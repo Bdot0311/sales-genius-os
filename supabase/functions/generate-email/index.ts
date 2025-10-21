@@ -1,8 +1,35 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+// Input validation helpers
+const sanitizeString = (input: string, maxLength: number): string => {
+  return input.trim().slice(0, maxLength);
+};
+
+const VALID_TONES = ['professional', 'friendly', 'casual', 'formal'];
+const VALID_GOALS = ['introduction', 'follow-up', 'meeting', 'demo', 'proposal'];
+
+const validateEmailInputs = (data: any) => {
+  const errors: string[] = [];
+  
+  if (!data.lead || typeof data.lead !== 'object') {
+    errors.push('Lead data is required');
+  }
+  
+  if (!data.tone || !VALID_TONES.includes(data.tone)) {
+    errors.push('Valid tone is required (professional, friendly, casual, or formal)');
+  }
+  
+  if (!data.goal || !VALID_GOALS.includes(data.goal)) {
+    errors.push('Valid goal is required (introduction, follow-up, meeting, demo, or proposal)');
+  }
+  
+  return errors;
 };
 
 serve(async (req) => {
@@ -11,22 +38,74 @@ serve(async (req) => {
   }
 
   try {
+    // Authenticate user
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const { lead, tone, goal } = await req.json();
+
+    // Validate inputs
+    const validationErrors = validateEmailInputs({ lead, tone, goal });
+    if (validationErrors.length > 0) {
+      return new Response(JSON.stringify({ error: validationErrors.join(', ') }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Verify user owns the lead
+    const { data: leadData, error: leadError } = await supabaseClient
+      .from('leads')
+      .select('id, user_id')
+      .eq('id', lead.id)
+      .single();
+
+    if (leadError || !leadData || leadData.user_id !== user.id) {
+      return new Response(JSON.stringify({ error: 'Lead not found or unauthorized' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
+    // Sanitize lead data
+    const sanitizedContactName = sanitizeString(lead.contact_name || 'there', 100);
+    const sanitizedCompanyName = sanitizeString(lead.company_name || 'your company', 100);
+    const sanitizedIndustry = lead.industry ? sanitizeString(lead.industry, 100) : 'Not specified';
+    const sanitizedCompanySize = lead.company_size ? sanitizeString(lead.company_size, 50) : 'Not specified';
+
     const systemPrompt = `You are an expert sales email writer. Generate a personalized, compelling email based on the lead information and goal provided. The email should be ${tone} in tone and focused on ${goal}.`;
 
     const userPrompt = `Write a sales email for the following lead:
     
 Lead Information:
-- Name: ${lead.contact_name}
-- Company: ${lead.company_name}
-- Industry: ${lead.industry || "Not specified"}
-- Company Size: ${lead.company_size || "Not specified"}
+- Name: ${sanitizedContactName}
+- Company: ${sanitizedCompanyName}
+- Industry: ${sanitizedIndustry}
+- Company Size: ${sanitizedCompanySize}
 - ICP Score: ${lead.icp_score || 0}/100
 
 Goal: ${goal}
