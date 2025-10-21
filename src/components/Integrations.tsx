@@ -1,0 +1,152 @@
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+
+const integrations = [
+  {
+    name: "Apollo.io",
+    category: "Lead Generation",
+    description: "Import leads directly from Apollo with enriched company data",
+    logo: "AP",
+    color: "bg-blue-500"
+  },
+  {
+    name: "LinkedIn Sales Navigator",
+    category: "Lead Generation",
+    description: "Sync leads and automatically enrich with LinkedIn profile data",
+    logo: "LI",
+    color: "bg-blue-600"
+  },
+  {
+    name: "Crunchbase",
+    category: "Data Enrichment",
+    description: "Get funding data, investor info, and company insights",
+    logo: "CB",
+    color: "bg-green-500"
+  },
+  {
+    name: "Google Calendar",
+    category: "Scheduling",
+    description: "Auto-schedule meetings based on your availability",
+    logo: "GC",
+    color: "bg-yellow-500"
+  },
+  {
+    name: "Outlook Calendar",
+    category: "Scheduling",
+    description: "Seamless calendar integration for Microsoft users",
+    logo: "OC",
+    color: "bg-blue-700"
+  },
+  {
+    name: "Calendly",
+    category: "Scheduling",
+    description: "Embed booking links in outreach campaigns",
+    logo: "CA",
+    color: "bg-blue-400"
+  },
+  {
+    name: "Gmail",
+    category: "Email",
+    description: "Send campaigns directly through your Gmail account",
+    logo: "GM",
+    color: "bg-red-500"
+  },
+  {
+    name: "Outlook",
+    category: "Email",
+    description: "Full email sync and campaign management",
+    logo: "OL",
+    color: "bg-blue-600"
+  },
+  {
+    name: "Slack",
+    category: "Communication",
+    description: "Get real-time notifications for deal updates",
+    logo: "SL",
+    color: "bg-purple-500"
+  },
+  {
+    name: "Zapier",
+    category: "Automation",
+    description: "Connect to 5000+ apps with custom workflows",
+    logo: "ZP",
+    color: "bg-orange-500"
+  },
+  {
+    name: "HubSpot",
+    category: "CRM",
+    description: "Two-way sync with HubSpot CRM",
+    logo: "HS",
+    color: "bg-orange-600"
+  },
+  {
+    name: "Salesforce",
+    category: "CRM",
+    description: "Bi-directional data sync with Salesforce",
+    logo: "SF",
+    color: "bg-blue-500"
+  }
+];
+
+const categories = ["All", "Lead Generation", "Scheduling", "Email", "CRM", "Automation"];
+
+export const Integrations = () => {
+  const navigate = useNavigate();
+
+  return (
+    <section id="integrations" className="py-24 bg-gradient-hero relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden opacity-30">
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-accent/20 rounded-full blur-3xl" />
+      </div>
+
+      <div className="container relative z-10 mx-auto px-6">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl md:text-5xl font-bold mb-4">
+            Connect Your
+            <span className="bg-gradient-primary bg-clip-text text-transparent"> Entire Stack</span>
+          </h2>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            SalesOS integrates with all your favorite tools to create a seamless sales workflow
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+          {integrations.map((integration, index) => (
+            <Card 
+              key={index}
+              className="p-6 bg-card border-border hover:border-primary/50 transition-all duration-300 hover:shadow-glow group"
+            >
+              <div className="flex items-start gap-4">
+                <div className={`w-12 h-12 ${integration.color} rounded-lg flex items-center justify-center text-white font-bold shrink-0 group-hover:scale-110 transition-transform duration-300`}>
+                  {integration.logo}
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="font-semibold">{integration.name}</h3>
+                    <Badge variant="secondary" className="text-xs">
+                      {integration.category}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{integration.description}</p>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        <div className="text-center">
+          <p className="text-muted-foreground mb-4">
+            Don't see your tool? We're adding new integrations every week.
+          </p>
+          <Button variant="hero" onClick={() => navigate('/auth')}>
+            Request an Integration
+          </Button>
+        </div>
+      </div>
+    </section>
+  );
+};

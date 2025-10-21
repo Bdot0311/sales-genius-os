@@ -13,10 +13,11 @@ export const Navbar = () => {
         </div>
 
         <div className="hidden md:flex items-center gap-8">
-          <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</a>
-          <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
-          <a href="#integrations" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Integrations</a>
-          <a href="#demo" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Demo</a>
+          <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">Features</a>
+          <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">Pricing</a>
+          <a href="#integrations" className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">Integrations</a>
+          <a href="#demo" className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">Demo</a>
+          <a href="#testimonials" className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">Testimonials</a>
         </div>
 
         <div className="flex items-center gap-4">

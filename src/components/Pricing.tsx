@@ -69,7 +69,7 @@ const plans = [
 
 export const Pricing = () => {
   return (
-    <section className="py-24 bg-gradient-hero relative overflow-hidden">
+    <section id="pricing" className="py-24 bg-gradient-hero relative overflow-hidden">
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden opacity-30">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl" />
