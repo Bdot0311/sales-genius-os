@@ -2,90 +2,91 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { Rocket, Linkedin, TrendingUp, Calendar, CalendarClock, Mail, Send, MessageSquare, Zap, Building2, Cloud } from "lucide-react";
 
 const integrations = [
   {
     name: "Apollo.io",
     category: "Lead Generation",
     description: "Import leads directly from Apollo with enriched company data",
-    logo: "AP",
+    icon: Rocket,
     color: "bg-blue-500"
   },
   {
     name: "LinkedIn Sales Navigator",
     category: "Lead Generation",
     description: "Sync leads and automatically enrich with LinkedIn profile data",
-    logo: "LI",
+    icon: Linkedin,
     color: "bg-blue-600"
   },
   {
     name: "Crunchbase",
     category: "Data Enrichment",
     description: "Get funding data, investor info, and company insights",
-    logo: "CB",
+    icon: TrendingUp,
     color: "bg-green-500"
   },
   {
     name: "Google Calendar",
     category: "Scheduling",
     description: "Auto-schedule meetings based on your availability",
-    logo: "GC",
+    icon: Calendar,
     color: "bg-yellow-500"
   },
   {
     name: "Outlook Calendar",
     category: "Scheduling",
     description: "Seamless calendar integration for Microsoft users",
-    logo: "OC",
+    icon: Calendar,
     color: "bg-blue-700"
   },
   {
     name: "Calendly",
     category: "Scheduling",
     description: "Embed booking links in outreach campaigns",
-    logo: "CA",
+    icon: CalendarClock,
     color: "bg-blue-400"
   },
   {
     name: "Gmail",
     category: "Email",
     description: "Send campaigns directly through your Gmail account",
-    logo: "GM",
+    icon: Mail,
     color: "bg-red-500"
   },
   {
     name: "Outlook",
     category: "Email",
     description: "Full email sync and campaign management",
-    logo: "OL",
+    icon: Send,
     color: "bg-blue-600"
   },
   {
     name: "Slack",
     category: "Communication",
     description: "Get real-time notifications for deal updates",
-    logo: "SL",
+    icon: MessageSquare,
     color: "bg-purple-500"
   },
   {
     name: "Zapier",
     category: "Automation",
     description: "Connect to 5000+ apps with custom workflows",
-    logo: "ZP",
+    icon: Zap,
     color: "bg-orange-500"
   },
   {
     name: "HubSpot",
     category: "CRM",
     description: "Two-way sync with HubSpot CRM",
-    logo: "HS",
+    icon: Building2,
     color: "bg-orange-600"
   },
   {
     name: "Salesforce",
     category: "CRM",
     description: "Bi-directional data sync with Salesforce",
-    logo: "SF",
+    icon: Cloud,
     color: "bg-blue-500"
   }
 ];
@@ -115,27 +116,30 @@ export const Integrations = () => {
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-          {integrations.map((integration, index) => (
-            <Card 
-              key={index}
-              className="p-6 bg-card border-border hover:border-primary/50 transition-all duration-300 hover:shadow-glow group"
-            >
-              <div className="flex items-start gap-4">
-                <div className={`w-12 h-12 ${integration.color} rounded-lg flex items-center justify-center text-white font-bold shrink-0 group-hover:scale-110 transition-transform duration-300`}>
-                  {integration.logo}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="font-semibold">{integration.name}</h3>
-                    <Badge variant="secondary" className="text-xs">
-                      {integration.category}
-                    </Badge>
+          {integrations.map((integration, index) => {
+            const Icon = integration.icon;
+            return (
+              <Card 
+                key={index}
+                className="p-6 bg-card border-border hover:border-primary/50 transition-all duration-300 hover:shadow-glow group"
+              >
+                <div className="flex items-start gap-4">
+                  <div className={`w-12 h-12 ${integration.color} rounded-lg flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform duration-300`}>
+                    <Icon className="w-6 h-6" />
                   </div>
-                  <p className="text-sm text-muted-foreground">{integration.description}</p>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="font-semibold">{integration.name}</h3>
+                      <Badge variant="secondary" className="text-xs">
+                        {integration.category}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{integration.description}</p>
+                  </div>
                 </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
 
         <div className="text-center">
