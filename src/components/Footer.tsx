@@ -36,7 +36,7 @@ export const Footer = () => {
         </div>
 
         <div className="pt-8 border-t border-border text-center text-sm text-muted-foreground">
-          © 2025 SalesOS. All rights reserved.
+          © 2025 BDØT Industries LLC. All rights reserved.
         </div>
       </div>
     </footer>

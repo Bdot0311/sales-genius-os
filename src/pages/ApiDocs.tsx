@@ -270,9 +270,9 @@ const ApiDocs = () => {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Need help? Contact our API support team at{" "}
-                <a href="mailto:api@salesos.com" className="text-primary hover:underline">
-                  api@salesos.com
+                Need help? Contact our support team at{" "}
+                <a href="mailto:support@alephwave.io" className="text-primary hover:underline">
+                  support@alephwave.io
                 </a>
               </p>
             </CardContent>
