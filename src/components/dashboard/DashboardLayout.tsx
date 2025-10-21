@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import salesosLogo from "@/assets/salesos-logo.png";
 import {
   LayoutDashboard,
   Users,
@@ -14,6 +15,7 @@ import {
   LogOut,
   Menu,
   X,
+  Puzzle,
 } from "lucide-react";
 import { User } from "@supabase/supabase-js";
 
@@ -30,6 +32,7 @@ const navigation = [
   { name: "Analytics", icon: BarChart3, href: "/dashboard/analytics" },
   { name: "Coach", icon: Mic, href: "/dashboard/coach" },
   { name: "Automations", icon: Workflow, href: "/dashboard/automations" },
+  { name: "Integrations", icon: Puzzle, href: "/dashboard/integrations" },
 ];
 
 export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
@@ -88,7 +91,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           {/* Logo */}
           <div className="flex items-center justify-between p-6 border-b border-border">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-primary rounded-lg" />
+              <img src={salesosLogo} alt="SalesOS Logo" className="w-8 h-8 rounded-lg" />
               <span className="text-xl font-bold">SalesOS</span>
             </div>
             <Button

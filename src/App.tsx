@@ -11,6 +11,7 @@ import Outreach from "./pages/Outreach";
 import Calendar from "./pages/Calendar";
 import Analytics from "./pages/Analytics";
 import Automations from "./pages/Automations";
+import DashboardIntegrations from "./pages/DashboardIntegrations";
 import PricingPage from "./pages/PricingPage";
 import ApiDocs from "./pages/ApiDocs";
 import NotFound from "./pages/NotFound";
@@ -34,6 +35,7 @@ const App = () => (
           <Route path="/dashboard/calendar" element={<Calendar />} />
           <Route path="/dashboard/analytics" element={<Analytics />} />
           <Route path="/dashboard/automations" element={<Automations />} />
+          <Route path="/dashboard/integrations" element={<DashboardIntegrations />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

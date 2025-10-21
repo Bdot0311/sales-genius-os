@@ -1,0 +1,368 @@
+import { useState } from "react";
+import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Rocket,
+  Linkedin,
+  TrendingUp,
+  Calendar,
+  CalendarClock,
+  Mail,
+  Send,
+  MessageSquare,
+  Zap,
+  Building2,
+  Cloud,
+  Settings,
+  Check,
+} from "lucide-react";
+
+interface Integration {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  icon: any;
+  color: string;
+  fields?: Array<{ name: string; label: string; type: string; placeholder: string }>;
+}
+
+const integrations: Integration[] = [
+  {
+    id: "apollo",
+    name: "Apollo.io",
+    category: "Lead Generation",
+    description: "Import leads directly from Apollo with enriched company data",
+    icon: Rocket,
+    color: "bg-blue-500",
+    fields: [
+      { name: "apiKey", label: "API Key", type: "password", placeholder: "Enter your Apollo API key" },
+    ],
+  },
+  {
+    id: "linkedin",
+    name: "LinkedIn Sales Navigator",
+    category: "Lead Generation",
+    description: "Sync leads and automatically enrich with LinkedIn profile data",
+    icon: Linkedin,
+    color: "bg-blue-600",
+    fields: [
+      { name: "clientId", label: "Client ID", type: "text", placeholder: "Enter Client ID" },
+      { name: "clientSecret", label: "Client Secret", type: "password", placeholder: "Enter Client Secret" },
+    ],
+  },
+  {
+    id: "crunchbase",
+    name: "Crunchbase",
+    category: "Data Enrichment",
+    description: "Get funding data, investor info, and company insights",
+    icon: TrendingUp,
+    color: "bg-green-500",
+    fields: [
+      { name: "apiKey", label: "API Key", type: "password", placeholder: "Enter your Crunchbase API key" },
+    ],
+  },
+  {
+    id: "google-calendar",
+    name: "Google Calendar",
+    category: "Scheduling",
+    description: "Auto-schedule meetings based on your availability",
+    icon: Calendar,
+    color: "bg-yellow-500",
+  },
+  {
+    id: "outlook-calendar",
+    name: "Outlook Calendar",
+    category: "Scheduling",
+    description: "Seamless calendar integration for Microsoft users",
+    icon: Calendar,
+    color: "bg-blue-700",
+  },
+  {
+    id: "calendly",
+    name: "Calendly",
+    category: "Scheduling",
+    description: "Embed booking links in outreach campaigns",
+    icon: CalendarClock,
+    color: "bg-blue-400",
+    fields: [
+      { name: "apiKey", label: "API Key", type: "password", placeholder: "Enter your Calendly API key" },
+    ],
+  },
+  {
+    id: "gmail",
+    name: "Gmail",
+    category: "Email",
+    description: "Send campaigns directly through your Gmail account",
+    icon: Mail,
+    color: "bg-red-500",
+  },
+  {
+    id: "outlook",
+    name: "Outlook",
+    category: "Email",
+    description: "Full email sync and campaign management",
+    icon: Send,
+    color: "bg-blue-600",
+  },
+  {
+    id: "slack",
+    name: "Slack",
+    category: "Communication",
+    description: "Get real-time notifications for deal updates",
+    icon: MessageSquare,
+    color: "bg-purple-500",
+    fields: [
+      { name: "webhookUrl", label: "Webhook URL", type: "text", placeholder: "https://hooks.slack.com/..." },
+    ],
+  },
+  {
+    id: "zapier",
+    name: "Zapier",
+    category: "Automation",
+    description: "Connect to 5000+ apps with custom workflows",
+    icon: Zap,
+    color: "bg-orange-500",
+    fields: [
+      { name: "webhookUrl", label: "Webhook URL", type: "text", placeholder: "https://hooks.zapier.com/..." },
+    ],
+  },
+  {
+    id: "hubspot",
+    name: "HubSpot",
+    category: "CRM",
+    description: "Two-way sync with HubSpot CRM",
+    icon: Building2,
+    color: "bg-orange-600",
+    fields: [
+      { name: "apiKey", label: "API Key", type: "password", placeholder: "Enter your HubSpot API key" },
+    ],
+  },
+  {
+    id: "salesforce",
+    name: "Salesforce",
+    category: "CRM",
+    description: "Bi-directional data sync with Salesforce",
+    icon: Cloud,
+    color: "bg-blue-500",
+    fields: [
+      { name: "instanceUrl", label: "Instance URL", type: "text", placeholder: "https://your-instance.salesforce.com" },
+      { name: "clientId", label: "Client ID", type: "text", placeholder: "Enter Client ID" },
+      { name: "clientSecret", label: "Client Secret", type: "password", placeholder: "Enter Client Secret" },
+    ],
+  },
+];
+
+const DashboardIntegrations = () => {
+  const { toast } = useToast();
+  const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
+  const [connectedIntegrations, setConnectedIntegrations] = useState<Set<string>>(new Set());
+  const [formData, setFormData] = useState<Record<string, string>>({});
+  const [selectedCategory, setSelectedCategory] = useState("All");
+
+  const categories = ["All", "Lead Generation", "Scheduling", "Email", "CRM", "Automation", "Communication", "Data Enrichment"];
+
+  const filteredIntegrations =
+    selectedCategory === "All"
+      ? integrations
+      : integrations.filter((i) => i.category === selectedCategory);
+
+  const handleConnect = (integration: Integration) => {
+    if (integration.fields && integration.fields.length > 0) {
+      setSelectedIntegration(integration);
+      setFormData({});
+    } else {
+      // OAuth flow - would redirect in real implementation
+      toast({
+        title: "Redirecting...",
+        description: `Opening ${integration.name} authentication window`,
+      });
+      setTimeout(() => {
+        setConnectedIntegrations(new Set([...connectedIntegrations, integration.id]));
+        toast({
+          title: "Connected!",
+          description: `Successfully connected to ${integration.name}`,
+        });
+      }, 1500);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedIntegration) return;
+
+    // In a real app, this would save to Supabase secrets
+    setConnectedIntegrations(new Set([...connectedIntegrations, selectedIntegration.id]));
+    toast({
+      title: "Connected!",
+      description: `Successfully connected to ${selectedIntegration.name}`,
+    });
+    setSelectedIntegration(null);
+    setFormData({});
+  };
+
+  const handleDisconnect = (integrationId: string) => {
+    const newSet = new Set(connectedIntegrations);
+    newSet.delete(integrationId);
+    setConnectedIntegrations(newSet);
+    toast({
+      title: "Disconnected",
+      description: "Integration has been disconnected",
+    });
+  };
+
+  return (
+    <DashboardLayout>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Integrations</h1>
+          <p className="text-muted-foreground">
+            Connect your favorite tools to supercharge your sales workflow
+          </p>
+        </div>
+
+        {/* Category Filter */}
+        <div className="flex gap-2 flex-wrap">
+          {categories.map((category) => (
+            <Button
+              key={category}
+              variant={selectedCategory === category ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSelectedCategory(category)}
+            >
+              {category}
+            </Button>
+          ))}
+        </div>
+
+        {/* Integrations Grid */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredIntegrations.map((integration) => {
+            const Icon = integration.icon;
+            const isConnected = connectedIntegrations.has(integration.id);
+
+            return (
+              <Card
+                key={integration.id}
+                className="p-6 hover:border-primary/50 transition-all duration-300 hover:shadow-glow group relative"
+              >
+                {isConnected && (
+                  <div className="absolute top-3 right-3">
+                    <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                      <Check className="w-4 h-4 text-white" />
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-start gap-4 mb-4">
+                  <div
+                    className={`w-12 h-12 ${integration.color} rounded-lg flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform duration-300`}
+                  >
+                    <Icon className="w-6 h-6" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="font-semibold">{integration.name}</h3>
+                      <Badge variant="secondary" className="text-xs">
+                        {integration.category}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {integration.description}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  {isConnected ? (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => handleConnect(integration)}
+                      >
+                        <Settings className="w-4 h-4 mr-2" />
+                        Configure
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDisconnect(integration.id)}
+                      >
+                        Disconnect
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      variant="hero"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => handleConnect(integration)}
+                    >
+                      Connect
+                    </Button>
+                  )}
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Configuration Dialog */}
+        <Dialog
+          open={!!selectedIntegration}
+          onOpenChange={() => setSelectedIntegration(null)}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                Connect to {selectedIntegration?.name}
+              </DialogTitle>
+            </DialogHeader>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {selectedIntegration?.fields?.map((field) => (
+                <div key={field.name} className="space-y-2">
+                  <Label htmlFor={field.name}>{field.label}</Label>
+                  <Input
+                    id={field.name}
+                    type={field.type}
+                    placeholder={field.placeholder}
+                    value={formData[field.name] || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, [field.name]: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+              ))}
+
+              <div className="flex gap-3 pt-4">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setSelectedIntegration(null)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" variant="hero" className="flex-1">
+                  Connect
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </DashboardLayout>
+  );
+};
+
+export default DashboardIntegrations;
