@@ -1,1 +1,7 @@
 project_id = "ghgfjnepvxvxrncmskys"
+
+[functions.score-lead]
+verify_jwt = false
+
+[functions.generate-email]
+verify_jwt = false
