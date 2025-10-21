@@ -45,8 +45,17 @@ const Calendar = () => {
 
   const handleCreateActivity = async () => {
     try {
+      // Check authentication first
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
+
+      // Validate inputs
+      if (!newActivity.subject.trim() || newActivity.subject.length > 200) {
+        throw new Error("Meeting title is required and must be less than 200 characters");
+      }
+      if (newActivity.description && newActivity.description.length > 1000) {
+        throw new Error("Description must be less than 1000 characters");
+      }
 
       const { error } = await supabase.from("activities").insert({
         ...newActivity,

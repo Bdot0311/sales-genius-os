@@ -38,6 +38,27 @@ const Outreach = () => {
       return;
     }
 
+    // Validate email goal length
+    if (emailGoal.length > 500) {
+      toast({
+        title: "Invalid input",
+        description: "Email goal must be less than 500 characters",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate tone is from allowed list
+    const allowedTones = ["professional", "friendly", "casual", "formal"];
+    if (!allowedTones.includes(emailTone)) {
+      toast({
+        title: "Invalid input",
+        description: "Invalid email tone selected",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsGenerating(true);
     try {
       const lead = leads.find((l) => l.id === selectedLead);

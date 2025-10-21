@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Zap, Play, Pause } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Plus, Zap, Play, Pause, Loader2 } from "lucide-react";
 
 interface Workflow {
   id: string;
@@ -15,12 +16,16 @@ interface Workflow {
   trigger: string;
   action: string;
   active: boolean;
+  user_id: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 const Automations = () => {
   const { toast } = useToast();
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [newWorkflow, setNewWorkflow] = useState({
     name: "",
     trigger: "",
@@ -28,18 +33,30 @@ const Automations = () => {
   });
 
   useEffect(() => {
-    const savedWorkflows = localStorage.getItem("workflows");
-    if (savedWorkflows) {
-      setWorkflows(JSON.parse(savedWorkflows));
-    }
+    loadWorkflows();
   }, []);
 
-  const saveWorkflows = (updatedWorkflows: Workflow[]) => {
-    setWorkflows(updatedWorkflows);
-    localStorage.setItem("workflows", JSON.stringify(updatedWorkflows));
+  const loadWorkflows = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("workflows")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setWorkflows(data || []);
+    } catch (error: any) {
+      toast({
+        title: "Error loading workflows",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleCreateWorkflow = () => {
+  const handleCreateWorkflow = async () => {
     if (!newWorkflow.name || !newWorkflow.trigger || !newWorkflow.action) {
       toast({
         title: "Missing information",
@@ -49,31 +66,68 @@ const Automations = () => {
       return;
     }
 
-    const workflow: Workflow = {
-      id: Date.now().toString(),
-      ...newWorkflow,
-      active: true,
-    };
+    try {
+      // Check authentication first
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
 
-    saveWorkflows([...workflows, workflow]);
-    toast({
-      title: "Workflow created",
-      description: "Your automation is now active",
-    });
+      // Validate inputs
+      if (newWorkflow.name.length > 100) {
+        throw new Error("Workflow name must be less than 100 characters");
+      }
 
-    setIsDialogOpen(false);
-    setNewWorkflow({ name: "", trigger: "", action: "" });
+      const { error } = await supabase.from("workflows").insert({
+        user_id: user.id,
+        name: newWorkflow.name,
+        trigger: newWorkflow.trigger,
+        action: newWorkflow.action,
+        active: true,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Workflow created",
+        description: "Your automation is now active",
+      });
+
+      setIsDialogOpen(false);
+      setNewWorkflow({ name: "", trigger: "", action: "" });
+      loadWorkflows();
+    } catch (error: any) {
+      toast({
+        title: "Error creating workflow",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
-  const toggleWorkflow = (id: string) => {
-    const updated = workflows.map((w) =>
-      w.id === id ? { ...w, active: !w.active } : w
-    );
-    saveWorkflows(updated);
-    toast({
-      title: "Workflow updated",
-      description: "Workflow status changed",
-    });
+  const toggleWorkflow = async (id: string) => {
+    try {
+      const workflow = workflows.find((w) => w.id === id);
+      if (!workflow) return;
+
+      const { error } = await supabase
+        .from("workflows")
+        .update({ active: !workflow.active })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Workflow updated",
+        description: "Workflow status changed",
+      });
+
+      loadWorkflows();
+    } catch (error: any) {
+      toast({
+        title: "Error updating workflow",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -154,7 +208,14 @@ const Automations = () => {
           </Dialog>
         </div>
 
-        {workflows.length === 0 ? (
+        {loading ? (
+          <Card className="p-12">
+            <div className="text-center">
+              <Loader2 className="w-12 h-12 mx-auto mb-4 text-muted-foreground animate-spin" />
+              <p className="text-muted-foreground">Loading workflows...</p>
+            </div>
+          </Card>
+        ) : workflows.length === 0 ? (
           <Card className="p-12">
             <div className="text-center">
               <Zap className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />

@@ -72,11 +72,30 @@ export const AddLeadDialog = ({ onLeadAdded }: AddLeadDialogProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
 
     try {
+      // Check authentication first
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
+
+      // Validate inputs
+      if (!formData.companyName.trim() || formData.companyName.length > 100) {
+        throw new Error("Company name is required and must be less than 100 characters");
+      }
+      if (!formData.contactName.trim() || formData.contactName.length > 100) {
+        throw new Error("Contact name is required and must be less than 100 characters");
+      }
+      if (formData.contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactEmail)) {
+        throw new Error("Invalid email format");
+      }
+      if (formData.contactEmail && formData.contactEmail.length > 255) {
+        throw new Error("Email must be less than 255 characters");
+      }
+      if (formData.notes && formData.notes.length > 2000) {
+        throw new Error("Notes must be less than 2000 characters");
+      }
+
+      setLoading(true);
 
       const { error } = await supabase.from("leads").insert({
         user_id: user.id,

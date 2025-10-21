@@ -45,11 +45,35 @@ export const AddDealDialog = ({ open, onOpenChange, onDealAdded, stage = "new" }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
 
     try {
+      // Check authentication first
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
+
+      // Validate inputs
+      if (!formData.title.trim() || formData.title.length > 200) {
+        throw new Error("Title is required and must be less than 200 characters");
+      }
+      if (!formData.company_name.trim() || formData.company_name.length > 100) {
+        throw new Error("Company name is required and must be less than 100 characters");
+      }
+      if (formData.contact_name && formData.contact_name.length > 100) {
+        throw new Error("Contact name must be less than 100 characters");
+      }
+      const dealValue = parseFloat(formData.value);
+      if (isNaN(dealValue) || dealValue < 0) {
+        throw new Error("Deal value must be a valid positive number");
+      }
+      const probability = parseInt(formData.probability);
+      if (isNaN(probability) || probability < 0 || probability > 100) {
+        throw new Error("Probability must be between 0 and 100");
+      }
+      if (formData.notes && formData.notes.length > 2000) {
+        throw new Error("Notes must be less than 2000 characters");
+      }
+
+      setLoading(true);
 
       const { error } = await supabase.from("deals").insert({
         user_id: user.id,
