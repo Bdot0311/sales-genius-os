@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface Deal {
   id: string;
@@ -17,9 +18,11 @@ interface PipelineColumnProps {
   deals: Deal[];
   totalValue: number;
   color: string;
+  onMoveDeal: (dealId: string, stage: string) => void;
+  stages: Array<{ name: string; key: string; color: string }>;
 }
 
-export const PipelineColumn = ({ title, deals, totalValue, color }: PipelineColumnProps) => {
+export const PipelineColumn = ({ title, deals, totalValue, color, onMoveDeal, stages }: PipelineColumnProps) => {
   return (
     <div className="flex-shrink-0 w-80">
       <div className="flex items-center justify-between mb-4">
@@ -43,9 +46,23 @@ export const PipelineColumn = ({ title, deals, totalValue, color }: PipelineColu
                 <h4 className="font-medium mb-1">{deal.title}</h4>
                 <p className="text-sm text-muted-foreground">{deal.company_name}</p>
               </div>
-              <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                <MoreVertical className="w-4 h-4" />
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                    <MoreVertical className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-popover">
+                  {stages.map((stage) => (
+                    <DropdownMenuItem 
+                      key={stage.key}
+                      onClick={() => onMoveDeal(deal.id, stage.key)}
+                    >
+                      Move to {stage.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             <div className="flex items-center justify-between">

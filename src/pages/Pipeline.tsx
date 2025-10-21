@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { PipelineColumn } from "@/components/dashboard/PipelineColumn";
+import { AddDealDialog } from "@/components/dashboard/AddDealDialog";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +30,7 @@ const Pipeline = () => {
   const { toast } = useToast();
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
 
   useEffect(() => {
     loadDeals();
@@ -66,6 +68,30 @@ const Pipeline = () => {
     );
   };
 
+  const handleMoveDealt = async (dealId: string, newStage: string) => {
+    try {
+      const { error } = await supabase
+        .from("deals")
+        .update({ stage: newStage })
+        .eq("id", dealId);
+
+      if (error) throw error;
+
+      setDeals(deals.map(d => d.id === dealId ? { ...d, stage: newStage } : d));
+      
+      toast({
+        title: "Deal moved",
+        description: "Deal stage updated successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -77,11 +103,17 @@ const Pipeline = () => {
               Manage your deals across all stages
             </p>
           </div>
-          <Button variant="hero">
+          <Button variant="hero" onClick={() => setAddDialogOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
             New Deal
           </Button>
         </div>
+
+        <AddDealDialog 
+          open={addDialogOpen}
+          onOpenChange={setAddDialogOpen}
+          onDealAdded={loadDeals}
+        />
 
         {/* Pipeline */}
         <div className="overflow-x-auto pb-6">
@@ -93,6 +125,8 @@ const Pipeline = () => {
                 deals={getDealsByStage(stage.key)}
                 totalValue={getTotalValue(stage.key)}
                 color={stage.color}
+                onMoveDeal={handleMoveDealt}
+                stages={stages}
               />
             ))}
           </div>
@@ -109,7 +143,7 @@ const Pipeline = () => {
             <p className="text-muted-foreground mb-4">
               No deals yet. Create your first deal to get started.
             </p>
-            <Button variant="hero">
+            <Button variant="hero" onClick={() => setAddDialogOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Create First Deal
             </Button>
