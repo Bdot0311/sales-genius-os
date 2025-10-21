@@ -11,6 +11,7 @@ import Outreach from "./pages/Outreach";
 import Calendar from "./pages/Calendar";
 import Analytics from "./pages/Analytics";
 import Automations from "./pages/Automations";
+import PricingPage from "./pages/PricingPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/pricing" element={<PricingPage />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard/pipeline" element={<Pipeline />} />
           <Route path="/dashboard/outreach" element={<Outreach />} />

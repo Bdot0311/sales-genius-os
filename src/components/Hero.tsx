@@ -54,9 +54,7 @@ export const Hero = () => {
 
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-in" style={{ animationDelay: "0.4s" }}>
-          <Button variant="hero" size="lg" className="group" onClick={() => {
-            document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
-          }}>
+          <Button variant="hero" size="lg" className="group" onClick={() => navigate('/pricing')}>
             Start Free Trial
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </Button>
