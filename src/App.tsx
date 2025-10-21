@@ -12,6 +12,7 @@ import Calendar from "./pages/Calendar";
 import Analytics from "./pages/Analytics";
 import Automations from "./pages/Automations";
 import PricingPage from "./pages/PricingPage";
+import ApiDocs from "./pages/ApiDocs";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/api-docs" element={<ApiDocs />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard/pipeline" element={<Pipeline />} />
           <Route path="/dashboard/outreach" element={<Outreach />} />

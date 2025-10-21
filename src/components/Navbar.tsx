@@ -39,6 +39,7 @@ export const Navbar = () => {
           <Button variant="ghost" onClick={() => handleNavigation('#features')}>Features</Button>
           <Button variant="ghost" onClick={() => handleNavigation('/pricing')}>Pricing</Button>
           <Button variant="ghost" onClick={() => handleNavigation('#integrations')}>Integrations</Button>
+          <Button variant="ghost" onClick={() => handleNavigation('/api-docs')}>API Docs</Button>
         </div>
 
         <div className="flex items-center gap-4">
