@@ -36,7 +36,7 @@ const faqs = [
   },
   {
     question: "What kind of support do you offer?",
-    answer: "We offer email support for all users, with priority support and dedicated account managers available for Pro and Enterprise plans. We also have extensive documentation and video tutorials."
+    answer: "We offer email support for all users, with priority support and dedicated account managers available for Pro and Enterprise plans."
   }
 ];
 

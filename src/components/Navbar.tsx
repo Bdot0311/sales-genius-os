@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
+import salesosLogo from "@/assets/salesos-logo.png";
 
 export const Navbar = () => {
   const navigate = useNavigate();
@@ -30,7 +31,7 @@ export const Navbar = () => {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
       <div className="container mx-auto px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-gradient-primary rounded-lg" />
+          <img src={salesosLogo} alt="SalesOS Logo" className="w-8 h-8 rounded-lg" />
           <span className="text-xl font-bold">SalesOS</span>
         </div>
 
@@ -38,16 +39,11 @@ export const Navbar = () => {
           <Button variant="ghost" onClick={() => handleNavigation('#features')}>Features</Button>
           <Button variant="ghost" onClick={() => handleNavigation('/pricing')}>Pricing</Button>
           <Button variant="ghost" onClick={() => handleNavigation('#integrations')}>Integrations</Button>
-          <Button variant="ghost" onClick={() => handleNavigation('#demo')}>Demo</Button>
-          <Button variant="ghost" onClick={() => handleNavigation('#testimonials')}>Testimonials</Button>
         </div>
 
         <div className="flex items-center gap-4">
-          <Button variant="ghost" className="hidden md:inline-flex" onClick={() => navigate("/auth")}>
-            Sign In
-          </Button>
           <Button variant="hero" onClick={() => navigate("/auth")}>
-            Get Started
+            Sign In
           </Button>
           <Button variant="ghost" size="icon" className="md:hidden">
             <Menu className="w-5 h-5" />

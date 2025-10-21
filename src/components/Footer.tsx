@@ -1,3 +1,5 @@
+import salesosLogo from "@/assets/salesos-logo.png";
+
 export const Footer = () => {
   return (
     <footer className="bg-card border-t border-border py-12">
@@ -5,7 +7,7 @@ export const Footer = () => {
         <div className="grid md:grid-cols-3 gap-8 mb-8">
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-gradient-primary rounded-lg" />
+              <img src={salesosLogo} alt="SalesOS Logo" className="w-8 h-8 rounded-lg" />
               <span className="text-xl font-bold">SalesOS</span>
             </div>
             <p className="text-sm text-muted-foreground">
