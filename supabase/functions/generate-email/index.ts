@@ -134,7 +134,13 @@ Write a personalized email that addresses their potential needs and includes a c
     }
 
     const data = await response.json();
-    const email = data.choices[0].message.content;
+    let email = data.choices[0].message.content;
+
+    // Remove markdown code blocks if present
+    email = email.trim();
+    if (email.startsWith('```')) {
+      email = email.replace(/^```[a-z]*\n/, '').replace(/\n```$/, '');
+    }
 
     return new Response(JSON.stringify({ email }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
