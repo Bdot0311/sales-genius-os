@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Rocket,
   Linkedin,
@@ -165,8 +166,32 @@ const DashboardIntegrations = () => {
   const [connectedIntegrations, setConnectedIntegrations] = useState<Set<string>>(new Set());
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [loading, setLoading] = useState(true);
 
   const categories = ["All", "Lead Generation", "Scheduling", "Email", "CRM", "Automation", "Communication", "Data Enrichment"];
+
+  useEffect(() => {
+    loadIntegrations();
+  }, []);
+
+  const loadIntegrations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('integrations')
+        .select('integration_id, is_active');
+      
+      if (error) throw error;
+      
+      const activeIds = new Set(
+        data?.filter(i => i.is_active).map(i => i.integration_id) || []
+      );
+      setConnectedIntegrations(activeIds);
+    } catch (error: any) {
+      console.error('Error loading integrations:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredIntegrations =
     selectedCategory === "All"
@@ -193,28 +218,69 @@ const DashboardIntegrations = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedIntegration) return;
 
-    // In a real app, this would save to Supabase secrets
-    setConnectedIntegrations(new Set([...connectedIntegrations, selectedIntegration.id]));
-    toast({
-      title: "Connected!",
-      description: `Successfully connected to ${selectedIntegration.name}`,
-    });
-    setSelectedIntegration(null);
-    setFormData({});
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { error } = await supabase
+        .from('integrations')
+        .upsert({
+          user_id: user.id,
+          integration_id: selectedIntegration.id,
+          integration_name: selectedIntegration.name,
+          config: formData,
+          is_active: true,
+        });
+
+      if (error) throw error;
+
+      setConnectedIntegrations(new Set([...connectedIntegrations, selectedIntegration.id]));
+      toast({
+        title: "Connected!",
+        description: `Successfully connected to ${selectedIntegration.name}`,
+      });
+      setSelectedIntegration(null);
+      setFormData({});
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleDisconnect = (integrationId: string) => {
-    const newSet = new Set(connectedIntegrations);
-    newSet.delete(integrationId);
-    setConnectedIntegrations(newSet);
-    toast({
-      title: "Disconnected",
-      description: "Integration has been disconnected",
-    });
+  const handleDisconnect = async (integrationId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { error } = await supabase
+        .from('integrations')
+        .update({ is_active: false })
+        .eq('user_id', user.id)
+        .eq('integration_id', integrationId);
+
+      if (error) throw error;
+
+      const newSet = new Set(connectedIntegrations);
+      newSet.delete(integrationId);
+      setConnectedIntegrations(newSet);
+      toast({
+        title: "Disconnected",
+        description: "Integration has been disconnected",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   return (

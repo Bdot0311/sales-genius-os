@@ -124,6 +124,39 @@ export type Database = {
           },
         ]
       }
+      integrations: {
+        Row: {
+          config: Json
+          created_at: string
+          id: string
+          integration_id: string
+          integration_name: string
+          is_active: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          id?: string
+          integration_id: string
+          integration_name: string
+          is_active?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          id?: string
+          integration_id?: string
+          integration_name?: string
+          is_active?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           company_name: string
