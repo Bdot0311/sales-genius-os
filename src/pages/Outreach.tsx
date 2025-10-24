@@ -134,11 +134,18 @@ const Outreach = () => {
 
               <div>
                 <Label>Email Goal</Label>
-                <Input
-                  placeholder="e.g., Schedule a demo, Follow up on proposal"
-                  value={emailGoal}
-                  onChange={(e) => setEmailGoal(e.target.value)}
-                />
+                <Select value={emailGoal} onValueChange={setEmailGoal}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose email goal" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="introduction">Introduction</SelectItem>
+                    <SelectItem value="follow-up">Follow-up</SelectItem>
+                    <SelectItem value="meeting">Schedule Meeting</SelectItem>
+                    <SelectItem value="demo">Request Demo</SelectItem>
+                    <SelectItem value="proposal">Send Proposal</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <Button
