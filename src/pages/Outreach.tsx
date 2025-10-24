@@ -18,6 +18,7 @@ const Outreach = () => {
   const [emailGoal, setEmailGoal] = useState("");
   const [generatedEmail, setGeneratedEmail] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSending, setIsSending] = useState(false);
 
   useEffect(() => {
     loadLeads();
@@ -84,6 +85,44 @@ const Outreach = () => {
       });
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const sendEmail = async () => {
+    if (!selectedLead || !generatedEmail) {
+      toast({
+        title: "Missing information",
+        description: "Please generate an email first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSending(true);
+    try {
+      const lead = leads.find((l) => l.id === selectedLead);
+      
+      // In a real implementation, this would send via an email service
+      // For now, we'll simulate sending
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      toast({
+        title: "Email sent!",
+        description: `Email sent to ${lead.contact_name} at ${lead.contact_email}`,
+      });
+      
+      // Clear the form
+      setGeneratedEmail("");
+      setSelectedLead("");
+      setEmailGoal("");
+    } catch (error: any) {
+      toast({
+        title: "Error sending email",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -177,9 +216,22 @@ const Outreach = () => {
                   onChange={(e) => setGeneratedEmail(e.target.value)}
                   className="min-h-[300px]"
                 />
-                <Button className="w-full">
-                  <Send className="w-4 h-4 mr-2" />
-                  Send Email
+                <Button 
+                  className="w-full"
+                  onClick={sendEmail}
+                  disabled={isSending}
+                >
+                  {isSending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 mr-2" />
+                      Send Email
+                    </>
+                  )}
                 </Button>
               </div>
             ) : (

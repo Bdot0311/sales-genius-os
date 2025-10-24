@@ -203,17 +203,42 @@ const DashboardIntegrations = () => {
       setSelectedIntegration(integration);
       setFormData({});
     } else {
-      // OAuth flow - would redirect in real implementation
+      // OAuth flow simulation
       toast({
-        title: "Redirecting...",
-        description: `Opening ${integration.name} authentication window`,
+        title: "OAuth Integration",
+        description: `${integration.name} uses OAuth. In a production app, this would redirect to their authorization page.`,
       });
-      setTimeout(() => {
-        setConnectedIntegrations(new Set([...connectedIntegrations, integration.id]));
-        toast({
-          title: "Connected!",
-          description: `Successfully connected to ${integration.name}`,
-        });
+      
+      // Simulate OAuth success after a delay
+      setTimeout(async () => {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) throw new Error('Not authenticated');
+
+          const { error } = await supabase
+            .from('integrations')
+            .upsert({
+              user_id: user.id,
+              integration_id: integration.id,
+              integration_name: integration.name,
+              config: { oauth_connected: true },
+              is_active: true,
+            });
+
+          if (error) throw error;
+
+          setConnectedIntegrations(new Set([...connectedIntegrations, integration.id]));
+          toast({
+            title: "Connected!",
+            description: `Successfully connected to ${integration.name}`,
+          });
+        } catch (error: any) {
+          toast({
+            title: "Error",
+            description: error.message,
+            variant: "destructive",
+          });
+        }
       }, 1500);
     }
   };
