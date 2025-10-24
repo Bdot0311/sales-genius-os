@@ -21,11 +21,13 @@ const validateEmailInputs = (data: any) => {
     errors.push('Lead data is required');
   }
   
-  if (!data.tone || !VALID_TONES.includes(data.tone)) {
+  const tone = typeof data.tone === 'string' ? data.tone.trim().toLowerCase() : '';
+  if (!tone || !VALID_TONES.includes(tone)) {
     errors.push('Valid tone is required (professional, friendly, casual, or formal)');
   }
   
-  if (!data.goal || !VALID_GOALS.includes(data.goal)) {
+  const goal = typeof data.goal === 'string' ? data.goal.trim().toLowerCase() : '';
+  if (!goal || !VALID_GOALS.includes(goal)) {
     errors.push('Valid goal is required (introduction, follow-up, meeting, demo, or proposal)');
   }
   
@@ -61,7 +63,10 @@ serve(async (req) => {
       });
     }
 
-    const { lead, tone, goal } = await req.json();
+    const requestData = await req.json();
+    const lead = requestData.lead;
+    const tone = typeof requestData.tone === 'string' ? requestData.tone.trim().toLowerCase() : '';
+    const goal = typeof requestData.goal === 'string' ? requestData.goal.trim().toLowerCase() : '';
 
     // Validate inputs
     const validationErrors = validateEmailInputs({ lead, tone, goal });
