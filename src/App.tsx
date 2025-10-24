@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import Leads from "./pages/Leads";
+import Coach from "./pages/Coach";
 import Pipeline from "./pages/Pipeline";
 import Outreach from "./pages/Outreach";
 import Calendar from "./pages/Calendar";
@@ -30,6 +32,8 @@ const App = () => (
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/api-docs" element={<ApiDocs />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard/leads" element={<Leads />} />
+          <Route path="/dashboard/coach" element={<Coach />} />
           <Route path="/dashboard/pipeline" element={<Pipeline />} />
           <Route path="/dashboard/outreach" element={<Outreach />} />
           <Route path="/dashboard/calendar" element={<Calendar />} />
