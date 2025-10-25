@@ -223,6 +223,8 @@ const DashboardIntegrations = () => {
               integration_name: integration.name,
               config: { oauth_connected: true },
               is_active: true,
+            }, {
+              onConflict: 'user_id,integration_id'
             });
 
           if (error) throw error;
@@ -259,6 +261,8 @@ const DashboardIntegrations = () => {
           integration_name: selectedIntegration.name,
           config: formData,
           is_active: true,
+        }, {
+          onConflict: 'user_id,integration_id'
         });
 
       if (error) throw error;
