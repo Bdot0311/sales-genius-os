@@ -296,7 +296,18 @@ const DashboardIntegrations = () => {
           },
         });
 
-        if (error) throw error;
+        if (error) {
+          // Check if provider is not enabled
+          if (error.message?.includes('provider') || error.message?.includes('not enabled')) {
+            toast({
+              title: "Provider Not Configured",
+              description: `${integration.name} OAuth is not set up yet. Please configure the ${provider === 'google' ? 'Google' : provider === 'azure' ? 'Microsoft Azure' : 'LinkedIn'} provider in your backend settings first.`,
+              variant: "destructive",
+            });
+          } else {
+            throw error;
+          }
+        }
       } else {
         // For integrations without OAuth (like Slack, Zapier) - show config dialog
         toast({
