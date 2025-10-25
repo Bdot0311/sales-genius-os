@@ -102,9 +102,44 @@ const Outreach = () => {
     try {
       const lead = leads.find((l) => l.id === selectedLead);
       
-      // In a real implementation, this would send via an email service
-      // For now, we'll simulate sending
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      if (!lead.contact_email) {
+        throw new Error('Lead does not have an email address');
+      }
+
+      // Check if user has connected an email integration
+      const { data: integrations } = await supabase
+        .from('integrations')
+        .select('integration_id')
+        .eq('is_active', true)
+        .in('integration_id', ['gmail', 'outlook']);
+
+      if (!integrations || integrations.length === 0) {
+        toast({
+          title: "No email provider connected",
+          description: "Please connect Gmail or Outlook in the Integrations page first",
+          variant: "destructive",
+        });
+        setIsSending(false);
+        return;
+      }
+
+      const integrationId = integrations[0].integration_id;
+
+      // Send email via edge function
+      const { data, error } = await supabase.functions.invoke('send-email', {
+        body: {
+          to: lead.contact_email,
+          subject: `${emailGoal === 'introduction' ? 'Introduction' : 
+                    emailGoal === 'follow-up' ? 'Following Up' :
+                    emailGoal === 'meeting' ? 'Meeting Request' :
+                    emailGoal === 'demo' ? 'Demo Request' : 
+                    'Proposal'} - ${lead.company_name}`,
+          body: generatedEmail,
+          integrationId
+        }
+      });
+
+      if (error) throw error;
       
       toast({
         title: "Email sent!",

@@ -172,7 +172,61 @@ const DashboardIntegrations = () => {
 
   useEffect(() => {
     loadIntegrations();
+    handleOAuthCallback();
   }, []);
+
+  const handleOAuthCallback = async () => {
+    const params = new URLSearchParams(window.location.search);
+    const integrationId = params.get('integration');
+    
+    if (integrationId) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) throw new Error('Not authenticated');
+
+        // Get the provider token from the session
+        const providerToken = session.provider_token;
+        const providerRefreshToken = session.provider_refresh_token;
+
+        if (providerToken) {
+          const integrationName = integrations.find(i => i.id === integrationId)?.name || integrationId;
+          
+          const { error } = await supabase
+            .from('integrations')
+            .upsert({
+              user_id: session.user.id,
+              integration_id: integrationId,
+              integration_name: integrationName,
+              config: { 
+                provider_token: providerToken,
+                provider_refresh_token: providerRefreshToken,
+                connected_at: new Date().toISOString()
+              },
+              is_active: true,
+            }, {
+              onConflict: 'user_id,integration_id'
+            });
+
+          if (error) throw error;
+
+          toast({
+            title: "Connected!",
+            description: `Successfully connected to ${integrationName}`,
+          });
+
+          // Remove the integration parameter from URL
+          window.history.replaceState({}, '', '/dashboard/integrations');
+          loadIntegrations();
+        }
+      } catch (error: any) {
+        toast({
+          title: "Connection Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    }
+  };
 
   const loadIntegrations = async () => {
     try {
@@ -198,50 +252,65 @@ const DashboardIntegrations = () => {
       ? integrations
       : integrations.filter((i) => i.category === selectedCategory);
 
-  const handleConnect = (integration: Integration) => {
+  const handleConnect = async (integration: Integration) => {
     if (integration.fields && integration.fields.length > 0) {
       setSelectedIntegration(integration);
       setFormData({});
-    } else {
-      // OAuth flow simulation
+      return;
+    }
+
+    // Real OAuth flow for supported providers
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      let provider: 'google' | 'azure' | 'linkedin_oidc' | null = null;
+      let scopes: string | undefined;
+
+      // Map integrations to OAuth providers
+      if (integration.id === 'gmail' || integration.id === 'google-calendar') {
+        provider = 'google';
+        scopes = 'https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/calendar';
+      } else if (integration.id === 'outlook' || integration.id === 'outlook-calendar') {
+        provider = 'azure';
+        scopes = 'Mail.Send Calendars.ReadWrite offline_access';
+      } else if (integration.id === 'linkedin') {
+        provider = 'linkedin_oidc';
+      }
+
+      if (provider) {
+        toast({
+          title: "Redirecting...",
+          description: `Opening ${integration.name} authorization page`,
+        });
+
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider,
+          options: {
+            scopes,
+            redirectTo: `${window.location.origin}/dashboard/integrations?integration=${integration.id}`,
+            queryParams: {
+              access_type: 'offline',
+              prompt: 'consent',
+            },
+          },
+        });
+
+        if (error) throw error;
+      } else {
+        // For integrations without OAuth (like Slack, Zapier) - show config dialog
+        toast({
+          title: "Configuration Required",
+          description: `Please configure ${integration.name} to complete setup`,
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
       toast({
-        title: "OAuth Integration",
-        description: `${integration.name} uses OAuth. In a production app, this would redirect to their authorization page.`,
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
       });
-      
-      // Simulate OAuth success after a delay
-      setTimeout(async () => {
-        try {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (!user) throw new Error('Not authenticated');
-
-          const { error } = await supabase
-            .from('integrations')
-            .upsert({
-              user_id: user.id,
-              integration_id: integration.id,
-              integration_name: integration.name,
-              config: { oauth_connected: true },
-              is_active: true,
-            }, {
-              onConflict: 'user_id,integration_id'
-            });
-
-          if (error) throw error;
-
-          setConnectedIntegrations(new Set([...connectedIntegrations, integration.id]));
-          toast({
-            title: "Connected!",
-            description: `Successfully connected to ${integration.name}`,
-          });
-        } catch (error: any) {
-          toast({
-            title: "Error",
-            description: error.message,
-            variant: "destructive",
-          });
-        }
-      }, 1500);
     }
   };
 
