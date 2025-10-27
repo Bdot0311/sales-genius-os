@@ -263,7 +263,7 @@ const DashboardIntegrations = () => {
           description: `Opening ${integration.name} authorization page`,
         });
 
-        const { data, error } = await supabase.auth.signInWithOAuth({
+        const { data, error } = await supabase.auth.linkIdentity({
           provider,
           options: {
             scopes,
