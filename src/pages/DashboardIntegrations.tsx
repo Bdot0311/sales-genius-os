@@ -76,6 +76,10 @@ const integrations: Integration[] = [
     description: "Auto-schedule meetings based on your availability",
     icon: Calendar,
     color: "bg-yellow-500",
+    fields: [
+      { name: "apiKey", label: "API Key", type: "password", placeholder: "Enter your Google API key" },
+      { name: "calendarId", label: "Calendar ID", type: "text", placeholder: "primary or your calendar ID" },
+    ],
   },
   {
     id: "calendly",
@@ -95,6 +99,10 @@ const integrations: Integration[] = [
     description: "Send campaigns directly through your Gmail account",
     icon: Mail,
     color: "bg-red-500",
+    fields: [
+      { name: "apiKey", label: "API Key", type: "password", placeholder: "Enter your Google API key" },
+      { name: "email", label: "Gmail Address", type: "email", placeholder: "your-email@gmail.com" },
+    ],
   },
   {
     id: "slack",
@@ -243,65 +251,12 @@ const DashboardIntegrations = () => {
       return;
     }
 
-    // Real OAuth flow for supported providers
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      let provider: 'google' | 'azure' | 'linkedin_oidc' | null = null;
-      let scopes: string | undefined;
-
-      // Map integrations to OAuth providers
-      if (integration.id === 'gmail' || integration.id === 'google-calendar') {
-        provider = 'google';
-        scopes = 'https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/calendar';
-      }
-
-      if (provider) {
-        toast({
-          title: "Redirecting...",
-          description: `Opening ${integration.name} authorization page`,
-        });
-
-        const { data, error } = await supabase.auth.linkIdentity({
-          provider,
-          options: {
-            scopes,
-            redirectTo: `${window.location.origin}/dashboard/integrations?integration=${integration.id}`,
-            queryParams: {
-              access_type: 'offline',
-              prompt: 'consent',
-            },
-          },
-        });
-
-        if (error) {
-          // Check if provider is not enabled
-          if (error.message?.includes('provider') || error.message?.includes('not enabled')) {
-            toast({
-              title: "Provider Not Configured",
-              description: `${integration.name} OAuth is not set up yet. Please configure the ${provider === 'google' ? 'Google' : provider === 'azure' ? 'Microsoft Azure' : 'LinkedIn'} provider in your backend settings first.`,
-              variant: "destructive",
-            });
-          } else {
-            throw error;
-          }
-        }
-      } else {
-        // For integrations without OAuth (like Slack, Zapier) - show config dialog
-        toast({
-          title: "Configuration Required",
-          description: `Please configure ${integration.name} to complete setup`,
-          variant: "destructive",
-        });
-      }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
+    // For integrations without fields, show a message
+    toast({
+      title: "Configuration Required",
+      description: `Please configure ${integration.name} to complete setup`,
+      variant: "destructive",
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
