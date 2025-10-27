@@ -234,6 +234,9 @@ const DashboardIntegrations = () => {
       });
       setSelectedIntegration(null);
       setFormData({});
+      
+      // Reload to ensure the UI reflects the saved data
+      await loadIntegrations();
     } catch (error: any) {
       toast({
         title: "Error",
