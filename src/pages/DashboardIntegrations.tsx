@@ -164,61 +164,7 @@ const DashboardIntegrations = () => {
 
   useEffect(() => {
     loadIntegrations();
-    handleOAuthCallback();
   }, []);
-
-  const handleOAuthCallback = async () => {
-    const params = new URLSearchParams(window.location.search);
-    const integrationId = params.get('integration');
-    
-    if (integrationId) {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) throw new Error('Not authenticated');
-
-        // Get the provider token from the session
-        const providerToken = session.provider_token;
-        const providerRefreshToken = session.provider_refresh_token;
-
-        if (providerToken) {
-          const integrationName = integrations.find(i => i.id === integrationId)?.name || integrationId;
-          
-          const { error } = await supabase
-            .from('integrations')
-            .upsert({
-              user_id: session.user.id,
-              integration_id: integrationId,
-              integration_name: integrationName,
-              config: { 
-                provider_token: providerToken,
-                provider_refresh_token: providerRefreshToken,
-                connected_at: new Date().toISOString()
-              },
-              is_active: true,
-            }, {
-              onConflict: 'user_id,integration_id'
-            });
-
-          if (error) throw error;
-
-          toast({
-            title: "Connected!",
-            description: `Successfully connected to ${integrationName}`,
-          });
-
-          // Remove the integration parameter from URL
-          window.history.replaceState({}, '', '/dashboard/integrations');
-          loadIntegrations();
-        }
-      } catch (error: any) {
-        toast({
-          title: "Connection Error",
-          description: error.message,
-          variant: "destructive",
-        });
-      }
-    }
-  };
 
   const loadIntegrations = async () => {
     try {
