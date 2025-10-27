@@ -78,14 +78,6 @@ const integrations: Integration[] = [
     color: "bg-yellow-500",
   },
   {
-    id: "outlook-calendar",
-    name: "Outlook Calendar",
-    category: "Scheduling",
-    description: "Seamless calendar integration for Microsoft users",
-    icon: Calendar,
-    color: "bg-blue-700",
-  },
-  {
     id: "calendly",
     name: "Calendly",
     category: "Scheduling",
@@ -103,14 +95,6 @@ const integrations: Integration[] = [
     description: "Send campaigns directly through your Gmail account",
     icon: Mail,
     color: "bg-red-500",
-  },
-  {
-    id: "outlook",
-    name: "Outlook",
-    category: "Email",
-    description: "Full email sync and campaign management",
-    icon: Send,
-    color: "bg-blue-600",
   },
   {
     id: "slack",
@@ -271,11 +255,6 @@ const DashboardIntegrations = () => {
       if (integration.id === 'gmail' || integration.id === 'google-calendar') {
         provider = 'google';
         scopes = 'https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/calendar';
-      } else if (integration.id === 'outlook' || integration.id === 'outlook-calendar') {
-        provider = 'azure';
-        scopes = 'Mail.Send Calendars.ReadWrite offline_access';
-      } else if (integration.id === 'linkedin') {
-        provider = 'linkedin_oidc';
       }
 
       if (provider) {

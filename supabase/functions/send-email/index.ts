@@ -94,44 +94,6 @@ serve(async (req) => {
         JSON.stringify({ success: true, provider: 'gmail' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
-    } else if (integrationId === 'outlook') {
-      // Send via Microsoft Graph API
-      const message = {
-        message: {
-          subject: subject,
-          body: {
-            contentType: 'HTML',
-            content: body
-          },
-          toRecipients: [
-            {
-              emailAddress: {
-                address: to
-              }
-            }
-          ]
-        }
-      };
-
-      const outlookResponse = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${providerToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(message),
-      });
-
-      if (!outlookResponse.ok) {
-        const error = await outlookResponse.text();
-        console.error('Outlook API error:', error);
-        throw new Error('Failed to send email via Outlook');
-      }
-
-      return new Response(
-        JSON.stringify({ success: true, provider: 'outlook' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
     } else {
       return new Response(
         JSON.stringify({ error: 'Unsupported email provider' }),
