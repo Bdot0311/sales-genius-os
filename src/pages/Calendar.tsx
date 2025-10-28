@@ -44,7 +44,7 @@ const Calendar = () => {
         .eq('user_id', user.id)
         .eq('integration_id', 'google-calendar')
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
       if (data?.config) {
         setHasGoogleCalendar(true);
@@ -58,24 +58,28 @@ const Calendar = () => {
   const loadGoogleCalendarEvents = async (config: any) => {
     try {
       const apiKey = config.apiKey;
-      const calendarId = config.calendarId || 'primary';
+      const calendarId = 'primary'; // Always use 'primary' for the user's main calendar
       
       const now = new Date();
       const timeMin = now.toISOString();
-      const timeMax = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(); // 30 days ahead
+      const timeMax = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
       const response = await fetch(
-        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?key=${apiKey}&timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime&maxResults=10`
+        `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events?key=${apiKey}&timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime&maxResults=10`
       );
 
-      if (!response.ok) throw new Error('Failed to fetch Google Calendar events');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || 'Failed to fetch calendar');
+      }
 
       const data = await response.json();
       setGoogleEvents(data.items || []);
     } catch (error: any) {
+      console.error('Google Calendar error:', error);
       toast({
-        title: "Error loading Google Calendar",
-        description: error.message,
+        title: "Google Calendar Setup Required",
+        description: "Please ensure the Google Calendar API is enabled in your Google Cloud Console and your API key has the correct permissions.",
         variant: "destructive",
       });
     }
