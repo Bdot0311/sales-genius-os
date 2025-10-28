@@ -41,14 +41,19 @@ serve(async (req) => {
       .eq('is_active', true)
       .single();
 
+    console.log('Looking for integration:', integrationId, 'for user:', user.id);
+    console.log('Integration found:', integration ? 'yes' : 'no');
+    
     if (integrationError || !integration) {
+      console.error('Integration error:', integrationError);
       return new Response(
-        JSON.stringify({ error: 'Integration not connected. Please connect your email provider first.' }),
+        JSON.stringify({ error: 'Gmail not connected. Please go to Integrations page and click "Connect" on Gmail.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const config = integration.config as any;
+    console.log('Config keys:', Object.keys(config));
     
     // Get access token based on provider
     let accessToken = config.accessToken || config.provider_token;
@@ -88,16 +93,16 @@ serve(async (req) => {
       } else {
         console.error('Failed to refresh token');
         return new Response(
-          JSON.stringify({ error: 'Failed to refresh access token. Please reconnect your Gmail account.' }),
+          JSON.stringify({ error: 'Failed to refresh access token. Please reconnect Gmail.' }),
           { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
     }
 
     if (!accessToken) {
-      console.error('No access token found in config:', config);
+      console.error('No access token found. Config has:', Object.keys(config));
       return new Response(
-        JSON.stringify({ error: 'No access token found. Please reconnect your email provider.' }),
+        JSON.stringify({ error: 'Gmail is not properly connected. Please go to Integrations page, disconnect Gmail, then click "Connect" to set it up with OAuth.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
