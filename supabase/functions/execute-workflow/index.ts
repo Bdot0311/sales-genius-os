@@ -1,12 +1,11 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.76.0';
-import { Resend } from 'npm:resend@2.0.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
+const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
 
 interface WorkflowNode {
   id: string;
@@ -110,18 +109,33 @@ Deno.serve(async (req) => {
                 timestamp: new Date().toISOString(),
               });
             } else {
-              // Send actual email using Resend
-              const emailResponse = await resend.emails.send({
-                from: 'SalesOS <onboarding@resend.dev>',
-                to: [leadEmail],
-                subject: emailConfig.subject || 'Welcome to SalesOS!',
-                html: emailConfig.body || `
-                  <h1>Welcome to SalesOS, ${leadName}!</h1>
-                  <p>Thank you for your interest in our platform.</p>
-                  <p>We're excited to help you streamline your sales process.</p>
-                  <p>Best regards,<br>The SalesOS Team</p>
-                `,
+              // Send actual email using Resend API
+              const emailBody = emailConfig.body || `
+                <h1>Welcome to SalesOS, ${leadName}!</h1>
+                <p>Thank you for your interest in our platform.</p>
+                <p>We're excited to help you streamline your sales process.</p>
+                <p>Best regards,<br>The SalesOS Team</p>
+              `;
+
+              const resendResponse = await fetch('https://api.resend.com/emails', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${RESEND_API_KEY}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  from: 'SalesOS <onboarding@resend.dev>',
+                  to: [leadEmail],
+                  subject: emailConfig.subject || 'Welcome to SalesOS!',
+                  html: emailBody,
+                }),
               });
+
+              if (!resendResponse.ok) {
+                throw new Error(`Resend API error: ${resendResponse.statusText}`);
+              }
+
+              const emailResponse = await resendResponse.json();
 
               console.log('Email sent successfully:', emailResponse);
 
