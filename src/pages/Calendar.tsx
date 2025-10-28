@@ -159,10 +159,30 @@ const Calendar = () => {
 
       if (error) throw error;
 
-      toast({
-        title: "Meeting scheduled",
-        description: "Your meeting has been added to the calendar",
-      });
+      // Sync to Google Calendar if connected
+      if (hasGoogleCalendar && newActivity.due_date) {
+        try {
+          await supabase.functions.invoke('sync-to-google-calendar', {
+            body: { eventData: newActivity }
+          });
+          
+          toast({
+            title: "Meeting scheduled",
+            description: "Your meeting has been added to both calendars",
+          });
+        } catch (syncError) {
+          console.error('Google Calendar sync error:', syncError);
+          toast({
+            title: "Meeting scheduled",
+            description: "Added to SalesOS. Google Calendar sync failed.",
+          });
+        }
+      } else {
+        toast({
+          title: "Meeting scheduled",
+          description: "Your meeting has been added to the calendar",
+        });
+      }
 
       setIsDialogOpen(false);
       setNewActivity({
@@ -173,6 +193,9 @@ const Calendar = () => {
         description: "",
       });
       loadActivities();
+      if (hasGoogleCalendar) {
+        checkGoogleCalendarConnection();
+      }
     } catch (error: any) {
       toast({
         title: "Error creating meeting",
