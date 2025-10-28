@@ -1,4 +1,5 @@
 import salesosLogo from "@/assets/salesos-logo.png";
+import { Link } from "react-router-dom";
 
 export const Footer = () => {
   return (
@@ -28,8 +29,8 @@ export const Footer = () => {
           <div>
             <h4 className="font-semibold mb-4">Legal</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><a href="#" className="hover:text-foreground transition-colors">Privacy</a></li>
-              <li><a href="#" className="hover:text-foreground transition-colors">Terms</a></li>
+              <li><Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link></li>
+              <li><Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link></li>
               <li><a href="#" className="hover:text-foreground transition-colors">Security</a></li>
             </ul>
           </div>

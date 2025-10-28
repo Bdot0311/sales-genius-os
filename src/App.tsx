@@ -16,6 +16,8 @@ import Automations from "./pages/Automations";
 import DashboardIntegrations from "./pages/DashboardIntegrations";
 import PricingPage from "./pages/PricingPage";
 import ApiDocs from "./pages/ApiDocs";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +33,8 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/api-docs" element={<ApiDocs />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard/leads" element={<Leads />} />
           <Route path="/dashboard/coach" element={<Coach />} />
