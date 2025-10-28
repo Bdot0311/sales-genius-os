@@ -19,7 +19,7 @@ import { ConditionNode } from './nodes/ConditionNode';
 import { NodeToolbar } from './NodeToolbar';
 import { WorkflowPanel } from './WorkflowPanel';
 import { Button } from '@/components/ui/button';
-import { Save, Play } from 'lucide-react';
+import { Save, Play, Zap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -138,6 +138,44 @@ export const WorkflowCanvas = ({
     }
   }, [workflowId, toast]);
 
+  const handleRun = useCallback(async () => {
+    if (!workflowId) {
+      toast({
+        title: "Cannot run",
+        description: "Please save the workflow first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      toast({
+        title: "Running workflow",
+        description: "Executing your workflow with live data...",
+      });
+
+      const { data, error } = await supabase.functions.invoke('execute-workflow', {
+        body: { 
+          workflowId,
+          testData: null, // Run with live data
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Workflow completed",
+        description: `Successfully executed ${data.executionLog.length} steps`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Execution failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  }, [workflowId, toast]);
+
   return (
     <div className="flex h-full">
       <div className="flex-1 relative">
@@ -169,6 +207,10 @@ export const WorkflowCanvas = ({
         </ReactFlow>
         
         <div className="absolute top-4 right-4 flex gap-2 z-10">
+          <Button onClick={handleRun} variant="default" size="sm">
+            <Zap className="w-4 h-4 mr-2" />
+            Run
+          </Button>
           <Button onClick={handleTest} variant="outline" size="sm">
             <Play className="w-4 h-4 mr-2" />
             Test
