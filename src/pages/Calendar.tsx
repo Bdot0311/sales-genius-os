@@ -57,15 +57,54 @@ const Calendar = () => {
 
   const loadGoogleCalendarEvents = async (config: any) => {
     try {
-      const apiKey = config.apiKey;
-      const calendarId = 'primary'; // Always use 'primary' for the user's main calendar
-      
+      let accessToken = config.accessToken;
+
+      // Check if token is expired and refresh if needed
+      if (config.expiresAt && Date.now() >= config.expiresAt && config.refreshToken) {
+        const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            client_id: config.clientId,
+            client_secret: config.clientSecret,
+            refresh_token: config.refreshToken,
+            grant_type: 'refresh_token',
+          }),
+        });
+
+        if (tokenResponse.ok) {
+          const tokens = await tokenResponse.json();
+          accessToken = tokens.access_token;
+          
+          // Update tokens in database
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await supabase
+              .from('integrations')
+              .update({
+                config: {
+                  ...config,
+                  accessToken: tokens.access_token,
+                  expiresAt: Date.now() + tokens.expires_in * 1000,
+                },
+              })
+              .eq('user_id', user.id)
+              .eq('integration_id', 'google-calendar');
+          }
+        }
+      }
+
       const now = new Date();
       const timeMin = now.toISOString();
       const timeMax = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
       const response = await fetch(
-        `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events?key=${apiKey}&timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime&maxResults=10`
+        `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime&maxResults=10`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
       );
 
       if (!response.ok) {
@@ -78,8 +117,8 @@ const Calendar = () => {
     } catch (error: any) {
       console.error('Google Calendar error:', error);
       toast({
-        title: "Google Calendar Setup Required",
-        description: "Please ensure the Google Calendar API is enabled in your Google Cloud Console and your API key has the correct permissions.",
+        title: "Google Calendar Error",
+        description: error.message,
         variant: "destructive",
       });
     }
