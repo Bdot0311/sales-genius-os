@@ -126,6 +126,11 @@ const Outreach = () => {
       const integrationId = integrations[0].integration_id;
 
       // Send email via edge function
+      console.log('Invoking send-email function with:', {
+        to: lead.contact_email,
+        integrationId,
+      });
+
       const { data, error } = await supabase.functions.invoke('send-email', {
         body: {
           to: lead.contact_email,
@@ -139,7 +144,12 @@ const Outreach = () => {
         }
       });
 
-      if (error) throw error;
+      console.log('Send-email function response:', { data, error });
+
+      if (error) {
+        console.error('Send-email function error details:', error);
+        throw error;
+      }
       
       toast({
         title: "Email sent!",

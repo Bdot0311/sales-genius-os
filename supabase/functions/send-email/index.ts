@@ -17,19 +17,34 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const { to, subject, body, integrationId } = await req.json();
+    
+    console.log('Send email request received:', { to, subject, integrationId });
 
     // Get authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
+      console.error('Missing authorization header');
       throw new Error('No authorization header');
     }
+
+    console.log('Auth header present, extracting user...');
 
     // Get user from JWT
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     
+    console.log('User extraction result:', { 
+      hasUser: !!user, 
+      userId: user?.id,
+      userError: userError?.message 
+    });
+    
     if (userError || !user) {
-      throw new Error('Unauthorized');
+      console.error('User authentication failed:', userError);
+      return new Response(
+        JSON.stringify({ error: `Authentication failed: ${userError?.message || 'No user found'}` }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Get the integration config for this user
