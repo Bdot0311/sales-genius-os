@@ -96,10 +96,13 @@ const integrations: Integration[] = [
     id: "gmail",
     name: "Gmail",
     category: "Email",
-    description: "Send campaigns directly through your Gmail account (uses Google Calendar OAuth)",
+    description: "Send campaigns directly through your Gmail account",
     icon: Mail,
     color: "bg-red-500",
-    fields: [],
+    fields: [
+      { name: "clientId", label: "OAuth Client ID", type: "text", placeholder: "Your Google OAuth Client ID" },
+      { name: "clientSecret", label: "OAuth Client Secret", type: "password", placeholder: "Your Google OAuth Client Secret" },
+    ],
   },
   {
     id: "slack",
@@ -199,15 +202,28 @@ const DashboardIntegrations = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Get stored client credentials
-      const { data: integration } = await supabase
+      // Try both Gmail and Google Calendar
+      const { data: gmailIntegration } = await supabase
         .from('integrations')
-        .select('config')
+        .select('config, integration_id')
+        .eq('user_id', user.id)
+        .eq('integration_id', 'gmail')
+        .maybeSingle();
+
+      const { data: calendarIntegration } = await supabase
+        .from('integrations')
+        .select('config, integration_id')
         .eq('user_id', user.id)
         .eq('integration_id', 'google-calendar')
-        .single();
+        .maybeSingle();
 
-      const config = integration?.config as any;
+      const integration = gmailIntegration || calendarIntegration;
+      
+      if (!integration) {
+        throw new Error('OAuth credentials not found');
+      }
+
+      const config = integration.config as any;
       if (!config?.clientId || !config?.clientSecret) {
         throw new Error('OAuth credentials not found');
       }
@@ -242,7 +258,7 @@ const DashboardIntegrations = () => {
         expiresAt: Date.now() + tokens.expires_in * 1000,
       };
 
-      // Save tokens to both Google Calendar and Gmail
+      // Update the integration that initiated the OAuth flow
       await supabase
         .from('integrations')
         .update({
@@ -250,24 +266,11 @@ const DashboardIntegrations = () => {
           is_active: true,
         })
         .eq('user_id', user.id)
-        .eq('integration_id', 'google-calendar');
-
-      // Also create/update Gmail integration with same tokens
-      await supabase
-        .from('integrations')
-        .upsert({
-          user_id: user.id,
-          integration_id: 'gmail',
-          integration_name: 'Gmail',
-          config: tokenData,
-          is_active: true,
-        }, {
-          onConflict: 'user_id,integration_id'
-        });
+        .eq('integration_id', integration.integration_id);
 
       toast({
-        title: "Google Services Connected!",
-        description: "Both Google Calendar and Gmail have been successfully connected",
+        title: `${integration.integration_id === 'gmail' ? 'Gmail' : 'Google Calendar'} Connected!`,
+        description: "Successfully connected to Google services",
       });
 
       // Clean up URL
@@ -289,62 +292,6 @@ const DashboardIntegrations = () => {
       : integrations.filter((i) => i.category === selectedCategory);
 
   const handleConnect = async (integration: Integration) => {
-    // Gmail uses Google Calendar OAuth
-    if (integration.id === 'gmail') {
-      const isGoogleCalendarConnected = connectedIntegrations.has('google-calendar');
-      
-      if (!isGoogleCalendarConnected) {
-        toast({
-          title: "Connect Google Calendar First",
-          description: "Gmail uses the same Google OAuth as Calendar. Please connect Google Calendar first.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // Copy Google Calendar credentials to Gmail
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error('Not authenticated');
-        
-        const { data: calendarIntegration } = await supabase
-          .from('integrations')
-          .select('config')
-          .eq('user_id', user.id)
-          .eq('integration_id', 'google-calendar')
-          .single();
-        
-        if (!calendarIntegration) throw new Error('Google Calendar not found');
-        
-        await supabase
-          .from('integrations')
-          .upsert({
-            user_id: user.id,
-            integration_id: 'gmail',
-            integration_name: 'Gmail',
-            config: calendarIntegration.config,
-            is_active: true,
-          }, {
-            onConflict: 'user_id,integration_id'
-          });
-        
-        toast({
-          title: "Gmail Connected!",
-          description: "Gmail has been connected using your Google account",
-        });
-        
-        loadIntegrations();
-        return;
-      } catch (error: any) {
-        toast({
-          title: "Error",
-          description: error.message,
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-    
     if (integration.fields && integration.fields.length > 0) {
       setSelectedIntegration(integration);
       
@@ -369,6 +316,30 @@ const DashboardIntegrations = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
+
+      // For Gmail OAuth, initiate OAuth flow with Gmail scope
+      if (selectedIntegration.id === 'gmail' && formData.clientId && formData.clientSecret) {
+        const redirectUri = `${window.location.origin}/integrations`;
+        const scope = 'https://www.googleapis.com/auth/gmail.send';
+        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${formData.clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}&access_type=offline&prompt=consent`;
+        
+        // Save client credentials first
+        await supabase
+          .from('integrations')
+          .upsert({
+            user_id: user.id,
+            integration_id: selectedIntegration.id,
+            integration_name: selectedIntegration.name,
+            config: { clientId: formData.clientId, clientSecret: formData.clientSecret },
+            is_active: false,
+          }, {
+            onConflict: 'user_id,integration_id'
+          });
+
+        // Open OAuth flow
+        window.location.href = authUrl;
+        return;
+      }
 
       // For Google Calendar OAuth, initiate OAuth flow with both Calendar and Gmail scopes
       if (selectedIntegration.id === 'google-calendar' && formData.clientId && formData.clientSecret) {
