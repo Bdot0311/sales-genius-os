@@ -230,16 +230,28 @@ const DashboardIntegrations = () => {
 
       // Exchange code for tokens
       const redirectUri = `${window.location.origin}/integrations`;
+      
+      const tokenRequestBody = {
+        code,
+        client_id: config.clientId,
+        client_secret: config.clientSecret,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code',
+      };
+      
+      console.log('Token exchange request:', {
+        redirectUri,
+        clientId: config.clientId,
+        hasClientSecret: !!config.clientSecret,
+        codeLength: code.length,
+      });
+      
       const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          code,
-          client_id: config.clientId,
-          client_secret: config.clientSecret,
-          redirect_uri: redirectUri,
-          grant_type: 'authorization_code',
-        }),
+        headers: { 
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams(tokenRequestBody as any).toString(),
       });
 
       if (!tokenResponse.ok) {
