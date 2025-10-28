@@ -301,7 +301,7 @@ const DashboardIntegrations = () => {
       // For Google Calendar OAuth, initiate OAuth flow
       if (selectedIntegration.id === 'google-calendar' && formData.clientId && formData.clientSecret) {
         const redirectUri = `${window.location.origin}/dashboard/integrations`;
-        const scope = 'https://www.googleapis.com/auth/calendar.readonly';
+        const scope = 'https://www.googleapis.com/auth/calendar';
         const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${formData.clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}&access_type=offline&prompt=consent`;
         
         // Save client credentials first
