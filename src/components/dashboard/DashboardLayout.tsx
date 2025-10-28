@@ -32,7 +32,7 @@ const navigation = [
   { name: "Analytics", icon: BarChart3, href: "/dashboard/analytics" },
   { name: "Coach", icon: Mic, href: "/dashboard/coach" },
   { name: "Automations", icon: Workflow, href: "/dashboard/automations" },
-  { name: "Integrations", icon: Puzzle, href: "/dashboard/integrations" },
+  { name: "Integrations", icon: Puzzle, href: "/integrations" },
 ];
 
 export const DashboardLayout = ({ children }: DashboardLayoutProps) => {

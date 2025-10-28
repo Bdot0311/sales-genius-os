@@ -216,7 +216,7 @@ const DashboardIntegrations = () => {
       }
 
       // Exchange code for tokens
-      const redirectUri = `${window.location.origin}/dashboard/integrations`;
+      const redirectUri = `${window.location.origin}/integrations`;
       const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -259,7 +259,7 @@ const DashboardIntegrations = () => {
       });
 
       // Clean up URL
-      window.history.replaceState({}, '', '/dashboard/integrations');
+      window.history.replaceState({}, '', '/integrations');
       loadIntegrations();
     } catch (error: any) {
       toast({
@@ -267,7 +267,7 @@ const DashboardIntegrations = () => {
         description: error.message,
         variant: "destructive",
       });
-      window.history.replaceState({}, '', '/dashboard/integrations');
+      window.history.replaceState({}, '', '/integrations');
     }
   };
 
@@ -304,7 +304,7 @@ const DashboardIntegrations = () => {
 
       // For Google Calendar OAuth, initiate OAuth flow
       if (selectedIntegration.id === 'google-calendar' && formData.clientId && formData.clientSecret) {
-        const redirectUri = `${window.location.origin}/dashboard/integrations`;
+        const redirectUri = `${window.location.origin}/integrations`;
         const scope = 'https://www.googleapis.com/auth/calendar';
         const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${formData.clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}&access_type=offline&prompt=consent`;
         
