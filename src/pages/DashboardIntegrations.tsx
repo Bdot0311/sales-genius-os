@@ -96,13 +96,10 @@ const integrations: Integration[] = [
     id: "gmail",
     name: "Gmail",
     category: "Email",
-    description: "Send campaigns directly through your Gmail account",
+    description: "Send campaigns directly through your Gmail account (uses Google Calendar OAuth)",
     icon: Mail,
     color: "bg-red-500",
-    fields: [
-      { name: "apiKey", label: "API Key", type: "password", placeholder: "Enter your Google API key" },
-      { name: "email", label: "Gmail Address", type: "email", placeholder: "your-email@gmail.com" },
-    ],
+    fields: [],
   },
   {
     id: "slack",
@@ -236,26 +233,41 @@ const DashboardIntegrations = () => {
       }
 
       const tokens = await tokenResponse.json();
+      
+      const tokenData = {
+        clientId: config.clientId,
+        clientSecret: config.clientSecret,
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token,
+        expiresAt: Date.now() + tokens.expires_in * 1000,
+      };
 
-      // Save tokens to database
+      // Save tokens to both Google Calendar and Gmail
       await supabase
         .from('integrations')
         .update({
-          config: {
-            clientId: config.clientId,
-            clientSecret: config.clientSecret,
-            accessToken: tokens.access_token,
-            refreshToken: tokens.refresh_token,
-            expiresAt: Date.now() + tokens.expires_in * 1000,
-          },
+          config: tokenData,
           is_active: true,
         })
         .eq('user_id', user.id)
         .eq('integration_id', 'google-calendar');
 
+      // Also create/update Gmail integration with same tokens
+      await supabase
+        .from('integrations')
+        .upsert({
+          user_id: user.id,
+          integration_id: 'gmail',
+          integration_name: 'Gmail',
+          config: tokenData,
+          is_active: true,
+        }, {
+          onConflict: 'user_id,integration_id'
+        });
+
       toast({
-        title: "Google Calendar Connected!",
-        description: "Your calendar has been successfully connected",
+        title: "Google Services Connected!",
+        description: "Both Google Calendar and Gmail have been successfully connected",
       });
 
       // Clean up URL
@@ -277,6 +289,62 @@ const DashboardIntegrations = () => {
       : integrations.filter((i) => i.category === selectedCategory);
 
   const handleConnect = async (integration: Integration) => {
+    // Gmail uses Google Calendar OAuth
+    if (integration.id === 'gmail') {
+      const isGoogleCalendarConnected = connectedIntegrations.has('google-calendar');
+      
+      if (!isGoogleCalendarConnected) {
+        toast({
+          title: "Connect Google Calendar First",
+          description: "Gmail uses the same Google OAuth as Calendar. Please connect Google Calendar first.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Copy Google Calendar credentials to Gmail
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('Not authenticated');
+        
+        const { data: calendarIntegration } = await supabase
+          .from('integrations')
+          .select('config')
+          .eq('user_id', user.id)
+          .eq('integration_id', 'google-calendar')
+          .single();
+        
+        if (!calendarIntegration) throw new Error('Google Calendar not found');
+        
+        await supabase
+          .from('integrations')
+          .upsert({
+            user_id: user.id,
+            integration_id: 'gmail',
+            integration_name: 'Gmail',
+            config: calendarIntegration.config,
+            is_active: true,
+          }, {
+            onConflict: 'user_id,integration_id'
+          });
+        
+        toast({
+          title: "Gmail Connected!",
+          description: "Gmail has been connected using your Google account",
+        });
+        
+        loadIntegrations();
+        return;
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    
     if (integration.fields && integration.fields.length > 0) {
       setSelectedIntegration(integration);
       
@@ -302,10 +370,10 @@ const DashboardIntegrations = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // For Google Calendar OAuth, initiate OAuth flow
+      // For Google Calendar OAuth, initiate OAuth flow with both Calendar and Gmail scopes
       if (selectedIntegration.id === 'google-calendar' && formData.clientId && formData.clientSecret) {
         const redirectUri = `${window.location.origin}/integrations`;
-        const scope = 'https://www.googleapis.com/auth/calendar';
+        const scope = 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/gmail.send';
         const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${formData.clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}&access_type=offline&prompt=consent`;
         
         // Save client credentials first
