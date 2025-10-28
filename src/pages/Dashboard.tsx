@@ -18,12 +18,45 @@ const Dashboard = () => {
 
   useEffect(() => {
     loadStats();
+
+    // Set up real-time subscriptions
+    const leadsChannel = supabase
+      .channel('dashboard-leads-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => {
+        loadStats();
+      })
+      .subscribe();
+
+    const dealsChannel = supabase
+      .channel('dashboard-deals-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'deals' }, () => {
+        loadStats();
+      })
+      .subscribe();
+
+    const activitiesChannel = supabase
+      .channel('dashboard-activities-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'activities' }, () => {
+        loadStats();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(leadsChannel);
+      supabase.removeChannel(dealsChannel);
+      supabase.removeChannel(activitiesChannel);
+    };
   }, []);
 
   const loadStats = async () => {
     try {
       const { data: leads } = await supabase.from("leads").select("id");
       const { data: deals } = await supabase.from("deals").select("id, value");
+      const { data: activities } = await supabase
+        .from("activities")
+        .select("*")
+        .eq("type", "meeting")
+        .gte("due_date", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
 
       const totalValue = deals?.reduce((sum, deal) => sum + (Number(deal.value) || 0), 0) || 0;
 
@@ -31,14 +64,10 @@ const Dashboard = () => {
         totalLeads: leads?.length || 0,
         totalDeals: deals?.length || 0,
         totalValue,
-        meetingsThisWeek: 0, // TODO: Calculate from activities
+        meetingsThisWeek: activities?.length || 0,
       });
     } catch (error: any) {
-      toast({
-        title: "Error loading stats",
-        description: error.message,
-        variant: "destructive",
-      });
+      console.error("Error loading stats:", error);
     }
   };
 
@@ -142,13 +171,16 @@ const Dashboard = () => {
               <TrendingUp className="w-6 h-6" />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold mb-2">AI Recommendation</h3>
+              <h3 className="font-semibold mb-2">Quick Insight</h3>
               <p className="text-white/90 mb-4">
-                Your best conversion time is Wednesdays at 10 AM. You have 5 leads that haven't been contacted yet. 
-                Want me to queue personalized outreach messages?
+                {stats.totalLeads > 0 ? (
+                  `You have ${stats.totalLeads} lead${stats.totalLeads > 1 ? 's' : ''} and ${stats.totalDeals} active deal${stats.totalDeals !== 1 ? 's' : ''} worth $${stats.totalValue.toLocaleString()}. ${stats.meetingsThisWeek > 0 ? `${stats.meetingsThisWeek} meeting${stats.meetingsThisWeek > 1 ? 's' : ''} scheduled this week.` : 'Schedule some meetings to keep momentum!'}`
+                ) : (
+                  "Add your first lead to get started with AI-powered sales coaching and insights."
+                )}
               </p>
-              <Button variant="secondary" size="sm">
-                Review Recommendations
+              <Button variant="secondary" size="sm" onClick={() => window.location.href = '/dashboard/coach'}>
+                Get AI Coaching
               </Button>
             </div>
           </div>

@@ -3,35 +3,117 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Mic, Send, TrendingUp, Target, Lightbulb } from "lucide-react";
-import { useState } from "react";
+import { Mic, Send, TrendingUp, Target, Lightbulb, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Coach = () => {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [coachingResponse, setCoachingResponse] = useState("");
+  const [stats, setStats] = useState({
+    totalLeads: 0,
+    activeDeals: 0,
+    pipelineValue: 0,
+    avgDealSize: 0,
+    closeRate: 0,
+    upcomingMeetings: 0,
+  });
   const { toast } = useToast();
+
+  useEffect(() => {
+    loadStats();
+    
+    // Set up real-time subscriptions
+    const leadsChannel = supabase
+      .channel('leads-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => {
+        loadStats();
+      })
+      .subscribe();
+
+    const dealsChannel = supabase
+      .channel('deals-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'deals' }, () => {
+        loadStats();
+      })
+      .subscribe();
+
+    const activitiesChannel = supabase
+      .channel('activities-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'activities' }, () => {
+        loadStats();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(leadsChannel);
+      supabase.removeChannel(dealsChannel);
+      supabase.removeChannel(activitiesChannel);
+    };
+  }, []);
+
+  const loadStats = async () => {
+    try {
+      const { data: leads } = await supabase.from("leads").select("*");
+      const { data: deals } = await supabase.from("deals").select("*");
+      const { data: activities } = await supabase
+        .from("activities")
+        .select("*")
+        .eq("type", "meeting")
+        .gte("due_date", new Date().toISOString());
+
+      const totalLeads = leads?.length || 0;
+      const activeDeals = deals?.length || 0;
+      const pipelineValue = deals?.reduce((sum, deal) => sum + (Number(deal.value) || 0), 0) || 0;
+      const avgDealSize = activeDeals > 0 ? Math.round(pipelineValue / activeDeals) : 0;
+      const closedDeals = deals?.filter(d => d.stage === 'closed-won').length || 0;
+      const closeRate = totalLeads > 0 ? Math.round((closedDeals / totalLeads) * 100) : 0;
+
+      setStats({
+        totalLeads,
+        activeDeals,
+        pipelineValue,
+        avgDealSize,
+        closeRate,
+        upcomingMeetings: activities?.length || 0,
+      });
+    } catch (error) {
+      console.error("Error loading stats:", error);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!input.trim()) return;
 
     setLoading(true);
+    setCoachingResponse("");
     try {
-      // Placeholder for AI coaching functionality
-      toast({
-        title: "AI Coach",
-        description: "AI coaching functionality coming soon!",
+      const { data, error } = await supabase.functions.invoke("ai-coach", {
+        body: { 
+          question: input,
+          userData: stats
+        },
       });
+
+      if (error) throw error;
+
+      setCoachingResponse(data.coaching);
       setInput("");
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to get coaching response",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleQuickQuestion = (question: string) => {
+    setInput(question);
   };
 
   return (
@@ -57,15 +139,15 @@ const Coach = () => {
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Close Rate</span>
-                  <Badge variant="outline">32%</Badge>
+                  <Badge variant="outline">{stats.closeRate}%</Badge>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Avg Deal Size</span>
-                  <Badge variant="outline">$45K</Badge>
+                  <Badge variant="outline">${stats.avgDealSize.toLocaleString()}</Badge>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Response Time</span>
-                  <Badge variant="outline">2.3h</Badge>
+                  <span className="text-sm text-muted-foreground">Upcoming Meetings</span>
+                  <Badge variant="outline">{stats.upcomingMeetings}</Badge>
                 </div>
               </div>
             </CardContent>
@@ -82,16 +164,16 @@ const Coach = () => {
             <CardContent>
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Monthly Quota</span>
-                  <Badge className="bg-green-500">75%</Badge>
+                  <span className="text-sm text-muted-foreground">Total Leads</span>
+                  <Badge className="bg-green-500">{stats.totalLeads}</Badge>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">New Leads</span>
-                  <Badge className="bg-yellow-500">60%</Badge>
+                  <span className="text-sm text-muted-foreground">Active Deals</span>
+                  <Badge className="bg-blue-500">{stats.activeDeals}</Badge>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Follow-ups</span>
-                  <Badge className="bg-green-500">90%</Badge>
+                  <span className="text-sm text-muted-foreground">Pipeline Value</span>
+                  <Badge className="bg-purple-500">${stats.pipelineValue.toLocaleString()}</Badge>
                 </div>
               </div>
             </CardContent>
@@ -106,11 +188,24 @@ const Coach = () => {
               <CardDescription>AI-powered insights</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2 text-sm">
-                <p>• Focus on enterprise leads this week</p>
-                <p>• Follow up with 3 high-value prospects</p>
-                <p>• Schedule demos for Tuesday afternoon</p>
-              </div>
+              {stats.totalLeads > 0 ? (
+                <div className="space-y-2 text-sm">
+                  {stats.upcomingMeetings > 0 && (
+                    <p>• Prepare for {stats.upcomingMeetings} upcoming meeting{stats.upcomingMeetings > 1 ? 's' : ''}</p>
+                  )}
+                  {stats.activeDeals > 0 && (
+                    <p>• Focus on closing ${stats.pipelineValue.toLocaleString()} in pipeline</p>
+                  )}
+                  {stats.closeRate > 0 && stats.closeRate < 25 && (
+                    <p>• Work on improving your {stats.closeRate}% close rate</p>
+                  )}
+                  {stats.totalLeads > 0 && stats.activeDeals === 0 && (
+                    <p>• Convert some of your {stats.totalLeads} leads into deals</p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Add leads to get AI-powered insights</p>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -124,15 +219,27 @@ const Coach = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-4">
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm">
-                  Practice objection handling
+              <div className="flex gap-2 flex-wrap">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => handleQuickQuestion("How can I improve my close rate?")}
+                >
+                  Improve close rate
                 </Button>
-                <Button variant="outline" size="sm">
-                  Analyze my last call
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => handleQuickQuestion("What should I focus on this week?")}
+                >
+                  Weekly priorities
                 </Button>
-                <Button variant="outline" size="sm">
-                  Improve my pitch
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => handleQuickQuestion("How do I handle price objections?")}
+                >
+                  Handle objections
                 </Button>
               </div>
 
@@ -149,13 +256,29 @@ const Coach = () => {
                   disabled={loading || !input.trim()}
                   className="flex-1"
                 >
-                  <Send className="w-4 h-4 mr-2" />
-                  Get Coaching
-                </Button>
-                <Button variant="outline" size="icon">
-                  <Mic className="w-4 h-4" />
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Thinking...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 mr-2" />
+                      Get Coaching
+                    </>
+                  )}
                 </Button>
               </div>
+
+              {coachingResponse && (
+                <div className="mt-4 p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                  <h4 className="font-semibold mb-2 flex items-center gap-2">
+                    <Lightbulb className="w-4 h-4 text-primary" />
+                    Coach's Advice:
+                  </h4>
+                  <p className="text-sm whitespace-pre-wrap">{coachingResponse}</p>
+                </div>
+              )}
             </div>
 
             <div className="mt-6 p-4 bg-accent/50 rounded-lg">
