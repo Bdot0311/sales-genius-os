@@ -170,7 +170,7 @@ const DashboardIntegrations = () => {
     try {
       const { data, error } = await supabase
         .from('integrations')
-        .select('integration_id, is_active');
+        .select('integration_id, is_active, config');
       
       if (error) throw error;
       
@@ -178,6 +178,12 @@ const DashboardIntegrations = () => {
         data?.filter(i => i.is_active).map(i => i.integration_id) || []
       );
       setConnectedIntegrations(activeIds);
+      
+      // Store full integration data for later use
+      const integrationsMap = new Map(
+        data?.map(i => [i.integration_id, i.config]) || []
+      );
+      (window as any).__integrationConfigs = integrationsMap;
     } catch (error: any) {
       console.error('Error loading integrations:', error);
     } finally {
@@ -193,7 +199,10 @@ const DashboardIntegrations = () => {
   const handleConnect = async (integration: Integration) => {
     if (integration.fields && integration.fields.length > 0) {
       setSelectedIntegration(integration);
-      setFormData({});
+      
+      // Load existing config if integration is already connected
+      const existingConfig = (window as any).__integrationConfigs?.get(integration.id);
+      setFormData(existingConfig || {});
       return;
     }
 
