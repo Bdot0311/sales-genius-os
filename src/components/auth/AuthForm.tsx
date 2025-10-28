@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import salesosLogo from "@/assets/salesos-logo.png";
 
 interface AuthFormProps {
   onSuccess?: () => void;
@@ -74,7 +75,7 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
       <div className="bg-card border border-border rounded-2xl p-8 shadow-card">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <div className="w-10 h-10 bg-gradient-primary rounded-lg" />
+            <img src={salesosLogo} alt="SalesOS" className="w-10 h-10" />
             <span className="text-2xl font-bold">SalesOS</span>
           </div>
           <h2 className="text-2xl font-bold mb-2">
