@@ -49,11 +49,55 @@ serve(async (req) => {
     }
 
     const config = integration.config as any;
-    const providerToken = config.provider_token;
+    
+    // Get access token based on provider
+    let accessToken = config.accessToken || config.provider_token;
+    
+    // Check if token needs refresh (for Google)
+    if (integrationId === 'gmail' && config.expiresAt && Date.now() >= config.expiresAt && config.refreshToken) {
+      console.log('Token expired, refreshing...');
+      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          client_id: config.clientId,
+          client_secret: config.clientSecret,
+          refresh_token: config.refreshToken,
+          grant_type: 'refresh_token',
+        }),
+      });
 
-    if (!providerToken) {
+      if (tokenResponse.ok) {
+        const tokens = await tokenResponse.json();
+        accessToken = tokens.access_token;
+        
+        // Update tokens in database
+        await supabase
+          .from('integrations')
+          .update({
+            config: {
+              ...config,
+              accessToken: tokens.access_token,
+              expiresAt: Date.now() + tokens.expires_in * 1000,
+            },
+          })
+          .eq('user_id', user.id)
+          .eq('integration_id', integrationId);
+        
+        console.log('Token refreshed successfully');
+      } else {
+        console.error('Failed to refresh token');
+        return new Response(
+          JSON.stringify({ error: 'Failed to refresh access token. Please reconnect your Gmail account.' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    if (!accessToken) {
+      console.error('No access token found in config:', config);
       return new Response(
-        JSON.stringify({ error: 'No provider token found. Please reconnect your email provider.' }),
+        JSON.stringify({ error: 'No access token found. Please reconnect your email provider.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -75,10 +119,12 @@ serve(async (req) => {
         .replace(/\//g, '_')
         .replace(/=+$/, '');
 
+      console.log('Sending email via Gmail to:', to);
+      
       const gmailResponse = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${providerToken}`,
+          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ raw: encodedEmail }),
@@ -86,9 +132,19 @@ serve(async (req) => {
 
       if (!gmailResponse.ok) {
         const error = await gmailResponse.text();
-        console.error('Gmail API error:', error);
-        throw new Error('Failed to send email via Gmail');
+        console.error('Gmail API error:', gmailResponse.status, error);
+        
+        if (gmailResponse.status === 401) {
+          return new Response(
+            JSON.stringify({ error: 'Gmail authentication failed. Please reconnect your Gmail account.' }),
+            { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        throw new Error(`Failed to send email via Gmail: ${error}`);
       }
+
+      console.log('Email sent successfully via Gmail');
 
       return new Response(
         JSON.stringify({ success: true, provider: 'gmail' }),
