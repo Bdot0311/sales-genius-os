@@ -1,9 +1,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.76.0';
+import { Resend } from 'npm:resend@2.0.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
 
 interface WorkflowNode {
   id: string;
@@ -90,21 +93,111 @@ Deno.serve(async (req) => {
         const actionType = nextNode.data.config?.type;
         
         if (actionType === 'send_email') {
-          executionLog.push({
-            nodeId: nextNode.id,
-            type: 'action',
-            action: 'send_email',
-            status: 'executed',
-            timestamp: new Date().toISOString(),
-          });
+          try {
+            // Get email configuration from node
+            const emailConfig = nextNode.data.config?.emailConfig || {};
+            const leadEmail = workflowData.contact_email || emailConfig.to;
+            const leadName = workflowData.contact_name || 'there';
+            
+            if (!leadEmail) {
+              console.warn('No email address found for send_email action');
+              executionLog.push({
+                nodeId: nextNode.id,
+                type: 'action',
+                action: 'send_email',
+                status: 'skipped',
+                error: 'No email address available',
+                timestamp: new Date().toISOString(),
+              });
+            } else {
+              // Send actual email using Resend
+              const emailResponse = await resend.emails.send({
+                from: 'SalesOS <onboarding@resend.dev>',
+                to: [leadEmail],
+                subject: emailConfig.subject || 'Welcome to SalesOS!',
+                html: emailConfig.body || `
+                  <h1>Welcome to SalesOS, ${leadName}!</h1>
+                  <p>Thank you for your interest in our platform.</p>
+                  <p>We're excited to help you streamline your sales process.</p>
+                  <p>Best regards,<br>The SalesOS Team</p>
+                `,
+              });
+
+              console.log('Email sent successfully:', emailResponse);
+
+              executionLog.push({
+                nodeId: nextNode.id,
+                type: 'action',
+                action: 'send_email',
+                status: 'executed',
+                emailId: emailResponse.id,
+                to: leadEmail,
+                timestamp: new Date().toISOString(),
+              });
+            }
+          } catch (error: any) {
+            console.error('Failed to send email:', error);
+            executionLog.push({
+              nodeId: nextNode.id,
+              type: 'action',
+              action: 'send_email',
+              status: 'failed',
+              error: error.message,
+              timestamp: new Date().toISOString(),
+            });
+          }
         } else if (actionType === 'create_task') {
-          executionLog.push({
-            nodeId: nextNode.id,
-            type: 'action',
-            action: 'create_task',
-            status: 'executed',
-            timestamp: new Date().toISOString(),
-          });
+          try {
+            // Get user_id from auth header
+            const authHeader = req.headers.get('Authorization');
+            if (authHeader) {
+              const { data: { user } } = await supabaseClient.auth.getUser();
+              
+              if (user) {
+                // Create actual task in activities table
+                const taskConfig = nextNode.data.config?.taskConfig || {};
+                const { error: taskError } = await supabaseClient
+                  .from('activities')
+                  .insert({
+                    user_id: user.id,
+                    lead_id: workflowData.id,
+                    type: 'task',
+                    subject: taskConfig.subject || 'Follow up with lead',
+                    description: taskConfig.description || '',
+                    due_date: taskConfig.dueDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                  });
+
+                if (taskError) throw taskError;
+
+                executionLog.push({
+                  nodeId: nextNode.id,
+                  type: 'action',
+                  action: 'create_task',
+                  status: 'executed',
+                  timestamp: new Date().toISOString(),
+                });
+              }
+            } else {
+              executionLog.push({
+                nodeId: nextNode.id,
+                type: 'action',
+                action: 'create_task',
+                status: 'skipped',
+                error: 'No authenticated user',
+                timestamp: new Date().toISOString(),
+              });
+            }
+          } catch (error: any) {
+            console.error('Failed to create task:', error);
+            executionLog.push({
+              nodeId: nextNode.id,
+              type: 'action',
+              action: 'create_task',
+              status: 'failed',
+              error: error.message,
+              timestamp: new Date().toISOString(),
+            });
+          }
         }
       } else if (nextNode.type === 'condition') {
         const conditionType = nextNode.data.config?.type;
