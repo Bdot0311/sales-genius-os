@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Send, Sparkles } from "lucide-react";
+import { Loader2, Send, Sparkles, CalendarPlus } from "lucide-react";
 
 const Outreach = () => {
   const { toast } = useToast();
@@ -161,6 +161,46 @@ const Outreach = () => {
     }
   };
 
+  const sendToCalendar = async () => {
+    if (!selectedLead) {
+      toast({
+        title: "Missing information",
+        description: "Please select a lead first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const lead = leads.find((l) => l.id === selectedLead);
+      
+      // Create a meeting activity
+      const { error } = await supabase.from("activities").insert({
+        subject: `Meeting with ${lead.contact_name}`,
+        type: "meeting",
+        lead_id: selectedLead,
+        user_id: user.id,
+        description: `Follow-up meeting scheduled via email`,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Added to calendar",
+        description: "Meeting has been added to your calendar",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error adding to calendar",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -251,23 +291,34 @@ const Outreach = () => {
                   onChange={(e) => setGeneratedEmail(e.target.value)}
                   className="min-h-[300px]"
                 />
-                <Button 
-                  className="w-full"
-                  onClick={sendEmail}
-                  disabled={isSending}
-                >
-                  {isSending ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Sending...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4 mr-2" />
-                      Send Email
-                    </>
+                <div className="flex gap-2">
+                  <Button 
+                    className="flex-1"
+                    onClick={sendEmail}
+                    disabled={isSending}
+                  >
+                    {isSending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4 mr-2" />
+                        Send Email
+                      </>
+                    )}
+                  </Button>
+                  {emailGoal === "meeting" && (
+                    <Button 
+                      variant="outline"
+                      onClick={sendToCalendar}
+                    >
+                      <CalendarPlus className="w-4 h-4 mr-2" />
+                      Add to Calendar
+                    </Button>
                   )}
-                </Button>
+                </div>
               </div>
             ) : (
               <div className="flex items-center justify-center h-[300px] text-muted-foreground">

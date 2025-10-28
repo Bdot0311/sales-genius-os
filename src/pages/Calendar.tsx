@@ -8,7 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar as CalendarIcon, Plus, Clock, ExternalLink } from "lucide-react";
+import { Calendar as CalendarIcon, Plus, Clock, ExternalLink, Edit, Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 
@@ -19,6 +20,9 @@ const Calendar = () => {
   const [googleEvents, setGoogleEvents] = useState<any[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [hasGoogleCalendar, setHasGoogleCalendar] = useState(false);
+  const [editingActivity, setEditingActivity] = useState<any>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [activityToDelete, setActivityToDelete] = useState<any>(null);
   const [newActivity, setNewActivity] = useState({
     subject: "",
     type: "meeting",
@@ -205,6 +209,97 @@ const Calendar = () => {
     }
   };
 
+  const handleEditActivity = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      if (!newActivity.subject.trim() || newActivity.subject.length > 200) {
+        throw new Error("Meeting title is required and must be less than 200 characters");
+      }
+      if (newActivity.description && newActivity.description.length > 1000) {
+        throw new Error("Description must be less than 1000 characters");
+      }
+
+      const { error } = await supabase
+        .from("activities")
+        .update({
+          subject: newActivity.subject,
+          lead_id: newActivity.lead_id,
+          due_date: newActivity.due_date,
+          description: newActivity.description,
+        })
+        .eq("id", editingActivity.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Meeting updated",
+        description: "Your meeting has been updated successfully",
+      });
+
+      setIsDialogOpen(false);
+      setEditingActivity(null);
+      setNewActivity({
+        subject: "",
+        type: "meeting",
+        lead_id: "",
+        due_date: "",
+        description: "",
+      });
+      loadActivities();
+    } catch (error: any) {
+      toast({
+        title: "Error updating meeting",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteActivity = async () => {
+    try {
+      const { error } = await supabase
+        .from("activities")
+        .delete()
+        .eq("id", activityToDelete.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Meeting deleted",
+        description: "Your meeting has been removed from the calendar",
+      });
+
+      setDeleteConfirmOpen(false);
+      setActivityToDelete(null);
+      loadActivities();
+    } catch (error: any) {
+      toast({
+        title: "Error deleting meeting",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const openEditDialog = (activity: any) => {
+    setEditingActivity(activity);
+    setNewActivity({
+      subject: activity.subject,
+      type: activity.type,
+      lead_id: activity.lead_id || "",
+      due_date: activity.due_date || "",
+      description: activity.description || "",
+    });
+    setIsDialogOpen(true);
+  };
+
+  const openDeleteDialog = (activity: any) => {
+    setActivityToDelete(activity);
+    setDeleteConfirmOpen(true);
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -213,7 +308,19 @@ const Calendar = () => {
             <h1 className="text-3xl font-bold mb-2">Calendar</h1>
             <p className="text-muted-foreground">Manage your meetings and schedule</p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) {
+              setEditingActivity(null);
+              setNewActivity({
+                subject: "",
+                type: "meeting",
+                lead_id: "",
+                due_date: "",
+                description: "",
+              });
+            }
+          }}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="w-4 h-4 mr-2" />
@@ -222,7 +329,7 @@ const Calendar = () => {
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Schedule New Meeting</DialogTitle>
+                <DialogTitle>{editingActivity ? "Edit Meeting" : "Schedule New Meeting"}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
@@ -275,8 +382,8 @@ const Calendar = () => {
                     placeholder="Meeting notes"
                   />
                 </div>
-                <Button onClick={handleCreateActivity} className="w-full">
-                  Schedule Meeting
+                <Button onClick={editingActivity ? handleEditActivity : handleCreateActivity} className="w-full">
+                  {editingActivity ? "Update Meeting" : "Schedule Meeting"}
                 </Button>
               </div>
             </DialogContent>
@@ -343,17 +450,50 @@ const Calendar = () => {
                   <p className="text-sm text-muted-foreground mb-2">
                     {activity.leads?.contact_name} - {activity.leads?.company_name}
                   </p>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
                     <Clock className="w-4 h-4" />
                     {activity.due_date
                       ? format(new Date(activity.due_date), "PPp")
                       : "No date set"}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => openEditDialog(activity)}
+                    >
+                      <Edit className="w-3 h-3 mr-1" />
+                      Edit
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => openDeleteDialog(activity)}
+                    >
+                      <Trash2 className="w-3 h-3 mr-1" />
+                      Delete
+                    </Button>
                   </div>
                 </div>
               </div>
             </Card>
           ))}
         </div>
+
+        <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Meeting</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this meeting? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteActivity}>Delete</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );
