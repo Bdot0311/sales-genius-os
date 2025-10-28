@@ -244,8 +244,25 @@ const DashboardIntegrations = () => {
 
       if (!tokenResponse.ok) {
         const errorData = await tokenResponse.json();
-        console.error('Google OAuth error:', errorData);
-        throw new Error(errorData.error_description || errorData.error || 'Failed to exchange code for tokens');
+        console.error('Google OAuth token exchange failed:', {
+          status: tokenResponse.status,
+          error: errorData,
+          requestDetails: {
+            clientId: config.clientId,
+            redirectUri,
+            hasCode: !!code,
+            hasClientSecret: !!config.clientSecret
+          }
+        });
+        
+        // Show detailed error to user
+        const errorMessage = errorData.error_description || errorData.error || 'Failed to exchange code for tokens';
+        toast({
+          title: "OAuth Token Exchange Failed",
+          description: `${errorMessage}. Check console for details.`,
+          variant: "destructive",
+        });
+        throw new Error(errorMessage);
       }
 
       const tokens = await tokenResponse.json();
