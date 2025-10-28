@@ -227,16 +227,18 @@ const DashboardIntegrations = () => {
 
       if (error) throw error;
 
-      setConnectedIntegrations(new Set([...connectedIntegrations, selectedIntegration.id]));
+      // Reload integrations first to get fresh data
+      await loadIntegrations();
+      
+      // Then update UI state
       toast({
         title: "Connected!",
         description: `Successfully connected to ${selectedIntegration.name}`,
       });
+      
+      // Close dialog and reset form
       setSelectedIntegration(null);
       setFormData({});
-      
-      // Reload to ensure the UI reflects the saved data
-      await loadIntegrations();
     } catch (error: any) {
       toast({
         title: "Error",
