@@ -229,7 +229,11 @@ const DashboardIntegrations = () => {
         }),
       });
 
-      if (!tokenResponse.ok) throw new Error('Failed to exchange code for tokens');
+      if (!tokenResponse.ok) {
+        const errorData = await tokenResponse.json();
+        console.error('Google OAuth error:', errorData);
+        throw new Error(errorData.error_description || errorData.error || 'Failed to exchange code for tokens');
+      }
 
       const tokens = await tokenResponse.json();
 
