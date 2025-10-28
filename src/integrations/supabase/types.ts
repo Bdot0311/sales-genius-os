@@ -237,31 +237,40 @@ export type Database = {
           action: string
           active: boolean
           created_at: string
+          edges: Json | null
           id: string
           name: string
+          nodes: Json | null
           trigger: string
           updated_at: string
           user_id: string
+          workflow_type: string | null
         }
         Insert: {
           action: string
           active?: boolean
           created_at?: string
+          edges?: Json | null
           id?: string
           name: string
+          nodes?: Json | null
           trigger: string
           updated_at?: string
           user_id: string
+          workflow_type?: string | null
         }
         Update: {
           action?: string
           active?: boolean
           created_at?: string
+          edges?: Json | null
           id?: string
           name?: string
+          nodes?: Json | null
           trigger?: string
           updated_at?: string
           user_id?: string
+          workflow_type?: string | null
         }
         Relationships: []
       }
