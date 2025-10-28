@@ -21,6 +21,7 @@ import { WorkflowPanel } from './WorkflowPanel';
 import { Button } from '@/components/ui/button';
 import { Save, Play } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const nodeTypes: NodeTypes = {
   trigger: TriggerNode,
@@ -96,12 +97,46 @@ export const WorkflowCanvas = ({
     }
   }, [nodes, edges, onSave, toast]);
 
-  const handleTest = useCallback(() => {
-    toast({
-      title: "Testing workflow",
-      description: "Workflow test initiated - check your activity log for results",
-    });
-  }, [toast]);
+  const handleTest = useCallback(async () => {
+    if (!workflowId) {
+      toast({
+        title: "Cannot test",
+        description: "Please save the workflow first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      toast({
+        title: "Testing workflow",
+        description: "Executing your workflow...",
+      });
+
+      const { data, error } = await supabase.functions.invoke('execute-workflow', {
+        body: { 
+          workflowId,
+          testData: {
+            test: true,
+            timestamp: new Date().toISOString(),
+          }
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Test completed",
+        description: `Workflow executed ${data.executionLog.length} steps successfully`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Test failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  }, [workflowId, toast]);
 
   return (
     <div className="flex h-full">

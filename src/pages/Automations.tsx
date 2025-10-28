@@ -126,12 +126,20 @@ const Automations = () => {
         .update({ 
           nodes: nodes as any,
           edges: edges as any,
+          updated_at: new Date().toISOString(),
         })
         .eq("id", selectedWorkflow.id);
 
       if (error) throw error;
 
-      loadWorkflows();
+      // Update local state
+      setSelectedWorkflow({
+        ...selectedWorkflow,
+        nodes: nodes,
+        edges: edges,
+      });
+
+      await loadWorkflows();
     } catch (error: any) {
       toast({
         title: "Error saving workflow",
