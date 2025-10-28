@@ -106,7 +106,7 @@ const Privacy = () => {
             <p>
               If you have questions about this Privacy Policy, please contact us at:
               <br />
-              <strong>Email:</strong> privacy@salesos.com
+              <strong>Email:</strong> support@alephwave.io
             </p>
           </section>
         </div>

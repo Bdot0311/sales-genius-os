@@ -141,7 +141,7 @@ const Terms = () => {
             <p>
               If you have questions about these Terms, please contact us at:
               <br />
-              <strong>Email:</strong> legal@salesos.com
+              <strong>Email:</strong> support@alephwave.io
             </p>
           </section>
         </div>
