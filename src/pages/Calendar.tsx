@@ -8,14 +8,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar as CalendarIcon, Plus, Clock } from "lucide-react";
+import { Calendar as CalendarIcon, Plus, Clock, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
+import { Badge } from "@/components/ui/badge";
 
 const Calendar = () => {
   const { toast } = useToast();
   const [activities, setActivities] = useState<any[]>([]);
   const [leads, setLeads] = useState<any[]>([]);
+  const [googleEvents, setGoogleEvents] = useState<any[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [hasGoogleCalendar, setHasGoogleCalendar] = useState(false);
   const [newActivity, setNewActivity] = useState({
     subject: "",
     type: "meeting",
@@ -27,7 +30,56 @@ const Calendar = () => {
   useEffect(() => {
     loadActivities();
     loadLeads();
+    checkGoogleCalendarConnection();
   }, []);
+
+  const checkGoogleCalendarConnection = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('integrations')
+        .select('config, is_active')
+        .eq('user_id', user.id)
+        .eq('integration_id', 'google-calendar')
+        .eq('is_active', true)
+        .single();
+
+      if (data?.config) {
+        setHasGoogleCalendar(true);
+        loadGoogleCalendarEvents(data.config);
+      }
+    } catch (error) {
+      console.error('Error checking Google Calendar:', error);
+    }
+  };
+
+  const loadGoogleCalendarEvents = async (config: any) => {
+    try {
+      const apiKey = config.apiKey;
+      const calendarId = config.calendarId || 'primary';
+      
+      const now = new Date();
+      const timeMin = now.toISOString();
+      const timeMax = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(); // 30 days ahead
+
+      const response = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?key=${apiKey}&timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime&maxResults=10`
+      );
+
+      if (!response.ok) throw new Error('Failed to fetch Google Calendar events');
+
+      const data = await response.json();
+      setGoogleEvents(data.items || []);
+    } catch (error: any) {
+      toast({
+        title: "Error loading Google Calendar",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   const loadActivities = async () => {
     const { data } = await supabase
@@ -165,6 +217,54 @@ const Calendar = () => {
           </Dialog>
         </div>
 
+
+        {hasGoogleCalendar && googleEvents.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              Google Calendar Events
+              <Badge variant="secondary">Connected</Badge>
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {googleEvents.map((event) => (
+                <Card key={event.id} className="p-4 bg-gradient-to-br from-blue-500/5 to-purple-500/5 border-blue-200">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-blue-500/10">
+                      <CalendarIcon className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold mb-1">{event.summary || 'Untitled Event'}</h3>
+                      {event.description && (
+                        <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                          {event.description}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                        <Clock className="w-4 h-4" />
+                        {event.start?.dateTime 
+                          ? format(new Date(event.start.dateTime), "PPp")
+                          : event.start?.date 
+                          ? format(new Date(event.start.date), "PP")
+                          : "No date"}
+                      </div>
+                      {event.htmlLink && (
+                        <a 
+                          href={event.htmlLink} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                        >
+                          View in Google Calendar <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <h2 className="text-xl font-semibold mb-4">SalesOS Meetings</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {activities.map((activity) => (
             <Card key={activity.id} className="p-4">
