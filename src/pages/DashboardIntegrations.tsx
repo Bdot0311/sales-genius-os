@@ -22,6 +22,9 @@ import {
   Cloud,
   Settings,
   Check,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
 } from "lucide-react";
 
 interface Integration {
@@ -144,6 +147,7 @@ const DashboardIntegrations = () => {
   const { toast } = useToast();
   const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
   const [connectedIntegrations, setConnectedIntegrations] = useState<Set<string>>(new Set());
+  const [integrationStatus, setIntegrationStatus] = useState<Map<string, { lastSync: string | null; error: string | null }>>(new Map());
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [loading, setLoading] = useState(true);
@@ -159,7 +163,7 @@ const DashboardIntegrations = () => {
     try {
       const { data, error } = await supabase
         .from('integrations')
-        .select('integration_id, is_active, config');
+        .select('integration_id, is_active, config, updated_at');
       
       if (error) throw error;
       
@@ -173,6 +177,17 @@ const DashboardIntegrations = () => {
         data?.map(i => [i.integration_id, i.config]) || []
       );
       (window as any).__integrationConfigs = integrationsMap;
+
+      // Build status map with last sync and error info
+      const statusMap = new Map<string, { lastSync: string | null; error: string | null }>();
+      data?.forEach(integration => {
+        const config = integration.config as any;
+        statusMap.set(integration.integration_id, {
+          lastSync: integration.updated_at,
+          error: config?.lastError || null
+        });
+      });
+      setIntegrationStatus(statusMap);
     } catch (error: any) {
       console.error('Error loading integrations:', error);
     } finally {
@@ -482,6 +497,7 @@ const DashboardIntegrations = () => {
           {filteredIntegrations.map((integration) => {
             const Icon = integration.icon;
             const isConnected = connectedIntegrations.has(integration.id);
+            const status = integrationStatus.get(integration.id);
 
             return (
               <Card
@@ -514,6 +530,34 @@ const DashboardIntegrations = () => {
                     </p>
                   </div>
                 </div>
+
+                {/* Sync Status Indicator */}
+                {isConnected && status && (
+                  <div className="mb-4 p-3 rounded-lg bg-muted/50 space-y-2">
+                    {status.error ? (
+                      <div className="flex items-center gap-2 text-destructive">
+                        <AlertCircle className="w-4 h-4" />
+                        <span className="text-xs font-medium">Sync Error</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-green-600">
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span className="text-xs font-medium">Active</span>
+                      </div>
+                    )}
+                    {status.lastSync && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Clock className="w-3 h-3" />
+                        <span className="text-xs">
+                          Last sync: {new Date(status.lastSync).toLocaleString()}
+                        </span>
+                      </div>
+                    )}
+                    {status.error && (
+                      <p className="text-xs text-destructive mt-1">{status.error}</p>
+                    )}
+                  </div>
+                )}
 
                 <div className="flex gap-2">
                   {isConnected ? (
