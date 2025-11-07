@@ -46,7 +46,7 @@ const Calendar = () => {
         .from('integrations')
         .select('config, is_active')
         .eq('user_id', user.id)
-        .eq('integration_id', 'google-calendar')
+        .eq('integration_id', 'google')
         .eq('is_active', true)
         .maybeSingle();
 
@@ -93,7 +93,7 @@ const Calendar = () => {
                 },
               })
               .eq('user_id', user.id)
-              .eq('integration_id', 'google-calendar');
+              .eq('integration_id', 'google');
           }
         }
       }

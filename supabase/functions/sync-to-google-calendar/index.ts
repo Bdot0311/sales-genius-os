@@ -28,12 +28,12 @@ serve(async (req) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Not authenticated");
 
-    // Get Google Calendar integration
+    // Get Google integration
     const { data: integration } = await supabase
       .from('integrations')
       .select('config')
       .eq('user_id', user.id)
-      .eq('integration_id', 'google-calendar')
+      .eq('integration_id', 'google')
       .eq('is_active', true)
       .single();
 
@@ -75,7 +75,7 @@ serve(async (req) => {
             },
           })
           .eq('user_id', user.id)
-          .eq('integration_id', 'google-calendar');
+          .eq('integration_id', 'google');
       }
     }
 

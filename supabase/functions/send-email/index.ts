@@ -52,17 +52,17 @@ serve(async (req) => {
       .from('integrations')
       .select('config')
       .eq('user_id', user.id)
-      .eq('integration_id', integrationId)
+      .eq('integration_id', integrationId || 'google')
       .eq('is_active', true)
       .single();
 
-    console.log('Looking for integration:', integrationId, 'for user:', user.id);
+    console.log('Looking for integration:', integrationId || 'google', 'for user:', user.id);
     console.log('Integration found:', integration ? 'yes' : 'no');
     
     if (integrationError || !integration) {
       console.error('Integration error:', integrationError);
       return new Response(
-        JSON.stringify({ error: 'Gmail not connected. Please go to Integrations page and click "Connect" on Gmail.' }),
+        JSON.stringify({ error: 'Google integration not found or not active' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -74,7 +74,7 @@ serve(async (req) => {
     let accessToken = config.accessToken || config.provider_token;
     
     // Check if token needs refresh (for Google)
-    if (integrationId === 'gmail' && config.expiresAt && Date.now() >= config.expiresAt && config.refreshToken) {
+    if ((integrationId === 'google' || !integrationId) && config.expiresAt && Date.now() >= config.expiresAt && config.refreshToken) {
       console.log('Token expired, refreshing...');
       const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
         method: 'POST',
@@ -102,7 +102,7 @@ serve(async (req) => {
             },
           })
           .eq('user_id', user.id)
-          .eq('integration_id', integrationId);
+          .eq('integration_id', integrationId || 'google');
         
         console.log('Token refreshed successfully');
       } else {
@@ -123,7 +123,7 @@ serve(async (req) => {
     }
 
     // Send email based on integration type
-    if (integrationId === 'gmail') {
+    if (integrationId === 'google' || !integrationId) {
       // Send via Gmail API
       const emailContent = [
         `To: ${to}`,

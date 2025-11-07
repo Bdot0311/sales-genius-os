@@ -106,17 +106,17 @@ const Outreach = () => {
         throw new Error('Lead does not have an email address');
       }
 
-      // Check if user has connected Gmail
+      // Check if user has connected Google
       const { data: integrations } = await supabase
         .from('integrations')
         .select('integration_id')
         .eq('is_active', true)
-        .eq('integration_id', 'gmail');
+        .eq('integration_id', 'google');
 
       if (!integrations || integrations.length === 0) {
         toast({
-          title: "No email provider connected",
-          description: "Please connect Gmail in the Integrations page first",
+          title: "Google not connected",
+          description: "Please connect Google in the Integrations page first.",
           variant: "destructive",
         });
         setIsSending(false);

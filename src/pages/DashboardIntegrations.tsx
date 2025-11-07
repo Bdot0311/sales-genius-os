@@ -70,16 +70,16 @@ const integrations: Integration[] = [
     ],
   },
   {
-    id: "google-calendar",
-    name: "Google Calendar",
-    category: "Scheduling",
-    description: "Auto-schedule meetings based on your availability",
-    icon: Calendar,
-    color: "bg-yellow-500",
+    id: 'google',
+    name: 'Google',
+    category: 'Email & Calendar',
+    description: 'Access Gmail and Google Calendar with one connection',
+    icon: Mail,
+    color: 'text-blue-500',
     fields: [
-      { name: "clientId", label: "OAuth Client ID", type: "text", placeholder: "Enter your Google OAuth Client ID" },
-      { name: "clientSecret", label: "OAuth Client Secret", type: "password", placeholder: "Enter your Google OAuth Client Secret" },
-    ],
+      { name: 'clientId', label: 'Client ID', type: 'text', placeholder: 'Your Google Client ID' },
+      { name: 'clientSecret', label: 'Client Secret', type: 'password', placeholder: 'Your Google Client Secret' }
+    ]
   },
   {
     id: "calendly",
@@ -90,18 +90,6 @@ const integrations: Integration[] = [
     color: "bg-blue-400",
     fields: [
       { name: "apiKey", label: "API Key", type: "password", placeholder: "Enter your Calendly API key" },
-    ],
-  },
-  {
-    id: "gmail",
-    name: "Gmail",
-    category: "Email",
-    description: "Send campaigns directly through your Gmail account",
-    icon: Mail,
-    color: "bg-red-500",
-    fields: [
-      { name: "clientId", label: "OAuth Client ID", type: "text", placeholder: "Your Google OAuth Client ID" },
-      { name: "clientSecret", label: "OAuth Client Secret", type: "password", placeholder: "Your Google OAuth Client Secret" },
     ],
   },
   {
@@ -195,6 +183,7 @@ const DashboardIntegrations = () => {
   const handleOAuthCallback = async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
+    const stateParam = urlParams.get('state');
     
     if (!code) return;
 
@@ -202,29 +191,38 @@ const DashboardIntegrations = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Try both Gmail and Google Calendar
-      const { data: gmailIntegration } = await supabase
-        .from('integrations')
-        .select('config, integration_id')
-        .eq('user_id', user.id)
-        .eq('integration_id', 'gmail')
-        .maybeSingle();
+      let integrationId = 'google';
+      let clientId, clientSecret;
 
-      const { data: calendarIntegration } = await supabase
-        .from('integrations')
-        .select('config, integration_id')
-        .eq('user_id', user.id)
-        .eq('integration_id', 'google-calendar')
-        .maybeSingle();
-
-      const integration = gmailIntegration || calendarIntegration;
-      
-      if (!integration) {
-        throw new Error('OAuth credentials not found');
+      // Parse state if available
+      if (stateParam) {
+        try {
+          const state = JSON.parse(stateParam);
+          integrationId = state.integrationId;
+          clientId = state.clientId;
+          clientSecret = state.clientSecret;
+        } catch (e) {
+          console.error('Failed to parse state:', e);
+        }
       }
 
-      const config = integration.config as any;
-      if (!config?.clientId || !config?.clientSecret) {
+      // If no state, try to find existing Google integration
+      if (!clientId || !clientSecret) {
+        const { data: googleIntegration } = await supabase
+          .from('integrations')
+          .select('config, integration_id')
+          .eq('user_id', user.id)
+          .eq('integration_id', 'google')
+          .maybeSingle();
+
+        if (googleIntegration) {
+          const config = googleIntegration.config as any;
+          clientId = config.clientId;
+          clientSecret = config.clientSecret;
+        }
+      }
+      
+      if (!clientId || !clientSecret) {
         throw new Error('OAuth credentials not found');
       }
 
@@ -233,16 +231,16 @@ const DashboardIntegrations = () => {
       
       const tokenRequestBody = {
         code,
-        client_id: config.clientId,
-        client_secret: config.clientSecret,
+        client_id: clientId,
+        client_secret: clientSecret,
         redirect_uri: redirectUri,
         grant_type: 'authorization_code',
       };
       
       console.log('Token exchange request:', {
         redirectUri,
-        clientId: config.clientId,
-        hasClientSecret: !!config.clientSecret,
+        clientId: clientId,
+        hasClientSecret: !!clientSecret,
         codeLength: code.length,
       });
       
@@ -260,10 +258,10 @@ const DashboardIntegrations = () => {
           status: tokenResponse.status,
           error: errorData,
           requestDetails: {
-            clientId: config.clientId,
+            clientId: clientId,
             redirectUri,
             hasCode: !!code,
-            hasClientSecret: !!config.clientSecret
+            hasClientSecret: !!clientSecret
           }
         });
         
@@ -280,26 +278,29 @@ const DashboardIntegrations = () => {
       const tokens = await tokenResponse.json();
       
       const tokenData = {
-        clientId: config.clientId,
-        clientSecret: config.clientSecret,
+        clientId: clientId,
+        clientSecret: clientSecret,
         accessToken: tokens.access_token,
         refreshToken: tokens.refresh_token,
         expiresAt: Date.now() + tokens.expires_in * 1000,
       };
 
-      // Update the integration that initiated the OAuth flow
+      // Update the Google integration
       await supabase
         .from('integrations')
-        .update({
+        .upsert({
+          user_id: user.id,
+          integration_id: integrationId,
+          integration_name: 'Google',
           config: tokenData,
           is_active: true,
-        })
-        .eq('user_id', user.id)
-        .eq('integration_id', integration.integration_id);
+        }, {
+          onConflict: 'user_id,integration_id'
+        });
 
       toast({
-        title: `${integration.integration_id === 'gmail' ? 'Gmail' : 'Google Calendar'} Connected!`,
-        description: "Successfully connected to Google services",
+        title: "Google Connected!",
+        description: "Successfully connected Gmail and Google Calendar",
       });
 
       // Clean up URL
@@ -315,10 +316,17 @@ const DashboardIntegrations = () => {
     }
   };
 
-  const filteredIntegrations =
-    selectedCategory === "All"
-      ? integrations
-      : integrations.filter((i) => i.category === selectedCategory);
+  const filteredIntegrations = selectedCategory === 'All'
+    ? integrations
+    : integrations.filter(int => {
+        if (selectedCategory === 'Email') {
+          return int.category === 'Email' || int.category === 'Email & Calendar';
+        }
+        if (selectedCategory === 'Calendar' || selectedCategory === 'Scheduling') {
+          return int.category === 'Calendar' || int.category === 'Scheduling' || int.category === 'Email & Calendar';
+        }
+        return int.category === selectedCategory;
+      });
 
   const handleConnect = async (integration: Integration) => {
     if (integration.fields && integration.fields.length > 0) {
@@ -346,12 +354,23 @@ const DashboardIntegrations = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // For Gmail OAuth, initiate OAuth flow with Gmail scope
-      if (selectedIntegration.id === 'gmail' && formData.clientId && formData.clientSecret) {
+      // Handle OAuth flow for Google
+      if (selectedIntegration.id === 'google') {
         const redirectUri = `${window.location.origin}/integrations`;
-        const scope = 'https://www.googleapis.com/auth/gmail.send';
-        const state = `gmail_${Date.now()}`;
-        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${formData.clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}&access_type=offline&prompt=consent&state=${state}`;
+        const scope = 'https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/userinfo.email';
+        
+        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+          `client_id=${encodeURIComponent(formData.clientId)}&` +
+          `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+          `response_type=code&` +
+          `scope=${encodeURIComponent(scope)}&` +
+          `access_type=offline&` +
+          `prompt=consent&` +
+          `state=${encodeURIComponent(JSON.stringify({ 
+            integrationId: selectedIntegration.id,
+            clientId: formData.clientId,
+            clientSecret: formData.clientSecret 
+          }))}`;
         
         // Save client credentials first
         await supabase
@@ -366,31 +385,6 @@ const DashboardIntegrations = () => {
             onConflict: 'user_id,integration_id'
           });
 
-        // Open OAuth flow
-        window.location.href = authUrl;
-        return;
-      }
-
-      // For Google Calendar OAuth, initiate OAuth flow with both Calendar and Gmail scopes
-      if (selectedIntegration.id === 'google-calendar' && formData.clientId && formData.clientSecret) {
-        const redirectUri = `${window.location.origin}/integrations`;
-        const scope = 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/gmail.send';
-        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${formData.clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}&access_type=offline&prompt=consent`;
-        
-        // Save client credentials first
-        await supabase
-          .from('integrations')
-          .upsert({
-            user_id: user.id,
-            integration_id: selectedIntegration.id,
-            integration_name: selectedIntegration.name,
-            config: { clientId: formData.clientId, clientSecret: formData.clientSecret },
-            is_active: false,
-          }, {
-            onConflict: 'user_id,integration_id'
-          });
-
-        // Open OAuth flow
         window.location.href = authUrl;
         return;
       }
