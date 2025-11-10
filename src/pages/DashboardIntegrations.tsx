@@ -10,7 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Rocket,
-  Linkedin,
   TrendingUp,
   Calendar,
   CalendarClock,
@@ -47,18 +46,6 @@ const integrations: Integration[] = [
     color: "bg-blue-500",
     fields: [
       { name: "apiKey", label: "API Key", type: "password", placeholder: "Enter your Apollo API key" },
-    ],
-  },
-  {
-    id: "linkedin",
-    name: "LinkedIn Sales Navigator",
-    category: "Lead Generation",
-    description: "Sync leads and automatically enrich with LinkedIn profile data",
-    icon: Linkedin,
-    color: "bg-blue-600",
-    fields: [
-      { name: "clientId", label: "Client ID", type: "text", placeholder: "Enter Client ID" },
-      { name: "clientSecret", label: "Client Secret", type: "password", placeholder: "Enter Client Secret" },
     ],
   },
   {

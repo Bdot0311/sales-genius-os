@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Rocket, Linkedin, TrendingUp, Calendar, CalendarClock, Mail, Send, MessageSquare, Zap, Building2, Cloud } from "lucide-react";
+import { Rocket, TrendingUp, Calendar, CalendarClock, Mail, Send, MessageSquare, Zap, Building2, Cloud } from "lucide-react";
 
 const integrations = [
   {
@@ -11,13 +11,6 @@ const integrations = [
     description: "Import leads directly from Apollo with enriched company data",
     icon: Rocket,
     color: "bg-blue-500"
-  },
-  {
-    name: "LinkedIn Sales Navigator",
-    category: "Lead Generation",
-    description: "Sync leads and automatically enrich with LinkedIn profile data",
-    icon: Linkedin,
-    color: "bg-blue-600"
   },
   {
     name: "Crunchbase",
