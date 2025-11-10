@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { useSubscription } from "@/hooks/use-subscription";
 import { useLeadsUsage } from "@/hooks/use-leads-usage";
+import { STRIPE_PRICE_IDS } from "@/lib/stripe-config";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
