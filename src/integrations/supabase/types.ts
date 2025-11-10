@@ -241,6 +241,8 @@ export type Database = {
           leads_limit: number
           plan: Database["public"]["Enums"]["subscription_plan"]
           status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
           updated_at: string
           user_id: string
         }
@@ -252,6 +254,8 @@ export type Database = {
           leads_limit?: number
           plan?: Database["public"]["Enums"]["subscription_plan"]
           status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -263,7 +267,30 @@ export type Database = {
           leads_limit?: number
           plan?: Database["public"]["Enums"]["subscription_plan"]
           status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
         Relationships: []
@@ -315,6 +342,35 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_get_all_subscriptions: {
+        Args: never
+        Returns: {
+          current_period_end: string
+          email: string
+          full_name: string
+          leads_limit: number
+          plan: Database["public"]["Enums"]["subscription_plan"]
+          status: string
+          stripe_customer_id: string
+          user_id: string
+        }[]
+      }
+      admin_update_subscription: {
+        Args: {
+          _plan: Database["public"]["Enums"]["subscription_plan"]
+          _status?: string
+          _user_id: string
+        }
+        Returns: undefined
+      }
+      get_user_leads_usage: {
+        Args: never
+        Returns: {
+          leads_count: number
+          leads_limit: number
+          plan: Database["public"]["Enums"]["subscription_plan"]
+        }[]
+      }
       get_user_plan: {
         Args: never
         Returns: {
@@ -326,8 +382,16 @@ export type Database = {
           plan: Database["public"]["Enums"]["subscription_plan"]
         }[]
       }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      app_role: "admin" | "user"
       subscription_plan: "growth" | "pro" | "elite"
     }
     CompositeTypes: {
@@ -456,6 +520,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "user"],
       subscription_plan: ["growth", "pro", "elite"],
     },
   },

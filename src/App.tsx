@@ -16,6 +16,8 @@ import Automations from "./pages/Automations";
 import DashboardIntegrations from "./pages/DashboardIntegrations";
 import PricingPage from "./pages/PricingPage";
 import ApiDocs from "./pages/ApiDocs";
+import Settings from "./pages/Settings";
+import Admin from "./pages/Admin";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import Security from "./pages/Security";
@@ -46,6 +48,8 @@ const App = () => (
           <Route path="/dashboard/analytics" element={<Analytics />} />
           <Route path="/dashboard/automations" element={<Automations />} />
           <Route path="/integrations" element={<DashboardIntegrations />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/admin" element={<Admin />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

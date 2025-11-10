@@ -16,9 +16,12 @@ import {
   Menu,
   X,
   Puzzle,
+  Settings,
+  Shield,
 } from "lucide-react";
 import { User } from "@supabase/supabase-js";
 import { useSubscription } from "@/hooks/use-subscription";
+import { useAdmin } from "@/hooks/use-admin";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -34,6 +37,7 @@ const navigation = [
   { name: "Coach", icon: Mic, href: "/dashboard/coach" },
   { name: "Automations", icon: Workflow, href: "/dashboard/automations" },
   { name: "Integrations", icon: Puzzle, href: "/integrations" },
+  { name: "Settings", icon: Settings, href: "/settings" },
 ];
 
 export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
@@ -41,6 +45,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { subscription } = useSubscription();
+  const { isAdmin } = useAdmin();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -121,6 +126,18 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 <span>{item.name}</span>
               </button>
             ))}
+            {isAdmin && (
+              <button
+                onClick={() => {
+                  navigate('/admin');
+                  setSidebarOpen(false);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              >
+                <Shield className="w-5 h-5" />
+                <span>Admin Panel</span>
+              </button>
+            )}
           </nav>
 
           {/* User section */}
