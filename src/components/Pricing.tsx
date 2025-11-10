@@ -1,11 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Check } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
-import { STRIPE_PRICE_IDS } from "@/lib/stripe-config";
-import { useState } from "react";
 
 const plans = [
   {
@@ -21,7 +16,8 @@ const plans = [
       "Email support"
     ],
     cta: "Start Free Trial",
-    highlighted: false
+    highlighted: false,
+    paymentLink: "https://buy.stripe.com/cNibJ1bcPden1km8EC1B60o"
   },
   {
     name: "Pro",
@@ -37,7 +33,8 @@ const plans = [
       "Priority support"
     ],
     cta: "Start Free Trial",
-    highlighted: true
+    highlighted: true,
+    paymentLink: "https://buy.stripe.com/9B65kD4Or8Y76EGaMK1B60p"
   },
   {
     name: "Elite",
@@ -53,43 +50,14 @@ const plans = [
       "Dedicated success manager"
     ],
     cta: "Start Free Trial",
-    highlighted: false
+    highlighted: false,
+    paymentLink: "https://buy.stripe.com/8x2bJ15Svfmvd341ca1B60q"
   }
 ];
 
 export const Pricing = () => {
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState<string | null>(null);
-
-  const handleCheckout = async (plan: 'growth' | 'pro' | 'elite') => {
-    try {
-      setLoading(plan);
-      
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        toast.error("Please sign in to subscribe");
-        navigate('/auth');
-        return;
-      }
-
-      const priceId = STRIPE_PRICE_IDS[plan];
-      
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { priceId }
-      });
-
-      if (error) throw error;
-      
-      if (data?.url) {
-        window.open(data.url, '_blank');
-      }
-    } catch (error) {
-      console.error('Checkout error:', error);
-      toast.error("Failed to start checkout. Please try again.");
-    } finally {
-      setLoading(null);
-    }
+  const handleCheckout = (paymentLink: string) => {
+    window.open(paymentLink, '_blank');
   };
 
   return (
@@ -148,10 +116,9 @@ export const Pricing = () => {
               <Button 
                 variant={plan.highlighted ? "secondary" : "hero"} 
                 className="w-full"
-                onClick={() => handleCheckout(plan.name.toLowerCase() as 'growth' | 'pro' | 'elite')}
-                disabled={loading === plan.name.toLowerCase()}
+                onClick={() => handleCheckout(plan.paymentLink)}
               >
-                {loading === plan.name.toLowerCase() ? "Loading..." : plan.cta}
+                {plan.cta}
               </Button>
             </Card>
           ))}
