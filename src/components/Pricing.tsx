@@ -49,21 +49,6 @@ const plans = [
     ],
     cta: "Start Free Trial",
     highlighted: false
-  },
-  {
-    name: "Enterprise",
-    price: "Custom",
-    description: "Tailored solutions for large enterprises",
-    features: [
-      "Custom onboarding",
-      "Advanced integrations",
-      "Dedicated infrastructure",
-      "Custom AI training",
-      "SLA guarantees",
-      "On-premise deployment option"
-    ],
-    cta: "Contact Sales",
-    highlighted: false
   }
 ];
 
@@ -87,7 +72,7 @@ export const Pricing = () => {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
           {plans.map((plan, index) => (
             <Card 
               key={index}
