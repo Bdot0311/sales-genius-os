@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Rocket, TrendingUp, Calendar, CalendarClock, Mail, Send, MessageSquare, Zap, Building2, Cloud } from "lucide-react";
+import { Rocket, TrendingUp, Calendar, CalendarClock, Mail, MessageSquare, Zap, Building2, Cloud } from "lucide-react";
 
 const integrations = [
   {
@@ -27,13 +27,6 @@ const integrations = [
     color: "bg-yellow-500"
   },
   {
-    name: "Outlook Calendar",
-    category: "Scheduling",
-    description: "Seamless calendar integration for Microsoft users",
-    icon: Calendar,
-    color: "bg-blue-700"
-  },
-  {
     name: "Calendly",
     category: "Scheduling",
     description: "Embed booking links in outreach campaigns",
@@ -46,13 +39,6 @@ const integrations = [
     description: "Send campaigns directly through your Gmail account",
     icon: Mail,
     color: "bg-red-500"
-  },
-  {
-    name: "Outlook",
-    category: "Email",
-    description: "Full email sync and campaign management",
-    icon: Send,
-    color: "bg-blue-600"
   },
   {
     name: "Slack",
