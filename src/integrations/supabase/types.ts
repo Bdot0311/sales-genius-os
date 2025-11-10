@@ -232,6 +232,42 @@ export type Database = {
         }
         Relationships: []
       }
+      subscriptions: {
+        Row: {
+          created_at: string
+          current_period_end: string
+          current_period_start: string
+          id: string
+          leads_limit: number
+          plan: Database["public"]["Enums"]["subscription_plan"]
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_period_end?: string
+          current_period_start?: string
+          id?: string
+          leads_limit?: number
+          plan?: Database["public"]["Enums"]["subscription_plan"]
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string
+          current_period_start?: string
+          id?: string
+          leads_limit?: number
+          plan?: Database["public"]["Enums"]["subscription_plan"]
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       workflows: {
         Row: {
           action: string
@@ -279,10 +315,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_plan: {
+        Args: never
+        Returns: {
+          has_ai_coach: boolean
+          has_analytics: boolean
+          has_api_access: boolean
+          has_automations: boolean
+          leads_limit: number
+          plan: Database["public"]["Enums"]["subscription_plan"]
+        }[]
+      }
     }
     Enums: {
-      [_ in never]: never
+      subscription_plan: "growth" | "pro" | "elite"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -409,6 +455,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      subscription_plan: ["growth", "pro", "elite"],
+    },
   },
 } as const

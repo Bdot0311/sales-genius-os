@@ -18,6 +18,7 @@ import {
   Puzzle,
 } from "lucide-react";
 import { User } from "@supabase/supabase-js";
+import { useSubscription } from "@/hooks/use-subscription";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -39,6 +40,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { subscription } = useSubscription();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -129,7 +131,9 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{user.email}</p>
-                <p className="text-xs text-muted-foreground">Pro Plan</p>
+                <p className="text-xs text-muted-foreground capitalize">
+                  {subscription?.plan || 'Growth'} Plan
+                </p>
               </div>
             </div>
             <Button

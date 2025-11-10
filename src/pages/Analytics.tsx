@@ -3,9 +3,12 @@ import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { TrendingUp, Users, DollarSign, Target } from "lucide-react";
+import { TrendingUp, Users, DollarSign, Target, Loader2 } from "lucide-react";
+import { useSubscription } from "@/hooks/use-subscription";
+import { UpgradePrompt } from "@/components/dashboard/UpgradePrompt";
 
 const Analytics = () => {
+  const { subscription, loading: subscriptionLoading } = useSubscription();
   const [stats, setStats] = useState({
     totalLeads: 0,
     totalDeals: 0,
@@ -14,6 +17,24 @@ const Analytics = () => {
   });
   const [dealsByStage, setDealsByStage] = useState<any[]>([]);
   const [leadsOverTime, setLeadsOverTime] = useState<any[]>([]);
+
+  if (subscriptionLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-12 h-12 text-muted-foreground animate-spin" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!subscription?.hasAnalytics) {
+    return (
+      <DashboardLayout>
+        <UpgradePrompt feature="Advanced Analytics" requiredPlan="pro" />
+      </DashboardLayout>
+    );
+  }
 
   useEffect(() => {
     loadAnalytics();

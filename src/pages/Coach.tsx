@@ -7,8 +7,11 @@ import { Mic, Send, TrendingUp, Target, Lightbulb, Loader2 } from "lucide-react"
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useSubscription } from "@/hooks/use-subscription";
+import { UpgradePrompt } from "@/components/dashboard/UpgradePrompt";
 
 const Coach = () => {
+  const { subscription, loading: subscriptionLoading } = useSubscription();
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [coachingResponse, setCoachingResponse] = useState("");
@@ -21,6 +24,24 @@ const Coach = () => {
     upcomingMeetings: 0,
   });
   const { toast } = useToast();
+
+  if (subscriptionLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-12 h-12 text-muted-foreground animate-spin" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!subscription?.hasAiCoach) {
+    return (
+      <DashboardLayout>
+        <UpgradePrompt feature="AI Sales Coach" requiredPlan="pro" />
+      </DashboardLayout>
+    );
+  }
 
   useEffect(() => {
     loadStats();

@@ -11,6 +11,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Plus, Zap, Loader2, Workflow as WorkflowIcon, List } from "lucide-react";
 import { WorkflowCanvas } from "@/components/workflow/WorkflowCanvas";
 import { Node, Edge } from "reactflow";
+import { useSubscription } from "@/hooks/use-subscription";
+import { UpgradePrompt } from "@/components/dashboard/UpgradePrompt";
 
 interface Workflow {
   id: string;
@@ -28,12 +30,31 @@ interface Workflow {
 
 const Automations = () => {
   const { toast } = useToast();
+  const { subscription, loading: subscriptionLoading } = useSubscription();
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'visual' | 'list'>('visual');
   const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null);
   const [newWorkflowName, setNewWorkflowName] = useState("");
+
+  if (subscriptionLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-12 h-12 text-muted-foreground animate-spin" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!subscription?.hasAutomations) {
+    return (
+      <DashboardLayout>
+        <UpgradePrompt feature="Automation Builder" requiredPlan="pro" />
+      </DashboardLayout>
+    );
+  }
 
   useEffect(() => {
     loadWorkflows();
