@@ -73,7 +73,7 @@ const Success = () => {
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <Button 
                 className="flex-1"
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate('/auth')}
               >
                 Go to Dashboard
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -90,7 +90,7 @@ const Success = () => {
             <div className="pt-4 border-t">
               <p className="text-sm text-muted-foreground text-center">
                 Need help getting started?{" "}
-                <a href="mailto:support@salesos.com" className="text-primary hover:underline">
+                <a href="mailto:support@alephwave.io" className="text-primary hover:underline">
                   Contact our support team
                 </a>
               </p>
