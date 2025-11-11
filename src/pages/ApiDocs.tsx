@@ -521,37 +521,6 @@ end`,
 
         <Card>
           <CardHeader>
-            <CardTitle>SDKs & Libraries</CardTitle>
-            <CardDescription>Official client libraries for popular languages</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="border rounded-lg p-4">
-                <h3 className="font-semibold mb-2">Node.js / JavaScript</h3>
-                <code className="text-xs bg-muted px-2 py-1 rounded block mb-2">
-                  npm install @salesos/api-client
-                </code>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <ExternalLink className="w-3 h-3" />
-                  View on GitHub
-                </Button>
-              </div>
-              <div className="border rounded-lg p-4">
-                <h3 className="font-semibold mb-2">Python</h3>
-                <code className="text-xs bg-muted px-2 py-1 rounded block mb-2">
-                  pip install salesos
-                </code>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <ExternalLink className="w-3 h-3" />
-                  View on GitHub
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
             <CardTitle>Need Help?</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
