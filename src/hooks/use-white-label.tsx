@@ -7,6 +7,9 @@ interface WhiteLabelSettings {
   primary_color: string;
   secondary_color: string;
   accent_color: string;
+  custom_domain?: string | null;
+  domain_verification_token?: string | null;
+  domain_verified?: boolean;
 }
 
 export const useWhiteLabel = () => {

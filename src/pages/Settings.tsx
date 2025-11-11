@@ -231,10 +231,6 @@ const Settings = () => {
                       <Palette className="h-4 w-4" />
                       White Label
                     </TabsTrigger>
-                    <TabsTrigger value="custom-domain" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
-                      <Globe className="h-4 w-4" />
-                      Domain
-                    </TabsTrigger>
                     <TabsTrigger value="monitoring" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
                       <Activity className="h-4 w-4" />
                       Monitor
@@ -491,10 +487,6 @@ const Settings = () => {
             <>
               <TabsContent value="white-label">
                 <WhiteLabelTab />
-              </TabsContent>
-
-              <TabsContent value="custom-domain">
-                <CustomDomainTab />
               </TabsContent>
 
               <TabsContent value="monitoring">

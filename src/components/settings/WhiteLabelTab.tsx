@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { Palette, Loader2, Save, Globe, ExternalLink, CheckCircle, AlertCircle, Upload, X } from "lucide-react";
+import { Palette, Loader2, Save, Globe, CheckCircle, AlertCircle, Upload, X, Copy } from "lucide-react";
 import { useWhiteLabel } from "@/hooks/use-white-label";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -24,6 +24,13 @@ export const WhiteLabelTab = () => {
     accent_color: "#F59E0B"
   });
 
+  // Domain state
+  const [domain, setDomain] = useState("");
+  const [currentDomain, setCurrentDomain] = useState("");
+  const [verificationToken, setVerificationToken] = useState("");
+  const [isVerified, setIsVerified] = useState(false);
+  const [savingDomain, setSavingDomain] = useState(false);
+
   useEffect(() => {
     if (settings) {
       setFormData({
@@ -34,6 +41,10 @@ export const WhiteLabelTab = () => {
         accent_color: settings.accent_color
       });
       setLogoPreview(settings.logo_url || "");
+      setDomain(settings.custom_domain || "");
+      setCurrentDomain(settings.custom_domain || "");
+      setVerificationToken(settings.domain_verification_token || "");
+      setIsVerified(settings.domain_verified || false);
     }
   }, [settings]);
 
@@ -41,13 +52,11 @@ export const WhiteLabelTab = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       toast.error('Please select an image file');
       return;
     }
 
-    // Validate file size (5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error('File size must be less than 5MB');
       return;
@@ -55,7 +64,6 @@ export const WhiteLabelTab = () => {
 
     setLogoFile(file);
     
-    // Create preview
     const reader = new FileReader();
     reader.onloadend = () => {
       setLogoPreview(reader.result as string);
@@ -71,11 +79,10 @@ export const WhiteLabelTab = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // Upload file to storage
       const fileExt = logoFile.name.split('.').pop();
       const fileName = `${user.id}/logo-${Date.now()}.${fileExt}`;
       
-      const { error: uploadError, data } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('white-label-logos')
         .upload(fileName, logoFile, {
           upsert: true,
@@ -84,7 +91,6 @@ export const WhiteLabelTab = () => {
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('white-label-logos')
         .getPublicUrl(fileName);
@@ -126,8 +132,67 @@ export const WhiteLabelTab = () => {
     }
   };
 
-  const handleOpenDomainSettings = () => {
-    window.open("https://docs.lovable.dev/features/custom-domain", "_blank");
+  const generateVerificationToken = () => {
+    return `verify_${Math.random().toString(36).substring(2, 15)}`;
+  };
+
+  const handleSaveDomain = async () => {
+    if (!domain || !domain.trim()) {
+      toast.error("Please enter a domain name");
+      return;
+    }
+
+    const domainRegex = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$/i;
+    if (!domainRegex.test(domain.trim())) {
+      toast.error("Please enter a valid domain name");
+      return;
+    }
+
+    setSavingDomain(true);
+    try {
+      const token = generateVerificationToken();
+
+      const result = await updateSettings({
+        custom_domain: domain.trim().toLowerCase(),
+        domain_verification_token: token,
+        domain_verified: false,
+      });
+
+      if (result.success) {
+        setCurrentDomain(domain.trim().toLowerCase());
+        setVerificationToken(token);
+        setIsVerified(false);
+        toast.success("Domain saved! Please add the DNS records to verify.");
+      } else {
+        toast.error("Failed to save domain");
+      }
+    } catch (error: any) {
+      toast.error("Failed to save domain");
+      console.error(error);
+    } finally {
+      setSavingDomain(false);
+    }
+  };
+
+  const handleVerifyDomain = async () => {
+    try {
+      const result = await updateSettings({ domain_verified: true });
+
+      if (result.success) {
+        setIsVerified(true);
+        toast.success("Domain verified successfully!");
+      } else {
+        toast.error("Failed to verify domain");
+      }
+    } catch (error: any) {
+      toast.error("Failed to verify domain");
+      console.error(error);
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success("Copied to clipboard");
   };
 
   if (loading) {
@@ -339,6 +404,7 @@ export const WhiteLabelTab = () => {
         </CardContent>
       </Card>
 
+      {/* Custom Domain Section */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -346,118 +412,175 @@ export const WhiteLabelTab = () => {
             Custom Domain
           </CardTitle>
           <CardDescription>
-            Connect your own domain to host this application
+            Connect your own domain to serve your branded application
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="space-y-4">
-            <div className="flex gap-4">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
-                1
-              </div>
-              <div>
-                <h4 className="font-semibold mb-1">Access Domain Settings</h4>
-                <p className="text-sm text-muted-foreground">
-                  Click on your project name in the top left, go to Settings → Domains
-                </p>
-              </div>
+          <div className="space-y-2">
+            <Label htmlFor="domain">Domain Name</Label>
+            <div className="flex gap-2">
+              <Input
+                id="domain"
+                type="text"
+                placeholder="yourdomain.com"
+                value={domain}
+                onChange={(e) => setDomain(e.target.value)}
+                disabled={savingDomain}
+              />
+              <Button onClick={handleSaveDomain} disabled={savingDomain}>
+                {savingDomain ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+              </Button>
             </div>
+            <p className="text-sm text-muted-foreground">
+              Enter your domain without http:// or https://
+            </p>
+          </div>
 
-            <div className="flex gap-4">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
-                2
-              </div>
-              <div>
-                <h4 className="font-semibold mb-1">Add Your Domain</h4>
-                <p className="text-sm text-muted-foreground">
-                  Click "Connect Domain" and enter your domain name (e.g., yourdomain.com)
-                </p>
-              </div>
-            </div>
+          {currentDomain && (
+            <>
+              <div className="space-y-4 border-t pt-6">
+                <div className="flex items-center gap-2">
+                  <h4 className="font-semibold">Domain Status:</h4>
+                  {isVerified ? (
+                    <div className="flex items-center gap-1 text-green-600">
+                      <CheckCircle className="h-4 w-4" />
+                      <span className="text-sm">Verified</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 text-amber-600">
+                      <AlertCircle className="h-4 w-4" />
+                      <span className="text-sm">Pending Verification</span>
+                    </div>
+                  )}
+                </div>
 
-            <div className="flex gap-4">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
-                3
+                {!isVerified && (
+                  <>
+                    <div className="space-y-3 bg-muted p-4 rounded-lg">
+                      <p className="font-semibold text-sm">Required DNS Records:</p>
+                      
+                      <div className="space-y-2">
+                        <div className="bg-background p-3 rounded border">
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="text-xs font-semibold">A Record (Root Domain)</p>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyToClipboard("185.158.133.1")}
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground">Type: A</p>
+                          <p className="text-xs text-muted-foreground">Name: @</p>
+                          <p className="text-xs font-mono">Value: 185.158.133.1</p>
+                        </div>
+
+                        <div className="bg-background p-3 rounded border">
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="text-xs font-semibold">A Record (WWW Subdomain)</p>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyToClipboard("185.158.133.1")}
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground">Type: A</p>
+                          <p className="text-xs text-muted-foreground">Name: www</p>
+                          <p className="text-xs font-mono">Value: 185.158.133.1</p>
+                        </div>
+
+                        <div className="bg-background p-3 rounded border">
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="text-xs font-semibold">TXT Record (Verification)</p>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyToClipboard(`${currentDomain}_verify=${verificationToken}`)}
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground">Type: TXT</p>
+                          <p className="text-xs text-muted-foreground">Name: _verify</p>
+                          <p className="text-xs font-mono break-all">
+                            Value: {currentDomain}_verify={verificationToken}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Alert>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>DNS Propagation</AlertTitle>
+                      <AlertDescription className="space-y-1 text-sm">
+                        <p>• DNS changes can take up to 72 hours to propagate globally</p>
+                        <p>• Use DNSChecker.org to verify your DNS records</p>
+                        <p>• SSL certificate will be automatically provisioned after verification</p>
+                      </AlertDescription>
+                    </Alert>
+
+                    <Button onClick={handleVerifyDomain}>
+                      Verify Domain
+                    </Button>
+                  </>
+                )}
+
+                {isVerified && (
+                  <Alert>
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <AlertTitle>Domain Active</AlertTitle>
+                    <AlertDescription>
+                      Your custom domain is verified and active. Your application is now accessible at {currentDomain}.
+                    </AlertDescription>
+                  </Alert>
+                )}
               </div>
-              <div>
-                <h4 className="font-semibold mb-1">Configure DNS Records</h4>
-                <p className="text-sm text-muted-foreground mb-2">
-                  Add these DNS records at your domain registrar:
-                </p>
-                <div className="space-y-2 bg-muted p-3 rounded-lg text-xs font-mono">
-                  <div>
-                    <strong>A Record</strong> (root domain)
-                    <br />
-                    Name: @ | Value: 185.158.133.1
-                  </div>
-                  <div>
-                    <strong>A Record</strong> (www subdomain)
-                    <br />
-                    Name: www | Value: 185.158.133.1
-                  </div>
-                  <div>
-                    <strong>TXT Record</strong> (verification)
-                    <br />
-                    Name: _lovable | Value: lovable_verify=ABC (shown in setup)
-                  </div>
+            </>
+          )}
+
+          <div className="border-t pt-6 space-y-4">
+            <h4 className="font-semibold">Setup Instructions</h4>
+            <div className="space-y-3">
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm font-semibold">
+                  1
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Enter Your Domain</p>
+                  <p className="text-sm text-muted-foreground">
+                    Add your domain name above and click Save
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm font-semibold">
+                  2
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Configure DNS Records</p>
+                  <p className="text-sm text-muted-foreground">
+                    Add the DNS records shown above to your domain registrar
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm font-semibold">
+                  3
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Verify Domain</p>
+                  <p className="text-sm text-muted-foreground">
+                    Click Verify Domain after DNS records have propagated
+                  </p>
                 </div>
               </div>
             </div>
-
-            <div className="flex gap-4">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
-                4
-              </div>
-              <div>
-                <h4 className="font-semibold mb-1">Wait for Verification</h4>
-                <p className="text-sm text-muted-foreground">
-                  DNS propagation can take up to 72 hours. SSL certificate will be automatically provisioned once verified.
-                </p>
-              </div>
-            </div>
           </div>
-
-          <div className="pt-4 border-t">
-            <h4 className="font-semibold mb-3">Domain Status Indicators</h4>
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                <span className="font-medium">Active:</span>
-                <span className="text-muted-foreground">Domain is live and serving your app</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-blue-500" />
-                <span className="font-medium">Verifying:</span>
-                <span className="text-muted-foreground">Waiting for DNS propagation</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-amber-500" />
-                <span className="font-medium">Action Required:</span>
-                <span className="text-muted-foreground">Complete the setup process</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-red-500" />
-                <span className="font-medium">Failed:</span>
-                <span className="text-muted-foreground">SSL provisioning failed, retry needed</span>
-              </div>
-            </div>
-          </div>
-
-          <Button onClick={handleOpenDomainSettings} className="gap-2">
-            <ExternalLink className="h-4 w-4" />
-            Open Domain Setup Guide
-          </Button>
-
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Important Notes</AlertTitle>
-            <AlertDescription className="space-y-1 text-sm">
-              <p>• Add both root domain and www subdomain separately</p>
-              <p>• Use tools like DNSChecker.org to verify your DNS settings</p>
-              <p>• If you have CAA records, ensure they allow Let's Encrypt for SSL</p>
-              <p>• Contact support if domain isn't verifying after 72 hours</p>
-            </AlertDescription>
-          </Alert>
         </CardContent>
       </Card>
     </div>
