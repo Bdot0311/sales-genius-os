@@ -877,6 +877,9 @@ export type Database = {
           accent_color: string | null
           company_name: string | null
           created_at: string
+          custom_domain: string | null
+          domain_verification_token: string | null
+          domain_verified: boolean | null
           id: string
           logo_url: string | null
           primary_color: string | null
@@ -888,6 +891,9 @@ export type Database = {
           accent_color?: string | null
           company_name?: string | null
           created_at?: string
+          custom_domain?: string | null
+          domain_verification_token?: string | null
+          domain_verified?: boolean | null
           id?: string
           logo_url?: string | null
           primary_color?: string | null
@@ -899,6 +905,9 @@ export type Database = {
           accent_color?: string | null
           company_name?: string | null
           created_at?: string
+          custom_domain?: string | null
+          domain_verification_token?: string | null
+          domain_verified?: boolean | null
           id?: string
           logo_url?: string | null
           primary_color?: string | null
