@@ -114,8 +114,12 @@ export const Pricing = () => {
               </ul>
 
               <Button 
-                variant={plan.highlighted ? "secondary" : "hero"} 
-                className="w-full"
+                variant={plan.highlighted ? "default" : "hero"} 
+                className={`w-full ${
+                  plan.highlighted 
+                    ? 'bg-black text-white hover:bg-primary hover:text-primary-foreground border-0' 
+                    : ''
+                }`}
                 onClick={() => handleCheckout(plan.paymentLink)}
               >
                 {plan.cta}
