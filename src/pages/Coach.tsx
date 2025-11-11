@@ -25,56 +25,6 @@ const Coach = () => {
   });
   const { toast } = useToast();
 
-  if (subscriptionLoading) {
-    return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-12 h-12 text-muted-foreground animate-spin" />
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  if (!subscription?.hasAiCoach) {
-    return (
-      <DashboardLayout>
-        <UpgradePrompt feature="AI Sales Coach" requiredPlan="pro" />
-      </DashboardLayout>
-    );
-  }
-
-  useEffect(() => {
-    loadStats();
-    
-    // Set up real-time subscriptions
-    const leadsChannel = supabase
-      .channel('leads-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => {
-        loadStats();
-      })
-      .subscribe();
-
-    const dealsChannel = supabase
-      .channel('deals-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'deals' }, () => {
-        loadStats();
-      })
-      .subscribe();
-
-    const activitiesChannel = supabase
-      .channel('activities-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'activities' }, () => {
-        loadStats();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(leadsChannel);
-      supabase.removeChannel(dealsChannel);
-      supabase.removeChannel(activitiesChannel);
-    };
-  }, []);
-
   const loadStats = async () => {
     try {
       const { data: leads } = await supabase.from("leads").select("*");
@@ -104,6 +54,58 @@ const Coach = () => {
       console.error("Error loading stats:", error);
     }
   };
+
+  useEffect(() => {
+    if (subscription?.hasAiCoach) {
+      loadStats();
+      
+      // Set up real-time subscriptions
+      const leadsChannel = supabase
+        .channel('leads-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => {
+          loadStats();
+        })
+        .subscribe();
+
+      const dealsChannel = supabase
+        .channel('deals-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'deals' }, () => {
+          loadStats();
+        })
+        .subscribe();
+
+      const activitiesChannel = supabase
+        .channel('activities-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'activities' }, () => {
+          loadStats();
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(leadsChannel);
+        supabase.removeChannel(dealsChannel);
+        supabase.removeChannel(activitiesChannel);
+      };
+    }
+  }, [subscription?.hasAiCoach]);
+
+  if (subscriptionLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-12 h-12 text-muted-foreground animate-spin" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!subscription?.hasAiCoach) {
+    return (
+      <DashboardLayout>
+        <UpgradePrompt feature="AI Sales Coach" requiredPlan="pro" />
+      </DashboardLayout>
+    );
+  }
 
   const handleSubmit = async () => {
     if (!input.trim()) return;
