@@ -78,7 +78,7 @@ serve(async (req) => {
           .in("api_key_id", apiKeys?.map(k => k.id) || [])
           .gte("created_at", timeWindowStart);
 
-        currentValue = usage?.length > 0
+        currentValue = usage && usage.length > 0
           ? usage.reduce((sum, u) => sum + (u.response_time_ms || 0), 0) / usage.length
           : 0;
 

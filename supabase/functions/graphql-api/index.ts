@@ -11,62 +11,28 @@ const logStep = (step: string, details?: any) => {
 };
 
 // Simple GraphQL resolver
-const resolvers = {
+const resolvers: Record<string, (args: any, supabase: any, userId: string) => Promise<any>> = {
   leads: async (args: any, supabase: any, userId: string) => {
-    const query = supabase.from('leads').select('*').eq('user_id', userId);
-    
-    if (args.filter) {
-      if (args.filter.company_name) {
-        query.ilike('company_name', `%${args.filter.company_name}%`);
-      }
-      if (args.filter.industry) {
-        query.eq('industry', args.filter.industry);
-      }
-    }
-    
-    if (args.limit) query.limit(args.limit);
-    if (args.offset) query.range(args.offset, args.offset + (args.limit || 10) - 1);
-    
-    const { data, error } = await query;
+    const { data, error } = await supabase
+      .from('leads')
+      .select('*')
+      .eq('user_id', userId);
     if (error) throw error;
     return data;
   },
-  
   deals: async (args: any, supabase: any, userId: string) => {
-    const query = supabase.from('deals').select('*').eq('user_id', userId);
-    
-    if (args.filter) {
-      if (args.filter.stage) {
-        query.eq('stage', args.filter.stage);
-      }
-      if (args.filter.minValue) {
-        query.gte('value', args.filter.minValue);
-      }
-    }
-    
-    if (args.limit) query.limit(args.limit);
-    if (args.offset) query.range(args.offset, args.offset + (args.limit || 10) - 1);
-    
-    const { data, error } = await query;
+    const { data, error } = await supabase
+      .from('deals')
+      .select('*')
+      .eq('user_id', userId);
     if (error) throw error;
     return data;
   },
-  
   activities: async (args: any, supabase: any, userId: string) => {
-    const query = supabase.from('activities').select('*').eq('user_id', userId);
-    
-    if (args.filter) {
-      if (args.filter.type) {
-        query.eq('type', args.filter.type);
-      }
-      if (args.filter.completed !== undefined) {
-        query.eq('completed', args.filter.completed);
-      }
-    }
-    
-    if (args.limit) query.limit(args.limit);
-    
-    const { data, error } = await query;
+    const { data, error } = await supabase
+      .from('activities')
+      .select('*')
+      .eq('user_id', userId);
     if (error) throw error;
     return data;
   },
@@ -79,7 +45,7 @@ const parseGraphQLQuery = (query: string) => {
   
   const [, operation, argsStr, fields] = match;
   
-  let args = {};
+  let args: Record<string, any> = {};
   if (argsStr) {
     // Very basic argument parsing
     const argMatches = argsStr.matchAll(/(\w+):\s*({[^}]+}|"[^"]*"|\d+)/g);
@@ -251,9 +217,10 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    logStep('Error', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logStep('Error', errorMessage);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }

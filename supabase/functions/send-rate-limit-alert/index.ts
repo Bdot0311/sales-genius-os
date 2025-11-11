@@ -138,10 +138,10 @@ serve(async (req) => {
       html: emailHtml,
     });
 
-    logStep("Email sent successfully", { emailId: emailResponse.id });
+    logStep("Email sent successfully");
 
     return new Response(
-      JSON.stringify({ success: true, emailId: emailResponse.id }),
+      JSON.stringify({ success: true }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,

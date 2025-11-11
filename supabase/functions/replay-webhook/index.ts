@@ -130,11 +130,12 @@ serve(async (req) => {
         }
 
       } catch (error) {
-        logStep(`Error replaying delivery ${delivery.id}`, error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logStep(`Error replaying delivery ${delivery.id}`, errorMessage);
         replayResults.push({
           originalDeliveryId: delivery.id,
           success: false,
-          error: error.message,
+          error: errorMessage,
         });
       }
     }
@@ -151,9 +152,10 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    logStep('Error', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logStep('Error', errorMessage);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }

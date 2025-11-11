@@ -146,7 +146,7 @@ serve(async (req) => {
                   <p>Suspicious activity detected on your account</p>
                 </div>
                 <div class="content">
-                  <p>Hello ${user.profiles.full_name || 'there'},</p>
+                  <p>Hello ${(user.profiles as any)?.full_name || 'there'},</p>
                   <p>Our security system has detected ${suspiciousPatterns.length} suspicious pattern(s) on your account:</p>
 
                   ${suspiciousPatterns.map(pattern => `
@@ -184,7 +184,7 @@ serve(async (req) => {
 
         await resend.emails.send({
           from: "SalesOS Security <onboarding@resend.dev>",
-          to: [user.profiles.email],
+          to: [(user.profiles as any)?.email],
           subject: `🚨 Security Alert: Suspicious Activity Detected`,
           html: emailHtml,
         });
