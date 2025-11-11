@@ -169,22 +169,23 @@ const ApiStatus = () => {
       <Navbar />
       <div className="flex-1 container mx-auto px-4 py-8 pt-12 max-w-6xl">
         <div className="space-y-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
-              <Button 
-                variant="ghost" 
-                onClick={() => navigate(-1)}
-                className="mb-4 gap-2"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Back
-              </Button>
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate(-1)}
+            className="mb-4 gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </Button>
+          
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            <div>
               <h1 className="text-3xl font-bold">API Status</h1>
               <p className="text-muted-foreground">
                 Real-time system status and incident history
               </p>
             </div>
-            <Button variant="outline" asChild className="mt-1">
+            <Button variant="outline" asChild className="shrink-0 w-fit">
               <a href="/api-docs" className="gap-2">
                 <ExternalLink className="w-4 h-4" />
                 API Docs
