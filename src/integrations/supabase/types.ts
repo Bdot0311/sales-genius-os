@@ -68,9 +68,99 @@ export type Database = {
           },
         ]
       }
+      alert_rules: {
+        Row: {
+          comparison_operator: string
+          created_at: string
+          id: string
+          is_active: boolean
+          last_triggered_at: string | null
+          metric_type: string
+          name: string
+          notification_channels: string[]
+          notification_webhook_url: string | null
+          threshold_value: number
+          time_window_minutes: number
+          trigger_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comparison_operator: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_triggered_at?: string | null
+          metric_type: string
+          name: string
+          notification_channels?: string[]
+          notification_webhook_url?: string | null
+          threshold_value: number
+          time_window_minutes?: number
+          trigger_count?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          comparison_operator?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_triggered_at?: string | null
+          metric_type?: string
+          name?: string
+          notification_channels?: string[]
+          notification_webhook_url?: string | null
+          threshold_value?: number
+          time_window_minutes?: number
+          trigger_count?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      api_key_rotations: {
+        Row: {
+          id: string
+          new_key_id: string
+          old_key_id: string
+          rotated_at: string
+          rotated_by: string
+          rotation_reason: string | null
+        }
+        Insert: {
+          id?: string
+          new_key_id: string
+          old_key_id: string
+          rotated_at?: string
+          rotated_by: string
+          rotation_reason?: string | null
+        }
+        Update: {
+          id?: string
+          new_key_id?: string
+          old_key_id?: string
+          rotated_at?: string
+          rotated_by?: string
+          rotation_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_key_rotations_new_key_id_fkey"
+            columns: ["new_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       api_keys: {
         Row: {
+          cache_ttl_seconds: number | null
           created_at: string
+          enable_caching: boolean
+          endpoint_rate_limits: Json | null
+          expires_at: string | null
           id: string
           is_active: boolean
           key: string
@@ -80,11 +170,17 @@ export type Database = {
           prefix: string
           rate_limit_per_day: number
           rate_limit_per_minute: number
+          rotation_policy_days: number | null
+          rotation_reminder_sent: boolean
           total_requests: number
           user_id: string
         }
         Insert: {
+          cache_ttl_seconds?: number | null
           created_at?: string
+          enable_caching?: boolean
+          endpoint_rate_limits?: Json | null
+          expires_at?: string | null
           id?: string
           is_active?: boolean
           key: string
@@ -94,11 +190,17 @@ export type Database = {
           prefix: string
           rate_limit_per_day?: number
           rate_limit_per_minute?: number
+          rotation_policy_days?: number | null
+          rotation_reminder_sent?: boolean
           total_requests?: number
           user_id: string
         }
         Update: {
+          cache_ttl_seconds?: number | null
           created_at?: string
+          enable_caching?: boolean
+          endpoint_rate_limits?: Json | null
+          expires_at?: string | null
           id?: string
           is_active?: boolean
           key?: string
@@ -108,6 +210,8 @@ export type Database = {
           prefix?: string
           rate_limit_per_day?: number
           rate_limit_per_minute?: number
+          rotation_policy_days?: number | null
+          rotation_reminder_sent?: boolean
           total_requests?: number
           user_id?: string
         }
@@ -578,6 +682,56 @@ export type Database = {
           },
         ]
       }
+      webhook_tests: {
+        Row: {
+          created_at: string
+          expected_response_contains: string | null
+          expected_status_code: number | null
+          id: string
+          last_run_at: string | null
+          passed: boolean | null
+          test_name: string
+          test_payload: Json
+          test_result: Json | null
+          validate_signature: boolean
+          webhook_id: string
+        }
+        Insert: {
+          created_at?: string
+          expected_response_contains?: string | null
+          expected_status_code?: number | null
+          id?: string
+          last_run_at?: string | null
+          passed?: boolean | null
+          test_name: string
+          test_payload: Json
+          test_result?: Json | null
+          validate_signature?: boolean
+          webhook_id: string
+        }
+        Update: {
+          created_at?: string
+          expected_response_contains?: string | null
+          expected_status_code?: number | null
+          id?: string
+          last_run_at?: string | null
+          passed?: boolean | null
+          test_name?: string
+          test_payload?: Json
+          test_result?: Json | null
+          validate_signature?: boolean
+          webhook_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_tests_webhook_id_fkey"
+            columns: ["webhook_id"]
+            isOneToOne: false
+            referencedRelation: "webhooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       webhooks: {
         Row: {
           created_at: string
@@ -721,6 +875,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      check_expiring_api_keys: { Args: never; Returns: undefined }
       get_user_leads_usage: {
         Args: never
         Returns: {

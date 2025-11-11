@@ -22,6 +22,8 @@ import { TeamActivityTab } from "@/components/settings/TeamActivityTab";
 import { CustomDomainTab } from "@/components/settings/CustomDomainTab";
 import { AuditLogsTab } from "@/components/settings/AuditLogsTab";
 import { MonitoringDashboard } from "@/components/settings/MonitoringDashboard";
+import { AlertRulesTab } from "@/components/settings/AlertRulesTab";
+import { WebhookDeliveryLogs } from "@/components/settings/WebhookDeliveryLogs";
 
 const Settings = () => {
   const { subscription, loading: subLoading } = useSubscription();
@@ -203,18 +205,20 @@ const Settings = () => {
         </div>
 
         <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className={`grid w-full ${subscription?.plan === 'elite' ? 'grid-cols-11' : 'grid-cols-3'}`}>
+          <TabsList className={`grid w-full ${subscription?.plan === 'elite' ? 'grid-cols-13' : 'grid-cols-3'}`}>
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="subscription">Subscription</TabsTrigger>
             <TabsTrigger value="usage">Usage</TabsTrigger>
             {subscription?.plan === 'elite' && (
               <>
                 <TabsTrigger value="monitoring">Monitoring</TabsTrigger>
+                <TabsTrigger value="alerts">Alerts</TabsTrigger>
                 <TabsTrigger value="api-keys">API Keys</TabsTrigger>
                 <TabsTrigger value="team">Team</TabsTrigger>
                 <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
+                <TabsTrigger value="webhook-logs">Logs</TabsTrigger>
                 <TabsTrigger value="activity">Activity</TabsTrigger>
-                <TabsTrigger value="audit">Audit Logs</TabsTrigger>
+                <TabsTrigger value="audit">Audit</TabsTrigger>
                 <TabsTrigger value="domain">Domain</TabsTrigger>
                 <TabsTrigger value="white-label">Branding</TabsTrigger>
               </>
@@ -409,6 +413,10 @@ const Settings = () => {
                 <MonitoringDashboard />
               </TabsContent>
 
+              <TabsContent value="alerts">
+                <AlertRulesTab />
+              </TabsContent>
+
               <TabsContent value="api-keys">
                 <APIKeysTab />
               </TabsContent>
@@ -419,6 +427,10 @@ const Settings = () => {
 
               <TabsContent value="webhooks">
                 <WebhooksTab />
+              </TabsContent>
+
+              <TabsContent value="webhook-logs">
+                <WebhookDeliveryLogs />
               </TabsContent>
 
             <TabsContent value="activity">
