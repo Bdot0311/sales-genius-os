@@ -211,7 +211,8 @@ const Settings = () => {
           <div className="bg-card border rounded-lg p-3 mb-6">
             <div className="space-y-2">
               {/* First row of tabs */}
-              <TabsList className="h-auto flex-wrap justify-center gap-2 bg-transparent p-0">
+              <div className="flex justify-center">
+                <TabsList className="h-auto inline-flex flex-wrap justify-center gap-2 bg-transparent p-0">
                 <TabsTrigger value="profile" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
                   <User className="h-4 w-4" />
                   Profile
@@ -244,11 +245,13 @@ const Settings = () => {
                     </TabsTrigger>
                   </>
                 )}
-              </TabsList>
+                </TabsList>
+              </div>
 
               {/* Second row of tabs (Elite only) */}
               {subscription?.plan === 'elite' && (
-                <TabsList className="h-auto flex-wrap justify-center gap-2 bg-transparent p-0">
+                <div className="flex justify-center">
+                  <TabsList className="h-auto inline-flex flex-wrap justify-center gap-2 bg-transparent p-0">
                   <TabsTrigger value="api-versions" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
                     <GitBranch className="h-4 w-4" />
                     Versions
@@ -281,7 +284,8 @@ const Settings = () => {
                     <FileSearch className="h-4 w-4" />
                     Audit
                   </TabsTrigger>
-                </TabsList>
+                  </TabsList>
+                </div>
               )}
             </div>
           </div>
