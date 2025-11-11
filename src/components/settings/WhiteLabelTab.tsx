@@ -175,18 +175,45 @@ export const WhiteLabelTab = () => {
   };
 
   const handleVerifyDomain = async () => {
-    try {
-      const result = await updateSettings({ domain_verified: true });
+    if (!currentDomain || !verificationToken) {
+      toast.error("No domain to verify");
+      return;
+    }
 
-      if (result.success) {
+    try {
+      // Call the verify-domain edge function
+      const { data, error } = await supabase.functions.invoke('verify-domain', {
+        body: {
+          domain: currentDomain,
+          verificationToken: verificationToken
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
         setIsVerified(true);
-        toast.success("Domain verified successfully!");
+        toast.success(data.message || "Domain verified successfully!");
       } else {
-        toast.error("Failed to verify domain");
+        // Show detailed error message about missing DNS records
+        const missingRecords = data.missingRecords || [];
+        toast.error(
+          <div className="space-y-2">
+            <p className="font-semibold">DNS verification failed</p>
+            <p className="text-sm">Missing or incorrect DNS records:</p>
+            <ul className="text-xs list-disc list-inside">
+              {missingRecords.map((record: string, idx: number) => (
+                <li key={idx}>{record}</li>
+              ))}
+            </ul>
+            <p className="text-xs mt-2">Please ensure all DNS records are correctly configured and have propagated.</p>
+          </div>,
+          { duration: 10000 }
+        );
       }
     } catch (error: any) {
-      toast.error("Failed to verify domain");
-      console.error(error);
+      console.error("Error verifying domain:", error);
+      toast.error("Failed to verify domain. Please try again later.");
     }
   };
 
