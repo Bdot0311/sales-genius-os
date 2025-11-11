@@ -64,7 +64,7 @@ const Cancel = () => {
                     <Button 
                       variant="outline"
                       className="w-full mt-4"
-                      onClick={() => window.location.href = 'mailto:support@salesos.com'}
+                      onClick={() => window.location.href = 'mailto:support@alephwave.io'}
                     >
                       <Mail className="mr-2 h-4 w-4" />
                       Email Support
