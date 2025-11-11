@@ -1,10 +1,12 @@
-import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { Copy, Check, ExternalLink } from "lucide-react";
+import { Copy, Check, ExternalLink, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
 
 const ApiDocs = () => {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
@@ -302,23 +304,35 @@ post '/webhooks' do
 end`,
   };
 
+  const navigate = useNavigate();
+
   return (
-    <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">API Documentation</h1>
-            <p className="text-muted-foreground">
-              Complete reference with interactive examples
-            </p>
+    <div className="min-h-screen flex flex-col bg-background">
+      <Navbar />
+      <div className="flex-1 container mx-auto px-4 py-8 max-w-6xl">
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <Button 
+                variant="ghost" 
+                onClick={() => navigate(-1)}
+                className="mb-4 gap-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back
+              </Button>
+              <h1 className="text-3xl font-bold">API Documentation</h1>
+              <p className="text-muted-foreground">
+                Complete reference with interactive examples
+              </p>
+            </div>
+            <Button variant="outline" asChild>
+              <a href="/api-status" className="gap-2">
+                <ExternalLink className="w-4 h-4" />
+                API Status
+              </a>
+            </Button>
           </div>
-          <Button variant="outline" asChild>
-            <a href="/api-status" className="gap-2">
-              <ExternalLink className="w-4 h-4" />
-              API Status
-            </a>
-          </Button>
-        </div>
 
         <Card>
           <CardHeader>
@@ -549,8 +563,10 @@ end`,
             </p>
           </CardContent>
         </Card>
+        </div>
       </div>
-    </DashboardLayout>
+      <Footer />
+    </div>
   );
 };
 

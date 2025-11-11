@@ -1,10 +1,12 @@
-import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
-import { CheckCircle, XCircle, AlertCircle, Activity, Clock, TrendingUp } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { CheckCircle, XCircle, AlertCircle, Activity, Clock, TrendingUp, ArrowLeft, ExternalLink } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
 
 interface ServiceStatus {
   name: string;
@@ -160,15 +162,35 @@ const ApiStatus = () => {
     ? "down"
     : "degraded";
 
+  const navigate = useNavigate();
+
   return (
-    <DashboardLayout>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">API Status</h1>
-          <p className="text-muted-foreground">
-            Real-time system status and incident history
-          </p>
-        </div>
+    <div className="min-h-screen flex flex-col bg-background">
+      <Navbar />
+      <div className="flex-1 container mx-auto px-4 py-8 max-w-6xl">
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <Button 
+                variant="ghost" 
+                onClick={() => navigate(-1)}
+                className="mb-4 gap-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back
+              </Button>
+              <h1 className="text-3xl font-bold">API Status</h1>
+              <p className="text-muted-foreground">
+                Real-time system status and incident history
+              </p>
+            </div>
+            <Button variant="outline" asChild>
+              <a href="/api-docs" className="gap-2">
+                <ExternalLink className="w-4 h-4" />
+                API Docs
+              </a>
+            </Button>
+          </div>
 
         <Card className={overallStatus === "operational" ? "border-green-500" : ""}>
           <CardHeader>
@@ -358,8 +380,10 @@ const ApiStatus = () => {
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
-    </DashboardLayout>
+      <Footer />
+    </div>
   );
 };
 
