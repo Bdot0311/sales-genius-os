@@ -463,110 +463,145 @@ export const WhiteLabelTab = () => {
             </p>
           </div>
 
-          {currentDomain && (
-            <>
-              <div className="space-y-4 border-t pt-6">
-                <div className="flex items-center gap-2">
-                  <h4 className="font-semibold">Domain Status:</h4>
-                  {isVerified ? (
-                    <div className="flex items-center gap-1 text-green-600">
-                      <CheckCircle className="h-4 w-4" />
-                      <span className="text-sm">Verified</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1 text-amber-600">
-                      <AlertCircle className="h-4 w-4" />
-                      <span className="text-sm">Pending Verification</span>
-                    </div>
-                  )}
-                </div>
-
-                {!isVerified && (
-                  <>
-                    <div className="space-y-3 bg-muted p-4 rounded-lg">
-                      <p className="font-semibold text-sm">Required DNS Records:</p>
-                      
-                      <div className="space-y-2">
-                        <div className="bg-background p-3 rounded border">
-                          <div className="flex items-center justify-between mb-1">
-                            <p className="text-xs font-semibold">A Record (Root Domain)</p>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => copyToClipboard("185.158.133.1")}
-                            >
-                              <Copy className="h-3 w-3" />
-                            </Button>
-                          </div>
-                          <p className="text-xs text-muted-foreground">Type: A</p>
-                          <p className="text-xs text-muted-foreground">Name: @</p>
-                          <p className="text-xs font-mono">Value: 185.158.133.1</p>
-                        </div>
-
-                        <div className="bg-background p-3 rounded border">
-                          <div className="flex items-center justify-between mb-1">
-                            <p className="text-xs font-semibold">A Record (WWW Subdomain)</p>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => copyToClipboard("185.158.133.1")}
-                            >
-                              <Copy className="h-3 w-3" />
-                            </Button>
-                          </div>
-                          <p className="text-xs text-muted-foreground">Type: A</p>
-                          <p className="text-xs text-muted-foreground">Name: www</p>
-                          <p className="text-xs font-mono">Value: 185.158.133.1</p>
-                        </div>
-
-                        <div className="bg-background p-3 rounded border">
-                          <div className="flex items-center justify-between mb-1">
-                            <p className="text-xs font-semibold">TXT Record (Verification)</p>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => copyToClipboard(`${currentDomain}_verify=${verificationToken}`)}
-                            >
-                              <Copy className="h-3 w-3" />
-                            </Button>
-                          </div>
-                          <p className="text-xs text-muted-foreground">Type: TXT</p>
-                          <p className="text-xs text-muted-foreground">Name: _verify</p>
-                          <p className="text-xs font-mono break-all">
-                            Value: {currentDomain}_verify={verificationToken}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <Alert>
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertTitle>DNS Propagation</AlertTitle>
-                      <AlertDescription className="space-y-1 text-sm">
-                        <p>• DNS changes can take up to 72 hours to propagate globally</p>
-                        <p>• Use DNSChecker.org to verify your DNS records</p>
-                        <p>• SSL certificate will be automatically provisioned after verification</p>
-                      </AlertDescription>
-                    </Alert>
-
-                    <Button onClick={handleVerifyDomain}>
-                      Verify Domain
-                    </Button>
-                  </>
-                )}
-
-                {isVerified && (
-                  <Alert>
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    <AlertTitle>Domain Active</AlertTitle>
-                    <AlertDescription>
-                      Your custom domain is verified and active. Your application is now accessible at {currentDomain}.
-                    </AlertDescription>
-                  </Alert>
+          <div className="space-y-4 border-t pt-6">
+            {currentDomain && (
+              <div className="flex items-center gap-2 mb-4">
+                <h4 className="font-semibold">Domain Status:</h4>
+                {isVerified ? (
+                  <div className="flex items-center gap-1 text-green-600">
+                    <CheckCircle className="h-4 w-4" />
+                    <span className="text-sm">Verified</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1 text-amber-600">
+                    <AlertCircle className="h-4 w-4" />
+                    <span className="text-sm">Pending Verification</span>
+                  </div>
                 )}
               </div>
-            </>
-          )}
+            )}
+
+            <div className="space-y-3 bg-muted p-4 rounded-lg">
+              <p className="font-semibold text-sm">Required DNS Records:</p>
+              
+              <div className="space-y-2">
+                <div className="bg-background p-3 rounded border">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-semibold">A Record (Root Domain)</p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => copyToClipboard("185.158.133.1")}
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-muted-foreground w-16">Type:</span>
+                      <span className="text-xs font-mono">A</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-muted-foreground w-16">Name:</span>
+                      <span className="text-xs font-mono">@</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-muted-foreground w-16">Value:</span>
+                      <span className="text-xs font-mono">185.158.133.1</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-background p-3 rounded border">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-semibold">A Record (WWW Subdomain)</p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => copyToClipboard("185.158.133.1")}
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-muted-foreground w-16">Type:</span>
+                      <span className="text-xs font-mono">A</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-muted-foreground w-16">Name:</span>
+                      <span className="text-xs font-mono">www</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-muted-foreground w-16">Value:</span>
+                      <span className="text-xs font-mono">185.158.133.1</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-background p-3 rounded border">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-semibold">TXT Record (Verification)</p>
+                    {currentDomain && verificationToken && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => copyToClipboard(`${currentDomain}_verify=${verificationToken}`)}
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-muted-foreground w-16">Type:</span>
+                      <span className="text-xs font-mono">TXT</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-muted-foreground w-16">Name:</span>
+                      <span className="text-xs font-mono">_verify</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-xs font-semibold text-muted-foreground w-16 pt-0.5">Value:</span>
+                      <span className="text-xs font-mono break-all flex-1">
+                        {currentDomain && verificationToken 
+                          ? `${currentDomain}_verify=${verificationToken}`
+                          : 'yourdomain.com_verify=TOKEN (generated after saving)'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {currentDomain && !isVerified && (
+              <>
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>DNS Propagation</AlertTitle>
+                  <AlertDescription className="space-y-1 text-sm">
+                    <p>• DNS changes can take up to 72 hours to propagate globally</p>
+                    <p>• Use DNSChecker.org to verify your DNS records</p>
+                    <p>• SSL certificate will be automatically provisioned after verification</p>
+                  </AlertDescription>
+                </Alert>
+
+                <Button onClick={handleVerifyDomain} className="w-full">
+                  Verify Domain
+                </Button>
+              </>
+            )}
+
+            {isVerified && (
+              <Alert>
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <AlertTitle>Domain Active</AlertTitle>
+                <AlertDescription>
+                  Your custom domain is verified and active. Your application is now accessible at {currentDomain}.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
 
           <div className="border-t pt-6 space-y-4">
             <h4 className="font-semibold">Setup Instructions</h4>
