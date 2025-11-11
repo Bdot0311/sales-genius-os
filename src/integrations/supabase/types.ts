@@ -74,9 +74,13 @@ export type Database = {
           id: string
           is_active: boolean
           key: string
+          last_request_at: string | null
           last_used_at: string | null
           name: string
           prefix: string
+          rate_limit_per_day: number
+          rate_limit_per_minute: number
+          total_requests: number
           user_id: string
         }
         Insert: {
@@ -84,9 +88,13 @@ export type Database = {
           id?: string
           is_active?: boolean
           key: string
+          last_request_at?: string | null
           last_used_at?: string | null
           name: string
           prefix: string
+          rate_limit_per_day?: number
+          rate_limit_per_minute?: number
+          total_requests?: number
           user_id: string
         }
         Update: {
@@ -94,12 +102,54 @@ export type Database = {
           id?: string
           is_active?: boolean
           key?: string
+          last_request_at?: string | null
           last_used_at?: string | null
           name?: string
           prefix?: string
+          rate_limit_per_day?: number
+          rate_limit_per_minute?: number
+          total_requests?: number
           user_id?: string
         }
         Relationships: []
+      }
+      api_usage_log: {
+        Row: {
+          api_key_id: string
+          created_at: string
+          endpoint: string
+          id: string
+          method: string
+          response_time_ms: number | null
+          status_code: number | null
+        }
+        Insert: {
+          api_key_id: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          method: string
+          response_time_ms?: number | null
+          status_code?: number | null
+        }
+        Update: {
+          api_key_id?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          method?: string
+          response_time_ms?: number | null
+          status_code?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_usage_log_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       deals: {
         Row: {
@@ -343,6 +393,39 @@ export type Database = {
         }
         Relationships: []
       }
+      team_activity_log: {
+        Row: {
+          action_type: string
+          created_at: string
+          details: Json | null
+          entity_id: string | null
+          entity_type: string
+          id: string
+          team_owner_id: string
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          team_owner_id: string
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          team_owner_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       team_members: {
         Row: {
           created_at: string
@@ -393,6 +476,45 @@ export type Database = {
           created_at?: string | null
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      webhooks: {
+        Row: {
+          created_at: string
+          events: string[]
+          id: string
+          is_active: boolean
+          last_triggered_at: string | null
+          name: string
+          secret: string
+          total_triggers: number
+          url: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          events: string[]
+          id?: string
+          is_active?: boolean
+          last_triggered_at?: string | null
+          name: string
+          secret: string
+          total_triggers?: number
+          url: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          events?: string[]
+          id?: string
+          is_active?: boolean
+          last_triggered_at?: string | null
+          name?: string
+          secret?: string
+          total_triggers?: number
+          url?: string
           user_id?: string
         }
         Relationships: []

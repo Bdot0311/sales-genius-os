@@ -33,6 +33,10 @@ interface APIKey {
   created_at: string;
   last_used_at: string | null;
   is_active: boolean;
+  rate_limit_per_minute: number;
+  rate_limit_per_day: number;
+  total_requests: number;
+  last_request_at: string | null;
 }
 
 export const APIKeysTab = () => {
@@ -53,7 +57,7 @@ export const APIKeysTab = () => {
     try {
       const { data, error } = await supabase
         .from("api_keys")
-        .select("id, name, prefix, created_at, last_used_at, is_active")
+        .select("*")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -170,10 +174,15 @@ export const APIKeysTab = () => {
                     <p className="text-sm text-muted-foreground mt-1">
                       {key.prefix}••••••••••••••••••
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Created {new Date(key.created_at).toLocaleDateString()}
-                      {key.last_used_at && ` • Last used ${new Date(key.last_used_at).toLocaleDateString()}`}
-                    </p>
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
+                      <span>Created {new Date(key.created_at).toLocaleDateString()}</span>
+                      {key.last_used_at && <span>Last used {new Date(key.last_used_at).toLocaleDateString()}</span>}
+                    </div>
+                    <div className="flex items-center gap-4 text-xs mt-2">
+                      <Badge variant="outline">{key.total_requests.toLocaleString()} requests</Badge>
+                      <Badge variant="outline">{key.rate_limit_per_minute}/min limit</Badge>
+                      <Badge variant="outline">{key.rate_limit_per_day.toLocaleString()}/day limit</Badge>
+                    </div>
                   </div>
                   <Button
                     variant="ghost"
