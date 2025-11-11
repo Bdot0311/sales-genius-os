@@ -208,28 +208,29 @@ const Settings = () => {
         </div>
 
         <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className={`grid w-full ${subscription?.plan === 'elite' ? 'grid-cols-4 lg:grid-cols-8 xl:grid-cols-16' : 'grid-cols-3'}`}>
-            <TabsTrigger value="profile" className="text-xs sm:text-sm">Profile</TabsTrigger>
-            <TabsTrigger value="subscription" className="text-xs sm:text-sm">Plan</TabsTrigger>
-            <TabsTrigger value="usage" className="text-xs sm:text-sm">Usage</TabsTrigger>
-            {subscription?.plan === 'elite' && (
-              <>
-                <TabsTrigger value="monitoring" className="text-xs sm:text-sm">Monitor</TabsTrigger>
-                <TabsTrigger value="alerts" className="text-xs sm:text-sm">Alerts</TabsTrigger>
-                <TabsTrigger value="api-keys" className="text-xs sm:text-sm">API Keys</TabsTrigger>
-                <TabsTrigger value="api-versions" className="text-xs sm:text-sm">Versions</TabsTrigger>
-                <TabsTrigger value="graphql" className="text-xs sm:text-sm">GraphQL</TabsTrigger>
-                <TabsTrigger value="webhooks" className="text-xs sm:text-sm">Webhooks</TabsTrigger>
-                <TabsTrigger value="webhook-logs" className="text-xs sm:text-sm">Logs</TabsTrigger>
-                <TabsTrigger value="webhook-replay" className="text-xs sm:text-sm">Replay</TabsTrigger>
-                <TabsTrigger value="team" className="text-xs sm:text-sm">Team</TabsTrigger>
-                <TabsTrigger value="activity" className="text-xs sm:text-sm">Activity</TabsTrigger>
-                <TabsTrigger value="audit" className="text-xs sm:text-sm">Audit</TabsTrigger>
-                <TabsTrigger value="domain" className="text-xs sm:text-sm">Domain</TabsTrigger>
-                <TabsTrigger value="white-label" className="text-xs sm:text-sm">Brand</TabsTrigger>
-              </>
-            )}
-          </TabsList>
+          <div className="bg-card border rounded-lg p-1">
+            <TabsList className={`grid w-full ${subscription?.plan === 'elite' ? 'grid-cols-4 lg:grid-cols-7 xl:grid-cols-14' : 'grid-cols-3'}`}>
+              <TabsTrigger value="profile" className="text-xs sm:text-sm">Profile</TabsTrigger>
+              <TabsTrigger value="subscription" className="text-xs sm:text-sm">Plan</TabsTrigger>
+              <TabsTrigger value="usage" className="text-xs sm:text-sm">Usage</TabsTrigger>
+              {subscription?.plan === 'elite' && (
+                <>
+                  <TabsTrigger value="white-label" className="text-xs sm:text-sm">White Label</TabsTrigger>
+                  <TabsTrigger value="monitoring" className="text-xs sm:text-sm">Monitor</TabsTrigger>
+                  <TabsTrigger value="alerts" className="text-xs sm:text-sm">Alerts</TabsTrigger>
+                  <TabsTrigger value="api-keys" className="text-xs sm:text-sm">API Keys</TabsTrigger>
+                  <TabsTrigger value="api-versions" className="text-xs sm:text-sm">Versions</TabsTrigger>
+                  <TabsTrigger value="graphql" className="text-xs sm:text-sm">GraphQL</TabsTrigger>
+                  <TabsTrigger value="webhooks" className="text-xs sm:text-sm">Webhooks</TabsTrigger>
+                  <TabsTrigger value="webhook-logs" className="text-xs sm:text-sm">Logs</TabsTrigger>
+                  <TabsTrigger value="webhook-replay" className="text-xs sm:text-sm">Replay</TabsTrigger>
+                  <TabsTrigger value="team" className="text-xs sm:text-sm">Team</TabsTrigger>
+                  <TabsTrigger value="activity" className="text-xs sm:text-sm">Activity</TabsTrigger>
+                  <TabsTrigger value="audit" className="text-xs sm:text-sm">Audit</TabsTrigger>
+                </>
+              )}
+            </TabsList>
+          </div>
 
           <TabsContent value="profile" className="space-y-6">
             <Card>
@@ -258,11 +259,22 @@ const Settings = () => {
                     id="email"
                     type="email"
                     value={profile.email}
-                    disabled
-                    className="bg-muted"
+                    onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                    placeholder="john@example.com"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Email cannot be changed here. Contact support to update.
+                    Update your email address for account notifications
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="new_password">Change Password</Label>
+                  <Input
+                    id="new_password"
+                    type="password"
+                    placeholder="Enter new password (optional)"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Leave blank to keep current password
                   </p>
                 </div>
                 <div className="space-y-2">
@@ -415,6 +427,10 @@ const Settings = () => {
 
           {subscription?.plan === 'elite' && (
             <>
+              <TabsContent value="white-label">
+                <WhiteLabelTab />
+              </TabsContent>
+
               <TabsContent value="monitoring">
                 <MonitoringDashboard />
               </TabsContent>
@@ -458,14 +474,6 @@ const Settings = () => {
             <TabsContent value="audit">
               <AuditLogsTab />
             </TabsContent>
-
-            <TabsContent value="domain">
-              <CustomDomainTab />
-            </TabsContent>
-
-              <TabsContent value="white-label">
-                <WhiteLabelTab />
-              </TabsContent>
             </>
           )}
         </Tabs>
