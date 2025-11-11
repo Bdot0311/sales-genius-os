@@ -209,7 +209,7 @@ const Settings = () => {
 
         <Tabs defaultValue="profile" className="space-y-6">
           <div className="bg-card border rounded-lg p-2 mb-6">
-            <TabsList className="h-auto flex-wrap justify-start gap-2 bg-transparent p-0">
+            <TabsList className="h-auto flex-wrap justify-center gap-2 bg-transparent p-0">
               <TabsTrigger value="profile" className="data-[state=active]:bg-muted hover:bg-muted/50">Profile</TabsTrigger>
               <TabsTrigger value="subscription" className="data-[state=active]:bg-muted hover:bg-muted/50">Plan</TabsTrigger>
               <TabsTrigger value="usage" className="data-[state=active]:bg-muted hover:bg-muted/50">Usage</TabsTrigger>
