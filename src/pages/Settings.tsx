@@ -24,6 +24,9 @@ import { AuditLogsTab } from "@/components/settings/AuditLogsTab";
 import { MonitoringDashboard } from "@/components/settings/MonitoringDashboard";
 import { AlertRulesTab } from "@/components/settings/AlertRulesTab";
 import { WebhookDeliveryLogs } from "@/components/settings/WebhookDeliveryLogs";
+import { APIVersionsTab } from "@/components/settings/APIVersionsTab";
+import { WebhookReplayTab } from "@/components/settings/WebhookReplayTab";
+import { GraphQLPlayground } from "@/components/settings/GraphQLPlayground";
 
 const Settings = () => {
   const { subscription, loading: subLoading } = useSubscription();
@@ -205,22 +208,25 @@ const Settings = () => {
         </div>
 
         <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className={`grid w-full ${subscription?.plan === 'elite' ? 'grid-cols-13' : 'grid-cols-3'}`}>
-            <TabsTrigger value="profile">Profile</TabsTrigger>
-            <TabsTrigger value="subscription">Subscription</TabsTrigger>
-            <TabsTrigger value="usage">Usage</TabsTrigger>
+          <TabsList className={`grid w-full ${subscription?.plan === 'elite' ? 'grid-cols-4 lg:grid-cols-8 xl:grid-cols-16' : 'grid-cols-3'}`}>
+            <TabsTrigger value="profile" className="text-xs sm:text-sm">Profile</TabsTrigger>
+            <TabsTrigger value="subscription" className="text-xs sm:text-sm">Plan</TabsTrigger>
+            <TabsTrigger value="usage" className="text-xs sm:text-sm">Usage</TabsTrigger>
             {subscription?.plan === 'elite' && (
               <>
-                <TabsTrigger value="monitoring">Monitoring</TabsTrigger>
-                <TabsTrigger value="alerts">Alerts</TabsTrigger>
-                <TabsTrigger value="api-keys">API Keys</TabsTrigger>
-                <TabsTrigger value="team">Team</TabsTrigger>
-                <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
-                <TabsTrigger value="webhook-logs">Logs</TabsTrigger>
-                <TabsTrigger value="activity">Activity</TabsTrigger>
-                <TabsTrigger value="audit">Audit</TabsTrigger>
-                <TabsTrigger value="domain">Domain</TabsTrigger>
-                <TabsTrigger value="white-label">Branding</TabsTrigger>
+                <TabsTrigger value="monitoring" className="text-xs sm:text-sm">Monitor</TabsTrigger>
+                <TabsTrigger value="alerts" className="text-xs sm:text-sm">Alerts</TabsTrigger>
+                <TabsTrigger value="api-keys" className="text-xs sm:text-sm">API Keys</TabsTrigger>
+                <TabsTrigger value="api-versions" className="text-xs sm:text-sm">Versions</TabsTrigger>
+                <TabsTrigger value="graphql" className="text-xs sm:text-sm">GraphQL</TabsTrigger>
+                <TabsTrigger value="webhooks" className="text-xs sm:text-sm">Webhooks</TabsTrigger>
+                <TabsTrigger value="webhook-logs" className="text-xs sm:text-sm">Logs</TabsTrigger>
+                <TabsTrigger value="webhook-replay" className="text-xs sm:text-sm">Replay</TabsTrigger>
+                <TabsTrigger value="team" className="text-xs sm:text-sm">Team</TabsTrigger>
+                <TabsTrigger value="activity" className="text-xs sm:text-sm">Activity</TabsTrigger>
+                <TabsTrigger value="audit" className="text-xs sm:text-sm">Audit</TabsTrigger>
+                <TabsTrigger value="domain" className="text-xs sm:text-sm">Domain</TabsTrigger>
+                <TabsTrigger value="white-label" className="text-xs sm:text-sm">Brand</TabsTrigger>
               </>
             )}
           </TabsList>
@@ -431,6 +437,18 @@ const Settings = () => {
 
               <TabsContent value="webhook-logs">
                 <WebhookDeliveryLogs />
+              </TabsContent>
+
+              <TabsContent value="webhook-replay">
+                <WebhookReplayTab />
+              </TabsContent>
+
+              <TabsContent value="api-versions">
+                <APIVersionsTab />
+              </TabsContent>
+
+              <TabsContent value="graphql">
+                <GraphQLPlayground />
               </TabsContent>
 
             <TabsContent value="activity">
