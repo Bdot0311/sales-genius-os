@@ -20,6 +20,7 @@ import { WhiteLabelTab } from "@/components/settings/WhiteLabelTab";
 import { WebhooksTab } from "@/components/settings/WebhooksTab";
 import { TeamActivityTab } from "@/components/settings/TeamActivityTab";
 import { CustomDomainTab } from "@/components/settings/CustomDomainTab";
+import { AuditLogsTab } from "@/components/settings/AuditLogsTab";
 
 const Settings = () => {
   const { subscription, loading: subLoading } = useSubscription();
@@ -201,7 +202,7 @@ const Settings = () => {
         </div>
 
         <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className={`grid w-full ${subscription?.plan === 'elite' ? 'grid-cols-9' : 'grid-cols-3'}`}>
+          <TabsList className={`grid w-full ${subscription?.plan === 'elite' ? 'grid-cols-10' : 'grid-cols-3'}`}>
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="subscription">Subscription</TabsTrigger>
             <TabsTrigger value="usage">Usage</TabsTrigger>
@@ -211,6 +212,7 @@ const Settings = () => {
                 <TabsTrigger value="team">Team</TabsTrigger>
                 <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
                 <TabsTrigger value="activity">Activity</TabsTrigger>
+                <TabsTrigger value="audit">Audit Logs</TabsTrigger>
                 <TabsTrigger value="domain">Domain</TabsTrigger>
                 <TabsTrigger value="white-label">Branding</TabsTrigger>
               </>
@@ -413,13 +415,17 @@ const Settings = () => {
                 <WebhooksTab />
               </TabsContent>
 
-              <TabsContent value="activity">
-                <TeamActivityTab />
-              </TabsContent>
+            <TabsContent value="activity">
+              <TeamActivityTab />
+            </TabsContent>
 
-              <TabsContent value="domain">
-                <CustomDomainTab />
-              </TabsContent>
+            <TabsContent value="audit">
+              <AuditLogsTab />
+            </TabsContent>
+
+            <TabsContent value="domain">
+              <CustomDomainTab />
+            </TabsContent>
 
               <TabsContent value="white-label">
                 <WhiteLabelTab />

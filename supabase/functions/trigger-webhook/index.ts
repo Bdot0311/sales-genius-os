@@ -51,68 +51,159 @@ serve(async (req) => {
 
     logStep("Found webhooks to trigger", { count: webhooks.length });
 
-    // Trigger all webhooks
+    // Trigger all webhooks with retry logic
     const results = await Promise.allSettled(
       webhooks.map(async (webhook) => {
-        try {
-          const timestamp = Date.now();
-          const payload = {
+        const timestamp = Date.now();
+        const payload = {
+          event,
+          data,
+          timestamp,
+        };
+
+        // Create HMAC signature using Web Crypto API
+        const encoder = new TextEncoder();
+        const keyData = encoder.encode(webhook.secret);
+        const messageData = encoder.encode(JSON.stringify(payload));
+        
+        const key = await crypto.subtle.importKey(
+          "raw",
+          keyData,
+          { name: "HMAC", hash: "SHA-256" },
+          false,
+          ["sign"]
+        );
+        
+        const signatureBuffer = await crypto.subtle.sign("HMAC", key, messageData);
+        const signatureArray = Array.from(new Uint8Array(signatureBuffer));
+        const signature = signatureArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+        // Create webhook delivery record
+        const { data: delivery, error: deliveryError } = await supabaseClient
+          .from("webhook_deliveries")
+          .insert({
+            webhook_id: webhook.id,
             event,
-            data,
-            timestamp,
-          };
+            payload,
+            status: "pending",
+          })
+          .select()
+          .single();
 
-          // Create HMAC signature using Web Crypto API
-          const encoder = new TextEncoder();
-          const keyData = encoder.encode(webhook.secret);
-          const messageData = encoder.encode(JSON.stringify(payload));
-          
-          const key = await crypto.subtle.importKey(
-            "raw",
-            keyData,
-            { name: "HMAC", hash: "SHA-256" },
-            false,
-            ["sign"]
-          );
-          
-          const signatureBuffer = await crypto.subtle.sign("HMAC", key, messageData);
-          const signatureArray = Array.from(new Uint8Array(signatureBuffer));
-          const signature = signatureArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-          // Send webhook
-          const response = await fetch(webhook.url, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Webhook-Signature": signature,
-              "X-Webhook-Event": event,
-            },
-            body: JSON.stringify(payload),
-          });
-
-          // Update webhook stats
-          await supabaseClient
-            .from("webhooks")
-            .update({
-              last_triggered_at: new Date().toISOString(),
-              total_triggers: webhook.total_triggers + 1,
-            })
-            .eq("id", webhook.id);
-
-          return {
-            webhookId: webhook.id,
-            success: response.ok,
-            status: response.status,
-          };
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : String(error);
-          logStep("Webhook trigger failed", { webhookId: webhook.id, error: errorMessage });
+        if (deliveryError) {
+          logStep("Failed to create delivery record", { error: deliveryError });
           return {
             webhookId: webhook.id,
             success: false,
-            error: errorMessage,
+            error: deliveryError.message,
           };
         }
+
+        // Attempt delivery with exponential backoff
+        let attemptCount = 0;
+        let lastError = null;
+        const maxAttempts = 5;
+
+        while (attemptCount < maxAttempts) {
+          try {
+            attemptCount++;
+            logStep("Attempting webhook delivery", { webhookId: webhook.id, attempt: attemptCount });
+
+            const response = await fetch(webhook.url, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Webhook-Signature": signature,
+                "X-Webhook-Event": event,
+              },
+              body: JSON.stringify(payload),
+            });
+
+            const responseBody = await response.text();
+
+            // Update delivery record
+            await supabaseClient
+              .from("webhook_deliveries")
+              .update({
+                status: response.ok ? "success" : "failed",
+                response_status: response.status,
+                response_body: responseBody.substring(0, 1000), // Limit response body size
+                attempt_count: attemptCount,
+                last_attempt_at: new Date().toISOString(),
+                completed_at: response.ok ? new Date().toISOString() : null,
+              })
+              .eq("id", delivery.id);
+
+            if (response.ok) {
+              // Update webhook stats
+              await supabaseClient
+                .from("webhooks")
+                .update({
+                  last_triggered_at: new Date().toISOString(),
+                  total_triggers: webhook.total_triggers + 1,
+                })
+                .eq("id", webhook.id);
+
+              return {
+                webhookId: webhook.id,
+                success: true,
+                status: response.status,
+                attempts: attemptCount,
+              };
+            }
+
+            lastError = `HTTP ${response.status}: ${responseBody}`;
+
+            // If not successful and not the last attempt, wait with exponential backoff
+            if (attemptCount < maxAttempts) {
+              const backoffMs = Math.min(1000 * Math.pow(2, attemptCount - 1), 30000); // Max 30 seconds
+              logStep("Retrying after backoff", { webhookId: webhook.id, backoffMs });
+              await new Promise(resolve => setTimeout(resolve, backoffMs));
+            }
+
+          } catch (error) {
+            lastError = error instanceof Error ? error.message : String(error);
+            logStep("Webhook delivery attempt failed", { 
+              webhookId: webhook.id, 
+              attempt: attemptCount, 
+              error: lastError 
+            });
+
+            // Update delivery record with error
+            await supabaseClient
+              .from("webhook_deliveries")
+              .update({
+                status: "failed",
+                attempt_count: attemptCount,
+                last_attempt_at: new Date().toISOString(),
+                response_body: lastError,
+              })
+              .eq("id", delivery.id);
+
+            // If not the last attempt, wait with exponential backoff
+            if (attemptCount < maxAttempts) {
+              const backoffMs = Math.min(1000 * Math.pow(2, attemptCount - 1), 30000);
+              await new Promise(resolve => setTimeout(resolve, backoffMs));
+            }
+          }
+        }
+
+        // All attempts failed, schedule retry
+        const nextRetryAt = new Date(Date.now() + 60000); // Retry in 1 minute
+        await supabaseClient
+          .from("webhook_deliveries")
+          .update({
+            status: "failed",
+            next_retry_at: nextRetryAt.toISOString(),
+          })
+          .eq("id", delivery.id);
+
+        return {
+          webhookId: webhook.id,
+          success: false,
+          error: lastError || "Unknown error",
+          attempts: attemptCount,
+        };
       })
     );
 
