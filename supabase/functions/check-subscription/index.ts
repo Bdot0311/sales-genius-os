@@ -47,9 +47,30 @@ serve(async (req) => {
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     
     if (customers.data.length === 0) {
-      logStep('No customer found, user has no subscription');
+      logStep('No Stripe customer found');
       
-      // Ensure user has a default subscription record
+      // Check if user has an existing subscription in database
+      const { data: existingSub } = await supabaseClient
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (existingSub && !existingSub.stripe_customer_id) {
+        // User has a manual/local subscription without Stripe, preserve it
+        logStep('Preserving existing local subscription', { plan: existingSub.plan });
+        return new Response(JSON.stringify({ 
+          subscribed: true,
+          plan: existingSub.plan,
+          status: existingSub.status
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        });
+      }
+
+      // No existing subscription or it's tied to Stripe, create default
+      logStep('Creating default growth subscription');
       const { error: upsertError } = await supabaseClient
         .from('subscriptions')
         .upsert({
