@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { AddLeadDialog } from "@/components/dashboard/AddLeadDialog";
+import { OnboardingChecklist } from "@/components/dashboard/OnboardingChecklist";
+import { DashboardTour } from "@/components/dashboard/DashboardTour";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, Users, DollarSign, Calendar, Plus } from "lucide-react";
@@ -9,6 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 
 const Dashboard = () => {
   const { toast } = useToast();
+  const [showChecklist, setShowChecklist] = useState(true);
+  const [showTour, setShowTour] = useState(false);
   const [stats, setStats] = useState({
     totalLeads: 0,
     totalDeals: 0,
@@ -18,6 +22,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     loadStats();
+    checkFirstVisit();
 
     // Set up real-time subscriptions
     const leadsChannel = supabase
@@ -47,6 +52,25 @@ const Dashboard = () => {
       supabase.removeChannel(activitiesChannel);
     };
   }, []);
+
+  const checkFirstVisit = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from("onboarding_progress")
+        .select("completed_tour")
+        .eq("user_id", user.id)
+        .single();
+
+      if (!data || !data.completed_tour) {
+        setShowTour(true);
+      }
+    } catch (error) {
+      console.error("Error checking first visit:", error);
+    }
+  };
 
   const loadStats = async () => {
     try {
@@ -105,6 +129,17 @@ const Dashboard = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        {/* Dashboard Tour */}
+        <DashboardTour isOpen={showTour} onClose={() => setShowTour(false)} />
+
+        {/* Onboarding Checklist */}
+        {showChecklist && (
+          <OnboardingChecklist 
+            onClose={() => setShowChecklist(false)}
+            onStartTour={() => setShowTour(true)}
+          />
+        )}
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>

@@ -205,6 +205,42 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_progress: {
+        Row: {
+          added_first_lead: boolean
+          completed_profile: boolean
+          completed_tour: boolean
+          created_at: string
+          created_first_deal: boolean
+          id: string
+          set_up_integration: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          added_first_lead?: boolean
+          completed_profile?: boolean
+          completed_tour?: boolean
+          created_at?: string
+          created_first_deal?: boolean
+          id?: string
+          set_up_integration?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          added_first_lead?: boolean
+          completed_profile?: boolean
+          completed_tour?: boolean
+          created_at?: string
+          created_first_deal?: boolean
+          id?: string
+          set_up_integration?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           company_name: string | null
