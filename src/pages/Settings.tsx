@@ -3,16 +3,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { useSubscription } from "@/hooks/use-subscription";
 import { useLeadsUsage } from "@/hooks/use-leads-usage";
+import { useSubscriptionSync } from "@/hooks/use-subscription-sync";
 import { STRIPE_PRICE_IDS } from "@/lib/stripe-config";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { CreditCard, TrendingUp, Check } from "lucide-react";
+import { CreditCard, TrendingUp, Check, RefreshCw } from "lucide-react";
+import { useState } from "react";
 
 const Settings = () => {
   const { subscription, loading: subLoading } = useSubscription();
   const { usage, loading: usageLoading } = useLeadsUsage();
+  const { manualSync } = useSubscriptionSync();
+  const [syncing, setSyncing] = useState(false);
 
   const plans = [
     {
@@ -90,6 +94,12 @@ const Settings = () => {
     }
   };
 
+  const handleRefreshSubscription = async () => {
+    setSyncing(true);
+    await manualSync();
+    setSyncing(false);
+  };
+
   if (subLoading || usageLoading) {
     return (
       <DashboardLayout>
@@ -103,9 +113,20 @@ const Settings = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Settings</h1>
-          <p className="text-muted-foreground">Manage your subscription and usage</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Settings</h1>
+            <p className="text-muted-foreground">Manage your subscription and usage</p>
+          </div>
+          <Button
+            variant="outline"
+            onClick={handleRefreshSubscription}
+            disabled={syncing}
+            className="gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+            {syncing ? 'Syncing...' : 'Refresh Subscription'}
+          </Button>
         </div>
 
         {usage && (
