@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { CreditCard, TrendingUp, Check, RefreshCw, User, Save, Loader2 } from "lucide-react";
+import { CreditCard, TrendingUp, Check, RefreshCw, User, Save, Loader2, Palette, Activity, Bell, Key, GitBranch, Code2, Webhook, FileText, RotateCcw, Users, History, FileSearch } from "lucide-react";
 import { APIKeysTab } from "@/components/settings/APIKeysTab";
 import { TeamMembersTab } from "@/components/settings/TeamMembersTab";
 import { WhiteLabelTab } from "@/components/settings/WhiteLabelTab";
@@ -208,28 +208,82 @@ const Settings = () => {
         </div>
 
         <Tabs defaultValue="profile" className="space-y-6">
-          <div className="bg-card border rounded-lg p-2 mb-6">
-            <TabsList className="h-auto flex-wrap justify-center gap-2 bg-transparent p-0">
-              <TabsTrigger value="profile" className="data-[state=active]:bg-muted hover:bg-muted/50">Profile</TabsTrigger>
-              <TabsTrigger value="subscription" className="data-[state=active]:bg-muted hover:bg-muted/50">Plan</TabsTrigger>
-              <TabsTrigger value="usage" className="data-[state=active]:bg-muted hover:bg-muted/50">Usage</TabsTrigger>
+          <div className="bg-card border rounded-lg p-3 mb-6">
+            <div className="space-y-2">
+              {/* First row of tabs */}
+              <TabsList className="h-auto flex-wrap justify-center gap-2 bg-transparent p-0">
+                <TabsTrigger value="profile" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                  <User className="h-4 w-4" />
+                  Profile
+                </TabsTrigger>
+                <TabsTrigger value="subscription" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                  <CreditCard className="h-4 w-4" />
+                  Plan
+                </TabsTrigger>
+                <TabsTrigger value="usage" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                  <TrendingUp className="h-4 w-4" />
+                  Usage
+                </TabsTrigger>
+                {subscription?.plan === 'elite' && (
+                  <>
+                    <TabsTrigger value="white-label" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                      <Palette className="h-4 w-4" />
+                      White Label
+                    </TabsTrigger>
+                    <TabsTrigger value="monitoring" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                      <Activity className="h-4 w-4" />
+                      Monitor
+                    </TabsTrigger>
+                    <TabsTrigger value="alerts" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                      <Bell className="h-4 w-4" />
+                      Alerts
+                    </TabsTrigger>
+                    <TabsTrigger value="api-keys" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                      <Key className="h-4 w-4" />
+                      API Keys
+                    </TabsTrigger>
+                  </>
+                )}
+              </TabsList>
+
+              {/* Second row of tabs (Elite only) */}
               {subscription?.plan === 'elite' && (
-                <>
-                  <TabsTrigger value="white-label" className="data-[state=active]:bg-muted hover:bg-muted/50">White Label</TabsTrigger>
-                  <TabsTrigger value="monitoring" className="data-[state=active]:bg-muted hover:bg-muted/50">Monitor</TabsTrigger>
-                  <TabsTrigger value="alerts" className="data-[state=active]:bg-muted hover:bg-muted/50">Alerts</TabsTrigger>
-                  <TabsTrigger value="api-keys" className="data-[state=active]:bg-muted hover:bg-muted/50">API Keys</TabsTrigger>
-                  <TabsTrigger value="api-versions" className="data-[state=active]:bg-muted hover:bg-muted/50">Versions</TabsTrigger>
-                  <TabsTrigger value="graphql" className="data-[state=active]:bg-muted hover:bg-muted/50">GraphQL</TabsTrigger>
-                  <TabsTrigger value="webhooks" className="data-[state=active]:bg-muted hover:bg-muted/50">Webhooks</TabsTrigger>
-                  <TabsTrigger value="webhook-logs" className="data-[state=active]:bg-muted hover:bg-muted/50">Logs</TabsTrigger>
-                  <TabsTrigger value="webhook-replay" className="data-[state=active]:bg-muted hover:bg-muted/50">Replay</TabsTrigger>
-                  <TabsTrigger value="team" className="data-[state=active]:bg-muted hover:bg-muted/50">Team</TabsTrigger>
-                  <TabsTrigger value="activity" className="data-[state=active]:bg-muted hover:bg-muted/50">Activity</TabsTrigger>
-                  <TabsTrigger value="audit" className="data-[state=active]:bg-muted hover:bg-muted/50">Audit</TabsTrigger>
-                </>
+                <TabsList className="h-auto flex-wrap justify-center gap-2 bg-transparent p-0">
+                  <TabsTrigger value="api-versions" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                    <GitBranch className="h-4 w-4" />
+                    Versions
+                  </TabsTrigger>
+                  <TabsTrigger value="graphql" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                    <Code2 className="h-4 w-4" />
+                    GraphQL
+                  </TabsTrigger>
+                  <TabsTrigger value="webhooks" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                    <Webhook className="h-4 w-4" />
+                    Webhooks
+                  </TabsTrigger>
+                  <TabsTrigger value="webhook-logs" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                    <FileText className="h-4 w-4" />
+                    Logs
+                  </TabsTrigger>
+                  <TabsTrigger value="webhook-replay" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                    <RotateCcw className="h-4 w-4" />
+                    Replay
+                  </TabsTrigger>
+                  <TabsTrigger value="team" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                    <Users className="h-4 w-4" />
+                    Team
+                  </TabsTrigger>
+                  <TabsTrigger value="activity" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                    <History className="h-4 w-4" />
+                    Activity
+                  </TabsTrigger>
+                  <TabsTrigger value="audit" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                    <FileSearch className="h-4 w-4" />
+                    Audit
+                  </TabsTrigger>
+                </TabsList>
               )}
-            </TabsList>
+            </div>
           </div>
 
           <TabsContent value="profile" className="space-y-6">
