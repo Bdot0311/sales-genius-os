@@ -208,25 +208,25 @@ const Settings = () => {
         </div>
 
         <Tabs defaultValue="profile" className="space-y-6">
-          <div className="bg-card border rounded-lg p-1">
-            <TabsList className={`grid w-full ${subscription?.plan === 'elite' ? 'grid-cols-4 lg:grid-cols-7 xl:grid-cols-14' : 'grid-cols-3'}`}>
-              <TabsTrigger value="profile" className="text-xs sm:text-sm">Profile</TabsTrigger>
-              <TabsTrigger value="subscription" className="text-xs sm:text-sm">Plan</TabsTrigger>
-              <TabsTrigger value="usage" className="text-xs sm:text-sm">Usage</TabsTrigger>
+          <div className="bg-card border rounded-lg p-2 mb-6">
+            <TabsList className="h-auto flex-wrap justify-start gap-2 bg-transparent p-0">
+              <TabsTrigger value="profile" className="data-[state=active]:bg-muted hover:bg-muted/50">Profile</TabsTrigger>
+              <TabsTrigger value="subscription" className="data-[state=active]:bg-muted hover:bg-muted/50">Plan</TabsTrigger>
+              <TabsTrigger value="usage" className="data-[state=active]:bg-muted hover:bg-muted/50">Usage</TabsTrigger>
               {subscription?.plan === 'elite' && (
                 <>
-                  <TabsTrigger value="white-label" className="text-xs sm:text-sm">White Label</TabsTrigger>
-                  <TabsTrigger value="monitoring" className="text-xs sm:text-sm">Monitor</TabsTrigger>
-                  <TabsTrigger value="alerts" className="text-xs sm:text-sm">Alerts</TabsTrigger>
-                  <TabsTrigger value="api-keys" className="text-xs sm:text-sm">API Keys</TabsTrigger>
-                  <TabsTrigger value="api-versions" className="text-xs sm:text-sm">Versions</TabsTrigger>
-                  <TabsTrigger value="graphql" className="text-xs sm:text-sm">GraphQL</TabsTrigger>
-                  <TabsTrigger value="webhooks" className="text-xs sm:text-sm">Webhooks</TabsTrigger>
-                  <TabsTrigger value="webhook-logs" className="text-xs sm:text-sm">Logs</TabsTrigger>
-                  <TabsTrigger value="webhook-replay" className="text-xs sm:text-sm">Replay</TabsTrigger>
-                  <TabsTrigger value="team" className="text-xs sm:text-sm">Team</TabsTrigger>
-                  <TabsTrigger value="activity" className="text-xs sm:text-sm">Activity</TabsTrigger>
-                  <TabsTrigger value="audit" className="text-xs sm:text-sm">Audit</TabsTrigger>
+                  <TabsTrigger value="white-label" className="data-[state=active]:bg-muted hover:bg-muted/50">White Label</TabsTrigger>
+                  <TabsTrigger value="monitoring" className="data-[state=active]:bg-muted hover:bg-muted/50">Monitor</TabsTrigger>
+                  <TabsTrigger value="alerts" className="data-[state=active]:bg-muted hover:bg-muted/50">Alerts</TabsTrigger>
+                  <TabsTrigger value="api-keys" className="data-[state=active]:bg-muted hover:bg-muted/50">API Keys</TabsTrigger>
+                  <TabsTrigger value="api-versions" className="data-[state=active]:bg-muted hover:bg-muted/50">Versions</TabsTrigger>
+                  <TabsTrigger value="graphql" className="data-[state=active]:bg-muted hover:bg-muted/50">GraphQL</TabsTrigger>
+                  <TabsTrigger value="webhooks" className="data-[state=active]:bg-muted hover:bg-muted/50">Webhooks</TabsTrigger>
+                  <TabsTrigger value="webhook-logs" className="data-[state=active]:bg-muted hover:bg-muted/50">Logs</TabsTrigger>
+                  <TabsTrigger value="webhook-replay" className="data-[state=active]:bg-muted hover:bg-muted/50">Replay</TabsTrigger>
+                  <TabsTrigger value="team" className="data-[state=active]:bg-muted hover:bg-muted/50">Team</TabsTrigger>
+                  <TabsTrigger value="activity" className="data-[state=active]:bg-muted hover:bg-muted/50">Activity</TabsTrigger>
+                  <TabsTrigger value="audit" className="data-[state=active]:bg-muted hover:bg-muted/50">Audit</TabsTrigger>
                 </>
               )}
             </TabsList>
