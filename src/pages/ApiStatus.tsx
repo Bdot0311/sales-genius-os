@@ -173,7 +173,7 @@ const ApiStatus = () => {
             <Button 
               variant="outline" 
               onClick={() => navigate(-1)}
-              className="gap-2 hover:bg-primary hover:text-primary-foreground"
+              className="gap-2"
             >
               <ArrowLeft className="w-4 h-4" />
               Back
@@ -187,7 +187,7 @@ const ApiStatus = () => {
                 Real-time system status and incident history
               </p>
             </div>
-            <Button variant="outline" asChild className="shrink-0 w-fit hover:bg-primary hover:text-primary-foreground">
+            <Button variant="outline" asChild className="shrink-0 w-fit">
               <a href="/api-docs" className="gap-2">
                 <ExternalLink className="w-4 h-4" />
                 API Docs
