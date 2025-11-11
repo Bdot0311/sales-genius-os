@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { CreditCard, TrendingUp, Check, RefreshCw, User, Save, Loader2, Palette, Activity, Bell, Key, GitBranch, Code2, Webhook, FileText, RotateCcw, Users, History, FileSearch } from "lucide-react";
+import { CreditCard, TrendingUp, Check, RefreshCw, User, Save, Loader2, Palette, Activity, Bell, Key, GitBranch, Code2, Webhook, FileText, RotateCcw, Users, History, FileSearch, Globe } from "lucide-react";
 import { APIKeysTab } from "@/components/settings/APIKeysTab";
 import { TeamMembersTab } from "@/components/settings/TeamMembersTab";
 import { WhiteLabelTab } from "@/components/settings/WhiteLabelTab";
@@ -230,6 +230,10 @@ const Settings = () => {
                     <TabsTrigger value="white-label" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
                       <Palette className="h-4 w-4" />
                       White Label
+                    </TabsTrigger>
+                    <TabsTrigger value="custom-domain" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                      <Globe className="h-4 w-4" />
+                      Domain
                     </TabsTrigger>
                     <TabsTrigger value="monitoring" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
                       <Activity className="h-4 w-4" />
@@ -487,6 +491,10 @@ const Settings = () => {
             <>
               <TabsContent value="white-label">
                 <WhiteLabelTab />
+              </TabsContent>
+
+              <TabsContent value="custom-domain">
+                <CustomDomainTab />
               </TabsContent>
 
               <TabsContent value="monitoring">
