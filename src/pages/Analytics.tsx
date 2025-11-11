@@ -18,28 +18,6 @@ const Analytics = () => {
   const [dealsByStage, setDealsByStage] = useState<any[]>([]);
   const [leadsOverTime, setLeadsOverTime] = useState<any[]>([]);
 
-  if (subscriptionLoading) {
-    return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-12 h-12 text-muted-foreground animate-spin" />
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  if (!subscription?.hasAnalytics) {
-    return (
-      <DashboardLayout>
-        <UpgradePrompt feature="Advanced Analytics" requiredPlan="pro" />
-      </DashboardLayout>
-    );
-  }
-
-  useEffect(() => {
-    loadAnalytics();
-  }, []);
-
   const loadAnalytics = async () => {
     const { data: leads } = await supabase.from("leads").select("*");
     const { data: deals } = await supabase.from("deals").select("*");
@@ -73,6 +51,30 @@ const Analytics = () => {
       setLeadsOverTime(timeData);
     }
   };
+
+  useEffect(() => {
+    if (subscription?.hasAnalytics) {
+      loadAnalytics();
+    }
+  }, [subscription?.hasAnalytics]);
+
+  if (subscriptionLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-12 h-12 text-muted-foreground animate-spin" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!subscription?.hasAnalytics) {
+    return (
+      <DashboardLayout>
+        <UpgradePrompt feature="Advanced Analytics" requiredPlan="pro" />
+      </DashboardLayout>
+    );
+  }
 
   const COLORS = ["hsl(var(--primary))", "hsl(var(--secondary))", "hsl(var(--accent))", "#8884d8", "#82ca9d"];
 
