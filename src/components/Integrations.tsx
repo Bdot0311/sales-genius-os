@@ -125,7 +125,7 @@ export const Integrations = () => {
           <p className="text-muted-foreground mb-4">
             Don't see your tool? We're adding new integrations every week.
           </p>
-          <Button variant="hero" onClick={() => navigate('/auth')}>
+          <Button variant="hero" onClick={() => navigate('/request-integration')}>
             Request an Integration
           </Button>
         </div>
