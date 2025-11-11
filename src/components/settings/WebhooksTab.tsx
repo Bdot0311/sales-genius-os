@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Webhook, Plus, Trash2, Loader2, Copy, Activity } from "lucide-react";
+import { Webhook, Plus, Trash2, Loader2, Copy, Activity, Play } from "lucide-react";
+import { WebhookTestDialog } from "./WebhookTestDialog";
 import {
   Dialog,
   DialogContent,
@@ -55,6 +56,7 @@ export const WebhooksTab = () => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [creating, setCreating] = useState(false);
   const [deleteWebhookId, setDeleteWebhookId] = useState<string | null>(null);
+  const [testWebhook, setTestWebhook] = useState<WebhookType | null>(null);
   const [newWebhook, setNewWebhook] = useState({
     name: "",
     url: "",
@@ -361,6 +363,15 @@ export const WebhooksTab = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Webhook Test Dialog */}
+      {testWebhook && (
+        <WebhookTestDialog
+          webhook={testWebhook}
+          open={!!testWebhook}
+          onOpenChange={(open) => !open && setTestWebhook(null)}
+        />
+      )}
     </div>
   );
 };

@@ -21,6 +21,7 @@ import { WebhooksTab } from "@/components/settings/WebhooksTab";
 import { TeamActivityTab } from "@/components/settings/TeamActivityTab";
 import { CustomDomainTab } from "@/components/settings/CustomDomainTab";
 import { AuditLogsTab } from "@/components/settings/AuditLogsTab";
+import { MonitoringDashboard } from "@/components/settings/MonitoringDashboard";
 
 const Settings = () => {
   const { subscription, loading: subLoading } = useSubscription();
@@ -202,12 +203,13 @@ const Settings = () => {
         </div>
 
         <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className={`grid w-full ${subscription?.plan === 'elite' ? 'grid-cols-10' : 'grid-cols-3'}`}>
+          <TabsList className={`grid w-full ${subscription?.plan === 'elite' ? 'grid-cols-11' : 'grid-cols-3'}`}>
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="subscription">Subscription</TabsTrigger>
             <TabsTrigger value="usage">Usage</TabsTrigger>
             {subscription?.plan === 'elite' && (
               <>
+                <TabsTrigger value="monitoring">Monitoring</TabsTrigger>
                 <TabsTrigger value="api-keys">API Keys</TabsTrigger>
                 <TabsTrigger value="team">Team</TabsTrigger>
                 <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
@@ -403,6 +405,10 @@ const Settings = () => {
 
           {subscription?.plan === 'elite' && (
             <>
+              <TabsContent value="monitoring">
+                <MonitoringDashboard />
+              </TabsContent>
+
               <TabsContent value="api-keys">
                 <APIKeysTab />
               </TabsContent>
