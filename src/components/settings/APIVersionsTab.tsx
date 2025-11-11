@@ -41,12 +41,12 @@ export const APIVersionsTab = () => {
   const loadVersions = async () => {
     try {
       const { data, error } = await supabase
-        .from('api_versions')
+        .from('api_versions' as any)
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setVersions(data || []);
+      setVersions((data as any) || []);
     } catch (error: any) {
       toast({
         title: "Error loading API versions",
@@ -60,13 +60,13 @@ export const APIVersionsTab = () => {
 
   const handleCreateVersion = async () => {
     try {
-      const { error } = await supabase.from('api_versions').insert({
+      const { error } = await supabase.from('api_versions' as any).insert({
         version: newVersion.version,
         status: newVersion.status,
         changelog: newVersion.changelog || null,
         deprecation_date: newVersion.deprecation_date || null,
         sunset_date: newVersion.sunset_date || null,
-      });
+      } as any);
 
       if (error) throw error;
 
@@ -90,8 +90,8 @@ export const APIVersionsTab = () => {
   const handleUpdateStatus = async (id: string, status: string) => {
     try {
       const { error } = await supabase
-        .from('api_versions')
-        .update({ status })
+        .from('api_versions' as any)
+        .update({ status } as any)
         .eq('id', id);
 
       if (error) throw error;

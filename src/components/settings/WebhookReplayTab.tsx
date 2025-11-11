@@ -36,13 +36,13 @@ export const WebhookReplayTab = () => {
   const loadDeliveries = async () => {
     try {
       const { data, error } = await supabase
-        .from('webhook_deliveries')
+        .from('webhook_deliveries' as any)
         .select('*, webhooks(name)')
         .order('created_at', { ascending: false })
         .limit(100);
 
       if (error) throw error;
-      setDeliveries(data || []);
+      setDeliveries((data as any) || []);
     } catch (error: any) {
       toast({
         title: "Error loading deliveries",
