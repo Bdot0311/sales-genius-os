@@ -311,8 +311,8 @@ end`,
       <Navbar />
       <div className="flex-1 container mx-auto px-4 py-8 max-w-6xl">
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
               <Button 
                 variant="ghost" 
                 onClick={() => navigate(-1)}
@@ -326,7 +326,7 @@ end`,
                 Complete reference with interactive examples
               </p>
             </div>
-            <Button variant="outline" asChild className="mt-4">
+            <Button variant="outline" asChild className="mt-1">
               <a href="/api-status" className="gap-2">
                 <ExternalLink className="w-4 h-4" />
                 API Status
