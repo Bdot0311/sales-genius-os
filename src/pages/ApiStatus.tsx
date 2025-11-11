@@ -184,7 +184,7 @@ const ApiStatus = () => {
                 Real-time system status and incident history
               </p>
             </div>
-            <Button variant="outline" asChild>
+            <Button variant="outline" asChild className="mt-4">
               <a href="/api-docs" className="gap-2">
                 <ExternalLink className="w-4 h-4" />
                 API Docs

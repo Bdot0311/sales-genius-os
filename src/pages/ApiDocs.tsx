@@ -326,7 +326,7 @@ end`,
                 Complete reference with interactive examples
               </p>
             </div>
-            <Button variant="outline" asChild>
+            <Button variant="outline" asChild className="mt-4">
               <a href="/api-status" className="gap-2">
                 <ExternalLink className="w-4 h-4" />
                 API Status
@@ -559,7 +559,7 @@ end`,
               Check our <Button variant="link" className="p-0 h-auto" asChild><a href="/api-status">API Status Page</a></Button> for real-time system status
             </p>
             <p className="text-sm text-muted-foreground">
-              Contact support at <a href="mailto:api@salesos.com" className="text-primary hover:underline">api@salesos.com</a>
+              Contact support at <a href="mailto:support@alephwave.io" className="text-primary hover:underline">support@alephwave.io</a>
             </p>
           </CardContent>
         </Card>
