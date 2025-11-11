@@ -1,287 +1,556 @@
-import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
+import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { Copy, Check, ExternalLink } from "lucide-react";
 
 const ApiDocs = () => {
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+  const copyToClipboard = (code: string, id: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCode(id);
+    setTimeout(() => setCopiedCode(null), 2000);
+  };
+
+  const endpoints = [
+    {
+      name: "Get Leads",
+      method: "GET",
+      path: "/api/leads",
+      description: "Retrieve all leads with optional filtering",
+      params: [
+        { name: "industry", type: "string", description: "Filter by industry" },
+        { name: "limit", type: "number", description: "Number of results (default: 50)" },
+        { name: "offset", type: "number", description: "Pagination offset" },
+      ],
+      response: {
+        status: 200,
+        body: {
+          data: [
+            {
+              id: "uuid",
+              contact_name: "John Doe",
+              company_name: "Acme Inc",
+              contact_email: "john@acme.com",
+              industry: "Technology",
+              icp_score: 85,
+            },
+          ],
+          count: 1,
+        },
+      },
+    },
+    {
+      name: "Create Lead",
+      method: "POST",
+      path: "/api/leads",
+      description: "Create a new lead",
+      body: {
+        contact_name: "John Doe",
+        company_name: "Acme Inc",
+        contact_email: "john@acme.com",
+        industry: "Technology",
+      },
+      response: {
+        status: 201,
+        body: {
+          id: "uuid",
+          contact_name: "John Doe",
+          company_name: "Acme Inc",
+          created_at: "2025-01-11T10:30:00Z",
+        },
+      },
+    },
+    {
+      name: "Get Deals",
+      method: "GET",
+      path: "/api/deals",
+      description: "Retrieve deals with filtering options",
+      params: [
+        { name: "stage", type: "string", description: "Filter by deal stage" },
+        { name: "minValue", type: "number", description: "Minimum deal value" },
+      ],
+      response: {
+        status: 200,
+        body: {
+          data: [
+            {
+              id: "uuid",
+              title: "Enterprise Deal",
+              value: 50000,
+              stage: "negotiation",
+              probability: 75,
+            },
+          ],
+        },
+      },
+    },
+  ];
+
+  const generateCodeSnippet = (endpoint: any, language: string) => {
+    const baseUrl = "https://api.salesos.com";
+    
+    switch (language) {
+      case "javascript":
+        return endpoint.method === "GET"
+          ? `// GET Request
+const response = await fetch('${baseUrl}${endpoint.path}', {
+  method: 'GET',
+  headers: {
+    'X-API-Key': 'your-api-key',
+    'Content-Type': 'application/json',
+  },
+});
+
+const data = await response.json();
+console.log(data);`
+          : `// POST Request
+const response = await fetch('${baseUrl}${endpoint.path}', {
+  method: 'POST',
+  headers: {
+    'X-API-Key': 'your-api-key',
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(${JSON.stringify(endpoint.body, null, 2)}),
+});
+
+const data = await response.json();
+console.log(data);`;
+
+      case "python":
+        return endpoint.method === "GET"
+          ? `import requests
+
+# GET Request
+headers = {
+    'X-API-Key': 'your-api-key',
+    'Content-Type': 'application/json',
+}
+
+response = requests.get('${baseUrl}${endpoint.path}', headers=headers)
+data = response.json()
+print(data)`
+          : `import requests
+
+# POST Request
+headers = {
+    'X-API-Key': 'your-api-key',
+    'Content-Type': 'application/json',
+}
+
+payload = ${JSON.stringify(endpoint.body, null, 2)}
+
+response = requests.post('${baseUrl}${endpoint.path}', 
+                        headers=headers, 
+                        json=payload)
+data = response.json()
+print(data)`;
+
+      case "curl":
+        return endpoint.method === "GET"
+          ? `curl -X GET '${baseUrl}${endpoint.path}' \\
+  -H 'X-API-Key: your-api-key' \\
+  -H 'Content-Type: application/json'`
+          : `curl -X POST '${baseUrl}${endpoint.path}' \\
+  -H 'X-API-Key: your-api-key' \\
+  -H 'Content-Type: application/json' \\
+  -d '${JSON.stringify(endpoint.body)}'`;
+
+      case "php":
+        return endpoint.method === "GET"
+          ? `<?php
+// GET Request
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL, '${baseUrl}${endpoint.path}');
+curl_setopt($ch, CURLOPT_HTTPHEADER, [
+    'X-API-Key: your-api-key',
+    'Content-Type: application/json',
+]);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+$response = curl_exec($ch);
+curl_close($ch);
+
+$data = json_decode($response, true);
+print_r($data);`
+          : `<?php
+// POST Request
+$data = ${JSON.stringify(endpoint.body, null, 2)};
+
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL, '${baseUrl}${endpoint.path}');
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+curl_setopt($ch, CURLOPT_HTTPHEADER, [
+    'X-API-Key: your-api-key',
+    'Content-Type: application/json',
+]);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+$response = curl_exec($ch);
+curl_close($ch);
+
+$result = json_decode($response, true);
+print_r($result);`;
+
+      default:
+        return "";
+    }
+  };
+
+  const webhookVerificationCode = {
+    javascript: `const crypto = require('crypto');
+
+function verifyWebhookSignature(payload, signature, secret) {
+  const hmac = crypto.createHmac('sha256', secret);
+  const calculatedSignature = hmac.update(JSON.stringify(payload)).digest('hex');
+  
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(calculatedSignature)
+  );
+}
+
+// Express.js example
+app.post('/webhooks', (req, res) => {
+  const signature = req.headers['x-webhook-signature'];
+  const secret = process.env.WEBHOOK_SECRET;
+  
+  if (!verifyWebhookSignature(req.body, signature, secret)) {
+    return res.status(401).send('Invalid signature');
+  }
+  
+  // Process webhook
+  console.log('Webhook verified:', req.body);
+  res.status(200).send('OK');
+});`,
+    python: `import hmac
+import hashlib
+import json
+
+def verify_webhook_signature(payload, signature, secret):
+    calculated_signature = hmac.new(
+        secret.encode(),
+        json.dumps(payload).encode(),
+        hashlib.sha256
+    ).hexdigest()
+    
+    return hmac.compare_digest(signature, calculated_signature)
+
+# Flask example
+@app.route('/webhooks', methods=['POST'])
+def handle_webhook():
+    signature = request.headers.get('X-Webhook-Signature')
+    secret = os.environ.get('WEBHOOK_SECRET')
+    
+    if not verify_webhook_signature(request.json, signature, secret):
+        return 'Invalid signature', 401
+    
+    # Process webhook
+    print('Webhook verified:', request.json)
+    return 'OK', 200`,
+    php: `<?php
+function verifyWebhookSignature($payload, $signature, $secret) {
+    $calculatedSignature = hash_hmac('sha256', json_encode($payload), $secret);
+    return hash_equals($signature, $calculatedSignature);
+}
+
+// Usage
+$signature = $_SERVER['HTTP_X_WEBHOOK_SIGNATURE'];
+$secret = getenv('WEBHOOK_SECRET');
+$payload = json_decode(file_get_contents('php://input'), true);
+
+if (!verifyWebhookSignature($payload, $signature, $secret)) {
+    http_response_code(401);
+    die('Invalid signature');
+}
+
+// Process webhook
+error_log('Webhook verified: ' . json_encode($payload));
+http_response_code(200);
+echo 'OK';`,
+    ruby: `require 'openssl'
+require 'json'
+
+def verify_webhook_signature(payload, signature, secret)
+  calculated_signature = OpenSSL::HMAC.hexdigest(
+    'SHA256',
+    secret,
+    payload.to_json
+  )
+  
+  Rack::Utils.secure_compare(signature, calculated_signature)
+end
+
+# Sinatra example
+post '/webhooks' do
+  signature = request.env['HTTP_X_WEBHOOK_SIGNATURE']
+  secret = ENV['WEBHOOK_SECRET']
+  payload = JSON.parse(request.body.read)
+  
+  unless verify_webhook_signature(payload, signature, secret)
+    halt 401, 'Invalid signature'
+  end
+  
+  # Process webhook
+  puts "Webhook verified: #{payload}"
+  status 200
+  'OK'
+end`,
+  };
+
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <Navbar />
-      
-      <main className="container mx-auto px-6 pt-24 pb-16">
-        <div className="max-w-5xl mx-auto">
-          <div className="mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">API Documentation</h1>
-            <p className="text-xl text-muted-foreground">
-              Integrate SalesOS into your existing workflows with our comprehensive API
+    <DashboardLayout>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">API Documentation</h1>
+            <p className="text-muted-foreground">
+              Complete reference with interactive examples
             </p>
           </div>
+          <Button variant="outline" asChild>
+            <a href="/api-status" className="gap-2">
+              <ExternalLink className="w-4 h-4" />
+              API Status
+            </a>
+          </Button>
+        </div>
 
-          <div className="mb-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>Getting Started</CardTitle>
-                <CardDescription>
-                  Base URL: <code className="bg-muted px-2 py-1 rounded">https://api.salesos.com/v1</code>
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Getting Started</CardTitle>
+            <CardDescription>Authentication and base URL information</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <h3 className="font-semibold mb-2">Base URL</h3>
+              <code className="bg-muted px-3 py-1 rounded text-sm">
+                https://api.salesos.com
+              </code>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-2">Authentication</h3>
+              <p className="text-sm text-muted-foreground mb-2">
+                Include your API key in the request header:
+              </p>
+              <code className="bg-muted px-3 py-1 rounded text-sm block">
+                X-API-Key: your-api-key
+              </code>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-2">Rate Limits</h3>
+              <p className="text-sm text-muted-foreground">
+                Rate limits vary by plan. Check response headers for your current usage:
+              </p>
+              <ul className="text-sm space-y-1 mt-2">
+                <li><code className="text-xs bg-muted px-2 py-0.5 rounded">X-RateLimit-Remaining</code> - Requests remaining</li>
+                <li><code className="text-xs bg-muted px-2 py-0.5 rounded">X-RateLimit-Reset</code> - Reset timestamp</li>
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+
+        {endpoints.map((endpoint) => (
+          <Card key={endpoint.path}>
+            <CardHeader>
+              <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-semibold mb-2">Authentication</h3>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    All API requests require authentication using an API key in the Authorization header:
-                  </p>
-                  <pre className="bg-muted p-4 rounded-lg overflow-x-auto">
-                    <code>Authorization: Bearer YOUR_API_KEY</code>
+                  <div className="flex items-center gap-3 mb-2">
+                    <Badge variant={endpoint.method === "GET" ? "default" : "secondary"}>
+                      {endpoint.method}
+                    </Badge>
+                    <code className="text-sm">{endpoint.path}</code>
+                  </div>
+                  <CardTitle className="text-xl">{endpoint.name}</CardTitle>
+                  <CardDescription>{endpoint.description}</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {endpoint.params && (
+                <div>
+                  <h3 className="font-semibold mb-3">Query Parameters</h3>
+                  <div className="border rounded-lg overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted">
+                        <tr>
+                          <th className="text-left p-3">Name</th>
+                          <th className="text-left p-3">Type</th>
+                          <th className="text-left p-3">Description</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {endpoint.params.map((param) => (
+                          <tr key={param.name} className="border-t">
+                            <td className="p-3 font-mono text-xs">{param.name}</td>
+                            <td className="p-3">
+                              <Badge variant="outline" className="text-xs">
+                                {param.type}
+                              </Badge>
+                            </td>
+                            <td className="p-3 text-muted-foreground">{param.description}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {endpoint.body && (
+                <div>
+                  <h3 className="font-semibold mb-3">Request Body</h3>
+                  <pre className="bg-muted p-4 rounded-lg text-xs overflow-auto">
+                    {JSON.stringify(endpoint.body, null, 2)}
                   </pre>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+              )}
 
-          <Tabs defaultValue="leads" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="leads">Leads</TabsTrigger>
-              <TabsTrigger value="deals">Deals</TabsTrigger>
-              <TabsTrigger value="outreach">Outreach</TabsTrigger>
-              <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            </TabsList>
+              <div>
+                <h3 className="font-semibold mb-3">Response</h3>
+                <div className="space-y-2">
+                  <Badge variant="default">Status: {endpoint.response.status}</Badge>
+                  <pre className="bg-muted p-4 rounded-lg text-xs overflow-auto">
+                    {JSON.stringify(endpoint.response.body, null, 2)}
+                  </pre>
+                </div>
+              </div>
 
-            <TabsContent value="leads" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle>Get All Leads</CardTitle>
-                    <Badge variant="outline">GET</Badge>
-                  </div>
-                  <CardDescription>/leads</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <h4 className="font-semibold mb-2">Request</h4>
-                    <pre className="bg-muted p-4 rounded-lg overflow-x-auto">
-                      <code>{`GET /leads?page=1&limit=50`}</code>
-                    </pre>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold mb-2">Response</h4>
-                    <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
-                      <code>{`{
-  "data": [
-    {
-      "id": "lead_123",
-      "name": "John Doe",
-      "email": "john@example.com",
-      "company": "Acme Corp",
-      "score": 85,
-      "created_at": "2025-01-15T10:30:00Z"
-    }
-  ],
-  "pagination": {
-    "page": 1,
-    "limit": 50,
-    "total": 150
-  }
-}`}</code>
-                    </pre>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle>Create Lead</CardTitle>
-                    <Badge>POST</Badge>
-                  </div>
-                  <CardDescription>/leads</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <h4 className="font-semibold mb-2">Request Body</h4>
-                    <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
-                      <code>{`{
-  "name": "Jane Smith",
-  "email": "jane@company.com",
-  "company": "Tech Solutions",
-  "phone": "+1234567890",
-  "source": "website"
-}`}</code>
-                    </pre>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold mb-2">Response</h4>
-                    <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
-                      <code>{`{
-  "id": "lead_456",
-  "name": "Jane Smith",
-  "email": "jane@company.com",
-  "score": 0,
-  "created_at": "2025-01-21T14:20:00Z"
-}`}</code>
-                    </pre>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="deals" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle>Get All Deals</CardTitle>
-                    <Badge variant="outline">GET</Badge>
-                  </div>
-                  <CardDescription>/deals</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <h4 className="font-semibold mb-2">Request</h4>
-                    <pre className="bg-muted p-4 rounded-lg overflow-x-auto">
-                      <code>{`GET /deals?status=active`}</code>
-                    </pre>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold mb-2">Response</h4>
-                    <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
-                      <code>{`{
-  "data": [
-    {
-      "id": "deal_789",
-      "title": "Enterprise Contract",
-      "value": 50000,
-      "stage": "negotiation",
-      "probability": 75,
-      "close_date": "2025-02-28"
-    }
-  ]
-}`}</code>
-                    </pre>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle>Update Deal Stage</CardTitle>
-                    <Badge className="bg-orange-500">PATCH</Badge>
-                  </div>
-                  <CardDescription>/deals/:id</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <h4 className="font-semibold mb-2">Request Body</h4>
-                    <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
-                      <code>{`{
-  "stage": "closed_won",
-  "value": 52000
-}`}</code>
-                    </pre>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="outreach" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle>Generate AI Email</CardTitle>
-                    <Badge>POST</Badge>
-                  </div>
-                  <CardDescription>/outreach/generate</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <h4 className="font-semibold mb-2">Request Body</h4>
-                    <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
-                      <code>{`{
-  "lead_id": "lead_123",
-  "tone": "professional",
-  "goal": "book_meeting"
-}`}</code>
-                    </pre>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold mb-2">Response</h4>
-                    <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
-                      <code>{`{
-  "subject": "Quick chat about scaling your sales?",
-  "body": "Hi John,\\n\\nI noticed your recent...",
-  "generated_at": "2025-01-21T15:00:00Z"
-}`}</code>
-                    </pre>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="analytics" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle>Get Sales Metrics</CardTitle>
-                    <Badge variant="outline">GET</Badge>
-                  </div>
-                  <CardDescription>/analytics/metrics</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <h4 className="font-semibold mb-2">Request</h4>
-                    <pre className="bg-muted p-4 rounded-lg overflow-x-auto">
-                      <code>{`GET /analytics/metrics?period=30d`}</code>
-                    </pre>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold mb-2">Response</h4>
-                    <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
-                      <code>{`{
-  "total_revenue": 250000,
-  "deals_closed": 15,
-  "win_rate": 0.68,
-  "avg_deal_size": 16666,
-  "period": "30d"
-}`}</code>
-                    </pre>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-
-          <Card className="mt-8">
-            <CardHeader>
-              <CardTitle>Rate Limits</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>• Standard: 100 requests per minute</li>
-                <li>• Pro: 500 requests per minute</li>
-                <li>• Enterprise: Custom limits available</li>
-              </ul>
+              <div>
+                <h3 className="font-semibold mb-3">Code Examples</h3>
+                <Tabs defaultValue="javascript">
+                  <TabsList className="grid w-full grid-cols-4">
+                    <TabsTrigger value="javascript">JavaScript</TabsTrigger>
+                    <TabsTrigger value="python">Python</TabsTrigger>
+                    <TabsTrigger value="curl">cURL</TabsTrigger>
+                    <TabsTrigger value="php">PHP</TabsTrigger>
+                  </TabsList>
+                  {["javascript", "python", "curl", "php"].map((lang) => (
+                    <TabsContent key={lang} value={lang} className="relative">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="absolute top-2 right-2 z-10"
+                        onClick={() =>
+                          copyToClipboard(
+                            generateCodeSnippet(endpoint, lang),
+                            `${endpoint.path}-${lang}`
+                          )
+                        }
+                      >
+                        {copiedCode === `${endpoint.path}-${lang}` ? (
+                          <Check className="w-4 h-4" />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
+                      </Button>
+                      <pre className="bg-muted p-4 rounded-lg text-xs overflow-auto">
+                        {generateCodeSnippet(endpoint, lang)}
+                      </pre>
+                    </TabsContent>
+                  ))}
+                </Tabs>
+              </div>
             </CardContent>
           </Card>
+        ))}
 
-          <Card className="mt-4">
-            <CardHeader>
-              <CardTitle>Support</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Need help? Contact our support team at{" "}
-                <a href="mailto:support@alephwave.io" className="text-primary hover:underline">
-                  support@alephwave.io
-                </a>
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </main>
+        <Card>
+          <CardHeader>
+            <CardTitle>Webhook Signature Verification</CardTitle>
+            <CardDescription>
+              Securely verify webhook deliveries from SalesOS
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Every webhook delivery includes a signature in the <code className="bg-muted px-2 py-0.5 rounded text-xs">X-Webhook-Signature</code> header.
+              Use your webhook secret to verify the signature using HMAC-SHA256.
+            </p>
 
-      <Footer />
-    </div>
+            <Tabs defaultValue="javascript">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="javascript">JavaScript</TabsTrigger>
+                <TabsTrigger value="python">Python</TabsTrigger>
+                <TabsTrigger value="php">PHP</TabsTrigger>
+                <TabsTrigger value="ruby">Ruby</TabsTrigger>
+              </TabsList>
+
+              {Object.entries(webhookVerificationCode).map(([lang, code]) => (
+                <TabsContent key={lang} value={lang}>
+                  <div className="relative">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="absolute top-2 right-2 z-10"
+                      onClick={() => copyToClipboard(code, `webhook-${lang}`)}
+                    >
+                      {copiedCode === `webhook-${lang}` ? (
+                        <Check className="w-4 h-4" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </Button>
+                    <pre className="bg-muted p-4 rounded-lg text-xs overflow-auto">
+                      {code}
+                    </pre>
+                  </div>
+                </TabsContent>
+              ))}
+            </Tabs>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>SDKs & Libraries</CardTitle>
+            <CardDescription>Official client libraries for popular languages</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="border rounded-lg p-4">
+                <h3 className="font-semibold mb-2">Node.js / JavaScript</h3>
+                <code className="text-xs bg-muted px-2 py-1 rounded block mb-2">
+                  npm install @salesos/api-client
+                </code>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <ExternalLink className="w-3 h-3" />
+                  View on GitHub
+                </Button>
+              </div>
+              <div className="border rounded-lg p-4">
+                <h3 className="font-semibold mb-2">Python</h3>
+                <code className="text-xs bg-muted px-2 py-1 rounded block mb-2">
+                  pip install salesos
+                </code>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <ExternalLink className="w-3 h-3" />
+                  View on GitHub
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Need Help?</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Check our <Button variant="link" className="p-0 h-auto" asChild><a href="/api-status">API Status Page</a></Button> for real-time system status
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Contact support at <a href="mailto:api@salesos.com" className="text-primary hover:underline">api@salesos.com</a>
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    </DashboardLayout>
   );
 };
 

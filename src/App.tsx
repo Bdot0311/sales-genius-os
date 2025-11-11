@@ -16,6 +16,7 @@ import Automations from "./pages/Automations";
 import DashboardIntegrations from "./pages/DashboardIntegrations";
 import PricingPage from "./pages/PricingPage";
 import ApiDocs from "./pages/ApiDocs";
+import ApiStatus from "./pages/ApiStatus";
 import Settings from "./pages/Settings";
 import Admin from "./pages/Admin";
 import Privacy from "./pages/Privacy";
@@ -38,6 +39,7 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/api-docs" element={<ApiDocs />} />
+          <Route path="/api-status" element={<ApiStatus />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/security" element={<Security />} />
