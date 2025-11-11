@@ -315,7 +315,7 @@ end`,
             <Button 
               variant="outline" 
               onClick={() => navigate(-1)}
-              className="gap-2"
+              className="gap-2 hover:bg-primary hover:text-primary-foreground"
             >
               <ArrowLeft className="w-4 h-4" />
               Back
@@ -329,7 +329,7 @@ end`,
                 Complete reference with interactive examples
               </p>
             </div>
-            <Button variant="outline" asChild className="shrink-0 w-fit">
+            <Button variant="outline" asChild className="shrink-0 w-fit hover:bg-primary hover:text-primary-foreground">
               <a href="/api-status" className="gap-2">
                 <ExternalLink className="w-4 h-4" />
                 API Status
