@@ -119,6 +119,33 @@ export type Database = {
         }
         Relationships: []
       }
+      api_cache: {
+        Row: {
+          cache_key: string
+          cache_value: Json
+          created_at: string
+          expires_at: string
+          id: string
+          ttl_seconds: number
+        }
+        Insert: {
+          cache_key: string
+          cache_value: Json
+          created_at?: string
+          expires_at: string
+          id?: string
+          ttl_seconds?: number
+        }
+        Update: {
+          cache_key?: string
+          cache_value?: Json
+          created_at?: string
+          expires_at?: string
+          id?: string
+          ttl_seconds?: number
+        }
+        Relationships: []
+      }
       api_key_rotations: {
         Row: {
           id: string
@@ -254,6 +281,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      api_versions: {
+        Row: {
+          changelog: string | null
+          created_at: string
+          deprecation_date: string | null
+          id: string
+          status: string
+          sunset_date: string | null
+          updated_at: string
+          user_id: string
+          version: string
+        }
+        Insert: {
+          changelog?: string | null
+          created_at?: string
+          deprecation_date?: string | null
+          id?: string
+          status?: string
+          sunset_date?: string | null
+          updated_at?: string
+          user_id: string
+          version: string
+        }
+        Update: {
+          changelog?: string | null
+          created_at?: string
+          deprecation_date?: string | null
+          id?: string
+          status?: string
+          sunset_date?: string | null
+          updated_at?: string
+          user_id?: string
+          version?: string
+        }
+        Relationships: []
       }
       audit_logs: {
         Row: {
@@ -496,6 +559,44 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      rate_limit_buckets: {
+        Row: {
+          api_key_id: string
+          created_at: string
+          endpoint: string
+          id: string
+          last_refill_at: string
+          tokens: number
+          updated_at: string
+        }
+        Insert: {
+          api_key_id: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          last_refill_at?: string
+          tokens?: number
+          updated_at?: string
+        }
+        Update: {
+          api_key_id?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          last_refill_at?: string
+          tokens?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rate_limit_buckets_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscriptions: {
         Row: {
@@ -876,6 +977,7 @@ export type Database = {
         Returns: undefined
       }
       check_expiring_api_keys: { Args: never; Returns: undefined }
+      cleanup_expired_cache: { Args: never; Returns: undefined }
       get_user_leads_usage: {
         Args: never
         Returns: {
