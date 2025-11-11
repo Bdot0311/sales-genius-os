@@ -22,6 +22,7 @@ import {
 import { User } from "@supabase/supabase-js";
 import { useSubscription } from "@/hooks/use-subscription";
 import { useAdmin } from "@/hooks/use-admin";
+import { useWhiteLabel } from "@/hooks/use-white-label";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -46,6 +47,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { subscription } = useSubscription();
   const { isAdmin } = useAdmin();
+  const { settings: whiteLabelSettings } = useWhiteLabel();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -98,8 +100,14 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           {/* Logo */}
           <div className="flex items-center justify-between p-6 border-b border-border">
             <div className="flex items-center gap-2">
-              <img src={salesosLogo} alt="SalesOS Logo" className="w-8 h-8 rounded-lg" />
-              <span className="text-xl font-bold">SalesOS</span>
+              {whiteLabelSettings?.logo_url ? (
+                <img src={whiteLabelSettings.logo_url} alt={whiteLabelSettings.company_name || "Logo"} className="h-8" />
+              ) : (
+                <>
+                  <img src={salesosLogo} alt="SalesOS Logo" className="w-8 h-8 rounded-lg" />
+                  <span className="text-xl font-bold">{whiteLabelSettings?.company_name || "SalesOS"}</span>
+                </>
+              )}
             </div>
             <Button
               variant="ghost"

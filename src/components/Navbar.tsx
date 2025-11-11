@@ -3,11 +3,13 @@ import { Menu } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
 import salesosLogo from "@/assets/salesos-logo.png";
+import { useWhiteLabel } from "@/hooks/use-white-label";
 
 export const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { settings: whiteLabelSettings } = useWhiteLabel();
 
   const handleNavigation = (path: string) => {
     if (path.startsWith('#')) {
@@ -31,8 +33,14 @@ export const Navbar = () => {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
       <div className="container mx-auto px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <img src={salesosLogo} alt="SalesOS Logo" className="w-8 h-8 rounded-lg" />
-          <span className="text-xl font-bold">SalesOS</span>
+          {whiteLabelSettings?.logo_url ? (
+            <img src={whiteLabelSettings.logo_url} alt={whiteLabelSettings.company_name || "Logo"} className="h-8" />
+          ) : (
+            <>
+              <img src={salesosLogo} alt="SalesOS Logo" className="w-8 h-8 rounded-lg" />
+              <span className="text-xl font-bold">{whiteLabelSettings?.company_name || "SalesOS"}</span>
+            </>
+          )}
         </div>
 
         <div className="hidden md:flex items-center gap-8">

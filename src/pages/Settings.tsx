@@ -14,6 +14,9 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { CreditCard, TrendingUp, Check, RefreshCw, User, Save, Loader2 } from "lucide-react";
+import { APIKeysTab } from "@/components/settings/APIKeysTab";
+import { TeamMembersTab } from "@/components/settings/TeamMembersTab";
+import { WhiteLabelTab } from "@/components/settings/WhiteLabelTab";
 
 const Settings = () => {
   const { subscription, loading: subLoading } = useSubscription();
@@ -195,10 +198,17 @@ const Settings = () => {
         </div>
 
         <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
+          <TabsList className={`grid w-full ${subscription?.plan === 'elite' ? 'grid-cols-6' : 'grid-cols-3'}`}>
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="subscription">Subscription</TabsTrigger>
             <TabsTrigger value="usage">Usage</TabsTrigger>
+            {subscription?.plan === 'elite' && (
+              <>
+                <TabsTrigger value="api-keys">API Keys</TabsTrigger>
+                <TabsTrigger value="team">Team</TabsTrigger>
+                <TabsTrigger value="white-label">White Label</TabsTrigger>
+              </>
+            )}
           </TabsList>
 
           <TabsContent value="profile" className="space-y-6">
@@ -382,6 +392,22 @@ const Settings = () => {
               </Card>
             )}
           </TabsContent>
+
+          {subscription?.plan === 'elite' && (
+            <>
+              <TabsContent value="api-keys">
+                <APIKeysTab />
+              </TabsContent>
+
+              <TabsContent value="team">
+                <TeamMembersTab />
+              </TabsContent>
+
+              <TabsContent value="white-label">
+                <WhiteLabelTab />
+              </TabsContent>
+            </>
+          )}
         </Tabs>
       </div>
     </DashboardLayout>
