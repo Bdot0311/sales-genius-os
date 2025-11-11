@@ -22,6 +22,7 @@ import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import Security from "./pages/Security";
 import Success from "./pages/Success";
+import Cancel from "./pages/Cancel";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,6 +42,7 @@ const App = () => (
           <Route path="/terms" element={<Terms />} />
           <Route path="/security" element={<Security />} />
           <Route path="/success" element={<Success />} />
+          <Route path="/cancel" element={<Cancel />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard/leads" element={<Leads />} />
           <Route path="/dashboard/coach" element={<Coach />} />
