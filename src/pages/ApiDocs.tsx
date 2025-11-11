@@ -309,16 +309,18 @@ end`,
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
-      <div className="flex-1 container mx-auto px-4 py-8 pt-12 max-w-6xl">
+      <div className="flex-1 container mx-auto px-4 py-12 max-w-6xl">
         <div className="space-y-6">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate(-1)}
-            className="mb-4 gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </Button>
+          <div className="mb-6">
+            <Button 
+              variant="outline" 
+              onClick={() => navigate(-1)}
+              className="gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </Button>
+          </div>
           
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div>
