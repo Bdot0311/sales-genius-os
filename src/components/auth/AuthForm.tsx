@@ -6,6 +6,14 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import salesosLogo from "@/assets/salesos-logo.png";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface AuthFormProps {
   onSuccess?: () => void;
@@ -15,7 +23,39 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
+  const [showResetDialog, setShowResetDialog] = useState(false);
   const { toast } = useToast();
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetLoading(true);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/auth`,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Password reset email sent",
+        description: "Check your email for the password reset link.",
+      });
+
+      setShowResetDialog(false);
+      setResetEmail("");
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setResetLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -147,7 +187,44 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
           </Button>
         </form>
 
-        <div className="mt-6 text-center">
+        <div className="mt-6 text-center space-y-3">
+          <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+            <DialogTrigger asChild>
+              <button className="text-sm text-primary hover:underline">
+                Forgot Password?
+              </button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Reset Password</DialogTitle>
+                <DialogDescription>
+                  Enter your email address and we'll send you a link to reset your password.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleResetPassword} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="reset-email">Email</Label>
+                  <Input
+                    id="reset-email"
+                    type="email"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    required
+                    placeholder="you@company.com"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={resetLoading}
+                >
+                  {resetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Send Reset Link
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+          
           <p className="text-sm text-muted-foreground">
             Don't have a subscription?{" "}
             <a href="/pricing" className="text-primary hover:underline">
