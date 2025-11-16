@@ -14,19 +14,19 @@ const Success = () => {
 
   const setupSteps = [
     {
-      icon: <Users className="h-5 w-5" />,
-      title: "Import Your Leads",
-      description: "Start by adding your contacts to begin managing your sales pipeline effectively."
+      icon: <CheckCircle className="h-5 w-5" />,
+      title: "Check Your Email",
+      description: "We've sent your login credentials to your email address. Please check your inbox."
     },
     {
-      icon: <TrendingUp className="h-5 w-5" />,
-      title: "Set Up Your Pipeline",
-      description: "Customize your deal stages and track opportunities through your sales funnel."
+      icon: <Users className="h-5 w-5" />,
+      title: "Sign In to Your Account",
+      description: "Use your email and the temporary password from the email to sign in."
     },
     {
       icon: <Settings className="h-5 w-5" />,
-      title: "Configure Integrations",
-      description: "Connect your email, calendar, and other tools to streamline your workflow."
+      title: "Change Your Password",
+      description: "For security, use the 'Forgot Password' link on the sign-in page to set your own password."
     }
   ];
 
@@ -47,9 +47,9 @@ const Success = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Get Started with SalesOS</CardTitle>
+            <CardTitle>Next Steps</CardTitle>
             <CardDescription>
-              Follow these steps to set up your account and start closing more deals
+              Follow these steps to access your SalesOS account
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -75,7 +75,7 @@ const Success = () => {
                 className="flex-1"
                 onClick={() => navigate('/auth')}
               >
-                Go to Dashboard
+                Sign In Now
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
               <Button 
