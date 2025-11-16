@@ -37,7 +37,19 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
         redirectTo: `${window.location.origin}/auth`,
       });
 
-      if (error) throw error;
+      if (error) {
+        // Check for common SMTP-related errors
+        if (error.message.includes("Email address not authorized") || 
+            error.message.includes("Load failed")) {
+          toast({
+            title: "Email service not configured",
+            description: "Please contact support or configure SMTP in your backend settings.",
+            variant: "destructive",
+          });
+          return;
+        }
+        throw error;
+      }
 
       toast({
         title: "Password reset email sent",
@@ -47,9 +59,10 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
       setShowResetDialog(false);
       setResetEmail("");
     } catch (error: any) {
+      console.error("Password reset error:", error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to send password reset email. Please try again.",
         variant: "destructive",
       });
     } finally {
