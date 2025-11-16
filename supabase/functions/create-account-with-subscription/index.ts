@@ -83,18 +83,51 @@ serve(async (req) => {
             "Authorization": `Bearer ${resendApiKey}`,
           },
           body: JSON.stringify({
-            from: "SalesOS <onboarding@resend.dev>",
+            from: "SalesOS <noreply@yourdomain.com>", // Update this to your verified domain
             to: [email],
             subject: "Welcome to SalesOS - Your Account Credentials",
             html: `
-              <h1>Welcome to SalesOS!</h1>
-              <p>Your subscription has been activated and your account has been created.</p>
-              <h2>Your Login Credentials:</h2>
-              <p><strong>Email:</strong> ${email}</p>
-              <p><strong>Temporary Password:</strong> ${tempPassword}</p>
-              <p>Please sign in at <a href="${req.headers.get("origin")}/auth">Sign In</a></p>
-              <p><strong>Important:</strong> For security, please change your password after your first login using the "Forgot Password" link on the sign-in page.</p>
-              <p>Best regards,<br>The SalesOS Team</p>
+              <!DOCTYPE html>
+              <html>
+                <head>
+                  <style>
+                    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; line-height: 1.6; color: #333; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+                    .header h1 { color: white; margin: 0; font-size: 28px; }
+                    .content { background: #ffffff; padding: 40px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
+                    .credentials { background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea; }
+                    .button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
+                    .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
+                  </style>
+                </head>
+                <body>
+                  <div class="container">
+                    <div class="header">
+                      <h1>Welcome to SalesOS!</h1>
+                    </div>
+                    <div class="content">
+                      <p>Thank you for choosing SalesOS. Your subscription has been activated and your account is ready to use.</p>
+                      
+                      <div class="credentials">
+                        <h2 style="margin-top: 0; color: #111827;">Your Login Credentials</h2>
+                        <p><strong>Email:</strong> ${email}</p>
+                        <p><strong>Temporary Password:</strong> <code style="background: #e5e7eb; padding: 4px 8px; border-radius: 4px;">${tempPassword}</code></p>
+                      </div>
+                      
+                      <a href="${req.headers.get("origin")}/auth" class="button">Sign In to Your Account</a>
+                      
+                      <p><strong>Important Security Notice:</strong></p>
+                      <p>For your security, please change your password immediately after your first login. Click the "Forgot Password" link on the sign-in page to set your own secure password.</p>
+                      
+                      <div class="footer">
+                        <p>Need help? Contact us at <a href="mailto:support@yourdomain.com">support@yourdomain.com</a></p>
+                        <p>&copy; ${new Date().getFullYear()} SalesOS. All rights reserved.</p>
+                      </div>
+                    </div>
+                  </div>
+                </body>
+              </html>
             `,
           }),
         });
