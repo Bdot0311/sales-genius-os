@@ -41,7 +41,7 @@ const Success = () => {
           </div>
           <h1 className="text-4xl font-bold">Payment Successful!</h1>
           <p className="text-xl text-muted-foreground">
-            Welcome to SalesOS. Your account is now activated.
+            Check your email for your login credentials
           </p>
         </div>
 

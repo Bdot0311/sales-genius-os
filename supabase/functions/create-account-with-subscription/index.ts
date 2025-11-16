@@ -7,13 +7,22 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const generateTempPassword = () => {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%";
+  let password = "";
+  for (let i = 0; i < 12; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return password;
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { email, password } = await req.json();
+    const { email } = await req.json();
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -51,14 +60,49 @@ serve(async (req) => {
       );
     }
 
-    // Create user account
+    // Generate temporary password
+    const tempPassword = generateTempPassword();
+
+    // Create user account with temp password
     const { data: userData, error: userError } = await supabaseAdmin.auth.admin.createUser({
       email,
-      password,
+      password: tempPassword,
       email_confirm: true,
     });
 
     if (userError) throw userError;
+
+    // Send credentials email via Resend
+    try {
+      const resendApiKey = Deno.env.get("RESEND_API_KEY");
+      if (resendApiKey) {
+        const emailResponse = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${resendApiKey}`,
+          },
+          body: JSON.stringify({
+            from: "SalesOS <onboarding@resend.dev>",
+            to: [email],
+            subject: "Welcome to SalesOS - Your Account Credentials",
+            html: `
+              <h1>Welcome to SalesOS!</h1>
+              <p>Your subscription has been activated and your account has been created.</p>
+              <h2>Your Login Credentials:</h2>
+              <p><strong>Email:</strong> ${email}</p>
+              <p><strong>Temporary Password:</strong> ${tempPassword}</p>
+              <p>Please sign in at <a href="${req.headers.get("origin")}/auth">Sign In</a></p>
+              <p><strong>Important:</strong> For security, please change your password after your first login using the "Forgot Password" link on the sign-in page.</p>
+              <p>Best regards,<br>The SalesOS Team</p>
+            `,
+          }),
+        });
+      }
+    } catch (emailError) {
+      console.error("Error sending credentials email:", emailError);
+      // Don't fail the account creation if email fails
+    }
 
     return new Response(
       JSON.stringify({ success: true, user: userData.user }),
