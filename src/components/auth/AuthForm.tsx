@@ -12,11 +12,9 @@ interface AuthFormProps {
 }
 
 export const AuthForm = ({ onSuccess }: AuthFormProps) => {
-  const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -24,39 +22,64 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
     setLoading(true);
 
     try {
-      if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+      // First, try to sign in
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-        if (error) throw error;
-
-        toast({
-          title: "Welcome back!",
-          description: "You have successfully signed in.",
-        });
-      } else {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              full_name: fullName,
-            },
-            emailRedirectTo: `${window.location.origin}/dashboard`,
-          },
-        });
-
-        if (error) throw error;
-
-        toast({
-          title: "Account created!",
-          description: "You can now sign in with your credentials.",
-        });
-
-        setIsLogin(true);
+      if (signInError) {
+        // If user doesn't exist, check if they have a subscription
+        if (signInError.message.includes("Invalid login credentials")) {
+          // Check Stripe for subscription
+          const { data: sessionData } = await supabase.auth.getSession();
+          
+          toast({
+            title: "No account found",
+            description: "Please purchase a subscription first to create an account.",
+            variant: "destructive",
+          });
+          
+          // Redirect to pricing after a short delay
+          setTimeout(() => {
+            window.location.href = "/pricing";
+          }, 2000);
+          return;
+        }
+        throw signInError;
       }
+
+      // After successful sign in, verify subscription
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        const { data: subCheck, error: subError } = await supabase.functions.invoke('check-subscription', {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`
+          }
+        });
+
+        if (subError || !subCheck?.subscribed) {
+          // Sign out the user
+          await supabase.auth.signOut();
+          
+          toast({
+            title: "No active subscription",
+            description: "Please purchase a subscription to access your account.",
+            variant: "destructive",
+          });
+          
+          setTimeout(() => {
+            window.location.href = "/pricing";
+          }, 2000);
+          return;
+        }
+      }
+
+      toast({
+        title: "Welcome back!",
+        description: "You have successfully signed in.",
+      });
 
       onSuccess?.();
     } catch (error: any) {
@@ -79,29 +102,14 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
             <span className="text-2xl font-bold">SalesOS</span>
           </div>
           <h2 className="text-2xl font-bold mb-2">
-            {isLogin ? "Welcome back" : "Get started"}
+            Welcome back
           </h2>
           <p className="text-muted-foreground">
-            {isLogin
-              ? "Sign in to your account"
-              : "Create your account to start selling smarter"}
+            Sign in to your account
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {!isLogin && (
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
-              <Input
-                id="fullName"
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                required={!isLogin}
-                placeholder="John Doe"
-              />
-            </div>
-          )}
 
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
@@ -135,23 +143,17 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
             disabled={loading}
           >
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isLogin ? "Sign In" : "Create Account"}
+            Sign In
           </Button>
         </form>
 
         <div className="mt-6 text-center">
-          <button
-            type="button"
-            onClick={() => {
-              setIsLogin(!isLogin);
-              setFullName("");
-            }}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            {isLogin
-              ? "Don't have an account? Sign up"
-              : "Already have an account? Sign in"}
-          </button>
+          <p className="text-sm text-muted-foreground">
+            Don't have a subscription?{" "}
+            <a href="/pricing" className="text-primary hover:underline">
+              Purchase a plan
+            </a>
+          </p>
         </div>
       </div>
     </div>

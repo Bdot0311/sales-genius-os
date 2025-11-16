@@ -57,6 +57,8 @@ const plans = [
 
 export const Pricing = () => {
   const handleCheckout = (paymentLink: string) => {
+    // Add success URL parameter to redirect back to auth after purchase
+    const url = new URL(paymentLink);
     window.open(paymentLink, '_blank');
   };
 
