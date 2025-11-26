@@ -33,23 +33,11 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
     setResetLoading(true);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/auth`,
+      const { error } = await supabase.functions.invoke('reset-password', {
+        body: { email: resetEmail }
       });
 
-      if (error) {
-        // Check for common SMTP-related errors
-        if (error.message.includes("Email address not authorized") || 
-            error.message.includes("Load failed")) {
-          toast({
-            title: "Email service not configured",
-            description: "Please contact support or configure SMTP in your backend settings.",
-            variant: "destructive",
-          });
-          return;
-        }
-        throw error;
-      }
+      if (error) throw error;
 
       toast({
         title: "Password reset email sent",
@@ -62,7 +50,7 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
       console.error("Password reset error:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to send password reset email. Please try again.",
+        description: "Failed to send password reset email. Please try again.",
         variant: "destructive",
       });
     } finally {
