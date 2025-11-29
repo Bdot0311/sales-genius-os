@@ -2,14 +2,23 @@ import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AddLeadDialog } from "@/components/dashboard/AddLeadDialog";
 import { ImportLeadsDialog } from "@/components/dashboard/ImportLeadsDialog";
-import { FilterLeadsDialog, LeadFilters } from "@/components/dashboard/FilterLeadsDialog";
 import { Search, Download } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+
+interface LeadFilters {
+  source?: string;
+  industry?: string;
+  company_size?: string;
+  min_score?: number;
+  max_score?: number;
+}
 
 interface Lead {
   id: string;
@@ -116,76 +125,190 @@ const Leads = () => {
           </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>All Leads ({filteredLeads.length})</CardTitle>
-            <CardDescription>
-              View and manage all your leads in one place
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search leads by name, company, or email..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <FilterLeadsDialog 
-                onApplyFilters={setFilters}
-                currentFilters={filters}
-              />
-              <Button variant="outline" onClick={handleExport}>
-                <Download className="w-4 h-4 mr-2" />
-                Export
-              </Button>
-            </div>
+        <div className="grid grid-cols-12 gap-6">
+          {/* Left Side - Search Criteria */}
+          <div className="col-span-12 lg:col-span-3">
+            <Card>
+              <CardHeader>
+                <CardTitle>Search Criteria</CardTitle>
+                <CardDescription>Filter your leads</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="source">Source</Label>
+                  <Select 
+                    value={filters.source || "all"} 
+                    onValueChange={(value) => setFilters({ ...filters, source: value === "all" ? undefined : value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="All sources" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All sources</SelectItem>
+                      <SelectItem value="Apollo">Apollo</SelectItem>
+                      <SelectItem value="Crunchbase">Crunchbase</SelectItem>
+                      <SelectItem value="LinkedIn">LinkedIn</SelectItem>
+                      <SelectItem value="Website">Website</SelectItem>
+                      <SelectItem value="Manual">Manual</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            {loading ? (
-              <div className="text-center py-12 text-muted-foreground">
-                Loading leads...
-              </div>
-            ) : filteredLeads.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                {searchQuery ? "No leads found matching your search" : "No leads yet. Add your first lead to get started!"}
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {filteredLeads.map((lead) => (
-                  <Card key={lead.id}>
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-1 flex-1">
-                          <div className="flex items-center gap-3">
-                            <h3 className="font-semibold text-lg">{lead.contact_name}</h3>
-                            {getScoreBadge(lead.icp_score)}
+                <div>
+                  <Label htmlFor="industry">Industry</Label>
+                  <Select 
+                    value={filters.industry || "all"} 
+                    onValueChange={(value) => setFilters({ ...filters, industry: value === "all" ? undefined : value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="All industries" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All industries</SelectItem>
+                      <SelectItem value="Technology">Technology</SelectItem>
+                      <SelectItem value="Healthcare">Healthcare</SelectItem>
+                      <SelectItem value="Finance">Finance</SelectItem>
+                      <SelectItem value="Manufacturing">Manufacturing</SelectItem>
+                      <SelectItem value="Retail">Retail</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="company_size">Company Size</Label>
+                  <Select 
+                    value={filters.company_size || "all"} 
+                    onValueChange={(value) => setFilters({ ...filters, company_size: value === "all" ? undefined : value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="All sizes" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All sizes</SelectItem>
+                      <SelectItem value="1-10">1-10</SelectItem>
+                      <SelectItem value="11-50">11-50</SelectItem>
+                      <SelectItem value="51-200">51-200</SelectItem>
+                      <SelectItem value="201-500">201-500</SelectItem>
+                      <SelectItem value="501-1000">501-1000</SelectItem>
+                      <SelectItem value="1000+">1000+</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="min_score">Min ICP Score</Label>
+                  <Input
+                    id="min_score"
+                    type="number"
+                    min="0"
+                    max="100"
+                    placeholder="0"
+                    value={filters.min_score || ""}
+                    onChange={(e) => setFilters({ ...filters, min_score: parseInt(e.target.value) || undefined })}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="max_score">Max ICP Score</Label>
+                  <Input
+                    id="max_score"
+                    type="number"
+                    min="0"
+                    max="100"
+                    placeholder="100"
+                    value={filters.max_score || ""}
+                    onChange={(e) => setFilters({ ...filters, max_score: parseInt(e.target.value) || undefined })}
+                  />
+                </div>
+
+                <Button 
+                  variant="outline" 
+                  onClick={() => setFilters({})}
+                  className="w-full"
+                >
+                  Reset Filters
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Side - Results */}
+          <div className="col-span-12 lg:col-span-9">
+            <Card>
+              <CardHeader>
+                <CardTitle>All Leads ({filteredLeads.length})</CardTitle>
+                <CardDescription>
+                  View and manage all your leads in one place
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex gap-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search leads by name, company, or email..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  <Button variant="outline" onClick={handleExport}>
+                    <Download className="w-4 h-4 mr-2" />
+                    Export
+                  </Button>
+                </div>
+
+                {loading ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    Loading leads...
+                  </div>
+                ) : filteredLeads.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    {searchQuery || Object.keys(filters).length > 0 
+                      ? "No leads found matching your criteria" 
+                      : "No leads yet. Add your first lead to get started!"}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {filteredLeads.map((lead) => (
+                      <Card key={lead.id}>
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between">
+                            <div className="space-y-1 flex-1">
+                              <div className="flex items-center gap-3">
+                                <h3 className="font-semibold text-lg">{lead.contact_name}</h3>
+                                {getScoreBadge(lead.icp_score)}
+                              </div>
+                              <p className="text-sm text-muted-foreground">{lead.company_name}</p>
+                              <div className="flex gap-4 text-sm text-muted-foreground">
+                                <span>{lead.contact_email}</span>
+                                {lead.contact_phone && <span>{lead.contact_phone}</span>}
+                              </div>
+                              {lead.industry && (
+                                <Badge variant="outline">{lead.industry}</Badge>
+                              )}
+                              {lead.source && (
+                                <Badge variant="secondary" className="ml-2">{lead.source}</Badge>
+                              )}
+                              {lead.notes && (
+                                <p className="text-sm text-muted-foreground mt-2">{lead.notes}</p>
+                              )}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {new Date(lead.created_at).toLocaleDateString()}
+                            </div>
                           </div>
-                          <p className="text-sm text-muted-foreground">{lead.company_name}</p>
-                          <div className="flex gap-4 text-sm text-muted-foreground">
-                            <span>{lead.contact_email}</span>
-                            {lead.contact_phone && <span>{lead.contact_phone}</span>}
-                          </div>
-                          {lead.industry && (
-                            <Badge variant="outline">{lead.industry}</Badge>
-                          )}
-                          {lead.notes && (
-                            <p className="text-sm text-muted-foreground mt-2">{lead.notes}</p>
-                          )}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {new Date(lead.created_at).toLocaleDateString()}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     </DashboardLayout>
   );
