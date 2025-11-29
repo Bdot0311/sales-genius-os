@@ -4,7 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { AddLeadDialog } from "@/components/dashboard/AddLeadDialog";
-import { Search, Filter, Download, Plus } from "lucide-react";
+import { ImportLeadsDialog } from "@/components/dashboard/ImportLeadsDialog";
+import { FilterLeadsDialog, LeadFilters } from "@/components/dashboard/FilterLeadsDialog";
+import { Search, Download } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -27,6 +29,7 @@ const Leads = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [filters, setFilters] = useState<LeadFilters>({});
   const { toast } = useToast();
 
   const fetchLeads = async () => {
@@ -56,12 +59,41 @@ const Leads = () => {
     fetchLeads();
   }, []);
 
-  const filteredLeads = leads.filter(
-    (lead) =>
+  const filteredLeads = leads.filter((lead) => {
+    const matchesSearch = 
       lead.company_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       lead.contact_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      lead.contact_email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+      (lead.contact_email?.toLowerCase().includes(searchQuery.toLowerCase()) || false);
+
+    const matchesSource = !filters.source || filters.source === "all" || lead.source === filters.source;
+    const matchesIndustry = !filters.industry || filters.industry === "all" || lead.industry === filters.industry;
+    const matchesSize = !filters.company_size || filters.company_size === "all" || lead.company_size === filters.company_size;
+    const matchesMinScore = !filters.min_score || (lead.icp_score || 0) >= filters.min_score;
+    const matchesMaxScore = !filters.max_score || (lead.icp_score || 0) <= filters.max_score;
+
+    return matchesSearch && matchesSource && matchesIndustry && matchesSize && matchesMinScore && matchesMaxScore;
+  });
+
+  const handleExport = () => {
+    const csv = [
+      "Company Name,Contact Name,Email,Phone,Industry,Company Size,Source,ICP Score,Created At",
+      ...filteredLeads.map(lead => 
+        `"${lead.company_name}","${lead.contact_name}","${lead.contact_email || ""}","${lead.contact_phone || ""}","${lead.industry || ""}","${lead.company_size || ""}","${lead.source || ""}","${lead.icp_score || ""}","${new Date(lead.created_at).toLocaleDateString()}"`
+      )
+    ].join("\n");
+    
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `leads_export_${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    
+    toast({
+      title: "Export successful",
+      description: `Exported ${filteredLeads.length} leads`,
+    });
+  };
 
   const getScoreBadge = (score?: number) => {
     if (!score) return <Badge variant="secondary">Not Scored</Badge>;
@@ -78,7 +110,10 @@ const Leads = () => {
             <h1 className="text-3xl font-bold">Leads</h1>
             <p className="text-muted-foreground">Manage and track your sales leads</p>
           </div>
-          <AddLeadDialog onLeadAdded={fetchLeads} />
+          <div className="flex gap-2">
+            <ImportLeadsDialog onImportComplete={fetchLeads} />
+            <AddLeadDialog onLeadAdded={fetchLeads} />
+          </div>
         </div>
 
         <Card>
@@ -99,11 +134,11 @@ const Leads = () => {
                   className="pl-10"
                 />
               </div>
-              <Button variant="outline">
-                <Filter className="w-4 h-4 mr-2" />
-                Filter
-              </Button>
-              <Button variant="outline">
+              <FilterLeadsDialog 
+                onApplyFilters={setFilters}
+                currentFilters={filters}
+              />
+              <Button variant="outline" onClick={handleExport}>
                 <Download className="w-4 h-4 mr-2" />
                 Export
               </Button>
