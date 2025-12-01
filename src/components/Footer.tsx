@@ -17,9 +17,9 @@ export const Footer = () => {
         </div>
 
         {/* Product & Legal columns side by side, centered */}
-        <div className="flex justify-center mb-6 sm:mb-8">
-          <div className="grid grid-cols-2 gap-8 sm:gap-12 md:gap-16 max-w-md">
-            <div>
+        <div className="mb-6 sm:mb-8">
+          <div className="grid grid-cols-2 gap-12 max-w-sm mx-auto">
+            <div className="text-left">
               <h4 className="font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Product</h4>
               <ul className="space-y-2 text-xs sm:text-sm text-muted-foreground">
                 <li><a href="#features" className="hover:text-foreground transition-colors">Features</a></li>
@@ -29,7 +29,7 @@ export const Footer = () => {
               </ul>
             </div>
 
-            <div>
+            <div className="text-left">
               <h4 className="font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Legal</h4>
               <ul className="space-y-2 text-xs sm:text-sm text-muted-foreground">
                 <li><Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link></li>
