@@ -40,12 +40,12 @@ const integrations: Integration[] = [
   {
     id: "apollo",
     name: "Apollo.io",
-    category: "Lead Generation",
-    description: "Import leads directly from Apollo with enriched company data",
+    category: "Enrichment",
+    description: "Lead enrichment and B2B data platform - auto-enrich your leads with company data",
     icon: Rocket,
-    color: "bg-blue-500",
+    color: "bg-purple-500",
     fields: [
-      { name: "apiKey", label: "API Key", type: "password", placeholder: "Enter your Apollo API key" },
+      { name: "api_key", label: "Apollo API Key", type: "password", placeholder: "Enter your Apollo.io API key" },
     ],
   },
   {

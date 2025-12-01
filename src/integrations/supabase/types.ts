@@ -478,53 +478,89 @@ export type Database = {
       }
       leads: {
         Row: {
+          annual_revenue: string | null
+          company_description: string | null
+          company_linkedin: string | null
           company_name: string
           company_size: string | null
+          company_website: string | null
           contact_email: string | null
           contact_name: string
           contact_phone: string | null
           created_at: string
+          department: string | null
+          employee_count: string | null
+          enriched_at: string | null
+          enrichment_status: string | null
           icp_score: number | null
           id: string
           industry: string | null
+          job_title: string | null
           last_contacted_at: string | null
+          linkedin_url: string | null
           notes: string | null
           score_changed_at: string | null
+          seniority: string | null
           source: string | null
+          technologies: string[] | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          annual_revenue?: string | null
+          company_description?: string | null
+          company_linkedin?: string | null
           company_name: string
           company_size?: string | null
+          company_website?: string | null
           contact_email?: string | null
           contact_name: string
           contact_phone?: string | null
           created_at?: string
+          department?: string | null
+          employee_count?: string | null
+          enriched_at?: string | null
+          enrichment_status?: string | null
           icp_score?: number | null
           id?: string
           industry?: string | null
+          job_title?: string | null
           last_contacted_at?: string | null
+          linkedin_url?: string | null
           notes?: string | null
           score_changed_at?: string | null
+          seniority?: string | null
           source?: string | null
+          technologies?: string[] | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          annual_revenue?: string | null
+          company_description?: string | null
+          company_linkedin?: string | null
           company_name?: string
           company_size?: string | null
+          company_website?: string | null
           contact_email?: string | null
           contact_name?: string
           contact_phone?: string | null
           created_at?: string
+          department?: string | null
+          employee_count?: string | null
+          enriched_at?: string | null
+          enrichment_status?: string | null
           icp_score?: number | null
           id?: string
           industry?: string | null
+          job_title?: string | null
           last_contacted_at?: string | null
+          linkedin_url?: string | null
           notes?: string | null
           score_changed_at?: string | null
+          seniority?: string | null
           source?: string | null
+          technologies?: string[] | null
           updated_at?: string
           user_id?: string
         }
