@@ -13,15 +13,15 @@ export const Hero = () => {
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/20 rounded-full blur-3xl animate-glow-pulse" style={{ animationDelay: "1s" }} />
       </div>
 
-      <div className="container relative z-10 mx-auto px-6 py-32 text-center">
+      <div className="container relative z-10 mx-auto px-4 sm:px-6 py-20 sm:py-28 md:py-32 text-center">
         {/* Badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 mb-8 animate-fade-in">
-          <Sparkles className="w-4 h-4 text-primary" />
-          <span className="text-sm text-muted-foreground">AI-Powered Sales Operating System</span>
+        <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 mb-6 sm:mb-8 animate-fade-in">
+          <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
+          <span className="text-xs sm:text-sm text-muted-foreground">AI-Powered Sales Operating System</span>
         </div>
 
         {/* Main headline */}
-        <h1 className="text-5xl md:text-7xl font-bold mb-6 animate-fade-in" style={{ animationDelay: "0.1s" }}>
+        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-4 sm:mb-6 animate-fade-in px-2" style={{ animationDelay: "0.1s" }}>
           Close More Deals with
           <br />
           <span className="bg-gradient-primary bg-clip-text text-transparent">
@@ -30,19 +30,19 @@ export const Hero = () => {
         </h1>
 
         {/* Subheadline */}
-        <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-12 animate-fade-in" style={{ animationDelay: "0.2s" }}>
+        <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8 sm:mb-12 animate-fade-in px-4" style={{ animationDelay: "0.2s" }}>
           SalesOS automates everything from lead generation to deal closing. Get real-time AI coaching, 
           intelligent outreach automation, and predictive analytics that help you sell like a pro.
         </p>
 
         {/* AI Command Demo */}
-        <div className="max-w-2xl mx-auto mb-12 p-6 rounded-2xl bg-card border border-border backdrop-blur-sm shadow-card animate-fade-in" style={{ animationDelay: "0.3s" }}>
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-3 h-3 rounded-full bg-destructive" />
-            <div className="w-3 h-3 rounded-full bg-yellow-500" />
-            <div className="w-3 h-3 rounded-full bg-green-500" />
+        <div className="max-w-2xl mx-auto mb-8 sm:mb-12 p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-card border border-border backdrop-blur-sm shadow-card animate-fade-in" style={{ animationDelay: "0.3s" }}>
+          <div className="flex items-center gap-2 mb-3 sm:mb-4">
+            <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-destructive" />
+            <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-yellow-500" />
+            <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-green-500" />
           </div>
-          <div className="text-left font-mono text-sm">
+          <div className="text-left font-mono text-xs sm:text-sm">
             <span className="text-primary">→</span> <span className="text-foreground">"Find 100 SaaS founders in fintech and send them a 3-step sequence."</span>
             <div className="mt-2 text-muted-foreground">
               ✓ Found 127 qualified leads<br />
@@ -53,12 +53,12 @@ export const Hero = () => {
         </div>
 
         {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-in" style={{ animationDelay: "0.4s" }}>
-          <Button variant="hero" size="lg" className="group" onClick={() => navigate('/pricing')}>
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center animate-fade-in px-4" style={{ animationDelay: "0.4s" }}>
+          <Button variant="hero" size="lg" className="group w-full sm:w-auto" onClick={() => navigate('/pricing')}>
             Start Free Trial
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </Button>
-          <Button variant="glass" size="lg" onClick={() => {
+          <Button variant="glass" size="lg" className="w-full sm:w-auto" onClick={() => {
             document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' });
           }}>
             Watch Demo
@@ -66,7 +66,7 @@ export const Hero = () => {
         </div>
 
         {/* Social proof */}
-        <p className="mt-12 text-sm text-muted-foreground animate-fade-in" style={{ animationDelay: "0.5s" }}>
+        <p className="mt-8 sm:mt-12 text-xs sm:text-sm text-muted-foreground animate-fade-in px-4" style={{ animationDelay: "0.5s" }}>
           Trusted by 500+ SaaS companies • Average 3.2x increase in qualified meetings
         </p>
       </div>

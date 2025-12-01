@@ -55,29 +55,29 @@ const features = [
 
 export const Features = () => {
   return (
-    <section id="features" className="py-24 bg-background relative">
-      <div className="container mx-auto px-6">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold mb-4">
+    <section id="features" className="py-16 sm:py-20 md:py-24 bg-background relative">
+      <div className="container mx-auto px-4 sm:px-6">
+        <div className="text-center mb-12 sm:mb-16">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 px-4">
             Everything You Need to
             <span className="bg-gradient-primary bg-clip-text text-transparent"> Dominate Sales</span>
           </h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
             8 powerful modules that work together to automate your entire sales process
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {features.map((feature, index) => (
             <Card 
               key={index}
-              className="p-6 bg-card border-border hover:border-primary/50 transition-all duration-300 hover:shadow-glow group"
+              className="p-5 sm:p-6 bg-card border-border hover:border-primary/50 transition-all duration-300 hover:shadow-glow group"
             >
-              <div className="mb-4 w-12 h-12 rounded-lg bg-gradient-primary flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                <feature.icon className="w-6 h-6 text-white" />
+              <div className="mb-3 sm:mb-4 w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-gradient-primary flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <feature.icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-              <p className="text-sm text-muted-foreground">{feature.description}</p>
+              <h3 className="text-base sm:text-lg font-semibold mb-2">{feature.title}</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground">{feature.description}</p>
             </Card>
           ))}
         </div>

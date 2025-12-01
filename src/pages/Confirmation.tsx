@@ -71,61 +71,61 @@ const Confirmation = () => {
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/20 rounded-full blur-3xl animate-glow-pulse" style={{ animationDelay: "1s" }} />
       </div>
 
-      <div className="container mx-auto px-6 py-12 max-w-4xl">
+      <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12 max-w-4xl">
         {/* Success Header */}
-        <div className="text-center mb-12 space-y-6">
+        <div className="text-center mb-8 sm:mb-12 space-y-4 sm:space-y-6">
           <div className="flex justify-center">
-            <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-              <CheckCircle className="w-12 h-12 text-primary animate-scale-in" />
+            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-primary/10 rounded-full flex items-center justify-center mb-3 sm:mb-4">
+              <CheckCircle className="w-10 h-10 sm:w-12 sm:h-12 text-primary animate-scale-in" />
             </div>
           </div>
           
-          <div className="space-y-3">
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-fade-in">
+          <div className="space-y-2 sm:space-y-3">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-fade-in px-4">
               Welcome to SalesOS!
             </h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
               Your subscription is active. Let's get you set up and selling in minutes.
             </p>
           </div>
         </div>
 
         {/* Plan Details */}
-        <Card className="p-6 mb-8 bg-card/50 backdrop-blur-sm border-primary/20">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold capitalize">{plan} Plan</h2>
-            <div className="px-4 py-2 bg-primary/10 rounded-full">
-              <span className="text-primary font-semibold">Active</span>
+        <Card className="p-5 sm:p-6 mb-6 sm:mb-8 bg-card/50 backdrop-blur-sm border-primary/20">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-4">
+            <h2 className="text-xl sm:text-2xl font-bold capitalize">{plan} Plan</h2>
+            <div className="px-3 sm:px-4 py-1.5 sm:py-2 bg-primary/10 rounded-full">
+              <span className="text-sm sm:text-base text-primary font-semibold">Active</span>
             </div>
           </div>
-          <div className="grid gap-3">
+          <div className="grid gap-2 sm:gap-3">
             {planFeatures[plan as keyof typeof planFeatures]?.map((feature, index) => (
-              <div key={index} className="flex items-start gap-3">
-                <CheckCircle className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                <span className="text-muted-foreground">{feature}</span>
+              <div key={index} className="flex items-start gap-2 sm:gap-3">
+                <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-primary mt-0.5 flex-shrink-0" />
+                <span className="text-sm sm:text-base text-muted-foreground">{feature}</span>
               </div>
             ))}
           </div>
         </Card>
 
         {/* Next Steps */}
-        <div className="space-y-6 mb-8">
-          <h2 className="text-2xl font-bold text-center">Next Steps</h2>
-          <div className="grid gap-6">
+        <div className="space-y-4 sm:space-y-6 mb-6 sm:mb-8">
+          <h2 className="text-xl sm:text-2xl font-bold text-center">Next Steps</h2>
+          <div className="grid gap-4 sm:gap-6">
             {nextSteps.map((step, index) => (
-              <Card key={index} className="p-6 bg-card/50 backdrop-blur-sm border-border/50 hover:border-primary/50 transition-all">
-                <div className="flex gap-4">
+              <Card key={index} className="p-5 sm:p-6 bg-card/50 backdrop-blur-sm border-border/50 hover:border-primary/50 transition-all">
+                <div className="flex gap-3 sm:gap-4">
                   <div className="flex-shrink-0">
-                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                      <step.icon className="w-6 h-6 text-primary" />
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                      <step.icon className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
                     </div>
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold mb-2">{step.title}</h3>
-                    <p className="text-muted-foreground">{step.description}</p>
+                    <h3 className="text-base sm:text-lg font-semibold mb-1 sm:mb-2">{step.title}</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground">{step.description}</p>
                   </div>
                   <div className="flex-shrink-0 flex items-center">
-                    <span className="text-3xl font-bold text-muted-foreground/20">
+                    <span className="text-2xl sm:text-3xl font-bold text-muted-foreground/20">
                       {index + 1}
                     </span>
                   </div>
@@ -136,12 +136,12 @@ const Confirmation = () => {
         </div>
 
         {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
           <Button
             variant="hero"
             size="lg"
             onClick={() => navigate("/auth")}
-            className="gap-2"
+            className="gap-2 w-full sm:w-auto"
           >
             Sign In to Your Account
             <ArrowRight className="w-4 h-4" />
@@ -150,14 +150,15 @@ const Confirmation = () => {
             variant="outline"
             size="lg"
             onClick={() => navigate("/")}
+            className="w-full sm:w-auto"
           >
             Back to Home
           </Button>
         </div>
 
         {/* Support Note */}
-        <div className="mt-12 text-center">
-          <p className="text-sm text-muted-foreground">
+        <div className="mt-8 sm:mt-12 text-center px-4">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Need help? Contact us at{" "}
             <a href="mailto:support@salesos.com" className="text-primary hover:underline">
               support@salesos.com
