@@ -31,57 +31,73 @@ serve(async (req) => {
     );
 
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) throw new Error('No authorization header provided');
-    logStep('Authorization header found');
+    let userEmail: string;
+    let userId: string | null = null;
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
-    const user = userData.user;
-    if (!user?.email) throw new Error('User not authenticated or email not available');
-    logStep('User authenticated', { userId: user.id, email: user.email });
+    // Check if this is an authenticated request or email-based request
+    if (authHeader && !authHeader.includes('anon')) {
+      // Authenticated request - get user from JWT
+      logStep('Authenticated request detected');
+      const token = authHeader.replace('Bearer ', '');
+      const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+      if (userError) throw new Error(`Authentication error: ${userError.message}`);
+      const user = userData.user;
+      if (!user?.email) throw new Error('User not authenticated or email not available');
+      userEmail = user.email;
+      userId = user.id;
+      logStep('User authenticated', { userId: user.id, email: userEmail });
+    } else {
+      // Unauthenticated request - get email from body
+      logStep('Unauthenticated request detected');
+      const body = await req.json();
+      userEmail = body.email;
+      if (!userEmail) throw new Error('Email is required');
+      logStep('Email provided in body', { email: userEmail });
+    }
 
     const stripe = new Stripe(stripeKey, { apiVersion: '2025-08-27.basil' });
     
     // Find Stripe customer by email
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+    const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
     
     if (customers.data.length === 0) {
       logStep('No Stripe customer found');
       
-      // Check if user has an existing subscription in database
-      const { data: existingSub } = await supabaseClient
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      // Check if user has an existing subscription in database (only if authenticated)
+      if (userId) {
+        const { data: existingSub } = await supabaseClient
+          .from('subscriptions')
+          .select('*')
+          .eq('user_id', userId)
+          .maybeSingle();
 
-      if (existingSub && !existingSub.stripe_customer_id) {
-        // User has a manual/local subscription without Stripe, preserve it
-        logStep('Preserving existing local subscription', { plan: existingSub.plan });
-        return new Response(JSON.stringify({ 
-          subscribed: true,
-          plan: existingSub.plan,
-          status: existingSub.status
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        });
-      }
+        if (existingSub && !existingSub.stripe_customer_id) {
+          // User has a manual/local subscription without Stripe, preserve it
+          logStep('Preserving existing local subscription', { plan: existingSub.plan });
+          return new Response(JSON.stringify({ 
+            subscribed: true,
+            plan: existingSub.plan,
+            status: existingSub.status
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200,
+          });
+        }
 
-      // No existing subscription or it's tied to Stripe, create default
-      logStep('Creating default growth subscription');
-      const { error: upsertError } = await supabaseClient
-        .from('subscriptions')
-        .upsert({
-          user_id: user.id,
-          plan: 'growth',
-          status: 'active',
-          leads_limit: 1000
-        }, { onConflict: 'user_id' });
+        // No existing subscription or it's tied to Stripe, create default
+        logStep('Creating default growth subscription');
+        const { error: upsertError } = await supabaseClient
+          .from('subscriptions')
+          .upsert({
+            user_id: userId,
+            plan: 'growth',
+            status: 'active',
+            leads_limit: 1000
+          }, { onConflict: 'user_id' });
 
-      if (upsertError) {
-        logStep('Error creating default subscription', { error: upsertError });
+        if (upsertError) {
+          logStep('Error creating default subscription', { error: upsertError });
+        }
       }
 
       return new Response(JSON.stringify({ 
@@ -133,43 +149,47 @@ serve(async (req) => {
       
       logStep('Determined plan', { plan });
 
-      // Sync to database
-      const leadsLimit = plan === 'growth' ? 1000 : plan === 'pro' ? 10000 : 999999;
-      
-      const { error: updateError } = await supabaseClient
-        .from('subscriptions')
-        .upsert({
-          user_id: user.id,
-          plan,
-          status: 'active',
-          leads_limit: leadsLimit,
-          stripe_customer_id: customerId,
-          stripe_subscription_id: stripeSubscriptionId,
-          current_period_end: subscriptionEnd
-        }, { onConflict: 'user_id' });
+      // Sync to database (only if authenticated)
+      if (userId) {
+        const leadsLimit = plan === 'growth' ? 1000 : plan === 'pro' ? 10000 : 999999;
+        
+        const { error: updateError } = await supabaseClient
+          .from('subscriptions')
+          .upsert({
+            user_id: userId,
+            plan,
+            status: 'active',
+            leads_limit: leadsLimit,
+            stripe_customer_id: customerId,
+            stripe_subscription_id: stripeSubscriptionId,
+            current_period_end: subscriptionEnd
+          }, { onConflict: 'user_id' });
 
-      if (updateError) {
-        logStep('Error updating subscription', { error: updateError });
-        throw updateError;
+        if (updateError) {
+          logStep('Error updating subscription', { error: updateError });
+          throw updateError;
+        }
+
+        logStep('Successfully synced subscription to database');
       }
-
-      logStep('Successfully synced subscription to database');
     } else {
       logStep('No active subscription found, setting to growth plan');
       
-      // Update to default growth plan
-      const { error: updateError } = await supabaseClient
-        .from('subscriptions')
-        .upsert({
-          user_id: user.id,
-          plan: 'growth',
-          status: 'active',
-          leads_limit: 1000,
-          stripe_customer_id: customerId
-        }, { onConflict: 'user_id' });
+      // Update to default growth plan (only if authenticated)
+      if (userId) {
+        const { error: updateError } = await supabaseClient
+          .from('subscriptions')
+          .upsert({
+            user_id: userId,
+            plan: 'growth',
+            status: 'active',
+            leads_limit: 1000,
+            stripe_customer_id: customerId
+          }, { onConflict: 'user_id' });
 
-      if (updateError) {
-        logStep('Error updating to growth plan', { error: updateError });
+        if (updateError) {
+          logStep('Error updating to growth plan', { error: updateError });
+        }
       }
     }
 
