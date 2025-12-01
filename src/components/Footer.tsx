@@ -18,23 +18,23 @@ export const Footer = () => {
 
         {/* Product & Legal columns side by side, centered */}
         <div className="mb-6 sm:mb-8">
-          <div className="grid grid-cols-2 gap-12 max-w-sm mx-auto">
-            <div className="text-left">
+          <div className="grid grid-cols-2 gap-12 max-w-sm mx-auto text-center md:text-left">
+            <div>
               <h4 className="font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Product</h4>
               <ul className="space-y-2 text-xs sm:text-sm text-muted-foreground">
-                <li><a href="#features" className="hover:text-foreground transition-colors">Features</a></li>
-                <li><a href="/pricing" className="hover:text-foreground transition-colors">Pricing</a></li>
-                <li><a href="#integrations" className="hover:text-foreground transition-colors">Integrations</a></li>
-                <li><a href="/api-docs" className="hover:text-foreground transition-colors">API Docs</a></li>
+                <li><a href="#features" className="hover:text-foreground transition-colors inline-block">Features</a></li>
+                <li><a href="/pricing" className="hover:text-foreground transition-colors inline-block">Pricing</a></li>
+                <li><a href="#integrations" className="hover:text-foreground transition-colors inline-block">Integrations</a></li>
+                <li><a href="/api-docs" className="hover:text-foreground transition-colors inline-block">API Docs</a></li>
               </ul>
             </div>
 
-            <div className="text-left">
+            <div>
               <h4 className="font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Legal</h4>
               <ul className="space-y-2 text-xs sm:text-sm text-muted-foreground">
-                <li><Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link></li>
-                <li><Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link></li>
-                <li><Link to="/security" className="hover:text-foreground transition-colors">Security</Link></li>
+                <li><Link to="/privacy" className="hover:text-foreground transition-colors inline-block">Privacy</Link></li>
+                <li><Link to="/terms" className="hover:text-foreground transition-colors inline-block">Terms</Link></li>
+                <li><Link to="/security" className="hover:text-foreground transition-colors inline-block">Security</Link></li>
               </ul>
             </div>
           </div>
