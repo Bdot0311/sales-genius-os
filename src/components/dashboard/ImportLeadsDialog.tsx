@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, Download } from "lucide-react";
+import { Upload, Download, Loader2, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 interface ImportLeadsDialogProps {
   onImportComplete?: () => void;
@@ -17,7 +18,13 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [source, setSource] = useState<string>("");
+  const [integrations, setIntegrations] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [selectedIntegration, setSelectedIntegration] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleCSVUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -72,6 +79,110 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
     }
   };
 
+  useEffect(() => {
+    if (open) {
+      fetchIntegrations();
+    }
+  }, [open]);
+
+  const fetchIntegrations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('integrations')
+        .select('*')
+        .eq('is_active', true)
+        .in('integration_id', ['apollo', 'crunchbase']);
+
+      if (error) throw error;
+      setIntegrations(data || []);
+    } catch (error) {
+      console.error('Error fetching integrations:', error);
+    }
+  };
+
+  const handleSearchApollo = async () => {
+    if (!searchQuery.trim()) return;
+    
+    setLoading(true);
+    try {
+      const apolloIntegration = integrations.find(i => i.integration_id === 'apollo');
+      if (!apolloIntegration) {
+        throw new Error('Apollo integration not configured');
+      }
+
+      const response = await fetch('https://api.apollo.io/v1/mixed_people/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
+          'X-Api-Key': apolloIntegration.config.api_key
+        },
+        body: JSON.stringify({
+          q_keywords: searchQuery,
+          page: 1,
+          per_page: 10
+        })
+      });
+
+      if (!response.ok) throw new Error('Apollo search failed');
+      
+      const data = await response.json();
+      setSearchResults(data.people || []);
+    } catch (error: any) {
+      toast({
+        title: "Search failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleImportSelected = async (leads: any[]) => {
+    setImporting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
+      const formattedLeads = leads.map(lead => ({
+        user_id: session.user.id,
+        company_name: lead.organization?.name || lead.company || 'Unknown Company',
+        contact_name: lead.name || `${lead.first_name || ''} ${lead.last_name || ''}`.trim() || 'Unknown Contact',
+        contact_email: lead.email || null,
+        contact_phone: lead.phone_numbers?.[0]?.sanitized_number || null,
+        industry: lead.organization?.industry || null,
+        company_size: lead.organization?.estimated_num_employees ? `${lead.organization.estimated_num_employees}` : null,
+        source: selectedIntegration === 'apollo' ? 'Apollo' : 'Crunchbase',
+        job_title: lead.title || null,
+        linkedin_url: lead.linkedin_url || null,
+        company_website: lead.organization?.website_url || null
+      }));
+
+      const { error } = await supabase.from("leads").insert(formattedLeads);
+      if (error) throw error;
+
+      toast({
+        title: "Import successful",
+        description: `Imported ${formattedLeads.length} leads from ${selectedIntegration === 'apollo' ? 'Apollo' : 'Crunchbase'}`,
+      });
+
+      setSearchResults([]);
+      setSearchQuery("");
+      setSelectedIntegration(null);
+      setOpen(false);
+      onImportComplete?.();
+    } catch (error: any) {
+      toast({
+        title: "Import failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const downloadTemplate = () => {
     const csv = "Company Name,Contact Name,Email,Phone,Industry,Company Size,Source\nExample Corp,John Doe,john@example.com,555-0100,Technology,50-200,Website";
     const blob = new Blob([csv], { type: "text/csv" });
@@ -80,6 +191,10 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
     a.href = url;
     a.download = "leads_template.csv";
     a.click();
+  };
+
+  const getIntegrationStatus = (integrationId: string) => {
+    return integrations.find(i => i.integration_id === integrationId);
   };
 
   return (
@@ -146,39 +261,133 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
           </TabsContent>
 
           <TabsContent value="integrations" className="space-y-4">
-            <div className="space-y-4">
-              <div className="border rounded-lg p-4">
+            {selectedIntegration ? (
+              <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-semibold">Apollo.io</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Import leads directly from Apollo
-                    </p>
-                  </div>
-                  <Button variant="outline" disabled>
-                    Connect
+                  <h4 className="font-semibold">
+                    {selectedIntegration === 'apollo' ? 'Search Apollo.io' : 'Search Crunchbase'}
+                  </h4>
+                  <Button variant="ghost" onClick={() => {
+                    setSelectedIntegration(null);
+                    setSearchResults([]);
+                    setSearchQuery("");
+                  }}>
+                    Back
                   </Button>
                 </div>
-              </div>
 
-              <div className="border rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-semibold">Crunchbase</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Import company data from Crunchbase
-                    </p>
-                  </div>
-                  <Button variant="outline" disabled>
-                    Connect
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Search for people or companies..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSearchApollo()}
+                  />
+                  <Button onClick={handleSearchApollo} disabled={loading}>
+                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Search'}
                   </Button>
                 </div>
-              </div>
 
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Integration connections coming soon. For now, export from your platform and use CSV import.
-              </p>
-            </div>
+                {searchResults.length > 0 && (
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm text-muted-foreground">
+                        {searchResults.length} results found
+                      </p>
+                      <Button 
+                        onClick={() => handleImportSelected(searchResults)}
+                        disabled={importing}
+                        variant="hero"
+                        size="sm"
+                      >
+                        {importing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                        Import All ({searchResults.length})
+                      </Button>
+                    </div>
+                    {searchResults.map((result, idx) => (
+                      <div key={idx} className="border rounded-lg p-3 space-y-1">
+                        <div className="font-semibold">
+                          {result.name || `${result.first_name} ${result.last_name}`}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {result.title && <div>{result.title}</div>}
+                          {result.organization?.name && <div>{result.organization.name}</div>}
+                          {result.email && <div>{result.email}</div>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="border rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-semibold">Apollo.io</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Import leads directly from Apollo
+                      </p>
+                    </div>
+                    {getIntegrationStatus('apollo') ? (
+                      <Button 
+                        variant="outline"
+                        onClick={() => setSelectedIntegration('apollo')}
+                      >
+                        Import
+                      </Button>
+                    ) : (
+                      <Button 
+                        variant="outline"
+                        onClick={() => {
+                          navigate('/dashboard/integrations');
+                          setOpen(false);
+                        }}
+                      >
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        Configure
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="border rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-semibold">Crunchbase</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Import company data from Crunchbase
+                      </p>
+                    </div>
+                    {getIntegrationStatus('crunchbase') ? (
+                      <Button 
+                        variant="outline"
+                        onClick={() => setSelectedIntegration('crunchbase')}
+                      >
+                        Import
+                      </Button>
+                    ) : (
+                      <Button 
+                        variant="outline"
+                        onClick={() => {
+                          navigate('/dashboard/integrations');
+                          setOpen(false);
+                        }}
+                      >
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        Configure
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {integrations.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    Configure your integrations in Settings to import leads directly from Apollo or Crunchbase.
+                  </p>
+                )}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </DialogContent>
