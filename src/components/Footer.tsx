@@ -3,8 +3,9 @@ import { Link } from "react-router-dom";
 
 export const Footer = () => {
   return (
-    <footer className="bg-card border-t border-border py-8 sm:py-12">
-      <div className="container mx-auto px-4 sm:px-6">
+    <footer className="relative border-t border-border py-12 sm:py-16 md:py-20 overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-b from-background via-card to-background opacity-90"></div>
+      <div className="container mx-auto px-6 sm:px-8 md:px-12 relative z-10">
         {/* Logo centered on mobile, shown first */}
         <div className="md:hidden text-center mb-6">
           <div className="flex items-center justify-center gap-2 mb-3">
