@@ -33,6 +33,15 @@ serve(async (req) => {
       throw new Error('Price ID is required');
     }
 
+    // Map price IDs to plan names
+    const planMap: Record<string, string> = {
+      'price_1SS44wFTerosS6hiCkKQnnoD': 'growth',
+      'price_1SS456FTerosS6hisBSDPwo4': 'pro',
+      'price_1SS45HFTerosS6hiQtxsNVL4': 'elite'
+    };
+    
+    const planName = planMap[priceId] || 'growth';
+
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', { 
       apiVersion: '2025-08-27.basil' 
     });
@@ -54,8 +63,8 @@ serve(async (req) => {
         },
       ],
       mode: 'subscription',
-      success_url: `${req.headers.get('origin')}/settings?success=true`,
-      cancel_url: `${req.headers.get('origin')}/settings?canceled=true`,
+      success_url: `${req.headers.get('origin')}/confirmation?plan=${planName}`,
+      cancel_url: `${req.headers.get('origin')}/pricing?canceled=true`,
     });
 
     return new Response(

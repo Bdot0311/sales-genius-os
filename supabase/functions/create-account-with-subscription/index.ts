@@ -115,7 +115,7 @@ serve(async (req) => {
                         <p><strong>Temporary Password:</strong> <code style="background: #e5e7eb; padding: 4px 8px; border-radius: 4px;">${tempPassword}</code></p>
                       </div>
                       
-                      <a href="${req.headers.get("origin")}/auth" class="button">Sign In to Your Account</a>
+                      <a href="${req.headers.get("origin")}/confirmation" class="button">Get Started</a>
                       
                       <p><strong>Important Security Notice:</strong></p>
                       <p>For your security, please change your password immediately after your first login. Click the "Forgot Password" link on the sign-in page to set your own secure password.</p>

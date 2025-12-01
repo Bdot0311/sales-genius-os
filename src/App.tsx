@@ -25,6 +25,7 @@ import Terms from "./pages/Terms";
 import Security from "./pages/Security";
 import Success from "./pages/Success";
 import Cancel from "./pages/Cancel";
+import Confirmation from "./pages/Confirmation";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,6 +48,7 @@ const App = () => (
           <Route path="/security" element={<Security />} />
           <Route path="/success" element={<Success />} />
           <Route path="/cancel" element={<Cancel />} />
+          <Route path="/confirmation" element={<Confirmation />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard/leads" element={<Leads />} />
           <Route path="/dashboard/coach" element={<Coach />} />
