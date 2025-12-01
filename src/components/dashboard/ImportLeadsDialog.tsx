@@ -5,10 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, Download, Loader2, ExternalLink } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Card } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Upload, Download, Loader2, ExternalLink, Clock, History, Settings2, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
 
 interface ImportLeadsDialogProps {
   onImportComplete?: () => void;
@@ -23,8 +27,22 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [selectedIntegration, setSelectedIntegration] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
+  const [importHistory, setImportHistory] = useState<any[]>([]);
+  const [scheduledImports, setScheduledImports] = useState<any[]>([]);
+  const [selectedLeads, setSelectedLeads] = useState<Set<number>>(new Set());
+  const [showFieldMapping, setShowFieldMapping] = useState(false);
+  const [fieldMappings, setFieldMappings] = useState<Record<string, string>>({});
+  const [scheduleFrequency, setScheduleFrequency] = useState<'daily' | 'weekly'>('daily');
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (open) {
+      fetchIntegrations();
+      fetchImportHistory();
+      fetchScheduledImports();
+    }
+  }, [open]);
 
   const handleCSVUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -59,12 +77,22 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
         return lead;
       });
 
-      const { error } = await supabase.from("leads").insert(leads);
+      const { data, error } = await supabase.from("leads").insert(leads).select();
       if (error) throw error;
+
+      // Log import history
+      await supabase.from("import_history").insert({
+        user_id: session.user.id,
+        source: source || 'CSV',
+        leads_count: leads.length,
+        success_count: data?.length || 0,
+        failed_count: leads.length - (data?.length || 0),
+        import_type: 'manual'
+      });
 
       toast({
         title: "Import successful",
-        description: `Imported ${leads.length} leads`,
+        description: `Imported ${data?.length || 0} leads from CSV`,
       });
       setOpen(false);
       onImportComplete?.();
@@ -78,12 +106,6 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    if (open) {
-      fetchIntegrations();
-    }
-  }, [open]);
 
   const fetchIntegrations = async () => {
     try {
@@ -100,34 +122,78 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
     }
   };
 
-  const handleSearchApollo = async () => {
+  const fetchImportHistory = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('import_history')
+        .select('*')
+        .order('imported_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      setImportHistory(data || []);
+    } catch (error) {
+      console.error('Error fetching import history:', error);
+    }
+  };
+
+  const fetchScheduledImports = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('scheduled_imports')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setScheduledImports(data || []);
+    } catch (error) {
+      console.error('Error fetching scheduled imports:', error);
+    }
+  };
+
+  const handleSearch = async () => {
     if (!searchQuery.trim()) return;
     
     setLoading(true);
     try {
-      const apolloIntegration = integrations.find(i => i.integration_id === 'apollo');
-      if (!apolloIntegration) {
-        throw new Error('Apollo integration not configured');
+      const integration = integrations.find(i => i.integration_id === selectedIntegration);
+      if (!integration) {
+        throw new Error(`${selectedIntegration} integration not configured`);
       }
 
-      const response = await fetch('https://api.apollo.io/v1/mixed_people/search', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache',
-          'X-Api-Key': apolloIntegration.config.api_key
-        },
-        body: JSON.stringify({
-          q_keywords: searchQuery,
-          page: 1,
-          per_page: 10
-        })
-      });
+      let results: any[] = [];
 
-      if (!response.ok) throw new Error('Apollo search failed');
-      
-      const data = await response.json();
-      setSearchResults(data.people || []);
+      if (selectedIntegration === 'apollo') {
+        const response = await fetch('https://api.apollo.io/v1/mixed_people/search', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache',
+            'X-Api-Key': integration.config.api_key
+          },
+          body: JSON.stringify({
+            q_keywords: searchQuery,
+            page: 1,
+            per_page: 25
+          })
+        });
+
+        if (!response.ok) throw new Error('Apollo search failed');
+        const data = await response.json();
+        results = data.people || [];
+      } else if (selectedIntegration === 'crunchbase') {
+        const response = await fetch(`https://api.crunchbase.com/api/v4/autocompletes?query=${encodeURIComponent(searchQuery)}&collection_ids=organizations&limit=25`, {
+          headers: {
+            'X-cb-user-key': integration.config.api_key
+          }
+        });
+
+        if (!response.ok) throw new Error('Crunchbase search failed');
+        const data = await response.json();
+        results = data.entities || [];
+      }
+
+      setSearchResults(results);
     } catch (error: any) {
       toast({
         title: "Search failed",
@@ -139,37 +205,71 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
     }
   };
 
-  const handleImportSelected = async (leads: any[]) => {
+  const formatLeadData = (lead: any) => {
+    const formatted: any = {};
+    
+    // Apply field mappings or use defaults
+    if (fieldMappings.company_name) {
+      formatted.company_name = lead[fieldMappings.company_name] || 'Unknown Company';
+    } else {
+      formatted.company_name = lead.organization?.name || lead.company || lead.name || 'Unknown Company';
+    }
+
+    if (fieldMappings.contact_name) {
+      formatted.contact_name = lead[fieldMappings.contact_name] || 'Unknown Contact';
+    } else {
+      formatted.contact_name = lead.name || `${lead.first_name || ''} ${lead.last_name || ''}`.trim() || 'Unknown Contact';
+    }
+
+    formatted.contact_email = lead[fieldMappings.contact_email || 'email'] || null;
+    formatted.contact_phone = lead[fieldMappings.contact_phone || 'phone_numbers']?.[0]?.sanitized_number || null;
+    formatted.industry = lead[fieldMappings.industry] || lead.organization?.industry || lead.industry || null;
+    formatted.job_title = lead[fieldMappings.job_title || 'title'] || null;
+    formatted.linkedin_url = lead[fieldMappings.linkedin_url || 'linkedin_url'] || null;
+    formatted.company_website = lead[fieldMappings.company_website] || lead.organization?.website_url || lead.website || null;
+    formatted.source = selectedIntegration === 'apollo' ? 'Apollo' : 'Crunchbase';
+
+    return formatted;
+  };
+
+  const handleImportSelected = async () => {
     setImporting(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
 
-      const formattedLeads = leads.map(lead => ({
-        user_id: session.user.id,
-        company_name: lead.organization?.name || lead.company || 'Unknown Company',
-        contact_name: lead.name || `${lead.first_name || ''} ${lead.last_name || ''}`.trim() || 'Unknown Contact',
-        contact_email: lead.email || null,
-        contact_phone: lead.phone_numbers?.[0]?.sanitized_number || null,
-        industry: lead.organization?.industry || null,
-        company_size: lead.organization?.estimated_num_employees ? `${lead.organization.estimated_num_employees}` : null,
-        source: selectedIntegration === 'apollo' ? 'Apollo' : 'Crunchbase',
-        job_title: lead.title || null,
-        linkedin_url: lead.linkedin_url || null,
-        company_website: lead.organization?.website_url || null
+      const leadsToImport = Array.from(selectedLeads).map(idx => searchResults[idx]);
+      const formattedLeads = leadsToImport.map(lead => ({
+        ...formatLeadData(lead),
+        user_id: session.user.id
       }));
 
-      const { error } = await supabase.from("leads").insert(formattedLeads);
+      const { data, error } = await supabase.from("leads").insert(formattedLeads).select();
       if (error) throw error;
+
+      // Log import history
+      await supabase.from("import_history").insert({
+        user_id: session.user.id,
+        source: selectedIntegration === 'apollo' ? 'Apollo' : 'Crunchbase',
+        leads_count: formattedLeads.length,
+        success_count: data?.length || 0,
+        failed_count: formattedLeads.length - (data?.length || 0),
+        import_type: 'manual',
+        search_query: searchQuery,
+        field_mappings: Object.keys(fieldMappings).length > 0 ? fieldMappings : null
+      });
 
       toast({
         title: "Import successful",
-        description: `Imported ${formattedLeads.length} leads from ${selectedIntegration === 'apollo' ? 'Apollo' : 'Crunchbase'}`,
+        description: `Imported ${data?.length || 0} leads from ${selectedIntegration === 'apollo' ? 'Apollo' : 'Crunchbase'}`,
       });
 
       setSearchResults([]);
       setSearchQuery("");
+      setSelectedLeads(new Set());
       setSelectedIntegration(null);
+      setFieldMappings({});
+      setShowFieldMapping(false);
       setOpen(false);
       onImportComplete?.();
     } catch (error: any) {
@@ -181,6 +281,102 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
     } finally {
       setImporting(false);
     }
+  };
+
+  const handleScheduleImport = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
+      const now = new Date();
+      let nextRun = new Date(now);
+      
+      if (scheduleFrequency === 'daily') {
+        nextRun.setDate(nextRun.getDate() + 1);
+      } else if (scheduleFrequency === 'weekly') {
+        nextRun.setDate(nextRun.getDate() + 7);
+      }
+
+      const { error } = await supabase.from("scheduled_imports").insert({
+        user_id: session.user.id,
+        integration_id: selectedIntegration!,
+        search_query: searchQuery,
+        field_mappings: Object.keys(fieldMappings).length > 0 ? fieldMappings : null,
+        schedule_frequency: scheduleFrequency,
+        next_run_at: nextRun.toISOString()
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Schedule created",
+        description: `Import will run ${scheduleFrequency} starting ${format(nextRun, 'PPp')}`,
+      });
+
+      fetchScheduledImports();
+    } catch (error: any) {
+      toast({
+        title: "Failed to create schedule",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const toggleSchedule = async (scheduleId: string, isActive: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('scheduled_imports')
+        .update({ is_active: !isActive })
+        .eq('id', scheduleId);
+
+      if (error) throw error;
+
+      toast({
+        title: isActive ? "Schedule paused" : "Schedule activated",
+      });
+
+      fetchScheduledImports();
+    } catch (error: any) {
+      toast({
+        title: "Failed to update schedule",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteSchedule = async (scheduleId: string) => {
+    try {
+      const { error } = await supabase
+        .from('scheduled_imports')
+        .delete()
+        .eq('id', scheduleId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Schedule deleted",
+      });
+
+      fetchScheduledImports();
+    } catch (error: any) {
+      toast({
+        title: "Failed to delete schedule",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const toggleLeadSelection = (idx: number) => {
+    const newSelected = new Set(selectedLeads);
+    if (newSelected.has(idx)) {
+      newSelected.delete(idx);
+    } else {
+      newSelected.add(idx);
+    }
+    setSelectedLeads(newSelected);
   };
 
   const downloadTemplate = () => {
@@ -205,7 +401,7 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
           Import Leads
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-4xl max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>Import Leads</DialogTitle>
           <DialogDescription>
@@ -214,9 +410,11 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
         </DialogHeader>
 
         <Tabs defaultValue="csv">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="csv">CSV Upload</TabsTrigger>
             <TabsTrigger value="integrations">Integrations</TabsTrigger>
+            <TabsTrigger value="schedule">Scheduled</TabsTrigger>
+            <TabsTrigger value="history">History</TabsTrigger>
           </TabsList>
 
           <TabsContent value="csv" className="space-y-4">
@@ -261,135 +459,337 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
           </TabsContent>
 
           <TabsContent value="integrations" className="space-y-4">
-            {selectedIntegration ? (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-semibold">
-                    {selectedIntegration === 'apollo' ? 'Search Apollo.io' : 'Search Crunchbase'}
-                  </h4>
-                  <Button variant="ghost" onClick={() => {
-                    setSelectedIntegration(null);
-                    setSearchResults([]);
-                    setSearchQuery("");
-                  }}>
-                    Back
-                  </Button>
-                </div>
+            <ScrollArea className="h-[500px] pr-4">
+              {selectedIntegration ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold">
+                      {selectedIntegration === 'apollo' ? 'Search Apollo.io' : 'Search Crunchbase'}
+                    </h4>
+                    <Button variant="ghost" onClick={() => {
+                      setSelectedIntegration(null);
+                      setSearchResults([]);
+                      setSearchQuery("");
+                      setSelectedLeads(new Set());
+                      setFieldMappings({});
+                      setShowFieldMapping(false);
+                    }}>
+                      Back
+                    </Button>
+                  </div>
 
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Search for people or companies..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSearchApollo()}
-                  />
-                  <Button onClick={handleSearchApollo} disabled={loading}>
-                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Search'}
-                  </Button>
-                </div>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Search for people or companies..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                    />
+                    <Button onClick={handleSearch} disabled={loading}>
+                      {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Search'}
+                    </Button>
+                  </div>
 
-                {searchResults.length > 0 && (
-                  <div className="space-y-2 max-h-96 overflow-y-auto">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-sm text-muted-foreground">
-                        {searchResults.length} results found
-                      </p>
-                      <Button 
-                        onClick={() => handleImportSelected(searchResults)}
-                        disabled={importing}
-                        variant="hero"
-                        size="sm"
-                      >
-                        {importing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                        Import All ({searchResults.length})
-                      </Button>
-                    </div>
-                    {searchResults.map((result, idx) => (
-                      <div key={idx} className="border rounded-lg p-3 space-y-1">
-                        <div className="font-semibold">
-                          {result.name || `${result.first_name} ${result.last_name}`}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {result.title && <div>{result.title}</div>}
-                          {result.organization?.name && <div>{result.organization.name}</div>}
-                          {result.email && <div>{result.email}</div>}
+                  {searchResults.length > 0 && (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowFieldMapping(!showFieldMapping)}
+                        >
+                          <Settings2 className="w-4 h-4 mr-2" />
+                          Field Mapping
+                        </Button>
+                        <div className="flex gap-2">
+                          <Button 
+                            onClick={handleImportSelected}
+                            disabled={importing || selectedLeads.size === 0}
+                            variant="hero"
+                            size="sm"
+                          >
+                            {importing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                            Import Selected ({selectedLeads.size})
+                          </Button>
+                          <Button 
+                            onClick={handleScheduleImport}
+                            disabled={!searchQuery}
+                            variant="outline"
+                            size="sm"
+                          >
+                            <Calendar className="w-4 h-4 mr-2" />
+                            Schedule
+                          </Button>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-semibold">Apollo.io</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Import leads directly from Apollo
-                      </p>
-                    </div>
-                    {getIntegrationStatus('apollo') ? (
-                      <Button 
-                        variant="outline"
-                        onClick={() => setSelectedIntegration('apollo')}
-                      >
-                        Import
-                      </Button>
-                    ) : (
-                      <Button 
-                        variant="outline"
-                        onClick={() => {
-                          navigate('/dashboard/integrations');
-                          setOpen(false);
-                        }}
-                      >
-                        <ExternalLink className="w-4 h-4 mr-2" />
-                        Configure
-                      </Button>
-                    )}
-                  </div>
-                </div>
 
-                <div className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-semibold">Crunchbase</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Import company data from Crunchbase
-                      </p>
-                    </div>
-                    {getIntegrationStatus('crunchbase') ? (
-                      <Button 
-                        variant="outline"
-                        onClick={() => setSelectedIntegration('crunchbase')}
-                      >
-                        Import
-                      </Button>
-                    ) : (
-                      <Button 
-                        variant="outline"
-                        onClick={() => {
-                          navigate('/dashboard/integrations');
-                          setOpen(false);
-                        }}
-                      >
-                        <ExternalLink className="w-4 h-4 mr-2" />
-                        Configure
-                      </Button>
-                    )}
-                  </div>
-                </div>
+                      {showFieldMapping && (
+                        <Card className="p-4 space-y-3">
+                          <h5 className="font-semibold text-sm">Custom Field Mapping</h5>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <Label className="text-xs">Company Name Field</Label>
+                              <Input
+                                placeholder="e.g., organization.name"
+                                value={fieldMappings.company_name || ''}
+                                onChange={(e) => setFieldMappings({...fieldMappings, company_name: e.target.value})}
+                                size={1}
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Contact Name Field</Label>
+                              <Input
+                                placeholder="e.g., name"
+                                value={fieldMappings.contact_name || ''}
+                                onChange={(e) => setFieldMappings({...fieldMappings, contact_name: e.target.value})}
+                                size={1}
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Email Field</Label>
+                              <Input
+                                placeholder="e.g., email"
+                                value={fieldMappings.contact_email || ''}
+                                onChange={(e) => setFieldMappings({...fieldMappings, contact_email: e.target.value})}
+                                size={1}
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Phone Field</Label>
+                              <Input
+                                placeholder="e.g., phone"
+                                value={fieldMappings.contact_phone || ''}
+                                onChange={(e) => setFieldMappings({...fieldMappings, contact_phone: e.target.value})}
+                                size={1}
+                              />
+                            </div>
+                          </div>
+                        </Card>
+                      )}
 
-                {integrations.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    Configure your integrations in Settings to import leads directly from Apollo or Crunchbase.
-                  </p>
-                )}
-              </div>
-            )}
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">
+                          {searchResults.length} results found - Select leads to import
+                        </p>
+                        {searchResults.map((result, idx) => (
+                          <Card key={idx} className="p-3 cursor-pointer hover:bg-muted/50" onClick={() => toggleLeadSelection(idx)}>
+                            <div className="flex items-start gap-3">
+                              <Checkbox
+                                checked={selectedLeads.has(idx)}
+                                onCheckedChange={() => toggleLeadSelection(idx)}
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              <div className="flex-1">
+                                <div className="font-semibold">
+                                  {result.name || `${result.first_name} ${result.last_name}` || result.identifier?.value}
+                                </div>
+                                <div className="text-sm text-muted-foreground space-y-1">
+                                  {result.title && <div>{result.title}</div>}
+                                  {(result.organization?.name || result.company) && <div>{result.organization?.name || result.company}</div>}
+                                  {result.email && <div>{result.email}</div>}
+                                  {result.short_description && <div className="text-xs">{result.short_description}</div>}
+                                </div>
+                              </div>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <Card className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-semibold">Apollo.io</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Import leads directly from Apollo
+                        </p>
+                      </div>
+                      {getIntegrationStatus('apollo') ? (
+                        <Button 
+                          variant="outline"
+                          onClick={() => setSelectedIntegration('apollo')}
+                        >
+                          Import
+                        </Button>
+                      ) : (
+                        <Button 
+                          variant="outline"
+                          onClick={() => {
+                            navigate('/dashboard/integrations');
+                            setOpen(false);
+                          }}
+                        >
+                          <ExternalLink className="w-4 h-4 mr-2" />
+                          Configure
+                        </Button>
+                      )}
+                    </div>
+                  </Card>
+
+                  <Card className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-semibold">Crunchbase</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Import company data from Crunchbase
+                        </p>
+                      </div>
+                      {getIntegrationStatus('crunchbase') ? (
+                        <Button 
+                          variant="outline"
+                          onClick={() => setSelectedIntegration('crunchbase')}
+                        >
+                          Import
+                        </Button>
+                      ) : (
+                        <Button 
+                          variant="outline"
+                          onClick={() => {
+                            navigate('/dashboard/integrations');
+                            setOpen(false);
+                          }}
+                        >
+                          <ExternalLink className="w-4 h-4 mr-2" />
+                          Configure
+                        </Button>
+                      )}
+                    </div>
+                  </Card>
+
+                  {integrations.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      Configure your integrations in Settings to import leads directly from Apollo or Crunchbase.
+                    </p>
+                  )}
+                </div>
+              )}
+            </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="schedule" className="space-y-4">
+            <ScrollArea className="h-[500px] pr-4">
+              {scheduledImports.length > 0 ? (
+                <div className="space-y-3">
+                  {scheduledImports.map((schedule) => (
+                    <Card key={schedule.id} className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-semibold capitalize">{schedule.integration_id}</h4>
+                            {schedule.is_active ? (
+                              <span className="text-xs bg-green-500/10 text-green-500 px-2 py-0.5 rounded">Active</span>
+                            ) : (
+                              <span className="text-xs bg-gray-500/10 text-gray-500 px-2 py-0.5 rounded">Paused</span>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Query: {schedule.search_query}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Runs {schedule.schedule_frequency} • Next: {format(new Date(schedule.next_run_at), 'PPp')}
+                          </p>
+                          {schedule.last_run_at && (
+                            <p className="text-xs text-muted-foreground">
+                              Last: {format(new Date(schedule.last_run_at), 'PPp')}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => toggleSchedule(schedule.id, schedule.is_active)}
+                          >
+                            <Clock className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => deleteSchedule(schedule.id)}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Clock className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>No scheduled imports yet</p>
+                  <p className="text-sm mt-2">Create a search in the Integrations tab and click Schedule</p>
+                </div>
+              )}
+            </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="history" className="space-y-4">
+            <ScrollArea className="h-[500px] pr-4">
+              {importHistory.length > 0 ? (
+                <div className="space-y-3">
+                  {importHistory.map((entry) => (
+                    <Card key={entry.id} className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-semibold">{entry.source}</h4>
+                            <span className="text-xs bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded capitalize">
+                              {entry.import_type}
+                            </span>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {entry.success_count} successful, {entry.failed_count} failed
+                          </p>
+                          {entry.search_query && (
+                            <p className="text-xs text-muted-foreground">
+                              Query: {entry.search_query}
+                            </p>
+                          )}
+                          <p className="text-xs text-muted-foreground">
+                            {format(new Date(entry.imported_at), 'PPp')}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-primary">{entry.leads_count}</p>
+                          <p className="text-xs text-muted-foreground">leads</p>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  <History className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>No import history yet</p>
+                  <p className="text-sm mt-2">Your import history will appear here</p>
+                </div>
+              )}
+            </ScrollArea>
           </TabsContent>
         </Tabs>
+
+        {selectedIntegration && searchQuery && (
+          <Card className="p-3 bg-muted/50">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Label className="text-sm">Schedule Frequency:</Label>
+                <Select value={scheduleFrequency} onValueChange={(v: any) => setScheduleFrequency(v)}>
+                  <SelectTrigger className="w-32 h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="daily">Daily</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </Card>
+        )}
       </DialogContent>
     </Dialog>
   );
