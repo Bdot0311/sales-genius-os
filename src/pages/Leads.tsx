@@ -12,7 +12,7 @@ import { ImportLeadsDialog } from "@/components/dashboard/ImportLeadsDialog";
 import { LeadAssignmentDialog } from "@/components/dashboard/LeadAssignmentDialog";
 import { LeadActivityTimeline } from "@/components/dashboard/LeadActivityTimeline";
 import { LeadsTableView } from "@/components/dashboard/LeadsTableView";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { LeadDetailSheet } from "@/components/dashboard/LeadDetailSheet";
 import { Search, Download, ArrowUpDown, Trash2, Plus, Save, Star, UserPlus, LayoutGrid, Table as TableIcon, Sparkles } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -73,6 +73,8 @@ const Leads = () => {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [viewMode, setViewMode] = useState<"card" | "table">("card");
   const [enrichingLeads, setEnrichingLeads] = useState<Set<string>>(new Set());
+  const [enrichmentHistory, setEnrichmentHistory] = useState<any[]>([]);
+  const [bulkEnriching, setBulkEnriching] = useState(false);
   const { toast } = useToast();
 
   const fetchLeads = async () => {
@@ -350,6 +352,21 @@ const Leads = () => {
     return <Badge variant="destructive">Low: {score}</Badge>;
   };
 
+  const fetchEnrichmentHistory = async (leadId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('enrichment_history')
+        .select('*')
+        .eq('lead_id', leadId)
+        .order('enriched_at', { ascending: false });
+
+      if (error) throw error;
+      setEnrichmentHistory(data || []);
+    } catch (error) {
+      console.error('Error fetching enrichment history:', error);
+    }
+  };
+
   const handleEnrichLead = async (leadId: string) => {
     setEnrichingLeads(prev => new Set(prev).add(leadId));
     
@@ -370,7 +387,10 @@ const Leads = () => {
         description: data.message || "Successfully enriched lead data",
       });
 
-      fetchLeads();
+      await fetchLeads();
+      if (selectedLead?.id === leadId) {
+        await fetchEnrichmentHistory(leadId);
+      }
     } catch (error: any) {
       toast({
         title: "Enrichment failed",
@@ -384,6 +404,47 @@ const Leads = () => {
         return next;
       });
     }
+  };
+
+  const handleBulkEnrich = async () => {
+    if (selectedLeads.size === 0) return;
+    
+    setBulkEnriching(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const leadId of Array.from(selectedLeads)) {
+      try {
+        const { error } = await supabase.functions.invoke('enrich-lead', {
+          body: { leadId }
+        });
+        if (error) throw error;
+        successCount++;
+      } catch (error) {
+        failCount++;
+      }
+    }
+
+    toast({
+      title: "Bulk enrichment complete",
+      description: `${successCount} leads enriched${failCount > 0 ? `, ${failCount} failed` : ''}`,
+    });
+
+    await fetchLeads();
+    setSelectedLeads(new Set());
+    setBulkEnriching(false);
+  };
+
+  const handleLeadClick = async (lead: Lead) => {
+    setSelectedLead(lead);
+    await fetchEnrichmentHistory(lead.id);
+  };
+
+  const getEnrichmentStatusBadge = (status: string | null) => {
+    if (!status || status === 'pending') return <Badge variant="outline" className="text-xs">Not Enriched</Badge>;
+    if (status === 'enriched') return <Badge variant="default" className="text-xs">✓ Enriched</Badge>;
+    if (status === 'failed') return <Badge variant="destructive" className="text-xs">Failed</Badge>;
+    return null;
   };
 
   return (
@@ -660,6 +721,14 @@ const Leads = () => {
 
                   {selectedLeads.size > 0 && (
                     <>
+                      <Button 
+                        variant="hero" 
+                        onClick={handleBulkEnrich}
+                        disabled={bulkEnriching}
+                      >
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        {bulkEnriching ? `Enriching ${selectedLeads.size}...` : `Enrich (${selectedLeads.size})`}
+                      </Button>
                       <Button variant="outline" onClick={() => setShowAssignDialog(true)}>
                         <UserPlus className="w-4 h-4 mr-2" />
                         Assign ({selectedLeads.size})
@@ -716,7 +785,7 @@ const Leads = () => {
                     selectedLeads={Array.from(selectedLeads)}
                     onSelectLead={toggleSelectLead}
                     onSelectAll={(checked) => checked ? setSelectedLeads(new Set(filteredAndSortedLeads.map(l => l.id))) : setSelectedLeads(new Set())}
-                    onLeadClick={(lead) => setSelectedLead(lead as Lead)}
+                    onLeadClick={handleLeadClick}
                   />
                 ) : (
                   <div className="space-y-3">
@@ -731,7 +800,7 @@ const Leads = () => {
                     </div>
                     
                     {filteredAndSortedLeads.map((lead) => (
-                      <Card key={lead.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedLead(lead)}>
+                      <Card key={lead.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleLeadClick(lead)}>
                         <CardContent className="p-4">
                           <div className="flex items-start gap-3">
                             <Checkbox
@@ -744,6 +813,7 @@ const Leads = () => {
                               <div className="flex items-center gap-3">
                                 <h3 className="font-semibold text-lg">{lead.contact_name}</h3>
                                 {getScoreBadge(lead.icp_score)}
+                                {getEnrichmentStatusBadge((lead as any).enrichment_status)}
                               </div>
                               <p className="text-sm text-muted-foreground">{lead.company_name}</p>
                               <div className="flex gap-4 text-sm text-muted-foreground">
@@ -812,51 +882,14 @@ const Leads = () => {
         selectedLeads={Array.from(selectedLeads)}
       />
 
-      <Sheet open={!!selectedLead} onOpenChange={(open) => !open && setSelectedLead(null)}>
-        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>{selectedLead?.contact_name}</SheetTitle>
-          </SheetHeader>
-          {selectedLead && (
-            <div className="space-y-6 mt-6">
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold">Company</h3>
-                <p className="text-sm">{selectedLead.company_name}</p>
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold">Contact</h3>
-                <p className="text-sm">{selectedLead.contact_email}</p>
-                {selectedLead.contact_phone && <p className="text-sm">{selectedLead.contact_phone}</p>}
-              </div>
-              {selectedLead.industry && (
-                <div className="space-y-2">
-                  <h3 className="text-sm font-semibold">Industry</h3>
-                  <p className="text-sm">{selectedLead.industry}</p>
-                </div>
-              )}
-              {selectedLead.company_size && (
-                <div className="space-y-2">
-                  <h3 className="text-sm font-semibold">Company Size</h3>
-                  <p className="text-sm">{selectedLead.company_size}</p>
-                </div>
-              )}
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold">ICP Score</h3>
-                {getScoreBadge(selectedLead.icp_score)}
-              </div>
-              {selectedLead.notes && (
-                <div className="space-y-2">
-                  <h3 className="text-sm font-semibold">Notes</h3>
-                  <p className="text-sm">{selectedLead.notes}</p>
-                </div>
-              )}
-              <div className="border-t pt-6">
-                <LeadActivityTimeline leadId={selectedLead.id} />
-              </div>
-            </div>
-          )}
-        </SheetContent>
-      </Sheet>
+      <LeadDetailSheet
+        lead={selectedLead as any}
+        open={!!selectedLead}
+        onOpenChange={(open) => !open && setSelectedLead(null)}
+        enrichmentHistory={enrichmentHistory}
+        onEnrich={() => selectedLead && handleEnrichLead(selectedLead.id)}
+        isEnriching={selectedLead ? enrichingLeads.has(selectedLead.id) : false}
+      />
     </DashboardLayout>
   );
 };
