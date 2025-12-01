@@ -14,6 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface AuthFormProps {
   onSuccess?: () => void;
@@ -26,6 +27,7 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
   const [resetEmail, setResetEmail] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
   const { toast } = useToast();
 
   const handleResetPassword = async (e: React.FormEvent) => {
@@ -58,7 +60,7 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
@@ -134,6 +136,60 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
     }
   };
 
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      // First check if user has an active subscription
+      const { data: subData, error: subError } = await supabase.functions.invoke(
+        "check-subscription",
+        {
+          body: { email },
+        }
+      );
+
+      if (subError || !subData?.subscribed) {
+        toast({
+          title: "No active subscription found",
+          description: "Please purchase a subscription or start a trial before creating an account.",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/pricing";
+        }, 1500);
+        return;
+      }
+
+      // If subscription exists, create the account
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        toast({
+          title: "Account created!",
+          description: "Please check your email to verify your account.",
+        });
+        setMode("signin");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="w-full max-w-md">
       <div className="bg-card border border-border rounded-2xl p-8 shadow-card">
@@ -143,89 +199,145 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
             <span className="text-2xl font-bold">SalesOS</span>
           </div>
           <h2 className="text-2xl font-bold mb-2">
-            Welcome back
+            {mode === "signin" ? "Welcome back" : "Create your account"}
           </h2>
           <p className="text-muted-foreground">
-            Sign in to your account
+            {mode === "signin" 
+              ? "Sign in to your account"
+              : "Sign up to access your subscription"
+            }
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <Tabs value={mode} onValueChange={(v) => setMode(v as "signin" | "signup")} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="signin">Sign In</TabsTrigger>
+            <TabsTrigger value="signup">Sign Up</TabsTrigger>
+          </TabsList>
 
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              placeholder="you@company.com"
-            />
-          </div>
+          <TabsContent value="signin">
+            <form onSubmit={handleSignIn} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="signin-email">Email</Label>
+                <Input
+                  id="signin-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  placeholder="you@company.com"
+                />
+              </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              placeholder="••••••••"
-              minLength={6}
-            />
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="signin-password">Password</Label>
+                <Input
+                  id="signin-password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  placeholder="••••••••"
+                  minLength={6}
+                />
+              </div>
 
-          <Button
-            type="submit"
-            variant="hero"
-            className="w-full"
-            disabled={loading}
-          >
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Sign In
-          </Button>
-        </form>
+              <Button
+                type="submit"
+                variant="hero"
+                className="w-full"
+                disabled={loading}
+              >
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Sign In
+              </Button>
 
-        <div className="mt-6 text-center space-y-3">
-          <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
-            <DialogTrigger asChild>
-              <button className="text-sm text-primary hover:underline">
-                Forgot Password?
-              </button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Reset Password</DialogTitle>
-                <DialogDescription>
-                  Enter your email address and we'll send you a link to reset your password.
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleResetPassword} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="reset-email">Email</Label>
-                  <Input
-                    id="reset-email"
-                    type="email"
-                    value={resetEmail}
-                    onChange={(e) => setResetEmail(e.target.value)}
-                    required
-                    placeholder="you@company.com"
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={resetLoading}
-                >
-                  {resetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Send Reset Link
-                </Button>
-              </form>
-            </DialogContent>
-          </Dialog>
-          
+              <div className="text-center">
+                <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+                  <DialogTrigger asChild>
+                    <button type="button" className="text-sm text-primary hover:underline">
+                      Forgot Password?
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Reset Password</DialogTitle>
+                      <DialogDescription>
+                        Enter your email address and we'll send you a link to reset your password.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleResetPassword} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="reset-email">Email</Label>
+                        <Input
+                          id="reset-email"
+                          type="email"
+                          value={resetEmail}
+                          onChange={(e) => setResetEmail(e.target.value)}
+                          required
+                          placeholder="you@company.com"
+                        />
+                      </div>
+                      <Button
+                        type="submit"
+                        className="w-full"
+                        disabled={resetLoading}
+                      >
+                        {resetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Send Reset Link
+                      </Button>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </form>
+          </TabsContent>
+
+          <TabsContent value="signup">
+            <form onSubmit={handleSignUp} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="signup-email">Email</Label>
+                <Input
+                  id="signup-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  placeholder="you@company.com"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="signup-password">Password</Label>
+                <Input
+                  id="signup-password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  placeholder="Create a secure password"
+                  minLength={6}
+                />
+              </div>
+
+              <Button
+                type="submit"
+                variant="hero"
+                className="w-full"
+                disabled={loading}
+              >
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Create Account
+              </Button>
+
+              <p className="text-xs text-muted-foreground text-center">
+                Note: You need an active subscription to create an account
+              </p>
+            </form>
+          </TabsContent>
+        </Tabs>
+
+        <div className="mt-6 text-center">
           <p className="text-sm text-muted-foreground">
             Don't have a subscription?{" "}
             <a href="/pricing" className="text-primary hover:underline">
