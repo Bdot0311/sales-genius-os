@@ -487,7 +487,9 @@ export type Database = {
           icp_score: number | null
           id: string
           industry: string | null
+          last_contacted_at: string | null
           notes: string | null
+          score_changed_at: string | null
           source: string | null
           updated_at: string
           user_id: string
@@ -502,7 +504,9 @@ export type Database = {
           icp_score?: number | null
           id?: string
           industry?: string | null
+          last_contacted_at?: string | null
           notes?: string | null
+          score_changed_at?: string | null
           source?: string | null
           updated_at?: string
           user_id: string
@@ -517,7 +521,9 @@ export type Database = {
           icp_score?: number | null
           id?: string
           industry?: string | null
+          last_contacted_at?: string | null
           notes?: string | null
+          score_changed_at?: string | null
           source?: string | null
           updated_at?: string
           user_id?: string
