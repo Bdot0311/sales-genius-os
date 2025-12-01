@@ -457,6 +457,45 @@ export type Database = {
           },
         ]
       }
+      import_history: {
+        Row: {
+          failed_count: number
+          field_mappings: Json | null
+          id: string
+          import_type: string
+          imported_at: string
+          leads_count: number
+          search_query: string | null
+          source: string
+          success_count: number
+          user_id: string
+        }
+        Insert: {
+          failed_count?: number
+          field_mappings?: Json | null
+          id?: string
+          import_type?: string
+          imported_at?: string
+          leads_count?: number
+          search_query?: string | null
+          source: string
+          success_count?: number
+          user_id: string
+        }
+        Update: {
+          failed_count?: number
+          field_mappings?: Json | null
+          id?: string
+          import_type?: string
+          imported_at?: string
+          leads_count?: number
+          search_query?: string | null
+          source?: string
+          success_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       integrations: {
         Row: {
           config: Json
@@ -707,6 +746,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      scheduled_imports: {
+        Row: {
+          created_at: string
+          field_mappings: Json | null
+          id: string
+          integration_id: string
+          is_active: boolean
+          last_run_at: string | null
+          next_run_at: string
+          schedule_frequency: string
+          search_query: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          field_mappings?: Json | null
+          id?: string
+          integration_id: string
+          is_active?: boolean
+          last_run_at?: string | null
+          next_run_at: string
+          schedule_frequency: string
+          search_query: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          field_mappings?: Json | null
+          id?: string
+          integration_id?: string
+          is_active?: boolean
+          last_run_at?: string | null
+          next_run_at?: string
+          schedule_frequency?: string
+          search_query?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       subscriptions: {
         Row: {
