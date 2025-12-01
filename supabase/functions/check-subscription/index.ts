@@ -30,26 +30,31 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    const authHeader = req.headers.get('Authorization');
     let userEmail: string;
     let userId: string | null = null;
+    const body = await req.json();
 
-    // Check if this is an authenticated request or email-based request
-    if (authHeader && !authHeader.includes('anon')) {
-      // Authenticated request - get user from JWT
-      logStep('Authenticated request detected');
+    // Try to get authenticated user if auth header exists and is not just anon key
+    const authHeader = req.headers.get('Authorization');
+    if (authHeader) {
       const token = authHeader.replace('Bearer ', '');
       const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-      if (userError) throw new Error(`Authentication error: ${userError.message}`);
-      const user = userData.user;
-      if (!user?.email) throw new Error('User not authenticated or email not available');
-      userEmail = user.email;
-      userId = user.id;
-      logStep('User authenticated', { userId: user.id, email: userEmail });
+      
+      // If we successfully got a user with a valid session (has sub claim)
+      if (userData?.user && !userError) {
+        userEmail = userData.user.email!;
+        userId = userData.user.id;
+        logStep('User authenticated', { userId, email: userEmail });
+      } else {
+        // Token is anon key or invalid - use email from body
+        logStep('Using email from body (anon or invalid token)');
+        userEmail = body.email;
+        if (!userEmail) throw new Error('Email is required for unauthenticated requests');
+        logStep('Email provided in body', { email: userEmail });
+      }
     } else {
-      // Unauthenticated request - get email from body
-      logStep('Unauthenticated request detected');
-      const body = await req.json();
+      // No auth header - use email from body
+      logStep('No auth header - using email from body');
       userEmail = body.email;
       if (!userEmail) throw new Error('Email is required');
       logStep('Email provided in body', { email: userEmail });
