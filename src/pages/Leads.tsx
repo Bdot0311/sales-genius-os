@@ -9,10 +9,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { AddLeadDialog } from "@/components/dashboard/AddLeadDialog";
 import { ImportLeadsDialog } from "@/components/dashboard/ImportLeadsDialog";
-import { Search, Download, ArrowUpDown, Trash2, Plus, Save, Star } from "lucide-react";
+import { LeadAssignmentDialog } from "@/components/dashboard/LeadAssignmentDialog";
+import { LeadActivityTimeline } from "@/components/dashboard/LeadActivityTimeline";
+import { LeadsTableView } from "@/components/dashboard/LeadsTableView";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Search, Download, ArrowUpDown, Trash2, Plus, Save, Star, UserPlus, LayoutGrid, Table as TableIcon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { subDays, startOfMonth } from "date-fns";
 
 interface LeadFilters {
   source?: string;
@@ -20,6 +25,9 @@ interface LeadFilters {
   company_size?: string;
   min_score?: number;
   max_score?: number;
+  date_range?: "all" | "last_7_days" | "last_30_days" | "this_month";
+  last_contacted?: "all" | "contacted" | "not_contacted";
+  score_changed?: "all" | "changed_this_month";
 }
 
 type SortField = "created_at" | "icp_score" | "company_name" | "company_size";
@@ -43,6 +51,10 @@ interface Lead {
   notes?: string;
   icp_score?: number;
   created_at: string;
+  updated_at: string;
+  user_id: string;
+  last_contacted_at?: string;
+  score_changed_at?: string;
 }
 
 const Leads = () => {
@@ -57,6 +69,9 @@ const Leads = () => {
   const [savedPresets, setSavedPresets] = useState<SavedPreset[]>([]);
   const [presetName, setPresetName] = useState("");
   const [showSavePreset, setShowSavePreset] = useState(false);
+  const [showAssignDialog, setShowAssignDialog] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [viewMode, setViewMode] = useState<"card" | "table">("card");
   const { toast } = useToast();
 
   const fetchLeads = async () => {
@@ -124,7 +139,42 @@ const Leads = () => {
       const matchesMinScore = !filters.min_score || (lead.icp_score || 0) >= filters.min_score;
       const matchesMaxScore = !filters.max_score || (lead.icp_score || 0) <= filters.max_score;
 
-      return matchesSearch && matchesSource && matchesIndustry && matchesSize && matchesMinScore && matchesMaxScore;
+      // Date range filter
+      let matchesDateRange = true;
+      if (filters.date_range && filters.date_range !== "all") {
+        const createdDate = new Date(lead.created_at);
+        const now = new Date();
+        
+        if (filters.date_range === "last_7_days") {
+          matchesDateRange = createdDate >= subDays(now, 7);
+        } else if (filters.date_range === "last_30_days") {
+          matchesDateRange = createdDate >= subDays(now, 30);
+        } else if (filters.date_range === "this_month") {
+          matchesDateRange = createdDate >= startOfMonth(now);
+        }
+      }
+
+      // Last contacted filter
+      let matchesLastContacted = true;
+      if (filters.last_contacted && filters.last_contacted !== "all") {
+        const hasContacted = (lead as any).last_contacted_at !== null;
+        matchesLastContacted = filters.last_contacted === "contacted" ? hasContacted : !hasContacted;
+      }
+
+      // Score changed filter
+      let matchesScoreChanged = true;
+      if (filters.score_changed === "changed_this_month") {
+        const scoreChangedDate = (lead as any).score_changed_at;
+        if (scoreChangedDate) {
+          matchesScoreChanged = new Date(scoreChangedDate) >= startOfMonth(new Date());
+        } else {
+          matchesScoreChanged = false;
+        }
+      }
+
+      return matchesSearch && matchesSource && matchesIndustry && matchesSize && 
+             matchesMinScore && matchesMaxScore && matchesDateRange && 
+             matchesLastContacted && matchesScoreChanged;
     })
     .sort((a, b) => {
       let comparison = 0;
@@ -444,6 +494,57 @@ const Leads = () => {
                   />
                 </div>
 
+                <div>
+                  <Label htmlFor="date_range">Date Added</Label>
+                  <Select 
+                    value={filters.date_range || "all"} 
+                    onValueChange={(value) => setFilters({ ...filters, date_range: value as any })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="All time" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All time</SelectItem>
+                      <SelectItem value="last_7_days">Last 7 days</SelectItem>
+                      <SelectItem value="last_30_days">Last 30 days</SelectItem>
+                      <SelectItem value="this_month">This month</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="last_contacted">Contact Status</Label>
+                  <Select 
+                    value={filters.last_contacted || "all"} 
+                    onValueChange={(value) => setFilters({ ...filters, last_contacted: value as any })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="All" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="contacted">Contacted</SelectItem>
+                      <SelectItem value="not_contacted">Not contacted</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="score_changed">Score Updates</Label>
+                  <Select 
+                    value={filters.score_changed || "all"} 
+                    onValueChange={(value) => setFilters({ ...filters, score_changed: value as any })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="All" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="changed_this_month">Changed this month</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div className="flex gap-2">
                   <Button 
                     variant="outline" 
@@ -522,6 +623,10 @@ const Leads = () => {
 
                   {selectedLeads.size > 0 && (
                     <>
+                      <Button variant="outline" onClick={() => setShowAssignDialog(true)}>
+                        <UserPlus className="w-4 h-4 mr-2" />
+                        Assign ({selectedLeads.size})
+                      </Button>
                       <Button variant="outline" onClick={handleBulkExport}>
                         <Download className="w-4 h-4 mr-2" />
                         Export ({selectedLeads.size})
@@ -539,6 +644,23 @@ const Leads = () => {
                       Export All
                     </Button>
                   )}
+
+                  <div className="flex gap-1 border rounded-md p-1">
+                    <Button
+                      variant={viewMode === "card" ? "secondary" : "ghost"}
+                      size="sm"
+                      onClick={() => setViewMode("card")}
+                    >
+                      <LayoutGrid className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant={viewMode === "table" ? "secondary" : "ghost"}
+                      size="sm"
+                      onClick={() => setViewMode("table")}
+                    >
+                      <TableIcon className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
 
                 {loading ? (
@@ -551,6 +673,14 @@ const Leads = () => {
                       ? "No leads found matching your criteria" 
                       : "No leads yet. Add your first lead to get started!"}
                   </div>
+                ) : viewMode === "table" ? (
+                  <LeadsTableView
+                    leads={filteredAndSortedLeads}
+                    selectedLeads={Array.from(selectedLeads)}
+                    onSelectLead={toggleSelectLead}
+                    onSelectAll={(checked) => checked ? setSelectedLeads(new Set(filteredAndSortedLeads.map(l => l.id))) : setSelectedLeads(new Set())}
+                    onLeadClick={(lead) => setSelectedLead(lead as Lead)}
+                  />
                 ) : (
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 py-2 border-b">
@@ -564,13 +694,14 @@ const Leads = () => {
                     </div>
                     
                     {filteredAndSortedLeads.map((lead) => (
-                      <Card key={lead.id}>
+                      <Card key={lead.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedLead(lead)}>
                         <CardContent className="p-4">
                           <div className="flex items-start gap-3">
                             <Checkbox
                               checked={selectedLeads.has(lead.id)}
                               onCheckedChange={() => toggleSelectLead(lead.id)}
                               className="mt-1"
+                              onClick={(e) => e.stopPropagation()}
                             />
                             <div className="space-y-1 flex-1">
                               <div className="flex items-center gap-3">
@@ -623,6 +754,58 @@ const Leads = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <LeadAssignmentDialog
+        open={showAssignDialog}
+        onOpenChange={setShowAssignDialog}
+        selectedLeads={Array.from(selectedLeads)}
+      />
+
+      <Sheet open={!!selectedLead} onOpenChange={(open) => !open && setSelectedLead(null)}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>{selectedLead?.contact_name}</SheetTitle>
+          </SheetHeader>
+          {selectedLead && (
+            <div className="space-y-6 mt-6">
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold">Company</h3>
+                <p className="text-sm">{selectedLead.company_name}</p>
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold">Contact</h3>
+                <p className="text-sm">{selectedLead.contact_email}</p>
+                {selectedLead.contact_phone && <p className="text-sm">{selectedLead.contact_phone}</p>}
+              </div>
+              {selectedLead.industry && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold">Industry</h3>
+                  <p className="text-sm">{selectedLead.industry}</p>
+                </div>
+              )}
+              {selectedLead.company_size && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold">Company Size</h3>
+                  <p className="text-sm">{selectedLead.company_size}</p>
+                </div>
+              )}
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold">ICP Score</h3>
+                {getScoreBadge(selectedLead.icp_score)}
+              </div>
+              {selectedLead.notes && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold">Notes</h3>
+                  <p className="text-sm">{selectedLead.notes}</p>
+                </div>
+              )}
+              <div className="border-t pt-6">
+                <LeadActivityTimeline leadId={selectedLead.id} />
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </DashboardLayout>
   );
 };
