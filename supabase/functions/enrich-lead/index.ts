@@ -184,11 +184,23 @@ serve(async (req) => {
 
     console.log('Lead enriched successfully:', leadId);
 
+    // Log enrichment history
+    const enrichedFields = Object.keys(enrichmentData).filter(k => k !== 'enrichment_status' && k !== 'enriched_at');
+    await supabase
+      .from('enrichment_history')
+      .insert({
+        lead_id: leadId,
+        user_id: user.id,
+        fields_enriched: enrichedFields,
+        source: 'apollo',
+        status: 'success'
+      });
+
     return new Response(
       JSON.stringify({ 
         success: true, 
         message: 'Lead enriched successfully',
-        enrichedFields: Object.keys(enrichmentData).filter(k => k !== 'enrichment_status' && k !== 'enriched_at')
+        enrichedFields
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

@@ -416,6 +416,47 @@ export type Database = {
           },
         ]
       }
+      enrichment_history: {
+        Row: {
+          enriched_at: string
+          error_message: string | null
+          fields_enriched: string[]
+          id: string
+          lead_id: string
+          source: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          enriched_at?: string
+          error_message?: string | null
+          fields_enriched?: string[]
+          id?: string
+          lead_id: string
+          source?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          enriched_at?: string
+          error_message?: string | null
+          fields_enriched?: string[]
+          id?: string
+          lead_id?: string
+          source?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enrichment_history_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integrations: {
         Row: {
           config: Json

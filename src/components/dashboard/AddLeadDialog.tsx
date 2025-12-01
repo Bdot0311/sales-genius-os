@@ -97,7 +97,7 @@ export const AddLeadDialog = ({ onLeadAdded }: AddLeadDialogProps) => {
 
       setLoading(true);
 
-      const { error } = await supabase.from("leads").insert({
+      const { data: newLead, error } = await supabase.from("leads").insert({
         user_id: user.id,
         company_name: formData.companyName,
         contact_name: formData.contactName,
@@ -108,9 +108,18 @@ export const AddLeadDialog = ({ onLeadAdded }: AddLeadDialogProps) => {
         source: formData.source || null,
         notes: formData.notes || null,
         icp_score: aiScore?.score || 0,
-      });
+      }).select().single();
 
       if (error) throw error;
+
+      // Auto-enrich the lead (don't wait for it to complete)
+      if (newLead) {
+        supabase.functions.invoke('enrich-lead', {
+          body: { leadId: newLead.id }
+        }).catch((enrichError) => {
+          console.error('Auto-enrichment failed:', enrichError);
+        });
+      }
 
       toast({
         title: "Lead added!",
