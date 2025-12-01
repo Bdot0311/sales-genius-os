@@ -17,12 +17,12 @@ export const Footer = () => {
         </div>
 
         {/* Logo + description for tablet/desktop */}
-        <div className="hidden md:block mb-8">
-          <div className="flex items-center gap-3 mb-3">
+        <div className="hidden md:block text-center mb-8">
+          <div className="flex items-center justify-center gap-3 mb-3">
             <img src={salesosLogo} alt="SalesOS Logo" className="w-8 h-8 rounded-lg" />
             <span className="text-xl font-bold">SalesOS</span>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
             The AI-powered sales operating system that helps you close more deals, faster.
           </p>
         </div>
