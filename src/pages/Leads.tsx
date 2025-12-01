@@ -13,7 +13,7 @@ import { LeadAssignmentDialog } from "@/components/dashboard/LeadAssignmentDialo
 import { LeadActivityTimeline } from "@/components/dashboard/LeadActivityTimeline";
 import { LeadsTableView } from "@/components/dashboard/LeadsTableView";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Search, Download, ArrowUpDown, Trash2, Plus, Save, Star, UserPlus, LayoutGrid, Table as TableIcon } from "lucide-react";
+import { Search, Download, ArrowUpDown, Trash2, Plus, Save, Star, UserPlus, LayoutGrid, Table as TableIcon, Sparkles } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -72,6 +72,7 @@ const Leads = () => {
   const [showAssignDialog, setShowAssignDialog] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [viewMode, setViewMode] = useState<"card" | "table">("card");
+  const [enrichingLeads, setEnrichingLeads] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   const fetchLeads = async () => {
@@ -347,6 +348,42 @@ const Leads = () => {
     if (score >= 80) return <Badge className="bg-green-500">High: {score}</Badge>;
     if (score >= 50) return <Badge className="bg-yellow-500">Medium: {score}</Badge>;
     return <Badge variant="destructive">Low: {score}</Badge>;
+  };
+
+  const handleEnrichLead = async (leadId: string) => {
+    setEnrichingLeads(prev => new Set(prev).add(leadId));
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Not authenticated');
+      }
+
+      const { data, error } = await supabase.functions.invoke('enrich-lead', {
+        body: { leadId }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Lead enriched",
+        description: data.message || "Successfully enriched lead data",
+      });
+
+      fetchLeads();
+    } catch (error: any) {
+      toast({
+        title: "Enrichment failed",
+        description: error.message || "Failed to enrich lead. Make sure Apollo.io is configured in Settings > Integrations.",
+        variant: "destructive",
+      });
+    } finally {
+      setEnrichingLeads(prev => {
+        const next = new Set(prev);
+        next.delete(leadId);
+        return next;
+      });
+    }
   };
 
   return (
@@ -723,8 +760,22 @@ const Leads = () => {
                                 <p className="text-sm text-muted-foreground mt-2">{lead.notes}</p>
                               )}
                             </div>
-                            <div className="text-sm text-muted-foreground">
-                              {new Date(lead.created_at).toLocaleDateString()}
+                            <div className="flex flex-col gap-2 items-end">
+                              <div className="text-sm text-muted-foreground">
+                                {new Date(lead.created_at).toLocaleDateString()}
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEnrichLead(lead.id);
+                                }}
+                                disabled={enrichingLeads.has(lead.id)}
+                              >
+                                <Sparkles className="w-4 h-4 mr-2" />
+                                {enrichingLeads.has(lead.id) ? 'Enriching...' : 'Enrich'}
+                              </Button>
                             </div>
                           </div>
                         </CardContent>
