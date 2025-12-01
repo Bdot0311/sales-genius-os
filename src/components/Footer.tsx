@@ -16,6 +16,17 @@ export const Footer = () => {
           </p>
         </div>
 
+        {/* Logo + description for tablet/desktop */}
+        <div className="hidden md:flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <img src={salesosLogo} alt="SalesOS Logo" className="w-8 h-8 rounded-lg" />
+            <span className="text-xl font-bold">SalesOS</span>
+          </div>
+          <p className="text-sm text-muted-foreground max-w-md text-right">
+            The AI-powered sales operating system that helps you close more deals, faster.
+          </p>
+        </div>
+
         {/* Product & Legal columns side by side, centered */}
         <div className="mb-6 sm:mb-8">
           <div className="grid grid-cols-2 gap-12 max-w-sm mx-auto text-center md:max-w-none md:text-left">
