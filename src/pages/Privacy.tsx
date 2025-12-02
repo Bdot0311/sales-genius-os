@@ -67,6 +67,9 @@ const Privacy = () => {
               <li>Google Calendar and Gmail (Google Privacy Policy)</li>
               <li>Other integrations as you authorize them</li>
             </ul>
+            <p className="mt-4">
+              We do not transfer or disclose your information to third parties for purposes other than the ones provided.
+            </p>
           </section>
 
           <section>
