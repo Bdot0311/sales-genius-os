@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { useAdmin } from "@/hooks/use-admin";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,7 +14,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Shield, UserPlus, Lock, Unlock, Trash2, Clock } from "lucide-react";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Shield, UserPlus, Lock, Unlock, Trash2, Clock, Search } from "lucide-react";
 
 interface UserSubscription {
   user_id: string;
@@ -40,6 +41,7 @@ const Admin = () => {
   const [selectedUser, setSelectedUser] = useState<UserSubscription | null>(null);
   const [newUser, setNewUser] = useState({ email: '', password: '', full_name: '', plan: 'growth' as 'growth' | 'pro' | 'elite' });
   const [trialDays, setTrialDays] = useState(30);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (!adminLoading && !isAdmin) {
@@ -200,13 +202,24 @@ const Admin = () => {
     return <Badge variant="default">Active</Badge>;
   };
 
+  const filteredSubscriptions = subscriptions.filter(sub => 
+    sub.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    sub.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   if (adminLoading || loading) {
     return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-full">
-          <p className="text-muted-foreground">Loading...</p>
+      <SidebarProvider>
+        <div className="flex min-h-screen w-full">
+          <AdminSidebar />
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Loading admin panel...</p>
+            </div>
+          </div>
         </div>
-      </DashboardLayout>
+      </SidebarProvider>
     );
   }
 
@@ -215,51 +228,91 @@ const Admin = () => {
   }
 
   return (
-    <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Shield className="h-8 w-8 text-primary" />
-            <div>
-              <h1 className="text-3xl font-bold">Admin Panel</h1>
-              <p className="text-muted-foreground">Manage user subscriptions and accounts</p>
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full bg-muted/30">
+        <AdminSidebar />
+        
+        <div className="flex-1 flex flex-col">
+          {/* Header */}
+          <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-6">
+            <SidebarTrigger />
+            <div className="flex items-center gap-2 flex-1">
+              <Shield className="h-6 w-6 text-primary" />
+              <div>
+                <h1 className="text-xl font-bold">Admin Control Panel</h1>
+              </div>
             </div>
-          </div>
-          <Button onClick={() => setCreateUserOpen(true)}>
-            <UserPlus className="h-4 w-4 mr-2" />
-            Create User
-          </Button>
-        </div>
+            <Button onClick={() => setCreateUserOpen(true)} size="sm">
+              <UserPlus className="h-4 w-4 mr-2" />
+              Create User
+            </Button>
+          </header>
 
-        <AdminDashboard />
+          {/* Main Content */}
+          <main className="flex-1 p-6 overflow-auto">
+            <div className="space-y-6">
+              {/* Dashboard Stats */}
+              <div>
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold tracking-tight">Overview</h2>
+                  <p className="text-muted-foreground">Key metrics and statistics</p>
+                </div>
+                <AdminDashboard />
+              </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>User Subscriptions</CardTitle>
-            <CardDescription>
-              View and manage all user subscription plans
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Plan</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Account</TableHead>
-                  <TableHead>Leads</TableHead>
-                  <TableHead>Period End</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {subscriptions.map((sub) => (
-                  <TableRow key={sub.user_id}>
-                    <TableCell className="font-medium">{sub.email}</TableCell>
-                    <TableCell>{sub.full_name || 'N/A'}</TableCell>
-                    <TableCell>
+              {/* Users Management Section */}
+              <Card className="shadow-sm">
+                <CardHeader className="bg-muted/50">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-xl">User Management</CardTitle>
+                      <CardDescription className="mt-1">
+                        View and manage all user accounts and subscriptions
+                      </CardDescription>
+                    </div>
+                    <Badge variant="secondary" className="text-sm">
+                      {filteredSubscriptions.length} users
+                    </Badge>
+                  </div>
+                  {/* Search Bar */}
+                  <div className="relative mt-4">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search by email or name..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/50 hover:bg-muted/50">
+                          <TableHead className="font-semibold">Email</TableHead>
+                          <TableHead className="font-semibold">Name</TableHead>
+                          <TableHead className="font-semibold">Plan</TableHead>
+                          <TableHead className="font-semibold">Status</TableHead>
+                          <TableHead className="font-semibold">Account</TableHead>
+                          <TableHead className="font-semibold">Leads</TableHead>
+                          <TableHead className="font-semibold">Period End</TableHead>
+                          <TableHead className="font-semibold text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredSubscriptions.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                              No users found
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          filteredSubscriptions.map((sub) => (
+                            <TableRow key={sub.user_id} className="hover:bg-muted/30 transition-colors">
+                              <TableCell className="font-medium">{sub.email}</TableCell>
+                              <TableCell>{sub.full_name || <span className="text-muted-foreground">N/A</span>}</TableCell>
+                              <TableCell>
                       <Select
                         value={sub.plan}
                         onValueChange={(value) => updateSubscription(sub.user_id, value as 'growth' | 'pro' | 'elite')}
@@ -286,53 +339,66 @@ const Admin = () => {
                     <TableCell>
                       {new Date(sub.current_period_end).toLocaleDateString()}
                     </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setSelectedUser(sub);
-                            setTrialDialogOpen(true);
-                          }}
-                        >
-                          <Clock className="h-3 w-3" />
-                        </Button>
-                        {sub.account_status === 'locked' ? (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => unlockUser(sub.user_id)}
-                          >
-                            <Unlock className="h-3 w-3" />
-                          </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => lockUser(sub.user_id)}
-                          >
-                            <Lock className="h-3 w-3" />
-                          </Button>
+                              <TableCell>
+                                <div className="flex gap-1 justify-end">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-8 w-8 p-0"
+                                    onClick={() => {
+                                      setSelectedUser(sub);
+                                      setTrialDialogOpen(true);
+                                    }}
+                                    title="Set Trial"
+                                  >
+                                    <Clock className="h-4 w-4" />
+                                  </Button>
+                                  {sub.account_status === 'locked' ? (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                      onClick={() => unlockUser(sub.user_id)}
+                                      title="Unlock Account"
+                                    >
+                                      <Unlock className="h-4 w-4" />
+                                    </Button>
+                                  ) : (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-8 w-8 p-0 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                                      onClick={() => lockUser(sub.user_id)}
+                                      title="Lock Account"
+                                    >
+                                      <Lock className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    onClick={() => {
+                                      setSelectedUser(sub);
+                                      setDeleteUserOpen(true);
+                                    }}
+                                    title="Delete User"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
                         )}
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => {
-                            setSelectedUser(sub);
-                            setDeleteUserOpen(true);
-                          }}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </main>
+        </div>
       </div>
 
       {/* Create User Dialog */}
@@ -448,7 +514,7 @@ const Admin = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </DashboardLayout>
+    </SidebarProvider>
   );
 };
 

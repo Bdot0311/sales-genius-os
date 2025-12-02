@@ -102,19 +102,28 @@ export const AdminDashboard = () => {
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {statCards.map((stat) => {
+      {statCards.map((stat, index) => {
         const Icon = stat.icon;
         return (
-          <Card key={stat.title}>
+          <Card 
+            key={stat.title} 
+            className="hover:shadow-md transition-shadow border-l-4" 
+            style={{ 
+              borderLeftColor: `hsl(var(--primary))`,
+              animationDelay: `${index * 50}ms`
+            }}
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 {stat.title}
               </CardTitle>
-              <Icon className={`h-4 w-4 ${stat.color}`} />
+              <div className={`h-10 w-10 rounded-full ${stat.color.replace('text-', 'bg-')}/10 flex items-center justify-center`}>
+                <Icon className={`h-5 w-5 ${stat.color}`} />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-3xl font-bold tracking-tight">{stat.value}</div>
+              <p className="text-xs text-muted-foreground mt-1">
                 {stat.description}
               </p>
             </CardContent>
