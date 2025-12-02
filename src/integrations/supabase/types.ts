@@ -802,6 +802,9 @@ export type Database = {
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
           trial_end_date: string | null
+          trial_warning_1d_sent: boolean | null
+          trial_warning_3d_sent: boolean | null
+          trial_warning_7d_sent: boolean | null
           updated_at: string
           user_id: string
         }
@@ -817,6 +820,9 @@ export type Database = {
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           trial_end_date?: string | null
+          trial_warning_1d_sent?: boolean | null
+          trial_warning_3d_sent?: boolean | null
+          trial_warning_7d_sent?: boolean | null
           updated_at?: string
           user_id: string
         }
@@ -832,6 +838,9 @@ export type Database = {
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           trial_end_date?: string | null
+          trial_warning_1d_sent?: boolean | null
+          trial_warning_3d_sent?: boolean | null
+          trial_warning_7d_sent?: boolean | null
           updated_at?: string
           user_id?: string
         }
@@ -1177,6 +1186,17 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_get_dashboard_stats: {
+        Args: never
+        Returns: {
+          active_subscriptions: number
+          active_trials: number
+          locked_accounts: number
+          monthly_revenue: number
+          total_revenue: number
+          total_users: number
+        }[]
+      }
       admin_lock_user: {
         Args: { _reason?: string; _user_id: string }
         Returns: undefined
@@ -1196,6 +1216,16 @@ export type Database = {
       }
       check_expiring_api_keys: { Args: never; Returns: undefined }
       cleanup_expired_cache: { Args: never; Returns: undefined }
+      get_expiring_trials: {
+        Args: { _days_until_expiry: number }
+        Returns: {
+          days_remaining: number
+          email: string
+          full_name: string
+          trial_end_date: string
+          user_id: string
+        }[]
+      }
       get_user_leads_usage: {
         Args: never
         Returns: {

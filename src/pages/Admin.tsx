@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { useAdmin } from "@/hooks/use-admin";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -229,6 +230,8 @@ const Admin = () => {
             Create User
           </Button>
         </div>
+
+        <AdminDashboard />
 
         <Card>
           <CardHeader>
