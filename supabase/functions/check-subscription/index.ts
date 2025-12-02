@@ -32,7 +32,6 @@ serve(async (req) => {
 
     let userEmail: string;
     let userId: string | null = null;
-    const body = await req.json();
 
     // Try to get authenticated user if auth header exists and is not just anon key
     const authHeader = req.headers.get('Authorization');
@@ -46,18 +45,28 @@ serve(async (req) => {
         userId = userData.user.id;
         logStep('User authenticated', { userId, email: userEmail });
       } else {
-        // Token is anon key or invalid - use email from body
+        // Token is anon key or invalid - try to parse body for email
         logStep('Using email from body (anon or invalid token)');
-        userEmail = body.email;
-        if (!userEmail) throw new Error('Email is required for unauthenticated requests');
-        logStep('Email provided in body', { email: userEmail });
+        try {
+          const body = await req.json();
+          userEmail = body.email;
+          if (!userEmail) throw new Error('Email is required for unauthenticated requests');
+          logStep('Email provided in body', { email: userEmail });
+        } catch (e) {
+          throw new Error('Email is required when not authenticated');
+        }
       }
     } else {
       // No auth header - use email from body
       logStep('No auth header - using email from body');
-      userEmail = body.email;
-      if (!userEmail) throw new Error('Email is required');
-      logStep('Email provided in body', { email: userEmail });
+      try {
+        const body = await req.json();
+        userEmail = body.email;
+        if (!userEmail) throw new Error('Email is required');
+        logStep('Email provided in body', { email: userEmail });
+      } catch (e) {
+        throw new Error('Email is required when no authentication provided');
+      }
     }
 
     const stripe = new Stripe(stripeKey, { apiVersion: '2025-08-27.basil' });
