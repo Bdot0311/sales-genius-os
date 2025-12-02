@@ -791,6 +791,7 @@ export type Database = {
       }
       subscriptions: {
         Row: {
+          account_status: string | null
           created_at: string
           current_period_end: string
           current_period_start: string
@@ -800,10 +801,12 @@ export type Database = {
           status: string
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
+          trial_end_date: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          account_status?: string | null
           created_at?: string
           current_period_end?: string
           current_period_start?: string
@@ -813,10 +816,12 @@ export type Database = {
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
+          trial_end_date?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          account_status?: string | null
           created_at?: string
           current_period_end?: string
           current_period_start?: string
@@ -826,6 +831,7 @@ export type Database = {
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
+          trial_end_date?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -1155,9 +1161,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_delete_user: { Args: { _user_id: string }; Returns: undefined }
       admin_get_all_subscriptions: {
         Args: never
         Returns: {
+          account_status: string
           current_period_end: string
           email: string
           full_name: string
@@ -1165,9 +1173,19 @@ export type Database = {
           plan: Database["public"]["Enums"]["subscription_plan"]
           status: string
           stripe_customer_id: string
+          trial_end_date: string
           user_id: string
         }[]
       }
+      admin_lock_user: {
+        Args: { _reason?: string; _user_id: string }
+        Returns: undefined
+      }
+      admin_set_trial: {
+        Args: { _trial_days?: number; _user_id: string }
+        Returns: undefined
+      }
+      admin_unlock_user: { Args: { _user_id: string }; Returns: undefined }
       admin_update_subscription: {
         Args: {
           _plan: Database["public"]["Enums"]["subscription_plan"]
@@ -1204,6 +1222,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      lock_expired_trials: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "user"
