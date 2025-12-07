@@ -1,6 +1,5 @@
 project_id = "ghgfjnepvxvxrncmskys"
 
-# Security: Enable JWT verification for rate limiting and scheduled imports
 [functions.check-rate-limit]
 verify_jwt = true
 
@@ -19,19 +18,13 @@ verify_jwt = true
 [functions.sync-to-google-calendar]
 verify_jwt = true
 
-[functions.check-rate-limit]
-verify_jwt = false
-
 [functions.replay-webhook]
 verify_jwt = true
-
-[functions.graphql-api]
-verify_jwt = false
 
 [functions.enrich-lead]
 verify_jwt = true
 
-[functions.run-scheduled-imports]
+[functions.graphql-api]
 verify_jwt = false
 
 [functions.check-subscription]
