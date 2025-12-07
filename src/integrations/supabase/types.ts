@@ -68,6 +68,36 @@ export type Database = {
           },
         ]
       }
+      admin_settings: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          setting_key: string
+          setting_value: Json
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          setting_key: string
+          setting_value?: Json
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          setting_key?: string
+          setting_value?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       alert_rules: {
         Row: {
           comparison_operator: string
@@ -360,6 +390,36 @@ export type Database = {
         }
         Relationships: []
       }
+      blocked_ips: {
+        Row: {
+          blocked_at: string
+          blocked_by: string | null
+          expires_at: string | null
+          id: string
+          ip_address: string
+          is_active: boolean
+          reason: string | null
+        }
+        Insert: {
+          blocked_at?: string
+          blocked_by?: string | null
+          expires_at?: string | null
+          id?: string
+          ip_address: string
+          is_active?: boolean
+          reason?: string | null
+        }
+        Update: {
+          blocked_at?: string
+          blocked_by?: string | null
+          expires_at?: string | null
+          id?: string
+          ip_address?: string
+          is_active?: boolean
+          reason?: string | null
+        }
+        Relationships: []
+      }
       deals: {
         Row: {
           company_name: string
@@ -416,6 +476,42 @@ export type Database = {
           },
         ]
       }
+      email_templates: {
+        Row: {
+          body_html: string
+          body_text: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          subject: string
+          updated_at: string
+          variables: string[] | null
+        }
+        Insert: {
+          body_html: string
+          body_text?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          subject: string
+          updated_at?: string
+          variables?: string[] | null
+        }
+        Update: {
+          body_html?: string
+          body_text?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          subject?: string
+          updated_at?: string
+          variables?: string[] | null
+        }
+        Relationships: []
+      }
       enrichment_history: {
         Row: {
           enriched_at: string
@@ -456,6 +552,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      feature_flags: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_enabled: boolean
+          name: string
+          rollout_percentage: number | null
+          target_plans: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_enabled?: boolean
+          name: string
+          rollout_percentage?: number | null
+          target_plans?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_enabled?: boolean
+          name?: string
+          rollout_percentage?: number | null
+          target_plans?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       import_history: {
         Row: {
@@ -643,6 +772,39 @@ export type Database = {
           technologies?: string[] | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      login_history: {
+        Row: {
+          created_at: string
+          id: string
+          ip_address: string | null
+          login_method: string
+          status: string
+          user_agent: string | null
+          user_email: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          login_method?: string
+          status?: string
+          user_agent?: string | null
+          user_email: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          login_method?: string
+          status?: string
+          user_agent?: string | null
+          user_email?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -843,6 +1005,33 @@ export type Database = {
           trial_warning_7d_sent?: boolean | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      system_events: {
+        Row: {
+          created_at: string
+          description: string
+          event_type: string
+          id: string
+          metadata: Json | null
+          severity: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          severity?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          severity?: string
         }
         Relationships: []
       }
