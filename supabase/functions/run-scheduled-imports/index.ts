@@ -12,9 +12,54 @@ serve(async (req) => {
   }
 
   try {
+    // Security: Validate that this is called with service role key (internal only)
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Authorization required' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      );
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    
+    // Verify the request is using service role key (for cron jobs) or valid user token
+    const token = authHeader.replace('Bearer ', '');
+    const isServiceRole = token === supabaseServiceKey;
+    
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    if (!isServiceRole) {
+      // If not service role, validate as admin user
+      const { data: userData, error: authError } = await supabase.auth.getUser(token);
+      
+      if (authError || !userData.user) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid authorization' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+        );
+      }
+
+      // Check if user is admin
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userData.user.id)
+        .eq('role', 'admin')
+        .single();
+
+      if (!roleData) {
+        return new Response(
+          JSON.stringify({ error: 'Admin access required' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
+        );
+      }
+
+      console.log('Admin user authorized:', userData.user.id);
+    } else {
+      console.log('Service role authorized for scheduled job');
+    }
 
     // Get all active scheduled imports that are due
     const { data: scheduledImports, error: scheduleError } = await supabase

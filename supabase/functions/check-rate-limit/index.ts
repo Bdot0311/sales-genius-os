@@ -18,9 +18,31 @@ serve(async (req) => {
   try {
     logStep('Starting rate limit check');
 
+    // Security: Validate authorization - this function should only be called by authenticated users or internal services
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Authorization required' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      );
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Validate the token
+    const token = authHeader.replace('Bearer ', '');
+    const { data: userData, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !userData.user) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid authorization token' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      );
+    }
+
+    logStep('User authenticated', { userId: userData.user.id });
 
     const { apiKeyId, endpoint = 'default' } = await req.json();
     logStep('Request data', { apiKeyId, endpoint });
@@ -29,15 +51,16 @@ serve(async (req) => {
       throw new Error('API key ID is required');
     }
 
-    // Get API key configuration
+    // Get API key configuration - ensure user owns this key
     const { data: apiKey, error: keyError } = await supabase
       .from('api_keys')
       .select('*')
       .eq('id', apiKeyId)
+      .eq('user_id', userData.user.id)
       .single();
 
     if (keyError || !apiKey) {
-      throw new Error('API key not found');
+      throw new Error('API key not found or access denied');
     }
 
     if (!apiKey.is_active) {
