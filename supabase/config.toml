@@ -1,5 +1,12 @@
 project_id = "ghgfjnepvxvxrncmskys"
 
+# Security: Enable JWT verification for rate limiting and scheduled imports
+[functions.check-rate-limit]
+verify_jwt = true
+
+[functions.run-scheduled-imports]
+verify_jwt = true
+
 [functions.score-lead]
 verify_jwt = true
 
