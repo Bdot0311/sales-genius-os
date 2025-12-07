@@ -13,79 +13,176 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
-interface RateLimitConfig {
-  id: string;
-  endpoint: string;
-  requests_per_minute: number;
-  requests_per_day: number;
-  is_enabled: boolean;
-}
-
 interface BlockedIP {
   id: string;
   ip_address: string;
-  reason: string;
+  reason: string | null;
   blocked_at: string;
   expires_at: string | null;
+  is_active: boolean;
 }
 
 interface SuspiciousActivity {
   id: string;
   user_id: string;
-  user_email: string;
-  activity_type: string;
-  description: string;
-  severity: 'low' | 'medium' | 'high';
-  detected_at: string;
+  user_email?: string;
+  action: string;
+  entity_type: string;
+  ip_address: string | null;
+  created_at: string;
+}
+
+interface RateLimitBucket {
+  id: string;
+  api_key_id: string;
+  endpoint: string;
+  tokens: number;
+  last_refill_at: string;
 }
 
 const AdminSecurity = () => {
+  const [blockedIPs, setBlockedIPs] = useState<BlockedIP[]>([]);
+  const [suspiciousActivities, setSuspiciousActivities] = useState<SuspiciousActivity[]>([]);
+  const [rateLimitBuckets, setRateLimitBuckets] = useState<RateLimitBucket[]>([]);
   const [newIP, setNewIP] = useState("");
   const [blockReason, setBlockReason] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Mock data for demonstration - in production, these would come from database
-  const [rateLimits] = useState<RateLimitConfig[]>([
-    { id: '1', endpoint: '/api/leads', requests_per_minute: 60, requests_per_day: 10000, is_enabled: true },
-    { id: '2', endpoint: '/api/deals', requests_per_minute: 60, requests_per_day: 10000, is_enabled: true },
-    { id: '3', endpoint: '/api/webhooks', requests_per_minute: 30, requests_per_day: 5000, is_enabled: true },
-    { id: '4', endpoint: '/api/enrichment', requests_per_minute: 10, requests_per_day: 1000, is_enabled: true },
-  ]);
+  useEffect(() => {
+    loadAllData();
+    
+    // Set up real-time subscription for blocked IPs
+    const channel = supabase
+      .channel('security-updates')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'blocked_ips' },
+        () => loadBlockedIPs()
+      )
+      .subscribe();
 
-  const [blockedIPs, setBlockedIPs] = useState<BlockedIP[]>([
-    { id: '1', ip_address: '192.168.1.100', reason: 'Brute force attempt', blocked_at: new Date().toISOString(), expires_at: null },
-    { id: '2', ip_address: '10.0.0.50', reason: 'Suspicious scraping activity', blocked_at: new Date(Date.now() - 86400000).toISOString(), expires_at: new Date(Date.now() + 86400000 * 7).toISOString() },
-  ]);
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
-  const [suspiciousActivities] = useState<SuspiciousActivity[]>([
-    { id: '1', user_id: '123', user_email: 'user@example.com', activity_type: 'multiple_failed_logins', description: '15 failed login attempts in 5 minutes', severity: 'high', detected_at: new Date().toISOString() },
-    { id: '2', user_id: '456', user_email: 'another@example.com', activity_type: 'unusual_access_pattern', description: 'Access from 3 different countries within 1 hour', severity: 'medium', detected_at: new Date(Date.now() - 3600000).toISOString() },
-    { id: '3', user_id: '789', user_email: 'test@example.com', activity_type: 'mass_data_export', description: 'Attempted to export 10,000+ records', severity: 'medium', detected_at: new Date(Date.now() - 7200000).toISOString() },
-  ]);
+  const loadAllData = async () => {
+    setLoading(true);
+    await Promise.all([
+      loadBlockedIPs(),
+      loadSuspiciousActivities(),
+      loadRateLimitBuckets()
+    ]);
+    setLoading(false);
+  };
 
-  const handleBlockIP = () => {
+  const loadBlockedIPs = async () => {
+    const { data, error } = await supabase
+      .from('blocked_ips')
+      .select('*')
+      .eq('is_active', true)
+      .order('blocked_at', { ascending: false });
+
+    if (error) {
+      console.error('Error loading blocked IPs:', error);
+      return;
+    }
+    setBlockedIPs(data || []);
+  };
+
+  const loadSuspiciousActivities = async () => {
+    // Get recent audit logs that might indicate suspicious activity
+    const { data, error } = await supabase
+      .from('audit_logs')
+      .select('*')
+      .in('action', ['deleted', 'lock_account', 'failed_login'])
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error) {
+      console.error('Error loading suspicious activities:', error);
+      return;
+    }
+
+    // Enrich with user emails
+    const enrichedActivities = await Promise.all(
+      (data || []).map(async (activity) => {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('id', activity.user_id)
+          .maybeSingle();
+        
+        return {
+          ...activity,
+          user_email: profile?.email || 'Unknown',
+        };
+      })
+    );
+
+    setSuspiciousActivities(enrichedActivities);
+  };
+
+  const loadRateLimitBuckets = async () => {
+    const { data, error } = await supabase
+      .from('rate_limit_buckets')
+      .select('*')
+      .order('last_refill_at', { ascending: false })
+      .limit(20);
+
+    if (error) {
+      console.error('Error loading rate limit buckets:', error);
+      return;
+    }
+    setRateLimitBuckets(data || []);
+  };
+
+  const handleBlockIP = async () => {
     if (!newIP.trim()) {
       toast.error("Please enter an IP address");
       return;
     }
-    
-    const newBlock: BlockedIP = {
-      id: Date.now().toString(),
-      ip_address: newIP,
-      reason: blockReason || 'Manual block',
-      blocked_at: new Date().toISOString(),
-      expires_at: null
-    };
-    
-    setBlockedIPs(prev => [...prev, newBlock]);
+
+    const { error } = await supabase
+      .from('blocked_ips')
+      .insert({
+        ip_address: newIP.trim(),
+        reason: blockReason || 'Manual block by admin'
+      });
+
+    if (error) {
+      toast.error('Failed to block IP');
+      return;
+    }
+
+    toast.success(`IP ${newIP} has been blocked`);
     setNewIP("");
     setBlockReason("");
-    toast.success(`IP ${newIP} has been blocked`);
+    loadBlockedIPs();
   };
 
-  const handleUnblockIP = (id: string) => {
-    setBlockedIPs(prev => prev.filter(ip => ip.id !== id));
+  const handleUnblockIP = async (id: string) => {
+    const { error } = await supabase
+      .from('blocked_ips')
+      .update({ is_active: false })
+      .eq('id', id);
+
+    if (error) {
+      toast.error('Failed to unblock IP');
+      return;
+    }
+
     toast.success("IP has been unblocked");
+    loadBlockedIPs();
+  };
+
+  const getActivitySeverity = (action: string): 'low' | 'medium' | 'high' => {
+    switch (action) {
+      case 'failed_login': return 'high';
+      case 'deleted': return 'medium';
+      case 'lock_account': return 'high';
+      default: return 'low';
+    }
   };
 
   const getSeverityColor = (severity: string) => {
@@ -96,6 +193,14 @@ const AdminSecurity = () => {
       default: return 'bg-muted text-muted-foreground';
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -117,7 +222,7 @@ const AdminSecurity = () => {
           </TabsTrigger>
           <TabsTrigger value="ip-blocking" className="gap-2">
             <Ban className="h-4 w-4" />
-            IP Blocking
+            IP Blocking ({blockedIPs.length})
           </TabsTrigger>
           <TabsTrigger value="suspicious" className="gap-2">
             <AlertTriangle className="h-4 w-4" />
@@ -128,41 +233,45 @@ const AdminSecurity = () => {
         <TabsContent value="rate-limits" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>API Rate Limits</CardTitle>
-              <CardDescription>Configure rate limiting for different API endpoints</CardDescription>
+              <CardTitle>Active Rate Limit Buckets</CardTitle>
+              <CardDescription>Current token bucket state for API rate limiting</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Endpoint</TableHead>
-                    <TableHead>Requests/Min</TableHead>
-                    <TableHead>Requests/Day</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rateLimits.map((limit) => (
-                    <TableRow key={limit.id}>
-                      <TableCell className="font-mono text-sm">{limit.endpoint}</TableCell>
-                      <TableCell>{limit.requests_per_minute}</TableCell>
-                      <TableCell>{limit.requests_per_day.toLocaleString()}</TableCell>
-                      <TableCell>
-                        <Badge variant={limit.is_enabled ? "default" : "secondary"}>
-                          {limit.is_enabled ? 'Enabled' : 'Disabled'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Switch checked={limit.is_enabled} />
-                          <Button variant="ghost" size="sm">Edit</Button>
-                        </div>
-                      </TableCell>
+              {rateLimitBuckets.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No active rate limit buckets</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>API Key ID</TableHead>
+                      <TableHead>Endpoint</TableHead>
+                      <TableHead>Tokens Remaining</TableHead>
+                      <TableHead>Last Refill</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {rateLimitBuckets.map((bucket) => (
+                      <TableRow key={bucket.id}>
+                        <TableCell className="font-mono text-xs">
+                          {bucket.api_key_id.slice(0, 8)}...
+                        </TableCell>
+                        <TableCell className="font-mono text-sm">{bucket.endpoint}</TableCell>
+                        <TableCell>
+                          <Badge variant={bucket.tokens > 10 ? "default" : "destructive"}>
+                            {bucket.tokens} tokens
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {format(new Date(bucket.last_refill_at), 'MMM d, HH:mm')}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -209,41 +318,48 @@ const AdminSecurity = () => {
               <CardDescription>{blockedIPs.length} IP addresses currently blocked</CardDescription>
             </CardHeader>
             <CardContent>
-              <ScrollArea className="h-[300px]">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>IP Address</TableHead>
-                      <TableHead>Reason</TableHead>
-                      <TableHead>Blocked At</TableHead>
-                      <TableHead>Expires</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {blockedIPs.map((ip) => (
-                      <TableRow key={ip.id}>
-                        <TableCell className="font-mono">{ip.ip_address}</TableCell>
-                        <TableCell>{ip.reason}</TableCell>
-                        <TableCell>{format(new Date(ip.blocked_at), 'MMM d, yyyy HH:mm')}</TableCell>
-                        <TableCell>
-                          {ip.expires_at ? format(new Date(ip.expires_at), 'MMM d, yyyy') : 'Never'}
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleUnblockIP(ip.id)}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
+              {blockedIPs.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Ban className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No blocked IP addresses</p>
+                </div>
+              ) : (
+                <ScrollArea className="h-[300px]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>IP Address</TableHead>
+                        <TableHead>Reason</TableHead>
+                        <TableHead>Blocked At</TableHead>
+                        <TableHead>Expires</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </ScrollArea>
+                    </TableHeader>
+                    <TableBody>
+                      {blockedIPs.map((ip) => (
+                        <TableRow key={ip.id}>
+                          <TableCell className="font-mono">{ip.ip_address}</TableCell>
+                          <TableCell>{ip.reason || 'No reason provided'}</TableCell>
+                          <TableCell>{format(new Date(ip.blocked_at), 'MMM d, yyyy HH:mm')}</TableCell>
+                          <TableCell>
+                            {ip.expires_at ? format(new Date(ip.expires_at), 'MMM d, yyyy') : 'Never'}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleUnblockIP(ip.id)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -253,45 +369,57 @@ const AdminSecurity = () => {
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Suspicious Activity Monitor</CardTitle>
-                <CardDescription>Real-time detection of potential security threats</CardDescription>
+                <CardDescription>Recent activities that may indicate security threats</CardDescription>
               </div>
-              <Button variant="outline" size="sm" className="gap-2">
+              <Button variant="outline" size="sm" onClick={loadSuspiciousActivities} className="gap-2">
                 <RefreshCw className="h-4 w-4" />
                 Refresh
               </Button>
             </CardHeader>
             <CardContent>
-              <ScrollArea className="h-[400px]">
-                <div className="space-y-4">
-                  {suspiciousActivities.map((activity) => (
-                    <div
-                      key={activity.id}
-                      className="flex items-start gap-4 p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
-                    >
-                      <div className={`p-2 rounded-full ${getSeverityColor(activity.severity)}`}>
-                        <AlertTriangle className="h-4 w-4" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium">{activity.activity_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
-                          <Badge className={getSeverityColor(activity.severity)}>
-                            {activity.severity}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground mb-2">{activity.description}</p>
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                          <span>User: {activity.user_email}</span>
-                          <span>{format(new Date(activity.detected_at), 'MMM d, yyyy HH:mm')}</span>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm">Investigate</Button>
-                        <Button variant="destructive" size="sm">Block User</Button>
-                      </div>
-                    </div>
-                  ))}
+              {suspiciousActivities.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No suspicious activities detected</p>
                 </div>
-              </ScrollArea>
+              ) : (
+                <ScrollArea className="h-[400px]">
+                  <div className="space-y-4">
+                    {suspiciousActivities.map((activity) => {
+                      const severity = getActivitySeverity(activity.action);
+                      return (
+                        <div
+                          key={activity.id}
+                          className="flex items-start gap-4 p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                        >
+                          <div className={`p-2 rounded-full ${getSeverityColor(severity)}`}>
+                            <AlertTriangle className="h-4 w-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-medium">
+                                {activity.action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                              </span>
+                              <Badge className={getSeverityColor(severity)}>
+                                {severity}
+                              </Badge>
+                              <Badge variant="outline">{activity.entity_type}</Badge>
+                            </div>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                              <span>User: {activity.user_email}</span>
+                              {activity.ip_address && <span>IP: {activity.ip_address}</span>}
+                              <span>{format(new Date(activity.created_at), 'MMM d, yyyy HH:mm')}</span>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button variant="outline" size="sm">Investigate</Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
