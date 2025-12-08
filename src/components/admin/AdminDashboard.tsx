@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, UserCheck, Lock, TrendingUp, DollarSign, Clock } from "lucide-react";
+import { Users, UserCheck, Lock, TrendingUp, DollarSign, Clock, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface DashboardStats {
   total_users: number;
@@ -12,12 +14,23 @@ interface DashboardStats {
   monthly_revenue: number;
 }
 
+interface StripeRevenue {
+  total_revenue: number;
+  monthly_revenue: number;
+  active_subscriptions: number;
+  total_customers: number;
+  last_updated: string;
+}
+
 export const AdminDashboard = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [stripeData, setStripeData] = useState<StripeRevenue | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingStripe, setLoadingStripe] = useState(false);
 
   useEffect(() => {
     loadStats();
+    loadStripeRevenue();
 
     // Set up real-time subscription for subscriptions table
     const channel = supabase
@@ -61,6 +74,39 @@ export const AdminDashboard = () => {
     }
   };
 
+  const loadStripeRevenue = async () => {
+    setLoadingStripe(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.error('No session found');
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('get-stripe-revenue', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+
+      if (error) throw error;
+      
+      setStripeData(data);
+      console.log('Stripe revenue data loaded:', data);
+    } catch (error) {
+      console.error('Error loading Stripe revenue:', error);
+      // Don't show error toast if it's just that there's no Stripe data yet
+    } finally {
+      setLoadingStripe(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    toast.info('Refreshing data...');
+    await Promise.all([loadStats(), loadStripeRevenue()]);
+    toast.success('Data refreshed');
+  };
+
   if (loading) {
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -80,6 +126,11 @@ export const AdminDashboard = () => {
 
   if (!stats) return null;
 
+  // Use Stripe data for revenue if available, otherwise fall back to database
+  const displayRevenue = stripeData ? stripeData.total_revenue : stats.total_revenue;
+  const displayMonthlyRevenue = stripeData ? stripeData.monthly_revenue : stats.monthly_revenue;
+  const displayActiveSubscriptions = stripeData ? stripeData.active_subscriptions : stats.active_subscriptions;
+
   const statCards = [
     {
       title: "Total Users",
@@ -90,9 +141,9 @@ export const AdminDashboard = () => {
     },
     {
       title: "Active Subscriptions",
-      value: stats.active_subscriptions,
+      value: displayActiveSubscriptions,
       icon: UserCheck,
-      description: "Paying customers",
+      description: stripeData ? "From Stripe (real-time)" : "Paying customers",
       color: "text-green-500",
     },
     {
@@ -111,50 +162,70 @@ export const AdminDashboard = () => {
     },
     {
       title: "Monthly Revenue",
-      value: `$${stats.monthly_revenue.toLocaleString()}`,
+      value: `$${displayMonthlyRevenue.toLocaleString()}`,
       icon: DollarSign,
-      description: "Current month MRR",
+      description: stripeData ? "From Stripe (real-time)" : "Current month MRR",
       color: "text-green-600",
     },
     {
       title: "Total Revenue",
-      value: `$${stats.total_revenue.toLocaleString()}`,
+      value: `$${displayRevenue.toLocaleString()}`,
       icon: TrendingUp,
-      description: "All-time revenue",
+      description: stripeData ? "From Stripe (real-time)" : "All-time revenue",
       color: "text-purple-500",
     },
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {statCards.map((stat, index) => {
-        const Icon = stat.icon;
-        return (
-          <Card 
-            key={stat.title} 
-            className="hover:shadow-md transition-shadow border-l-4" 
-            style={{ 
-              borderLeftColor: `hsl(var(--primary))`,
-              animationDelay: `${index * 50}ms`
-            }}
-          >
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {stat.title}
-              </CardTitle>
-              <div className={`h-10 w-10 rounded-full ${stat.color.replace('text-', 'bg-')}/10 flex items-center justify-center`}>
-                <Icon className={`h-5 w-5 ${stat.color}`} />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold tracking-tight">{stat.value}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {stat.description}
-              </p>
-            </CardContent>
-          </Card>
-        );
-      })}
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleRefresh}
+          disabled={loadingStripe}
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${loadingStripe ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
+      </div>
+      
+      {stripeData && (
+        <p className="text-xs text-muted-foreground text-right">
+          Revenue data from Stripe • Last updated: {new Date(stripeData.last_updated).toLocaleTimeString()}
+        </p>
+      )}
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {statCards.map((stat, index) => {
+          const Icon = stat.icon;
+          return (
+            <Card 
+              key={stat.title} 
+              className="hover:shadow-md transition-shadow border-l-4" 
+              style={{ 
+                borderLeftColor: `hsl(var(--primary))`,
+                animationDelay: `${index * 50}ms`
+              }}
+            >
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  {stat.title}
+                </CardTitle>
+                <div className={`h-10 w-10 rounded-full ${stat.color.replace('text-', 'bg-')}/10 flex items-center justify-center`}>
+                  <Icon className={`h-5 w-5 ${stat.color}`} />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold tracking-tight">{stat.value}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {stat.description}
+                </p>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
     </div>
   );
 };
