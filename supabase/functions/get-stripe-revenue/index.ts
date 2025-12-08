@@ -7,6 +7,19 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// SalesOS specific product and price IDs
+const SALESOS_PRODUCT_IDS = [
+  'prod_TOropirqoOz7Ed', // growth
+  'prod_TOrozUbuuN18RP', // pro
+  'prod_TOrod7SaIV2D7s', // elite
+];
+
+const SALESOS_PRICE_IDS = [
+  'price_1SS44wFTerosS6hiCkKQnnoD', // growth
+  'price_1SS456FTerosS6hisBSDPwo4', // pro
+  'price_1SS45HFTerosS6hiQtxsNVL4', // elite
+];
+
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[GET-STRIPE-REVENUE] ${step}${detailsStr}`);
@@ -62,96 +75,142 @@ serve(async (req) => {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const monthStartTimestamp = Math.floor(monthStart.getTime() / 1000);
 
-    // Fetch all successful charges for total revenue
+    // Fetch invoices for SalesOS products only
     let totalRevenue = 0;
+    let monthlyRevenue = 0;
     let hasMore = true;
     let startingAfter: string | undefined;
 
-    logStep('Fetching total revenue from Stripe');
+    logStep('Fetching invoices for SalesOS products only', { productIds: SALESOS_PRODUCT_IDS });
+    
     while (hasMore) {
-      const charges: Stripe.ApiList<Stripe.Charge> = await stripe.charges.list({
+      const invoices: Stripe.ApiList<Stripe.Invoice> = await stripe.invoices.list({
         limit: 100,
         starting_after: startingAfter,
+        status: 'paid',
+        expand: ['data.lines.data'],
       });
 
-      for (const charge of charges.data) {
-        if (charge.status === 'succeeded' && !charge.refunded) {
-          totalRevenue += charge.amount;
+      for (const invoice of invoices.data) {
+        // Check if invoice contains SalesOS products
+        let isSalesOSInvoice = false;
+        
+        if (invoice.lines?.data) {
+          for (const lineItem of invoice.lines.data) {
+            const priceId = lineItem.price?.id;
+            const productId = typeof lineItem.price?.product === 'string' 
+              ? lineItem.price.product 
+              : lineItem.price?.product?.id;
+            
+            if (SALESOS_PRICE_IDS.includes(priceId || '') || SALESOS_PRODUCT_IDS.includes(productId || '')) {
+              isSalesOSInvoice = true;
+              break;
+            }
+          }
+        }
+
+        if (isSalesOSInvoice && invoice.amount_paid > 0) {
+          totalRevenue += invoice.amount_paid;
+          
+          // Check if invoice is from current month
+          const invoiceDate = new Date((invoice.created || 0) * 1000);
+          if (invoiceDate >= monthStart) {
+            monthlyRevenue += invoice.amount_paid;
+          }
         }
       }
 
-      hasMore = charges.has_more;
-      if (charges.data.length > 0) {
-        startingAfter = charges.data[charges.data.length - 1].id;
+      hasMore = invoices.has_more;
+      if (invoices.data.length > 0) {
+        startingAfter = invoices.data[invoices.data.length - 1].id;
       }
     }
-    logStep('Total revenue calculated', { totalRevenue: totalRevenue / 100 });
+    
+    logStep('Revenue calculated from invoices', { 
+      totalRevenue: totalRevenue / 100, 
+      monthlyRevenue: monthlyRevenue / 100 
+    });
 
-    // Fetch this month's charges for monthly revenue
-    let monthlyRevenue = 0;
-    hasMore = true;
-    startingAfter = undefined;
-
-    logStep('Fetching monthly revenue from Stripe');
-    while (hasMore) {
-      const charges: Stripe.ApiList<Stripe.Charge> = await stripe.charges.list({
-        limit: 100,
-        created: { gte: monthStartTimestamp },
-        starting_after: startingAfter,
-      });
-
-      for (const charge of charges.data) {
-        if (charge.status === 'succeeded' && !charge.refunded) {
-          monthlyRevenue += charge.amount;
-        }
-      }
-
-      hasMore = charges.has_more;
-      if (charges.data.length > 0) {
-        startingAfter = charges.data[charges.data.length - 1].id;
-      }
-    }
-    logStep('Monthly revenue calculated', { monthlyRevenue: monthlyRevenue / 100 });
-
-    // Get active subscriptions count from Stripe
+    // Get active subscriptions for SalesOS products only
     let activeSubscriptions = 0;
     hasMore = true;
     startingAfter = undefined;
 
-    logStep('Fetching active subscriptions from Stripe');
+    logStep('Fetching active subscriptions for SalesOS products');
+    
     while (hasMore) {
       const subscriptions: Stripe.ApiList<Stripe.Subscription> = await stripe.subscriptions.list({
         limit: 100,
         status: 'active',
         starting_after: startingAfter,
+        expand: ['data.items.data'],
       });
 
-      activeSubscriptions += subscriptions.data.length;
+      for (const subscription of subscriptions.data) {
+        // Check if subscription is for SalesOS products
+        let isSalesOSSub = false;
+        
+        for (const item of subscription.items.data) {
+          const priceId = item.price?.id;
+          const productId = typeof item.price?.product === 'string' 
+            ? item.price.product 
+            : item.price?.product?.id;
+          
+          if (SALESOS_PRICE_IDS.includes(priceId || '') || SALESOS_PRODUCT_IDS.includes(productId || '')) {
+            isSalesOSSub = true;
+            break;
+          }
+        }
+        
+        if (isSalesOSSub) {
+          activeSubscriptions++;
+        }
+      }
+
       hasMore = subscriptions.has_more;
       if (subscriptions.data.length > 0) {
         startingAfter = subscriptions.data[subscriptions.data.length - 1].id;
       }
     }
+    
     logStep('Active subscriptions counted', { activeSubscriptions });
 
-    // Get total customers from Stripe
-    let totalCustomers = 0;
+    // Get unique customers with SalesOS subscriptions
+    let salesOSCustomerIds = new Set<string>();
     hasMore = true;
     startingAfter = undefined;
 
     while (hasMore) {
-      const customers: Stripe.ApiList<Stripe.Customer> = await stripe.customers.list({
+      const subscriptions: Stripe.ApiList<Stripe.Subscription> = await stripe.subscriptions.list({
         limit: 100,
         starting_after: startingAfter,
+        expand: ['data.items.data'],
       });
 
-      totalCustomers += customers.data.length;
-      hasMore = customers.has_more;
-      if (customers.data.length > 0) {
-        startingAfter = customers.data[customers.data.length - 1].id;
+      for (const subscription of subscriptions.data) {
+        for (const item of subscription.items.data) {
+          const priceId = item.price?.id;
+          const productId = typeof item.price?.product === 'string' 
+            ? item.price.product 
+            : item.price?.product?.id;
+          
+          if (SALESOS_PRICE_IDS.includes(priceId || '') || SALESOS_PRODUCT_IDS.includes(productId || '')) {
+            if (typeof subscription.customer === 'string') {
+              salesOSCustomerIds.add(subscription.customer);
+            }
+            break;
+          }
+        }
+      }
+
+      hasMore = subscriptions.has_more;
+      if (subscriptions.data.length > 0) {
+        startingAfter = subscriptions.data[subscriptions.data.length - 1].id;
       }
     }
-    logStep('Total customers counted', { totalCustomers });
+
+    const totalCustomers = salesOSCustomerIds.size;
+    logStep('SalesOS customers counted', { totalCustomers });
 
     const result = {
       total_revenue: totalRevenue / 100, // Convert from cents to dollars
@@ -160,6 +219,7 @@ serve(async (req) => {
       total_customers: totalCustomers,
       currency: 'usd',
       last_updated: new Date().toISOString(),
+      filtered_by: 'SalesOS products only',
     };
 
     logStep('Returning revenue data', result);
