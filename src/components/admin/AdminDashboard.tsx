@@ -18,6 +18,31 @@ export const AdminDashboard = () => {
 
   useEffect(() => {
     loadStats();
+
+    // Set up real-time subscription for subscriptions table
+    const channel = supabase
+      .channel('admin-dashboard-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'subscriptions' },
+        () => {
+          console.log('Subscription data changed, refreshing stats...');
+          loadStats();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'profiles' },
+        () => {
+          console.log('Profile data changed, refreshing stats...');
+          loadStats();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const loadStats = async () => {
