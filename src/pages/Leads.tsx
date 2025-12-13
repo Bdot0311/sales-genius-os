@@ -13,10 +13,12 @@ import { LeadAssignmentDialog } from "@/components/dashboard/LeadAssignmentDialo
 import { LeadActivityTimeline } from "@/components/dashboard/LeadActivityTimeline";
 import { LeadsTableView } from "@/components/dashboard/LeadsTableView";
 import { LeadDetailSheet } from "@/components/dashboard/LeadDetailSheet";
-import { Search, Download, ArrowUpDown, Trash2, Plus, Save, Star, UserPlus, LayoutGrid, Table as TableIcon, Sparkles, Globe, Loader2, CheckCircle } from "lucide-react";
+import { ExternalLeadsTable } from "@/components/dashboard/ExternalLeadsTable";
+import { Search, Download, ArrowUpDown, Trash2, Plus, Save, Star, UserPlus, LayoutGrid, Table as TableIcon, Sparkles, Globe, Loader2, CheckCircle, Zap } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useExternalLeads, ExternalLeadFilters } from "@/hooks/use-external-leads";
 import { subDays, startOfMonth } from "date-fns";
 
 interface LeadFilters {
@@ -97,7 +99,19 @@ const Leads = () => {
   const [searchingProspects, setSearchingProspects] = useState(false);
   const [savingProspect, setSavingProspect] = useState<string | null>(null);
   const [activatingLead, setActivatingLead] = useState<string | null>(null);
+  const [externalFilters, setExternalFilters] = useState<ExternalLeadFilters>({});
+  const [showExternalLeads, setShowExternalLeads] = useState(false);
   const { toast } = useToast();
+  
+  // External leads hook
+  const {
+    leads: externalLeads,
+    loading: externalLoading,
+    activatingLead: externalActivating,
+    fetchLeads: fetchExternalLeads,
+    activateLead: activateExternalLead,
+    clearLeads: clearExternalLeads,
+  } = useExternalLeads();
 
   const fetchLeads = async () => {
     try {
@@ -945,11 +959,168 @@ const Leads = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* External Lead Search Section */}
+                <Card className="border-dashed border-primary/30 bg-primary/5">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Globe className="w-5 h-5 text-primary" />
+                      Find New Leads
+                    </CardTitle>
+                    <CardDescription>Search external B2B data sources for new prospects</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div>
+                        <Label className="text-xs">Job Title</Label>
+                        <Input
+                          placeholder="e.g. VP, Director"
+                          value={externalFilters.job_title || ''}
+                          onChange={(e) => setExternalFilters(prev => ({ ...prev, job_title: e.target.value }))}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Industry</Label>
+                        <Select
+                          value={externalFilters.industry || 'all'}
+                          onValueChange={(v) => setExternalFilters(prev => ({ ...prev, industry: v === 'all' ? undefined : v }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Any" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Any</SelectItem>
+                            <SelectItem value="Technology">Technology</SelectItem>
+                            <SelectItem value="Healthcare">Healthcare</SelectItem>
+                            <SelectItem value="Finance">Finance</SelectItem>
+                            <SelectItem value="Retail">Retail</SelectItem>
+                            <SelectItem value="Manufacturing">Manufacturing</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Company Size</Label>
+                        <Select
+                          value={externalFilters.company_size_max?.toString() || 'all'}
+                          onValueChange={(v) => {
+                            if (v === 'all') {
+                              setExternalFilters(prev => ({ ...prev, company_size_min: undefined, company_size_max: undefined }));
+                            } else if (v === '50') {
+                              setExternalFilters(prev => ({ ...prev, company_size_min: 1, company_size_max: 50 }));
+                            } else if (v === '200') {
+                              setExternalFilters(prev => ({ ...prev, company_size_min: 51, company_size_max: 200 }));
+                            } else if (v === '500') {
+                              setExternalFilters(prev => ({ ...prev, company_size_min: 201, company_size_max: 500 }));
+                            } else if (v === '1000') {
+                              setExternalFilters(prev => ({ ...prev, company_size_min: 501, company_size_max: 1000 }));
+                            } else {
+                              setExternalFilters(prev => ({ ...prev, company_size_min: 1001, company_size_max: undefined }));
+                            }
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Any size" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Any size</SelectItem>
+                            <SelectItem value="50">1-50</SelectItem>
+                            <SelectItem value="200">51-200</SelectItem>
+                            <SelectItem value="500">201-500</SelectItem>
+                            <SelectItem value="1000">501-1000</SelectItem>
+                            <SelectItem value="1001">1000+</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Country</Label>
+                        <Select
+                          value={externalFilters.country || 'all'}
+                          onValueChange={(v) => setExternalFilters(prev => ({ ...prev, country: v === 'all' ? undefined : v }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Any" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Any</SelectItem>
+                            <SelectItem value="United States">United States</SelectItem>
+                            <SelectItem value="United Kingdom">United Kingdom</SelectItem>
+                            <SelectItem value="Canada">Canada</SelectItem>
+                            <SelectItem value="Germany">Germany</SelectItem>
+                            <SelectItem value="Australia">Australia</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="hero"
+                        onClick={() => {
+                          setShowExternalLeads(true);
+                          fetchExternalLeads({ ...externalFilters, limit: 25 });
+                        }}
+                        disabled={externalLoading}
+                      >
+                        {externalLoading ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Searching...
+                          </>
+                        ) : (
+                          <>
+                            <Zap className="w-4 h-4 mr-2" />
+                            Search External Sources
+                          </>
+                        )}
+                      </Button>
+                      {externalLeads.length > 0 && (
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            clearExternalLeads();
+                            setShowExternalLeads(false);
+                          }}
+                        >
+                          Clear Results
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* External Leads Results */}
+                {showExternalLeads && externalLeads.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Globe className="w-4 h-4 text-primary" />
+                        <span className="font-medium">External Leads ({externalLeads.length})</span>
+                        <Badge variant="outline" className="text-xs">Transient - Not Saved</Badge>
+                      </div>
+                    </div>
+                    <ExternalLeadsTable
+                      leads={externalLeads}
+                      activatingLead={externalActivating}
+                      onActivateLead={activateExternalLead}
+                    />
+                  </div>
+                )}
+
+                {showExternalLeads && externalLeads.length === 0 && !externalLoading && (
+                  <div className="text-center py-8 text-muted-foreground border rounded-lg border-dashed">
+                    No external leads found matching your criteria. Try adjusting your filters.
+                  </div>
+                )}
+
+                {/* Separator */}
+                {showExternalLeads && externalLeads.length > 0 && (
+                  <div className="border-t pt-4" />
+                )}
+
+                {/* Existing Leads Search */}
                 <div className="flex gap-2 flex-wrap">
                   <div className="relative flex-1 min-w-[200px]">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
-                      placeholder="Search leads..."
+                      placeholder="Search saved leads..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-10"

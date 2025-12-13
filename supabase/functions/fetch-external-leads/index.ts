@@ -33,6 +33,18 @@ interface BusinessContact {
   industry?: string;
   company_size?: string;
   country?: string;
+  linkedin_url?: string;
+}
+
+interface ScoredLead extends BusinessContact {
+  scores: {
+    icp_score: number;
+    intent_score: number;
+    enrichment_score: number;
+    overall_score: number;
+  };
+  score_explanation: string;
+  buying_signals: string[];
 }
 
 function isBusinessEmail(email: string): boolean {
@@ -42,15 +54,113 @@ function isBusinessEmail(email: string): boolean {
   return !PERSONAL_EMAIL_DOMAINS.has(domain);
 }
 
-function getCompanySizeLabel(min?: number, max?: number): string | null {
-  if (!min && !max) return null;
-  if (min && min >= 1000) return '1000+';
-  if (max && max <= 10) return '1-10';
-  if (max && max <= 50) return '11-50';
-  if (max && max <= 200) return '51-200';
-  if (max && max <= 500) return '201-500';
-  if (max && max <= 1000) return '501-1000';
-  return '51-200'; // Default
+// SalesOS Enrichment Logic
+function enrichLead(contact: BusinessContact): BusinessContact {
+  // Simulate enrichment by adding additional data
+  const enrichedContact = { ...contact };
+  
+  // Add LinkedIn URL if not present
+  if (!enrichedContact.linkedin_url) {
+    const nameParts = contact.contact_name.toLowerCase().split(' ');
+    enrichedContact.linkedin_url = `https://linkedin.com/in/${nameParts.join('-')}`;
+  }
+  
+  return enrichedContact;
+}
+
+// SalesOS Lead Scoring Logic
+function scoreLead(contact: BusinessContact): { scores: ScoredLead['scores']; explanation: string; buyingSignals: string[] } {
+  let icpScore = 50;
+  let intentScore = 30;
+  let enrichmentScore = 40;
+  const buyingSignals: string[] = [];
+  const reasons: string[] = [];
+
+  // ICP Scoring based on job title seniority
+  const title = contact.job_title?.toLowerCase() || '';
+  if (title.includes('ceo') || title.includes('cto') || title.includes('cfo') || title.includes('coo')) {
+    icpScore += 30;
+    reasons.push('C-level executive');
+    buyingSignals.push('Decision Maker');
+  } else if (title.includes('vp') || title.includes('vice president')) {
+    icpScore += 25;
+    reasons.push('VP-level leadership');
+    buyingSignals.push('Budget Authority');
+  } else if (title.includes('director')) {
+    icpScore += 20;
+    reasons.push('Director-level role');
+    buyingSignals.push('Influencer');
+  } else if (title.includes('head of') || title.includes('manager')) {
+    icpScore += 15;
+    reasons.push('Management position');
+  }
+
+  // ICP Scoring based on company size
+  const size = contact.company_size || '';
+  if (size === '201-500' || size === '501-1000') {
+    icpScore += 15;
+    reasons.push('Mid-market company');
+    buyingSignals.push('Growth Stage');
+  } else if (size === '1000+') {
+    icpScore += 10;
+    reasons.push('Enterprise company');
+    buyingSignals.push('Enterprise');
+  } else if (size === '51-200') {
+    icpScore += 12;
+    reasons.push('Growing startup');
+  }
+
+  // ICP Scoring based on industry
+  const industry = contact.industry?.toLowerCase() || '';
+  if (industry.includes('technology') || industry.includes('software')) {
+    icpScore += 10;
+    intentScore += 10;
+    reasons.push('Tech industry fit');
+    buyingSignals.push('Tech Buyer');
+  } else if (industry.includes('finance') || industry.includes('healthcare')) {
+    icpScore += 8;
+    reasons.push('High-value vertical');
+  }
+
+  // Enrichment score based on data completeness
+  if (contact.business_email) enrichmentScore += 15;
+  if (contact.linkedin_url) enrichmentScore += 15;
+  if (contact.company_domain) enrichmentScore += 10;
+  if (contact.industry) enrichmentScore += 10;
+  if (contact.company_size) enrichmentScore += 10;
+
+  // Intent signals (simulated)
+  if (title.includes('sales') || title.includes('marketing') || title.includes('growth')) {
+    intentScore += 20;
+    buyingSignals.push('Revenue Focus');
+  }
+  if (title.includes('operations') || title.includes('product')) {
+    intentScore += 15;
+    buyingSignals.push('Efficiency Focus');
+  }
+
+  // Cap scores at 100
+  icpScore = Math.min(100, icpScore);
+  intentScore = Math.min(100, intentScore);
+  enrichmentScore = Math.min(100, enrichmentScore);
+
+  // Calculate overall score (weighted average)
+  const overallScore = Math.round(icpScore * 0.4 + intentScore * 0.35 + enrichmentScore * 0.25);
+
+  const explanation = reasons.length > 0 
+    ? `${reasons.slice(0, 3).join(', ')}. Overall fit: ${overallScore >= 70 ? 'Strong' : overallScore >= 50 ? 'Good' : 'Moderate'}.`
+    : 'Basic profile - needs more data for accurate scoring.';
+
+  return {
+    scores: {
+      icp_score: icpScore,
+      intent_score: intentScore,
+      enrichment_score: enrichmentScore,
+      overall_score: overallScore,
+    },
+    explanation,
+    buyingSignals: buyingSignals.slice(0, 4),
+  };
 }
 
 serve(async (req) => {
@@ -89,11 +199,27 @@ serve(async (req) => {
 
     console.log(`Found ${businessContacts.length} business contacts (filtered from ${sampleData.length})`);
 
+    // Enrich and score each lead
+    const scoredLeads: ScoredLead[] = businessContacts.map(contact => {
+      const enrichedContact = enrichLead(contact);
+      const { scores, explanation, buyingSignals } = scoreLead(enrichedContact);
+      
+      return {
+        ...enrichedContact,
+        scores,
+        score_explanation: explanation,
+        buying_signals: buyingSignals,
+      };
+    });
+
+    // Sort by overall score descending
+    scoredLeads.sort((a, b) => b.scores.overall_score - a.scores.overall_score);
+
     return new Response(
       JSON.stringify({ 
         success: true, 
-        contacts: businessContacts,
-        total: businessContacts.length,
+        leads: scoredLeads,
+        total: scoredLeads.length,
         filters_applied: {
           job_title: job_title || null,
           industry: industry || null,
@@ -110,7 +236,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: error instanceof Error ? error.message : 'Unknown error occurred',
-        contacts: []
+        leads: []
       }),
       { 
         status: 400,
