@@ -605,16 +605,65 @@ const Leads = () => {
   const activateLead = async (leadId: string) => {
     setActivatingLead(leadId);
     try {
-      const { error } = await supabase
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
+
+      // Get lead data for enrichment/scoring
+      const lead = leads.find(l => l.id === leadId);
+      if (!lead) throw new Error('Lead not found');
+
+      // Step 1: Set lead_status to active
+      const { error: updateError } = await supabase
         .from('leads')
         .update({ lead_status: 'active' })
         .eq('id', leadId);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
       toast({
         title: "Lead activated",
-        description: "Lead is now active and ready for outreach",
+        description: "Running enrichment and scoring...",
+      });
+
+      // Step 2: Run enrichment
+      try {
+        await supabase.functions.invoke('enrich-lead', {
+          body: { leadId }
+        });
+      } catch (enrichError) {
+        console.error('Enrichment failed:', enrichError);
+        // Continue even if enrichment fails
+      }
+
+      // Step 3: Run lead scoring
+      try {
+        const { data: scoreData } = await supabase.functions.invoke('score-lead', {
+          body: {
+            company_name: lead.company_name,
+            contact_name: lead.contact_name,
+            contact_email: lead.contact_email,
+            industry: lead.industry,
+            company_size: lead.company_size,
+            job_title: lead.job_title,
+            source: lead.source,
+          }
+        });
+
+        // Update lead with score if scoring succeeded
+        if (scoreData?.score) {
+          await supabase
+            .from('leads')
+            .update({ icp_score: scoreData.score })
+            .eq('id', leadId);
+        }
+      } catch (scoreError) {
+        console.error('Scoring failed:', scoreError);
+        // Continue even if scoring fails
+      }
+
+      toast({
+        title: "Lead fully activated",
+        description: "Enrichment and scoring complete. Lead is ready for outreach!",
       });
 
       await fetchLeads();
