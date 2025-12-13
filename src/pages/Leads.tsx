@@ -95,6 +95,7 @@ const Leads = () => {
   const [discoveredProspects, setDiscoveredProspects] = useState<DiscoveredProspect[]>([]);
   const [searchingProspects, setSearchingProspects] = useState(false);
   const [savingProspect, setSavingProspect] = useState<string | null>(null);
+  const [activatingLead, setActivatingLead] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchLeads = async () => {
@@ -601,6 +602,33 @@ const Leads = () => {
     return null; // Active leads don't show a badge
   };
 
+  const activateLead = async (leadId: string) => {
+    setActivatingLead(leadId);
+    try {
+      const { error } = await supabase
+        .from('leads')
+        .update({ lead_status: 'active' })
+        .eq('id', leadId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Lead activated",
+        description: "Lead is now active and ready for outreach",
+      });
+
+      await fetchLeads();
+    } catch (error: any) {
+      toast({
+        title: "Error activating lead",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setActivatingLead(null);
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -940,6 +968,8 @@ const Leads = () => {
                     onSelectLead={toggleSelectLead}
                     onSelectAll={(checked) => checked ? setSelectedLeads(new Set(filteredAndSortedLeads.map(l => l.id))) : setSelectedLeads(new Set())}
                     onLeadClick={handleLeadClick}
+                    onActivateLead={activateLead}
+                    activatingLead={activatingLead}
                   />
                 ) : (
                   <div className="space-y-3">
@@ -998,18 +1028,37 @@ const Leads = () => {
                               <div className="text-sm text-muted-foreground">
                                 {new Date(lead.created_at).toLocaleDateString()}
                               </div>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEnrichLead(lead.id);
-                                }}
-                                disabled={enrichingLeads.has(lead.id)}
-                              >
-                                <Sparkles className="w-4 h-4 mr-2" />
-                                {enrichingLeads.has(lead.id) ? 'Enriching...' : 'Enrich'}
-                              </Button>
+                              {lead.lead_status === 'discovered' ? (
+                                <Button
+                                  variant="hero"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    activateLead(lead.id);
+                                  }}
+                                  disabled={activatingLead === lead.id}
+                                >
+                                  {activatingLead === lead.id ? (
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  ) : (
+                                    <CheckCircle className="w-4 h-4 mr-2" />
+                                  )}
+                                  {activatingLead === lead.id ? 'Activating...' : 'Activate Lead'}
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEnrichLead(lead.id);
+                                  }}
+                                  disabled={enrichingLeads.has(lead.id)}
+                                >
+                                  <Sparkles className="w-4 h-4 mr-2" />
+                                  {enrichingLeads.has(lead.id) ? 'Enriching...' : 'Enrich'}
+                                </Button>
+                              )}
                             </div>
                           </div>
                         </CardContent>
