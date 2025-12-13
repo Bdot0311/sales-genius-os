@@ -4,6 +4,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { FAQSchema } from "@/components/seo";
 
 const faqs = [
   {
@@ -42,17 +43,19 @@ const faqs = [
 
 export const FAQ = () => {
   return (
-    <section id="faq" className="py-24 bg-background">
+    <section id="faq" className="py-24 bg-background" aria-labelledby="faq-heading">
+      <FAQSchema faqs={faqs} />
+      
       <div className="container mx-auto px-6">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold mb-4">
+        <header className="text-center mb-16">
+          <h2 id="faq-heading" className="text-4xl md:text-5xl font-bold mb-4">
             Frequently Asked
             <span className="bg-gradient-primary bg-clip-text text-transparent"> Questions</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Everything you need to know about SalesOS
           </p>
-        </div>
+        </header>
 
         <div className="max-w-3xl mx-auto">
           <Accordion type="single" collapsible className="space-y-4">

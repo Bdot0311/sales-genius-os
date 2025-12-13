@@ -6,9 +6,12 @@ export const Hero = () => {
   const navigate = useNavigate();
   
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-hero">
+    <section 
+      className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-hero"
+      aria-label="Hero section"
+    >
       {/* Animated background gradient orbs */}
-      <div className="absolute inset-0 overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-glow-pulse" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/20 rounded-full blur-3xl animate-glow-pulse" style={{ animationDelay: "1s" }} />
       </div>
@@ -16,11 +19,11 @@ export const Hero = () => {
       <div className="container relative z-10 mx-auto px-4 sm:px-6 py-20 sm:py-28 md:py-32 text-center">
         {/* Badge */}
         <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 mb-6 sm:mb-8 animate-fade-in">
-          <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
+          <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-primary" aria-hidden="true" />
           <span className="text-xs sm:text-sm text-muted-foreground">AI-Powered Sales Operating System</span>
         </div>
 
-        {/* Main headline */}
+        {/* Main headline - H1 for SEO */}
         <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-4 sm:mb-6 animate-fade-in px-2" style={{ animationDelay: "0.1s" }}>
           Close More Deals with
           <br />
@@ -36,38 +39,39 @@ export const Hero = () => {
         </p>
 
         {/* AI Command Demo */}
-        <div className="max-w-2xl mx-auto mb-8 sm:mb-12 p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-card border border-border backdrop-blur-sm shadow-card animate-fade-in" style={{ animationDelay: "0.3s" }}>
-          <div className="flex items-center gap-2 mb-3 sm:mb-4">
+        <figure className="max-w-2xl mx-auto mb-8 sm:mb-12 p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-card border border-border backdrop-blur-sm shadow-card animate-fade-in" style={{ animationDelay: "0.3s" }}>
+          <div className="flex items-center gap-2 mb-3 sm:mb-4" aria-hidden="true">
             <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-destructive" />
             <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-yellow-500" />
             <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-green-500" />
           </div>
+          <figcaption className="sr-only">AI Command Demo showing how SalesOS processes a lead generation request</figcaption>
           <div className="text-left font-mono text-xs sm:text-sm">
-            <span className="text-primary">→</span> <span className="text-foreground">"Find 100 SaaS founders in fintech and send them a 3-step sequence."</span>
-            <div className="mt-2 text-muted-foreground">
-              ✓ Found 127 qualified leads<br />
-              ✓ Personalized outreach generated<br />
-              ✓ Sequences scheduled for optimal send times
+            <span className="text-primary" aria-hidden="true">→</span> <span className="text-foreground">"Find 100 SaaS founders in fintech and send them a 3-step sequence."</span>
+            <div className="mt-2 text-muted-foreground" role="status" aria-label="AI processing results">
+              <span aria-hidden="true">✓</span> Found 127 qualified leads<br />
+              <span aria-hidden="true">✓</span> Personalized outreach generated<br />
+              <span aria-hidden="true">✓</span> Sequences scheduled for optimal send times
             </div>
           </div>
-        </div>
+        </figure>
 
         {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center animate-fade-in px-4" style={{ animationDelay: "0.4s" }}>
+        <nav className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center animate-fade-in px-4" style={{ animationDelay: "0.4s" }} aria-label="Call to action">
           <Button variant="hero" size="lg" className="group w-full sm:w-auto" onClick={() => navigate('/pricing')}>
             Start Free Trial
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" aria-hidden="true" />
           </Button>
           <Button variant="glass" size="lg" className="w-full sm:w-auto" onClick={() => {
             document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' });
           }}>
             Watch Demo
           </Button>
-        </div>
+        </nav>
 
         {/* Social proof */}
         <p className="mt-8 sm:mt-12 text-xs sm:text-sm text-muted-foreground animate-fade-in px-4" style={{ animationDelay: "0.5s" }}>
-          Trusted by 500+ SaaS companies • Average 3.2x increase in qualified meetings
+          <strong>Trusted by 500+ SaaS companies</strong> • Average 3.2x increase in qualified meetings
         </p>
       </div>
     </section>
