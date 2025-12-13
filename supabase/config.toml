@@ -32,3 +32,9 @@ verify_jwt = false
 
 [functions.search-prospects]
 verify_jwt = true
+
+[functions.build-salesos-network]
+verify_jwt = true
+
+[functions.refresh-salesos-network]
+verify_jwt = false

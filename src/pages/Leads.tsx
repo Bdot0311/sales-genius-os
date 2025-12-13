@@ -13,7 +13,7 @@ import { LeadAssignmentDialog } from "@/components/dashboard/LeadAssignmentDialo
 import { LeadActivityTimeline } from "@/components/dashboard/LeadActivityTimeline";
 import { LeadsTableView } from "@/components/dashboard/LeadsTableView";
 import { LeadDetailSheet } from "@/components/dashboard/LeadDetailSheet";
-import { Search, Download, ArrowUpDown, Trash2, Plus, Save, Star, UserPlus, LayoutGrid, Table as TableIcon, Sparkles, Globe, Loader2, CheckCircle } from "lucide-react";
+import { Search, Download, ArrowUpDown, Trash2, Plus, Save, Star, UserPlus, LayoutGrid, Table as TableIcon, Sparkles, Globe, Loader2, CheckCircle, Database, Zap } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -29,6 +29,7 @@ interface LeadFilters {
   last_contacted?: "all" | "contacted" | "not_contacted";
   score_changed?: "all" | "changed_this_month";
   lead_status?: "all" | "discovered" | "active";
+  network_source?: "all" | "in_network" | "new";
 }
 
 type SortField = "created_at" | "icp_score" | "company_name" | "company_size";
@@ -73,6 +74,8 @@ interface DiscoveredProspect {
   job_title?: string;
   company_website?: string;
   lead_status: 'discovered';
+  network_status?: 'in_network' | 'new';
+  data_quality_score?: number;
 }
 
 const Leads = () => {
@@ -610,6 +613,16 @@ const Leads = () => {
     return null; // Active leads don't show a badge
   };
 
+  const getNetworkStatusBadge = (networkStatus?: 'in_network' | 'new') => {
+    if (networkStatus === 'in_network') {
+      return <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-xs"><Database className="w-3 h-3 mr-1" />In Network</Badge>;
+    }
+    if (networkStatus === 'new') {
+      return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-xs"><Zap className="w-3 h-3 mr-1" />New</Badge>;
+    }
+    return null;
+  };
+
   const activateLead = async (leadId: string) => {
     setActivatingLead(leadId);
     try {
@@ -899,8 +912,25 @@ const Leads = () => {
                   </Select>
                 </div>
 
+                <div>
+                  <Label htmlFor="network_source">Network Source</Label>
+                  <Select 
+                    value={filters.network_source || "all"} 
+                    onValueChange={(value) => setFilters({ ...filters, network_source: value as "all" | "in_network" | "new" })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="All" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="in_network">In Network</SelectItem>
+                      <SelectItem value="new">New</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div className="flex gap-2">
-                  <Button 
+                  <Button
                     variant="outline" 
                     onClick={() => setFilters({})}
                     className="flex-1"
@@ -1145,7 +1175,7 @@ const Leads = () => {
                         <div className="flex items-center gap-2 py-3 border-t mt-4">
                           <Globe className="w-4 h-4 text-blue-400" />
                           <span className="text-sm font-medium text-blue-400">
-                            External Prospects ({discoveredProspects.length})
+                            SalesOS Lead Intelligence Network ({discoveredProspects.length})
                           </span>
                           <span className="text-xs text-muted-foreground">
                             Click + to add to your leads
@@ -1157,19 +1187,26 @@ const Leads = () => {
                           return (
                             <Card 
                               key={`prospect-${index}`} 
-                              className="border-blue-500/30 bg-blue-500/5 border-dashed"
+                              className={`border-dashed ${prospect.network_status === 'in_network' ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-amber-500/30 bg-amber-500/5'}`}
                             >
                               <CardContent className="p-4">
                                 <div className="flex items-start gap-3">
                                   <div className="mt-1 w-4 h-4 rounded border-2 border-blue-500/30 flex items-center justify-center">
-                                    <Globe className="w-3 h-3 text-blue-400" />
+                                    {prospect.network_status === 'in_network' ? (
+                                      <Database className="w-3 h-3 text-emerald-400" />
+                                    ) : (
+                                      <Zap className="w-3 h-3 text-amber-400" />
+                                    )}
                                   </div>
                                   <div className="space-y-1 flex-1">
                                     <div className="flex items-center gap-3 flex-wrap">
                                       <h3 className="font-semibold text-lg">{prospect.contact_name}</h3>
-                                      <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
-                                        <Globe className="w-3 h-3 mr-1" />External
-                                      </Badge>
+                                      {getNetworkStatusBadge(prospect.network_status)}
+                                      {prospect.data_quality_score !== undefined && (
+                                        <Badge variant="outline" className="text-xs">
+                                          Quality: {prospect.data_quality_score}%
+                                        </Badge>
+                                      )}
                                     </div>
                                     <p className="text-sm text-muted-foreground">{prospect.company_name}</p>
                                     {prospect.job_title && (
