@@ -28,6 +28,7 @@ interface LeadFilters {
   date_range?: "all" | "last_7_days" | "last_30_days" | "this_month";
   last_contacted?: "all" | "contacted" | "not_contacted";
   score_changed?: "all" | "changed_this_month";
+  lead_status?: "all" | "discovered" | "active";
 }
 
 type SortField = "created_at" | "icp_score" | "company_name" | "company_size";
@@ -310,9 +311,16 @@ const Leads = () => {
         }
       }
 
+      // Lead status filter
+      let matchesLeadStatus = true;
+      if (filters.lead_status && filters.lead_status !== "all") {
+        const leadStatus = lead.lead_status || 'active';
+        matchesLeadStatus = leadStatus === filters.lead_status;
+      }
+
       return matchesSearch && matchesSource && matchesIndustry && matchesSize && 
              matchesMinScore && matchesMaxScore && matchesDateRange && 
-             matchesLastContacted && matchesScoreChanged;
+             matchesLastContacted && matchesScoreChanged && matchesLeadStatus;
     })
     .sort((a, b) => {
       // First, prioritize active leads over discovered leads
@@ -734,6 +742,23 @@ const Leads = () => {
                 <CardDescription>Filter your leads</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="lead_status">Lead Status</Label>
+                  <Select 
+                    value={filters.lead_status || "all"} 
+                    onValueChange={(value) => setFilters({ ...filters, lead_status: value as "all" | "discovered" | "active" })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="All statuses" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="discovered">Discovered</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div>
                   <Label htmlFor="source">Source</Label>
                   <Select 
