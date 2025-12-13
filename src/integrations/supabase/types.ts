@@ -480,6 +480,7 @@ export type Database = {
           id: string
           job_title: string | null
           last_name: string | null
+          lead_status: string
           linkedin_url: string | null
           seniority: string | null
           source: string | null
@@ -497,6 +498,7 @@ export type Database = {
           id?: string
           job_title?: string | null
           last_name?: string | null
+          lead_status?: string
           linkedin_url?: string | null
           seniority?: string | null
           source?: string | null
@@ -514,6 +516,7 @@ export type Database = {
           id?: string
           job_title?: string | null
           last_name?: string | null
+          lead_status?: string
           linkedin_url?: string | null
           seniority?: string | null
           source?: string | null
