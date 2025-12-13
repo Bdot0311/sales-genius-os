@@ -863,6 +863,7 @@ export type Database = {
           industry: string | null
           job_title: string | null
           last_contacted_at: string | null
+          lead_status: string
           linkedin_url: string | null
           notes: string | null
           score_changed_at: string | null
@@ -892,6 +893,7 @@ export type Database = {
           industry?: string | null
           job_title?: string | null
           last_contacted_at?: string | null
+          lead_status?: string
           linkedin_url?: string | null
           notes?: string | null
           score_changed_at?: string | null
@@ -921,6 +923,7 @@ export type Database = {
           industry?: string | null
           job_title?: string | null
           last_contacted_at?: string | null
+          lead_status?: string
           linkedin_url?: string | null
           notes?: string | null
           score_changed_at?: string | null
