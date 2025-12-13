@@ -420,6 +420,54 @@ export type Database = {
         }
         Relationships: []
       }
+      companies: {
+        Row: {
+          city: string | null
+          country: string | null
+          created_at: string
+          domain: string | null
+          employee_count: number | null
+          id: string
+          industry: string | null
+          linkedin_url: string | null
+          name: string
+          revenue_range: string | null
+          tech_stack: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          domain?: string | null
+          employee_count?: number | null
+          id?: string
+          industry?: string | null
+          linkedin_url?: string | null
+          name: string
+          revenue_range?: string | null
+          tech_stack?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          domain?: string | null
+          employee_count?: number | null
+          id?: string
+          industry?: string | null
+          linkedin_url?: string | null
+          name?: string
+          revenue_range?: string | null
+          tech_stack?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       deals: {
         Row: {
           company_name: string
