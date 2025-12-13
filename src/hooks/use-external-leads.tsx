@@ -5,8 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 export interface ExternalLeadFilters {
   job_title?: string;
   industry?: string;
-  company_size_min?: number;
-  company_size_max?: number;
+  company_size?: string;
   country?: string;
   limit?: number;
 }
@@ -47,7 +46,17 @@ export function useExternalLeads() {
       });
 
       if (error) throw error;
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
       setLeads(data.leads || []);
+      
+      if (data.credits_used) {
+        console.log(`PDL credits used: ${data.credits_used}`);
+      }
+      
       return data.leads || [];
     } catch (error: any) {
       toast({
@@ -132,7 +141,7 @@ export function useExternalLeads() {
             linkedin_url: lead.linkedin_url,
             country: lead.country,
             lead_status: 'active',
-            source: 'External Provider',
+            source: 'People Data Labs',
           })
           .select('id')
           .single();
@@ -170,8 +179,8 @@ export function useExternalLeads() {
           company_size: lead.company_size,
           job_title: lead.job_title,
           linkedin_url: lead.linkedin_url,
-          company_website: `https://${lead.company_domain}`,
-          source: 'External Provider',
+          company_website: lead.company_domain ? `https://${lead.company_domain}` : undefined,
+          source: 'People Data Labs',
           lead_status: 'active',
           icp_score: lead.scores.overall_score,
         });

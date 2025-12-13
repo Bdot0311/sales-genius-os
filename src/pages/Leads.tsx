@@ -1000,33 +1000,20 @@ const Leads = () => {
                       <div>
                         <Label className="text-xs">Company Size</Label>
                         <Select
-                          value={externalFilters.company_size_max?.toString() || 'all'}
-                          onValueChange={(v) => {
-                            if (v === 'all') {
-                              setExternalFilters(prev => ({ ...prev, company_size_min: undefined, company_size_max: undefined }));
-                            } else if (v === '50') {
-                              setExternalFilters(prev => ({ ...prev, company_size_min: 1, company_size_max: 50 }));
-                            } else if (v === '200') {
-                              setExternalFilters(prev => ({ ...prev, company_size_min: 51, company_size_max: 200 }));
-                            } else if (v === '500') {
-                              setExternalFilters(prev => ({ ...prev, company_size_min: 201, company_size_max: 500 }));
-                            } else if (v === '1000') {
-                              setExternalFilters(prev => ({ ...prev, company_size_min: 501, company_size_max: 1000 }));
-                            } else {
-                              setExternalFilters(prev => ({ ...prev, company_size_min: 1001, company_size_max: undefined }));
-                            }
-                          }}
+                          value={externalFilters.company_size || 'all'}
+                          onValueChange={(v) => setExternalFilters(prev => ({ ...prev, company_size: v === 'all' ? undefined : v }))}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Any size" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">Any size</SelectItem>
-                            <SelectItem value="50">1-50</SelectItem>
-                            <SelectItem value="200">51-200</SelectItem>
-                            <SelectItem value="500">201-500</SelectItem>
-                            <SelectItem value="1000">501-1000</SelectItem>
-                            <SelectItem value="1001">1000+</SelectItem>
+                            <SelectItem value="1-10">1-10</SelectItem>
+                            <SelectItem value="11-50">11-50</SelectItem>
+                            <SelectItem value="51-200">51-200</SelectItem>
+                            <SelectItem value="201-500">201-500</SelectItem>
+                            <SelectItem value="501-1000">501-1000</SelectItem>
+                            <SelectItem value="1000+">1000+</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
