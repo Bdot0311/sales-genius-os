@@ -768,6 +768,50 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_scores: {
+        Row: {
+          contact_id: string
+          created_at: string
+          enrichment_score: number | null
+          explanation: string | null
+          icp_score: number | null
+          id: string
+          intent_score: number | null
+          overall_score: number | null
+          user_id: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          enrichment_score?: number | null
+          explanation?: string | null
+          icp_score?: number | null
+          id?: string
+          intent_score?: number | null
+          overall_score?: number | null
+          user_id: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          enrichment_score?: number | null
+          explanation?: string | null
+          icp_score?: number | null
+          id?: string
+          intent_score?: number | null
+          overall_score?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_scores_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_search_presets: {
         Row: {
           created_at: string
