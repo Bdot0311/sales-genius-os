@@ -533,6 +533,36 @@ export type Database = {
           },
         ]
       }
+      data_provider_events: {
+        Row: {
+          cost_units: number
+          created_at: string
+          id: string
+          provider_name: string
+          query_hash: string
+          results_count: number
+          user_id: string
+        }
+        Insert: {
+          cost_units?: number
+          created_at?: string
+          id?: string
+          provider_name?: string
+          query_hash: string
+          results_count?: number
+          user_id: string
+        }
+        Update: {
+          cost_units?: number
+          created_at?: string
+          id?: string
+          provider_name?: string
+          query_hash?: string
+          results_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       deals: {
         Row: {
           company_name: string
@@ -770,6 +800,81 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      lead_index: {
+        Row: {
+          canonical_domain: string | null
+          canonical_industry: string | null
+          canonical_title: string | null
+          city: string | null
+          company_id: string | null
+          contact_id: string | null
+          country: string | null
+          created_at: string
+          data_quality_score: number | null
+          employee_bucket: string | null
+          id: string
+          is_active: boolean
+          last_refreshed_at: string | null
+          last_verified_at: string | null
+          region: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          canonical_domain?: string | null
+          canonical_industry?: string | null
+          canonical_title?: string | null
+          city?: string | null
+          company_id?: string | null
+          contact_id?: string | null
+          country?: string | null
+          created_at?: string
+          data_quality_score?: number | null
+          employee_bucket?: string | null
+          id?: string
+          is_active?: boolean
+          last_refreshed_at?: string | null
+          last_verified_at?: string | null
+          region?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          canonical_domain?: string | null
+          canonical_industry?: string | null
+          canonical_title?: string | null
+          city?: string | null
+          company_id?: string | null
+          contact_id?: string | null
+          country?: string | null
+          created_at?: string
+          data_quality_score?: number | null
+          employee_bucket?: string | null
+          id?: string
+          is_active?: boolean
+          last_refreshed_at?: string | null
+          last_verified_at?: string | null
+          region?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_index_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_index_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lead_scores: {
         Row: {
