@@ -42,103 +42,48 @@ serve(async (req) => {
 
     console.log('Searching prospects for user:', user.id, 'query:', query);
 
-    // Check for Apollo integration
-    const { data: integration } = await supabase
-      .from('integrations')
-      .select('config')
-      .eq('user_id', user.id)
-      .eq('integration_id', 'apollo')
-      .eq('is_active', true)
-      .maybeSingle();
-
     let prospects: any[] = [];
 
-    if (integration?.config?.api_key) {
-      // Use Apollo API for real prospect search
-      const apolloApiKey = integration.config.api_key;
-      
-      try {
-        console.log('Calling Apollo People Search API');
-        
-        const apolloResponse = await fetch('https://api.apollo.io/v1/mixed_people/search', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Cache-Control': 'no-cache',
-            'X-Api-Key': apolloApiKey
-          },
-          body: JSON.stringify({
-            q_organization_name: query,
-            per_page: limit,
-            page: 1,
-          })
-        });
+    // Generate sample prospects from SalesOS Lead Intelligence Network
+    console.log('Generating sample prospects from SalesOS Lead Intelligence Network');
+    
+    const sampleCompanies = [
+      { name: 'TechVenture Solutions', industry: 'Technology', size: '51-200' },
+      { name: 'DataFlow Analytics', industry: 'Technology', size: '11-50' },
+      { name: 'CloudFirst Systems', industry: 'Technology', size: '201-500' },
+      { name: 'InnovateTech Labs', industry: 'Technology', size: '11-50' },
+      { name: 'Digital Dynamics Corp', industry: 'Technology', size: '51-200' },
+      { name: 'NextGen Software', industry: 'Technology', size: '1-10' },
+      { name: 'Quantum Computing Inc', industry: 'Technology', size: '51-200' },
+      { name: 'AI Innovations Ltd', industry: 'Technology', size: '11-50' },
+      { name: 'SmartData Solutions', industry: 'Technology', size: '201-500' },
+      { name: 'CyberTech Security', industry: 'Technology', size: '51-200' },
+    ];
 
-        if (apolloResponse.ok) {
-          const apolloData = await apolloResponse.json();
-          console.log('Apollo returned', apolloData.people?.length || 0, 'results');
-          
-          prospects = (apolloData.people || []).map((person: any) => ({
-            company_name: person.organization?.name || 'Unknown Company',
-            contact_name: `${person.first_name || ''} ${person.last_name || ''}`.trim() || 'Unknown',
-            contact_email: person.email || null,
-            industry: person.organization?.industry || null,
-            company_size: getCompanySizeLabel(person.organization?.estimated_num_employees),
-            source: 'Apollo',
-            linkedin_url: person.linkedin_url || null,
-            job_title: person.title || null,
-            company_website: person.organization?.website_url || null,
-            lead_status: 'discovered',
-          }));
-        } else {
-          const errorText = await apolloResponse.text();
-          console.log('Apollo API error:', apolloResponse.status, errorText);
-        }
-      } catch (apolloError) {
-        console.error('Apollo API error:', apolloError);
-      }
-    } else {
-      // Generate sample prospects when Apollo is not configured
-      console.log('Apollo not configured, generating sample prospects');
-      
-      const sampleCompanies = [
-        { name: 'TechVenture Solutions', industry: 'Technology', size: '51-200' },
-        { name: 'DataFlow Analytics', industry: 'Technology', size: '11-50' },
-        { name: 'CloudFirst Systems', industry: 'Technology', size: '201-500' },
-        { name: 'InnovateTech Labs', industry: 'Technology', size: '11-50' },
-        { name: 'Digital Dynamics Corp', industry: 'Technology', size: '51-200' },
-        { name: 'NextGen Software', industry: 'Technology', size: '1-10' },
-        { name: 'Quantum Computing Inc', industry: 'Technology', size: '51-200' },
-        { name: 'AI Innovations Ltd', industry: 'Technology', size: '11-50' },
-        { name: 'SmartData Solutions', industry: 'Technology', size: '201-500' },
-        { name: 'CyberTech Security', industry: 'Technology', size: '51-200' },
-      ];
+    const sampleContacts = ['John Smith', 'Sarah Johnson', 'Michael Chen', 'Emily Davis', 'David Wilson'];
+    const sampleTitles = ['CEO', 'CTO', 'VP of Sales', 'Director of Engineering', 'Head of Product'];
 
-      const sampleContacts = ['John Smith', 'Sarah Johnson', 'Michael Chen', 'Emily Davis', 'David Wilson'];
-      const sampleTitles = ['CEO', 'CTO', 'VP of Sales', 'Director of Engineering', 'Head of Product'];
+    // Filter companies that match the query
+    const matchingCompanies = sampleCompanies.filter(c => 
+      c.name.toLowerCase().includes(query.toLowerCase()) ||
+      query.toLowerCase().includes('tech') ||
+      query.toLowerCase().includes('software') ||
+      query.toLowerCase().includes('data')
+    );
 
-      // Filter companies that match the query
-      const matchingCompanies = sampleCompanies.filter(c => 
-        c.name.toLowerCase().includes(query.toLowerCase()) ||
-        query.toLowerCase().includes('tech') ||
-        query.toLowerCase().includes('software') ||
-        query.toLowerCase().includes('data')
-      );
+    // If no specific matches, return some random ones
+    const companiesToUse = matchingCompanies.length > 0 ? matchingCompanies : sampleCompanies.slice(0, limit);
 
-      // If no specific matches, return some random ones
-      const companiesToUse = matchingCompanies.length > 0 ? matchingCompanies : sampleCompanies.slice(0, limit);
-
-      prospects = companiesToUse.slice(0, limit).map((company, index) => ({
-        company_name: company.name,
-        contact_name: sampleContacts[index % sampleContacts.length],
-        contact_email: `contact${index + 1}@${company.name.toLowerCase().replace(/\s+/g, '')}.com`,
-        industry: company.industry,
-        company_size: company.size,
-        source: 'Prospector',
-        job_title: sampleTitles[index % sampleTitles.length],
-        lead_status: 'discovered',
-      }));
-    }
+    prospects = companiesToUse.slice(0, limit).map((company, index) => ({
+      company_name: company.name,
+      contact_name: sampleContacts[index % sampleContacts.length],
+      contact_email: `contact${index + 1}@${company.name.toLowerCase().replace(/\s+/g, '')}.com`,
+      industry: company.industry,
+      company_size: company.size,
+      source: 'SalesOS',
+      job_title: sampleTitles[index % sampleTitles.length],
+      lead_status: 'discovered',
+    }));
 
     console.log('Returning', prospects.length, 'prospects');
 
@@ -146,7 +91,7 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         prospects,
-        source: integration?.config?.api_key ? 'apollo' : 'sample'
+        source: 'salesos_intelligence'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

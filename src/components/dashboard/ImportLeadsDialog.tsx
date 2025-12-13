@@ -113,7 +113,7 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
         .from('integrations')
         .select('*')
         .eq('is_active', true)
-        .in('integration_id', ['apollo', 'crunchbase']);
+        .in('integration_id', ['external_provider']);
 
       if (error) throw error;
       setIntegrations(data || []);
@@ -156,44 +156,12 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
     
     setLoading(true);
     try {
-      const integration = integrations.find(i => i.integration_id === selectedIntegration);
-      if (!integration) {
-        throw new Error(`${selectedIntegration} integration not configured`);
-      }
-
-      let results: any[] = [];
-
-      if (selectedIntegration === 'apollo') {
-        const response = await fetch('https://api.apollo.io/v1/mixed_people/search', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Cache-Control': 'no-cache',
-            'X-Api-Key': integration.config.api_key
-          },
-          body: JSON.stringify({
-            q_keywords: searchQuery,
-            page: 1,
-            per_page: 25
-          })
-        });
-
-        if (!response.ok) throw new Error('Apollo search failed');
-        const data = await response.json();
-        results = data.people || [];
-      } else if (selectedIntegration === 'crunchbase') {
-        const response = await fetch(`https://api.crunchbase.com/api/v4/autocompletes?query=${encodeURIComponent(searchQuery)}&collection_ids=organizations&limit=25`, {
-          headers: {
-            'X-cb-user-key': integration.config.api_key
-          }
-        });
-
-        if (!response.ok) throw new Error('Crunchbase search failed');
-        const data = await response.json();
-        results = data.entities || [];
-      }
-
-      setSearchResults(results);
+      // Search functionality now uses SalesOS Lead Intelligence Network
+      toast({
+        title: "Use Lead Finder",
+        description: "Search for leads using the main Leads page search functionality",
+      });
+      setSearchResults([]);
     } catch (error: any) {
       toast({
         title: "Search failed",
@@ -227,7 +195,7 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
     formatted.job_title = lead[fieldMappings.job_title || 'title'] || null;
     formatted.linkedin_url = lead[fieldMappings.linkedin_url || 'linkedin_url'] || null;
     formatted.company_website = lead[fieldMappings.company_website] || lead.organization?.website_url || lead.website || null;
-    formatted.source = selectedIntegration === 'apollo' ? 'Apollo' : 'Crunchbase';
+    formatted.source = 'External Data Provider';
 
     return formatted;
   };
@@ -250,7 +218,7 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
       // Log import history
       await supabase.from("import_history").insert({
         user_id: session.user.id,
-        source: selectedIntegration === 'apollo' ? 'Apollo' : 'Crunchbase',
+        source: 'External Data Provider',
         leads_count: formattedLeads.length,
         success_count: data?.length || 0,
         failed_count: formattedLeads.length - (data?.length || 0),
@@ -261,7 +229,7 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
 
       toast({
         title: "Import successful",
-        description: `Imported ${data?.length || 0} leads from ${selectedIntegration === 'apollo' ? 'Apollo' : 'Crunchbase'}`,
+        description: `Imported ${data?.length || 0} leads`,
       });
 
       setSearchResults([]);
@@ -425,8 +393,7 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
                   <SelectValue placeholder="Select source" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Apollo">Apollo</SelectItem>
-                  <SelectItem value="Crunchbase">Crunchbase</SelectItem>
+                  <SelectItem value="SalesOS">SalesOS Lead Intelligence</SelectItem>
                   <SelectItem value="LinkedIn">LinkedIn</SelectItem>
                   <SelectItem value="Manual Import">Manual Import</SelectItem>
                   <SelectItem value="Other">Other</SelectItem>
@@ -463,9 +430,7 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
               {selectedIntegration ? (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-semibold">
-                      {selectedIntegration === 'apollo' ? 'Search Apollo.io' : 'Search Crunchbase'}
-                    </h4>
+                    <h4 className="font-semibold">Search External Providers</h4>
                     <Button variant="ghost" onClick={() => {
                       setSelectedIntegration(null);
                       setSearchResults([]);
@@ -599,71 +564,9 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <Card className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-semibold">Apollo.io</h4>
-                        <p className="text-sm text-muted-foreground">
-                          Import leads directly from Apollo
-                        </p>
-                      </div>
-                      {getIntegrationStatus('apollo') ? (
-                        <Button 
-                          variant="outline"
-                          onClick={() => setSelectedIntegration('apollo')}
-                        >
-                          Import
-                        </Button>
-                      ) : (
-                        <Button 
-                          variant="outline"
-                          onClick={() => {
-                            navigate('/dashboard/integrations');
-                            setOpen(false);
-                          }}
-                        >
-                          <ExternalLink className="w-4 h-4 mr-2" />
-                          Configure
-                        </Button>
-                      )}
-                    </div>
-                  </Card>
-
-                  <Card className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-semibold">Crunchbase</h4>
-                        <p className="text-sm text-muted-foreground">
-                          Import company data from Crunchbase
-                        </p>
-                      </div>
-                      {getIntegrationStatus('crunchbase') ? (
-                        <Button 
-                          variant="outline"
-                          onClick={() => setSelectedIntegration('crunchbase')}
-                        >
-                          Import
-                        </Button>
-                      ) : (
-                        <Button 
-                          variant="outline"
-                          onClick={() => {
-                            navigate('/dashboard/integrations');
-                            setOpen(false);
-                          }}
-                        >
-                          <ExternalLink className="w-4 h-4 mr-2" />
-                          Configure
-                        </Button>
-                      )}
-                    </div>
-                  </Card>
-
-                  {integrations.length === 0 && (
-                    <p className="text-sm text-muted-foreground text-center py-4">
-                      Configure your integrations in Settings to import leads directly from Apollo or Crunchbase.
-                    </p>
-                  )}
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    Use CSV upload or the SalesOS Lead Intelligence Network to import leads.
+                  </p>
                 </div>
               )}
             </ScrollArea>

@@ -6,18 +6,11 @@ import { Rocket, TrendingUp, Calendar, CalendarClock, Mail, MessageSquare, Zap, 
 
 const integrations = [
   {
-    name: "Apollo.io",
-    category: "Lead Generation",
-    description: "Import leads directly from Apollo with enriched company data",
-    icon: Rocket,
-    color: "bg-blue-500"
-  },
-  {
-    name: "Crunchbase",
-    category: "Data Enrichment",
-    description: "Get funding data, investor info, and company insights",
-    icon: TrendingUp,
-    color: "bg-green-500"
+    name: "Google Calendar",
+    category: "Scheduling",
+    description: "Auto-schedule meetings based on your availability",
+    icon: Calendar,
+    color: "bg-yellow-500"
   },
   {
     name: "Google Calendar",

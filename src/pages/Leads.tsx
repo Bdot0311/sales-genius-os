@@ -547,7 +547,7 @@ const Leads = () => {
     } catch (error: any) {
       toast({
         title: "Enrichment failed",
-        description: error.message || "Failed to enrich lead. Make sure Apollo.io is configured in Settings > Integrations.",
+        description: error.message || "Failed to enrich lead. Make sure an enrichment provider is configured in Settings > Integrations.",
         variant: "destructive",
       });
     } finally {
@@ -770,8 +770,8 @@ const Leads = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All sources</SelectItem>
-                      <SelectItem value="Apollo">Apollo</SelectItem>
-                      <SelectItem value="Crunchbase">Crunchbase</SelectItem>
+                      <SelectItem value="SalesOS">SalesOS</SelectItem>
+                      <SelectItem value="Prospector">Prospector</SelectItem>
                       <SelectItem value="LinkedIn">LinkedIn</SelectItem>
                       <SelectItem value="Website">Website</SelectItem>
                       <SelectItem value="Manual">Manual</SelectItem>
