@@ -1,14 +1,26 @@
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { TrendingUp, Users, DollarSign, Target, Loader2 } from "lucide-react";
-import { useSubscription } from "@/hooks/use-subscription";
-import { UpgradePrompt } from "@/components/dashboard/UpgradePrompt";
+import { TrendingUp, Users, DollarSign, Target, Loader2, Download, FileText, Sparkles } from "lucide-react";
+import { usePlanFeatures } from "@/hooks/use-plan-features";
+import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
+import { FeatureHighlight } from "@/components/dashboard/FeatureHighlight";
 
 const Analytics = () => {
-  const { subscription, loading: subscriptionLoading } = useSubscription();
+  const { 
+    currentPlan, 
+    features, 
+    loading: planLoading,
+    hasFeature,
+    gateModalOpen,
+    setGateModalOpen,
+    gatedFeature,
+    triggerGate,
+  } = usePlanFeatures();
+  
   const [stats, setStats] = useState({
     totalLeads: 0,
     totalDeals: 0,
@@ -17,61 +29,56 @@ const Analytics = () => {
   });
   const [dealsByStage, setDealsByStage] = useState<any[]>([]);
   const [leadsOverTime, setLeadsOverTime] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const loadAnalytics = async () => {
-    const { data: leads } = await supabase.from("leads").select("*");
-    const { data: deals } = await supabase.from("deals").select("*");
+    try {
+      const { data: leads } = await supabase.from("leads").select("*");
+      const { data: deals } = await supabase.from("deals").select("*");
 
-    if (leads && deals) {
-      const totalValue = deals.reduce((sum, deal) => sum + (Number(deal.value) || 0), 0);
-      setStats({
-        totalLeads: leads.length,
-        totalDeals: deals.length,
-        totalValue,
-        avgDealSize: deals.length > 0 ? totalValue / deals.length : 0,
-      });
+      if (leads && deals) {
+        const totalValue = deals.reduce((sum, deal) => sum + (Number(deal.value) || 0), 0);
+        setStats({
+          totalLeads: leads.length,
+          totalDeals: deals.length,
+          totalValue,
+          avgDealSize: deals.length > 0 ? totalValue / deals.length : 0,
+        });
 
-      const stageData = [
-        { stage: "New", count: deals.filter((d) => d.stage === "new").length },
-        { stage: "Qualified", count: deals.filter((d) => d.stage === "qualified").length },
-        { stage: "Proposal", count: deals.filter((d) => d.stage === "proposal").length },
-        { stage: "Negotiation", count: deals.filter((d) => d.stage === "negotiation").length },
-        { stage: "Closed", count: deals.filter((d) => d.stage === "closed").length },
-      ];
-      setDealsByStage(stageData);
+        const stageData = [
+          { stage: "New", count: deals.filter((d) => d.stage === "new").length },
+          { stage: "Qualified", count: deals.filter((d) => d.stage === "qualified").length },
+          { stage: "Proposal", count: deals.filter((d) => d.stage === "proposal").length },
+          { stage: "Negotiation", count: deals.filter((d) => d.stage === "negotiation").length },
+          { stage: "Closed", count: deals.filter((d) => d.stage === "closed").length },
+        ];
+        setDealsByStage(stageData);
 
-      const timeData = [
-        { month: "Jan", leads: Math.floor(leads.length * 0.1) },
-        { month: "Feb", leads: Math.floor(leads.length * 0.15) },
-        { month: "Mar", leads: Math.floor(leads.length * 0.2) },
-        { month: "Apr", leads: Math.floor(leads.length * 0.25) },
-        { month: "May", leads: Math.floor(leads.length * 0.3) },
-        { month: "Jun", leads: leads.length },
-      ];
-      setLeadsOverTime(timeData);
+        const timeData = [
+          { month: "Jan", leads: Math.floor(leads.length * 0.1) },
+          { month: "Feb", leads: Math.floor(leads.length * 0.15) },
+          { month: "Mar", leads: Math.floor(leads.length * 0.2) },
+          { month: "Apr", leads: Math.floor(leads.length * 0.25) },
+          { month: "May", leads: Math.floor(leads.length * 0.3) },
+          { month: "Jun", leads: leads.length },
+        ];
+        setLeadsOverTime(timeData);
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (subscription?.hasAnalytics) {
-      loadAnalytics();
-    }
-  }, [subscription?.hasAnalytics]);
+    loadAnalytics();
+  }, []);
 
-  if (subscriptionLoading) {
+  if (planLoading || loading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-12 h-12 text-muted-foreground animate-spin" />
         </div>
-      </DashboardLayout>
-    );
-  }
-
-  if (!subscription?.hasAnalytics) {
-    return (
-      <DashboardLayout>
-        <UpgradePrompt feature="Advanced Analytics" requiredPlan="pro" />
       </DashboardLayout>
     );
   }
@@ -109,12 +116,49 @@ const Analytics = () => {
     },
   ];
 
+  const handleExport = () => {
+    if (!features.dataExports) {
+      triggerGate('dataExports');
+      return;
+    }
+    // Export logic would go here
+  };
+
+  const handleCustomReport = () => {
+    if (!features.customReports) {
+      triggerGate('customReports');
+      return;
+    }
+    // Custom report logic would go here
+  };
+
   return (
     <DashboardLayout>
+      <FeatureGateModal 
+        open={gateModalOpen} 
+        onOpenChange={setGateModalOpen}
+        feature={gatedFeature || 'funnelAnalytics'}
+        currentPlan={currentPlan}
+      />
+      
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Analytics</h1>
-          <p className="text-muted-foreground">Track your sales performance and metrics</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Analytics</h1>
+            <p className="text-muted-foreground">Track your sales performance and metrics</p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleExport}>
+              <Download className="w-4 h-4 mr-2" />
+              Export
+              {!features.dataExports && <Sparkles className="w-3 h-3 ml-2 text-primary" />}
+            </Button>
+            <Button variant="outline" onClick={handleCustomReport}>
+              <FileText className="w-4 h-4 mr-2" />
+              Custom Report
+              {!features.customReports && <Sparkles className="w-3 h-3 ml-2 text-primary" />}
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -162,7 +206,16 @@ const Analytics = () => {
         </div>
 
         <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-4">Deal Distribution</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Deal Distribution</h2>
+            {!features.funnelAnalytics && (
+              <FeatureHighlight 
+                availableOn="pro" 
+                onUpgrade={() => triggerGate('funnelAnalytics')}
+                inline
+              />
+            )}
+          </div>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
@@ -183,6 +236,27 @@ const Analytics = () => {
             </PieChart>
           </ResponsiveContainer>
         </Card>
+
+        {/* Rep Performance - Pro+ feature */}
+        {features.repPerformance ? (
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold mb-4">Rep Performance</h2>
+            <p className="text-muted-foreground">Performance metrics for your team will appear here.</p>
+          </Card>
+        ) : (
+          <Card className="p-6 border-dashed border-2 border-primary/20">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold mb-2">Rep Performance</h2>
+                <p className="text-muted-foreground">Track individual rep performance and identify coaching opportunities.</p>
+              </div>
+              <FeatureHighlight 
+                availableOn="pro" 
+                onUpgrade={() => triggerGate('funnelAnalytics')}
+              />
+            </div>
+          </Card>
+        )}
       </div>
     </DashboardLayout>
   );

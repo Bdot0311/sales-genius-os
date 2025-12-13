@@ -3,15 +3,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Mic, Send, TrendingUp, Target, Lightbulb, Loader2 } from "lucide-react";
+import { Mic, Send, TrendingUp, Target, Lightbulb, Loader2, Sparkles, BookOpen, Radio } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useSubscription } from "@/hooks/use-subscription";
-import { UpgradePrompt } from "@/components/dashboard/UpgradePrompt";
+import { usePlanFeatures } from "@/hooks/use-plan-features";
+import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
+import { FeatureHighlight } from "@/components/dashboard/FeatureHighlight";
 
 const Coach = () => {
-  const { subscription, loading: subscriptionLoading } = useSubscription();
+  const { 
+    currentPlan, 
+    features, 
+    loading: planLoading,
+    gateModalOpen,
+    setGateModalOpen,
+    gatedFeature,
+    triggerGate,
+  } = usePlanFeatures();
+  
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [coachingResponse, setCoachingResponse] = useState("");
@@ -56,40 +66,38 @@ const Coach = () => {
   };
 
   useEffect(() => {
-    if (subscription?.hasAiCoach) {
-      loadStats();
-      
-      // Set up real-time subscriptions
-      const leadsChannel = supabase
-        .channel('leads-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => {
-          loadStats();
-        })
-        .subscribe();
+    loadStats();
+    
+    // Set up real-time subscriptions
+    const leadsChannel = supabase
+      .channel('leads-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => {
+        loadStats();
+      })
+      .subscribe();
 
-      const dealsChannel = supabase
-        .channel('deals-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'deals' }, () => {
-          loadStats();
-        })
-        .subscribe();
+    const dealsChannel = supabase
+      .channel('deals-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'deals' }, () => {
+        loadStats();
+      })
+      .subscribe();
 
-      const activitiesChannel = supabase
-        .channel('activities-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'activities' }, () => {
-          loadStats();
-        })
-        .subscribe();
+    const activitiesChannel = supabase
+      .channel('activities-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'activities' }, () => {
+        loadStats();
+      })
+      .subscribe();
 
-      return () => {
-        supabase.removeChannel(leadsChannel);
-        supabase.removeChannel(dealsChannel);
-        supabase.removeChannel(activitiesChannel);
-      };
-    }
-  }, [subscription?.hasAiCoach]);
+    return () => {
+      supabase.removeChannel(leadsChannel);
+      supabase.removeChannel(dealsChannel);
+      supabase.removeChannel(activitiesChannel);
+    };
+  }, []);
 
-  if (subscriptionLoading) {
+  if (planLoading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
@@ -99,13 +107,9 @@ const Coach = () => {
     );
   }
 
-  if (!subscription?.hasAiCoach) {
-    return (
-      <DashboardLayout>
-        <UpgradePrompt feature="AI Sales Coach" requiredPlan="pro" />
-      </DashboardLayout>
-    );
-  }
+  const coachingLevel = features.coachingLevel;
+  const hasLiveCoaching = features.liveCoaching;
+  const hasCustomPlaybooks = features.customPlaybooks;
 
   const handleSubmit = async () => {
     if (!input.trim()) return;
@@ -139,14 +143,51 @@ const Coach = () => {
     setInput(question);
   };
 
+  const handleLiveCoaching = () => {
+    if (!hasLiveCoaching) {
+      triggerGate('liveCoaching');
+      return;
+    }
+    // Live coaching logic
+  };
+
+  const handleCustomPlaybooks = () => {
+    if (!hasCustomPlaybooks) {
+      triggerGate('customPlaybooks');
+      return;
+    }
+    // Custom playbooks logic
+  };
+
   return (
     <DashboardLayout>
+      <FeatureGateModal 
+        open={gateModalOpen} 
+        onOpenChange={setGateModalOpen}
+        feature={gatedFeature || 'liveCoaching'}
+        currentPlan={currentPlan}
+      />
+      
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">AI Sales Coach</h1>
-          <p className="text-muted-foreground">
-            Get personalized coaching and insights to improve your sales performance
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">AI Sales Coach</h1>
+            <p className="text-muted-foreground">
+              Get personalized coaching and insights to improve your sales performance
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleLiveCoaching}>
+              <Radio className="w-4 h-4 mr-2" />
+              Live Coaching
+              {!hasLiveCoaching && <Sparkles className="w-3 h-3 ml-2 text-primary" />}
+            </Button>
+            <Button variant="outline" onClick={handleCustomPlaybooks}>
+              <BookOpen className="w-4 h-4 mr-2" />
+              Playbooks
+              {!hasCustomPlaybooks && <Sparkles className="w-3 h-3 ml-2 text-primary" />}
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

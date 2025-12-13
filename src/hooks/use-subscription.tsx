@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { PLAN_FEATURES, type PlanType } from '@/lib/plan-features';
 
 export type SubscriptionPlan = 'growth' | 'pro' | 'elite';
 
@@ -10,6 +11,8 @@ export interface UserSubscription {
   hasAnalytics: boolean;
   hasApiAccess: boolean;
   leadsLimit: number;
+  // Plan feature details
+  features: typeof PLAN_FEATURES[PlanType];
 }
 
 export const useSubscription = () => {
@@ -28,17 +31,42 @@ export const useSubscription = () => {
       
       if (data && data.length > 0) {
         const planData = data[0];
+        const plan = planData.plan as SubscriptionPlan;
+        const features = PLAN_FEATURES[plan];
+        
         setSubscription({
-          plan: planData.plan as SubscriptionPlan,
+          plan,
           hasAutomations: planData.has_automations,
           hasAiCoach: planData.has_ai_coach,
           hasAnalytics: planData.has_analytics,
           hasApiAccess: planData.has_api_access,
           leadsLimit: planData.leads_limit,
+          features,
+        });
+      } else {
+        // Default to growth plan
+        setSubscription({
+          plan: 'growth',
+          hasAutomations: false,
+          hasAiCoach: false,
+          hasAnalytics: false,
+          hasApiAccess: false,
+          leadsLimit: 500,
+          features: PLAN_FEATURES.growth,
         });
       }
     } catch (error) {
       console.error('Error loading subscription:', error);
+      // Default to growth plan on error
+      setSubscription({
+        plan: 'growth',
+        hasAutomations: false,
+        hasAiCoach: false,
+        hasAnalytics: false,
+        hasApiAccess: false,
+        leadsLimit: 500,
+        features: PLAN_FEATURES.growth,
+      });
     } finally {
       setLoading(false);
     }

@@ -11,8 +11,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Plus, Zap, Loader2, Workflow as WorkflowIcon, List } from "lucide-react";
 import { WorkflowCanvas } from "@/components/workflow/WorkflowCanvas";
 import { Node, Edge } from "reactflow";
-import { useSubscription } from "@/hooks/use-subscription";
-import { UpgradePrompt } from "@/components/dashboard/UpgradePrompt";
+import { usePlanFeatures } from "@/hooks/use-plan-features";
+import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
+import { PlanLimitBadge } from "@/components/dashboard/PlanLimitBadge";
+import { FeatureHighlight } from "@/components/dashboard/FeatureHighlight";
 
 interface Workflow {
   id: string;
@@ -30,7 +32,18 @@ interface Workflow {
 
 const Automations = () => {
   const { toast } = useToast();
-  const { subscription, loading: subscriptionLoading } = useSubscription();
+  const { 
+    currentPlan, 
+    features, 
+    loading: planLoading,
+    hasFeature,
+    limitedAction,
+    gateModalOpen,
+    setGateModalOpen,
+    gatedFeature,
+    triggerGate,
+  } = usePlanFeatures();
+  
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -67,12 +80,10 @@ const Automations = () => {
   };
 
   useEffect(() => {
-    if (subscription?.hasAutomations) {
-      loadWorkflows();
-    }
-  }, [subscription?.hasAutomations]);
+    loadWorkflows();
+  }, []);
 
-  if (subscriptionLoading) {
+  if (planLoading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
@@ -82,15 +93,16 @@ const Automations = () => {
     );
   }
 
-  if (!subscription?.hasAutomations) {
-    return (
-      <DashboardLayout>
-        <UpgradePrompt feature="Automation Builder" requiredPlan="pro" />
-      </DashboardLayout>
-    );
-  }
+  const workflowLimit = features.automationRules;
+  const isUnlimited = workflowLimit === -1;
+  const canCreateWorkflow = isUnlimited || workflows.length < workflowLimit;
 
   const handleCreateVisualWorkflow = async () => {
+    if (!canCreateWorkflow) {
+      triggerGate('advancedWorkflows');
+      return;
+    }
+
     if (!newWorkflowName) {
       toast({
         title: "Missing information",
@@ -206,6 +218,13 @@ const Automations = () => {
 
   return (
     <DashboardLayout>
+      <FeatureGateModal 
+        open={gateModalOpen} 
+        onOpenChange={setGateModalOpen}
+        feature={gatedFeature || 'advancedWorkflows'}
+        currentPlan={currentPlan}
+      />
+      
       <div className="space-y-6 h-[calc(100vh-8rem)]">
         <div className="flex items-center justify-between">
           <div>
@@ -214,7 +233,14 @@ const Automations = () => {
               Build visual workflows to automate your sales process
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-4">
+            <PlanLimitBadge 
+              current={workflows.length} 
+              limit={workflowLimit}
+              label="workflows"
+              showUpgrade
+              upgradePlan={currentPlan === 'growth' ? 'pro' : 'elite'}
+            />
             <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'visual' | 'list')}>
               <TabsList>
                 <TabsTrigger value="visual">
@@ -247,6 +273,12 @@ const Automations = () => {
                       placeholder="e.g., Auto-follow up new leads"
                     />
                   </div>
+                  {!canCreateWorkflow && (
+                    <FeatureHighlight 
+                      availableOn="pro" 
+                      onUpgrade={() => triggerGate('advancedWorkflows')} 
+                    />
+                  )}
                   <Button onClick={handleCreateVisualWorkflow} className="w-full">
                     Create Visual Workflow
                   </Button>
