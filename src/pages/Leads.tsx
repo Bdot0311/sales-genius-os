@@ -13,7 +13,7 @@ import { LeadAssignmentDialog } from "@/components/dashboard/LeadAssignmentDialo
 import { LeadActivityTimeline } from "@/components/dashboard/LeadActivityTimeline";
 import { LeadsTableView } from "@/components/dashboard/LeadsTableView";
 import { LeadDetailSheet } from "@/components/dashboard/LeadDetailSheet";
-import { Search, Download, ArrowUpDown, Trash2, Plus, Save, Star, UserPlus, LayoutGrid, Table as TableIcon, Sparkles } from "lucide-react";
+import { Search, Download, ArrowUpDown, Trash2, Plus, Save, Star, UserPlus, LayoutGrid, Table as TableIcon, Sparkles, Globe, Loader2, CheckCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -55,6 +55,23 @@ interface Lead {
   user_id: string;
   last_contacted_at?: string;
   score_changed_at?: string;
+  lead_status?: string;
+  linkedin_url?: string;
+  job_title?: string;
+  company_website?: string;
+}
+
+interface DiscoveredProspect {
+  company_name: string;
+  contact_name: string;
+  contact_email?: string;
+  industry?: string;
+  company_size?: string;
+  source?: string;
+  linkedin_url?: string;
+  job_title?: string;
+  company_website?: string;
+  lead_status: 'discovered';
 }
 
 const Leads = () => {
@@ -75,6 +92,9 @@ const Leads = () => {
   const [enrichingLeads, setEnrichingLeads] = useState<Set<string>>(new Set());
   const [enrichmentHistory, setEnrichmentHistory] = useState<any[]>([]);
   const [bulkEnriching, setBulkEnriching] = useState(false);
+  const [discoveredProspects, setDiscoveredProspects] = useState<DiscoveredProspect[]>([]);
+  const [searchingProspects, setSearchingProspects] = useState(false);
+  const [savingProspect, setSavingProspect] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchLeads = async () => {
@@ -129,6 +149,120 @@ const Leads = () => {
     }
   };
 
+  // Search for external prospects when search query changes
+  const searchExternalProspects = async (query: string) => {
+    if (!query || query.trim().length < 2) {
+      setDiscoveredProspects([]);
+      return;
+    }
+
+    // Count active leads matching search
+    const activeLeadsCount = leads.filter(lead => 
+      (lead.lead_status === 'active' || !lead.lead_status) &&
+      (lead.company_name.toLowerCase().includes(query.toLowerCase()) ||
+       lead.contact_name.toLowerCase().includes(query.toLowerCase()) ||
+       (lead.contact_email?.toLowerCase().includes(query.toLowerCase()) || false))
+    ).length;
+
+    // If we have 25+ active leads, don't fetch external
+    if (activeLeadsCount >= 25) {
+      setDiscoveredProspects([]);
+      return;
+    }
+
+    setSearchingProspects(true);
+    try {
+      const neededCount = 25 - activeLeadsCount;
+      const { data, error } = await supabase.functions.invoke('search-prospects', {
+        body: { query, limit: neededCount }
+      });
+
+      if (error) throw error;
+      
+      // Filter out prospects that already exist in leads
+      const existingEmails = new Set(leads.map(l => l.contact_email?.toLowerCase()));
+      const existingCompanyContacts = new Set(leads.map(l => 
+        `${l.company_name.toLowerCase()}-${l.contact_name.toLowerCase()}`
+      ));
+      
+      const newProspects = (data.prospects || []).filter((p: DiscoveredProspect) => {
+        const emailExists = p.contact_email && existingEmails.has(p.contact_email.toLowerCase());
+        const contactExists = existingCompanyContacts.has(
+          `${p.company_name.toLowerCase()}-${p.contact_name.toLowerCase()}`
+        );
+        return !emailExists && !contactExists;
+      });
+
+      setDiscoveredProspects(newProspects);
+    } catch (error) {
+      console.error('Error searching prospects:', error);
+      setDiscoveredProspects([]);
+    } finally {
+      setSearchingProspects(false);
+    }
+  };
+
+  // Debounced search effect
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchQuery.trim().length >= 2) {
+        searchExternalProspects(searchQuery);
+      } else {
+        setDiscoveredProspects([]);
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, leads]);
+
+  // Save discovered prospect as lead
+  const saveProspectAsLead = async (prospect: DiscoveredProspect) => {
+    const prospectKey = `${prospect.company_name}-${prospect.contact_name}`;
+    setSavingProspect(prospectKey);
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
+      const { error } = await supabase.from("leads").insert({
+        user_id: session.user.id,
+        company_name: prospect.company_name,
+        contact_name: prospect.contact_name,
+        contact_email: prospect.contact_email || null,
+        industry: prospect.industry || null,
+        company_size: prospect.company_size || null,
+        source: prospect.source || 'Prospector',
+        linkedin_url: prospect.linkedin_url || null,
+        job_title: prospect.job_title || null,
+        company_website: prospect.company_website || null,
+        lead_status: 'discovered',
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Lead saved",
+        description: `${prospect.contact_name} from ${prospect.company_name} added to your leads`,
+      });
+
+      // Remove from discovered list
+      setDiscoveredProspects(prev => prev.filter(p => 
+        `${p.company_name}-${p.contact_name}` !== prospectKey
+      ));
+      
+      // Refresh leads
+      await fetchLeads();
+    } catch (error: any) {
+      toast({
+        title: "Error saving lead",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setSavingProspect(null);
+    }
+  };
+
   const filteredAndSortedLeads = leads
     .filter((lead) => {
       const matchesSearch = 
@@ -180,6 +314,16 @@ const Leads = () => {
              matchesLastContacted && matchesScoreChanged;
     })
     .sort((a, b) => {
+      // First, prioritize active leads over discovered leads
+      const statusOrder: Record<string, number> = { 'active': 0, '': 0, 'discovered': 1, 'archived': 2 };
+      const statusA = statusOrder[a.lead_status || ''] ?? 0;
+      const statusB = statusOrder[b.lead_status || ''] ?? 0;
+      
+      if (statusA !== statusB) {
+        return statusA - statusB;
+      }
+
+      // Then apply regular sort
       let comparison = 0;
       
       switch (sortField) {
@@ -445,6 +589,16 @@ const Leads = () => {
     if (status === 'enriched') return <Badge variant="default" className="text-xs">✓ Enriched</Badge>;
     if (status === 'failed') return <Badge variant="destructive" className="text-xs">Failed</Badge>;
     return null;
+  };
+
+  const getLeadStatusBadge = (status?: string) => {
+    if (status === 'discovered') {
+      return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs"><Globe className="w-3 h-3 mr-1" />Discovered</Badge>;
+    }
+    if (status === 'archived') {
+      return <Badge variant="secondary" className="text-xs">Archived</Badge>;
+    }
+    return null; // Active leads don't show a badge
   };
 
   return (
@@ -800,7 +954,11 @@ const Leads = () => {
                     </div>
                     
                     {filteredAndSortedLeads.map((lead) => (
-                      <Card key={lead.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleLeadClick(lead)}>
+                      <Card 
+                        key={lead.id} 
+                        className={`cursor-pointer hover:bg-muted/50 ${lead.lead_status === 'discovered' ? 'border-blue-500/30 bg-blue-500/5' : ''}`} 
+                        onClick={() => handleLeadClick(lead)}
+                      >
                         <CardContent className="p-4">
                           <div className="flex items-start gap-3">
                             <Checkbox
@@ -810,22 +968,28 @@ const Leads = () => {
                               onClick={(e) => e.stopPropagation()}
                             />
                             <div className="space-y-1 flex-1">
-                              <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-3 flex-wrap">
                                 <h3 className="font-semibold text-lg">{lead.contact_name}</h3>
+                                {getLeadStatusBadge(lead.lead_status)}
                                 {getScoreBadge(lead.icp_score)}
                                 {getEnrichmentStatusBadge((lead as any).enrichment_status)}
                               </div>
                               <p className="text-sm text-muted-foreground">{lead.company_name}</p>
+                              {lead.job_title && (
+                                <p className="text-sm text-muted-foreground">{lead.job_title}</p>
+                              )}
                               <div className="flex gap-4 text-sm text-muted-foreground">
                                 <span>{lead.contact_email}</span>
                                 {lead.contact_phone && <span>{lead.contact_phone}</span>}
                               </div>
-                              {lead.industry && (
-                                <Badge variant="outline">{lead.industry}</Badge>
-                              )}
-                              {lead.source && (
-                                <Badge variant="secondary" className="ml-2">{lead.source}</Badge>
-                              )}
+                              <div className="flex gap-2 flex-wrap mt-1">
+                                {lead.industry && (
+                                  <Badge variant="outline">{lead.industry}</Badge>
+                                )}
+                                {lead.source && (
+                                  <Badge variant="secondary">{lead.source}</Badge>
+                                )}
+                              </div>
                               {lead.notes && (
                                 <p className="text-sm text-muted-foreground mt-2">{lead.notes}</p>
                               )}
@@ -851,6 +1015,85 @@ const Leads = () => {
                         </CardContent>
                       </Card>
                     ))}
+
+                    {/* Discovered Prospects Section */}
+                    {searchQuery.trim().length >= 2 && discoveredProspects.length > 0 && (
+                      <>
+                        <div className="flex items-center gap-2 py-3 border-t mt-4">
+                          <Globe className="w-4 h-4 text-blue-400" />
+                          <span className="text-sm font-medium text-blue-400">
+                            External Prospects ({discoveredProspects.length})
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            Click + to add to your leads
+                          </span>
+                        </div>
+                        
+                        {discoveredProspects.map((prospect, index) => {
+                          const prospectKey = `${prospect.company_name}-${prospect.contact_name}`;
+                          return (
+                            <Card 
+                              key={`prospect-${index}`} 
+                              className="border-blue-500/30 bg-blue-500/5 border-dashed"
+                            >
+                              <CardContent className="p-4">
+                                <div className="flex items-start gap-3">
+                                  <div className="mt-1 w-4 h-4 rounded border-2 border-blue-500/30 flex items-center justify-center">
+                                    <Globe className="w-3 h-3 text-blue-400" />
+                                  </div>
+                                  <div className="space-y-1 flex-1">
+                                    <div className="flex items-center gap-3 flex-wrap">
+                                      <h3 className="font-semibold text-lg">{prospect.contact_name}</h3>
+                                      <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
+                                        <Globe className="w-3 h-3 mr-1" />External
+                                      </Badge>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">{prospect.company_name}</p>
+                                    {prospect.job_title && (
+                                      <p className="text-sm text-muted-foreground">{prospect.job_title}</p>
+                                    )}
+                                    <div className="flex gap-4 text-sm text-muted-foreground">
+                                      {prospect.contact_email && <span>{prospect.contact_email}</span>}
+                                    </div>
+                                    <div className="flex gap-2 flex-wrap mt-1">
+                                      {prospect.industry && (
+                                        <Badge variant="outline">{prospect.industry}</Badge>
+                                      )}
+                                      {prospect.source && (
+                                        <Badge variant="secondary">{prospect.source}</Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <Button
+                                    variant="hero"
+                                    size="sm"
+                                    onClick={() => saveProspectAsLead(prospect)}
+                                    disabled={savingProspect === prospectKey}
+                                  >
+                                    {savingProspect === prospectKey ? (
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                      <>
+                                        <Plus className="w-4 h-4 mr-1" />
+                                        Add
+                                      </>
+                                    )}
+                                  </Button>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
+                      </>
+                    )}
+
+                    {/* Loading indicator for external search */}
+                    {searchingProspects && (
+                      <div className="flex items-center justify-center gap-2 py-4 text-muted-foreground">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span className="text-sm">Searching for external prospects...</span>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>
