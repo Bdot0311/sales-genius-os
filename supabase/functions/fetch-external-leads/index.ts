@@ -20,6 +20,7 @@ interface ExternalLeadFilters {
   job_title?: string;
   industry?: string;
   company_size?: string;
+  include_unknown_size?: boolean;
   country?: string;
   limit?: number;
 }
@@ -31,7 +32,7 @@ interface ScoredLead {
   business_email: string;
   contact_name: string;
   industry?: string;
-  company_size?: string;
+  company_size: string;
   country?: string;
   linkedin_url?: string;
   scores: {
@@ -51,7 +52,9 @@ function isBusinessEmail(email: string): boolean {
   return !PERSONAL_EMAIL_DOMAINS.has(domain);
 }
 
-function mapCompanySizeToRange(size: string): string {
+function mapCompanySizeToRange(size: string | null | undefined): string {
+  if (!size) return 'Unknown';
+  
   const sizeMap: Record<string, string> = {
     '1-10': '1-10',
     '11-50': '11-50',
@@ -60,50 +63,44 @@ function mapCompanySizeToRange(size: string): string {
     '501-1000': '501-1000',
     '1001-5000': '1001-5000',
     '5001-10000': '5001-10000',
-    '10001+': '1000+'
+    '10001+': '10001+'
   };
-  return sizeMap[size] || size || 'Unknown';
+  return sizeMap[size] || 'Unknown';
 }
 
+// Simplified PDL query - no company size filtering at provider level
 function buildPDLQuery(filters: ExternalLeadFilters): string {
   const conditions: string[] = [];
   
-  // Always filter for work emails
+  // Required: work email and company website must exist
   conditions.push("work_email IS NOT NULL");
+  conditions.push("job_company_website IS NOT NULL");
   
+  // Job title matching
   if (filters.job_title) {
-    // Use LIKE for flexible matching on job titles
     const escapedTitle = filters.job_title.replace(/'/g, "''");
     conditions.push(`job_title LIKE '%${escapedTitle}%'`);
   }
   
-  if (filters.industry) {
-    const escapedIndustry = filters.industry.replace(/'/g, "''").toLowerCase();
-    conditions.push(`job_company_industry='${escapedIndustry}'`);
-  }
-  
-  if (filters.company_size) {
-    // Map our size filters to PDL format
-    const sizeMapping: Record<string, string> = {
-      '1-10': '1-10',
-      '11-50': '11-50',
-      '51-200': '51-200',
-      '201-500': '201-500',
-      '501-1000': '501-1000',
-      '1001-5000': '1001-5000',
-      '5001-10000': '5001-10000',
-      '1000+': '10001+'
-    };
-    const pdlSize = sizeMapping[filters.company_size] || filters.company_size;
-    conditions.push(`job_company_size='${pdlSize}'`);
-  }
-  
+  // Country matching
   if (filters.country) {
     const escapedCountry = filters.country.replace(/'/g, "''").toLowerCase();
     conditions.push(`location_country='${escapedCountry}'`);
   }
   
   return conditions.join(' AND ');
+}
+
+// Post-process filter by company size after enrichment
+function filterByCompanySize(leads: ScoredLead[], targetSize: string | undefined, includeUnknown: boolean): ScoredLead[] {
+  if (!targetSize) return leads;
+  
+  return leads.filter(lead => {
+    if (lead.company_size === 'Unknown') {
+      return includeUnknown;
+    }
+    return lead.company_size === targetSize;
+  });
 }
 
 function scoreLead(person: any): { scores: ScoredLead['scores']; explanation: string; buyingSignals: string[] } {
@@ -312,14 +309,21 @@ serve(async (req) => {
     const pdlData = await pdlResponse.json();
     console.log('PDL returned', pdlData.total, 'total results,', pdlData.data?.length, 'in this batch');
 
-    // Map PDL results to our lead format
-    const leads: ScoredLead[] = [];
+    // Map PDL results to our lead format with SalesOS enrichment & scoring
+    let leads: ScoredLead[] = [];
     for (const person of pdlData.data || []) {
       const lead = mapPDLPersonToLead(person);
       if (lead) {
         leads.push(lead);
       }
     }
+
+    console.log('Mapped', leads.length, 'leads from PDL response');
+
+    // Apply local company size filtering after enrichment
+    const preFilterCount = leads.length;
+    leads = filterByCompanySize(leads, filters.company_size, filters.include_unknown_size ?? true);
+    console.log('After company size filter:', preFilterCount, '->', leads.length, 'leads');
 
     // Sort by overall score descending
     leads.sort((a, b) => b.scores.overall_score - a.scores.overall_score);
