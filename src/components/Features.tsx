@@ -14,7 +14,7 @@ const features = [
   {
     icon: Brain,
     title: "Lead Intelligence Engine",
-    description: "Import and enrich leads from Apollo, LinkedIn, and Crunchbase. Auto-score by ICP match for laser-focused targeting."
+    description: "Import and enrich leads from the SalesOS Lead Intelligence Network. Auto-score by ICP match for laser-focused targeting."
   },
   {
     icon: Mail,

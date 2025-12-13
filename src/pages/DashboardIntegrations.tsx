@@ -38,26 +38,16 @@ interface Integration {
 
 const integrations: Integration[] = [
   {
-    id: "apollo",
-    name: "Apollo.io",
-    category: "Enrichment",
-    description: "Lead enrichment and B2B data platform - auto-enrich your leads with company data",
-    icon: Rocket,
-    color: "bg-purple-500",
+    id: 'google',
+    name: 'Google',
+    category: 'Email & Calendar',
+    description: 'Access Gmail and Google Calendar with one connection',
+    icon: Mail,
+    color: 'text-blue-500',
     fields: [
-      { name: "api_key", label: "Apollo API Key", type: "password", placeholder: "Enter your Apollo.io API key" },
-    ],
-  },
-  {
-    id: "crunchbase",
-    name: "Crunchbase",
-    category: "Data Enrichment",
-    description: "Get funding data, investor info, and company insights",
-    icon: TrendingUp,
-    color: "bg-green-500",
-    fields: [
-      { name: "apiKey", label: "API Key", type: "password", placeholder: "Enter your Crunchbase API key" },
-    ],
+      { name: 'clientId', label: 'Client ID', type: 'text', placeholder: 'Your Google Client ID' },
+      { name: 'clientSecret', label: 'Client Secret', type: 'password', placeholder: 'Your Google Client Secret' }
+    ]
   },
   {
     id: 'google',
@@ -139,7 +129,7 @@ const DashboardIntegrations = () => {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [loading, setLoading] = useState(true);
 
-  const categories = ["All", "Lead Generation", "Scheduling", "Email", "CRM", "Automation", "Communication", "Data Enrichment"];
+  const categories = ["All", "Scheduling", "Email", "CRM", "Automation", "Communication"];
 
   useEffect(() => {
     loadIntegrations();
