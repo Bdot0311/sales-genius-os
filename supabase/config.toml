@@ -38,3 +38,6 @@ verify_jwt = true
 
 [functions.refresh-salesos-network]
 verify_jwt = false
+
+[functions.fetch-external-leads]
+verify_jwt = true
