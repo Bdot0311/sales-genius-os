@@ -1,8 +1,13 @@
+# SalesOS Robots.txt
+# https://salesos.com/robots.txt
+
 User-agent: Googlebot
 Allow: /
+Crawl-delay: 1
 
 User-agent: Bingbot
 Allow: /
+Crawl-delay: 1
 
 User-agent: Twitterbot
 Allow: /
@@ -10,5 +15,25 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+Crawl-delay: 1
+
+User-agent: DuckDuckBot
+Allow: /
+
 User-agent: *
 Allow: /
+Crawl-delay: 2
+
+# Disallow admin and authenticated areas
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /settings
+Disallow: /auth
+
+# Sitemap
+Sitemap: https://salesos.com/sitemap.xml
