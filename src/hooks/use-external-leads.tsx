@@ -6,6 +6,7 @@ export interface ExternalLeadFilters {
   job_title?: string;
   industry?: string;
   company_size?: string;
+  include_unknown_size?: boolean;
   country?: string;
   limit?: number;
 }

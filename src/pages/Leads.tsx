@@ -1013,7 +1013,9 @@ const Leads = () => {
                             <SelectItem value="51-200">51-200</SelectItem>
                             <SelectItem value="201-500">201-500</SelectItem>
                             <SelectItem value="501-1000">501-1000</SelectItem>
-                            <SelectItem value="1000+">1000+</SelectItem>
+                            <SelectItem value="1001-5000">1001-5000</SelectItem>
+                            <SelectItem value="5001-10000">5001-10000</SelectItem>
+                            <SelectItem value="10001+">10001+</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -1037,6 +1039,20 @@ const Leads = () => {
                         </Select>
                       </div>
                     </div>
+                    {externalFilters.company_size && (
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="include-unknown-size"
+                          checked={externalFilters.include_unknown_size ?? true}
+                          onCheckedChange={(checked) => 
+                            setExternalFilters(prev => ({ ...prev, include_unknown_size: !!checked }))
+                          }
+                        />
+                        <Label htmlFor="include-unknown-size" className="text-sm text-muted-foreground cursor-pointer">
+                          Include leads with unknown company size
+                        </Label>
+                      </div>
+                    )}
                     <div className="flex gap-2">
                       <Button
                         variant="hero"
