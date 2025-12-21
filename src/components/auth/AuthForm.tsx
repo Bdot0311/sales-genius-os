@@ -191,17 +191,31 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
   };
 
   return (
-    <div className="w-full max-w-md">
-      <div className="bg-card border border-border rounded-2xl p-8 shadow-card">
+    <div className="w-full max-w-md animate-fade-in">
+      <div className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl p-8 shadow-2xl shadow-primary/5">
+        {/* Logo with staggered animation */}
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <img src={salesosLogo} alt="SalesOS" className="w-10 h-10" />
-            <span className="text-2xl font-bold">SalesOS</span>
+          <div 
+            className="flex items-center justify-center gap-2 mb-4 animate-scale-in"
+            style={{ animationDelay: '0.1s', animationFillMode: 'both' }}
+          >
+            <img 
+              src={salesosLogo} 
+              alt="SalesOS" 
+              className="w-10 h-10 transition-transform duration-300 hover:scale-110" 
+            />
+            <span className="text-2xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">SalesOS</span>
           </div>
-          <h2 className="text-2xl font-bold mb-2">
+          <h2 
+            className="text-2xl font-bold mb-2 animate-fade-in"
+            style={{ animationDelay: '0.2s', animationFillMode: 'both' }}
+          >
             {mode === "signin" ? "Welcome back" : "Create your account"}
           </h2>
-          <p className="text-muted-foreground">
+          <p 
+            className="text-muted-foreground animate-fade-in"
+            style={{ animationDelay: '0.3s', animationFillMode: 'both' }}
+          >
             {mode === "signin" 
               ? "Sign in to your account"
               : "Sign up to access your subscription"
@@ -209,10 +223,15 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
           </p>
         </div>
 
-        <Tabs value={mode} onValueChange={(v) => setMode(v as "signin" | "signup")} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="signin">Sign In</TabsTrigger>
-            <TabsTrigger value="signup">Sign Up</TabsTrigger>
+        <Tabs 
+          value={mode} 
+          onValueChange={(v) => setMode(v as "signin" | "signup")} 
+          className="w-full animate-fade-in"
+          style={{ animationDelay: '0.4s', animationFillMode: 'both' }}
+        >
+          <TabsList className="grid w-full grid-cols-2 mb-6 bg-muted/50">
+            <TabsTrigger value="signin" className="transition-all duration-200">Sign In</TabsTrigger>
+            <TabsTrigger value="signup" className="transition-all duration-200">Sign Up</TabsTrigger>
           </TabsList>
 
           <TabsContent value="signin">
@@ -337,10 +356,13 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
           </TabsContent>
         </Tabs>
 
-        <div className="mt-6 text-center">
+        <div 
+          className="mt-6 text-center animate-fade-in"
+          style={{ animationDelay: '0.5s', animationFillMode: 'both' }}
+        >
           <p className="text-sm text-muted-foreground">
             Don't have a subscription?{" "}
-            <a href="/pricing" className="text-primary hover:underline">
+            <a href="/pricing" className="text-primary hover:underline transition-colors duration-200">
               Purchase a plan
             </a>
           </p>
