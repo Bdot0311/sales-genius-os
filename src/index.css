@@ -58,3 +58,39 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+/* Floating orb animation */
+@keyframes float-orb {
+  0%, 100% {
+    transform: translate(-50%, -50%) translateY(0) translateX(0) scale(1);
+  }
+  25% {
+    transform: translate(-50%, -50%) translateY(-30px) translateX(20px) scale(1.05);
+  }
+  50% {
+    transform: translate(-50%, -50%) translateY(-15px) translateX(-25px) scale(0.95);
+  }
+  75% {
+    transform: translate(-50%, -50%) translateY(20px) translateX(15px) scale(1.02);
+  }
+}
+
+.animate-float-orb {
+  animation: float-orb linear infinite;
+}
+
+/* Glow pulse animation */
+@keyframes glow-pulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.1);
+  }
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 4s ease-in-out infinite;
+}
