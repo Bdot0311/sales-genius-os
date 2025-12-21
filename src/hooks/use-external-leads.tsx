@@ -168,8 +168,8 @@ export function useExternalLeads() {
 
       if (scoreError) throw scoreError;
 
-      // Step 4: Also save to leads table for backward compatibility
-      const { error: leadError } = await supabase
+      // Step 4: Save to leads table with enriched status
+      const { data: savedLead, error: leadError } = await supabase
         .from('leads')
         .insert({
           user_id: userId,
@@ -184,13 +184,26 @@ export function useExternalLeads() {
           source: 'People Data Labs',
           lead_status: 'active',
           icp_score: lead.scores.overall_score,
-        });
+          enrichment_status: 'enriched',
+          enriched_at: new Date().toISOString(),
+        })
+        .select('id')
+        .single();
 
       if (leadError) throw leadError;
 
+      // Step 5: Record enrichment history
+      await supabase.from('enrichment_history').insert({
+        user_id: userId,
+        lead_id: savedLead.id,
+        fields_enriched: ['company_name', 'contact_name', 'contact_email', 'industry', 'company_size', 'job_title', 'linkedin_url', 'icp_score'],
+        source: 'People Data Labs',
+        status: 'success',
+      });
+
       toast({
-        title: 'Lead activated',
-        description: `${lead.contact_name} from ${lead.company_name} is now ready for outreach!`,
+        title: 'Lead enriched & saved',
+        description: `${lead.contact_name} from ${lead.company_name} is now in your saved leads!`,
       });
 
       // Remove from external leads list
