@@ -13,13 +13,6 @@ const integrations = [
     color: "bg-yellow-500"
   },
   {
-    name: "Google Calendar",
-    category: "Scheduling",
-    description: "Auto-schedule meetings based on your availability",
-    icon: Calendar,
-    color: "bg-yellow-500"
-  },
-  {
     name: "Calendly",
     category: "Scheduling",
     description: "Embed booking links in outreach campaigns",
