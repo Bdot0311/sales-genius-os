@@ -720,55 +720,68 @@ const Leads = () => {
 
         {/* AI Command Interface - Hero Section */}
         <AILeadCommand
-          onSearch={(query) => {
+          onSearch={async (query) => {
             setAiSearchQuery(query);
             setShowExternalLeads(true);
-            // Parse the natural language query into filters
-            const lowerQuery = query.toLowerCase();
-            const newFilters: ExternalLeadFilters = { limit: 50 };
             
-            // Extract job titles
-            if (lowerQuery.includes('ceo') || lowerQuery.includes('founder')) {
-              newFilters.job_title = lowerQuery.includes('ceo') ? 'CEO' : 'Founder';
-            } else if (lowerQuery.includes('vp') || lowerQuery.includes('vice president')) {
-              newFilters.job_title = 'VP';
-            } else if (lowerQuery.includes('director')) {
-              newFilters.job_title = 'Director';
-            } else if (lowerQuery.includes('manager')) {
-              newFilters.job_title = 'Manager';
+            try {
+              // Use AI to parse the natural language query
+              const { data, error } = await supabase.functions.invoke('parse-lead-query', {
+                body: { query }
+              });
+              
+              if (error) throw error;
+              
+              const aiFilters = data?.filters || {};
+              const newFilters: ExternalLeadFilters = {
+                limit: aiFilters.limit || 50,
+              };
+              
+              // Map AI-parsed fields to our filter format
+              if (aiFilters.jobTitles?.length > 0) {
+                newFilters.job_title = aiFilters.jobTitles[0];
+              }
+              if (aiFilters.industries?.length > 0) {
+                newFilters.industry = aiFilters.industries[0];
+              }
+              if (aiFilters.companySizes?.length > 0) {
+                newFilters.company_size = aiFilters.companySizes[0];
+              }
+              if (aiFilters.locations?.length > 0) {
+                newFilters.country = aiFilters.locations[0];
+              }
+              
+              console.log('AI parsed filters:', aiFilters, '-> Applied:', newFilters);
+              
+              setExternalFilters(newFilters);
+              fetchExternalLeads(newFilters);
+            } catch (error) {
+              console.error('AI parsing failed, using fallback:', error);
+              // Fallback to simple parsing if AI fails
+              const lowerQuery = query.toLowerCase();
+              const newFilters: ExternalLeadFilters = { limit: 50 };
+              
+              if (lowerQuery.includes('ceo') || lowerQuery.includes('founder')) {
+                newFilters.job_title = lowerQuery.includes('ceo') ? 'CEO' : 'Founder';
+              }
+              if (lowerQuery.includes('fintech') || lowerQuery.includes('saas') || lowerQuery.includes('tech')) {
+                newFilters.industry = 'Technology';
+              }
+              
+              const countMatch = lowerQuery.match(/(\d+)\s*(leads?|founders?|ceos?|prospects?)/i);
+              if (countMatch) {
+                newFilters.limit = Math.min(parseInt(countMatch[1]), 100);
+              }
+              
+              setExternalFilters(newFilters);
+              fetchExternalLeads(newFilters);
+              
+              toast({
+                title: "Using basic search",
+                description: "AI parsing unavailable, using keyword matching",
+                variant: "default",
+              });
             }
-            
-            // Extract industries
-            if (lowerQuery.includes('fintech') || lowerQuery.includes('finance')) {
-              newFilters.industry = 'Finance';
-            } else if (lowerQuery.includes('healthcare') || lowerQuery.includes('health')) {
-              newFilters.industry = 'Healthcare';
-            } else if (lowerQuery.includes('saas') || lowerQuery.includes('tech') || lowerQuery.includes('ai') || lowerQuery.includes('ml')) {
-              newFilters.industry = 'Technology';
-            } else if (lowerQuery.includes('retail') || lowerQuery.includes('ecommerce')) {
-              newFilters.industry = 'Retail';
-            }
-            
-            // Extract company size
-            const sizeMatch = lowerQuery.match(/(\d+)[-–](\d+)\s*employees?/i);
-            if (sizeMatch) {
-              const min = parseInt(sizeMatch[1]);
-              if (min <= 10) newFilters.company_size = '1-10';
-              else if (min <= 50) newFilters.company_size = '11-50';
-              else if (min <= 200) newFilters.company_size = '51-200';
-              else if (min <= 500) newFilters.company_size = '201-500';
-              else if (min <= 1000) newFilters.company_size = '501-1000';
-              else newFilters.company_size = '1001-5000';
-            }
-            
-            // Extract count if specified
-            const countMatch = lowerQuery.match(/(\d+)\s*(leads?|founders?|ceos?|prospects?)/i);
-            if (countMatch) {
-              newFilters.limit = Math.min(parseInt(countMatch[1]), 100);
-            }
-            
-            setExternalFilters(newFilters);
-            fetchExternalLeads(newFilters);
           }}
           isSearching={externalLoading}
           resultsCount={externalLeads.length}
