@@ -7,6 +7,7 @@ import { Demo } from "@/components/Demo";
 import { FAQ } from "@/components/FAQ";
 import { Footer } from "@/components/Footer";
 import { SEOHead, OrganizationSchema, SoftwareApplicationSchema, WebSiteSchema } from "@/components/seo";
+import { AnimatedBackground } from "@/components/ui/AnimatedBackground";
 
 const Index = () => {
   return (
@@ -21,7 +22,9 @@ const Index = () => {
       <SoftwareApplicationSchema />
       <WebSiteSchema />
       
-      <div className="min-h-screen bg-background text-foreground">
+      <AnimatedBackground />
+      
+      <div className="min-h-screen bg-transparent text-foreground relative">
         <Navbar />
         <main>
           <Hero />
