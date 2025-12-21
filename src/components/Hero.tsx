@@ -1,29 +1,96 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 export const Hero = () => {
   const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(false);
+  const [scrollY, setScrollY] = useState(0);
+  const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     setIsVisible(true);
+    
+    const handleScroll = () => {
+      if (sectionRef.current) {
+        const rect = sectionRef.current.getBoundingClientRect();
+        if (rect.bottom > 0) {
+          setScrollY(window.scrollY);
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
   
   return (
     <section 
+      ref={sectionRef}
       className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-hero"
       aria-label="Hero section"
     >
-      {/* Animated background gradient orbs */}
+      {/* Parallax background layers */}
       <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-glow-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/20 rounded-full blur-3xl animate-glow-pulse" style={{ animationDelay: "1s" }} />
-        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-primary/10 rounded-full blur-3xl animate-float" style={{ animationDelay: "2s" }} />
+        {/* Deep background layer - slowest */}
+        <div 
+          className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[100px]"
+          style={{ transform: `translate3d(0, ${scrollY * 0.1}px, 0)` }}
+        />
+        <div 
+          className="absolute bottom-1/3 right-1/4 w-[400px] h-[400px] bg-accent/10 rounded-full blur-[80px]"
+          style={{ transform: `translate3d(0, ${scrollY * 0.08}px, 0)` }}
+        />
+        
+        {/* Mid layer - medium speed */}
+        <div 
+          className="absolute top-1/3 left-1/3 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-glow-pulse"
+          style={{ transform: `translate3d(0, ${scrollY * 0.25}px, 0)` }}
+        />
+        <div 
+          className="absolute bottom-1/4 right-1/3 w-96 h-96 bg-accent/20 rounded-full blur-3xl animate-glow-pulse"
+          style={{ transform: `translate3d(0, ${scrollY * 0.2}px, 0)`, animationDelay: "1s" }}
+        />
+        
+        {/* Foreground layer - faster */}
+        <div 
+          className="absolute top-1/2 left-1/2 w-64 h-64 bg-primary/15 rounded-full blur-3xl animate-float"
+          style={{ transform: `translate(-50%, -50%) translate3d(0, ${scrollY * 0.4}px, 0)`, animationDelay: "2s" }}
+        />
+        <div 
+          className="absolute top-[20%] right-[15%] w-32 h-32 bg-accent/25 rounded-full blur-2xl"
+          style={{ transform: `translate3d(0, ${scrollY * 0.5}px, 0)` }}
+        />
+        <div 
+          className="absolute bottom-[30%] left-[10%] w-40 h-40 bg-primary/20 rounded-full blur-2xl"
+          style={{ transform: `translate3d(0, ${scrollY * 0.45}px, 0)` }}
+        />
+
+        {/* Floating particles */}
+        <div 
+          className="absolute top-[15%] left-[20%] w-2 h-2 bg-primary/60 rounded-full"
+          style={{ transform: `translate3d(0, ${scrollY * 0.6}px, 0)` }}
+        />
+        <div 
+          className="absolute top-[40%] right-[25%] w-1.5 h-1.5 bg-accent/60 rounded-full"
+          style={{ transform: `translate3d(0, ${scrollY * 0.55}px, 0)` }}
+        />
+        <div 
+          className="absolute bottom-[40%] left-[30%] w-1 h-1 bg-primary/50 rounded-full"
+          style={{ transform: `translate3d(0, ${scrollY * 0.7}px, 0)` }}
+        />
+        <div 
+          className="absolute top-[60%] right-[10%] w-2 h-2 bg-accent/40 rounded-full"
+          style={{ transform: `translate3d(0, ${scrollY * 0.5}px, 0)` }}
+        />
       </div>
 
-      <div className="container relative z-10 mx-auto px-4 sm:px-6 py-20 sm:py-28 md:py-32 text-center">
+      {/* Content with subtle parallax */}
+      <div 
+        className="container relative z-10 mx-auto px-4 sm:px-6 py-20 sm:py-28 md:py-32 text-center"
+        style={{ transform: `translate3d(0, ${scrollY * 0.15}px, 0)` }}
+      >
         {/* Badge */}
         <div 
           className={`inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 mb-6 sm:mb-8 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
@@ -53,7 +120,7 @@ export const Hero = () => {
 
         {/* AI Command Demo */}
         <figure 
-          className={`max-w-2xl mx-auto mb-8 sm:mb-12 p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-card border border-border backdrop-blur-sm shadow-card card-interactive transition-all duration-700 delay-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+          className={`max-w-2xl mx-auto mb-8 sm:mb-12 p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-card/80 border border-border backdrop-blur-md shadow-card card-interactive transition-all duration-700 delay-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
         >
           <div className="flex items-center gap-2 mb-3 sm:mb-4" aria-hidden="true">
             <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-destructive animate-pulse" />
@@ -100,6 +167,12 @@ export const Hero = () => {
           <strong>Trusted by 500+ SaaS companies</strong> • Average 3.2x increase in qualified meetings
         </p>
       </div>
+
+      {/* Bottom gradient fade for smooth transition */}
+      <div 
+        className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent pointer-events-none"
+        style={{ transform: `translate3d(0, ${scrollY * 0.1}px, 0)` }}
+      />
     </section>
   );
 };
