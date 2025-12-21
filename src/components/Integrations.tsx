@@ -6,11 +6,11 @@ import { Rocket, TrendingUp, Calendar, CalendarClock, Mail, MessageSquare, Zap, 
 
 const integrations = [
   {
-    name: "Google Calendar",
-    category: "Scheduling",
-    description: "Auto-schedule meetings based on your availability",
-    icon: Calendar,
-    color: "bg-yellow-500"
+    name: "Google",
+    category: "Email & Calendar",
+    description: "Access Gmail and Google Calendar with one connection",
+    icon: Mail,
+    color: "bg-blue-500"
   },
   {
     name: "Calendly",
@@ -18,13 +18,6 @@ const integrations = [
     description: "Embed booking links in outreach campaigns",
     icon: CalendarClock,
     color: "bg-blue-400"
-  },
-  {
-    name: "Gmail",
-    category: "Email",
-    description: "Send campaigns directly through your Gmail account",
-    icon: Mail,
-    color: "bg-red-500"
   },
   {
     name: "Slack",
