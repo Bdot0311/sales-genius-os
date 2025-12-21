@@ -14,7 +14,8 @@ import { LeadActivityTimeline } from "@/components/dashboard/LeadActivityTimelin
 import { LeadsTableView } from "@/components/dashboard/LeadsTableView";
 import { LeadDetailSheet } from "@/components/dashboard/LeadDetailSheet";
 import { ExternalLeadsTable } from "@/components/dashboard/ExternalLeadsTable";
-import { Search, Download, ArrowUpDown, Trash2, Plus, Save, Star, UserPlus, LayoutGrid, Table as TableIcon, Sparkles, Globe, Loader2, CheckCircle, Zap } from "lucide-react";
+import { AILeadCommand } from "@/components/dashboard/AILeadCommand";
+import { Search, Download, ArrowUpDown, Trash2, Plus, Save, Star, UserPlus, LayoutGrid, Table as TableIcon, Sparkles, Globe, Loader2, CheckCircle, Zap, Filter, ChevronDown, ChevronUp } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -101,6 +102,8 @@ const Leads = () => {
   const [activatingLead, setActivatingLead] = useState<string | null>(null);
   const [externalFilters, setExternalFilters] = useState<ExternalLeadFilters>({});
   const [showExternalLeads, setShowExternalLeads] = useState(false);
+  const [aiSearchQuery, setAiSearchQuery] = useState("");
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const { toast } = useToast();
   
   // External leads hook
@@ -706,8 +709,8 @@ const Leads = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Leads</h1>
-            <p className="text-muted-foreground">Manage and track your sales leads</p>
+            <h1 className="text-3xl font-bold">AI Lead Generation</h1>
+            <p className="text-muted-foreground">Describe your ideal customer and let AI find them</p>
           </div>
           <div className="flex gap-2">
             <ImportLeadsDialog onImportComplete={fetchLeads} />
@@ -715,6 +718,126 @@ const Leads = () => {
           </div>
         </div>
 
+        {/* AI Command Interface - Hero Section */}
+        <AILeadCommand
+          onSearch={(query) => {
+            setAiSearchQuery(query);
+            setShowExternalLeads(true);
+            // Parse the natural language query into filters
+            const lowerQuery = query.toLowerCase();
+            const newFilters: ExternalLeadFilters = { limit: 50 };
+            
+            // Extract job titles
+            if (lowerQuery.includes('ceo') || lowerQuery.includes('founder')) {
+              newFilters.job_title = lowerQuery.includes('ceo') ? 'CEO' : 'Founder';
+            } else if (lowerQuery.includes('vp') || lowerQuery.includes('vice president')) {
+              newFilters.job_title = 'VP';
+            } else if (lowerQuery.includes('director')) {
+              newFilters.job_title = 'Director';
+            } else if (lowerQuery.includes('manager')) {
+              newFilters.job_title = 'Manager';
+            }
+            
+            // Extract industries
+            if (lowerQuery.includes('fintech') || lowerQuery.includes('finance')) {
+              newFilters.industry = 'Finance';
+            } else if (lowerQuery.includes('healthcare') || lowerQuery.includes('health')) {
+              newFilters.industry = 'Healthcare';
+            } else if (lowerQuery.includes('saas') || lowerQuery.includes('tech') || lowerQuery.includes('ai') || lowerQuery.includes('ml')) {
+              newFilters.industry = 'Technology';
+            } else if (lowerQuery.includes('retail') || lowerQuery.includes('ecommerce')) {
+              newFilters.industry = 'Retail';
+            }
+            
+            // Extract company size
+            const sizeMatch = lowerQuery.match(/(\d+)[-–](\d+)\s*employees?/i);
+            if (sizeMatch) {
+              const min = parseInt(sizeMatch[1]);
+              if (min <= 10) newFilters.company_size = '1-10';
+              else if (min <= 50) newFilters.company_size = '11-50';
+              else if (min <= 200) newFilters.company_size = '51-200';
+              else if (min <= 500) newFilters.company_size = '201-500';
+              else if (min <= 1000) newFilters.company_size = '501-1000';
+              else newFilters.company_size = '1001-5000';
+            }
+            
+            // Extract count if specified
+            const countMatch = lowerQuery.match(/(\d+)\s*(leads?|founders?|ceos?|prospects?)/i);
+            if (countMatch) {
+              newFilters.limit = Math.min(parseInt(countMatch[1]), 100);
+            }
+            
+            setExternalFilters(newFilters);
+            fetchExternalLeads(newFilters);
+          }}
+          isSearching={externalLoading}
+          resultsCount={externalLeads.length}
+          showResults={showExternalLeads && externalLeads.length > 0 && !externalLoading}
+        />
+
+        {/* Advanced Filters Toggle */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+          className="text-muted-foreground"
+        >
+          <Filter className="w-4 h-4 mr-2" />
+          Advanced Filters
+          {showAdvancedFilters ? <ChevronUp className="w-4 h-4 ml-2" /> : <ChevronDown className="w-4 h-4 ml-2" />}
+        </Button>
+
+        {/* AI-Discovered Leads Section */}
+        {showExternalLeads && (
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-primary" />
+                  <CardTitle>AI-Discovered Leads</CardTitle>
+                  {externalLeads.length > 0 && (
+                    <Badge variant="secondary">{externalLeads.length} found</Badge>
+                  )}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    clearExternalLeads();
+                    setShowExternalLeads(false);
+                    setAiSearchQuery("");
+                  }}
+                >
+                  Clear
+                </Button>
+              </div>
+              {aiSearchQuery && (
+                <CardDescription>Results for: "{aiSearchQuery}"</CardDescription>
+              )}
+            </CardHeader>
+            <CardContent>
+              {externalLoading ? (
+                <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
+                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                  <span>Searching B2B data sources...</span>
+                </div>
+              ) : externalLeads.length > 0 ? (
+                <ExternalLeadsTable
+                  leads={externalLeads}
+                  activatingLead={externalActivating}
+                  onActivateLead={activateExternalLead}
+                />
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  No leads found matching your criteria. Try a different query.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Advanced Filters - Collapsible */}
+        {showAdvancedFilters && (
         <div className="grid grid-cols-12 gap-6">
           {/* Left Side - Search Criteria */}
           <div className="col-span-12 lg:col-span-3 space-y-4">
@@ -754,7 +877,7 @@ const Leads = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Search Criteria</CardTitle>
-                <CardDescription>Filter your leads</CardDescription>
+                <CardDescription>Filter your saved leads</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
@@ -850,70 +973,6 @@ const Leads = () => {
                   />
                 </div>
 
-                <div>
-                  <Label htmlFor="max_score">Max ICP Score</Label>
-                  <Input
-                    id="max_score"
-                    type="number"
-                    min="0"
-                    max="100"
-                    placeholder="100"
-                    value={filters.max_score || ""}
-                    onChange={(e) => setFilters({ ...filters, max_score: parseInt(e.target.value) || undefined })}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="date_range">Date Added</Label>
-                  <Select 
-                    value={filters.date_range || "all"} 
-                    onValueChange={(value) => setFilters({ ...filters, date_range: value as any })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="All time" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All time</SelectItem>
-                      <SelectItem value="last_7_days">Last 7 days</SelectItem>
-                      <SelectItem value="last_30_days">Last 30 days</SelectItem>
-                      <SelectItem value="this_month">This month</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="last_contacted">Contact Status</Label>
-                  <Select 
-                    value={filters.last_contacted || "all"} 
-                    onValueChange={(value) => setFilters({ ...filters, last_contacted: value as any })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="All" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All</SelectItem>
-                      <SelectItem value="contacted">Contacted</SelectItem>
-                      <SelectItem value="not_contacted">Not contacted</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="score_changed">Score Updates</Label>
-                  <Select 
-                    value={filters.score_changed || "all"} 
-                    onValueChange={(value) => setFilters({ ...filters, score_changed: value as any })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="All" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All</SelectItem>
-                      <SelectItem value="changed_this_month">Changed this month</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
                 <div className="flex gap-2">
                   <Button
                     variant="outline" 
@@ -953,171 +1012,10 @@ const Leads = () => {
           <div className="col-span-12 lg:col-span-9">
             <Card>
               <CardHeader>
-                <CardTitle>All Leads ({filteredAndSortedLeads.length})</CardTitle>
-                <CardDescription>
-                  View and manage all your leads in one place
-                </CardDescription>
+                <CardTitle>Saved Leads ({filteredAndSortedLeads.length})</CardTitle>
+                <CardDescription>View and manage your saved leads</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* External Lead Search Section */}
-                <Card className="border-dashed border-primary/30 bg-primary/5">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Globe className="w-5 h-5 text-primary" />
-                      Find New Leads
-                    </CardTitle>
-                    <CardDescription>Search external B2B data sources for new prospects</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      <div>
-                        <Label className="text-xs">Job Title</Label>
-                        <Input
-                          placeholder="e.g. VP, Director"
-                          value={externalFilters.job_title || ''}
-                          onChange={(e) => setExternalFilters(prev => ({ ...prev, job_title: e.target.value }))}
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">Industry</Label>
-                        <Select
-                          value={externalFilters.industry || 'all'}
-                          onValueChange={(v) => setExternalFilters(prev => ({ ...prev, industry: v === 'all' ? undefined : v }))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Any" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">Any</SelectItem>
-                            <SelectItem value="Technology">Technology</SelectItem>
-                            <SelectItem value="Healthcare">Healthcare</SelectItem>
-                            <SelectItem value="Finance">Finance</SelectItem>
-                            <SelectItem value="Retail">Retail</SelectItem>
-                            <SelectItem value="Manufacturing">Manufacturing</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label className="text-xs">Company Size</Label>
-                        <Select
-                          value={externalFilters.company_size || 'all'}
-                          onValueChange={(v) => setExternalFilters(prev => ({ ...prev, company_size: v === 'all' ? undefined : v }))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Any size" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">Any size</SelectItem>
-                            <SelectItem value="1-10">1-10</SelectItem>
-                            <SelectItem value="11-50">11-50</SelectItem>
-                            <SelectItem value="51-200">51-200</SelectItem>
-                            <SelectItem value="201-500">201-500</SelectItem>
-                            <SelectItem value="501-1000">501-1000</SelectItem>
-                            <SelectItem value="1001-5000">1001-5000</SelectItem>
-                            <SelectItem value="5001-10000">5001-10000</SelectItem>
-                            <SelectItem value="10001+">10001+</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label className="text-xs">Country</Label>
-                        <Select
-                          value={externalFilters.country || 'all'}
-                          onValueChange={(v) => setExternalFilters(prev => ({ ...prev, country: v === 'all' ? undefined : v }))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Any" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">Any</SelectItem>
-                            <SelectItem value="United States">United States</SelectItem>
-                            <SelectItem value="United Kingdom">United Kingdom</SelectItem>
-                            <SelectItem value="Canada">Canada</SelectItem>
-                            <SelectItem value="Germany">Germany</SelectItem>
-                            <SelectItem value="Australia">Australia</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    {externalFilters.company_size && (
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          id="include-unknown-size"
-                          checked={externalFilters.include_unknown_size ?? true}
-                          onCheckedChange={(checked) => 
-                            setExternalFilters(prev => ({ ...prev, include_unknown_size: !!checked }))
-                          }
-                        />
-                        <Label htmlFor="include-unknown-size" className="text-sm text-muted-foreground cursor-pointer">
-                          Include leads with unknown company size
-                        </Label>
-                      </div>
-                    )}
-                    <div className="flex gap-2">
-                      <Button
-                        variant="hero"
-                        onClick={() => {
-                          setShowExternalLeads(true);
-                          fetchExternalLeads({ ...externalFilters, limit: 25 });
-                        }}
-                        disabled={externalLoading}
-                      >
-                        {externalLoading ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Searching...
-                          </>
-                        ) : (
-                          <>
-                            <Zap className="w-4 h-4 mr-2" />
-                            Search External Sources
-                          </>
-                        )}
-                      </Button>
-                      {externalLeads.length > 0 && (
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            clearExternalLeads();
-                            setShowExternalLeads(false);
-                          }}
-                        >
-                          Clear Results
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* External Leads Results */}
-                {showExternalLeads && externalLeads.length > 0 && (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Globe className="w-4 h-4 text-primary" />
-                        <span className="font-medium">External Leads ({externalLeads.length})</span>
-                        <Badge variant="outline" className="text-xs">Transient - Not Saved</Badge>
-                      </div>
-                    </div>
-                    <ExternalLeadsTable
-                      leads={externalLeads}
-                      activatingLead={externalActivating}
-                      onActivateLead={activateExternalLead}
-                    />
-                  </div>
-                )}
-
-                {showExternalLeads && externalLeads.length === 0 && !externalLoading && (
-                  <div className="text-center py-8 text-muted-foreground border rounded-lg border-dashed">
-                    No external leads found matching your criteria. Try adjusting your filters.
-                  </div>
-                )}
-
-                {/* Separator */}
-                {showExternalLeads && externalLeads.length > 0 && (
-                  <div className="border-t pt-4" />
-                )}
-
                 {/* Existing Leads Search */}
                 <div className="flex gap-2 flex-wrap">
                   <div className="relative flex-1 min-w-[200px]">
@@ -1398,6 +1296,7 @@ const Leads = () => {
             </Card>
           </div>
         </div>
+        )}
       </div>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
