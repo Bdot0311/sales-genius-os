@@ -128,12 +128,12 @@ export function ExternalLeadsTable({ leads, activatingLead, onActivateLead }: Ex
                     {isActivating ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Activating...
+                        Enriching...
                       </>
                     ) : (
                       <>
-                        <Zap className="w-4 h-4 mr-2" />
-                        Activate Lead
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        Enrich & Save
                       </>
                     )}
                   </Button>

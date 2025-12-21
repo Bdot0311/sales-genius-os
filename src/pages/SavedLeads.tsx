@@ -7,9 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { LeadAssignmentDialog } from "@/components/dashboard/LeadAssignmentDialog";
-import { LeadsTableView } from "@/components/dashboard/LeadsTableView";
 import { LeadDetailSheet } from "@/components/dashboard/LeadDetailSheet";
-import { Search, Download, ArrowUpDown, Trash2, UserPlus, LayoutGrid, Table as TableIcon, Sparkles, Globe, Loader2, CheckCircle, ArrowLeft } from "lucide-react";
+import { Search, Download, ArrowUpDown, Trash2, UserPlus, LayoutGrid, Table as TableIcon, ArrowLeft, CheckCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,12 +31,10 @@ interface Lead {
   created_at: string;
   updated_at: string;
   user_id: string;
-  last_contacted_at?: string;
-  score_changed_at?: string;
-  lead_status?: string;
   linkedin_url?: string;
   job_title?: string;
   company_website?: string;
+  enrichment_status?: string;
 }
 
 const SavedLeads = () => {
@@ -50,11 +47,8 @@ const SavedLeads = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showAssignDialog, setShowAssignDialog] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-  const [viewMode, setViewMode] = useState<"card" | "table">("card");
-  const [enrichingLeads, setEnrichingLeads] = useState<Set<string>>(new Set());
+  const [viewMode, setViewMode] = useState<"card" | "table">("table");
   const [enrichmentHistory, setEnrichmentHistory] = useState<any[]>([]);
-  const [bulkEnriching, setBulkEnriching] = useState(false);
-  const [activatingLead, setActivatingLead] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -106,20 +100,10 @@ const SavedLeads = () => {
         lead.company_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         lead.contact_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (lead.contact_email?.toLowerCase().includes(searchQuery.toLowerCase()) || false);
-
       return matchesSearch;
     })
     .sort((a, b) => {
-      const statusOrder: Record<string, number> = { 'active': 0, '': 0, 'discovered': 1, 'archived': 2 };
-      const statusA = statusOrder[a.lead_status || ''] ?? 0;
-      const statusB = statusOrder[b.lead_status || ''] ?? 0;
-      
-      if (statusA !== statusB) {
-        return statusA - statusB;
-      }
-
       let comparison = 0;
-      
       switch (sortField) {
         case "created_at":
           comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
@@ -137,7 +121,6 @@ const SavedLeads = () => {
           comparison = (sizeOrder[a.company_size || ""] || 0) - (sizeOrder[b.company_size || ""] || 0);
           break;
       }
-      
       return sortOrder === "asc" ? comparison : -comparison;
     });
 
@@ -211,89 +194,9 @@ const SavedLeads = () => {
     handleExport(selectedLeadObjects);
   };
 
-  const handleEnrichLead = async (leadId: string) => {
-    setEnrichingLeads(prev => new Set(prev).add(leadId));
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('enrich-lead', {
-        body: { leadId }
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Lead enriched",
-        description: data.message || "Successfully enriched lead data",
-      });
-
-      await fetchLeads();
-      if (selectedLead?.id === leadId) {
-        await fetchEnrichmentHistory(leadId);
-      }
-    } catch (error: any) {
-      toast({
-        title: "Enrichment failed",
-        description: error.message || "Failed to enrich lead.",
-        variant: "destructive",
-      });
-    } finally {
-      setEnrichingLeads(prev => {
-        const next = new Set(prev);
-        next.delete(leadId);
-        return next;
-      });
-    }
-  };
-
-  const handleBulkEnrich = async () => {
-    if (selectedLeads.size === 0) return;
-    
-    setBulkEnriching(true);
-    let successCount = 0;
-    let failCount = 0;
-
-    for (const leadId of Array.from(selectedLeads)) {
-      try {
-        const { error } = await supabase.functions.invoke('enrich-lead', {
-          body: { leadId }
-        });
-        if (error) throw error;
-        successCount++;
-      } catch (error) {
-        failCount++;
-      }
-    }
-
-    toast({
-      title: "Bulk enrichment complete",
-      description: `${successCount} leads enriched${failCount > 0 ? `, ${failCount} failed` : ''}`,
-    });
-
-    await fetchLeads();
-    setSelectedLeads(new Set());
-    setBulkEnriching(false);
-  };
-
   const handleLeadClick = async (lead: Lead) => {
     setSelectedLead(lead);
     await fetchEnrichmentHistory(lead.id);
-  };
-
-  const getEnrichmentStatusBadge = (status: string | null) => {
-    if (!status || status === 'pending') return <Badge variant="outline" className="text-xs">Not Enriched</Badge>;
-    if (status === 'enriched') return <Badge variant="default" className="text-xs">✓ Enriched</Badge>;
-    if (status === 'failed') return <Badge variant="destructive" className="text-xs">Failed</Badge>;
-    return null;
-  };
-
-  const getLeadStatusBadge = (status?: string) => {
-    if (status === 'discovered') {
-      return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs"><Globe className="w-3 h-3 mr-1" />Discovered</Badge>;
-    }
-    if (status === 'archived') {
-      return <Badge variant="secondary" className="text-xs">Archived</Badge>;
-    }
-    return null;
   };
 
   const getScoreBadge = (score?: number | null) => {
@@ -306,75 +209,6 @@ const SavedLeads = () => {
     return <Badge className={`${color} text-xs`}>{score}% ICP</Badge>;
   };
 
-  const activateLead = async (leadId: string) => {
-    setActivatingLead(leadId);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Not authenticated');
-
-      const lead = leads.find(l => l.id === leadId);
-      if (!lead) throw new Error('Lead not found');
-
-      const { error: updateError } = await supabase
-        .from('leads')
-        .update({ lead_status: 'active' })
-        .eq('id', leadId);
-
-      if (updateError) throw updateError;
-
-      toast({
-        title: "Lead activated",
-        description: "Running enrichment and scoring...",
-      });
-
-      try {
-        await supabase.functions.invoke('enrich-lead', {
-          body: { leadId }
-        });
-      } catch (enrichError) {
-        console.error('Enrichment failed:', enrichError);
-      }
-
-      try {
-        const { data: scoreData } = await supabase.functions.invoke('score-lead', {
-          body: {
-            company_name: lead.company_name,
-            contact_name: lead.contact_name,
-            contact_email: lead.contact_email,
-            industry: lead.industry,
-            company_size: lead.company_size,
-            job_title: lead.job_title,
-            source: lead.source,
-          }
-        });
-
-        if (scoreData?.score) {
-          await supabase
-            .from('leads')
-            .update({ icp_score: scoreData.score })
-            .eq('id', leadId);
-        }
-      } catch (scoreError) {
-        console.error('Scoring failed:', scoreError);
-      }
-
-      toast({
-        title: "Lead fully activated",
-        description: "Enrichment and scoring complete. Lead is ready for outreach!",
-      });
-
-      await fetchLeads();
-    } catch (error: any) {
-      toast({
-        title: "Error activating lead",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setActivatingLead(null);
-    }
-  };
-
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -385,7 +219,7 @@ const SavedLeads = () => {
             </Button>
             <div>
               <h1 className="text-3xl font-bold">Saved Leads</h1>
-              <p className="text-muted-foreground">View and manage your saved leads</p>
+              <p className="text-muted-foreground">Your enriched leads ready for outreach</p>
             </div>
           </div>
         </div>
@@ -393,14 +227,14 @@ const SavedLeads = () => {
         <Card>
           <CardHeader>
             <CardTitle>All Leads ({filteredAndSortedLeads.length})</CardTitle>
-            <CardDescription>Your saved leads database</CardDescription>
+            <CardDescription>All leads are pre-enriched with company and contact data</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex gap-2 flex-wrap">
               <div className="relative flex-1 min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search saved leads..."
+                  placeholder="Search leads..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
@@ -429,14 +263,6 @@ const SavedLeads = () => {
 
               {selectedLeads.size > 0 && (
                 <>
-                  <Button 
-                    variant="hero" 
-                    onClick={handleBulkEnrich}
-                    disabled={bulkEnriching}
-                  >
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    {bulkEnriching ? `Enriching ${selectedLeads.size}...` : `Enrich (${selectedLeads.size})`}
-                  </Button>
                   <Button variant="outline" onClick={() => setShowAssignDialog(true)}>
                     <UserPlus className="w-4 h-4 mr-2" />
                     Assign ({selectedLeads.size})
@@ -482,21 +308,83 @@ const SavedLeads = () => {
                 Loading leads...
               </div>
             ) : filteredAndSortedLeads.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                {searchQuery 
-                  ? "No leads found matching your search" 
-                  : "No leads yet. Add your first lead to get started!"}
+              <div className="text-center py-12">
+                <p className="text-muted-foreground mb-4">
+                  {searchQuery 
+                    ? "No leads found matching your search" 
+                    : "No saved leads yet. Search for leads and enrich them to add to your list!"}
+                </p>
+                {!searchQuery && (
+                  <Button onClick={() => navigate('/dashboard/leads')}>
+                    Find New Leads
+                  </Button>
+                )}
               </div>
             ) : viewMode === "table" ? (
-              <LeadsTableView
-                leads={filteredAndSortedLeads}
-                selectedLeads={Array.from(selectedLeads)}
-                onSelectLead={toggleSelectLead}
-                onSelectAll={(checked) => checked ? setSelectedLeads(new Set(filteredAndSortedLeads.map(l => l.id))) : setSelectedLeads(new Set())}
-                onLeadClick={handleLeadClick}
-                onActivateLead={activateLead}
-                activatingLead={activatingLead}
-              />
+              <div className="border rounded-lg overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-muted/50">
+                    <tr>
+                      <th className="p-3 text-left">
+                        <Checkbox
+                          checked={selectedLeads.size === filteredAndSortedLeads.length && filteredAndSortedLeads.length > 0}
+                          onCheckedChange={toggleSelectAll}
+                        />
+                      </th>
+                      <th className="p-3 text-left text-sm font-medium">Contact</th>
+                      <th className="p-3 text-left text-sm font-medium">Company</th>
+                      <th className="p-3 text-left text-sm font-medium">Industry</th>
+                      <th className="p-3 text-left text-sm font-medium">ICP Score</th>
+                      <th className="p-3 text-left text-sm font-medium">Source</th>
+                      <th className="p-3 text-left text-sm font-medium">Added</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredAndSortedLeads.map((lead) => (
+                      <tr 
+                        key={lead.id} 
+                        className="border-t hover:bg-muted/30 cursor-pointer"
+                        onClick={() => handleLeadClick(lead)}
+                      >
+                        <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={selectedLeads.has(lead.id)}
+                            onCheckedChange={() => toggleSelectLead(lead.id)}
+                          />
+                        </td>
+                        <td className="p-3">
+                          <div>
+                            <p className="font-medium">{lead.contact_name}</p>
+                            <p className="text-xs text-muted-foreground">{lead.contact_email}</p>
+                            {lead.job_title && <p className="text-xs text-muted-foreground">{lead.job_title}</p>}
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <div>
+                            <p className="font-medium">{lead.company_name}</p>
+                            {lead.company_size && <p className="text-xs text-muted-foreground">{lead.company_size} employees</p>}
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          {lead.industry && <Badge variant="outline">{lead.industry}</Badge>}
+                        </td>
+                        <td className="p-3">
+                          {getScoreBadge(lead.icp_score)}
+                        </td>
+                        <td className="p-3">
+                          <div className="flex items-center gap-1">
+                            <CheckCircle className="w-3 h-3 text-green-500" />
+                            <span className="text-sm text-muted-foreground">{lead.source || 'Manual'}</span>
+                          </div>
+                        </td>
+                        <td className="p-3 text-sm text-muted-foreground">
+                          {new Date(lead.created_at).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             ) : (
               <div className="space-y-3">
                 <div className="flex items-center gap-2 py-2 border-b">
@@ -512,7 +400,7 @@ const SavedLeads = () => {
                 {filteredAndSortedLeads.map((lead) => (
                   <Card 
                     key={lead.id} 
-                    className={`cursor-pointer hover:bg-muted/50 ${lead.lead_status === 'discovered' ? 'border-blue-500/30 bg-blue-500/5' : ''}`} 
+                    className="cursor-pointer hover:bg-muted/50"
                     onClick={() => handleLeadClick(lead)}
                   >
                     <CardContent className="p-4">
@@ -526,9 +414,11 @@ const SavedLeads = () => {
                         <div className="space-y-1 flex-1">
                           <div className="flex items-center gap-3 flex-wrap">
                             <h3 className="font-semibold text-lg">{lead.contact_name}</h3>
-                            {getLeadStatusBadge(lead.lead_status)}
                             {getScoreBadge(lead.icp_score)}
-                            {getEnrichmentStatusBadge((lead as any).enrichment_status)}
+                            <Badge variant="default" className="text-xs">
+                              <CheckCircle className="w-3 h-3 mr-1" />
+                              Enriched
+                            </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground">{lead.company_name}</p>
                           {lead.job_title && (
@@ -546,45 +436,9 @@ const SavedLeads = () => {
                               <Badge variant="secondary">{lead.source}</Badge>
                             )}
                           </div>
-                          {lead.notes && (
-                            <p className="text-sm text-muted-foreground mt-2">{lead.notes}</p>
-                          )}
                         </div>
-                        <div className="flex flex-col gap-2 items-end">
-                          <div className="text-sm text-muted-foreground">
-                            {new Date(lead.created_at).toLocaleDateString()}
-                          </div>
-                          {lead.lead_status === 'discovered' ? (
-                            <Button
-                              variant="hero"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                activateLead(lead.id);
-                              }}
-                              disabled={activatingLead === lead.id}
-                            >
-                              {activatingLead === lead.id ? (
-                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              ) : (
-                                <CheckCircle className="w-4 h-4 mr-2" />
-                              )}
-                              {activatingLead === lead.id ? 'Activating...' : 'Activate Lead'}
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEnrichLead(lead.id);
-                              }}
-                              disabled={enrichingLeads.has(lead.id)}
-                            >
-                              <Sparkles className="w-4 h-4 mr-2" />
-                              {enrichingLeads.has(lead.id) ? 'Enriching...' : 'Enrich'}
-                            </Button>
-                          )}
+                        <div className="text-sm text-muted-foreground">
+                          {new Date(lead.created_at).toLocaleDateString()}
                         </div>
                       </div>
                     </CardContent>
@@ -624,8 +478,8 @@ const SavedLeads = () => {
         open={!!selectedLead}
         onOpenChange={(open) => !open && setSelectedLead(null)}
         enrichmentHistory={enrichmentHistory}
-        onEnrich={() => selectedLead && handleEnrichLead(selectedLead.id)}
-        isEnriching={selectedLead ? enrichingLeads.has(selectedLead.id) : false}
+        onEnrich={() => {}}
+        isEnriching={false}
       />
     </DashboardLayout>
   );
