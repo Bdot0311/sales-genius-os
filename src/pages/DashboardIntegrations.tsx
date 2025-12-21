@@ -50,18 +50,6 @@ const integrations: Integration[] = [
     ]
   },
   {
-    id: 'google',
-    name: 'Google',
-    category: 'Email & Calendar',
-    description: 'Access Gmail and Google Calendar with one connection',
-    icon: Mail,
-    color: 'text-blue-500',
-    fields: [
-      { name: 'clientId', label: 'Client ID', type: 'text', placeholder: 'Your Google Client ID' },
-      { name: 'clientSecret', label: 'Client Secret', type: 'password', placeholder: 'Your Google Client Secret' }
-    ]
-  },
-  {
     id: "calendly",
     name: "Calendly",
     category: "Scheduling",
