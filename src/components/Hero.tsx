@@ -3,11 +3,48 @@ import { ArrowRight, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 
+const useTypewriter = (text: string, speed: number = 50, delay: number = 0) => {
+  const [displayText, setDisplayText] = useState("");
+  const [isComplete, setIsComplete] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
+
+  useEffect(() => {
+    const startTimeout = setTimeout(() => {
+      setHasStarted(true);
+    }, delay);
+
+    return () => clearTimeout(startTimeout);
+  }, [delay]);
+
+  useEffect(() => {
+    if (!hasStarted) return;
+
+    let index = 0;
+    const timer = setInterval(() => {
+      if (index < text.length) {
+        setDisplayText(text.slice(0, index + 1));
+        index++;
+      } else {
+        setIsComplete(true);
+        clearInterval(timer);
+      }
+    }, speed);
+
+    return () => clearInterval(timer);
+  }, [text, speed, hasStarted]);
+
+  return { displayText, isComplete, hasStarted };
+};
+
 export const Hero = () => {
   const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(false);
   const [scrollY, setScrollY] = useState(0);
+  const [showResults, setShowResults] = useState([false, false, false]);
   const sectionRef = useRef<HTMLElement>(null);
+
+  const command = "Find 100 SaaS founders in fintech and send them a 3-step sequence.";
+  const { displayText, isComplete } = useTypewriter(command, 40, 1500);
 
   useEffect(() => {
     setIsVisible(true);
@@ -24,6 +61,17 @@ export const Hero = () => {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    if (isComplete) {
+      const timers = [
+        setTimeout(() => setShowResults(prev => [true, prev[1], prev[2]]), 400),
+        setTimeout(() => setShowResults(prev => [prev[0], true, prev[2]]), 800),
+        setTimeout(() => setShowResults(prev => [prev[0], prev[1], true]), 1200),
+      ];
+      return () => timers.forEach(clearTimeout);
+    }
+  }, [isComplete]);
   
   return (
     <section 
@@ -118,7 +166,7 @@ export const Hero = () => {
           intelligent outreach automation, and predictive analytics that help you sell like a pro.
         </p>
 
-        {/* AI Command Demo */}
+        {/* AI Command Demo with Typing Animation */}
         <figure 
           className={`max-w-2xl mx-auto mb-8 sm:mb-12 p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-card/80 border border-border backdrop-blur-md shadow-card card-interactive transition-all duration-700 delay-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
         >
@@ -126,21 +174,42 @@ export const Hero = () => {
             <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-destructive animate-pulse" />
             <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-yellow-500 animate-pulse" style={{ animationDelay: "0.2s" }} />
             <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-green-500 animate-pulse" style={{ animationDelay: "0.4s" }} />
+            <span className="ml-2 text-xs text-muted-foreground/60 font-mono">salesos-terminal</span>
           </div>
           <figcaption className="sr-only">AI Command Demo showing how SalesOS processes a lead generation request</figcaption>
           <div className="text-left font-mono text-xs sm:text-sm">
-            <span className="text-primary" aria-hidden="true">→</span> <span className="text-foreground">"Find 100 SaaS founders in fintech and send them a 3-step sequence."</span>
-            <div className="mt-2 text-muted-foreground" role="status" aria-label="AI processing results">
-              <span className={`inline-block transition-all duration-500 delay-500 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
-                <span aria-hidden="true" className="text-green-400">✓</span> Found 127 qualified leads
-              </span><br />
-              <span className={`inline-block transition-all duration-500 delay-700 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
-                <span aria-hidden="true" className="text-green-400">✓</span> Personalized outreach generated
-              </span><br />
-              <span className={`inline-block transition-all duration-500 delay-1000 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
-                <span aria-hidden="true" className="text-green-400">✓</span> Sequences scheduled for optimal send times
+            <div className="flex items-start gap-1">
+              <span className="text-primary shrink-0" aria-hidden="true">→</span>
+              <span className="text-foreground">
+                "{displayText}"
+                {!isComplete && (
+                  <span className="inline-block w-2 h-4 bg-primary ml-0.5 animate-pulse" />
+                )}
               </span>
             </div>
+            
+            {isComplete && (
+              <div className="mt-3 space-y-1.5" role="status" aria-label="AI processing results">
+                <div 
+                  className={`flex items-center gap-2 transition-all duration-300 ${showResults[0] ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}
+                >
+                  <span className="text-green-400 animate-bounce" style={{ animationDuration: '0.5s', animationIterationCount: '1' }}>✓</span>
+                  <span className="text-muted-foreground">Found <span className="text-primary font-semibold">127</span> qualified leads</span>
+                </div>
+                <div 
+                  className={`flex items-center gap-2 transition-all duration-300 ${showResults[1] ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}
+                >
+                  <span className="text-green-400">✓</span>
+                  <span className="text-muted-foreground">Personalized outreach generated</span>
+                </div>
+                <div 
+                  className={`flex items-center gap-2 transition-all duration-300 ${showResults[2] ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}
+                >
+                  <span className="text-green-400">✓</span>
+                  <span className="text-muted-foreground">Sequences scheduled for optimal send times</span>
+                </div>
+              </div>
+            )}
           </div>
         </figure>
 
