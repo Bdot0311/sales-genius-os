@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles, Search } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 
@@ -44,8 +43,8 @@ export const Hero = () => {
   const [showResults, setShowResults] = useState([false, false, false]);
   const sectionRef = useRef<HTMLElement>(null);
 
-  const command = "fintech SaaS founders";
-  const { displayText, isComplete } = useTypewriter(command, 60, 1500);
+  const command = "Find 100 SaaS founders in fintech and send them a 3-step sequence.";
+  const { displayText, isComplete } = useTypewriter(command, 40, 1500);
 
   useEffect(() => {
     setIsVisible(true);
@@ -167,80 +166,51 @@ export const Hero = () => {
           intelligent outreach automation, and predictive analytics that help you sell like a pro.
         </p>
 
-        {/* Lead Discovery Demo */}
+        {/* AI Command Demo with Typing Animation */}
         <figure 
           className={`max-w-2xl mx-auto mb-8 sm:mb-12 p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-card/80 border border-border backdrop-blur-md shadow-card card-interactive transition-all duration-700 delay-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
         >
-          <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <div className="flex items-center gap-2">
-              <Search className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-foreground">Lead Search</span>
-            </div>
-            <Badge variant="secondary" className="text-xs">
-              <Sparkles className="w-3 h-3 mr-1" />
-              AI-Powered
-            </Badge>
+          <div className="flex items-center gap-2 mb-3 sm:mb-4" aria-hidden="true">
+            <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-destructive animate-pulse" />
+            <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-yellow-500 animate-pulse" style={{ animationDelay: "0.2s" }} />
+            <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-green-500 animate-pulse" style={{ animationDelay: "0.4s" }} />
+            <span className="ml-2 text-xs text-muted-foreground/60 font-mono">salesos-terminal</span>
           </div>
-          <figcaption className="sr-only">Lead discovery demo showing how SalesOS finds qualified prospects</figcaption>
-          
-          {/* Search Input */}
-          <div className="relative mb-4">
-            <div className="flex items-center gap-2 px-3 py-2 bg-background/50 border border-border/50 rounded-lg">
-              <Search className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm text-foreground">
-                {displayText}
+          <figcaption className="sr-only">AI Command Demo showing how SalesOS processes a lead generation request</figcaption>
+          <div className="text-left font-mono text-xs sm:text-sm">
+            <div className="flex items-start gap-1">
+              <span className="text-primary shrink-0" aria-hidden="true">→</span>
+              <span className="text-foreground">
+                "{displayText}"
                 {!isComplete && (
-                  <span className="inline-block w-0.5 h-4 bg-primary ml-0.5 animate-pulse" />
+                  <span className="inline-block w-2 h-4 bg-primary ml-0.5 animate-pulse" />
                 )}
               </span>
             </div>
-          </div>
             
-          {isComplete && (
-            <div className="space-y-2" role="status" aria-label="Lead discovery results">
-              {/* Results Header */}
-              <div 
-                className={`flex items-center justify-between text-xs text-muted-foreground mb-2 transition-all duration-300 ${showResults[0] ? 'opacity-100' : 'opacity-0'}`}
-              >
-                <span>Found <span className="text-primary font-semibold">127</span> matching leads</span>
-                <span className="text-green-400">● Live</span>
-              </div>
-              
-              {/* Lead Cards */}
-              <div 
-                className={`flex items-center gap-3 p-2.5 bg-background/30 border border-border/30 rounded-lg transition-all duration-300 ${showResults[0] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
-              >
-                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium text-primary">JD</div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-foreground">James Davidson</div>
-                  <div className="text-xs text-muted-foreground">CEO at FinanceFlow • Series B</div>
+            {isComplete && (
+              <div className="mt-3 space-y-1.5" role="status" aria-label="AI processing results">
+                <div 
+                  className={`flex items-center gap-2 transition-all duration-300 ${showResults[0] ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}
+                >
+                  <span className="text-green-400 animate-bounce" style={{ animationDuration: '0.5s', animationIterationCount: '1' }}>✓</span>
+                  <span className="text-muted-foreground">Found <span className="text-primary font-semibold">127</span> qualified leads</span>
                 </div>
-                <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">Score: 94</Badge>
-              </div>
-              
-              <div 
-                className={`flex items-center gap-3 p-2.5 bg-background/30 border border-border/30 rounded-lg transition-all duration-300 ${showResults[1] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
-              >
-                <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-xs font-medium text-accent">SP</div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-foreground">Sarah Park</div>
-                  <div className="text-xs text-muted-foreground">Founder at PayTech • Seed</div>
+                <div 
+                  className={`flex items-center gap-2 transition-all duration-300 ${showResults[1] ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}
+                >
+                  <span className="text-green-400">✓</span>
+                  <span className="text-muted-foreground">Personalized outreach generated</span>
                 </div>
-                <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">Score: 89</Badge>
-              </div>
-              
-              <div 
-                className={`flex items-center gap-3 p-2.5 bg-background/30 border border-border/30 rounded-lg transition-all duration-300 ${showResults[2] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
-              >
-                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium text-primary">MR</div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-foreground">Michael Rivera</div>
-                  <div className="text-xs text-muted-foreground">CTO at BankStack • Series A</div>
+                <div 
+                  className={`flex items-center gap-2 transition-all duration-300 ${showResults[2] ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}
+                >
+                  <span className="text-green-400">✓</span>
+                  <span className="text-muted-foreground">Sequences scheduled for optimal send times</span>
                 </div>
-                <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">Score: 76</Badge>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </figure>
 
         {/* CTA Buttons */}
