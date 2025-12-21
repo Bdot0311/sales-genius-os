@@ -45,8 +45,8 @@ interface ScoredLead {
   buying_signals: string[];
 }
 
-function isBusinessEmail(email: string): boolean {
-  if (!email) return false;
+function isBusinessEmail(email: string | null | undefined): boolean {
+  if (!email || typeof email !== 'string') return false;
   const domain = email.split('@')[1]?.toLowerCase();
   if (!domain) return false;
   return !PERSONAL_EMAIL_DOMAINS.has(domain);
@@ -199,10 +199,14 @@ function scoreLead(person: any): { scores: ScoredLead['scores']; explanation: st
 }
 
 function mapPDLPersonToLead(person: any): ScoredLead | null {
-  const email = person.work_email;
+  // Handle work_email being an array or string
+  let email = person.work_email;
+  if (Array.isArray(email)) {
+    email = email[0]; // Take first email if it's an array
+  }
   
-  // Skip if no business email
-  if (!email || !isBusinessEmail(email)) {
+  // Skip if no valid business email string
+  if (!email || typeof email !== 'string' || !isBusinessEmail(email)) {
     return null;
   }
 
