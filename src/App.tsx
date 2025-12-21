@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Leads from "./pages/Leads";
+import SavedLeads from "./pages/SavedLeads";
 import Coach from "./pages/Coach";
 import Pipeline from "./pages/Pipeline";
 import Outreach from "./pages/Outreach";
@@ -47,6 +48,7 @@ const App = () => (
           <Route path="/confirmation" element={<Confirmation />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard/leads" element={<Leads />} />
+          <Route path="/dashboard/leads/saved" element={<SavedLeads />} />
           <Route path="/dashboard/coach" element={<Coach />} />
           <Route path="/dashboard/pipeline" element={<Pipeline />} />
           <Route path="/dashboard/outreach" element={<Outreach />} />
