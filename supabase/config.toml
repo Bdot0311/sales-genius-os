@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.fetch-external-leads]
 verify_jwt = true
+
+[functions.parse-lead-query]
+verify_jwt = true
