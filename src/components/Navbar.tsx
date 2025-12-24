@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
-import salesosLogo from "@/assets/salesos-logo.png";
+import salesosLogo from "@/assets/salesos-logo.webp";
 import { useWhiteLabel } from "@/hooks/use-white-label";
 
 export const Navbar = () => {

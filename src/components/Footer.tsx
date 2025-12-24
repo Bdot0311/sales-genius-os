@@ -1,4 +1,4 @@
-import salesosLogo from "@/assets/salesos-logo.png";
+import salesosLogo from "@/assets/salesos-logo.webp";
 import { Link } from "react-router-dom";
 
 export const Footer = () => {

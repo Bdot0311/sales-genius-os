@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import salesosLogo from "@/assets/salesos-logo.png";
+import salesosLogo from "@/assets/salesos-logo.webp";
 
 interface TimeLeft {
   days: number;
