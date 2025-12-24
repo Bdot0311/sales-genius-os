@@ -22,7 +22,35 @@ const Waitlist = () => {
   const [timeLeft, setTimeLeft] = useState<TimeLeft>({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [activeFeature, setActiveFeature] = useState(0);
+  const [waitlistCount, setWaitlistCount] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Fetch waitlist count
+  useEffect(() => {
+    const fetchCount = async () => {
+      const { data, error } = await supabase.rpc('get_waitlist_count');
+      if (!error && data !== null) {
+        setWaitlistCount(data);
+      }
+    };
+    fetchCount();
+
+    // Subscribe to realtime updates
+    const channel = supabase
+      .channel('waitlist-changes')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'waitlist_signups' },
+        () => {
+          setWaitlistCount(prev => (prev !== null ? prev + 1 : 1));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   // Track mouse for parallax effect
   useEffect(() => {
@@ -195,7 +223,11 @@ const Waitlist = () => {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
               </span>
-              <span>Launching Soon</span>
+              <span>
+                {waitlistCount !== null && waitlistCount > 0 
+                  ? `${waitlistCount.toLocaleString()} joined` 
+                  : 'Launching Soon'}
+              </span>
             </div>
           </div>
         </header>
