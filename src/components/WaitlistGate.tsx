@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TimeLeft {
   days: number;
@@ -77,13 +78,30 @@ const WaitlistGate = ({ onLaunch }: WaitlistGateProps) => {
 
     setIsSubmitting(true);
     
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    
-    setIsSubmitting(false);
-    setIsSubmitted(true);
-    toast.success("You're on the list! We'll notify you at launch.");
-    setEmail("");
+    try {
+      const { error } = await supabase
+        .from('waitlist_signups')
+        .insert({ email, source: 'landing_page' });
+
+      if (error) {
+        if (error.code === '23505') {
+          // Duplicate email - still show success to avoid revealing if email exists
+          toast.success("You're on the list! We'll notify you at launch.");
+        } else {
+          throw error;
+        }
+      } else {
+        toast.success("You're on the list! We'll notify you at launch.");
+      }
+      
+      setIsSubmitted(true);
+      setEmail("");
+    } catch (error) {
+      console.error('Waitlist signup error:', error);
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const formatNumber = (num: number) => String(num).padStart(2, "0");
