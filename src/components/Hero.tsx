@@ -49,12 +49,14 @@ export const Hero = () => {
   useEffect(() => {
     setIsVisible(true);
     
+    let ticking = false;
     const handleScroll = () => {
-      if (sectionRef.current) {
-        const rect = sectionRef.current.getBoundingClientRect();
-        if (rect.bottom > 0) {
+      if (!ticking) {
+        requestAnimationFrame(() => {
           setScrollY(window.scrollY);
-        }
+          ticking = false;
+        });
+        ticking = true;
       }
     };
 
