@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import salesosLogo from "@/assets/salesos-logo.webp";
-import { Sparkles, Zap, Shield, Users, ArrowRight, Star, ChevronDown } from "lucide-react";
+import { Sparkles, Zap, Shield, Users, ArrowRight, ChevronDown } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
@@ -363,63 +363,6 @@ const Waitlist = () => {
 
             {/* Social proof & benefits */}
             <div className="max-w-4xl mx-auto">
-              {/* Testimonial quotes */}
-              <div className="grid md:grid-cols-3 gap-6 mb-12">
-                <div className="bg-card/50 backdrop-blur-sm border border-border/30 rounded-2xl p-6 text-left">
-                  <div className="flex gap-1 mb-3">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="w-4 h-4 fill-yellow-500 text-yellow-500" />
-                    ))}
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-4 italic">
-                    "Finally, a CRM that actually understands how modern sales teams work. Can't wait for launch!"
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-xs font-bold text-white">JM</div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">James Mitchell</p>
-                      <p className="text-xs text-muted-foreground">VP Sales, TechFlow</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-card/50 backdrop-blur-sm border border-border/30 rounded-2xl p-6 text-left">
-                  <div className="flex gap-1 mb-3">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="w-4 h-4 fill-yellow-500 text-yellow-500" />
-                    ))}
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-4 italic">
-                    "The AI features in the demo blew my mind. This is exactly what we've been missing."
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center text-xs font-bold text-white">SK</div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Sarah Kim</p>
-                      <p className="text-xs text-muted-foreground">Sales Director, GrowthLab</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-card/50 backdrop-blur-sm border border-border/30 rounded-2xl p-6 text-left">
-                  <div className="flex gap-1 mb-3">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="w-4 h-4 fill-yellow-500 text-yellow-500" />
-                    ))}
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-4 italic">
-                    "Signed up instantly. The workflow automation alone will save us 10+ hours weekly."
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-xs font-bold text-white">DR</div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">David Rodriguez</p>
-                      <p className="text-xs text-muted-foreground">Founder, ScaleUp Inc</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
               {/* Early access benefits */}
               <div className="bg-gradient-to-r from-primary/10 via-purple-500/10 to-pink-500/10 border border-primary/20 rounded-2xl p-8 mb-8">
                 <h3 className="text-xl font-bold text-foreground mb-4">🎁 Early Access Benefits</h3>
