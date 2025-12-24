@@ -414,7 +414,7 @@ const Waitlist = () => {
         {/* Footer */}
         <footer className="py-8 px-6 text-center">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} SalesOS. All rights reserved.
+            © {new Date().getFullYear()} BDØT Industries LLC. All rights reserved.
           </p>
         </footer>
       </div>
