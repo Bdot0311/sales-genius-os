@@ -241,13 +241,7 @@ const WaitlistGate = ({ onLaunch }: WaitlistGateProps) => {
       </div>
 
       {/* Footer */}
-      <div className="absolute bottom-8 left-0 right-0 text-center space-y-3">
-        <button
-          onClick={onLaunch}
-          className="text-xs text-gray-600 hover:text-gray-400 transition-colors underline underline-offset-2 opacity-50 hover:opacity-100"
-        >
-          Skip for testing →
-        </button>
+      <div className="absolute bottom-8 left-0 right-0 text-center">
         <p className="text-sm text-gray-600">© SalesOS</p>
       </div>
 
