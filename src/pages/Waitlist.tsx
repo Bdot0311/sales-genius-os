@@ -15,11 +15,7 @@ interface TimeLeft {
 
 const LAUNCH_DATE = new Date("2026-01-01T08:00:00-05:00");
 
-interface WaitlistProps {
-  onSkip?: () => void;
-}
-
-const Waitlist = ({ onSkip }: WaitlistProps = {}) => {
+const Waitlist = () => {
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
