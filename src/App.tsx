@@ -48,7 +48,8 @@ const App = () => (
       <BrowserRouter>
         <Suspense fallback={<PageLoader />}>
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<Waitlist />} />
+            <Route path="/home" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/api-docs" element={<ApiDocs />} />
@@ -58,7 +59,6 @@ const App = () => (
             <Route path="/terms" element={<Terms />} />
             <Route path="/security" element={<Security />} />
             <Route path="/confirmation" element={<Confirmation />} />
-            <Route path="/waitlist" element={<Waitlist />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/dashboard/leads" element={<Leads />} />
             <Route path="/dashboard/leads/saved" element={<SavedLeads />} />
