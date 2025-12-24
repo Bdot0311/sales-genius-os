@@ -325,15 +325,7 @@ const Waitlist = ({ onSkip }: WaitlistProps = {}) => {
         </main>
 
         {/* Footer */}
-        <footer className="py-8 px-6 text-center space-y-4">
-          {onSkip && (
-            <button
-              onClick={onSkip}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4"
-            >
-              Skip to landing page →
-            </button>
-          )}
+        <footer className="py-8 px-6 text-center">
           <p className="text-sm text-muted-foreground">
             © {new Date().getFullYear()} SalesOS. All rights reserved.
           </p>
