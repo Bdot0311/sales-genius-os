@@ -15,7 +15,6 @@ const LAUNCH_DATE = new Date("2026-01-01T08:00:00-05:00");
 
 const Index = () => {
   const [showWaitlist, setShowWaitlist] = useState(true);
-  const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
     // Check if launch date has passed
@@ -31,15 +30,6 @@ const Index = () => {
     }
   }, []);
 
-  const handleLaunch = () => {
-    setIsTransitioning(true);
-    localStorage.setItem("salesos_launched", "true");
-    setTimeout(() => {
-      setShowWaitlist(false);
-      setIsTransitioning(false);
-    }, 500);
-  };
-
   return (
     <>
       <SEOHead 
@@ -52,11 +42,11 @@ const Index = () => {
       <SoftwareApplicationSchema />
       <WebSiteSchema />
       
-      {showWaitlist && <Waitlist onSkip={handleLaunch} />}
+      {showWaitlist && <Waitlist />}
       
       <div 
         className={`min-h-screen bg-transparent text-foreground relative transition-all duration-1000 ${
-          showWaitlist && !isTransitioning ? "opacity-0" : "opacity-100"
+          showWaitlist ? "opacity-0" : "opacity-100"
         }`}
       >
         <AnimatedBackground />
