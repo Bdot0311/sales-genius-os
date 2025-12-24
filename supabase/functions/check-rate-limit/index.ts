@@ -18,7 +18,7 @@ serve(async (req) => {
   try {
     logStep('Starting rate limit check');
 
-    // Security: Validate authorization - this function should only be called by authenticated users or internal services
+    // Security: Validate authorization - this function can be called by authenticated users or internal services
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
@@ -31,36 +31,70 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Validate the token
     const token = authHeader.replace('Bearer ', '');
-    const { data: userData, error: authError } = await supabase.auth.getUser(token);
     
-    if (authError || !userData.user) {
+    // Parse request body first to get apiKeyId and check for internal calls
+    const { apiKeyId, endpoint = 'default', internalCall = false } = await req.json();
+    logStep('Request data', { apiKeyId, endpoint, internalCall });
+
+    if (!apiKeyId) {
       return new Response(
-        JSON.stringify({ error: 'Invalid authorization token' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+        JSON.stringify({ error: 'API key ID is required' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
 
-    logStep('User authenticated', { userId: userData.user.id });
+    let userId: string | null = null;
 
-    const { apiKeyId, endpoint = 'default' } = await req.json();
-    logStep('Request data', { apiKeyId, endpoint });
+    // Check if this is an internal service call (using service role key)
+    if (token === supabaseKey && internalCall) {
+      logStep('Internal service call detected');
+      // For internal calls, we trust the apiKeyId and just fetch the key directly
+      const { data: apiKey, error: keyError } = await supabase
+        .from('api_keys')
+        .select('*')
+        .eq('id', apiKeyId)
+        .eq('is_active', true)
+        .single();
 
-    if (!apiKeyId) {
-      throw new Error('API key ID is required');
+      if (keyError || !apiKey) {
+        return new Response(
+          JSON.stringify({ error: 'API key not found' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+        );
+      }
+
+      userId = apiKey.user_id;
+    } else {
+      // Regular user authentication
+      const { data: userData, error: authError } = await supabase.auth.getUser(token);
+      
+      if (authError || !userData.user) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid authorization token' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+        );
+      }
+
+      userId = userData.user.id;
+      logStep('User authenticated', { userId });
     }
 
-    // Get API key configuration - ensure user owns this key
-    const { data: apiKey, error: keyError } = await supabase
-      .from('api_keys')
-      .select('*')
-      .eq('id', apiKeyId)
-      .eq('user_id', userData.user.id)
-      .single();
+    // Get API key configuration
+    let apiKeyQuery = supabase.from('api_keys').select('*').eq('id', apiKeyId);
+    
+    // For non-internal calls, ensure user owns this key
+    if (!internalCall || token !== supabaseKey) {
+      apiKeyQuery = apiKeyQuery.eq('user_id', userId);
+    }
+
+    const { data: apiKey, error: keyError } = await apiKeyQuery.single();
 
     if (keyError || !apiKey) {
-      throw new Error('API key not found or access denied');
+      return new Response(
+        JSON.stringify({ error: 'API key not found or access denied' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+      );
     }
 
     if (!apiKey.is_active) {
@@ -192,8 +226,9 @@ serve(async (req) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep('Error', errorMessage);
+    // Security: Don't expose internal error details
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: 'Rate limit check failed' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }

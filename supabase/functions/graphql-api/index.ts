@@ -161,7 +161,7 @@ serve(async (req) => {
 
     const userId = keyData.user_id;
 
-    // Check rate limit using internal call
+    // Check rate limit using internal service call
     const rateLimitResponse = await fetch(`${supabaseUrl}/functions/v1/check-rate-limit`, {
       method: 'POST',
       headers: {
@@ -171,6 +171,7 @@ serve(async (req) => {
       body: JSON.stringify({
         apiKeyId: keyData.id,
         endpoint: 'graphql',
+        internalCall: true, // Flag for internal service calls
       }),
     });
 
