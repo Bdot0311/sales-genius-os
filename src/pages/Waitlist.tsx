@@ -331,12 +331,12 @@ const Waitlist = () => {
               </div>
             </form>
 
-            <p className="text-sm text-muted-foreground mb-16">
+            <p className="text-sm text-muted-foreground mb-12">
               🔒 No spam, ever. Unsubscribe anytime.
             </p>
 
             {/* Rotating features */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-3xl mx-auto">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-3xl mx-auto mb-16">
               {features.map((feature, index) => (
                 <div
                   key={index}
@@ -353,6 +353,116 @@ const Waitlist = () => {
                   <p className="text-xs text-muted-foreground mt-1">{feature.desc}</p>
                 </div>
               ))}
+            </div>
+
+            {/* Social proof & benefits */}
+            <div className="max-w-4xl mx-auto">
+              {/* Testimonial quotes */}
+              <div className="grid md:grid-cols-3 gap-6 mb-12">
+                <div className="bg-card/50 backdrop-blur-sm border border-border/30 rounded-2xl p-6 text-left">
+                  <div className="flex gap-1 mb-3">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="w-4 h-4 fill-yellow-500 text-yellow-500" />
+                    ))}
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4 italic">
+                    "Finally, a CRM that actually understands how modern sales teams work. Can't wait for launch!"
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-xs font-bold text-white">JM</div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">James Mitchell</p>
+                      <p className="text-xs text-muted-foreground">VP Sales, TechFlow</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-card/50 backdrop-blur-sm border border-border/30 rounded-2xl p-6 text-left">
+                  <div className="flex gap-1 mb-3">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="w-4 h-4 fill-yellow-500 text-yellow-500" />
+                    ))}
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4 italic">
+                    "The AI features in the demo blew my mind. This is exactly what we've been missing."
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center text-xs font-bold text-white">SK</div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Sarah Kim</p>
+                      <p className="text-xs text-muted-foreground">Sales Director, GrowthLab</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-card/50 backdrop-blur-sm border border-border/30 rounded-2xl p-6 text-left">
+                  <div className="flex gap-1 mb-3">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="w-4 h-4 fill-yellow-500 text-yellow-500" />
+                    ))}
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4 italic">
+                    "Signed up instantly. The workflow automation alone will save us 10+ hours weekly."
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-xs font-bold text-white">DR</div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">David Rodriguez</p>
+                      <p className="text-xs text-muted-foreground">Founder, ScaleUp Inc</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Early access benefits */}
+              <div className="bg-gradient-to-r from-primary/10 via-purple-500/10 to-pink-500/10 border border-primary/20 rounded-2xl p-8 mb-8">
+                <h3 className="text-xl font-bold text-foreground mb-4">🎁 Early Access Benefits</h3>
+                <div className="grid sm:grid-cols-3 gap-4 text-left">
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-primary text-sm">✓</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">50% Lifetime Discount</p>
+                      <p className="text-xs text-muted-foreground">Lock in founder pricing forever</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-primary text-sm">✓</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Priority Onboarding</p>
+                      <p className="text-xs text-muted-foreground">1-on-1 setup with our team</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-primary text-sm">✓</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Shape the Product</p>
+                      <p className="text-xs text-muted-foreground">Direct input on features</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Trust badges */}
+              <div className="flex flex-wrap items-center justify-center gap-6 text-muted-foreground text-sm">
+                <div className="flex items-center gap-2">
+                  <Shield className="w-4 h-4" />
+                  <span>SOC 2 Compliant</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Zap className="w-4 h-4" />
+                  <span>99.9% Uptime SLA</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  <span>Built for Teams of All Sizes</span>
+                </div>
+              </div>
             </div>
           </div>
         </main>
