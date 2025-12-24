@@ -4,13 +4,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import salesosLogo from "@/assets/salesos-logo.webp";
-import { Sparkles, Zap, Shield, Users, ArrowRight, ChevronDown } from "lucide-react";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { Sparkles, Zap, Shield, Users, ArrowRight } from "lucide-react";
 
 interface TimeLeft {
   days: number;
@@ -413,65 +407,6 @@ const Waitlist = () => {
                 </div>
               </div>
 
-              {/* FAQ Section */}
-              <div className="mt-16 text-left">
-                <h3 className="text-2xl font-bold text-foreground text-center mb-8">Frequently Asked Questions</h3>
-                <Accordion type="single" collapsible className="w-full space-y-3">
-                  <AccordionItem value="item-1" className="bg-card/50 backdrop-blur-sm border border-border/30 rounded-xl px-6 data-[state=open]:bg-card/70">
-                    <AccordionTrigger className="text-foreground hover:no-underline py-5">
-                      What is SalesOS and how is it different from other CRMs?
-                    </AccordionTrigger>
-                    <AccordionContent className="text-muted-foreground pb-5">
-                      SalesOS is an AI-powered sales operating system designed for modern sales teams. Unlike traditional CRMs that require manual data entry, SalesOS automatically enriches leads, scores prospects based on your ideal customer profile, and suggests the best next actions. Our AI learns from your winning deals to help you close more.
-                    </AccordionContent>
-                  </AccordionItem>
-
-                  <AccordionItem value="item-2" className="bg-card/50 backdrop-blur-sm border border-border/30 rounded-xl px-6 data-[state=open]:bg-card/70">
-                    <AccordionTrigger className="text-foreground hover:no-underline py-5">
-                      What do I get as an early access member?
-                    </AccordionTrigger>
-                    <AccordionContent className="text-muted-foreground pb-5">
-                      Early access members receive 50% off forever (locked-in founder pricing), priority onboarding with 1-on-1 setup assistance, direct access to our product team to shape features, and first access to all new capabilities before public release.
-                    </AccordionContent>
-                  </AccordionItem>
-
-                  <AccordionItem value="item-3" className="bg-card/50 backdrop-blur-sm border border-border/30 rounded-xl px-6 data-[state=open]:bg-card/70">
-                    <AccordionTrigger className="text-foreground hover:no-underline py-5">
-                      When will SalesOS launch?
-                    </AccordionTrigger>
-                    <AccordionContent className="text-muted-foreground pb-5">
-                      We're planning to launch in January 2026. Waitlist members will be the first to know and will receive early access before our public launch. We'll send you updates on our progress and invite you to exclusive beta previews.
-                    </AccordionContent>
-                  </AccordionItem>
-
-                  <AccordionItem value="item-4" className="bg-card/50 backdrop-blur-sm border border-border/30 rounded-xl px-6 data-[state=open]:bg-card/70">
-                    <AccordionTrigger className="text-foreground hover:no-underline py-5">
-                      How much will SalesOS cost?
-                    </AccordionTrigger>
-                    <AccordionContent className="text-muted-foreground pb-5">
-                      We'll offer flexible plans starting at $49/user/month for growing teams, with Pro and Elite tiers for larger organizations. Early access members lock in 50% off these prices forever—meaning you'd pay just $24.50/user/month on our Growth plan.
-                    </AccordionContent>
-                  </AccordionItem>
-
-                  <AccordionItem value="item-5" className="bg-card/50 backdrop-blur-sm border border-border/30 rounded-xl px-6 data-[state=open]:bg-card/70">
-                    <AccordionTrigger className="text-foreground hover:no-underline py-5">
-                      Can I migrate from my current CRM?
-                    </AccordionTrigger>
-                    <AccordionContent className="text-muted-foreground pb-5">
-                      Absolutely! We offer seamless migration from Salesforce, HubSpot, Pipedrive, and other major CRMs. Our team handles the heavy lifting during onboarding, and early access members get priority white-glove migration support at no extra cost.
-                    </AccordionContent>
-                  </AccordionItem>
-
-                  <AccordionItem value="item-6" className="bg-card/50 backdrop-blur-sm border border-border/30 rounded-xl px-6 data-[state=open]:bg-card/70">
-                    <AccordionTrigger className="text-foreground hover:no-underline py-5">
-                      Is my data secure?
-                    </AccordionTrigger>
-                    <AccordionContent className="text-muted-foreground pb-5">
-                      Security is our top priority. SalesOS is SOC 2 Type II compliant, uses bank-grade encryption for all data, and offers enterprise SSO. Your data is never used to train AI models, and we offer data residency options for compliance requirements.
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-              </div>
             </div>
           </div>
         </main>
