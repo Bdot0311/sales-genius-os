@@ -15,7 +15,11 @@ interface TimeLeft {
 
 const LAUNCH_DATE = new Date("2026-01-01T08:00:00-05:00");
 
-const Waitlist = () => {
+interface WaitlistProps {
+  onSkip?: () => void;
+}
+
+const Waitlist = ({ onSkip }: WaitlistProps = {}) => {
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -321,7 +325,15 @@ const Waitlist = () => {
         </main>
 
         {/* Footer */}
-        <footer className="py-8 px-6 text-center">
+        <footer className="py-8 px-6 text-center space-y-4">
+          {onSkip && (
+            <button
+              onClick={onSkip}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4"
+            >
+              Skip to landing page →
+            </button>
+          )}
           <p className="text-sm text-muted-foreground">
             © {new Date().getFullYear()} SalesOS. All rights reserved.
           </p>
