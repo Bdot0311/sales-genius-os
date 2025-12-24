@@ -1720,6 +1720,7 @@ export type Database = {
           plan: Database["public"]["Enums"]["subscription_plan"]
         }[]
       }
+      get_waitlist_count: { Args: never; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
