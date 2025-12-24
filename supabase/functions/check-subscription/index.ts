@@ -33,41 +33,22 @@ serve(async (req) => {
     let userEmail: string;
     let userId: string | null = null;
 
-    // Try to get authenticated user if auth header exists and is not just anon key
+    // SECURITY: Require authentication for all subscription queries
     const authHeader = req.headers.get('Authorization');
-    if (authHeader) {
-      const token = authHeader.replace('Bearer ', '');
-      const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-      
-      // If we successfully got a user with a valid session (has sub claim)
-      if (userData?.user && !userError) {
-        userEmail = userData.user.email!;
-        userId = userData.user.id;
-        logStep('User authenticated', { userId, email: userEmail });
-      } else {
-        // Token is anon key or invalid - try to parse body for email
-        logStep('Using email from body (anon or invalid token)');
-        try {
-          const body = await req.json();
-          userEmail = body.email;
-          if (!userEmail) throw new Error('Email is required for unauthenticated requests');
-          logStep('Email provided in body', { email: userEmail });
-        } catch (e) {
-          throw new Error('Email is required when not authenticated');
-        }
-      }
-    } else {
-      // No auth header - use email from body
-      logStep('No auth header - using email from body');
-      try {
-        const body = await req.json();
-        userEmail = body.email;
-        if (!userEmail) throw new Error('Email is required');
-        logStep('Email provided in body', { email: userEmail });
-      } catch (e) {
-        throw new Error('Email is required when no authentication provided');
-      }
+    if (!authHeader) {
+      throw new Error('Authentication required');
     }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+    
+    if (userError || !userData?.user) {
+      throw new Error('Authentication required');
+    }
+    
+    userEmail = userData.user.email!;
+    userId = userData.user.id;
+    logStep('User authenticated', { userId });
 
     const stripe = new Stripe(stripeKey, { apiVersion: '2025-08-27.basil' });
     
@@ -220,9 +201,11 @@ serve(async (req) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep('ERROR in check-subscription', { message: errorMessage });
-    return new Response(JSON.stringify({ error: errorMessage }), {
+    // Return generic error message to avoid leaking internal details
+    const isAuthError = errorMessage.includes('Authentication');
+    return new Response(JSON.stringify({ error: isAuthError ? 'Authentication required' : 'Operation failed' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
+      status: isAuthError ? 401 : 500,
     });
   }
 });
