@@ -149,7 +149,7 @@ const Waitlist = () => {
   return (
     <div 
       ref={containerRef}
-      className="min-h-screen relative overflow-hidden"
+      className="h-screen relative overflow-hidden"
       style={{
         background: "radial-gradient(ellipse 80% 50% at 50% -20%, hsl(261 75% 20% / 0.4), transparent), hsl(0 0% 4%)",
       }}
