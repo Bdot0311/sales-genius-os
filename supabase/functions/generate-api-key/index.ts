@@ -90,11 +90,14 @@ serve(async (req) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR", { message: errorMessage });
+    // Return generic error messages to avoid leaking internal details
+    const isAuthError = errorMessage.includes('auth') || errorMessage.includes('Authentication');
+    const isPlanError = errorMessage.includes('Elite plan');
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: isAuthError ? 'Authentication required' : isPlanError ? 'Elite plan required' : 'Operation failed' }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
+        status: isAuthError ? 401 : isPlanError ? 403 : 500,
       }
     );
   }

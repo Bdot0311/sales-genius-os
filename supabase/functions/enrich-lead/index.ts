@@ -121,12 +121,17 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in enrich-lead function:', error);
+    // Return generic error messages to avoid leaking internal details
+    const errorMsg = error instanceof Error ? error.message : '';
+    const isAuthError = errorMsg.includes('authorization') || errorMsg.includes('token') || errorMsg.includes('No authorization');
+    const isNotFound = errorMsg.includes('not found');
+    
     return new Response(
       JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'Unknown error occurred' 
+        error: isAuthError ? 'Authentication required' : isNotFound ? 'Resource not found' : 'Operation failed'
       }),
       { 
-        status: 400,
+        status: isAuthError ? 401 : isNotFound ? 404 : 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
