@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Hero } from "@/components/Hero";
 import { Features } from "@/components/Features";
@@ -8,8 +9,37 @@ import { FAQ } from "@/components/FAQ";
 import { Footer } from "@/components/Footer";
 import { SEOHead, OrganizationSchema, SoftwareApplicationSchema, WebSiteSchema } from "@/components/seo";
 import { AnimatedBackground } from "@/components/ui/AnimatedBackground";
+import WaitlistGate from "@/components/WaitlistGate";
+
+const LAUNCH_DATE = new Date("2026-01-01T08:00:00-05:00");
 
 const Index = () => {
+  const [showWaitlist, setShowWaitlist] = useState(true);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  useEffect(() => {
+    // Check if launch date has passed
+    const now = new Date();
+    if (now >= LAUNCH_DATE) {
+      setShowWaitlist(false);
+    }
+
+    // Check if user has already seen the launch
+    const hasLaunched = localStorage.getItem("salesos_launched");
+    if (hasLaunched === "true") {
+      setShowWaitlist(false);
+    }
+  }, []);
+
+  const handleLaunch = () => {
+    setIsTransitioning(true);
+    localStorage.setItem("salesos_launched", "true");
+    setTimeout(() => {
+      setShowWaitlist(false);
+      setIsTransitioning(false);
+    }, 500);
+  };
+
   return (
     <>
       <SEOHead 
@@ -22,9 +52,14 @@ const Index = () => {
       <SoftwareApplicationSchema />
       <WebSiteSchema />
       
-      <AnimatedBackground />
+      {showWaitlist && <WaitlistGate onLaunch={handleLaunch} />}
       
-      <div className="min-h-screen bg-transparent text-foreground relative">
+      <div 
+        className={`min-h-screen bg-transparent text-foreground relative transition-all duration-1000 ${
+          showWaitlist && !isTransitioning ? "opacity-0" : "opacity-100"
+        }`}
+      >
+        <AnimatedBackground />
         <Navbar />
         <main>
           <Hero />
