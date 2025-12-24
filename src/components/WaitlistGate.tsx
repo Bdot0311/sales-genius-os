@@ -157,7 +157,7 @@ const WaitlistGate = ({ onLaunch }: WaitlistGateProps) => {
         {/* Logo Mark */}
         <div className="mb-8 relative">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary via-blue-500 to-purple-600 flex items-center justify-center shadow-2xl shadow-primary/30 p-2">
-            <img src={salesosLogo} alt="SalesOS" className="w-full h-full object-contain" />
+            <img src={salesosLogo} alt="SalesOS" className="w-full h-full object-contain" width={48} height={48} decoding="async" />
           </div>
           <div className="absolute -inset-2 bg-gradient-to-r from-primary to-purple-600 rounded-3xl blur-xl opacity-30 animate-pulse" />
         </div>
