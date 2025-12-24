@@ -37,7 +37,7 @@ export const Navbar = () => {
             <img src={whiteLabelSettings.logo_url} alt={whiteLabelSettings.company_name || "Logo"} className="h-7 sm:h-8" />
           ) : (
             <>
-              <img src={salesosLogo} alt="SalesOS Logo" className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg" />
+              <img src={salesosLogo} alt="SalesOS Logo" className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg" width={32} height={32} decoding="async" />
               <span className="text-lg sm:text-xl font-bold">{whiteLabelSettings?.company_name || "SalesOS"}</span>
             </>
           )}
