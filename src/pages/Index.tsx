@@ -9,7 +9,7 @@ import { FAQ } from "@/components/FAQ";
 import { Footer } from "@/components/Footer";
 import { SEOHead, OrganizationSchema, SoftwareApplicationSchema, WebSiteSchema } from "@/components/seo";
 import { AnimatedBackground } from "@/components/ui/AnimatedBackground";
-import WaitlistGate from "@/components/WaitlistGate";
+import Waitlist from "@/pages/Waitlist";
 
 const LAUNCH_DATE = new Date("2026-01-01T08:00:00-05:00");
 
@@ -52,7 +52,7 @@ const Index = () => {
       <SoftwareApplicationSchema />
       <WebSiteSchema />
       
-      {showWaitlist && <WaitlistGate onLaunch={handleLaunch} />}
+      {showWaitlist && <Waitlist onSkip={handleLaunch} />}
       
       <div 
         className={`min-h-screen bg-transparent text-foreground relative transition-all duration-1000 ${
