@@ -119,7 +119,12 @@ const Waitlist = () => {
           throw error;
         }
       } else {
-        toast.success("🎉 You're on the list! Get ready for something amazing.");
+        toast.success("🎉 You're on the list! Check your email for confirmation.");
+        
+        // Send confirmation email (fire and forget)
+        supabase.functions.invoke('send-waitlist-confirmation', {
+          body: { email }
+        }).catch(err => console.error('Failed to send confirmation email:', err));
       }
       
       setIsSubmitted(true);
