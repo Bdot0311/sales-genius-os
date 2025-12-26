@@ -68,38 +68,85 @@ function mapCompanySizeToRange(size: string | null | undefined): string {
   return sizeMap[size] || 'Unknown';
 }
 
-// Input validation constants
-const ALLOWED_TEXT_CHARS = /^[a-zA-Z0-9\s\-.,&']+$/;
+// Input validation constants - strict allowlists
+const ALLOWED_JOB_TITLE_CHARS = /^[a-zA-Z\s\-]+$/;
+const ALLOWED_COUNTRY_CHARS = /^[a-zA-Z\s\-]+$/;
 const MAX_JOB_TITLE_LENGTH = 100;
 const MAX_COUNTRY_LENGTH = 50;
 
-// Validate and sanitize input for SQL injection prevention
-function validateAndSanitizeInput(input: string, maxLength: number, fieldName: string): string {
+// Job title allowlist for common patterns
+const VALID_JOB_TITLE_KEYWORDS = new Set([
+  'ceo', 'cto', 'cfo', 'coo', 'cmo', 'ciso', 'cio',
+  'president', 'vice', 'vp', 'director', 'head', 'chief',
+  'manager', 'lead', 'senior', 'junior', 'executive',
+  'engineer', 'developer', 'analyst', 'consultant', 'specialist',
+  'sales', 'marketing', 'operations', 'product', 'hr', 'finance',
+  'software', 'data', 'business', 'account', 'customer', 'success',
+  'founder', 'owner', 'partner', 'associate', 'coordinator',
+  'officer', 'advisor', 'strategist', 'architect', 'designer'
+]);
+
+// Country allowlist
+const VALID_COUNTRIES = new Set([
+  'united states', 'united kingdom', 'canada', 'australia', 'germany',
+  'france', 'spain', 'italy', 'netherlands', 'sweden', 'norway',
+  'denmark', 'finland', 'ireland', 'belgium', 'switzerland', 'austria',
+  'japan', 'singapore', 'india', 'brazil', 'mexico', 'israel',
+  'new zealand', 'south africa', 'poland', 'portugal', 'czech republic',
+  'usa', 'uk', 'us', 'gb'
+]);
+
+// Validate and sanitize input with strict allowlist approach
+function validateAndSanitizeInput(input: string, maxLength: number, fieldName: string, allowedChars: RegExp): string {
   if (!input || typeof input !== 'string') {
     throw new Error(`Invalid ${fieldName}: must be a non-empty string`);
   }
   
-  const trimmed = input.trim();
+  const trimmed = input.trim().toLowerCase();
+  
+  if (trimmed.length === 0) {
+    throw new Error(`${fieldName} cannot be empty`);
+  }
   
   if (trimmed.length > maxLength) {
-    throw new Error(`${fieldName} exceeds maximum length of ${maxLength} characters`);
+    throw new Error(`${fieldName} exceeds maximum length`);
   }
   
-  if (!ALLOWED_TEXT_CHARS.test(trimmed)) {
-    throw new Error(`${fieldName} contains invalid characters. Only alphanumeric characters, spaces, hyphens, periods, commas, ampersands, and apostrophes are allowed.`);
+  // Strict character allowlist - only letters, spaces, and hyphens
+  if (!allowedChars.test(trimmed)) {
+    throw new Error(`${fieldName} contains invalid characters`);
   }
   
-  // Remove any SQL-like patterns as extra protection
-  const sqlPatterns = /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|OR|AND|WHERE|FROM|JOIN|INTO|SET|VALUES|CREATE|ALTER|TRUNCATE|EXEC|EXECUTE|--|;|\/\*|\*\/|xp_|sp_)\b)/gi;
-  if (sqlPatterns.test(trimmed)) {
-    throw new Error(`${fieldName} contains disallowed patterns`);
-  }
-  
-  // Escape single quotes after validation
-  return trimmed.replace(/'/g, "''");
+  return trimmed;
 }
 
-// Simplified PDL query - no company size filtering at provider level
+// Validate job title against allowlist
+function validateJobTitle(title: string): string {
+  const sanitized = validateAndSanitizeInput(title, MAX_JOB_TITLE_LENGTH, 'Job title', ALLOWED_JOB_TITLE_CHARS);
+  
+  // Check that at least one word is in our allowlist
+  const words = sanitized.split(/\s+/);
+  const hasValidKeyword = words.some(word => VALID_JOB_TITLE_KEYWORDS.has(word));
+  
+  if (!hasValidKeyword) {
+    throw new Error('Job title must contain a recognized job keyword');
+  }
+  
+  return sanitized;
+}
+
+// Validate country against allowlist
+function validateCountry(country: string): string {
+  const sanitized = validateAndSanitizeInput(country, MAX_COUNTRY_LENGTH, 'Country', ALLOWED_COUNTRY_CHARS);
+  
+  if (!VALID_COUNTRIES.has(sanitized)) {
+    throw new Error('Country not recognized. Please use a supported country name.');
+  }
+  
+  return sanitized;
+}
+
+// Build PDL query with validated inputs only
 function buildPDLQuery(filters: ExternalLeadFilters): string {
   const conditions: string[] = [];
   
@@ -107,16 +154,16 @@ function buildPDLQuery(filters: ExternalLeadFilters): string {
   conditions.push("work_email IS NOT NULL");
   conditions.push("job_company_website IS NOT NULL");
   
-  // Job title matching - with validation
+  // Job title matching - strict validation with allowlist
   if (filters.job_title) {
-    const sanitizedTitle = validateAndSanitizeInput(filters.job_title, MAX_JOB_TITLE_LENGTH, 'Job title');
-    conditions.push(`job_title LIKE '%${sanitizedTitle}%'`);
+    const validatedTitle = validateJobTitle(filters.job_title);
+    conditions.push(`job_title LIKE '%${validatedTitle}%'`);
   }
   
-  // Country matching - with validation
+  // Country matching - strict validation with allowlist
   if (filters.country) {
-    const sanitizedCountry = validateAndSanitizeInput(filters.country, MAX_COUNTRY_LENGTH, 'Country').toLowerCase();
-    conditions.push(`location_country='${sanitizedCountry}'`);
+    const validatedCountry = validateCountry(filters.country);
+    conditions.push(`location_country='${validatedCountry}'`);
   }
   
   return conditions.join(' AND ');
@@ -377,9 +424,16 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in fetch-external-leads:', error);
+    
+    // Return generic error messages to prevent information leakage
+    const errorMessage = error instanceof Error && 
+      (error.message.includes('Job title') || error.message.includes('Country'))
+      ? error.message // Validation errors are safe to return
+      : 'Failed to fetch leads';
+    
     return new Response(
       JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'Unknown error occurred',
+        error: errorMessage,
         leads: []
       }),
       { 
