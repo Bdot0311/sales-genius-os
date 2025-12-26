@@ -153,7 +153,7 @@ Write a personalized email that addresses their potential needs and includes a c
   } catch (error: any) {
     console.error("Error in generate-email function:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: 'Failed to generate email' }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

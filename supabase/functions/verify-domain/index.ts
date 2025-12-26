@@ -18,9 +18,35 @@ interface CloudflareDnsResponse {
   Answer?: DnsRecord[];
 }
 
+// Domain validation to prevent SSRF attacks
+function validateDomain(domain: string): boolean {
+  if (!domain || typeof domain !== 'string') return false;
+  if (domain.length > 253) return false;
+  
+  // Strict domain pattern - only allows valid domain characters
+  const domainPattern = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/;
+  if (!domainPattern.test(domain)) return false;
+  
+  // Block reserved TLDs and internal domains
+  const blockedTlds = ['.local', '.internal', '.test', '.localhost', '.lan', '.localdomain', '.home', '.corp', '.private'];
+  const lowerDomain = domain.toLowerCase();
+  if (blockedTlds.some(tld => lowerDomain.endsWith(tld))) return false;
+  
+  // Block IP addresses
+  const ipPattern = /^(\d{1,3}\.){3}\d{1,3}$/;
+  if (ipPattern.test(domain)) return false;
+  
+  // Block localhost variations
+  if (lowerDomain.includes('localhost') || lowerDomain.includes('127.0.0.1') || lowerDomain.includes('0.0.0.0')) return false;
+  
+  return true;
+}
+
 async function checkDnsRecord(domain: string, recordType: string): Promise<string[]> {
   try {
-    const url = `https://cloudflare-dns.com/dns-query?name=${domain}&type=${recordType}`;
+    // Encode domain to prevent URL injection
+    const encodedDomain = encodeURIComponent(domain);
+    const url = `https://cloudflare-dns.com/dns-query?name=${encodedDomain}&type=${recordType}`;
     const response = await fetch(url, {
       headers: {
         'Accept': 'application/dns-json',
@@ -83,6 +109,18 @@ serve(async (req) => {
     if (!domain || !verificationToken) {
       return new Response(
         JSON.stringify({ error: 'Domain and verification token are required' }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    // Validate domain to prevent SSRF attacks
+    if (!validateDomain(domain)) {
+      console.warn(`[VERIFY-DOMAIN] Invalid domain rejected: ${domain}`);
+      return new Response(
+        JSON.stringify({ error: 'Invalid domain format' }),
         {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -175,7 +213,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('[VERIFY-DOMAIN] Error:', error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Internal server error' }),
+      JSON.stringify({ error: 'Domain verification failed' }),
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
