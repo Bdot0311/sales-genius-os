@@ -1,14 +1,54 @@
 # SalesOS Robots.txt
 # https://salesos.com/robots.txt
+# Optimized for SEO and AI Search Engines (AEO)
 
+# Main Search Engine Crawlers
 User-agent: Googlebot
 Allow: /
-Crawl-delay: 1
+Crawl-delay: 0
+
+User-agent: Googlebot-Image
+Allow: /
+
+User-agent: Googlebot-Video
+Allow: /
 
 User-agent: Bingbot
 Allow: /
 Crawl-delay: 1
 
+User-agent: msnbot
+Allow: /
+
+# AI Search Engines and LLM Crawlers
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Anthropic-AI
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: YouBot
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: cohere-ai
+Allow: /
+
+# Social Media Crawlers
 User-agent: Twitterbot
 Allow: /
 
@@ -18,6 +58,19 @@ Allow: /
 User-agent: LinkedInBot
 Allow: /
 
+User-agent: Pinterest
+Allow: /
+
+User-agent: Slackbot
+Allow: /
+
+User-agent: Discordbot
+Allow: /
+
+User-agent: WhatsApp
+Allow: /
+
+# Other Major Search Engines
 User-agent: Slurp
 Allow: /
 Crawl-delay: 1
@@ -25,15 +78,78 @@ Crawl-delay: 1
 User-agent: DuckDuckBot
 Allow: /
 
+User-agent: Baiduspider
+Allow: /
+Crawl-delay: 2
+
+User-agent: YandexBot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Sogou
+Allow: /
+Crawl-delay: 2
+
+User-agent: Applebot
+Allow: /
+
+# SEO Tools (allow for analysis)
+User-agent: AhrefsBot
+Allow: /
+Crawl-delay: 5
+
+User-agent: SemrushBot
+Allow: /
+Crawl-delay: 5
+
+User-agent: MJ12bot
+Allow: /
+Crawl-delay: 5
+
+User-agent: rogerbot
+Allow: /
+Crawl-delay: 5
+
+# Default rule for all other bots
 User-agent: *
 Allow: /
 Crawl-delay: 2
 
 # Disallow admin and authenticated areas
 Disallow: /dashboard
+Disallow: /dashboard/*
 Disallow: /admin
+Disallow: /admin/*
 Disallow: /settings
+Disallow: /settings/*
 Disallow: /auth
+Disallow: /pipeline
+Disallow: /leads
+Disallow: /analytics
+Disallow: /automations
+Disallow: /outreach
+Disallow: /calendar
+Disallow: /coach
+Disallow: /saved-leads
+Disallow: /integrations
 
-# Sitemap
+# Allow public pages
+Allow: /
+Allow: /home
+Allow: /pricing
+Allow: /api-docs
+Allow: /api-status
+Allow: /privacy
+Allow: /terms
+Allow: /security
+Allow: /waitlist
+
+# Sitemap location
 Sitemap: https://salesos.com/sitemap.xml
+
+# Crawl budget optimization hints
+# These pages are most important for indexing:
+# Priority: / (homepage) - main landing page
+# Priority: /pricing - pricing information
+# Priority: /api-docs - API documentation
+# Priority: /privacy, /terms, /security - legal pages
