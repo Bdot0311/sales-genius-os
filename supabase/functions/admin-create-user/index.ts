@@ -87,9 +87,20 @@ serve(async (req) => {
     );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR", { message: errorMessage });
+    logStep("ERROR", { message: errorMessage }); // Log internally for debugging
+    
+    // Return generic error message to client - don't expose internal details
+    const safeErrors: Record<string, string> = {
+      "No authorization header": "Authentication required",
+      "Unauthorized": "Authentication failed",
+      "Admin privileges required": "Insufficient permissions",
+      "Email and password are required": "Email and password are required",
+    };
+    
+    const clientMessage = safeErrors[errorMessage] || "Failed to create user";
+    
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: clientMessage }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
     );
   }

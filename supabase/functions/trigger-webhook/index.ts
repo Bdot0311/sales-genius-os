@@ -25,9 +25,33 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    const { event, data, userId } = await req.json();
-    if (!event || !data || !userId) {
-      throw new Error("Missing required fields: event, data, userId");
+    // Authenticate the request
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      logStep("ERROR", { message: "No authorization header" });
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 }
+      );
+    }
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+    
+    if (userError || !userData.user) {
+      logStep("ERROR", { message: "Invalid user token" });
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 }
+      );
+    }
+
+    // Derive userId from authenticated session - do not trust request body
+    const userId = userData.user.id;
+    
+    const { event, data } = await req.json();
+    if (!event || !data) {
+      throw new Error("Missing required fields: event, data");
     }
 
     logStep("Payload received", { event, userId });

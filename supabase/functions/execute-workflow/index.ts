@@ -243,10 +243,12 @@ Deno.serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error('Error executing workflow:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error executing workflow:', errorMessage); // Log internally
+    
+    // Return generic error to client
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: 'Workflow execution failed. Please try again.' }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
