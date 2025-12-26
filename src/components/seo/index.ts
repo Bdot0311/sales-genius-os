@@ -5,5 +5,12 @@ export {
   FAQSchema, 
   ProductSchema,
   WebSiteSchema,
-  BreadcrumbSchema
+  BreadcrumbSchema,
+  HowToSchema,
+  VideoSchema,
+  ArticleSchema,
+  ServiceSchema,
+  SpeakableSchema,
+  ItemListSchema,
+  ComparisonSchema
 } from './StructuredData';
