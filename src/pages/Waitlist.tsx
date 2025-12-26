@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import salesosLogo from "@/assets/salesos-logo.webp";
-import { Sparkles, Zap, Shield, Users, ArrowRight } from "lucide-react";
+import { Sparkles, Zap, Shield, Users, ArrowRight, Rocket } from "lucide-react";
 
 interface TimeLeft {
   days: number;
@@ -16,6 +17,7 @@ interface TimeLeft {
 const LAUNCH_DATE = new Date("2026-01-01T08:00:00-05:00");
 
 const Waitlist = () => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -23,7 +25,45 @@ const Waitlist = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [activeFeature, setActiveFeature] = useState(0);
   const [waitlistCount, setWaitlistCount] = useState<number | null>(null);
+  const [isLaunching, setIsLaunching] = useState(false);
+  const [launchPhase, setLaunchPhase] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Check if launch date has passed
+  useEffect(() => {
+    const checkLaunchDate = () => {
+      const now = new Date();
+      if (now >= LAUNCH_DATE) {
+        triggerLaunchSequence();
+      }
+    };
+
+    // Check immediately
+    checkLaunchDate();
+
+    // Also check every second in case the user is viewing the page at launch time
+    const interval = setInterval(checkLaunchDate, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const triggerLaunchSequence = () => {
+    if (isLaunching) return;
+    setIsLaunching(true);
+
+    // Phase 1: Flash effect (0-500ms)
+    setLaunchPhase(1);
+    
+    // Phase 2: Zoom and dissolve (500-1500ms)
+    setTimeout(() => setLaunchPhase(2), 500);
+    
+    // Phase 3: Final fade out (1500-2500ms)
+    setTimeout(() => setLaunchPhase(3), 1500);
+    
+    // Navigate to home after animation completes
+    setTimeout(() => {
+      navigate("/home");
+    }, 2500);
+  };
 
   // Fetch waitlist count
   useEffect(() => {
@@ -145,6 +185,85 @@ const Waitlist = () => {
     { icon: Shield, title: "Enterprise Security", desc: "Bank-grade protection for your data" },
     { icon: Users, title: "Team Collaboration", desc: "Built for modern sales teams" },
   ];
+
+  // Launch sequence overlay
+  if (isLaunching) {
+    return (
+      <div className="min-h-screen relative overflow-hidden flex items-center justify-center"
+        style={{
+          background: "radial-gradient(ellipse 80% 50% at 50% -20%, hsl(261 75% 20% / 0.4), transparent), hsl(0 0% 4%)",
+        }}
+      >
+        {/* Phase 1: Bright flash */}
+        <div 
+          className={`absolute inset-0 bg-white transition-opacity duration-500 ${
+            launchPhase >= 1 ? "opacity-100" : "opacity-0"
+          } ${launchPhase >= 2 ? "opacity-0" : ""}`}
+          style={{ transitionDuration: launchPhase >= 2 ? "1000ms" : "300ms" }}
+        />
+
+        {/* Phase 2 & 3: Content dissolve with particles */}
+        <div 
+          className={`relative z-10 text-center transition-all ${
+            launchPhase >= 2 ? "scale-150 opacity-0 blur-xl" : "scale-100 opacity-100 blur-0"
+          }`}
+          style={{ 
+            transitionDuration: "1500ms",
+            transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)"
+          }}
+        >
+          {/* Rocket icon */}
+          <div className={`mb-6 transition-transform duration-1000 ${
+            launchPhase >= 1 ? "translate-y-[-100vh]" : "translate-y-0"
+          }`}
+            style={{ transitionDelay: "200ms" }}
+          >
+            <Rocket className="w-24 h-24 mx-auto text-primary animate-pulse" />
+          </div>
+          
+          <h1 className="text-5xl sm:text-7xl font-bold text-foreground mb-4">
+            🚀 We're Live!
+          </h1>
+          <p className="text-xl text-muted-foreground">
+            Welcome to the future of sales...
+          </p>
+        </div>
+
+        {/* Particle explosion effect */}
+        <div className={`absolute inset-0 pointer-events-none transition-opacity duration-500 ${
+          launchPhase >= 2 ? "opacity-100" : "opacity-0"
+        }`}>
+          {[...Array(20)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-2 h-2 rounded-full bg-primary"
+              style={{
+                left: "50%",
+                top: "50%",
+                transform: launchPhase >= 2 
+                  ? `translate(${(Math.random() - 0.5) * 200}vw, ${(Math.random() - 0.5) * 200}vh) scale(${Math.random() * 2})` 
+                  : "translate(-50%, -50%) scale(1)",
+                opacity: launchPhase >= 3 ? 0 : 1,
+                transition: `all ${1000 + Math.random() * 500}ms cubic-bezier(0.4, 0, 0.2, 1)`,
+                transitionDelay: `${Math.random() * 200}ms`,
+                backgroundColor: `hsl(${260 + Math.random() * 60} 75% ${50 + Math.random() * 30}%)`,
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Radial wipe effect */}
+        <div 
+          className={`absolute inset-0 transition-all duration-1000 ${
+            launchPhase >= 3 ? "opacity-100" : "opacity-0"
+          }`}
+          style={{
+            background: "radial-gradient(circle at center, transparent 0%, hsl(0 0% 4%) 100%)",
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div 
