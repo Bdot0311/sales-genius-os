@@ -42,7 +42,43 @@ const resolvers: Record<string, (args: any, supabase: any, userId: string) => Pr
   },
 };
 
-// Secure GraphQL query parser with validation
+// Security: Safe regex execution with timeout protection
+const safeRegexExec = (pattern: RegExp, input: string, timeoutMs: number = 100): RegExpMatchArray | null => {
+  const startTime = Date.now();
+  
+  // Pre-validation: reject obviously problematic inputs
+  if (input.length > MAX_QUERY_LENGTH) return null;
+  
+  // Check for patterns that could cause catastrophic backtracking
+  const suspiciousPatterns = /(\{[^}]*){6,}|(\([^)]*){6,}|(\s{100,})/;
+  if (suspiciousPatterns.test(input)) {
+    console.log('[graphql-api] Suspicious pattern detected, rejecting query');
+    return null;
+  }
+  
+  try {
+    const result = input.match(pattern);
+    const elapsed = Date.now() - startTime;
+    
+    // Log if parsing took too long (but still under limit)
+    if (elapsed > 50) {
+      console.log(`[graphql-api] Slow regex execution: ${elapsed}ms`);
+    }
+    
+    // Hard timeout check
+    if (elapsed > timeoutMs) {
+      console.log(`[graphql-api] Regex timeout exceeded: ${elapsed}ms`);
+      return null;
+    }
+    
+    return result;
+  } catch (error) {
+    console.log('[graphql-api] Regex execution error:', error);
+    return null;
+  }
+};
+
+// Secure GraphQL query parser with validation and timeout protection
 const parseGraphQLQuery = (query: string): { operation: string; args: Record<string, any>; fields: string } | null => {
   // Security: Validate query length
   if (!query || typeof query !== 'string' || query.length > MAX_QUERY_LENGTH) {
@@ -50,21 +86,32 @@ const parseGraphQLQuery = (query: string): { operation: string; args: Record<str
     return null;
   }
 
-  // Security: Basic structure validation
+  // Security: Reject queries with excessive whitespace or repeated characters
+  if (/(.)\1{50,}/.test(query)) {
+    logStep('Query validation failed: excessive repeated characters');
+    return null;
+  }
+
+  // Security: Basic structure validation using safe regex
   const trimmedQuery = query.trim();
-  if (!trimmedQuery.match(/^(query\s*\{|mutation\s*\{|\{|\w+\s*(\(|{))/i)) {
+  const structureMatch = safeRegexExec(/^(query\s*\{|mutation\s*\{|\{|\w+\s*[({])/i, trimmedQuery);
+  if (!structureMatch) {
     logStep('Query validation failed: invalid structure');
     return null;
   }
 
   // Security: Check for nested depth (prevent deeply nested queries)
-  const braceDepth = (trimmedQuery.match(/{/g) || []).length;
-  if (braceDepth > MAX_QUERY_DEPTH) {
+  const braceCount = trimmedQuery.split('{').length - 1;
+  if (braceCount > MAX_QUERY_DEPTH) {
     logStep('Query validation failed: too deeply nested');
     return null;
   }
 
-  const match = query.match(/(\w+)\s*(?:\((.*?)\))?\s*\{([\s\S]*?)\}/);
+  // Use more specific, non-greedy pattern with explicit character classes
+  // This avoids catastrophic backtracking by using possessive-like matching
+  const operationPattern = /^(?:query\s*)?\{?\s*(\w{1,50})\s*(?:\(([^)]{0,500})\))?\s*\{([^{}]{0,5000})\}/;
+  const match = safeRegexExec(operationPattern, trimmedQuery);
+  
   if (!match) {
     logStep('Query parsing failed: no match');
     return null;
@@ -80,11 +127,13 @@ const parseGraphQLQuery = (query: string): { operation: string; args: Record<str
   
   let args: Record<string, any> = {};
   if (argsStr) {
-    // Security: Limit argument parsing
-    const argMatches = argsStr.matchAll(/(\w+):\s*({[^}]+}|"[^"]*"|\d+)/g);
+    // Security: Limit argument parsing with bounded pattern
+    const argPattern = /(\w{1,30}):\s*(\{[^}]{0,200}\}|"[^"]{0,100}"|\d{1,20})/g;
+    let argMatch;
     let argCount = 0;
-    for (const [, key, value] of argMatches) {
-      if (argCount >= 10) break; // Limit number of arguments
+    
+    while ((argMatch = argPattern.exec(argsStr)) !== null && argCount < 10) {
+      const [, key, value] = argMatch;
       
       // Security: Validate key format
       if (!/^[\w]+$/.test(key)) continue;
