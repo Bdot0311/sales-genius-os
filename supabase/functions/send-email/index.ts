@@ -177,9 +177,11 @@ serve(async (req) => {
       );
     }
   } catch (error: any) {
-    console.error('Error sending email:', error);
+    console.error('Error sending email:', error.message); // Log internally
+    
+    // Return generic error to client - don't expose internal details
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: 'Failed to send email. Please try again.' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

@@ -68,6 +68,37 @@ function mapCompanySizeToRange(size: string | null | undefined): string {
   return sizeMap[size] || 'Unknown';
 }
 
+// Input validation constants
+const ALLOWED_TEXT_CHARS = /^[a-zA-Z0-9\s\-.,&']+$/;
+const MAX_JOB_TITLE_LENGTH = 100;
+const MAX_COUNTRY_LENGTH = 50;
+
+// Validate and sanitize input for SQL injection prevention
+function validateAndSanitizeInput(input: string, maxLength: number, fieldName: string): string {
+  if (!input || typeof input !== 'string') {
+    throw new Error(`Invalid ${fieldName}: must be a non-empty string`);
+  }
+  
+  const trimmed = input.trim();
+  
+  if (trimmed.length > maxLength) {
+    throw new Error(`${fieldName} exceeds maximum length of ${maxLength} characters`);
+  }
+  
+  if (!ALLOWED_TEXT_CHARS.test(trimmed)) {
+    throw new Error(`${fieldName} contains invalid characters. Only alphanumeric characters, spaces, hyphens, periods, commas, ampersands, and apostrophes are allowed.`);
+  }
+  
+  // Remove any SQL-like patterns as extra protection
+  const sqlPatterns = /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|OR|AND|WHERE|FROM|JOIN|INTO|SET|VALUES|CREATE|ALTER|TRUNCATE|EXEC|EXECUTE|--|;|\/\*|\*\/|xp_|sp_)\b)/gi;
+  if (sqlPatterns.test(trimmed)) {
+    throw new Error(`${fieldName} contains disallowed patterns`);
+  }
+  
+  // Escape single quotes after validation
+  return trimmed.replace(/'/g, "''");
+}
+
 // Simplified PDL query - no company size filtering at provider level
 function buildPDLQuery(filters: ExternalLeadFilters): string {
   const conditions: string[] = [];
@@ -76,16 +107,16 @@ function buildPDLQuery(filters: ExternalLeadFilters): string {
   conditions.push("work_email IS NOT NULL");
   conditions.push("job_company_website IS NOT NULL");
   
-  // Job title matching
+  // Job title matching - with validation
   if (filters.job_title) {
-    const escapedTitle = filters.job_title.replace(/'/g, "''");
-    conditions.push(`job_title LIKE '%${escapedTitle}%'`);
+    const sanitizedTitle = validateAndSanitizeInput(filters.job_title, MAX_JOB_TITLE_LENGTH, 'Job title');
+    conditions.push(`job_title LIKE '%${sanitizedTitle}%'`);
   }
   
-  // Country matching
+  // Country matching - with validation
   if (filters.country) {
-    const escapedCountry = filters.country.replace(/'/g, "''").toLowerCase();
-    conditions.push(`location_country='${escapedCountry}'`);
+    const sanitizedCountry = validateAndSanitizeInput(filters.country, MAX_COUNTRY_LENGTH, 'Country').toLowerCase();
+    conditions.push(`location_country='${sanitizedCountry}'`);
   }
   
   return conditions.join(' AND ');

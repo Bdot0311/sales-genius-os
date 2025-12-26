@@ -86,9 +86,11 @@ Keep responses concise (2-3 paragraphs max) unless they ask for detailed analysi
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: any) {
-    console.error("Error in ai-coach function:", error);
+    console.error("Error in ai-coach function:", error.message); // Log internally
+    
+    // Return generic error to client
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: "Failed to get coaching response. Please try again." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
