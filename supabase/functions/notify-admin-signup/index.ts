@@ -1,32 +1,29 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const ADMIN_EMAIL = "sales@alephwave.io";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface WaitlistEmailRequest {
+interface AdminNotificationRequest {
   email: string;
   source?: string;
   waitlistCount?: number;
 }
 
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
-
 serve(async (req) => {
-  console.log("send-waitlist-confirmation function called");
+  console.log("notify-admin-signup function called");
 
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { email, source, waitlistCount }: WaitlistEmailRequest = await req.json();
-    console.log("Sending confirmation email to:", email);
+    const { email, source, waitlistCount }: AdminNotificationRequest = await req.json();
+    console.log("Notifying admin about new signup:", email);
 
     if (!email) {
       throw new Error("Email is required");
@@ -36,6 +33,16 @@ serve(async (req) => {
       throw new Error("RESEND_API_KEY is not configured");
     }
 
+    const signupTime = new Date().toLocaleString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZoneName: "short",
+    });
+
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -44,8 +51,8 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         from: "SalesOS <onboarding@resend.dev>",
-        to: [email],
-        subject: "🚀 You're on the SalesOS Waitlist!",
+        to: [ADMIN_EMAIL],
+        subject: `🚀 New Waitlist Signup: ${email}`,
         html: `
           <!DOCTYPE html>
           <html>
@@ -73,26 +80,47 @@ serve(async (req) => {
                       <td style="background: linear-gradient(180deg, #1a1a2e 0%, #16162a 100%); border-radius: 16px; padding: 40px; border: 1px solid rgba(139, 92, 246, 0.2);">
                         
                         <h1 style="color: #ffffff; font-size: 28px; font-weight: bold; margin: 0 0 20px 0; text-align: center;">
-                          You're In! 🎉
+                          🎉 New Waitlist Signup!
                         </h1>
                         
-                        <p style="color: #a1a1aa; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0; text-align: center;">
-                          Welcome to the future of sales. You've secured your spot on the SalesOS early access list.
+                        <p style="color: #a1a1aa; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0; text-align: center;">
+                          Someone just joined the SalesOS waitlist.
                         </p>
                         
-                        <div style="background: rgba(139, 92, 246, 0.1); border-radius: 12px; padding: 24px; margin: 24px 0; border: 1px solid rgba(139, 92, 246, 0.2);">
-                          <h2 style="color: #8B5CF6; font-size: 18px; margin: 0 0 16px 0;">What's coming:</h2>
-                          <ul style="color: #d4d4d8; font-size: 14px; line-height: 1.8; margin: 0; padding-left: 20px;">
-                            <li>AI-powered lead generation</li>
-                            <li>Smart outreach automation</li>
-                            <li>Real-time sales coaching</li>
-                            <li>Enterprise-grade security</li>
-                          </ul>
+                        <div style="background: rgba(139, 92, 246, 0.1); border-radius: 12px; padding: 24px; margin: 0 0 24px 0; border: 1px solid rgba(139, 92, 246, 0.2);">
+                          
+                          <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                            <tr>
+                              <td style="padding: 8px 0;">
+                                <span style="color: #8B5CF6; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Email</span>
+                                <p style="color: #ffffff; font-size: 18px; font-weight: 600; margin: 4px 0 0 0;">${email}</p>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="padding: 16px 0 8px 0; border-top: 1px solid rgba(139, 92, 246, 0.2);">
+                                <span style="color: #8B5CF6; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Signed Up</span>
+                                <p style="color: #d4d4d8; font-size: 14px; margin: 4px 0 0 0;">${signupTime}</p>
+                              </td>
+                            </tr>
+                            ${source ? `
+                            <tr>
+                              <td style="padding: 16px 0 8px 0; border-top: 1px solid rgba(139, 92, 246, 0.2);">
+                                <span style="color: #8B5CF6; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Source</span>
+                                <p style="color: #d4d4d8; font-size: 14px; margin: 4px 0 0 0;">${source}</p>
+                              </td>
+                            </tr>
+                            ` : ""}
+                            ${waitlistCount ? `
+                            <tr>
+                              <td style="padding: 16px 0 0 0; border-top: 1px solid rgba(139, 92, 246, 0.2);">
+                                <span style="color: #8B5CF6; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Total Waitlist</span>
+                                <p style="color: #10B981; font-size: 24px; font-weight: bold; margin: 4px 0 0 0;">${waitlistCount} people</p>
+                              </td>
+                            </tr>
+                            ` : ""}
+                          </table>
+                          
                         </div>
-                        
-                        <p style="color: #a1a1aa; font-size: 14px; line-height: 1.6; margin: 20px 0 0 0; text-align: center;">
-                          We'll notify you the moment we launch. Get ready to transform how you sell.
-                        </p>
                         
                       </td>
                     </tr>
@@ -101,10 +129,7 @@ serve(async (req) => {
                     <tr>
                       <td align="center" style="padding-top: 30px;">
                         <p style="color: #71717a; font-size: 12px; margin: 0;">
-                          © ${new Date().getFullYear()} SalesOS. All rights reserved.
-                        </p>
-                        <p style="color: #52525b; font-size: 11px; margin: 10px 0 0 0;">
-                          You received this email because you signed up for the SalesOS waitlist.
+                          © ${new Date().getFullYear()} SalesOS Admin Notifications
                         </p>
                       </td>
                     </tr>
@@ -122,32 +147,18 @@ serve(async (req) => {
     if (!res.ok) {
       const error = await res.text();
       console.error("Resend API error:", error);
-      throw new Error(`Failed to send email: ${error}`);
+      throw new Error(`Failed to send notification: ${error}`);
     }
 
     const data = await res.json();
-    console.log("Email sent successfully:", data);
+    console.log("Admin notification sent successfully:", data);
 
-    // Send admin notification (fire and forget)
-    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
-      fetch(`${SUPABASE_URL}/functions/v1/notify-admin-signup`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({ email, source, waitlistCount }),
-      }).catch((err) => {
-        console.error("Failed to send admin notification:", err);
-      });
-    }
-
-    return new Response(JSON.stringify(data), {
+    return new Response(JSON.stringify({ success: true, data }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   } catch (error: any) {
-    console.error("Error in send-waitlist-confirmation function:", error);
+    console.error("Error in notify-admin-signup function:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
       {

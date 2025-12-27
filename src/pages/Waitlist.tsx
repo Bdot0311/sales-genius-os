@@ -161,9 +161,13 @@ const Waitlist = () => {
       } else {
         toast.success("🎉 You're on the list! Check your email for confirmation.");
         
-        // Send confirmation email (fire and forget)
+        // Send confirmation email with source and count for admin notification
         supabase.functions.invoke('send-waitlist-confirmation', {
-          body: { email }
+          body: { 
+            email, 
+            source: 'waitlist_page',
+            waitlistCount: (waitlistCount || 0) + 1
+          }
         }).catch(err => console.error('Failed to send confirmation email:', err));
       }
       
