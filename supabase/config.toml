@@ -47,3 +47,6 @@ verify_jwt = true
 
 [functions.send-waitlist-confirmation]
 verify_jwt = false
+
+[functions.notify-admin-signup]
+verify_jwt = false
