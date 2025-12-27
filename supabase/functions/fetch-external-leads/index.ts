@@ -145,8 +145,16 @@ function validateCountry(country: string): string {
   
   return sanitized;
 }
+// Escape SQL special characters for defense-in-depth
+function escapeSQLValue(value: string): string {
+  return value
+    .replace(/\\/g, '\\\\')  // Escape backslashes first
+    .replace(/'/g, "''")     // Escape single quotes
+    .replace(/%/g, '\\%')    // Escape percent signs (for LIKE)
+    .replace(/_/g, '\\_');   // Escape underscores (for LIKE)
+}
 
-// Build PDL query with validated inputs only
+// Build PDL query with validated AND escaped inputs
 function buildPDLQuery(filters: ExternalLeadFilters): string {
   const conditions: string[] = [];
   
@@ -154,16 +162,18 @@ function buildPDLQuery(filters: ExternalLeadFilters): string {
   conditions.push("work_email IS NOT NULL");
   conditions.push("job_company_website IS NOT NULL");
   
-  // Job title matching - strict validation with allowlist
+  // Job title matching - strict validation with allowlist + SQL escaping
   if (filters.job_title) {
     const validatedTitle = validateJobTitle(filters.job_title);
-    conditions.push(`job_title LIKE '%${validatedTitle}%'`);
+    const escapedTitle = escapeSQLValue(validatedTitle);
+    conditions.push(`job_title LIKE '%${escapedTitle}%'`);
   }
   
-  // Country matching - strict validation with allowlist
+  // Country matching - strict validation with allowlist + SQL escaping
   if (filters.country) {
     const validatedCountry = validateCountry(filters.country);
-    conditions.push(`location_country='${validatedCountry}'`);
+    const escapedCountry = escapeSQLValue(validatedCountry);
+    conditions.push(`location_country='${escapedCountry}'`);
   }
   
   return conditions.join(' AND ');
