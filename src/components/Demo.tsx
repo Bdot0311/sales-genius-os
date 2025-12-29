@@ -668,19 +668,6 @@ export const Demo = () => {
               </button>
             ))}
           </div>
-
-          {/* CTA */}
-          <div className={`text-center mt-12 transition-all duration-700 delay-500 ${
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-          }`}>
-            <Button size="lg" className="magnetic-btn group">
-              Start Free Trial
-              <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-            </Button>
-            <p className="text-sm text-muted-foreground mt-3">
-              No credit card required • 14-day free trial
-            </p>
-          </div>
         </div>
       </div>
     </section>
