@@ -84,9 +84,64 @@ export const WebhooksTab = () => {
     }
   };
 
+  // Validate webhook URL to prevent SSRF attacks
+  const isValidWebhookUrl = (url: string): { valid: boolean; error?: string } => {
+    try {
+      const parsed = new URL(url);
+      
+      // Only allow http/https protocols
+      if (!['https:', 'http:'].includes(parsed.protocol)) {
+        return { valid: false, error: "Only HTTP and HTTPS protocols are allowed" };
+      }
+      
+      const hostname = parsed.hostname.toLowerCase();
+      
+      // Block localhost and loopback
+      if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') {
+        return { valid: false, error: "Localhost URLs are not allowed" };
+      }
+      
+      // Block private IP ranges
+      const privateIpPatterns = [
+        /^127\./, // Loopback
+        /^10\./, // Class A private
+        /^172\.(1[6-9]|2[0-9]|3[01])\./, // Class B private
+        /^192\.168\./, // Class C private
+        /^169\.254\./, // Link-local
+        /^0\./, // Current network
+        /^100\.(6[4-9]|[7-9][0-9]|1[0-2][0-9])\./, // Shared address space
+      ];
+      
+      if (privateIpPatterns.some(pattern => pattern.test(hostname))) {
+        return { valid: false, error: "Private IP addresses are not allowed" };
+      }
+      
+      // Block AWS metadata endpoint
+      if (hostname === '169.254.169.254') {
+        return { valid: false, error: "Cloud metadata endpoints are not allowed" };
+      }
+      
+      // Block internal hostnames
+      if (hostname.endsWith('.internal') || hostname.endsWith('.local')) {
+        return { valid: false, error: "Internal hostnames are not allowed" };
+      }
+      
+      return { valid: true };
+    } catch {
+      return { valid: false, error: "Invalid URL format" };
+    }
+  };
+
   const handleCreate = async () => {
     if (!newWebhook.name.trim() || !newWebhook.url.trim() || newWebhook.events.length === 0) {
       toast.error("Please fill in all fields and select at least one event");
+      return;
+    }
+
+    // Validate URL for SSRF protection
+    const urlValidation = isValidWebhookUrl(newWebhook.url);
+    if (!urlValidation.valid) {
+      toast.error(urlValidation.error || "Invalid webhook URL");
       return;
     }
 
@@ -116,7 +171,7 @@ export const WebhooksTab = () => {
       toast.success("Webhook created successfully");
     } catch (error: any) {
       console.error("Error creating webhook:", error);
-      toast.error(error.message || "Failed to create webhook");
+      toast.error("Failed to create webhook");
     } finally {
       setCreating(false);
     }
