@@ -11,6 +11,37 @@ const logStep = (step: string, details?: any) => {
   console.log(`[TRIGGER-WEBHOOK] ${step}${detailsStr}`);
 };
 
+// Validate webhook URL to prevent SSRF attacks
+const isValidWebhookUrl = (url: string): boolean => {
+  try {
+    const parsed = new URL(url);
+    
+    // Only allow http/https protocols
+    if (!['https:', 'http:'].includes(parsed.protocol)) return false;
+    
+    const hostname = parsed.hostname.toLowerCase();
+    
+    // Block localhost and loopback
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') return false;
+    
+    // Block private IP ranges
+    if (/^127\./.test(hostname)) return false;
+    if (/^10\./.test(hostname)) return false;
+    if (/^172\.(1[6-9]|2[0-9]|3[01])\./.test(hostname)) return false;
+    if (/^192\.168\./.test(hostname)) return false;
+    if (/^169\.254\./.test(hostname)) return false;
+    if (/^0\./.test(hostname)) return false;
+    if (/^100\.(6[4-9]|[7-9][0-9]|1[0-2][0-9])\./.test(hostname)) return false;
+    
+    // Block internal hostnames
+    if (hostname.endsWith('.internal') || hostname.endsWith('.local')) return false;
+    
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -78,6 +109,16 @@ serve(async (req) => {
     // Trigger all webhooks with retry logic
     const results = await Promise.allSettled(
       webhooks.map(async (webhook) => {
+        // Server-side URL validation to prevent SSRF
+        if (!isValidWebhookUrl(webhook.url)) {
+          logStep("Blocked invalid webhook URL", { webhookId: webhook.id, url: webhook.url });
+          return {
+            webhookId: webhook.id,
+            success: false,
+            error: "Invalid webhook URL blocked for security",
+          };
+        }
+
         const timestamp = Date.now();
         const payload = {
           event,
@@ -242,9 +283,11 @@ serve(async (req) => {
     );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
+    // Log detailed error server-side only
     logStep("ERROR", { message: errorMessage });
+    // Return generic error to client
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: "Failed to trigger webhooks" }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,

@@ -73,8 +73,11 @@ serve(async (req) => {
     );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
+    // Log detailed error server-side only
+    console.error('[CREATE-CHECKOUT] Error:', errorMessage);
+    // Return generic error to client
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: "Payment processing failed. Please try again." }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }
