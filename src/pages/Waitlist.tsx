@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import salesosLogo from "@/assets/salesos-logo.webp";
 import { Sparkles, Zap, Shield, Users, ArrowRight, Rocket } from "lucide-react";
+import { Demo } from "@/components/Demo";
 
 interface TimeLeft {
   days: number;
@@ -476,6 +477,15 @@ const Waitlist = () => {
                   <p className="text-xs text-muted-foreground mt-1">{feature.desc}</p>
                 </div>
               ))}
+            </div>
+
+            {/* Interactive Demo */}
+            <div className="max-w-5xl mx-auto mb-16">
+              <div className="text-center mb-8">
+                <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-3">See It In Action</h2>
+                <p className="text-muted-foreground">Experience the power of SalesOS before anyone else</p>
+              </div>
+              <Demo />
             </div>
 
             {/* Social proof & benefits */}
