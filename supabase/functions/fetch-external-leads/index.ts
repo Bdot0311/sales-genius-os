@@ -196,6 +196,32 @@ function mapRailwayLead(lead: any): ScoredLead {
   };
 }
 
+// Fetch cached search results from Railway
+async function fetchCachedResults(railwayBaseUrl: string): Promise<{ searches: any[], error?: string }> {
+  try {
+    // Railway exposes cache stats, let's check what's available
+    const statsUrl = railwayBaseUrl.replace('/search', '/cache/stats');
+    console.log('Fetching cache stats from:', statsUrl);
+    
+    const response = await fetch(statsUrl, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    
+    if (!response.ok) {
+      console.log('Cache stats not available:', response.status);
+      return { searches: [] };
+    }
+    
+    const data = await response.json();
+    console.log('Cache stats:', JSON.stringify(data));
+    return { searches: data.recent_searches || [] };
+  } catch (error) {
+    console.error('Error fetching cache stats:', error);
+    return { searches: [], error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -285,6 +311,7 @@ serve(async (req) => {
       // Parse error for more specific messages
       let errorMessage = `Railway API error: ${response.status}`;
       let errorCode = 'api_error';
+      let cachedSearches: any[] = [];
       
       try {
         const errorJson = JSON.parse(errorText);
@@ -302,7 +329,11 @@ serve(async (req) => {
       // Handle 402 Payment Required (PDL credits exhausted)
       if (response.status === 402) {
         errorCode = 'credits_exhausted';
-        errorMessage = 'Search credits exhausted. Please add more PDL search credits to continue generating leads.';
+        errorMessage = 'Search credits exhausted. Cached results may be available for previous searches.';
+        
+        // Try to get cached results info
+        const cacheData = await fetchCachedResults(railwayUrl);
+        cachedSearches = cacheData.searches;
       }
       
       // Handle 400 Bad Request (missing params)
@@ -317,7 +348,8 @@ serve(async (req) => {
         JSON.stringify({ 
           error: errorMessage, 
           error_code: errorCode,
-          leads: [] 
+          leads: [],
+          cached_searches: cachedSearches
         }),
         { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -325,6 +357,7 @@ serve(async (req) => {
 
     const data = await response.json();
     console.log('Railway API response received');
+    console.log('Response data keys:', Object.keys(data));
 
     // Handle different response formats from Railway
     let rawLeads: any[] = [];
@@ -339,6 +372,9 @@ serve(async (req) => {
     }
 
     console.log('Raw leads count:', rawLeads.length);
+    if (rawLeads.length > 0) {
+      console.log('Sample lead:', JSON.stringify(rawLeads[0]));
+    }
 
     // Map leads to expected format
     const leads: ScoredLead[] = rawLeads
@@ -348,11 +384,29 @@ serve(async (req) => {
 
     console.log('Processed leads count:', leads.length);
 
+    // If no leads returned, check if it's a caching issue
+    if (leads.length === 0 && rawLeads.length === 0) {
+      console.log('No leads returned - checking cache availability');
+      const cacheData = await fetchCachedResults(railwayUrl);
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          leads: [],
+          total: 0,
+          message: 'No leads found for this search. Try different search criteria or check cached searches.',
+          cached_searches: cacheData.searches
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true,
         leads,
-        total: data.total || leads.length
+        total: data.total || leads.length,
+        from_cache: data.from_cache || false
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
