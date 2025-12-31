@@ -340,7 +340,7 @@ export const WebSiteSchema = () => {
       }
     ],
     "inLanguage": "en-US",
-    "copyrightYear": "2024",
+    "copyrightYear": new Date().getFullYear().toString(),
     "copyrightHolder": {
       "@type": "Organization",
       "@id": "https://salesos.com/#organization"
