@@ -235,7 +235,7 @@ export const Hero = () => {
         <p 
           className={`mt-8 sm:mt-12 text-xs sm:text-sm text-muted-foreground px-4 transition-all duration-700 delay-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
         >
-          <strong>50+ beta testers</strong> • Launching January 2026 • <span className="text-primary">Join the waitlist</span>
+          <strong>Trusted by 50+ beta testers</strong> • <span className="text-primary">94% would recommend</span>
         </p>
       </div>
 

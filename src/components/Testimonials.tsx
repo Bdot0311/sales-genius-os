@@ -38,7 +38,7 @@ const betaStats = [
   { value: "50+", label: "Beta testers" },
   { value: "94%", label: "Would recommend" },
   { value: "4.8", label: "Avg. satisfaction score" },
-  { value: "Jan '26", label: "Official launch" }
+  { value: "12+", label: "Features tested" }
 ];
 
 const AnimatedCounter = ({ value, isVisible }: { value: string; isVisible: boolean }) => {
