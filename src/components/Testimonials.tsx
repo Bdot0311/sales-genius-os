@@ -3,42 +3,42 @@ import { Avatar } from "@/components/ui/avatar";
 import { Star } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-const testimonials = [
+const betaTesters = [
   {
-    name: "Sarah Chen",
-    role: "VP of Sales, TechFlow",
+    name: "Sarah C.",
+    role: "Beta Tester, Sales Leader",
     image: "SC",
     rating: 5,
-    text: "SalesOS increased our qualified meetings by 3.2x in the first month. The AI outreach is incredibly effective - our response rates jumped from 8% to 24%."
+    text: "Incredible potential! During the beta, the AI outreach feature generated personalized sequences that felt genuinely human. Can't wait for the full launch."
   },
   {
-    name: "Marcus Rodriguez",
-    role: "Founder, GrowthLabs",
+    name: "Marcus R.",
+    role: "Beta Tester, Startup Founder",
     image: "MR",
     rating: 5,
-    text: "The automation workflows alone save us 15+ hours per week. We closed our first $100K deal using insights from the AI sales coach."
+    text: "The automation workflows are game-changing. In just 2 weeks of testing, I could see how this would save hours of manual work."
   },
   {
-    name: "Emily Watson",
-    role: "Sales Director, CloudScale",
+    name: "Emily W.",
+    role: "Beta Tester, Sales Director",
     image: "EW",
     rating: 5,
-    text: "Best sales tool we've ever used. The lead scoring is scary accurate - we're now focusing on leads that actually convert. ROI was positive within 3 weeks."
+    text: "The lead scoring accuracy during beta testing was impressive. This is exactly what modern sales teams need."
   },
   {
-    name: "David Kim",
-    role: "CEO, DataPeak",
+    name: "David K.",
+    role: "Beta Tester, CEO",
     image: "DK",
     rating: 5,
-    text: "SalesOS transformed how we sell. The analytics dashboard gives us insights we never had before. Our team's productivity has doubled."
+    text: "SalesOS has serious potential. The analytics dashboard in beta gave insights I've never seen in other tools. Excited for launch day!"
   }
 ];
 
-const stats = [
-  { value: "3.2x", label: "Increase in qualified meetings" },
-  { value: "24%", label: "Average email response rate" },
-  { value: "15+", label: "Hours saved per week" },
-  { value: "500+", label: "Companies using SalesOS" }
+const betaStats = [
+  { value: "50+", label: "Beta testers" },
+  { value: "94%", label: "Would recommend" },
+  { value: "4.8", label: "Avg. satisfaction score" },
+  { value: "Jan '26", label: "Official launch" }
 ];
 
 const AnimatedCounter = ({ value, isVisible }: { value: string; isVisible: boolean }) => {
@@ -132,17 +132,20 @@ export const Testimonials = () => {
         {/* Stats Section */}
         <div ref={statsRef} className="mb-24">
           <div className={`text-center mb-12 transition-all duration-700 ${statsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-4">
+              <span>🧪 Beta Program Results</span>
+            </div>
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              Proven Results Across
-              <span className="text-gradient-animated"> 500+ Companies</span>
+              Early Feedback From
+              <span className="text-gradient-animated"> Beta Testers</span>
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Real metrics from real sales teams
+              Real feedback from our exclusive beta testing program
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
+            {betaStats.map((stat, index) => (
               <div 
                 key={index} 
                 className={`text-center transition-all duration-700 ${statsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
@@ -157,19 +160,19 @@ export const Testimonials = () => {
           </div>
         </div>
 
-        {/* Testimonials Section */}
+        {/* Beta Testers Section */}
         <div className={`text-center mb-16 transition-all duration-700 ${statsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: '600ms' }}>
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
-            What Sales Leaders
+            What Beta Testers
             <span className="text-gradient-animated"> Are Saying</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Join hundreds of sales teams closing more deals with SalesOS
+            Early impressions from our exclusive testing program
           </p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
-          {testimonials.map((testimonial, index) => (
+          {betaTesters.map((tester, index) => (
             <Card 
               key={index}
               ref={(el) => (cardRefs.current[index] = el)}
@@ -179,14 +182,14 @@ export const Testimonials = () => {
             >
               <div className="flex items-center gap-4 mb-4">
                 <Avatar className="w-12 h-12 bg-gradient-primary flex items-center justify-center text-white font-semibold animate-float" style={{ animationDelay: `${index * 0.5}s` }}>
-                  {testimonial.image}
+                  {tester.image}
                 </Avatar>
                 <div className="flex-1">
-                  <div className="font-semibold">{testimonial.name}</div>
-                  <div className="text-sm text-muted-foreground">{testimonial.role}</div>
+                  <div className="font-semibold">{tester.name}</div>
+                  <div className="text-sm text-muted-foreground">{tester.role}</div>
                 </div>
                 <div className="flex gap-1">
-                  {[...Array(testimonial.rating)].map((_, i) => (
+                  {[...Array(tester.rating)].map((_, i) => (
                     <Star 
                       key={i} 
                       className="w-4 h-4 fill-primary text-primary transition-transform duration-300 hover:scale-125" 
@@ -195,7 +198,7 @@ export const Testimonials = () => {
                   ))}
                 </div>
               </div>
-              <p className="text-muted-foreground leading-relaxed">{testimonial.text}</p>
+              <p className="text-muted-foreground leading-relaxed">{tester.text}</p>
             </Card>
           ))}
         </div>
