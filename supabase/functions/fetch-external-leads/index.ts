@@ -171,35 +171,61 @@ function generateBuyingSignals(lead: any): string[] {
 }
 
 // Map Railway response to ScoredLead format
+// Railway now pre-transforms leads, so we just add scores if missing
 function mapRailwayLead(lead: any): ScoredLead {
   // Use provided scores or calculate them
-  const scores = lead.scores ? {
-    icp_score: lead.scores.icp_score || lead.scores.icpScore || 50,
-    intent_score: lead.scores.intent_score || lead.scores.intentScore || 50,
-    enrichment_score: lead.scores.enrichment_score || lead.scores.enrichmentScore || 50,
-    overall_score: lead.scores.overall_score || lead.scores.overallScore || 50,
-  } : calculateScores(lead);
+  const scores = lead.scores || calculateScores(lead);
   
   return {
-    job_title: lead.job_title || lead.jobTitle || '',
-    company_name: lead.company_name || lead.companyName || lead.company || '',
-    company_domain: lead.company_domain || lead.companyDomain || lead.domain || lead.website || '',
-    business_email: lead.business_email || lead.businessEmail || lead.email || lead.work_email || null,
-    contact_name: lead.contact_name || lead.contactName || lead.name || lead.full_name || lead.fullName || '',
+    job_title: lead.job_title || '',
+    company_name: lead.company_name || '',
+    company_domain: lead.company_domain || '',
+    business_email: lead.business_email || null,
+    contact_name: lead.contact_name || '',
     industry: lead.industry || '',
-    company_size: lead.company_size || lead.companySize || lead.size || '',
-    country: lead.country || lead.location || lead.location_country || '',
-    linkedin_url: lead.linkedin_url || lead.linkedinUrl || lead.linkedin || null,
+    company_size: lead.company_size || '',
+    country: lead.country || '',
+    linkedin_url: lead.linkedin_url || null,
     scores,
-    score_explanation: lead.score_explanation || lead.scoreExplanation || generateScoreExplanation(lead, scores),
-    buying_signals: lead.buying_signals || lead.buyingSignals || generateBuyingSignals(lead),
+    score_explanation: generateScoreExplanation(lead, scores),
+    buying_signals: generateBuyingSignals(lead),
   };
 }
 
-// Fetch cached search results from Railway
+// Fetch all cached leads from Railway as fallback
+async function fetchCacheAllFallback(railwayBaseUrl: string): Promise<{ leads: ScoredLead[], from_cache: boolean, error?: string }> {
+  try {
+    const cacheUrl = railwayBaseUrl.replace('/search', '/cache/all');
+    console.log('Fetching all cached leads from:', cacheUrl);
+    
+    const response = await fetch(cacheUrl, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    
+    if (!response.ok) {
+      console.log('Cache all not available:', response.status);
+      return { leads: [], from_cache: false };
+    }
+    
+    const data = await response.json();
+    console.log('Cache all response:', JSON.stringify(data).substring(0, 500));
+    
+    if (data.leads && Array.isArray(data.leads) && data.leads.length > 0) {
+      const leads = data.leads.map(mapRailwayLead);
+      return { leads, from_cache: true };
+    }
+    
+    return { leads: [], from_cache: false };
+  } catch (error) {
+    console.error('Error fetching cache all:', error);
+    return { leads: [], from_cache: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+// Fetch cached search results stats from Railway
 async function fetchCachedResults(railwayBaseUrl: string): Promise<{ searches: any[], error?: string }> {
   try {
-    // Railway exposes cache stats, let's check what's available
     const statsUrl = railwayBaseUrl.replace('/search', '/cache/stats');
     console.log('Fetching cache stats from:', statsUrl);
     
@@ -263,7 +289,6 @@ serve(async (req) => {
     console.log('Calling Railway API:', railwayUrl);
 
     // Prepare request body for Railway API - exact PDL format
-    // Handle job_title - either from direct filter or extracted from keywords
     let jobTitle: string | undefined = filters.job_title;
     if (!jobTitle && filters.keywords && filters.keywords.length > 0) {
       const extractedTitle = extractJobTitleFromKeywords(filters.keywords);
@@ -307,39 +332,53 @@ serve(async (req) => {
       body: JSON.stringify(requestBody),
     });
 
+    // Handle 402 Payment Required - try cache fallback
+    if (response.status === 402) {
+      console.log('PDL credits exhausted (402), trying cache fallback...');
+      const cacheFallback = await fetchCacheAllFallback(railwayUrl);
+      
+      if (cacheFallback.leads.length > 0) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            leads: cacheFallback.leads,
+            total: cacheFallback.leads.length,
+            from_cache: true,
+            message: 'Results from cache (PDL credits may be exhausted)'
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      // No cache available
+      const cacheData = await fetchCachedResults(railwayUrl);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Search credits exhausted and no cached results available.',
+          error_code: 'credits_exhausted',
+          leads: [],
+          cached_searches: cacheData.searches
+        }),
+        { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Railway API error:', response.status, errorText);
       
-      // Parse error for more specific messages
       let errorMessage = `Railway API error: ${response.status}`;
       let errorCode = 'api_error';
-      let cachedSearches: any[] = [];
       
       try {
         const errorJson = JSON.parse(errorText);
-        if (errorJson.detail) {
-          errorMessage = errorJson.detail;
-        }
-        if (errorJson.error) {
-          errorMessage = errorJson.error;
-        }
+        if (errorJson.detail) errorMessage = errorJson.detail;
+        if (errorJson.error) errorMessage = errorJson.error;
       } catch {
-        // Use raw text if not JSON
         if (errorText) errorMessage = errorText;
       }
       
-      // Handle 402 Payment Required (PDL credits exhausted)
-      if (response.status === 402) {
-        errorCode = 'credits_exhausted';
-        errorMessage = 'Search credits exhausted. Cached results may be available for previous searches.';
-        
-        // Try to get cached results info
-        const cacheData = await fetchCachedResults(railwayUrl);
-        cachedSearches = cacheData.searches;
-      }
-      
-      // Handle 400 Bad Request (missing params)
+      // Handle 400 Bad Request
       if (response.status === 400) {
         errorCode = 'invalid_request';
         if (errorMessage.includes('search parameter')) {
@@ -351,8 +390,7 @@ serve(async (req) => {
         JSON.stringify({ 
           error: errorMessage, 
           error_code: errorCode,
-          leads: [],
-          cached_searches: cachedSearches
+          leads: []
         }),
         { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -361,35 +399,64 @@ serve(async (req) => {
     const data = await response.json();
     console.log('=== RESPONSE FROM RAILWAY ===');
     console.log('Response status:', response.status);
-    console.log('Response headers:', JSON.stringify(Object.fromEntries(response.headers.entries())));
-    console.log('Response data type:', typeof data);
     console.log('Response data keys:', Object.keys(data));
+    console.log('from_cache:', data.from_cache);
+    console.log('source:', data.source);
+    console.log('count:', data.count);
     console.log('Full response data:', JSON.stringify(data, null, 2).substring(0, 2000));
 
-    // Handle different response formats from Railway
+    // Handle different response formats - prioritize data.leads (pre-transformed by Railway)
     let rawLeads: any[] = [];
-    if (Array.isArray(data)) {
-      console.log('Data is array format');
-      rawLeads = data;
-    } else if (data.leads && Array.isArray(data.leads)) {
-      console.log('Data has leads array');
+    if (data.leads && Array.isArray(data.leads)) {
+      console.log('Using pre-transformed leads array from Railway');
       rawLeads = data.leads;
+    } else if (Array.isArray(data)) {
+      console.log('Data is direct array format');
+      rawLeads = data;
     } else if (data.data && Array.isArray(data.data)) {
-      console.log('Data has data array');
+      console.log('Using data.data array (raw PDL)');
       rawLeads = data.data;
     } else if (data.results && Array.isArray(data.results)) {
-      console.log('Data has results array');
+      console.log('Using data.results array');
       rawLeads = data.results;
-    } else if (data.people && Array.isArray(data.people)) {
-      console.log('Data has people array (PDL format)');
-      rawLeads = data.people;
     }
 
     console.log('=== LEAD DATA ===');
     console.log('Raw leads count:', rawLeads.length);
     if (rawLeads.length > 0) {
-      console.log('First raw lead keys:', Object.keys(rawLeads[0]));
-      console.log('First raw lead full:', JSON.stringify(rawLeads[0], null, 2));
+      console.log('First raw lead:', JSON.stringify(rawLeads[0], null, 2));
+    }
+
+    // If no leads found, try cache fallback
+    if (rawLeads.length === 0) {
+      console.log('No leads returned, trying cache fallback...');
+      const cacheFallback = await fetchCacheAllFallback(railwayUrl);
+      
+      if (cacheFallback.leads.length > 0) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            leads: cacheFallback.leads,
+            total: cacheFallback.leads.length,
+            from_cache: true,
+            message: 'No new results found. Showing cached leads.'
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      const cacheData = await fetchCachedResults(railwayUrl);
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          leads: [],
+          total: 0,
+          from_cache: false,
+          message: 'No leads found for this search. Try different search criteria.',
+          cached_searches: cacheData.searches
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Map leads to expected format
@@ -401,23 +468,6 @@ serve(async (req) => {
     console.log('Processed leads count:', leads.length);
     if (leads.length > 0) {
       console.log('First processed lead:', JSON.stringify(leads[0], null, 2));
-    }
-
-    // If no leads returned, check if it's a caching issue
-    if (leads.length === 0 && rawLeads.length === 0) {
-      console.log('No leads returned - checking cache availability');
-      const cacheData = await fetchCachedResults(railwayUrl);
-      
-      return new Response(
-        JSON.stringify({ 
-          success: true,
-          leads: [],
-          total: 0,
-          message: 'No leads found for this search. Try different search criteria or check cached searches.',
-          cached_searches: cacheData.searches
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
     }
 
     return new Response(
