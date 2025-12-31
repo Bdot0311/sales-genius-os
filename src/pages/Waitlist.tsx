@@ -339,20 +339,20 @@ const Waitlist = () => {
       {/* Main content */}
       <div className="relative z-10 flex flex-col">
         {/* Header */}
-        <header className="py-6 px-6">
+        <header className="py-4 sm:py-6 px-4 sm:px-6">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-primary/30 p-1.5">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-primary via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-primary/30 p-1 sm:p-1.5">
                 <img src={salesosLogo} alt="SalesOS" className="w-full h-full object-contain" />
               </div>
-              <span className="text-xl font-bold text-foreground">SalesOS</span>
+              <span className="text-lg sm:text-xl font-bold text-foreground">SalesOS</span>
             </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
-              <span className="relative flex h-2 w-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-muted-foreground px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-primary/10 border border-primary/20">
+              <span className="relative flex h-1.5 w-1.5 sm:h-2 sm:w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 sm:h-2 sm:w-2 bg-green-500"></span>
               </span>
-              <span>
+              <span className="whitespace-nowrap">
                 {waitlistCount !== null && waitlistCount > 0 
                   ? `${waitlistCount.toLocaleString()} joined` 
                   : 'Launching Soon'}
@@ -362,52 +362,52 @@ const Waitlist = () => {
         </header>
 
         {/* Hero section */}
-        <main className="flex flex-col items-center justify-center px-6 py-12">
+        <main className="flex flex-col items-center justify-center px-4 sm:px-6 py-8 sm:py-12">
           <div className="max-w-4xl mx-auto text-center">
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-8 animate-fade-in">
-              <Sparkles className="w-4 h-4" />
+            <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs sm:text-sm font-medium mb-6 sm:mb-8 animate-fade-in">
+              <Sparkles className="w-3 h-3 sm:w-4 sm:h-4" />
               <span>Coming January 2026</span>
             </div>
 
             {/* Main headline with animated gradient */}
-            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold mb-6 tracking-tight leading-[0.9]">
+            <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold mb-4 sm:mb-6 tracking-tight leading-[0.95]">
               <span className="text-foreground">The Future of</span>
               <br />
               <span className="text-gradient-animated">Sales is Here.</span>
             </h1>
 
-            <p className="text-xl sm:text-2xl text-muted-foreground mb-12 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-base sm:text-xl md:text-2xl text-muted-foreground mb-8 sm:mb-12 max-w-2xl mx-auto leading-relaxed px-2">
               An AI-powered sales operating system that turns your team into a revenue machine.
             </p>
 
             {/* Countdown timer */}
-            <div className="mb-12">
-              <p className="text-xs text-muted-foreground uppercase tracking-[0.3em] mb-6 font-medium">Launching In</p>
-              <div className="flex items-center justify-center gap-2 sm:gap-4">
+            <div className="mb-8 sm:mb-12">
+              <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-[0.2em] sm:tracking-[0.3em] mb-4 sm:mb-6 font-medium">Launching In</p>
+              <div className="flex items-center justify-center gap-1.5 sm:gap-2 md:gap-4">
                 {[
                   { value: timeLeft.days, label: "Days" },
                   { value: timeLeft.hours, label: "Hours" },
                   { value: timeLeft.minutes, label: "Mins" },
                   { value: timeLeft.seconds, label: "Secs" },
                 ].map((item, index) => (
-                  <div key={item.label} className="flex items-center gap-2 sm:gap-4">
+                  <div key={item.label} className="flex items-center gap-1 sm:gap-2 md:gap-4">
                     <div className="relative group">
                       {/* Glow effect */}
-                      <div className="absolute -inset-1 bg-gradient-to-r from-primary/40 to-purple-600/40 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                      <div className="absolute -inset-0.5 sm:-inset-1 bg-gradient-to-r from-primary/40 to-purple-600/40 rounded-xl sm:rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                       
-                      <div className="relative bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl px-4 sm:px-6 py-4 sm:py-6 min-w-[70px] sm:min-w-[100px] overflow-hidden">
+                      <div className="relative bg-card/80 backdrop-blur-xl border border-border/50 rounded-xl sm:rounded-2xl px-2.5 sm:px-4 md:px-6 py-2.5 sm:py-4 md:py-6 min-w-[52px] sm:min-w-[70px] md:min-w-[100px] overflow-hidden">
                         {/* Shimmer effect */}
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                         
-                        <span className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground tabular-nums block">
+                        <span className="text-xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground tabular-nums block">
                           {formatNumber(item.value)}
                         </span>
-                        <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider mt-2">{item.label}</p>
+                        <p className="text-[8px] sm:text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider mt-1 sm:mt-2">{item.label}</p>
                       </div>
                     </div>
                     {index < 3 && (
-                      <span className="text-2xl sm:text-3xl text-muted-foreground/50 font-light animate-pulse">:</span>
+                      <span className="text-lg sm:text-2xl md:text-3xl text-muted-foreground/50 font-light animate-pulse">:</span>
                     )}
                   </div>
                 ))}
@@ -415,39 +415,39 @@ const Waitlist = () => {
             </div>
 
             {/* Email form */}
-            <form onSubmit={handleSubmit} className="w-full max-w-lg mx-auto mb-8">
+            <form onSubmit={handleSubmit} className="w-full max-w-lg mx-auto mb-6 sm:mb-8 px-2">
               <div className="relative group">
                 {/* Outer glow */}
-                <div className="absolute -inset-1 bg-gradient-to-r from-primary via-purple-500 to-pink-500 rounded-2xl blur-lg opacity-40 group-hover:opacity-60 transition-opacity duration-500" />
+                <div className="absolute -inset-0.5 sm:-inset-1 bg-gradient-to-r from-primary via-purple-500 to-pink-500 rounded-xl sm:rounded-2xl blur-lg opacity-40 group-hover:opacity-60 transition-opacity duration-500" />
                 
-                <div className="relative flex flex-col sm:flex-row gap-3 bg-card/90 backdrop-blur-xl border border-border/50 rounded-2xl p-2">
+                <div className="relative flex flex-col sm:flex-row gap-2 sm:gap-3 bg-card/90 backdrop-blur-xl border border-border/50 rounded-xl sm:rounded-2xl p-2">
                   <Input
                     type="email"
                     placeholder="Enter your email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="flex-1 bg-transparent border-0 text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 h-14 text-lg px-4"
+                    className="flex-1 bg-transparent border-0 text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 h-12 sm:h-14 text-base sm:text-lg px-3 sm:px-4"
                     disabled={isSubmitting || isSubmitted}
                   />
                   <Button
                     type="submit"
                     disabled={isSubmitting || isSubmitted}
                     size="lg"
-                    className="h-14 px-8 bg-gradient-to-r from-primary via-purple-500 to-pink-500 hover:opacity-90 text-white font-semibold rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] group"
+                    className="h-12 sm:h-14 px-6 sm:px-8 bg-gradient-to-r from-primary via-purple-500 to-pink-500 hover:opacity-90 text-white font-semibold rounded-lg sm:rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] group text-sm sm:text-base"
                   >
                     {isSubmitting ? (
                       <span className="flex items-center gap-2">
-                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                         Joining...
                       </span>
                     ) : isSubmitted ? (
                       <span className="flex items-center gap-2">
-                        You're In! <Sparkles className="w-5 h-5" />
+                        You're In! <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
                       </span>
                     ) : (
                       <span className="flex items-center gap-2">
                         Get Early Access
-                        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
                       </span>
                     )}
                   </Button>
@@ -455,88 +455,88 @@ const Waitlist = () => {
               </div>
             </form>
 
-            <p className="text-sm text-muted-foreground mb-12">
+            <p className="text-xs sm:text-sm text-muted-foreground mb-8 sm:mb-12">
               🔒 No spam, ever. Unsubscribe anytime.
             </p>
 
             {/* Rotating features */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-3xl mx-auto mb-16">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 max-w-3xl mx-auto mb-10 sm:mb-16 px-2">
               {features.map((feature, index) => (
                 <div
                   key={index}
-                  className={`p-4 rounded-xl border transition-all duration-500 ${
+                  className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border transition-all duration-500 ${
                     activeFeature === index
                       ? "bg-primary/10 border-primary/30 scale-105"
                       : "bg-card/50 border-border/30 opacity-60"
                   }`}
                 >
-                  <feature.icon className={`w-6 h-6 mx-auto mb-2 transition-colors duration-500 ${
+                  <feature.icon className={`w-5 h-5 sm:w-6 sm:h-6 mx-auto mb-1.5 sm:mb-2 transition-colors duration-500 ${
                     activeFeature === index ? "text-primary" : "text-muted-foreground"
                   }`} />
-                  <p className="text-sm font-medium text-foreground">{feature.title}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{feature.desc}</p>
+                  <p className="text-xs sm:text-sm font-medium text-foreground">{feature.title}</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1 hidden sm:block">{feature.desc}</p>
                 </div>
               ))}
             </div>
 
             {/* Interactive Demo */}
-            <div className="max-w-5xl mx-auto mb-16">
-              <div className="text-center mb-8">
-                <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-3">See It In Action</h2>
-                <p className="text-muted-foreground">Experience the power of SalesOS before anyone else</p>
+            <div className="max-w-5xl mx-auto mb-10 sm:mb-16">
+              <div className="text-center mb-6 sm:mb-8">
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-2 sm:mb-3">See It In Action</h2>
+                <p className="text-sm sm:text-base text-muted-foreground">Experience the power of SalesOS before anyone else</p>
               </div>
               <Demo />
             </div>
 
             {/* Social proof & benefits */}
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-4xl mx-auto px-2">
               {/* Early access benefits */}
-              <div className="bg-gradient-to-r from-primary/10 via-purple-500/10 to-pink-500/10 border border-primary/20 rounded-2xl p-8 mb-8">
-                <h3 className="text-xl font-bold text-foreground mb-4">🎁 Early Access Benefits</h3>
-                <div className="grid sm:grid-cols-3 gap-4 text-left">
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-primary text-sm">✓</span>
+              <div className="bg-gradient-to-r from-primary/10 via-purple-500/10 to-pink-500/10 border border-primary/20 rounded-xl sm:rounded-2xl p-4 sm:p-8 mb-6 sm:mb-8">
+                <h3 className="text-lg sm:text-xl font-bold text-foreground mb-3 sm:mb-4">🎁 Early Access Benefits</h3>
+                <div className="grid sm:grid-cols-3 gap-3 sm:gap-4 text-left">
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-primary text-xs sm:text-sm">✓</span>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-foreground">50% Lifetime Discount</p>
-                      <p className="text-xs text-muted-foreground">Lock in founder pricing forever</p>
+                      <p className="text-xs sm:text-sm font-medium text-foreground">50% Lifetime Discount</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">Lock in founder pricing forever</p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-primary text-sm">✓</span>
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-primary text-xs sm:text-sm">✓</span>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-foreground">Priority Onboarding</p>
-                      <p className="text-xs text-muted-foreground">1-on-1 setup with our team</p>
+                      <p className="text-xs sm:text-sm font-medium text-foreground">Priority Onboarding</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">1-on-1 setup with our team</p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-primary text-sm">✓</span>
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-primary text-xs sm:text-sm">✓</span>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-foreground">Shape the Product</p>
-                      <p className="text-xs text-muted-foreground">Direct input on features</p>
+                      <p className="text-xs sm:text-sm font-medium text-foreground">Shape the Product</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">Direct input on features</p>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Trust badges */}
-              <div className="flex flex-wrap items-center justify-center gap-6 text-muted-foreground text-sm">
-                <div className="flex items-center gap-2">
-                  <Shield className="w-4 h-4" />
+              <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-muted-foreground text-xs sm:text-sm">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <Shield className="w-3 h-3 sm:w-4 sm:h-4" />
                   <span>SOC 2 Compliant</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Zap className="w-4 h-4" />
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <Zap className="w-3 h-3 sm:w-4 sm:h-4" />
                   <span>99.9% Uptime SLA</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  <span>Built for Teams of All Sizes</span>
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <Users className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span>Built for Teams</span>
                 </div>
               </div>
 
@@ -545,8 +545,8 @@ const Waitlist = () => {
         </main>
 
         {/* Footer */}
-        <footer className="py-8 px-6 text-center">
-          <p className="text-sm text-muted-foreground">
+        <footer className="py-6 sm:py-8 px-4 sm:px-6 text-center">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             © {new Date().getFullYear()} BDØT Industries LLC. All rights reserved.
           </p>
         </footer>
