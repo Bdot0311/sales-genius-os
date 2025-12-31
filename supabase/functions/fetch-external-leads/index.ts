@@ -262,11 +262,7 @@ serve(async (req) => {
 
     console.log('Calling Railway API:', railwayUrl);
 
-    // Prepare request body for Railway API (matches SearchRequest schema)
-    const requestBody: Record<string, string | number | null> = {
-      limit: Math.min(filters.limit || 50, 100),
-    };
-    
+    // Prepare request body for Railway API - exact PDL format
     // Handle job_title - either from direct filter or extracted from keywords
     let jobTitle: string | undefined = filters.job_title;
     if (!jobTitle && filters.keywords && filters.keywords.length > 0) {
@@ -276,24 +272,31 @@ serve(async (req) => {
       }
       console.log('Extracted job title from keywords:', jobTitle);
     }
-    
-    // Only include non-empty filters (Railway API requires at least one search param)
-    if (jobTitle) requestBody.job_title = jobTitle;
-    if (filters.industry) requestBody.industry = filters.industry;
-    if (filters.company_size) requestBody.company_size = filters.company_size;
-    if (filters.country) requestBody.location = filters.country; // Railway uses 'location' not 'country'
-    if (filters.company) requestBody.company = filters.company;
-    if (filters.seniority) requestBody.seniority = filters.seniority;
 
-    // Check if we have at least one search parameter (besides limit)
-    const hasSearchParam = Object.keys(requestBody).some(k => k !== 'limit' && requestBody[k]);
+    // Build request body matching exact PDL schema
+    const requestBody: Record<string, any> = {
+      job_title: jobTitle || '',
+      location: filters.country || '',
+      industry: filters.industry || '',
+      company: filters.company || '',
+      company_size: filters.company_size || '',
+      seniority: filters.seniority || '',
+      limit: Math.min(filters.limit || 10, 100),
+    };
+
+    // Check if we have at least one search parameter
+    const hasSearchParam = requestBody.job_title || requestBody.location || 
+                           requestBody.industry || requestBody.company || 
+                           requestBody.company_size || requestBody.seniority;
+    
     if (!hasSearchParam) {
       console.warn('No search parameters provided, adding default job_title');
-      // Default to common decision-maker titles if no params provided
       requestBody.job_title = 'CEO OR Founder OR CTO OR Director';
     }
 
-    console.log('Request body:', JSON.stringify(requestBody));
+    console.log('=== REQUEST TO RAILWAY ===');
+    console.log('URL:', railwayUrl);
+    console.log('Request body:', JSON.stringify(requestBody, null, 2));
 
     // Call Railway backend
     const response = await fetch(railwayUrl, {
@@ -356,33 +359,49 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    console.log('Railway API response received');
+    console.log('=== RESPONSE FROM RAILWAY ===');
+    console.log('Response status:', response.status);
+    console.log('Response headers:', JSON.stringify(Object.fromEntries(response.headers.entries())));
+    console.log('Response data type:', typeof data);
     console.log('Response data keys:', Object.keys(data));
+    console.log('Full response data:', JSON.stringify(data, null, 2).substring(0, 2000));
 
     // Handle different response formats from Railway
     let rawLeads: any[] = [];
     if (Array.isArray(data)) {
+      console.log('Data is array format');
       rawLeads = data;
     } else if (data.leads && Array.isArray(data.leads)) {
+      console.log('Data has leads array');
       rawLeads = data.leads;
     } else if (data.data && Array.isArray(data.data)) {
+      console.log('Data has data array');
       rawLeads = data.data;
     } else if (data.results && Array.isArray(data.results)) {
+      console.log('Data has results array');
       rawLeads = data.results;
+    } else if (data.people && Array.isArray(data.people)) {
+      console.log('Data has people array (PDL format)');
+      rawLeads = data.people;
     }
 
+    console.log('=== LEAD DATA ===');
     console.log('Raw leads count:', rawLeads.length);
     if (rawLeads.length > 0) {
-      console.log('Sample lead:', JSON.stringify(rawLeads[0]));
+      console.log('First raw lead keys:', Object.keys(rawLeads[0]));
+      console.log('First raw lead full:', JSON.stringify(rawLeads[0], null, 2));
     }
 
     // Map leads to expected format
     const leads: ScoredLead[] = rawLeads
       .map(mapRailwayLead)
-      .filter(lead => lead.contact_name || lead.company_name) // Filter out empty leads
+      .filter(lead => lead.contact_name || lead.company_name)
       .sort((a, b) => b.scores.overall_score - a.scores.overall_score);
 
     console.log('Processed leads count:', leads.length);
+    if (leads.length > 0) {
+      console.log('First processed lead:', JSON.stringify(leads[0], null, 2));
+    }
 
     // If no leads returned, check if it's a caching issue
     if (leads.length === 0 && rawLeads.length === 0) {
