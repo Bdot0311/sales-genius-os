@@ -553,39 +553,39 @@ export const Demo = () => {
   const currentStepData = demoSteps[currentStep];
 
   return (
-    <section ref={sectionRef} id="demo" className="py-24 bg-background relative overflow-hidden">
+    <section ref={sectionRef} id="demo" className="py-12 sm:py-16 md:py-24 bg-background relative overflow-hidden">
       {/* Background accent */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
       </div>
 
-      <div className="container mx-auto px-6 relative">
-        <div className={`text-center mb-12 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-          <h2 className="text-4xl md:text-5xl font-bold mb-4">
+      <div className="container mx-auto px-4 sm:px-6 relative">
+        <div className={`text-center mb-8 sm:mb-12 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4">
             See SalesOS
             <span className="text-gradient-animated"> In Action</span>
           </h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-2">
             Explore how top sales teams are using SalesOS to close more deals
           </p>
         </div>
 
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto">
           <Card 
             className={`overflow-hidden bg-card border-border relative transition-all duration-700 delay-200 ${
               isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
             }`}
           >
             {/* Header with step info */}
-            <div className="flex items-center justify-between p-4 border-b border-border/50 bg-muted/30">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                  <currentStepData.icon className="w-5 h-5 text-primary-foreground" />
+            <div className="flex items-center justify-between p-3 sm:p-4 border-b border-border/50 bg-muted/30">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
+                  <currentStepData.icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
                 </div>
-                <div>
-                  <div className="font-semibold">{currentStepData.title}</div>
-                  <div className="text-sm text-muted-foreground">Step {currentStep + 1} of {demoSteps.length}</div>
+                <div className="min-w-0">
+                  <div className="font-semibold text-sm sm:text-base truncate">{currentStepData.title}</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground">Step {currentStep + 1} of {demoSteps.length}</div>
                 </div>
               </div>
               <Button
@@ -599,34 +599,34 @@ export const Demo = () => {
             </div>
 
             {/* Main demo area */}
-            <div className="p-6 min-h-[320px] bg-gradient-to-b from-background to-muted/20">
-              <div className="mb-4">
-                <p className="text-muted-foreground">{currentStepData.description}</p>
+            <div className="p-4 sm:p-6 min-h-[280px] sm:min-h-[300px] md:min-h-[320px] bg-gradient-to-b from-background to-muted/20">
+              <div className="mb-3 sm:mb-4">
+                <p className="text-sm sm:text-base text-muted-foreground">{currentStepData.description}</p>
               </div>
               <CurrentMockup isActive={isVisible} />
             </div>
 
             {/* Navigation */}
-            <div className="flex items-center justify-between p-4 border-t border-border/50 bg-muted/30">
+            <div className="flex items-center justify-between p-3 sm:p-4 border-t border-border/50 bg-muted/30">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={prevStep}
-                className="flex items-center gap-1"
+                className="flex items-center gap-1 text-xs sm:text-sm px-2 sm:px-3"
               >
-                <ChevronLeft className="w-4 h-4" />
-                Previous
+                <ChevronLeft className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden xs:inline">Previous</span>
               </Button>
 
               {/* Step indicators */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 {demoSteps.map((_, index) => (
                   <button
                     key={index}
                     onClick={() => goToStep(index)}
-                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                    className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-all duration-300 ${
                       index === currentStep
-                        ? 'w-6 bg-primary'
+                        ? 'w-4 sm:w-6 bg-primary'
                         : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
                     }`}
                   />
@@ -637,30 +637,30 @@ export const Demo = () => {
                 variant="ghost"
                 size="sm"
                 onClick={nextStep}
-                className="flex items-center gap-1"
+                className="flex items-center gap-1 text-xs sm:text-sm px-2 sm:px-3"
               >
-                Next
-                <ChevronRight className="w-4 h-4" />
+                <span className="hidden xs:inline">Next</span>
+                <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4" />
               </Button>
             </div>
           </Card>
 
           {/* Feature quick links */}
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-3 mt-8">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3 mt-6 sm:mt-8">
             {demoSteps.map((step, index) => (
               <button
                 key={step.id}
                 onClick={() => goToStep(index)}
-                className={`p-3 rounded-xl border text-center transition-all duration-300 ${
+                className={`p-2 sm:p-3 rounded-lg sm:rounded-xl border text-center transition-all duration-300 ${
                   index === currentStep
                     ? 'bg-primary/10 border-primary/50 scale-105'
                     : 'bg-card border-border hover:border-primary/30 hover:bg-muted/50'
                 }`}
               >
-                <step.icon className={`w-5 h-5 mx-auto mb-1.5 ${
+                <step.icon className={`w-4 h-4 sm:w-5 sm:h-5 mx-auto mb-1 sm:mb-1.5 ${
                   index === currentStep ? 'text-primary' : 'text-muted-foreground'
                 }`} />
-                <div className={`text-xs font-medium truncate ${
+                <div className={`text-[10px] sm:text-xs font-medium truncate ${
                   index === currentStep ? 'text-primary' : 'text-muted-foreground'
                 }`}>
                   {step.title.split(' ')[0]}
