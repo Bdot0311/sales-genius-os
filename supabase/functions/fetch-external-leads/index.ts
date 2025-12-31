@@ -7,318 +7,166 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Personal/free email domains to exclude
-const PERSONAL_EMAIL_DOMAINS = new Set([
-  'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com',
-  'aol.com', 'mail.com', 'protonmail.com', 'zoho.com', 'yandex.com',
-  'gmx.com', 'live.com', 'msn.com', 'me.com', 'inbox.com', 'fastmail.com',
-  'tutanota.com', 'hey.com', 'pm.me', 'proton.me', 'mailbox.org',
-  'yahoo.co.uk', 'hotmail.co.uk', 'outlook.co.uk', 'googlemail.com'
-]);
-
 interface ExternalLeadFilters {
   job_title?: string;
   industry?: string;
   company_size?: string;
-  include_unknown_size?: boolean;
   country?: string;
   limit?: number;
+}
+
+interface LeadScores {
+  icp_score: number;
+  intent_score: number;
+  enrichment_score: number;
+  overall_score: number;
 }
 
 interface ScoredLead {
   job_title: string;
   company_name: string;
   company_domain: string;
-  business_email: string;
+  business_email: string | null;
   contact_name: string;
-  industry?: string;
+  industry: string;
   company_size: string;
-  country?: string;
-  linkedin_url?: string;
-  scores: {
-    icp_score: number;
-    intent_score: number;
-    enrichment_score: number;
-    overall_score: number;
-  };
+  country: string;
+  linkedin_url: string | null;
+  scores: LeadScores;
   score_explanation: string;
   buying_signals: string[];
 }
 
-function isBusinessEmail(email: string | null | undefined): boolean {
-  if (!email || typeof email !== 'string') return false;
-  const domain = email.split('@')[1]?.toLowerCase();
-  if (!domain) return false;
-  return !PERSONAL_EMAIL_DOMAINS.has(domain);
-}
-
-function mapCompanySizeToRange(size: string | null | undefined): string {
-  if (!size) return 'Unknown';
-  
-  const sizeMap: Record<string, string> = {
-    '1-10': '1-10',
-    '11-50': '11-50',
-    '51-200': '51-200',
-    '201-500': '201-500',
-    '501-1000': '501-1000',
-    '1001-5000': '1001-5000',
-    '5001-10000': '5001-10000',
-    '10001+': '10001+'
-  };
-  return sizeMap[size] || 'Unknown';
-}
-
-// Input validation constants - strict allowlists
-const ALLOWED_JOB_TITLE_CHARS = /^[a-zA-Z\s\-]+$/;
-const ALLOWED_COUNTRY_CHARS = /^[a-zA-Z\s\-]+$/;
-const MAX_JOB_TITLE_LENGTH = 100;
-const MAX_COUNTRY_LENGTH = 50;
-
-// Job title allowlist for common patterns
-const VALID_JOB_TITLE_KEYWORDS = new Set([
-  'ceo', 'cto', 'cfo', 'coo', 'cmo', 'ciso', 'cio',
-  'president', 'vice', 'vp', 'director', 'head', 'chief',
-  'manager', 'lead', 'senior', 'junior', 'executive',
-  'engineer', 'developer', 'analyst', 'consultant', 'specialist',
-  'sales', 'marketing', 'operations', 'product', 'hr', 'finance',
-  'software', 'data', 'business', 'account', 'customer', 'success',
-  'founder', 'owner', 'partner', 'associate', 'coordinator',
-  'officer', 'advisor', 'strategist', 'architect', 'designer'
-]);
-
-// Country allowlist
-const VALID_COUNTRIES = new Set([
-  'united states', 'united kingdom', 'canada', 'australia', 'germany',
-  'france', 'spain', 'italy', 'netherlands', 'sweden', 'norway',
-  'denmark', 'finland', 'ireland', 'belgium', 'switzerland', 'austria',
-  'japan', 'singapore', 'india', 'brazil', 'mexico', 'israel',
-  'new zealand', 'south africa', 'poland', 'portugal', 'czech republic',
-  'usa', 'uk', 'us', 'gb'
-]);
-
-// Validate and sanitize input with strict allowlist approach
-function validateAndSanitizeInput(input: string, maxLength: number, fieldName: string, allowedChars: RegExp): string {
-  if (!input || typeof input !== 'string') {
-    throw new Error(`Invalid ${fieldName}: must be a non-empty string`);
-  }
-  
-  const trimmed = input.trim().toLowerCase();
-  
-  if (trimmed.length === 0) {
-    throw new Error(`${fieldName} cannot be empty`);
-  }
-  
-  if (trimmed.length > maxLength) {
-    throw new Error(`${fieldName} exceeds maximum length`);
-  }
-  
-  // Strict character allowlist - only letters, spaces, and hyphens
-  if (!allowedChars.test(trimmed)) {
-    throw new Error(`${fieldName} contains invalid characters`);
-  }
-  
-  return trimmed;
-}
-
-// Validate job title against allowlist
-function validateJobTitle(title: string): string {
-  const sanitized = validateAndSanitizeInput(title, MAX_JOB_TITLE_LENGTH, 'Job title', ALLOWED_JOB_TITLE_CHARS);
-  
-  // Check that at least one word is in our allowlist
-  const words = sanitized.split(/\s+/);
-  const hasValidKeyword = words.some(word => VALID_JOB_TITLE_KEYWORDS.has(word));
-  
-  if (!hasValidKeyword) {
-    throw new Error('Job title must contain a recognized job keyword');
-  }
-  
-  return sanitized;
-}
-
-// Validate country against allowlist
-function validateCountry(country: string): string {
-  const sanitized = validateAndSanitizeInput(country, MAX_COUNTRY_LENGTH, 'Country', ALLOWED_COUNTRY_CHARS);
-  
-  if (!VALID_COUNTRIES.has(sanitized)) {
-    throw new Error('Country not recognized. Please use a supported country name.');
-  }
-  
-  return sanitized;
-}
-// Escape SQL special characters for defense-in-depth
-function escapeSQLValue(value: string): string {
-  return value
-    .replace(/\\/g, '\\\\')  // Escape backslashes first
-    .replace(/'/g, "''")     // Escape single quotes
-    .replace(/%/g, '\\%')    // Escape percent signs (for LIKE)
-    .replace(/_/g, '\\_');   // Escape underscores (for LIKE)
-}
-
-// Build PDL query with validated AND escaped inputs
-function buildPDLQuery(filters: ExternalLeadFilters): string {
-  const conditions: string[] = [];
-  
-  // Required: work email and company website must exist
-  conditions.push("work_email IS NOT NULL");
-  conditions.push("job_company_website IS NOT NULL");
-  
-  // Job title matching - strict validation with allowlist + SQL escaping
-  if (filters.job_title) {
-    const validatedTitle = validateJobTitle(filters.job_title);
-    const escapedTitle = escapeSQLValue(validatedTitle);
-    conditions.push(`job_title LIKE '%${escapedTitle}%'`);
-  }
-  
-  // Country matching - strict validation with allowlist + SQL escaping
-  if (filters.country) {
-    const validatedCountry = validateCountry(filters.country);
-    const escapedCountry = escapeSQLValue(validatedCountry);
-    conditions.push(`location_country='${escapedCountry}'`);
-  }
-  
-  return conditions.join(' AND ');
-}
-
-// Post-process filter by company size after enrichment
-function filterByCompanySize(leads: ScoredLead[], targetSize: string | undefined, includeUnknown: boolean): ScoredLead[] {
-  if (!targetSize) return leads;
-  
-  return leads.filter(lead => {
-    if (lead.company_size === 'Unknown') {
-      return includeUnknown;
-    }
-    return lead.company_size === targetSize;
-  });
-}
-
-function scoreLead(person: any): { scores: ScoredLead['scores']; explanation: string; buyingSignals: string[] } {
+// Calculate scores if not provided by Railway API
+function calculateScores(lead: any): LeadScores {
   let icpScore = 50;
-  let intentScore = 30;
-  let enrichmentScore = 40;
-  const buyingSignals: string[] = [];
-  const reasons: string[] = [];
+  let intentScore = 50;
+  let enrichmentScore = 50;
 
-  // ICP Scoring based on job title seniority
-  const title = (person.job_title || '').toLowerCase();
-  const titleLevels = person.job_title_levels || [];
-  
-  if (title.includes('ceo') || title.includes('cto') || title.includes('cfo') || title.includes('coo') || title.includes('chief')) {
+  // ICP scoring based on job title seniority
+  const jobTitle = (lead.job_title || '').toLowerCase();
+  if (jobTitle.includes('ceo') || jobTitle.includes('founder') || jobTitle.includes('owner')) {
+    icpScore += 35;
+  } else if (jobTitle.includes('cto') || jobTitle.includes('cfo') || jobTitle.includes('coo') || jobTitle.includes('cmo')) {
     icpScore += 30;
-    reasons.push('C-level executive');
-    buyingSignals.push('Decision Maker');
-  } else if (title.includes('vp') || title.includes('vice president') || titleLevels.includes('vp')) {
+  } else if (jobTitle.includes('vp') || jobTitle.includes('vice president')) {
     icpScore += 25;
-    reasons.push('VP-level leadership');
-    buyingSignals.push('Budget Authority');
-  } else if (title.includes('director') || titleLevels.includes('director')) {
+  } else if (jobTitle.includes('director')) {
     icpScore += 20;
-    reasons.push('Director-level role');
-    buyingSignals.push('Influencer');
-  } else if (title.includes('head of') || title.includes('manager')) {
+  } else if (jobTitle.includes('head of') || jobTitle.includes('manager')) {
     icpScore += 15;
-    reasons.push('Management position');
   }
 
-  // ICP Scoring based on company size
-  const size = person.job_company_size || '';
-  const largeSizes = ['201-500', '501-1000', '1001-5000', '5001-10000', '10001+'];
-  if (largeSizes.includes(size)) {
-    icpScore += 15;
-    reasons.push('Enterprise company');
-    buyingSignals.push('Enterprise');
-  } else if (size === '51-200') {
-    icpScore += 12;
-    reasons.push('Growing company');
-    buyingSignals.push('Growth Stage');
-  }
-
-  // ICP Scoring based on industry
-  const industry = (person.job_company_industry || '').toLowerCase();
-  if (industry.includes('technology') || industry.includes('software') || industry.includes('computer')) {
+  // Company size scoring
+  const companySize = lead.company_size || '';
+  if (companySize.includes('201') || companySize.includes('500') || companySize.includes('1000')) {
     icpScore += 10;
     intentScore += 10;
-    reasons.push('Tech industry fit');
-    buyingSignals.push('Tech Buyer');
-  } else if (industry.includes('finance') || industry.includes('healthcare')) {
+  } else if (companySize.includes('51') || companySize.includes('200')) {
     icpScore += 8;
-    reasons.push('High-value vertical');
+    intentScore += 8;
   }
 
-  // Enrichment score based on data completeness
-  if (person.work_email) enrichmentScore += 15;
-  if (person.linkedin_url) enrichmentScore += 15;
-  if (person.job_company_website) enrichmentScore += 10;
-  if (person.job_company_industry) enrichmentScore += 10;
-  if (person.job_company_size) enrichmentScore += 10;
-
-  // Intent signals based on role
-  const role = (person.job_title_role || '').toLowerCase();
-  if (role === 'sales' || role === 'marketing' || title.includes('sales') || title.includes('marketing') || title.includes('growth')) {
-    intentScore += 20;
-    buyingSignals.push('Revenue Focus');
-  }
-  if (role === 'operations' || role === 'product' || title.includes('operations') || title.includes('product')) {
-    intentScore += 15;
-    buyingSignals.push('Efficiency Focus');
-  }
+  // Enrichment scoring based on data completeness
+  if (lead.business_email || lead.email) enrichmentScore += 15;
+  if (lead.linkedin_url || lead.linkedin) enrichmentScore += 10;
+  if (lead.company_domain || lead.domain) enrichmentScore += 10;
+  if (lead.industry) enrichmentScore += 5;
+  if (lead.country || lead.location) enrichmentScore += 5;
 
   // Cap scores at 100
   icpScore = Math.min(100, icpScore);
   intentScore = Math.min(100, intentScore);
   enrichmentScore = Math.min(100, enrichmentScore);
 
-  // Calculate overall score (weighted average)
-  const overallScore = Math.round(icpScore * 0.4 + intentScore * 0.35 + enrichmentScore * 0.25);
-
-  const explanation = reasons.length > 0 
-    ? `${reasons.slice(0, 3).join(', ')}. Overall fit: ${overallScore >= 70 ? 'Strong' : overallScore >= 50 ? 'Good' : 'Moderate'}.`
-    : 'Basic profile - needs more data for accurate scoring.';
+  const overallScore = Math.round((icpScore * 0.4) + (intentScore * 0.3) + (enrichmentScore * 0.3));
 
   return {
-    scores: {
-      icp_score: icpScore,
-      intent_score: intentScore,
-      enrichment_score: enrichmentScore,
-      overall_score: overallScore,
-    },
-    explanation,
-    buyingSignals: buyingSignals.slice(0, 4),
+    icp_score: icpScore,
+    intent_score: intentScore,
+    enrichment_score: enrichmentScore,
+    overall_score: overallScore,
   };
 }
 
-function mapPDLPersonToLead(person: any): ScoredLead | null {
-  // Handle work_email being an array or string
-  let email = person.work_email;
-  if (Array.isArray(email)) {
-    email = email[0]; // Take first email if it's an array
-  }
+// Generate score explanation
+function generateScoreExplanation(lead: any, scores: LeadScores): string {
+  const parts: string[] = [];
   
-  // Skip if no valid business email string
-  if (!email || typeof email !== 'string' || !isBusinessEmail(email)) {
-    return null;
+  if (scores.icp_score >= 80) {
+    parts.push('Strong ICP match');
+  } else if (scores.icp_score >= 60) {
+    parts.push('Good ICP fit');
   }
 
-  const { scores, explanation, buyingSignals } = scoreLead(person);
-  const fullName = person.full_name || `${person.first_name || ''} ${person.last_name || ''}`.trim();
-  const companyDomain = person.job_company_website?.replace(/^https?:\/\//, '').replace(/\/$/, '') || '';
+  const jobTitle = (lead.job_title || '').toLowerCase();
+  if (jobTitle.includes('ceo') || jobTitle.includes('founder')) {
+    parts.push('C-level executive');
+  } else if (jobTitle.includes('vp') || jobTitle.includes('director')) {
+    parts.push('Senior leadership');
+  }
 
+  if (lead.industry) {
+    parts.push(`${lead.industry} industry`);
+  }
+
+  return parts.length > 0 ? parts.join(' - ') : 'Lead discovered from search';
+}
+
+// Generate buying signals
+function generateBuyingSignals(lead: any): string[] {
+  const signals: string[] = [];
+  const jobTitle = (lead.job_title || '').toLowerCase();
+
+  if (jobTitle.includes('ceo') || jobTitle.includes('founder') || jobTitle.includes('owner') ||
+      jobTitle.includes('vp') || jobTitle.includes('director') || jobTitle.includes('head')) {
+    signals.push('Decision Maker');
+  }
+
+  if (jobTitle.includes('tech') || jobTitle.includes('it') || jobTitle.includes('engineer') ||
+      jobTitle.includes('developer') || jobTitle.includes('cto')) {
+    signals.push('Tech Buyer');
+  }
+
+  if (jobTitle.includes('sales') || jobTitle.includes('revenue') || jobTitle.includes('growth')) {
+    signals.push('Revenue Focus');
+  }
+
+  if (jobTitle.includes('marketing') || jobTitle.includes('cmo') || jobTitle.includes('brand')) {
+    signals.push('Marketing Leader');
+  }
+
+  return signals.length > 0 ? signals : ['Prospect'];
+}
+
+// Map Railway response to ScoredLead format
+function mapRailwayLead(lead: any): ScoredLead {
+  // Use provided scores or calculate them
+  const scores = lead.scores ? {
+    icp_score: lead.scores.icp_score || lead.scores.icpScore || 50,
+    intent_score: lead.scores.intent_score || lead.scores.intentScore || 50,
+    enrichment_score: lead.scores.enrichment_score || lead.scores.enrichmentScore || 50,
+    overall_score: lead.scores.overall_score || lead.scores.overallScore || 50,
+  } : calculateScores(lead);
+  
   return {
-    job_title: person.job_title || 'Unknown',
-    company_name: person.job_company_name || 'Unknown',
-    company_domain: companyDomain,
-    business_email: email,
-    contact_name: fullName || 'Unknown',
-    industry: person.job_company_industry || undefined,
-    company_size: mapCompanySizeToRange(person.job_company_size),
-    country: person.location_country || undefined,
-    linkedin_url: person.linkedin_url || undefined,
+    job_title: lead.job_title || lead.jobTitle || '',
+    company_name: lead.company_name || lead.companyName || lead.company || '',
+    company_domain: lead.company_domain || lead.companyDomain || lead.domain || lead.website || '',
+    business_email: lead.business_email || lead.businessEmail || lead.email || lead.work_email || null,
+    contact_name: lead.contact_name || lead.contactName || lead.name || lead.full_name || lead.fullName || '',
+    industry: lead.industry || '',
+    company_size: lead.company_size || lead.companySize || lead.size || '',
+    country: lead.country || lead.location || lead.location_country || '',
+    linkedin_url: lead.linkedin_url || lead.linkedinUrl || lead.linkedin || null,
     scores,
-    score_explanation: explanation,
-    buying_signals: buyingSignals,
+    score_explanation: lead.score_explanation || lead.scoreExplanation || generateScoreExplanation(lead, scores),
+    buying_signals: lead.buying_signals || lead.buyingSignals || generateBuyingSignals(lead),
   };
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -327,11 +175,13 @@ serve(async (req) => {
     const filters: ExternalLeadFilters = await req.json();
     console.log('Received filters:', filters);
 
+    // Get auth token from request
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       throw new Error('No authorization header');
     }
 
+    // Verify user is authenticated
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -343,112 +193,92 @@ serve(async (req) => {
       throw new Error('Invalid user token');
     }
 
-    // Get PDL API key
-    const pdlApiKey = Deno.env.get('PDL_API_KEY');
-    if (!pdlApiKey) {
-      console.error('PDL_API_KEY not configured');
+    // Get Railway API URL from secrets
+    const railwayUrl = Deno.env.get('RAILWAY_LEADS_API_URL');
+    if (!railwayUrl) {
+      console.error('RAILWAY_LEADS_API_URL not configured');
       return new Response(
         JSON.stringify({ error: 'Lead data provider not configured', leads: [] }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Build PDL query
-    const limit = Math.min(filters.limit || 25, 100);
-    const sqlQuery = buildPDLQuery(filters);
-    
-    console.log('PDL SQL Query:', sqlQuery);
+    console.log('Calling Railway API:', railwayUrl);
 
-    // Call PDL Person Search API
-    const pdlUrl = new URL('https://api.peopledatalabs.com/v5/person/search');
-    pdlUrl.searchParams.set('sql', `SELECT * FROM person WHERE ${sqlQuery}`);
-    pdlUrl.searchParams.set('size', limit.toString());
+    // Prepare request body for Railway API
+    const requestBody = {
+      job_title: filters.job_title || '',
+      industry: filters.industry || '',
+      company_size: filters.company_size || '',
+      country: filters.country || '',
+      limit: Math.min(filters.limit || 50, 100),
+    };
 
-    console.log('Calling PDL API...');
-    
-    const pdlResponse = await fetch(pdlUrl.toString(), {
-      method: 'GET',
+    console.log('Request body:', JSON.stringify(requestBody));
+
+    // Call Railway backend
+    const response = await fetch(railwayUrl, {
+      method: 'POST',
       headers: {
-        'X-Api-Key': pdlApiKey,
-        'Content-Type': 'application/json'
-      }
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
     });
 
-    if (!pdlResponse.ok) {
-      const errorText = await pdlResponse.text();
-      console.error('PDL API error:', pdlResponse.status, errorText);
-      
-      if (pdlResponse.status === 401) {
-        return new Response(
-          JSON.stringify({ error: 'Invalid API key for lead data provider', leads: [] }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      if (pdlResponse.status === 402) {
-        return new Response(
-          JSON.stringify({ error: 'Lead data provider credits exhausted', leads: [] }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Railway API error:', response.status, errorText);
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch leads from data provider', leads: [] }),
+        JSON.stringify({ error: `Railway API error: ${response.status}`, leads: [] }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const pdlData = await pdlResponse.json();
-    console.log('PDL returned', pdlData.total, 'total results,', pdlData.data?.length, 'in this batch');
+    const data = await response.json();
+    console.log('Railway API response received');
 
-    // Map PDL results to our lead format with SalesOS enrichment & scoring
-    let leads: ScoredLead[] = [];
-    for (const person of pdlData.data || []) {
-      const lead = mapPDLPersonToLead(person);
-      if (lead) {
-        leads.push(lead);
-      }
+    // Handle different response formats from Railway
+    let rawLeads: any[] = [];
+    if (Array.isArray(data)) {
+      rawLeads = data;
+    } else if (data.leads && Array.isArray(data.leads)) {
+      rawLeads = data.leads;
+    } else if (data.data && Array.isArray(data.data)) {
+      rawLeads = data.data;
+    } else if (data.results && Array.isArray(data.results)) {
+      rawLeads = data.results;
     }
 
-    console.log('Mapped', leads.length, 'leads from PDL response');
+    console.log('Raw leads count:', rawLeads.length);
 
-    // Apply local company size filtering after enrichment
-    const preFilterCount = leads.length;
-    leads = filterByCompanySize(leads, filters.company_size, filters.include_unknown_size ?? true);
-    console.log('After company size filter:', preFilterCount, '->', leads.length, 'leads');
+    // Map leads to expected format
+    const leads: ScoredLead[] = rawLeads
+      .map(mapRailwayLead)
+      .filter(lead => lead.contact_name || lead.company_name) // Filter out empty leads
+      .sort((a, b) => b.scores.overall_score - a.scores.overall_score);
 
-    // Sort by overall score descending
-    leads.sort((a, b) => b.scores.overall_score - a.scores.overall_score);
-
-    console.log('Returning', leads.length, 'scored leads');
+    console.log('Processed leads count:', leads.length);
 
     return new Response(
       JSON.stringify({ 
         success: true,
         leads,
-        total: pdlData.total || leads.length,
-        credits_used: pdlData.data?.length || 0
+        total: data.total || leads.length
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
     console.error('Error in fetch-external-leads:', error);
-    
-    // Return generic error messages to prevent information leakage
-    const errorMessage = error instanceof Error && 
-      (error.message.includes('Job title') || error.message.includes('Country'))
-      ? error.message // Validation errors are safe to return
-      : 'Failed to fetch leads';
-    
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch leads';
     return new Response(
       JSON.stringify({ 
         error: errorMessage,
-        leads: []
+        leads: [] 
       }),
       { 
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: errorMessage === 'Invalid user token' ? 401 : 500 
       }
     );
   }
