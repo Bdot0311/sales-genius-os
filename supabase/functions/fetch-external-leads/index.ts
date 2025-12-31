@@ -40,12 +40,41 @@ interface ScoredLead {
   buying_signals: string[];
 }
 
-// Calculate scores based on lead data
+// Job-related keywords to extract from keywords array
+const JOB_KEYWORDS = [
+  'ceo', 'cto', 'cfo', 'coo', 'cmo', 'cio', 'cpo', 'cro',
+  'founder', 'co-founder', 'cofounder', 'owner',
+  'president', 'vice president', 'vp',
+  'director', 'head', 'chief',
+  'manager', 'lead', 'senior', 'executive',
+  'partner', 'principal'
+];
+
+// Extract job titles from keywords
+function extractJobTitleFromKeywords(keywords: string[]): string | null {
+  if (!keywords || keywords.length === 0) return null;
+  
+  const foundJobs: string[] = [];
+  for (const keyword of keywords) {
+    const lower = keyword.toLowerCase();
+    for (const jobKeyword of JOB_KEYWORDS) {
+      if (lower.includes(jobKeyword)) {
+        foundJobs.push(keyword);
+        break;
+      }
+    }
+  }
+  
+  return foundJobs.length > 0 ? foundJobs.join(' OR ') : null;
+}
+
+// Calculate scores if not provided by Railway API
 function calculateScores(lead: any): LeadScores {
   let icpScore = 50;
   let intentScore = 50;
   let enrichmentScore = 50;
 
+  // ICP scoring based on job title seniority
   const jobTitle = (lead.job_title || '').toLowerCase();
   if (jobTitle.includes('ceo') || jobTitle.includes('founder') || jobTitle.includes('owner')) {
     icpScore += 35;
@@ -59,6 +88,7 @@ function calculateScores(lead: any): LeadScores {
     icpScore += 15;
   }
 
+  // Company size scoring
   const companySize = lead.company_size || '';
   if (companySize.includes('201') || companySize.includes('500') || companySize.includes('1000')) {
     icpScore += 10;
@@ -68,12 +98,14 @@ function calculateScores(lead: any): LeadScores {
     intentScore += 8;
   }
 
-  if (lead.work_email) enrichmentScore += 15;
-  if (lead.linkedin_url) enrichmentScore += 10;
-  if (lead.job_company_website) enrichmentScore += 10;
+  // Enrichment scoring based on data completeness
+  if (lead.business_email || lead.email) enrichmentScore += 15;
+  if (lead.linkedin_url || lead.linkedin) enrichmentScore += 10;
+  if (lead.company_domain || lead.domain) enrichmentScore += 10;
   if (lead.industry) enrichmentScore += 5;
-  if (lead.location_country) enrichmentScore += 5;
+  if (lead.country || lead.location) enrichmentScore += 5;
 
+  // Cap scores at 100
   icpScore = Math.min(100, icpScore);
   intentScore = Math.min(100, intentScore);
   enrichmentScore = Math.min(100, enrichmentScore);
@@ -88,6 +120,7 @@ function calculateScores(lead: any): LeadScores {
   };
 }
 
+// Generate score explanation
 function generateScoreExplanation(lead: any, scores: LeadScores): string {
   const parts: string[] = [];
   
@@ -111,6 +144,7 @@ function generateScoreExplanation(lead: any, scores: LeadScores): string {
   return parts.length > 0 ? parts.join(' - ') : 'Lead discovered from search';
 }
 
+// Generate buying signals
 function generateBuyingSignals(lead: any): string[] {
   const signals: string[] = [];
   const jobTitle = (lead.job_title || '').toLowerCase();
@@ -136,39 +170,34 @@ function generateBuyingSignals(lead: any): string[] {
   return signals.length > 0 ? signals : ['Prospect'];
 }
 
-// Map PDL response to ScoredLead format
-function mapPDLLead(lead: any): ScoredLead {
-  const scores = calculateScores(lead);
-  
-  // Get employee count range for company size
-  let companySize = '';
-  const employeeCount = lead.job_company_size;
-  if (employeeCount) {
-    if (employeeCount <= 10) companySize = '1-10';
-    else if (employeeCount <= 50) companySize = '11-50';
-    else if (employeeCount <= 200) companySize = '51-200';
-    else if (employeeCount <= 500) companySize = '201-500';
-    else if (employeeCount <= 1000) companySize = '501-1000';
-    else companySize = '1000+';
-  }
+// Map Railway response to ScoredLead format
+function mapRailwayLead(lead: any): ScoredLead {
+  // Use provided scores or calculate them
+  const scores = lead.scores ? {
+    icp_score: lead.scores.icp_score || lead.scores.icpScore || 50,
+    intent_score: lead.scores.intent_score || lead.scores.intentScore || 50,
+    enrichment_score: lead.scores.enrichment_score || lead.scores.enrichmentScore || 50,
+    overall_score: lead.scores.overall_score || lead.scores.overallScore || 50,
+  } : calculateScores(lead);
   
   return {
-    job_title: lead.job_title || '',
-    company_name: lead.job_company_name || '',
-    company_domain: lead.job_company_website || '',
-    business_email: lead.work_email || null,
-    contact_name: lead.full_name || '',
-    industry: lead.industry || lead.job_company_industry || '',
-    company_size: companySize,
-    country: lead.location_country || '',
-    linkedin_url: lead.linkedin_url || null,
+    job_title: lead.job_title || lead.jobTitle || '',
+    company_name: lead.company_name || lead.companyName || lead.company || '',
+    company_domain: lead.company_domain || lead.companyDomain || lead.domain || lead.website || '',
+    business_email: lead.business_email || lead.businessEmail || lead.email || lead.work_email || null,
+    contact_name: lead.contact_name || lead.contactName || lead.name || lead.full_name || lead.fullName || '',
+    industry: lead.industry || '',
+    company_size: lead.company_size || lead.companySize || lead.size || '',
+    country: lead.country || lead.location || lead.location_country || '',
+    linkedin_url: lead.linkedin_url || lead.linkedinUrl || lead.linkedin || null,
     scores,
-    score_explanation: generateScoreExplanation(lead, scores),
-    buying_signals: generateBuyingSignals(lead),
+    score_explanation: lead.score_explanation || lead.scoreExplanation || generateScoreExplanation(lead, scores),
+    buying_signals: lead.buying_signals || lead.buyingSignals || generateBuyingSignals(lead),
   };
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -177,11 +206,13 @@ serve(async (req) => {
     const filters: ExternalLeadFilters = await req.json();
     console.log('Received filters:', JSON.stringify(filters));
 
+    // Get auth token from request
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       throw new Error('No authorization header');
     }
 
+    // Verify user is authenticated
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -193,104 +224,127 @@ serve(async (req) => {
       throw new Error('Invalid user token');
     }
 
-    // Use PDL API directly
-    const pdlApiKey = Deno.env.get('PDL_API_KEY');
-    if (!pdlApiKey) {
-      console.error('PDL_API_KEY not configured');
+    // Get Railway API URL from secrets
+    const railwayUrl = Deno.env.get('RAILWAY_LEADS_API_URL');
+    if (!railwayUrl) {
+      console.error('RAILWAY_LEADS_API_URL not configured');
       return new Response(
         JSON.stringify({ error: 'Lead data provider not configured', leads: [] }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Build PDL search query
-    const pdlQuery: Record<string, any> = {
-      size: Math.min(filters.limit || 50, 100),
-      dataset: 'all',
+    console.log('Calling Railway API:', railwayUrl);
+
+    // Prepare request body for Railway API (matches SearchRequest schema)
+    const requestBody: Record<string, string | number | null> = {
+      limit: Math.min(filters.limit || 50, 100),
     };
-
-    // Build SQL-like query for PDL
-    const queryParts: string[] = [];
-
-    if (filters.job_title) {
-      // Handle OR queries for job titles
-      const titles = filters.job_title.split(' OR ').map(t => t.trim());
-      if (titles.length > 1) {
-        const titleQuery = titles.map(t => `job_title='${t}'`).join(' OR ');
-        queryParts.push(`(${titleQuery})`);
-      } else {
-        queryParts.push(`job_title='${filters.job_title}'`);
+    
+    // Handle job_title - either from direct filter or extracted from keywords
+    let jobTitle: string | undefined = filters.job_title;
+    if (!jobTitle && filters.keywords && filters.keywords.length > 0) {
+      const extractedTitle = extractJobTitleFromKeywords(filters.keywords);
+      if (extractedTitle) {
+        jobTitle = extractedTitle;
       }
+      console.log('Extracted job title from keywords:', jobTitle);
+    }
+    
+    // Only include non-empty filters (Railway API requires at least one search param)
+    if (jobTitle) requestBody.job_title = jobTitle;
+    if (filters.industry) requestBody.industry = filters.industry;
+    if (filters.company_size) requestBody.company_size = filters.company_size;
+    if (filters.country) requestBody.location = filters.country; // Railway uses 'location' not 'country'
+    if (filters.company) requestBody.company = filters.company;
+    if (filters.seniority) requestBody.seniority = filters.seniority;
+
+    // Check if we have at least one search parameter (besides limit)
+    const hasSearchParam = Object.keys(requestBody).some(k => k !== 'limit' && requestBody[k]);
+    if (!hasSearchParam) {
+      console.warn('No search parameters provided, adding default job_title');
+      // Default to common decision-maker titles if no params provided
+      requestBody.job_title = 'CEO OR Founder OR CTO OR Director';
     }
 
-    if (filters.industry) {
-      queryParts.push(`industry='${filters.industry}'`);
-    }
+    console.log('Request body:', JSON.stringify(requestBody));
 
-    if (filters.country) {
-      queryParts.push(`location_country='${filters.country}'`);
-    }
-
-    if (filters.company) {
-      queryParts.push(`job_company_name='${filters.company}'`);
-    }
-
-    // If no query parts, use a default search
-    if (queryParts.length === 0) {
-      queryParts.push("job_title='CEO' OR job_title='Founder' OR job_title='CTO'");
-    }
-
-    pdlQuery.query = queryParts.join(' AND ');
-
-    console.log('Calling PDL API with query:', JSON.stringify(pdlQuery));
-
-    const response = await fetch('https://api.peopledatalabs.com/v5/person/search', {
+    // Call Railway backend
+    const response = await fetch(railwayUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Api-Key': pdlApiKey,
       },
-      body: JSON.stringify(pdlQuery),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('PDL API error:', response.status, errorText);
+      console.error('Railway API error:', response.status, errorText);
       
-      // Don't throw errors for empty results or credit issues - just return empty
+      // Parse error for more specific messages
+      let errorMessage = `Railway API error: ${response.status}`;
+      let errorCode = 'api_error';
+      
+      try {
+        const errorJson = JSON.parse(errorText);
+        if (errorJson.detail) {
+          errorMessage = errorJson.detail;
+        }
+        if (errorJson.error) {
+          errorMessage = errorJson.error;
+        }
+      } catch {
+        // Use raw text if not JSON
+        if (errorText) errorMessage = errorText;
+      }
+      
+      // Handle 402 Payment Required (PDL credits exhausted)
       if (response.status === 402) {
-        console.log('PDL credits exhausted, returning empty results');
-        return new Response(
-          JSON.stringify({ 
-            success: true,
-            leads: [],
-            total: 0,
-            message: 'No leads found for this search criteria.'
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        errorCode = 'credits_exhausted';
+        errorMessage = 'Search credits exhausted. Please add more PDL search credits to continue generating leads.';
+      }
+      
+      // Handle 400 Bad Request (missing params)
+      if (response.status === 400) {
+        errorCode = 'invalid_request';
+        if (errorMessage.includes('search parameter')) {
+          errorMessage = 'At least one search filter is required. Please specify a job title, industry, or location.';
+        }
       }
       
       return new Response(
         JSON.stringify({ 
-          success: true,
-          leads: [],
-          total: 0,
-          message: 'No leads found matching your criteria.'
+          error: errorMessage, 
+          error_code: errorCode,
+          leads: [] 
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const data = await response.json();
-    console.log('PDL API response - total:', data.total);
+    console.log('Railway API response received');
 
-    const rawLeads = data.data || [];
-    
+    // Handle different response formats from Railway
+    let rawLeads: any[] = [];
+    if (Array.isArray(data)) {
+      rawLeads = data;
+    } else if (data.leads && Array.isArray(data.leads)) {
+      rawLeads = data.leads;
+    } else if (data.data && Array.isArray(data.data)) {
+      rawLeads = data.data;
+    } else if (data.results && Array.isArray(data.results)) {
+      rawLeads = data.results;
+    }
+
+    console.log('Raw leads count:', rawLeads.length);
+
+    // Map leads to expected format
     const leads: ScoredLead[] = rawLeads
-      .map(mapPDLLead)
-      .filter((lead: ScoredLead) => lead.contact_name || lead.company_name)
-      .sort((a: ScoredLead, b: ScoredLead) => b.scores.overall_score - a.scores.overall_score);
+      .map(mapRailwayLead)
+      .filter(lead => lead.contact_name || lead.company_name) // Filter out empty leads
+      .sort((a, b) => b.scores.overall_score - a.scores.overall_score);
 
     console.log('Processed leads count:', leads.length);
 
@@ -306,24 +360,15 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in fetch-external-leads:', error);
     const errorMessage = error instanceof Error ? error.message : 'Failed to fetch leads';
-    
-    // For auth errors, return proper status
-    if (errorMessage === 'Invalid user token') {
-      return new Response(
-        JSON.stringify({ error: errorMessage, leads: [] }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    
-    // For other errors, return success with empty leads to avoid error UI
     return new Response(
       JSON.stringify({ 
-        success: true,
-        leads: [],
-        total: 0,
-        message: 'Unable to search leads at this time.'
+        error: errorMessage,
+        leads: [] 
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: errorMessage === 'Invalid user token' ? 401 : 500 
+      }
     );
   }
 });

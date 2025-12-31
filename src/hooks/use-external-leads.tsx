@@ -51,9 +51,8 @@ export function useExternalLeads() {
 
       if (error) throw error;
       
-      // Handle graceful empty responses (no error shown to user)
-      if (data.success === false && data.error) {
-        console.log('Lead fetch returned error:', data.error);
+      if (data.error) {
+        throw new Error(data.error);
       }
       
       setLeads(data.leads || []);
@@ -64,16 +63,28 @@ export function useExternalLeads() {
       
       return data.leads || [];
     } catch (error: any) {
-      console.error('Lead fetch error:', error);
-      // Only show toast for real network/auth errors, not credit issues
-      if (error.message?.includes('Invalid user token') || error.message?.includes('unauthorized')) {
+      const errorMessage = error.message || 'Failed to fetch leads';
+      
+      // Check for credit-related errors
+      if (errorMessage.includes('credits') || errorMessage.includes('402') || errorMessage.includes('Payment')) {
         toast({
-          title: 'Session expired',
-          description: 'Please sign in again to search for leads.',
+          title: 'Search Credits Exhausted',
+          description: 'Your PDL search credits have been used up. Please add more credits to your People Data Labs account to continue.',
+          variant: 'destructive',
+        });
+      } else if (errorMessage.includes('search parameter') || errorMessage.includes('filter')) {
+        toast({
+          title: 'Search Filter Required',
+          description: 'Please provide at least one search filter like job title, industry, or location.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Error fetching leads',
+          description: errorMessage,
           variant: 'destructive',
         });
       }
-      // Don't show toast for other errors - just return empty
       return [];
     } finally {
       setLoading(false);
