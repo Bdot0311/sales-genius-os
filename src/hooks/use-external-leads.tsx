@@ -8,6 +8,9 @@ export interface ExternalLeadFilters {
   company_size?: string;
   include_unknown_size?: boolean;
   country?: string;
+  company?: string;
+  seniority?: string;
+  keywords?: string[];
   limit?: number;
 }
 
@@ -60,11 +63,28 @@ export function useExternalLeads() {
       
       return data.leads || [];
     } catch (error: any) {
-      toast({
-        title: 'Error fetching leads',
-        description: error.message,
-        variant: 'destructive',
-      });
+      const errorMessage = error.message || 'Failed to fetch leads';
+      
+      // Check for credit-related errors
+      if (errorMessage.includes('credits') || errorMessage.includes('402') || errorMessage.includes('Payment')) {
+        toast({
+          title: 'Search Credits Exhausted',
+          description: 'Your PDL search credits have been used up. Please add more credits to your People Data Labs account to continue.',
+          variant: 'destructive',
+        });
+      } else if (errorMessage.includes('search parameter') || errorMessage.includes('filter')) {
+        toast({
+          title: 'Search Filter Required',
+          description: 'Please provide at least one search filter like job title, industry, or location.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Error fetching leads',
+          description: errorMessage,
+          variant: 'destructive',
+        });
+      }
       return [];
     } finally {
       setLoading(false);

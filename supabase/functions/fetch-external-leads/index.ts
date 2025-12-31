@@ -12,6 +12,9 @@ interface ExternalLeadFilters {
   industry?: string;
   company_size?: string;
   country?: string;
+  company?: string;
+  seniority?: string;
+  keywords?: string[];
   limit?: number;
 }
 
@@ -35,6 +38,34 @@ interface ScoredLead {
   scores: LeadScores;
   score_explanation: string;
   buying_signals: string[];
+}
+
+// Job-related keywords to extract from keywords array
+const JOB_KEYWORDS = [
+  'ceo', 'cto', 'cfo', 'coo', 'cmo', 'cio', 'cpo', 'cro',
+  'founder', 'co-founder', 'cofounder', 'owner',
+  'president', 'vice president', 'vp',
+  'director', 'head', 'chief',
+  'manager', 'lead', 'senior', 'executive',
+  'partner', 'principal'
+];
+
+// Extract job titles from keywords
+function extractJobTitleFromKeywords(keywords: string[]): string | null {
+  if (!keywords || keywords.length === 0) return null;
+  
+  const foundJobs: string[] = [];
+  for (const keyword of keywords) {
+    const lower = keyword.toLowerCase();
+    for (const jobKeyword of JOB_KEYWORDS) {
+      if (lower.includes(jobKeyword)) {
+        foundJobs.push(keyword);
+        break;
+      }
+    }
+  }
+  
+  return foundJobs.length > 0 ? foundJobs.join(' OR ') : null;
 }
 
 // Calculate scores if not provided by Railway API
@@ -173,7 +204,7 @@ serve(async (req) => {
 
   try {
     const filters: ExternalLeadFilters = await req.json();
-    console.log('Received filters:', filters);
+    console.log('Received filters:', JSON.stringify(filters));
 
     // Get auth token from request
     const authHeader = req.headers.get('Authorization');
@@ -210,11 +241,31 @@ serve(async (req) => {
       limit: Math.min(filters.limit || 50, 100),
     };
     
-    // Only include non-empty filters
-    if (filters.job_title) requestBody.job_title = filters.job_title;
+    // Handle job_title - either from direct filter or extracted from keywords
+    let jobTitle: string | undefined = filters.job_title;
+    if (!jobTitle && filters.keywords && filters.keywords.length > 0) {
+      const extractedTitle = extractJobTitleFromKeywords(filters.keywords);
+      if (extractedTitle) {
+        jobTitle = extractedTitle;
+      }
+      console.log('Extracted job title from keywords:', jobTitle);
+    }
+    
+    // Only include non-empty filters (Railway API requires at least one search param)
+    if (jobTitle) requestBody.job_title = jobTitle;
     if (filters.industry) requestBody.industry = filters.industry;
     if (filters.company_size) requestBody.company_size = filters.company_size;
     if (filters.country) requestBody.location = filters.country; // Railway uses 'location' not 'country'
+    if (filters.company) requestBody.company = filters.company;
+    if (filters.seniority) requestBody.seniority = filters.seniority;
+
+    // Check if we have at least one search parameter (besides limit)
+    const hasSearchParam = Object.keys(requestBody).some(k => k !== 'limit' && requestBody[k]);
+    if (!hasSearchParam) {
+      console.warn('No search parameters provided, adding default job_title');
+      // Default to common decision-maker titles if no params provided
+      requestBody.job_title = 'CEO OR Founder OR CTO OR Director';
+    }
 
     console.log('Request body:', JSON.stringify(requestBody));
 
@@ -230,9 +281,45 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Railway API error:', response.status, errorText);
+      
+      // Parse error for more specific messages
+      let errorMessage = `Railway API error: ${response.status}`;
+      let errorCode = 'api_error';
+      
+      try {
+        const errorJson = JSON.parse(errorText);
+        if (errorJson.detail) {
+          errorMessage = errorJson.detail;
+        }
+        if (errorJson.error) {
+          errorMessage = errorJson.error;
+        }
+      } catch {
+        // Use raw text if not JSON
+        if (errorText) errorMessage = errorText;
+      }
+      
+      // Handle 402 Payment Required (PDL credits exhausted)
+      if (response.status === 402) {
+        errorCode = 'credits_exhausted';
+        errorMessage = 'Search credits exhausted. Please add more PDL search credits to continue generating leads.';
+      }
+      
+      // Handle 400 Bad Request (missing params)
+      if (response.status === 400) {
+        errorCode = 'invalid_request';
+        if (errorMessage.includes('search parameter')) {
+          errorMessage = 'At least one search filter is required. Please specify a job title, industry, or location.';
+        }
+      }
+      
       return new Response(
-        JSON.stringify({ error: `Railway API error: ${response.status}`, leads: [] }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          error: errorMessage, 
+          error_code: errorCode,
+          leads: [] 
+        }),
+        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 

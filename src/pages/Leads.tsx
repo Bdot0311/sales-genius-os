@@ -88,8 +88,9 @@ const Leads = () => {
                 limit: aiFilters.limit || 50,
               };
               
+              // Use job titles if available
               if (aiFilters.jobTitles?.length > 0) {
-                newFilters.job_title = aiFilters.jobTitles[0];
+                newFilters.job_title = aiFilters.jobTitles.join(' OR ');
               }
               if (aiFilters.industries?.length > 0) {
                 newFilters.industry = aiFilters.industries[0];
@@ -99,6 +100,21 @@ const Leads = () => {
               }
               if (aiFilters.locations?.length > 0) {
                 newFilters.country = aiFilters.locations[0];
+              }
+              
+              // Pass keywords for fallback extraction in edge function
+              if (aiFilters.keywords?.length > 0) {
+                newFilters.keywords = aiFilters.keywords;
+              }
+              
+              // If no job titles but keywords exist, try to build job_title from keywords
+              if (!newFilters.job_title && aiFilters.keywords?.length > 0) {
+                const jobKeywords = aiFilters.keywords.filter((k: string) => 
+                  /ceo|cto|cfo|founder|director|vp|head|manager|executive|owner/i.test(k)
+                );
+                if (jobKeywords.length > 0) {
+                  newFilters.job_title = jobKeywords.join(' OR ');
+                }
               }
               
               setExternalFilters(newFilters);
