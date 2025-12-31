@@ -92,10 +92,29 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
         throw signInError;
       }
 
-      // After successful sign in, verify subscription
+      // After successful sign in, check if user is admin (skip subscription check for admins)
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session) {
+        // First check if user is an admin
+        const { data: adminCheck } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .eq('role', 'admin')
+          .single();
+
+        // If admin, skip subscription check entirely
+        if (adminCheck?.role === 'admin') {
+          toast({
+            title: "Welcome back, Admin!",
+            description: "You have successfully signed in.",
+          });
+          onSuccess?.();
+          return;
+        }
+
+        // For non-admin users, verify subscription
         const { data: subCheck, error: subError } = await supabase.functions.invoke('check-subscription', {
           headers: {
             Authorization: `Bearer ${session.access_token}`
