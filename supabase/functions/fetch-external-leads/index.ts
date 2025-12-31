@@ -205,14 +205,16 @@ serve(async (req) => {
 
     console.log('Calling Railway API:', railwayUrl);
 
-    // Prepare request body for Railway API
-    const requestBody = {
-      job_title: filters.job_title || '',
-      industry: filters.industry || '',
-      company_size: filters.company_size || '',
-      country: filters.country || '',
+    // Prepare request body for Railway API (matches SearchRequest schema)
+    const requestBody: Record<string, string | number | null> = {
       limit: Math.min(filters.limit || 50, 100),
     };
+    
+    // Only include non-empty filters
+    if (filters.job_title) requestBody.job_title = filters.job_title;
+    if (filters.industry) requestBody.industry = filters.industry;
+    if (filters.company_size) requestBody.company_size = filters.company_size;
+    if (filters.country) requestBody.location = filters.country; // Railway uses 'location' not 'country'
 
     console.log('Request body:', JSON.stringify(requestBody));
 
