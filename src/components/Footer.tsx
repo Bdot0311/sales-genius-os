@@ -53,7 +53,7 @@ export const Footer = () => {
         </div>
 
         <div className="pt-6 sm:pt-8 border-t border-border text-center text-xs sm:text-sm text-muted-foreground">
-          © 2025 BDØT Industries LLC. All rights reserved.
+          © {new Date().getFullYear()} BDØT Industries LLC. All rights reserved.
         </div>
       </div>
     </footer>
