@@ -88,18 +88,18 @@ const AILeadDiscoveryMockup = ({ isActive }: { isActive: boolean }) => {
   }, [isActive]);
 
   return (
-    <div className="space-y-4">
-      <div className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border border-border/50">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-primary-foreground" />
+    <div className="space-y-3 sm:space-y-4">
+      <div className="bg-background/50 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-4 border border-border/50">
+        <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+          <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
+            <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-primary-foreground" />
           </div>
-          <span className="text-sm text-muted-foreground">AI Command</span>
+          <span className="text-xs sm:text-sm text-muted-foreground">AI Command</span>
         </div>
-        <div className="bg-muted/50 rounded-lg p-3 min-h-[48px] flex items-center">
-          <Search className="w-4 h-4 text-muted-foreground mr-2 flex-shrink-0" />
-          <span className="text-foreground">{typedText}</span>
-          <span className={`w-0.5 h-5 bg-primary ml-1 ${isActive ? 'animate-pulse' : 'opacity-0'}`} />
+        <div className="bg-muted/50 rounded-lg p-2 sm:p-3 min-h-[40px] sm:min-h-[48px] flex items-center">
+          <Search className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground mr-2 flex-shrink-0" />
+          <span className="text-foreground text-xs sm:text-sm break-words">{typedText}</span>
+          <span className={`w-0.5 h-4 sm:h-5 bg-primary ml-1 flex-shrink-0 ${isActive ? 'animate-pulse' : 'opacity-0'}`} />
         </div>
       </div>
 
@@ -107,31 +107,30 @@ const AILeadDiscoveryMockup = ({ isActive }: { isActive: boolean }) => {
         {[
           { name: "Sarah Johnson", company: "TechFlow", role: "Founder & CEO" },
           { name: "Marcus Chen", company: "DataSync", role: "Co-founder" },
-          { name: "Emma Schmidt", company: "CloudBase", role: "CEO" },
         ].map((lead, i) => (
           <div 
             key={i} 
-            className="bg-background/30 backdrop-blur-sm rounded-lg p-3 border border-border/30 flex items-center gap-3 transition-all duration-300"
+            className="bg-background/30 backdrop-blur-sm rounded-lg p-2 sm:p-3 border border-border/30 flex items-center gap-2 sm:gap-3 transition-all duration-300"
             style={{ animationDelay: `${i * 100}ms` }}
           >
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-              <User className="w-5 h-5 text-primary" />
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0">
+              <User className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
             </div>
-            <div className="flex-1">
-              <div className="font-medium text-sm">{lead.name}</div>
-              <div className="text-xs text-muted-foreground">{lead.role} at {lead.company}</div>
+            <div className="flex-1 min-w-0">
+              <div className="font-medium text-xs sm:text-sm truncate">{lead.name}</div>
+              <div className="text-[10px] sm:text-xs text-muted-foreground truncate">{lead.role} at {lead.company}</div>
             </div>
-            <div className="flex gap-1">
-              <div className="w-6 h-6 rounded bg-primary/10 flex items-center justify-center">
-                <Linkedin className="w-3 h-3 text-primary" />
+            <div className="flex gap-1 flex-shrink-0">
+              <div className="w-5 h-5 sm:w-6 sm:h-6 rounded bg-primary/10 flex items-center justify-center">
+                <Linkedin className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-primary" />
               </div>
-              <div className="w-6 h-6 rounded bg-primary/10 flex items-center justify-center">
-                <Mail className="w-3 h-3 text-primary" />
+              <div className="w-5 h-5 sm:w-6 sm:h-6 rounded bg-primary/10 flex items-center justify-center">
+                <Mail className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-primary" />
               </div>
             </div>
           </div>
         ))}
-        <div className="text-center text-xs text-muted-foreground pt-2">
+        <div className="text-center text-[10px] sm:text-xs text-muted-foreground pt-1 sm:pt-2">
           Found 47 more matching leads...
         </div>
       </div>
@@ -172,17 +171,17 @@ const EnrichmentMockup = ({ isActive }: { isActive: boolean }) => {
   ];
 
   return (
-    <div className="bg-background/50 backdrop-blur-sm rounded-xl p-5 border border-border/50">
-      <div className="flex items-center gap-4 mb-4 pb-4 border-b border-border/30">
-        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-          <User className="w-7 h-7 text-primary" />
+    <div className="bg-background/50 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-5 border border-border/50">
+      <div className="flex items-center gap-2 sm:gap-4 mb-3 sm:mb-4 pb-3 sm:pb-4 border-b border-border/30">
+        <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0">
+          <User className="w-5 h-5 sm:w-7 sm:h-7 text-primary" />
         </div>
-        <div>
-          <div className="font-semibold text-lg">Sarah Johnson</div>
-          <div className="text-sm text-muted-foreground">Founder & CEO at TechFlow</div>
+        <div className="min-w-0 flex-1">
+          <div className="font-semibold text-sm sm:text-lg truncate">Sarah Johnson</div>
+          <div className="text-xs sm:text-sm text-muted-foreground truncate">Founder & CEO at TechFlow</div>
         </div>
-        <div className="ml-auto">
-          <div className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-300 ${
+        <div className="flex-shrink-0">
+          <div className={`px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-medium transition-all duration-300 ${
             enrichStage >= 4 ? 'bg-green-500/20 text-green-400' : 'bg-primary/20 text-primary animate-pulse'
           }`}>
             {enrichStage >= 4 ? '✓ Enriched' : 'Enriching...'}
@@ -190,23 +189,23 @@ const EnrichmentMockup = ({ isActive }: { isActive: boolean }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
         {enrichFields.map((field, i) => (
           <div 
             key={i}
-            className={`p-3 rounded-lg border transition-all duration-500 ${
+            className={`p-2 sm:p-3 rounded-lg border transition-all duration-500 ${
               enrichStage >= field.stage 
                 ? 'bg-primary/5 border-primary/30' 
                 : 'bg-muted/30 border-border/30'
             }`}
           >
-            <div className="flex items-center gap-2 mb-1">
-              <field.icon className={`w-4 h-4 transition-colors ${
+            <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
+              <field.icon className={`w-3 h-3 sm:w-4 sm:h-4 transition-colors flex-shrink-0 ${
                 enrichStage >= field.stage ? 'text-primary' : 'text-muted-foreground'
               }`} />
-              <span className="text-xs text-muted-foreground">{field.label}</span>
+              <span className="text-[10px] sm:text-xs text-muted-foreground truncate">{field.label}</span>
             </div>
-            <div className={`text-sm font-medium transition-all duration-300 ${
+            <div className={`text-xs sm:text-sm font-medium transition-all duration-300 truncate ${
               enrichStage >= field.stage ? 'opacity-100' : 'opacity-0'
             }`}>
               {field.value}
@@ -249,14 +248,14 @@ const PipelineMockup = ({ isActive }: { isActive: boolean }) => {
   ];
 
   return (
-    <div className="flex gap-2 overflow-hidden">
+    <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-2 -mx-1 px-1">
       {stages.map((stage, stageIndex) => (
-        <div key={stageIndex} className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2">
-            <div className={`w-2 h-2 rounded-full ${stage.color}`} />
-            <span className="text-xs font-medium truncate">{stage.name}</span>
+        <div key={stageIndex} className="flex-1 min-w-[70px] sm:min-w-0">
+          <div className="flex items-center gap-1 sm:gap-2 mb-1.5 sm:mb-2">
+            <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0 ${stage.color}`} />
+            <span className="text-[10px] sm:text-xs font-medium truncate">{stage.name}</span>
           </div>
-          <div className="bg-muted/30 rounded-lg p-2 min-h-[120px] border border-border/30 space-y-2">
+          <div className="bg-muted/30 rounded-md sm:rounded-lg p-1.5 sm:p-2 min-h-[80px] sm:min-h-[120px] border border-border/30 space-y-1.5 sm:space-y-2">
             {stage.deals.map((deal) => {
               const isMoving = movingDeal === deal.id;
               const shouldShow = deal.id !== 1 || (deal.id === 1 && (stageIndex === 0 && dealPosition === 0) || (stageIndex === 1 && dealPosition === 1));
@@ -267,21 +266,21 @@ const PipelineMockup = ({ isActive }: { isActive: boolean }) => {
               return (
                 <div 
                   key={deal.id}
-                  className={`bg-background/80 rounded-lg p-2 border border-border/50 transition-all duration-500 ${
+                  className={`bg-background/80 rounded-md sm:rounded-lg p-1.5 sm:p-2 border border-border/50 transition-all duration-500 ${
                     isMoving ? 'scale-105 shadow-lg shadow-primary/20 border-primary/50' : ''
                   }`}
                 >
-                  <div className="font-medium text-xs">{deal.name}</div>
-                  <div className="text-xs text-primary">{deal.value}</div>
+                  <div className="font-medium text-[10px] sm:text-xs truncate">{deal.name}</div>
+                  <div className="text-[10px] sm:text-xs text-primary">{deal.value}</div>
                 </div>
               );
             })}
             {stages[1].deals.length === 1 && stageIndex === 1 && dealPosition === 1 && (
               <div 
-                className="bg-background/80 rounded-lg p-2 border border-primary/50 shadow-lg shadow-primary/20 animate-fade-in"
+                className="bg-background/80 rounded-md sm:rounded-lg p-1.5 sm:p-2 border border-primary/50 shadow-lg shadow-primary/20 animate-fade-in"
               >
-                <div className="font-medium text-xs">TechFlow</div>
-                <div className="text-xs text-primary">$25,000</div>
+                <div className="font-medium text-[10px] sm:text-xs truncate">TechFlow</div>
+                <div className="text-[10px] sm:text-xs text-primary">$25,000</div>
               </div>
             )}
           </div>
@@ -326,29 +325,29 @@ const OutreachMockup = ({ isActive }: { isActive: boolean }) => {
   ];
 
   return (
-    <div className="bg-background/50 backdrop-blur-sm rounded-xl border border-border/50 overflow-hidden">
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-border/30 bg-muted/30">
-        <Mail className="w-4 h-4 text-primary" />
-        <span className="text-sm font-medium">AI-Generated Email</span>
-        <div className="ml-auto flex items-center gap-1.5">
-          <Sparkles className="w-3 h-3 text-primary animate-pulse" />
-          <span className="text-xs text-muted-foreground">Personalized</span>
+    <div className="bg-background/50 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border/50 overflow-hidden">
+      <div className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-3 border-b border-border/30 bg-muted/30">
+        <Mail className="w-3 h-3 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
+        <span className="text-xs sm:text-sm font-medium">AI-Generated Email</span>
+        <div className="ml-auto flex items-center gap-1 sm:gap-1.5">
+          <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-primary animate-pulse" />
+          <span className="text-[10px] sm:text-xs text-muted-foreground">Personalized</span>
         </div>
       </div>
-      <div className="p-4 space-y-3">
-        <div className="flex items-center gap-2 text-sm">
+      <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
+        <div className="flex items-center gap-2 text-xs sm:text-sm">
           <span className="text-muted-foreground">To:</span>
-          <span className="text-foreground">sarah@techflow.io</span>
+          <span className="text-foreground truncate">sarah@techflow.io</span>
         </div>
-        <div className="flex items-center gap-2 text-sm">
-          <span className="text-muted-foreground">Subject:</span>
-          <span className="text-foreground">Quick question about TechFlow's growth</span>
+        <div className="flex items-center gap-2 text-xs sm:text-sm">
+          <span className="text-muted-foreground flex-shrink-0">Subject:</span>
+          <span className="text-foreground truncate">Quick question about TechFlow</span>
         </div>
-        <div className={`pt-3 border-t border-border/30 space-y-2 transition-opacity duration-300 ${showEmail ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`pt-2 sm:pt-3 border-t border-border/30 space-y-1.5 sm:space-y-2 transition-opacity duration-300 ${showEmail ? 'opacity-100' : 'opacity-0'}`}>
           {emailContent.map((line, i) => (
             <p 
               key={i}
-              className={`text-sm transition-all duration-300 ${
+              className={`text-xs sm:text-sm transition-all duration-300 ${
                 i < emailLines ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
               }`}
             >
@@ -400,23 +399,23 @@ const AnalyticsMockup = ({ isActive }: { isActive: boolean }) => {
   ];
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-4 gap-2">
+    <div className="space-y-3 sm:space-y-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
         {stats.map((stat, i) => (
-          <div key={i} className="bg-background/50 backdrop-blur-sm rounded-lg p-3 border border-border/50 text-center">
-            <div className={`text-lg font-bold ${stat.color}`}>
+          <div key={i} className="bg-background/50 backdrop-blur-sm rounded-md sm:rounded-lg p-2 sm:p-3 border border-border/50 text-center">
+            <div className={`text-sm sm:text-lg font-bold ${stat.color}`}>
               {stat.prefix}{stat.value}{stat.suffix}
             </div>
-            <div className="text-xs text-muted-foreground">{stat.label}</div>
+            <div className="text-[10px] sm:text-xs text-muted-foreground">{stat.label}</div>
           </div>
         ))}
       </div>
-      <div className="bg-background/50 backdrop-blur-sm rounded-lg p-4 border border-border/50">
-        <div className="flex items-center gap-2 mb-3">
-          <TrendingUp className="w-4 h-4 text-green-400" />
-          <span className="text-sm font-medium">Monthly Growth</span>
+      <div className="bg-background/50 backdrop-blur-sm rounded-md sm:rounded-lg p-3 sm:p-4 border border-border/50">
+        <div className="flex items-center gap-2 mb-2 sm:mb-3">
+          <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-green-400" />
+          <span className="text-xs sm:text-sm font-medium">Monthly Growth</span>
         </div>
-        <div className="flex items-end gap-1 h-16">
+        <div className="flex items-end gap-0.5 sm:gap-1 h-12 sm:h-16">
           {[40, 55, 45, 65, 50, 80, 70, 95].map((height, i) => (
             <div 
               key={i} 
@@ -458,12 +457,12 @@ const CoachMockup = ({ isActive }: { isActive: boolean }) => {
   ];
 
   return (
-    <div className="bg-background/50 backdrop-blur-sm rounded-xl border border-border/50 overflow-hidden">
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-border/30 bg-muted/30">
-        <MessageSquare className="w-4 h-4 text-primary" />
-        <span className="text-sm font-medium">AI Sales Coach</span>
+    <div className="bg-background/50 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border/50 overflow-hidden">
+      <div className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-3 border-b border-border/30 bg-muted/30">
+        <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
+        <span className="text-xs sm:text-sm font-medium">AI Sales Coach</span>
       </div>
-      <div className="p-4 space-y-3 min-h-[160px]">
+      <div className="p-3 sm:p-4 space-y-2 sm:space-y-3 min-h-[120px] sm:min-h-[160px]">
         {chatMessages.map((msg, i) => (
           <div 
             key={i}
@@ -471,15 +470,15 @@ const CoachMockup = ({ isActive }: { isActive: boolean }) => {
               messages.includes(i) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
             } ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
           >
-            <div className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
+            <div className={`max-w-[90%] sm:max-w-[85%] rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm ${
               msg.type === 'user' 
                 ? 'bg-primary text-primary-foreground' 
                 : 'bg-muted/50 border border-border/50'
             }`}>
               {msg.type === 'ai' && (
-                <div className="flex items-center gap-1.5 mb-1">
-                  <Sparkles className="w-3 h-3 text-primary" />
-                  <span className="text-xs text-primary font-medium">AI Coach</span>
+                <div className="flex items-center gap-1 sm:gap-1.5 mb-0.5 sm:mb-1">
+                  <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-primary" />
+                  <span className="text-[10px] sm:text-xs text-primary font-medium">AI Coach</span>
                 </div>
               )}
               {msg.text}
