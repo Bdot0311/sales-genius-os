@@ -241,24 +241,23 @@ const PipelineMockup = ({ isActive }: { isActive: boolean }) => {
   }, [isActive]);
 
   const stages = [
-    { name: "Qualified", deals: [{ id: 1, name: "TechFlow", value: "$25,000" }], color: "bg-blue-500" },
-    { name: "Meeting", deals: [{ id: 2, name: "DataSync", value: "$18,000" }], color: "bg-yellow-500" },
+    { name: "Qualified", deals: [{ id: 1, name: "TechFl...", value: "$25,000" }], color: "bg-blue-500" },
+    { name: "Meeting", deals: [{ id: 2, name: "DataSy...", value: "$18,000" }], color: "bg-yellow-500" },
     { name: "Proposal", deals: [], color: "bg-purple-500" },
-    { name: "Closed", deals: [{ id: 3, name: "CloudBase", value: "$42,000" }], color: "bg-green-500" },
+    { name: "Closed", deals: [{ id: 3, name: "CloudB...", value: "$42,000" }], color: "bg-green-500" },
   ];
 
   return (
-    <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-2 -mx-1 px-1">
+    <div className="grid grid-cols-4 gap-1 sm:gap-2">
       {stages.map((stage, stageIndex) => (
-        <div key={stageIndex} className="flex-1 min-w-[70px] sm:min-w-0">
-          <div className="flex items-center gap-1 sm:gap-2 mb-1.5 sm:mb-2">
+        <div key={stageIndex} className="min-w-0">
+          <div className="flex items-center gap-1 mb-1 sm:mb-2">
             <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0 ${stage.color}`} />
-            <span className="text-[10px] sm:text-xs font-medium truncate">{stage.name}</span>
+            <span className="text-[9px] sm:text-xs font-medium truncate">{stage.name}</span>
           </div>
-          <div className="bg-muted/30 rounded-md sm:rounded-lg p-1.5 sm:p-2 min-h-[80px] sm:min-h-[120px] border border-border/30 space-y-1.5 sm:space-y-2">
+          <div className="bg-muted/30 rounded-md sm:rounded-lg p-1 sm:p-2 min-h-[60px] sm:min-h-[100px] border border-border/30 space-y-1 sm:space-y-2">
             {stage.deals.map((deal) => {
               const isMoving = movingDeal === deal.id;
-              const shouldShow = deal.id !== 1 || (deal.id === 1 && (stageIndex === 0 && dealPosition === 0) || (stageIndex === 1 && dealPosition === 1));
               
               if (deal.id === 1 && stageIndex === 0 && dealPosition === 1) return null;
               if (deal.id === 1 && stageIndex === 1 && dealPosition === 0) return null;
@@ -266,21 +265,21 @@ const PipelineMockup = ({ isActive }: { isActive: boolean }) => {
               return (
                 <div 
                   key={deal.id}
-                  className={`bg-background/80 rounded-md sm:rounded-lg p-1.5 sm:p-2 border border-border/50 transition-all duration-500 ${
+                  className={`bg-background/80 rounded sm:rounded-md p-1 sm:p-2 border border-border/50 transition-all duration-500 ${
                     isMoving ? 'scale-105 shadow-lg shadow-primary/20 border-primary/50' : ''
                   }`}
                 >
-                  <div className="font-medium text-[10px] sm:text-xs truncate">{deal.name}</div>
-                  <div className="text-[10px] sm:text-xs text-primary">{deal.value}</div>
+                  <div className="font-medium text-[8px] sm:text-xs truncate">{deal.name}</div>
+                  <div className="text-[8px] sm:text-xs text-primary">{deal.value}</div>
                 </div>
               );
             })}
             {stages[1].deals.length === 1 && stageIndex === 1 && dealPosition === 1 && (
               <div 
-                className="bg-background/80 rounded-md sm:rounded-lg p-1.5 sm:p-2 border border-primary/50 shadow-lg shadow-primary/20 animate-fade-in"
+                className="bg-background/80 rounded sm:rounded-md p-1 sm:p-2 border border-primary/50 shadow-lg shadow-primary/20 animate-fade-in"
               >
-                <div className="font-medium text-[10px] sm:text-xs truncate">TechFlow</div>
-                <div className="text-[10px] sm:text-xs text-primary">$25,000</div>
+                <div className="font-medium text-[8px] sm:text-xs truncate">TechFl...</div>
+                <div className="text-[8px] sm:text-xs text-primary">$25,000</div>
               </div>
             )}
           </div>
