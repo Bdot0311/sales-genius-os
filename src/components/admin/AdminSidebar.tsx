@@ -1,5 +1,7 @@
-import { LayoutDashboard, Users, Settings, Activity, BarChart3, Lock } from "lucide-react";
+import { LayoutDashboard, Users, Settings, Activity, BarChart3, Lock, ArrowLeft } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -64,7 +66,13 @@ export function AdminSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <div className="mt-auto p-4">
+        <div className="mt-auto p-4 space-y-3">
+          <Button variant="outline" size="sm" className="w-full" asChild>
+            <Link to="/dashboard">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              {open && "Back to Dashboard"}
+            </Link>
+          </Button>
           <div className={`bg-muted/50 rounded-lg p-3 ${!open && 'text-center'}`}>
             <Lock className={`h-4 w-4 text-muted-foreground ${!open ? 'mx-auto' : 'mb-2'}`} />
             {open && (
