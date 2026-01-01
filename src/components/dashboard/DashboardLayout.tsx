@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import salesosLogo from "@/assets/salesos-logo.webp";
 import {
   LayoutDashboard,
@@ -18,9 +19,11 @@ import {
   Puzzle,
   Settings,
   Shield,
+  Clock,
 } from "lucide-react";
 import { User } from "@supabase/supabase-js";
 import { useSubscription } from "@/hooks/use-subscription";
+import { useSubscriptionStatus } from "@/hooks/use-subscription-status";
 import { useAdmin } from "@/hooks/use-admin";
 import { useWhiteLabel } from "@/hooks/use-white-label";
 
@@ -46,8 +49,14 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { subscription } = useSubscription();
+  const { status: subscriptionStatus } = useSubscriptionStatus();
   const { isAdmin } = useAdmin();
   const { settings: whiteLabelSettings } = useWhiteLabel();
+
+  // Calculate trial days remaining
+  const trialDaysRemaining = subscriptionStatus?.trialEndDate
+    ? Math.max(0, Math.ceil((new Date(subscriptionStatus.trialEndDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : null;
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -186,6 +195,19 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             <Menu className="w-5 h-5" />
           </Button>
           <div className="flex-1" />
+          
+          {/* Trial days remaining badge */}
+          {subscriptionStatus?.isTrialUser && trialDaysRemaining !== null && (
+            <Badge 
+              variant={trialDaysRemaining <= 3 ? "destructive" : "secondary"}
+              className="flex items-center gap-1.5"
+            >
+              <Clock className="w-3.5 h-3.5" />
+              {trialDaysRemaining === 0 
+                ? "Trial expires today" 
+                : `${trialDaysRemaining} day${trialDaysRemaining === 1 ? '' : 's'} left in trial`}
+            </Badge>
+          )}
         </header>
 
         {/* Page content */}
