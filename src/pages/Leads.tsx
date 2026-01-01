@@ -6,12 +6,13 @@ import { AddLeadDialog } from "@/components/dashboard/AddLeadDialog";
 import { ImportLeadsDialog } from "@/components/dashboard/ImportLeadsDialog";
 import { ExternalLeadsTable } from "@/components/dashboard/ExternalLeadsTable";
 import { AILeadCommand } from "@/components/dashboard/AILeadCommand";
-import { Sparkles, Loader2, Users, RefreshCw } from "lucide-react";
+import { Sparkles, Loader2, Users, RefreshCw, Lock, CreditCard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useExternalLeads, ExternalLeadFilters } from "@/hooks/use-external-leads";
+import { useSubscriptionStatus } from "@/hooks/use-subscription-status";
 
 const Leads = () => {
   const [leads, setLeads] = useState<any[]>([]);
@@ -20,6 +21,7 @@ const Leads = () => {
   const [aiSearchQuery, setAiSearchQuery] = useState("");
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { status: subscriptionStatus, loading: subscriptionLoading } = useSubscriptionStatus();
   
   const {
     leads: externalLeads,
@@ -29,6 +31,9 @@ const Leads = () => {
     activateLead: activateExternalLead,
     clearLeads: clearExternalLeads,
   } = useExternalLeads();
+
+  // Check if user can access lead gen (must be paid, not trial)
+  const canAccessLeadGen = subscriptionStatus?.isPaidUser === true;
 
   const fetchLeads = async () => {
     try {
@@ -70,89 +75,116 @@ const Leads = () => {
           </div>
         </div>
 
-        {/* AI Command Interface - Hero Section */}
-        <AILeadCommand
-          onSearch={async (query) => {
-            setAiSearchQuery(query);
-            setShowExternalLeads(true);
-            
-            try {
-              const { data, error } = await supabase.functions.invoke('parse-lead-query', {
-                body: { query }
-              });
-              
-              if (error) throw error;
-              
-              const aiFilters = data?.filters || {};
-              const newFilters: ExternalLeadFilters = {
-                limit: aiFilters.limit || 50,
-              };
-              
-              // Use job titles if available
-              if (aiFilters.jobTitles?.length > 0) {
-                newFilters.job_title = aiFilters.jobTitles.join(' OR ');
-              }
-              if (aiFilters.industries?.length > 0) {
-                newFilters.industry = aiFilters.industries[0];
-              }
-              if (aiFilters.companySizes?.length > 0) {
-                newFilters.company_size = aiFilters.companySizes[0];
-              }
-              if (aiFilters.locations?.length > 0) {
-                newFilters.country = aiFilters.locations[0];
-              }
-              
-              // Pass keywords for fallback extraction in edge function
-              if (aiFilters.keywords?.length > 0) {
-                newFilters.keywords = aiFilters.keywords;
-              }
-              
-              // If no job titles but keywords exist, try to build job_title from keywords
-              if (!newFilters.job_title && aiFilters.keywords?.length > 0) {
-                const jobKeywords = aiFilters.keywords.filter((k: string) => 
-                  /ceo|cto|cfo|founder|director|vp|head|manager|executive|owner/i.test(k)
-                );
-                if (jobKeywords.length > 0) {
-                  newFilters.job_title = jobKeywords.join(' OR ');
+        {/* Trial User Lock Screen */}
+        {!subscriptionLoading && !canAccessLeadGen && (
+          <Card className="border-2 border-dashed border-muted-foreground/25">
+            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-6">
+                <Lock className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <h2 className="text-2xl font-bold mb-2">Lead Generation is a Paid Feature</h2>
+              <p className="text-muted-foreground max-w-md mb-6">
+                {subscriptionStatus?.isTrialUser 
+                  ? "AI Lead Generation is not included in your free trial. Upgrade to a paid plan to unlock unlimited access to our B2B lead database."
+                  : "Subscribe to a paid plan to unlock AI-powered lead generation and access millions of B2B contacts."
                 }
-              }
-              
-              setExternalFilters(newFilters);
-              fetchExternalLeads(newFilters);
-            } catch (error) {
-              console.error('AI parsing failed, using fallback:', error);
-              const lowerQuery = query.toLowerCase();
-              const newFilters: ExternalLeadFilters = { limit: 50 };
-              
-              if (lowerQuery.includes('ceo') || lowerQuery.includes('founder')) {
-                newFilters.job_title = lowerQuery.includes('ceo') ? 'CEO' : 'Founder';
-              }
-              if (lowerQuery.includes('fintech') || lowerQuery.includes('saas') || lowerQuery.includes('tech')) {
-                newFilters.industry = 'Technology';
-              }
-              
-              const countMatch = lowerQuery.match(/(\d+)\s*(leads?|founders?|ceos?|prospects?)/i);
-              if (countMatch) {
-                newFilters.limit = Math.min(parseInt(countMatch[1]), 100);
-              }
-              
-              setExternalFilters(newFilters);
-              fetchExternalLeads(newFilters);
-              
-              toast({
-                title: "Using basic search",
-                description: "AI parsing unavailable, using keyword matching",
-                variant: "default",
-              });
-            }
-          }}
-          isSearching={externalLoading}
-          resultsCount={externalLeads.length}
-          showResults={showExternalLeads && externalLeads.length > 0 && !externalLoading}
-        />
+              </p>
+              <Button onClick={() => navigate('/pricing')} size="lg" className="gap-2">
+                <CreditCard className="w-4 h-4" />
+                Upgrade Now
+              </Button>
+              <p className="text-sm text-muted-foreground mt-4">
+                Cancel anytime • Instant access after upgrade
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
-        {/* AI-Discovered Leads Section */}
-        {showExternalLeads && (
+        {/* AI Command Interface - Hero Section (only show for paid users) */}
+        {canAccessLeadGen && (
+          <>
+            <AILeadCommand
+              onSearch={async (query) => {
+                setAiSearchQuery(query);
+                setShowExternalLeads(true);
+                
+                try {
+                  const { data, error } = await supabase.functions.invoke('parse-lead-query', {
+                    body: { query }
+                  });
+                  
+                  if (error) throw error;
+                  
+                  const aiFilters = data?.filters || {};
+                  const newFilters: ExternalLeadFilters = {
+                    limit: aiFilters.limit || 50,
+                  };
+                  
+                  // Use job titles if available
+                  if (aiFilters.jobTitles?.length > 0) {
+                    newFilters.job_title = aiFilters.jobTitles.join(' OR ');
+                  }
+                  if (aiFilters.industries?.length > 0) {
+                    newFilters.industry = aiFilters.industries[0];
+                  }
+                  if (aiFilters.companySizes?.length > 0) {
+                    newFilters.company_size = aiFilters.companySizes[0];
+                  }
+                  if (aiFilters.locations?.length > 0) {
+                    newFilters.country = aiFilters.locations[0];
+                  }
+                  
+                  // Pass keywords for fallback extraction in edge function
+                  if (aiFilters.keywords?.length > 0) {
+                    newFilters.keywords = aiFilters.keywords;
+                  }
+                  
+                  // If no job titles but keywords exist, try to build job_title from keywords
+                  if (!newFilters.job_title && aiFilters.keywords?.length > 0) {
+                    const jobKeywords = aiFilters.keywords.filter((k: string) => 
+                      /ceo|cto|cfo|founder|director|vp|head|manager|executive|owner/i.test(k)
+                    );
+                    if (jobKeywords.length > 0) {
+                      newFilters.job_title = jobKeywords.join(' OR ');
+                    }
+                  }
+                  
+                  setExternalFilters(newFilters);
+                  fetchExternalLeads(newFilters);
+                } catch (error) {
+                  console.error('AI parsing failed, using fallback:', error);
+                  const lowerQuery = query.toLowerCase();
+                  const newFilters: ExternalLeadFilters = { limit: 50 };
+                  
+                  if (lowerQuery.includes('ceo') || lowerQuery.includes('founder')) {
+                    newFilters.job_title = lowerQuery.includes('ceo') ? 'CEO' : 'Founder';
+                  }
+                  if (lowerQuery.includes('fintech') || lowerQuery.includes('saas') || lowerQuery.includes('tech')) {
+                    newFilters.industry = 'Technology';
+                  }
+                  
+                  const countMatch = lowerQuery.match(/(\d+)\s*(leads?|founders?|ceos?|prospects?)/i);
+                  if (countMatch) {
+                    newFilters.limit = Math.min(parseInt(countMatch[1]), 100);
+                  }
+                  
+                  setExternalFilters(newFilters);
+                  fetchExternalLeads(newFilters);
+                  
+                  toast({
+                    title: "Using basic search",
+                    description: "AI parsing unavailable, using keyword matching",
+                    variant: "default",
+                  });
+                }
+              }}
+              isSearching={externalLoading}
+              resultsCount={externalLeads.length}
+              showResults={showExternalLeads && externalLeads.length > 0 && !externalLoading}
+            />
+
+            {/* AI-Discovered Leads Section */}
+            {showExternalLeads && (
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
@@ -212,6 +244,8 @@ const Leads = () => {
               )}
             </CardContent>
           </Card>
+        )}
+          </>
         )}
       </div>
     </DashboardLayout>
