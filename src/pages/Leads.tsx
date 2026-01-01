@@ -6,7 +6,7 @@ import { AddLeadDialog } from "@/components/dashboard/AddLeadDialog";
 import { ImportLeadsDialog } from "@/components/dashboard/ImportLeadsDialog";
 import { ExternalLeadsTable } from "@/components/dashboard/ExternalLeadsTable";
 import { AILeadCommand } from "@/components/dashboard/AILeadCommand";
-import { Sparkles, Loader2, Users } from "lucide-react";
+import { Sparkles, Loader2, Users, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -163,17 +163,31 @@ const Leads = () => {
                     <Badge variant="secondary">{externalLeads.length} found</Badge>
                   )}
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    clearExternalLeads();
-                    setShowExternalLeads(false);
-                    setAiSearchQuery("");
-                  }}
-                >
-                  Clear
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      clearExternalLeads();
+                      setShowExternalLeads(false);
+                      setAiSearchQuery("");
+                    }}
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Start New Search
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      clearExternalLeads();
+                      setShowExternalLeads(false);
+                      setAiSearchQuery("");
+                    }}
+                  >
+                    Clear
+                  </Button>
+                </div>
               </div>
               {aiSearchQuery && (
                 <CardDescription>Results for: "{aiSearchQuery}"</CardDescription>
