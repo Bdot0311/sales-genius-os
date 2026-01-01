@@ -12,6 +12,18 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
+// Product IDs for plans and addons
+const PLAN_PRODUCTS = {
+  'prod_TOropirqoOz7Ed': { plan: 'growth', credits: 200, dailyLimit: 25 },
+  'prod_TOrozUbuuN18RP': { plan: 'pro', credits: 700, dailyLimit: 100 },
+  'prod_TOrod7SaIV2D7s': { plan: 'elite', credits: 2000, dailyLimit: 500 },
+};
+
+const ADDON_PRODUCTS = {
+  'prod_TiLYPvYYIpq6I9': { credits: 500, priceId: 'price_1SkurgFTerosS6hiDIBX0NhA' },
+  'prod_TiLYxYZjV6ru4w': { credits: 1500, priceId: 'price_1SkurlFTerosS6hirju1trQ4' },
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -72,7 +84,10 @@ serve(async (req) => {
           return new Response(JSON.stringify({ 
             subscribed: true,
             plan: existingSub.plan,
-            status: existingSub.status
+            status: existingSub.status,
+            search_credits_base: existingSub.search_credits_base || 200,
+            search_credits_addon: existingSub.search_credits_addon || 0,
+            search_credits_remaining: existingSub.search_credits_remaining || 200,
           }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 200,
@@ -87,7 +102,10 @@ serve(async (req) => {
             user_id: userId,
             plan: 'growth',
             status: 'active',
-            leads_limit: 1000
+            leads_limit: 1000,
+            search_credits_base: 200,
+            search_credits_addon: 0,
+            search_credits_remaining: 200,
           }, { onConflict: 'user_id' });
 
         if (upsertError) {
@@ -98,7 +116,10 @@ serve(async (req) => {
       return new Response(JSON.stringify({ 
         subscribed: false,
         plan: 'growth',
-        status: 'active'
+        status: 'active',
+        search_credits_base: 200,
+        search_credits_addon: 0,
+        search_credits_remaining: 200,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
@@ -119,34 +140,60 @@ serve(async (req) => {
     let plan: 'growth' | 'pro' | 'elite' = 'growth';
     let subscriptionEnd: string | null = null;
     let stripeSubscriptionId: string | null = null;
+    let baseCredits = 200;
+    let addonCredits = 0;
+    let addonPriceId: string | null = null;
 
     if (hasActiveSub) {
       const subscription = subscriptions.data[0];
       subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
       stripeSubscriptionId = subscription.id;
       
-      // Determine plan based on product ID
-      const productId = subscription.items.data[0].price.product as string;
       logStep('Found active subscription', { 
         subscriptionId: subscription.id, 
-        productId,
+        itemCount: subscription.items.data.length,
         endDate: subscriptionEnd 
       });
 
-      // Map product ID to plan (using the product IDs from stripe-config.ts)
-      if (productId === 'prod_TOropirqoOz7Ed') {
-        plan = 'growth';
-      } else if (productId === 'prod_TOrozUbuuN18RP') {
-        plan = 'pro';
-      } else if (productId === 'prod_TOrod7SaIV2D7s') {
-        plan = 'elite';
+      // Loop through ALL subscription items to detect plan and addons
+      for (const item of subscription.items.data) {
+        const productId = item.price.product as string;
+        
+        // Check if it's a base plan
+        if (PLAN_PRODUCTS[productId as keyof typeof PLAN_PRODUCTS]) {
+          const planInfo = PLAN_PRODUCTS[productId as keyof typeof PLAN_PRODUCTS];
+          plan = planInfo.plan as 'growth' | 'pro' | 'elite';
+          baseCredits = planInfo.credits;
+          logStep('Detected base plan', { plan, baseCredits });
+        }
+        
+        // Check if it's an addon
+        if (ADDON_PRODUCTS[productId as keyof typeof ADDON_PRODUCTS]) {
+          const addonInfo = ADDON_PRODUCTS[productId as keyof typeof ADDON_PRODUCTS];
+          addonCredits = addonInfo.credits;
+          addonPriceId = addonInfo.priceId;
+          logStep('Detected addon', { addonCredits, addonPriceId });
+        }
       }
-      
-      logStep('Determined plan', { plan });
 
       // Sync to database (only if authenticated)
       if (userId) {
         const leadsLimit = plan === 'growth' ? 1000 : plan === 'pro' ? 10000 : 999999;
+        
+        // Get current subscription to preserve remaining credits if same billing cycle
+        const { data: currentSub } = await supabaseClient
+          .from('subscriptions')
+          .select('search_credits_remaining, credits_reset_at, current_period_end')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        const totalCredits = baseCredits + addonCredits;
+        let remainingCredits = totalCredits;
+
+        // If we're in the same billing cycle, preserve remaining credits
+        if (currentSub?.current_period_end === subscriptionEnd) {
+          remainingCredits = currentSub.search_credits_remaining;
+        }
         
         const { error: updateError } = await supabaseClient
           .from('subscriptions')
@@ -157,7 +204,12 @@ serve(async (req) => {
             leads_limit: leadsLimit,
             stripe_customer_id: customerId,
             stripe_subscription_id: stripeSubscriptionId,
-            current_period_end: subscriptionEnd
+            current_period_end: subscriptionEnd,
+            search_credits_base: baseCredits,
+            search_credits_addon: addonCredits,
+            search_credits_remaining: remainingCredits,
+            addon_price_id: addonPriceId,
+            credits_reset_at: subscriptionEnd,
           }, { onConflict: 'user_id' });
 
         if (updateError) {
@@ -165,7 +217,7 @@ serve(async (req) => {
           throw updateError;
         }
 
-        logStep('Successfully synced subscription to database');
+        logStep('Successfully synced subscription to database', { plan, baseCredits, addonCredits });
       }
     } else {
       logStep('No active subscription found, setting to growth plan');
@@ -179,7 +231,10 @@ serve(async (req) => {
             plan: 'growth',
             status: 'active',
             leads_limit: 1000,
-            stripe_customer_id: customerId
+            stripe_customer_id: customerId,
+            search_credits_base: 200,
+            search_credits_addon: 0,
+            search_credits_remaining: 200,
           }, { onConflict: 'user_id' });
 
         if (updateError) {
@@ -193,7 +248,11 @@ serve(async (req) => {
       plan,
       status: 'active',
       subscription_end: subscriptionEnd,
-      stripe_customer_id: customerId
+      stripe_customer_id: customerId,
+      search_credits_base: baseCredits,
+      search_credits_addon: addonCredits,
+      total_credits: baseCredits + addonCredits,
+      addon_price_id: addonPriceId,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,

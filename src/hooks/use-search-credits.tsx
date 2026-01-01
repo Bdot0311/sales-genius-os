@@ -1,0 +1,178 @@
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { PLAN_CONFIG, ADDON_CONFIG, type PlanType, type AddonType } from '@/lib/stripe-config';
+
+interface SearchCredits {
+  baseCredits: number;
+  addonCredits: number;
+  totalCredits: number;
+  remainingCredits: number;
+  dailySearchesUsed: number;
+  dailySearchLimit: number;
+  plan: PlanType;
+  addonPriceId: string | null;
+  creditsResetAt: string | null;
+}
+
+export const useSearchCredits = () => {
+  const [credits, setCredits] = useState<SearchCredits | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchCredits = useCallback(async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setCredits(null);
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('plan, search_credits_base, search_credits_addon, search_credits_remaining, daily_searches_used, daily_searches_reset_at, credits_reset_at, addon_price_id')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data) {
+        const plan = (data.plan || 'growth') as PlanType;
+        const planConfig = PLAN_CONFIG[plan];
+        
+        setCredits({
+          baseCredits: data.search_credits_base || planConfig.monthlySearchCredits,
+          addonCredits: data.search_credits_addon || 0,
+          totalCredits: (data.search_credits_base || planConfig.monthlySearchCredits) + (data.search_credits_addon || 0),
+          remainingCredits: data.search_credits_remaining || planConfig.monthlySearchCredits,
+          dailySearchesUsed: data.daily_searches_used || 0,
+          dailySearchLimit: planConfig.dailySearchLimit,
+          plan,
+          addonPriceId: data.addon_price_id,
+          creditsResetAt: data.credits_reset_at,
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching search credits:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCredits();
+  }, [fetchCredits]);
+
+  const addAddon = useCallback(async (addonPriceId: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('Please sign in first');
+        return { success: false };
+      }
+
+      const { data, error } = await supabase.functions.invoke('add-subscription-addon', {
+        body: { addonPriceId },
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      toast.success(data.message || 'Addon added successfully');
+      await fetchCredits();
+      return { success: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to add addon';
+      toast.error(message);
+      return { success: false, error: message };
+    }
+  }, [fetchCredits]);
+
+  const removeAddon = useCallback(async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('Please sign in first');
+        return { success: false };
+      }
+
+      const { data, error } = await supabase.functions.invoke('remove-subscription-addon', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      toast.success('Addon removed successfully');
+      await fetchCredits();
+      return { success: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to remove addon';
+      toast.error(message);
+      return { success: false, error: message };
+    }
+  }, [fetchCredits]);
+
+  const useCredit = useCallback(async (amount: number = 1, description?: string) => {
+    if (!credits || credits.remainingCredits < amount) {
+      toast.error('Insufficient search credits');
+      return { success: false };
+    }
+
+    if (credits.dailySearchesUsed >= credits.dailySearchLimit) {
+      toast.error('Daily search limit reached');
+      return { success: false };
+    }
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return { success: false };
+
+      const newRemaining = credits.remainingCredits - amount;
+      const newDailyUsed = credits.dailySearchesUsed + 1;
+
+      // Update credits in database
+      const { error: updateError } = await supabase
+        .from('subscriptions')
+        .update({
+          search_credits_remaining: newRemaining,
+          daily_searches_used: newDailyUsed,
+        })
+        .eq('user_id', session.user.id);
+
+      if (updateError) throw updateError;
+
+      // Log transaction
+      await supabase.from('search_transactions').insert({
+        user_id: session.user.id,
+        type: 'usage',
+        amount: -amount,
+        balance_after: newRemaining,
+        description: description || 'Search query',
+      });
+
+      setCredits(prev => prev ? {
+        ...prev,
+        remainingCredits: newRemaining,
+        dailySearchesUsed: newDailyUsed,
+      } : null);
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error using credit:', error);
+      return { success: false };
+    }
+  }, [credits]);
+
+  return {
+    credits,
+    loading,
+    fetchCredits,
+    addAddon,
+    removeAddon,
+    useCredit,
+    hasCredits: credits ? credits.remainingCredits > 0 : false,
+    canSearch: credits ? credits.dailySearchesUsed < credits.dailySearchLimit && credits.remainingCredits > 0 : false,
+  };
+};

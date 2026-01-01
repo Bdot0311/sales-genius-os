@@ -1216,15 +1216,52 @@ export type Database = {
         }
         Relationships: []
       }
+      search_transactions: {
+        Row: {
+          amount: number
+          balance_after: number
+          created_at: string
+          description: string | null
+          id: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           account_status: string | null
+          addon_price_id: string | null
           created_at: string
+          credits_reset_at: string | null
           current_period_end: string
           current_period_start: string
+          daily_searches_reset_at: string | null
+          daily_searches_used: number
           id: string
           leads_limit: number
           plan: Database["public"]["Enums"]["subscription_plan"]
+          search_credits_addon: number
+          search_credits_base: number
+          search_credits_remaining: number
           status: string
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
@@ -1237,12 +1274,19 @@ export type Database = {
         }
         Insert: {
           account_status?: string | null
+          addon_price_id?: string | null
           created_at?: string
+          credits_reset_at?: string | null
           current_period_end?: string
           current_period_start?: string
+          daily_searches_reset_at?: string | null
+          daily_searches_used?: number
           id?: string
           leads_limit?: number
           plan?: Database["public"]["Enums"]["subscription_plan"]
+          search_credits_addon?: number
+          search_credits_base?: number
+          search_credits_remaining?: number
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
@@ -1255,12 +1299,19 @@ export type Database = {
         }
         Update: {
           account_status?: string | null
+          addon_price_id?: string | null
           created_at?: string
+          credits_reset_at?: string | null
           current_period_end?: string
           current_period_start?: string
+          daily_searches_reset_at?: string | null
+          daily_searches_used?: number
           id?: string
           leads_limit?: number
           plan?: Database["public"]["Enums"]["subscription_plan"]
+          search_credits_addon?: number
+          search_credits_base?: number
+          search_credits_remaining?: number
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null

@@ -1,8 +1,12 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, Search, Eye, Zap, Download, Star } from "lucide-react";
+import { Check, Search, Eye, Zap, Download, Star, Loader2 } from "lucide-react";
 import { STRIPE_PRICE_IDS, PLAN_CONFIG, ADDON_CONFIG } from "@/lib/stripe-config";
+import { useSearchCredits } from "@/hooks/use-search-credits";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const plans = [
   {
@@ -97,8 +101,31 @@ const creditUsage = [
 ];
 
 export const Pricing = () => {
+  const { credits, addAddon, removeAddon } = useSearchCredits();
+  const [addingAddon, setAddingAddon] = useState<string | null>(null);
+  const [removingAddon, setRemovingAddon] = useState(false);
+
   const handleCheckout = (paymentLink: string) => {
     window.open(paymentLink, '_blank');
+  };
+
+  const handleAddAddon = async (addonPriceId: string) => {
+    // Check if user is subscribed first
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      toast.error('Please sign in and subscribe to a plan first');
+      return;
+    }
+
+    setAddingAddon(addonPriceId);
+    await addAddon(addonPriceId);
+    setAddingAddon(null);
+  };
+
+  const handleRemoveAddon = async () => {
+    setRemovingAddon(true);
+    await removeAddon();
+    setRemovingAddon(false);
   };
 
   return (
@@ -220,23 +247,47 @@ export const Pricing = () => {
           </div>
 
           <div className="grid sm:grid-cols-2 gap-4">
-            {addons.map((addon, index) => (
-              <Card key={index} className="p-6 bg-card border-border text-center">
-                <div className="text-lg font-semibold mb-2">
-                  +{addon.credits.toLocaleString()} search credits / month
-                </div>
-                <div className="text-2xl font-bold text-primary mb-4">
-                  {addon.price}<span className="text-sm font-normal text-muted-foreground">/month</span>
-                </div>
-                <Button variant="outline" className="w-full" onClick={() => window.open(`https://buy.stripe.com/${addon.priceId}`, '_blank')}>
-                  Add to Subscription
-                </Button>
-              </Card>
-            ))}
+            {addons.map((addon, index) => {
+              const isCurrentAddon = credits?.addonPriceId === addon.priceId;
+              const isLoading = addingAddon === addon.priceId;
+              
+              return (
+                <Card key={index} className={`p-6 bg-card border-border text-center ${isCurrentAddon ? 'ring-2 ring-primary' : ''}`}>
+                  {isCurrentAddon && (
+                    <Badge className="mb-2 bg-primary text-primary-foreground">Current Add-on</Badge>
+                  )}
+                  <div className="text-lg font-semibold mb-2">
+                    +{addon.credits.toLocaleString()} search credits / month
+                  </div>
+                  <div className="text-2xl font-bold text-primary mb-4">
+                    {addon.price}<span className="text-sm font-normal text-muted-foreground">/month</span>
+                  </div>
+                  {isCurrentAddon ? (
+                    <Button 
+                      variant="outline" 
+                      className="w-full" 
+                      onClick={handleRemoveAddon}
+                      disabled={removingAddon}
+                    >
+                      {removingAddon ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Removing...</> : 'Remove Add-on'}
+                    </Button>
+                  ) : (
+                    <Button 
+                      variant="outline" 
+                      className="w-full" 
+                      onClick={() => handleAddAddon(addon.priceId)}
+                      disabled={isLoading || addingAddon !== null}
+                    >
+                      {isLoading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Adding...</> : 'Add to Subscription'}
+                    </Button>
+                  )}
+                </Card>
+              );
+            })}
           </div>
 
           <p className="text-center text-sm text-muted-foreground mt-4">
-            No one-time purchases. No custom plans.
+            Add-ons are merged into your existing subscription. One combined bill.
           </p>
         </div>
 
