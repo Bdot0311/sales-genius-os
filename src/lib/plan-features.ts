@@ -6,8 +6,12 @@ export const PLAN_FEATURES = {
     name: 'Growth',
     price: 99,
     
+    // Search Credits (NEW credit-based system)
+    monthlySearchCredits: 200,
+    dailySearchLimit: 25,
+    exportTier: 'standard' as const,
+    
     // Lead Intelligence Engine
-    monthlyDiscoveryAllowance: 500,
     maxResultsPerSearch: 25,
     enrichmentLevel: 'standard',
     advancedFilters: false,
@@ -57,8 +61,12 @@ export const PLAN_FEATURES = {
     name: 'Pro',
     price: 299,
     
+    // Search Credits (NEW credit-based system)
+    monthlySearchCredits: 700,
+    dailySearchLimit: 100,
+    exportTier: 'advanced' as const,
+    
     // Lead Intelligence Engine
-    monthlyDiscoveryAllowance: 2500,
     maxResultsPerSearch: 100,
     enrichmentLevel: 'advanced',
     advancedFilters: true,
@@ -108,8 +116,12 @@ export const PLAN_FEATURES = {
     name: 'Elite',
     price: 799,
     
+    // Search Credits (NEW credit-based system)
+    monthlySearchCredits: 2000,
+    dailySearchLimit: 500,
+    exportTier: 'unlimited' as const,
+    
     // Lead Intelligence Engine
-    monthlyDiscoveryAllowance: 10000,
     maxResultsPerSearch: 500,
     enrichmentLevel: 'premium',
     advancedFilters: true,
