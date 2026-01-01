@@ -9,8 +9,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { UserPlus, Lock, Unlock, Trash2, Clock, Search, RefreshCw } from "lucide-react";
+import { UserPlus, Lock, Unlock, Trash2, Clock, Search, RefreshCw, Shield } from "lucide-react";
 
 interface UserSubscription {
   user_id: string;
@@ -25,19 +26,32 @@ interface UserSubscription {
   trial_end_date: string | null;
 }
 
+interface UserRole {
+  user_id: string;
+  role: string;
+}
+
 const AdminUsers = () => {
   const [subscriptions, setSubscriptions] = useState<UserSubscription[]>([]);
+  const [userRoles, setUserRoles] = useState<UserRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [createUserOpen, setCreateUserOpen] = useState(false);
   const [deleteUserOpen, setDeleteUserOpen] = useState(false);
   const [trialDialogOpen, setTrialDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserSubscription | null>(null);
-  const [newUser, setNewUser] = useState({ email: '', password: '', full_name: '', plan: 'growth' as 'growth' | 'pro' | 'elite' });
+  const [newUser, setNewUser] = useState({ 
+    email: '', 
+    password: '', 
+    full_name: '', 
+    plan: 'elite' as 'growth' | 'pro' | 'elite',
+    is_admin: true 
+  });
   const [trialDays, setTrialDays] = useState(30);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     loadSubscriptions();
+    loadUserRoles();
   }, []);
 
   const loadSubscriptions = async () => {
@@ -51,6 +65,22 @@ const AdminUsers = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadUserRoles = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('user_id, role');
+      if (error) throw error;
+      setUserRoles(data || []);
+    } catch (error) {
+      console.error('Error loading user roles:', error);
+    }
+  };
+
+  const isUserAdmin = (userId: string) => {
+    return userRoles.some(r => r.user_id === userId && r.role === 'admin');
   };
 
   const updateSubscription = async (userId: string, plan: 'growth' | 'pro' | 'elite') => {
@@ -74,10 +104,11 @@ const AdminUsers = () => {
         body: newUser
       });
       if (error) throw error;
-      toast.success('User created successfully');
+      toast.success(newUser.is_admin ? 'Admin team member created successfully' : 'User created successfully');
       setCreateUserOpen(false);
-      setNewUser({ email: '', password: '', full_name: '', plan: 'growth' });
+      setNewUser({ email: '', password: '', full_name: '', plan: 'elite', is_admin: true });
       loadSubscriptions();
+      loadUserRoles();
     } catch (error) {
       console.error('Error creating user:', error);
       toast.error('Failed to create user');
@@ -148,7 +179,13 @@ const AdminUsers = () => {
     }
   };
 
-  const getAccountStatusBadge = (accountStatus: string, trialEndDate: string | null) => {
+  const getAccountStatusBadge = (userId: string, accountStatus: string, trialEndDate: string | null) => {
+    if (isUserAdmin(userId)) {
+      return <Badge className="gap-1 bg-primary"><Shield className="h-3 w-3" />Admin</Badge>;
+    }
+    if (accountStatus === 'admin') {
+      return <Badge className="gap-1 bg-primary"><Shield className="h-3 w-3" />Admin</Badge>;
+    }
     if (accountStatus === 'locked') {
       return <Badge variant="destructive">Locked</Badge>;
     }
@@ -253,7 +290,7 @@ const AdminUsers = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {getAccountStatusBadge(sub.account_status, sub.trial_end_date)}
+                        {getAccountStatusBadge(sub.user_id, sub.account_status, sub.trial_end_date)}
                       </TableCell>
                       <TableCell>{sub.leads_limit.toLocaleString()}</TableCell>
                       <TableCell>
@@ -321,12 +358,25 @@ const AdminUsers = () => {
       <Dialog open={createUserOpen} onOpenChange={setCreateUserOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create New User</DialogTitle>
+            <DialogTitle>Add Team Member</DialogTitle>
             <DialogDescription>
-              Manually create a new user account with subscription
+              Create a new user account. Admin team members get full access without requiring payment.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/50">
+              <div className="space-y-0.5">
+                <Label htmlFor="is_admin" className="text-base">Admin Access</Label>
+                <p className="text-sm text-muted-foreground">
+                  Admins get full platform access without paying
+                </p>
+              </div>
+              <Switch
+                id="is_admin"
+                checked={newUser.is_admin}
+                onCheckedChange={(checked) => setNewUser({ ...newUser, is_admin: checked })}
+              />
+            </div>
             <div>
               <Label htmlFor="email">Email</Label>
               <Input
@@ -334,7 +384,7 @@ const AdminUsers = () => {
                 type="email"
                 value={newUser.email}
                 onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                placeholder="user@example.com"
+                placeholder="teammate@company.com"
               />
             </div>
             <div>
@@ -377,7 +427,9 @@ const AdminUsers = () => {
             <Button variant="outline" onClick={() => setCreateUserOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={createUser}>Create User</Button>
+            <Button onClick={createUser}>
+              {newUser.is_admin ? 'Add Admin' : 'Create User'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

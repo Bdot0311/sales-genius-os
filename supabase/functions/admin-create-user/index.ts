@@ -42,13 +42,13 @@ serve(async (req) => {
 
     if (!roleData) throw new Error("Admin privileges required");
 
-    const { email, password, full_name, plan = 'growth' } = await req.json();
+    const { email, password, full_name, plan = 'growth', is_admin = false } = await req.json();
     
     if (!email || !password) {
       throw new Error("Email and password are required");
     }
 
-    logStep("Creating user", { email, plan });
+    logStep("Creating user", { email, plan, is_admin });
 
     // Create the user in auth
     const { data: newUser, error: createError } = await supabaseClient.auth.admin.createUser({
@@ -64,13 +64,33 @@ serve(async (req) => {
     logStep("User created", { userId: newUser.user.id });
 
     // Profile and subscription will be created by triggers
-    // But let's update the subscription plan if needed
-    if (plan !== 'growth') {
-      const leadsLimit = plan === 'pro' ? 10000 : 999999;
-      await supabaseClient
-        .from('subscriptions')
-        .update({ plan, leads_limit: leadsLimit })
-        .eq('user_id', newUser.user.id);
+    // Update the subscription plan if needed
+    const leadsLimit = plan === 'growth' ? 1000 : plan === 'pro' ? 10000 : 999999;
+    await supabaseClient
+      .from('subscriptions')
+      .update({ 
+        plan, 
+        leads_limit: leadsLimit,
+        // Admins get unlimited access - set account to permanent active
+        account_status: is_admin ? 'admin' : 'active',
+      })
+      .eq('user_id', newUser.user.id);
+
+    // If user should be admin, add admin role
+    if (is_admin) {
+      const { error: roleError } = await supabaseClient
+        .from('user_roles')
+        .insert({
+          user_id: newUser.user.id,
+          role: 'admin'
+        });
+      
+      if (roleError) {
+        logStep("Error adding admin role", { error: roleError });
+        // Don't throw - user is created, role just failed
+      } else {
+        logStep("Admin role assigned");
+      }
     }
 
     logStep("User setup complete");
