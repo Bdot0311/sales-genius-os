@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useExternalLeads, ExternalLeadFilters } from "@/hooks/use-external-leads";
 import { useSubscriptionStatus } from "@/hooks/use-subscription-status";
-
+import { useSearchCredits } from "@/hooks/use-search-credits";
 const Leads = () => {
   const [leads, setLeads] = useState<any[]>([]);
   const [externalFilters, setExternalFilters] = useState<ExternalLeadFilters>({});
@@ -22,6 +22,7 @@ const Leads = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { status: subscriptionStatus, loading: subscriptionLoading } = useSubscriptionStatus();
+  const { credits, canSearch, useCredit } = useSearchCredits();
   
   const {
     leads: externalLeads,
@@ -105,6 +106,24 @@ const Leads = () => {
           <>
             <AILeadCommand
               onSearch={async (query) => {
+                // Check if user can search
+                if (!canSearch) {
+                  toast({
+                    title: "Search limit reached",
+                    description: credits?.remainingCredits === 0 
+                      ? "You've used all your monthly search credits. Add more credits to continue."
+                      : "You've reached your daily search limit. Try again tomorrow.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+
+                // Deduct credit before searching
+                const creditResult = await useCredit(1, `Lead search: ${query.substring(0, 50)}`);
+                if (!creditResult.success) {
+                  return;
+                }
+
                 setAiSearchQuery(query);
                 setShowExternalLeads(true);
                 
