@@ -51,19 +51,25 @@ const Waitlist = () => {
     if (isLaunching) return;
     setIsLaunching(true);
 
-    // Phase 1: Flash effect (0-500ms)
+    // Phase 1: Glitch initiation (0-300ms)
     setLaunchPhase(1);
     
-    // Phase 2: Zoom and dissolve (500-1500ms)
-    setTimeout(() => setLaunchPhase(2), 500);
+    // Phase 2: Screen tear + particle burst (300-800ms)
+    setTimeout(() => setLaunchPhase(2), 300);
     
-    // Phase 3: Final fade out (1500-2500ms)
-    setTimeout(() => setLaunchPhase(3), 1500);
+    // Phase 3: Vortex implosion (800-1500ms)
+    setTimeout(() => setLaunchPhase(3), 800);
+    
+    // Phase 4: Shockwave expansion (1500-2200ms)
+    setTimeout(() => setLaunchPhase(4), 1500);
+    
+    // Phase 5: Portal opening (2200-3000ms)
+    setTimeout(() => setLaunchPhase(5), 2200);
     
     // Navigate to home after animation completes
     setTimeout(() => {
       navigate("/home");
-    }, 2500);
+    }, 3200);
   };
 
   // Fetch waitlist count
@@ -191,42 +197,186 @@ const Waitlist = () => {
     { icon: Users, title: "Team Collaboration", desc: "Built for modern sales teams" },
   ];
 
-  // Launch sequence overlay
+  // Launch sequence overlay - EPIC DISAPPEARING EFFECT
   if (isLaunching) {
     return (
-      <div className="min-h-screen relative overflow-hidden flex items-center justify-center"
+      <div 
+        className="min-h-screen relative overflow-hidden flex items-center justify-center"
         style={{
           background: "radial-gradient(ellipse 80% 50% at 50% -20%, hsl(261 75% 20% / 0.4), transparent), hsl(0 0% 4%)",
         }}
       >
-        {/* Phase 1: Bright flash */}
+        {/* Glitch scan lines */}
         <div 
-          className={`absolute inset-0 bg-white transition-opacity duration-500 ${
-            launchPhase >= 1 ? "opacity-100" : "opacity-0"
-          } ${launchPhase >= 2 ? "opacity-0" : ""}`}
-          style={{ transitionDuration: launchPhase >= 2 ? "1000ms" : "300ms" }}
+          className={`absolute inset-0 pointer-events-none transition-opacity duration-200 ${
+            launchPhase >= 1 && launchPhase <= 2 ? "opacity-100" : "opacity-0"
+          }`}
+          style={{
+            backgroundImage: `repeating-linear-gradient(
+              0deg,
+              transparent,
+              transparent 2px,
+              rgba(255, 255, 255, 0.03) 2px,
+              rgba(255, 255, 255, 0.03) 4px
+            )`,
+            animation: launchPhase >= 1 ? "glitch-lines 0.1s infinite" : "none",
+          }}
         />
 
-        {/* Phase 2 & 3: Content dissolve with particles */}
+        {/* Screen tear effect */}
+        <div 
+          className={`absolute inset-0 pointer-events-none ${
+            launchPhase >= 1 && launchPhase <= 2 ? "opacity-100" : "opacity-0"
+          }`}
+        >
+          {[...Array(8)].map((_, i) => (
+            <div
+              key={`tear-${i}`}
+              className="absolute h-[12.5%] w-full overflow-hidden"
+              style={{
+                top: `${i * 12.5}%`,
+                transform: launchPhase >= 2 
+                  ? `translateX(${(Math.random() - 0.5) * (i % 2 === 0 ? 80 : -80)}px) skewX(${(Math.random() - 0.5) * 10}deg)`
+                  : "translateX(0) skewX(0deg)",
+                transition: `transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) ${i * 30}ms`,
+                filter: launchPhase >= 2 ? "hue-rotate(90deg) saturate(2)" : "none",
+              }}
+            >
+              <div 
+                className="absolute inset-0"
+                style={{
+                  background: `linear-gradient(${90 + i * 20}deg, 
+                    hsl(261 75% 50% / ${0.1 + i * 0.05}), 
+                    hsl(${280 + i * 15} 75% 60% / ${0.15 + i * 0.03}))`,
+                }}
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Vortex spiral effect */}
+        <div 
+          className={`absolute inset-0 pointer-events-none transition-all duration-700 ${
+            launchPhase >= 3 ? "opacity-100 scale-100" : "opacity-0 scale-50"
+          }`}
+          style={{
+            background: `conic-gradient(from 0deg at 50% 50%, 
+              transparent, 
+              hsl(261 75% 50% / 0.5), 
+              hsl(280 75% 60% / 0.3), 
+              hsl(320 75% 50% / 0.5),
+              transparent)`,
+            animation: launchPhase >= 3 ? "vortex-spin 0.5s ease-in forwards" : "none",
+          }}
+        />
+
+        {/* Particle disintegration burst */}
+        <div className={`absolute inset-0 pointer-events-none ${
+          launchPhase >= 2 ? "opacity-100" : "opacity-0"
+        }`}>
+          {[...Array(60)].map((_, i) => {
+            const angle = (i / 60) * 360;
+            const distance = 50 + Math.random() * 100;
+            const size = 2 + Math.random() * 8;
+            const delay = Math.random() * 300;
+            
+            return (
+              <div
+                key={`particle-${i}`}
+                className="absolute rounded-full"
+                style={{
+                  left: "50%",
+                  top: "50%",
+                  width: `${size}px`,
+                  height: `${size}px`,
+                  background: `linear-gradient(135deg, 
+                    hsl(${260 + Math.random() * 80} 80% ${50 + Math.random() * 30}%), 
+                    hsl(${280 + Math.random() * 60} 75% ${40 + Math.random() * 40}%))`,
+                  boxShadow: `0 0 ${size * 2}px hsl(${260 + Math.random() * 60} 80% 60%)`,
+                  transform: launchPhase >= 3
+                    ? `translate(-50%, -50%) translate(${Math.cos(angle * Math.PI / 180) * distance}vw, ${Math.sin(angle * Math.PI / 180) * distance}vh) scale(0)`
+                    : "translate(-50%, -50%) scale(1)",
+                  opacity: launchPhase >= 4 ? 0 : 1,
+                  transition: `all ${800 + Math.random() * 400}ms cubic-bezier(0.4, 0, 0.2, 1) ${delay}ms`,
+                }}
+              />
+            );
+          })}
+        </div>
+
+        {/* Shockwave rings */}
+        <div className={`absolute inset-0 pointer-events-none flex items-center justify-center ${
+          launchPhase >= 4 ? "opacity-100" : "opacity-0"
+        }`}>
+          {[...Array(5)].map((_, i) => (
+            <div
+              key={`ring-${i}`}
+              className="absolute rounded-full border-2"
+              style={{
+                width: launchPhase >= 4 ? `${300 + i * 100}vmax` : "0",
+                height: launchPhase >= 4 ? `${300 + i * 100}vmax` : "0",
+                borderColor: `hsl(261 75% ${70 - i * 10}% / ${0.6 - i * 0.1})`,
+                boxShadow: `0 0 ${30 - i * 5}px hsl(261 75% 60% / 0.4), inset 0 0 ${20 - i * 3}px hsl(261 75% 60% / 0.2)`,
+                transition: `all ${600 + i * 100}ms cubic-bezier(0.4, 0, 0.2, 1) ${i * 80}ms`,
+                opacity: launchPhase >= 5 ? 0 : 1,
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Central portal */}
+        <div 
+          className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-500 ${
+            launchPhase >= 5 ? "scale-[50] opacity-100" : "scale-0 opacity-0"
+          }`}
+          style={{
+            width: "100px",
+            height: "100px",
+            background: "radial-gradient(circle, hsl(0 0% 100%) 0%, hsl(261 75% 50%) 30%, hsl(0 0% 4%) 70%)",
+            borderRadius: "50%",
+            boxShadow: "0 0 100px 50px hsl(261 75% 50% / 0.8)",
+          }}
+        />
+
+        {/* Main content that disintegrates */}
         <div 
           className={`relative z-10 text-center transition-all ${
-            launchPhase >= 2 ? "scale-150 opacity-0 blur-xl" : "scale-100 opacity-100 blur-0"
+            launchPhase >= 2 
+              ? "scale-90 opacity-0" 
+              : launchPhase >= 1 
+                ? "scale-105" 
+                : "scale-100"
           }`}
           style={{ 
-            transitionDuration: "1500ms",
-            transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)"
+            transitionDuration: "500ms",
+            transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
+            filter: launchPhase >= 1 
+              ? `blur(${launchPhase >= 2 ? 20 : 0}px) brightness(${launchPhase >= 1 ? 1.5 : 1})`
+              : "none",
+            animation: launchPhase === 1 ? "glitch-shake 0.1s infinite" : "none",
           }}
         >
-          {/* Rocket icon */}
-          <div className={`mb-6 transition-transform duration-1000 ${
-            launchPhase >= 1 ? "translate-y-[-100vh]" : "translate-y-0"
+          {/* Rocket icon launching */}
+          <div className={`mb-6 transition-all duration-700 ${
+            launchPhase >= 1 ? "translate-y-[-200vh] scale-150 rotate-12" : "translate-y-0 scale-100 rotate-0"
           }`}
-            style={{ transitionDelay: "200ms" }}
+            style={{ transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)" }}
           >
-            <Rocket className="w-24 h-24 mx-auto text-primary animate-pulse" />
+            <Rocket className="w-24 h-24 mx-auto text-primary" style={{
+              filter: launchPhase >= 1 ? "drop-shadow(0 0 30px hsl(261 75% 60%)) drop-shadow(0 20px 40px hsl(30 100% 50%))" : "none"
+            }} />
+            {/* Rocket trail */}
+            {launchPhase >= 1 && (
+              <div className="absolute left-1/2 top-full -translate-x-1/2 w-8 h-96 bg-gradient-to-b from-orange-500 via-yellow-400 to-transparent opacity-80 blur-sm" />
+            )}
           </div>
           
-          <h1 className="text-5xl sm:text-7xl font-bold text-foreground mb-4">
+          <h1 
+            className="text-5xl sm:text-7xl font-bold text-foreground mb-4"
+            style={{
+              textShadow: launchPhase >= 1 ? "0 0 40px hsl(261 75% 60%), 0 0 80px hsl(261 75% 50%)" : "none",
+            }}
+          >
             🚀 We're Live!
           </h1>
           <p className="text-xl text-muted-foreground">
@@ -234,38 +384,52 @@ const Waitlist = () => {
           </p>
         </div>
 
-        {/* Particle explosion effect */}
-        <div className={`absolute inset-0 pointer-events-none transition-opacity duration-500 ${
-          launchPhase >= 2 ? "opacity-100" : "opacity-0"
-        }`}>
-          {[...Array(20)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute w-2 h-2 rounded-full bg-primary"
-              style={{
-                left: "50%",
-                top: "50%",
-                transform: launchPhase >= 2 
-                  ? `translate(${(Math.random() - 0.5) * 200}vw, ${(Math.random() - 0.5) * 200}vh) scale(${Math.random() * 2})` 
-                  : "translate(-50%, -50%) scale(1)",
-                opacity: launchPhase >= 3 ? 0 : 1,
-                transition: `all ${1000 + Math.random() * 500}ms cubic-bezier(0.4, 0, 0.2, 1)`,
-                transitionDelay: `${Math.random() * 200}ms`,
-                backgroundColor: `hsl(${260 + Math.random() * 60} 75% ${50 + Math.random() * 30}%)`,
-              }}
-            />
-          ))}
-        </div>
-
-        {/* Radial wipe effect */}
+        {/* Flash overlay */}
         <div 
-          className={`absolute inset-0 transition-all duration-1000 ${
-            launchPhase >= 3 ? "opacity-100" : "opacity-0"
+          className={`absolute inset-0 bg-white pointer-events-none transition-opacity ${
+            launchPhase >= 4 ? "opacity-100" : "opacity-0"
           }`}
-          style={{
-            background: "radial-gradient(circle at center, transparent 0%, hsl(0 0% 4%) 100%)",
+          style={{ 
+            transitionDuration: launchPhase >= 5 ? "300ms" : "100ms",
+            opacity: launchPhase === 4 ? 1 : launchPhase >= 5 ? 0 : 0,
           }}
         />
+
+        {/* Final black overlay */}
+        <div 
+          className={`absolute inset-0 bg-background pointer-events-none transition-opacity duration-500 ${
+            launchPhase >= 5 ? "opacity-100" : "opacity-0"
+          }`}
+          style={{ transitionDelay: "200ms" }}
+        />
+
+        {/* CSS animations via style tag */}
+        <style>{`
+          @keyframes glitch-lines {
+            0%, 100% { transform: translateY(0); }
+            25% { transform: translateY(-2px); }
+            50% { transform: translateY(2px); }
+            75% { transform: translateY(-1px); }
+          }
+          
+          @keyframes glitch-shake {
+            0%, 100% { transform: translate(0, 0) skewX(0deg); }
+            10% { transform: translate(-5px, -2px) skewX(-1deg); }
+            20% { transform: translate(5px, 2px) skewX(1deg); }
+            30% { transform: translate(-3px, 1px) skewX(-0.5deg); }
+            40% { transform: translate(3px, -1px) skewX(0.5deg); }
+            50% { transform: translate(-2px, 2px) skewX(-0.3deg); }
+            60% { transform: translate(2px, -2px) skewX(0.3deg); }
+            70% { transform: translate(-4px, 0) skewX(-0.8deg); }
+            80% { transform: translate(4px, 0) skewX(0.8deg); }
+            90% { transform: translate(-1px, 1px) skewX(-0.2deg); }
+          }
+          
+          @keyframes vortex-spin {
+            0% { transform: rotate(0deg) scale(1); }
+            100% { transform: rotate(720deg) scale(0); }
+          }
+        `}</style>
       </div>
     );
   }
