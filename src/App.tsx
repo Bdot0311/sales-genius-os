@@ -28,7 +28,6 @@ const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Security = lazy(() => import("./pages/Security"));
 const Confirmation = lazy(() => import("./pages/Confirmation"));
-const Waitlist = lazy(() => import("./pages/Waitlist"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -48,7 +47,7 @@ const App = () => (
       <BrowserRouter>
         <Suspense fallback={<PageLoader />}>
           <Routes>
-            <Route path="/" element={<Waitlist />} />
+            <Route path="/" element={<Index />} />
             <Route path="/home" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/pricing" element={<PricingPage />} />
