@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import salesosLogo from "@/assets/salesos-logo.webp";
 import {
   LayoutDashboard,
@@ -20,12 +22,15 @@ import {
   Settings,
   Shield,
   Clock,
+  Search,
+  Zap,
 } from "lucide-react";
 import { User } from "@supabase/supabase-js";
 import { useSubscription } from "@/hooks/use-subscription";
 import { useSubscriptionStatus } from "@/hooks/use-subscription-status";
 import { useAdmin } from "@/hooks/use-admin";
 import { useWhiteLabel } from "@/hooks/use-white-label";
+import { useSearchCredits } from "@/hooks/use-search-credits";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -52,6 +57,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const { status: subscriptionStatus } = useSubscriptionStatus();
   const { isAdmin } = useAdmin();
   const { settings: whiteLabelSettings } = useWhiteLabel();
+  const { credits } = useSearchCredits();
 
   // Calculate trial days remaining
   const trialDaysRemaining = subscriptionStatus?.trialEndDate
@@ -196,18 +202,71 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </Button>
           <div className="flex-1" />
           
-          {/* Trial days remaining badge */}
-          {subscriptionStatus?.isTrialUser && trialDaysRemaining !== null && (
-            <Badge 
-              variant={trialDaysRemaining <= 3 ? "destructive" : "secondary"}
-              className="flex items-center gap-1.5"
-            >
-              <Clock className="w-3.5 h-3.5" />
-              {trialDaysRemaining === 0 
-                ? "Trial expires today" 
-                : `${trialDaysRemaining} day${trialDaysRemaining === 1 ? '' : 's'} left in trial`}
-            </Badge>
-          )}
+          <div className="flex items-center gap-4">
+            {/* Search Credits Display */}
+            {credits && (
+              <TooltipProvider>
+                <div className="flex items-center gap-3">
+                  {/* Monthly Credits */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border">
+                        <Search className="w-4 h-4 text-primary" />
+                        <div className="flex flex-col">
+                          <span className="text-xs text-muted-foreground leading-none">Credits</span>
+                          <span className="text-sm font-semibold leading-tight">
+                            {credits.remainingCredits.toLocaleString()}/{credits.totalCredits.toLocaleString()}
+                          </span>
+                        </div>
+                        <Progress 
+                          value={(credits.remainingCredits / credits.totalCredits) * 100} 
+                          className="w-12 h-1.5"
+                        />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{credits.remainingCredits.toLocaleString()} of {credits.totalCredits.toLocaleString()} monthly search credits remaining</p>
+                      {credits.addonCredits > 0 && (
+                        <p className="text-xs text-muted-foreground">Includes +{credits.addonCredits} add-on credits</p>
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
+
+                  {/* Daily Limit */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border">
+                        <Zap className="w-4 h-4 text-accent" />
+                        <div className="flex flex-col">
+                          <span className="text-xs text-muted-foreground leading-none">Today</span>
+                          <span className="text-sm font-semibold leading-tight">
+                            {credits.dailySearchesUsed}/{credits.dailySearchLimit}
+                          </span>
+                        </div>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{credits.dailySearchLimit - credits.dailySearchesUsed} searches remaining today</p>
+                      <p className="text-xs text-muted-foreground">Daily limit resets at midnight</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </TooltipProvider>
+            )}
+
+            {/* Trial days remaining badge */}
+            {subscriptionStatus?.isTrialUser && trialDaysRemaining !== null && (
+              <Badge 
+                variant={trialDaysRemaining <= 3 ? "destructive" : "secondary"}
+                className="flex items-center gap-1.5"
+              >
+                <Clock className="w-3.5 h-3.5" />
+                {trialDaysRemaining === 0 
+                  ? "Trial expires today" 
+                  : `${trialDaysRemaining} day${trialDaysRemaining === 1 ? '' : 's'} left in trial`}
+              </Badge>
+            )}
+          </div>
         </header>
 
         {/* Page content */}
