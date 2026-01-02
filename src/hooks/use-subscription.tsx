@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { PLAN_FEATURES, type PlanType } from '@/lib/plan-features';
+import { useAdmin } from './use-admin';
 
 export type SubscriptionPlan = 'growth' | 'pro' | 'elite';
 
@@ -18,6 +19,7 @@ export interface UserSubscription {
 export const useSubscription = () => {
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [loading, setLoading] = useState(true);
+  const { isAdmin } = useAdmin();
 
   useEffect(() => {
     loadSubscription();
@@ -73,6 +75,9 @@ export const useSubscription = () => {
   };
 
   const hasFeature = (feature: 'automations' | 'coach' | 'analytics' | 'api') => {
+    // Admins have access to all features
+    if (isAdmin) return true;
+    
     if (!subscription) return false;
     
     switch (feature) {

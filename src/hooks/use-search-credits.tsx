@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { PLAN_CONFIG, ADDON_CONFIG, type PlanType, type AddonType } from '@/lib/stripe-config';
+import { useAdmin } from './use-admin';
 
 interface SearchCredits {
   baseCredits: number;
@@ -18,6 +19,7 @@ interface SearchCredits {
 export const useSearchCredits = () => {
   const [credits, setCredits] = useState<SearchCredits | null>(null);
   const [loading, setLoading] = useState(true);
+  const { isAdmin } = useAdmin();
 
   const fetchCredits = useCallback(async () => {
     try {
@@ -115,6 +117,11 @@ export const useSearchCredits = () => {
   }, [fetchCredits]);
 
   const useCredit = useCallback(async (amount: number = 1, description?: string) => {
+    // Admin users bypass credit checks
+    if (isAdmin) {
+      return { success: true };
+    }
+
     if (!credits || credits.remainingCredits < amount) {
       toast.error('Insufficient search credits');
       return { success: false };
@@ -163,7 +170,7 @@ export const useSearchCredits = () => {
       console.error('Error using credit:', error);
       return { success: false };
     }
-  }, [credits]);
+  }, [credits, isAdmin]);
 
   return {
     credits,
@@ -172,7 +179,8 @@ export const useSearchCredits = () => {
     addAddon,
     removeAddon,
     useCredit,
-    hasCredits: credits ? credits.remainingCredits > 0 : false,
-    canSearch: credits ? credits.dailySearchesUsed < credits.dailySearchLimit && credits.remainingCredits > 0 : false,
+    // Admins always have unlimited credits
+    hasCredits: isAdmin ? true : (credits ? credits.remainingCredits > 0 : false),
+    canSearch: isAdmin ? true : (credits ? credits.dailySearchesUsed < credits.dailySearchLimit && credits.remainingCredits > 0 : false),
   };
 };

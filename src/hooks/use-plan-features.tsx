@@ -1,30 +1,36 @@
 import { useState, useCallback } from 'react';
 import { useSubscription } from './use-subscription';
+import { useAdmin } from './use-admin';
 import { PLAN_FEATURES, UPGRADE_MESSAGES, type PlanType, type UpgradeFeature } from '@/lib/plan-features';
 
 export const usePlanFeatures = () => {
   const { subscription, loading } = useSubscription();
+  const { isAdmin } = useAdmin();
   const [gateModalOpen, setGateModalOpen] = useState(false);
   const [gatedFeature, setGatedFeature] = useState<UpgradeFeature | null>(null);
   
   const currentPlan: PlanType = subscription?.plan || 'growth';
   const features = PLAN_FEATURES[currentPlan];
 
-  // Check if a feature is available on the current plan
+  // Check if a feature is available on the current plan (admins have access to everything)
   const hasFeature = useCallback((feature: UpgradeFeature): boolean => {
+    if (isAdmin) return true;
+    
     const requiredPlan = UPGRADE_MESSAGES[feature].availableOn as PlanType;
     const planOrder: PlanType[] = ['growth', 'pro', 'elite'];
     const currentIndex = planOrder.indexOf(currentPlan);
     const requiredIndex = planOrder.indexOf(requiredPlan);
     return currentIndex >= requiredIndex;
-  }, [currentPlan]);
+  }, [currentPlan, isAdmin]);
 
-  // Check if a numeric limit is exceeded
+  // Check if a numeric limit is exceeded (admins have unlimited)
   const checkLimit = useCallback((current: number, limitKey: keyof typeof features): boolean => {
+    if (isAdmin) return true;
+    
     const limit = features[limitKey] as number;
     if (limit === -1) return true; // unlimited
     return current < limit;
-  }, [features]);
+  }, [features, isAdmin]);
 
   // Get the limit value for a feature
   const getLimit = useCallback((limitKey: keyof typeof features): number => {
