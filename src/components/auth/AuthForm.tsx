@@ -192,6 +192,14 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
       if (error) throw error;
 
       if (data.user) {
+        // Send welcome email in background
+        supabase.functions.invoke('send-welcome-email', {
+          body: { 
+            email: data.user.email,
+            name: data.user.user_metadata?.full_name || email.split('@')[0]
+          }
+        }).catch(err => console.error('Welcome email error:', err));
+
         toast({
           title: "Account created!",
           description: "Please check your email to verify your account.",
