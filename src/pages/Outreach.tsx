@@ -8,15 +8,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Send, Sparkles, CalendarPlus, Settings2, Image, Upload } from "lucide-react";
+import { Loader2, Send, Sparkles, CalendarPlus, Settings2, Image, Upload, Wand2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const Outreach = () => {
   const { toast } = useToast();
   const [leads, setLeads] = useState<any[]>([]);
   const [selectedLead, setSelectedLead] = useState("");
   const [emailTone, setEmailTone] = useState("professional");
-  const [emailGoal, setEmailGoal] = useState("");
+  const [subjectLine, setSubjectLine] = useState("");
+  const [isGeneratingSubject, setIsGeneratingSubject] = useState(false);
   const [generatedEmail, setGeneratedEmail] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -142,21 +144,59 @@ const Outreach = () => {
     }
   };
 
-  const generateEmail = async () => {
-    if (!selectedLead || !emailGoal) {
+  const generateSubjectLine = async () => {
+    if (!selectedLead) {
       toast({
-        title: "Missing information",
-        description: "Please select a lead and specify the email goal",
+        title: "Select a lead first",
+        description: "Please select a lead to generate a subject line",
         variant: "destructive",
       });
       return;
     }
 
-    // Validate email goal length
-    if (emailGoal.length > 500) {
+    setIsGeneratingSubject(true);
+    try {
+      const lead = leads.find((l) => l.id === selectedLead);
+      const { data, error } = await supabase.functions.invoke("generate-email", {
+        body: {
+          lead,
+          tone: emailTone,
+          goal: "subject_only",
+        },
+      });
+
+      if (error) throw error;
+      setSubjectLine(data.email.replace(/^Subject:\s*/i, '').trim());
+      toast({
+        title: "Subject line generated",
+        description: "AI has created a subject line for you",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error generating subject",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingSubject(false);
+    }
+  };
+
+  const generateEmail = async () => {
+    if (!selectedLead || !subjectLine) {
+      toast({
+        title: "Missing information",
+        description: "Please select a lead and add a subject line",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate subject line length
+    if (subjectLine.length > 200) {
       toast({
         title: "Invalid input",
-        description: "Email goal must be less than 500 characters",
+        description: "Subject line must be less than 200 characters",
         variant: "destructive",
       });
       return;
@@ -180,7 +220,8 @@ const Outreach = () => {
         body: {
           lead,
           tone: emailTone,
-          goal: emailGoal,
+          goal: "custom",
+          subjectLine: subjectLine,
         },
       });
 
@@ -252,11 +293,7 @@ const Outreach = () => {
       const { data, error } = await supabase.functions.invoke('send-email', {
         body: {
           to: lead.contact_email,
-          subject: `${emailGoal === 'introduction' ? 'Introduction' : 
-                    emailGoal === 'follow-up' ? 'Following Up' :
-                    emailGoal === 'meeting' ? 'Meeting Request' :
-                    emailGoal === 'demo' ? 'Demo Request' : 
-                    'Proposal'} - ${lead.company_name}`,
+          subject: subjectLine,
           body: fullEmailBody,
           integrationId
         }
@@ -277,7 +314,7 @@ const Outreach = () => {
       // Clear the form
       setGeneratedEmail("");
       setSelectedLead("");
-      setEmailGoal("");
+      setSubjectLine("");
     } catch (error: any) {
       toast({
         title: "Error sending email",
@@ -468,19 +505,40 @@ For logos, use HTML:
               </div>
 
               <div>
-                <Label>Email Goal</Label>
-                <Select value={emailGoal} onValueChange={setEmailGoal}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose email goal" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="introduction">Introduction</SelectItem>
-                    <SelectItem value="follow-up">Follow-up</SelectItem>
-                    <SelectItem value="meeting">Schedule Meeting</SelectItem>
-                    <SelectItem value="demo">Request Demo</SelectItem>
-                    <SelectItem value="proposal">Send Proposal</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>Subject Line</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={subjectLine}
+                    onChange={(e) => setSubjectLine(e.target.value)}
+                    placeholder="Enter subject line or generate one..."
+                    className="flex-1"
+                    maxLength={200}
+                  />
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={generateSubjectLine}
+                          disabled={isGeneratingSubject || !selectedLead}
+                        >
+                          {isGeneratingSubject ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Wand2 className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Generate subject line with AI</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  The email content will be tailored to match your subject line
+                </p>
               </div>
 
               <Button
@@ -530,7 +588,7 @@ For logos, use HTML:
                       </>
                     )}
                   </Button>
-                  {emailGoal === "meeting" && (
+                  {subjectLine.toLowerCase().includes("meeting") && (
                     <Button 
                       variant="outline"
                       onClick={sendToCalendar}
