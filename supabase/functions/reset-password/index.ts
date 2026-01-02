@@ -69,7 +69,7 @@ serve(async (req) => {
       const resend = new Resend(resendApiKey);
 
       const { data: emailData, error: emailError } = await resend.emails.send({
-        from: "SalesOS <support@bdotindustries.com>",
+        from: "SalesOS <onboarding@resend.dev>",
         to: [email],
         subject: "Reset Your SalesOS Password",
         html: `
