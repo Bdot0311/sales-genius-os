@@ -62,6 +62,38 @@ serve(async (req) => {
     userId = userData.user.id;
     logStep('User authenticated', { userId });
 
+    // CRITICAL: Check if user is an admin FIRST - admins bypass all subscription checks
+    const { data: adminRole } = await supabaseClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .eq('role', 'admin')
+      .maybeSingle();
+
+    if (adminRole?.role === 'admin') {
+      logStep('Admin user detected - bypassing subscription check');
+      
+      // Get admin's current subscription info or create one
+      const { data: adminSub } = await supabaseClient
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      return new Response(JSON.stringify({ 
+        subscribed: true,
+        plan: adminSub?.plan || 'elite',
+        status: 'active',
+        is_admin: true,
+        search_credits_base: adminSub?.search_credits_base || 2000,
+        search_credits_addon: adminSub?.search_credits_addon || 0,
+        search_credits_remaining: adminSub?.search_credits_remaining || 2000,
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+
     const stripe = new Stripe(stripeKey, { apiVersion: '2025-08-27.basil' });
     
     // Find Stripe customer by email
