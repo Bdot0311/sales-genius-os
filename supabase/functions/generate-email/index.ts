@@ -102,9 +102,16 @@ serve(async (req) => {
     const sanitizedIndustry = lead.industry ? sanitizeString(lead.industry, 100) : 'Not specified';
     const sanitizedCompanySize = lead.company_size ? sanitizeString(lead.company_size, 50) : 'Not specified';
 
-    const systemPrompt = `You are an expert sales email writer. Generate a personalized, compelling email based on the lead information and goal provided. The email should be ${tone} in tone and focused on ${goal}.`;
+    const systemPrompt = `You are an expert sales email writer. Generate a personalized, compelling email body based on the lead information and goal provided. The email should be ${tone} in tone and focused on ${goal}.
 
-    const userPrompt = `Write a sales email for the following lead:
+IMPORTANT: Generate ONLY the email body content. Do NOT include:
+- Subject line or "Subject:" prefix
+- Email headers
+- Any meta information
+
+Start directly with the greeting (e.g., "Hi [Name],") and end with the signature.`;
+
+    const userPrompt = `Write a sales email BODY ONLY (no subject line) for the following lead:
     
 Lead Information:
 - Name: ${sanitizedContactName}
@@ -115,7 +122,7 @@ Lead Information:
 
 Goal: ${goal}
 
-Write a personalized email that addresses their potential needs and includes a clear call to action. Keep it concise and engaging.`;
+Write ONLY the email body - start with the greeting and end with the signature. Do NOT include a subject line. Keep it concise and engaging with a clear call to action.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -146,6 +153,9 @@ Write a personalized email that addresses their potential needs and includes a c
     if (email.startsWith('```')) {
       email = email.replace(/^```[a-z]*\n/, '').replace(/\n```$/, '');
     }
+    
+    // Remove any subject line if AI still included it
+    email = email.replace(/^Subject:.*\n+/i, '').trim();
 
     return new Response(JSON.stringify({ email }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
