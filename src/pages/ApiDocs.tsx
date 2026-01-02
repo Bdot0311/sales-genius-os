@@ -531,7 +531,7 @@ end`,
               Check our <Button variant="link" className="p-0 h-auto" asChild><a href="/api-status">API Status Page</a></Button> for real-time system status
             </p>
             <p className="text-sm text-muted-foreground">
-              Contact support at <a href="mailto:support@alephwave.io" className="text-primary hover:underline">support@alephwave.io</a>
+              Contact support at <a href="mailto:support@bdotindustries.com" className="text-primary hover:underline">support@bdotindustries.com</a>
             </p>
           </CardContent>
         </Card>

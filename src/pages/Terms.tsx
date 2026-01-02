@@ -148,7 +148,7 @@ const Terms = () => {
                 <address className="not-italic">
                   If you have questions about these Terms, please contact us at:
                   <br />
-                  <strong>Email:</strong> <a href="mailto:support@alephwave.io" className="text-primary hover:underline">support@alephwave.io</a>
+                  <strong>Email:</strong> <a href="mailto:support@bdotindustries.com" className="text-primary hover:underline">support@bdotindustries.com</a>
                 </address>
               </section>
             </div>

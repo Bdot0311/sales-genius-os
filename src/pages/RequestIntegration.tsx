@@ -234,10 +234,10 @@ const RequestIntegration = () => {
                 If you have questions about integrations or need immediate assistance, 
                 reach out to us directly at{" "}
                 <a 
-                  href="mailto:support@alephwave.io" 
+                  href="mailto:support@bdotindustries.com" 
                   className="text-primary hover:underline"
                 >
-                  support@alephwave.io
+                  support@bdotindustries.com
                 </a>
               </p>
             </CardContent>
