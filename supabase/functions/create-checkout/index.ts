@@ -63,7 +63,7 @@ serve(async (req) => {
         },
       ],
       mode: 'subscription',
-      success_url: `${req.headers.get('origin')}/confirmation?plan=${planName}`,
+      success_url: `${req.headers.get('origin')}/confirmation?plan=${planName}&email=${encodeURIComponent(user.email)}`,
       cancel_url: `${req.headers.get('origin')}/pricing?canceled=true`,
     });
 

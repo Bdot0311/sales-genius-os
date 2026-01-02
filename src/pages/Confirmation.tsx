@@ -2,17 +2,40 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CheckCircle, ArrowRight, Sparkles, Users, BarChart } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Confirmation = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const plan = searchParams.get("plan") || "growth";
+  const email = searchParams.get("email");
+  const emailSentRef = useRef(false);
 
   useEffect(() => {
     // Scroll to top on mount
     window.scrollTo(0, 0);
-  }, []);
+
+    // Send subscription confirmation email (only once)
+    if (email && !emailSentRef.current) {
+      emailSentRef.current = true;
+      
+      const planPrices: Record<string, string> = {
+        growth: "$49",
+        pro: "$199",
+        elite: "$499"
+      };
+
+      supabase.functions.invoke('send-subscription-confirmation', {
+        body: {
+          email,
+          name: email.split('@')[0],
+          plan: plan.charAt(0).toUpperCase() + plan.slice(1),
+          amount: planPrices[plan] || "$49"
+        }
+      }).catch(err => console.error('Subscription email error:', err));
+    }
+  }, [email, plan]);
 
   const planFeatures = {
     growth: [
