@@ -203,8 +203,30 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <div className="flex-1" />
           
           <div className="flex items-center gap-4">
-            {/* Search Credits Display */}
-            {credits && (
+            {/* Admin Badge */}
+            {isAdmin && (
+              <Badge variant="default" className="flex items-center gap-1.5 bg-primary">
+                <Shield className="w-3.5 h-3.5" />
+                Admin
+              </Badge>
+            )}
+
+            {/* Search Credits Display - Show unlimited for admins */}
+            {isAdmin ? (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20">
+                      <Search className="w-4 h-4 text-primary" />
+                      <span className="text-sm font-semibold">Unlimited</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Admin accounts have unlimited search credits</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ) : credits && (
               <TooltipProvider>
                 <div className="flex items-center gap-3">
                   {/* Monthly Credits */}
@@ -254,8 +276,8 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               </TooltipProvider>
             )}
 
-            {/* Trial days remaining badge */}
-            {subscriptionStatus?.isTrialUser && trialDaysRemaining !== null && (
+            {/* Trial days remaining badge - Not shown for admins */}
+            {!isAdmin && subscriptionStatus?.isTrialUser && trialDaysRemaining !== null && (
               <Badge 
                 variant={trialDaysRemaining <= 3 ? "destructive" : "secondary"}
                 className="flex items-center gap-1.5"
