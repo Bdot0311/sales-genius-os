@@ -107,11 +107,11 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-50 h-full w-64 bg-card border-r border-border transition-transform duration-300 ${
+        className={`fixed top-0 left-0 z-50 h-screen w-64 bg-card border-r border-border transition-transform duration-300 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         } lg:translate-x-0`}
       >
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-screen overflow-hidden">
           {/* Logo */}
           <div className="flex items-center justify-between p-6 border-b border-border">
             <div className="flex items-center gap-2">
@@ -135,7 +135,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-1">
+          <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
             {navigation.map((item) => (
               <button
                 key={item.name}
@@ -163,8 +163,8 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             )}
           </nav>
 
-          {/* User section */}
-          <div className="p-4 border-t border-border">
+          {/* User section - fixed at bottom */}
+          <div className="flex-shrink-0 p-4 border-t border-border bg-card">
             <div className="flex items-center gap-3 mb-3 px-4">
               <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-semibold">
                 {user.email?.[0].toUpperCase()}
