@@ -3,12 +3,12 @@ import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Send, Sparkles, CalendarPlus } from "lucide-react";
+import { Loader2, Send, Sparkles, CalendarPlus, Settings2, Image } from "lucide-react";
 
 const Outreach = () => {
   const { toast } = useToast();
@@ -19,14 +19,62 @@ const Outreach = () => {
   const [generatedEmail, setGeneratedEmail] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [signature, setSignature] = useState("");
+  const [signatureDialogOpen, setSignatureDialogOpen] = useState(false);
+  const [isSavingSignature, setIsSavingSignature] = useState(false);
 
   useEffect(() => {
     loadLeads();
+    loadSignature();
   }, []);
 
   const loadLeads = async () => {
     const { data } = await supabase.from("leads").select("*");
     if (data) setLeads(data);
+  };
+
+  const loadSignature = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    
+    const { data } = await supabase
+      .from("profiles")
+      .select("email_signature")
+      .eq("id", user.id)
+      .single();
+    
+    if (data?.email_signature) {
+      setSignature(data.email_signature);
+    }
+  };
+
+  const saveSignature = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    setIsSavingSignature(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ email_signature: signature })
+        .eq("id", user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Signature saved",
+        description: "Your email signature has been updated",
+      });
+      setSignatureDialogOpen(false);
+    } catch (error: any) {
+      toast({
+        title: "Error saving signature",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingSignature(false);
+    }
   };
 
   const generateEmail = async () => {
@@ -131,6 +179,11 @@ const Outreach = () => {
         integrationId,
       });
 
+      // Combine email body with signature
+      const fullEmailBody = signature 
+        ? `${generatedEmail}\n\n${signature}`
+        : generatedEmail;
+
       const { data, error } = await supabase.functions.invoke('send-email', {
         body: {
           to: lead.contact_email,
@@ -139,7 +192,7 @@ const Outreach = () => {
                     emailGoal === 'meeting' ? 'Meeting Request' :
                     emailGoal === 'demo' ? 'Demo Request' : 
                     'Proposal'} - ${lead.company_name}`,
-          body: generatedEmail,
+          body: fullEmailBody,
           integrationId
         }
       });
@@ -214,11 +267,75 @@ const Outreach = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Outreach Studio</h1>
-          <p className="text-muted-foreground">
-            Generate AI-powered personalized emails for your leads
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Outreach Studio</h1>
+            <p className="text-muted-foreground">
+              Generate AI-powered personalized emails for your leads
+            </p>
+          </div>
+          <Dialog open={signatureDialogOpen} onOpenChange={setSignatureDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Settings2 className="w-4 h-4 mr-2" />
+                {signature ? "Edit Signature" : "Add Signature"}
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Email Signature</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label>Your Signature (supports HTML for logos/images)</Label>
+                  <Textarea
+                    value={signature}
+                    onChange={(e) => setSignature(e.target.value)}
+                    placeholder={`Best regards,
+John Doe
+Sales Director | Company Name
+📧 john@company.com | 📞 (555) 123-4567
+🌐 www.company.com
+
+For logos, use HTML:
+<img src="https://your-logo-url.com/logo.png" alt="Company Logo" width="150" />`}
+                    className="min-h-[200px] font-mono text-sm"
+                  />
+                </div>
+                <div className="bg-muted/50 p-3 rounded-lg">
+                  <p className="text-sm text-muted-foreground flex items-center gap-2">
+                    <Image className="w-4 h-4" />
+                    To add a logo, upload it to a hosting service and use: 
+                    <code className="bg-muted px-1 rounded">&lt;img src="URL" width="150" /&gt;</code>
+                  </p>
+                </div>
+                {signature && (
+                  <div>
+                    <Label className="text-muted-foreground">Preview</Label>
+                    <div 
+                      className="mt-2 p-4 border rounded-lg bg-background prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ __html: signature.replace(/\n/g, '<br/>') }}
+                    />
+                  </div>
+                )}
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setSignatureDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={saveSignature} disabled={isSavingSignature}>
+                    {isSavingSignature ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      "Save Signature"
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

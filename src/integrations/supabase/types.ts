@@ -1114,6 +1114,7 @@ export type Database = {
           company_name: string | null
           created_at: string
           email: string
+          email_signature: string | null
           full_name: string | null
           id: string
           updated_at: string
@@ -1122,6 +1123,7 @@ export type Database = {
           company_name?: string | null
           created_at?: string
           email: string
+          email_signature?: string | null
           full_name?: string | null
           id: string
           updated_at?: string
@@ -1130,6 +1132,7 @@ export type Database = {
           company_name?: string | null
           created_at?: string
           email?: string
+          email_signature?: string | null
           full_name?: string | null
           id?: string
           updated_at?: string
