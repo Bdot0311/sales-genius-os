@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAdmin } from './use-admin';
 
 export interface SubscriptionStatus {
   isTrialUser: boolean;
@@ -12,6 +13,7 @@ export interface SubscriptionStatus {
 export const useSubscriptionStatus = () => {
   const [status, setStatus] = useState<SubscriptionStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const { isAdmin } = useAdmin();
 
   useEffect(() => {
     loadStatus();
@@ -65,9 +67,19 @@ export const useSubscriptionStatus = () => {
     }
   };
 
+  // Admins are treated as fully paid users with no restrictions
+  const effectiveStatus = isAdmin && status ? {
+    ...status,
+    isTrialUser: false,
+    isPaidUser: true,
+    accountStatus: 'admin',
+    hasStripeSubscription: true,
+  } : status;
+
   return {
-    status,
+    status: effectiveStatus,
     loading,
     refreshStatus: loadStatus,
+    isAdmin,
   };
 };
