@@ -160,8 +160,8 @@ const Confirmation = () => {
         <div className="mt-8 sm:mt-12 text-center px-4">
           <p className="text-xs sm:text-sm text-muted-foreground">
             Need help? Contact us at{" "}
-            <a href="mailto:support@salesos.com" className="text-primary hover:underline">
-              support@salesos.com
+            <a href="mailto:support@bdotindustries.com" className="text-primary hover:underline">
+              support@bdotindustries.com
             </a>
           </p>
         </div>

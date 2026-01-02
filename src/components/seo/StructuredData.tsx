@@ -88,13 +88,13 @@ export const OrganizationSchema = ({
       {
         "@type": "ContactPoint",
         "contactType": "customer service",
-        "email": "support@salesos.com",
+        "email": "support@bdotindustries.com",
         "availableLanguage": ["English"]
       },
       {
         "@type": "ContactPoint",
         "contactType": "sales",
-        "email": "sales@salesos.com",
+        "email": "sales@bdotindustries.com",
         "availableLanguage": ["English"]
       }
     ],
