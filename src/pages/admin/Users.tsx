@@ -179,6 +179,47 @@ const AdminUsers = () => {
     }
   };
 
+  const toggleAdminStatus = async (userId: string, currentlyAdmin: boolean) => {
+    try {
+      if (currentlyAdmin) {
+        // Remove admin role
+        const { error } = await supabase
+          .from('user_roles')
+          .delete()
+          .eq('user_id', userId)
+          .eq('role', 'admin');
+        if (error) throw error;
+        
+        // Update account_status back to active
+        await supabase
+          .from('subscriptions')
+          .update({ account_status: 'active' })
+          .eq('user_id', userId);
+          
+        toast.success('Admin privileges removed');
+      } else {
+        // Add admin role
+        const { error } = await supabase
+          .from('user_roles')
+          .insert({ user_id: userId, role: 'admin' });
+        if (error) throw error;
+        
+        // Update account_status to admin
+        await supabase
+          .from('subscriptions')
+          .update({ account_status: 'admin' })
+          .eq('user_id', userId);
+          
+        toast.success('Admin privileges granted');
+      }
+      loadSubscriptions();
+      loadUserRoles();
+    } catch (error) {
+      console.error('Error toggling admin status:', error);
+      toast.error('Failed to update admin status');
+    }
+  };
+
   const getAccountStatusBadge = (userId: string, accountStatus: string, trialEndDate: string | null) => {
     if (isUserAdmin(userId)) {
       return <Badge className="gap-1 bg-primary"><Shield className="h-3 w-3" />Admin</Badge>;
@@ -298,6 +339,15 @@ const AdminUsers = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1 justify-end">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className={`h-8 w-8 p-0 ${isUserAdmin(sub.user_id) ? 'text-primary hover:text-primary/80' : 'text-muted-foreground hover:text-foreground'}`}
+                            onClick={() => toggleAdminStatus(sub.user_id, isUserAdmin(sub.user_id))}
+                            title={isUserAdmin(sub.user_id) ? 'Remove Admin' : 'Make Admin'}
+                          >
+                            <Shield className="h-4 w-4" />
+                          </Button>
                           <Button
                             size="sm"
                             variant="ghost"
