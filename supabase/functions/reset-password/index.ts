@@ -105,7 +105,7 @@ serve(async (req) => {
               </div>
               <div style="background-color: #fafafa; padding: 20px 30px; text-align: center;">
                 <p style="color: #a1a1aa; font-size: 12px; margin: 0;">
-                  © ${new Date().getFullYear()} SalesOS by B. Industries. All rights reserved.
+                  © ${new Date().getFullYear()} BDØT Industries LLC. All rights reserved.
                 </p>
               </div>
             </div>
