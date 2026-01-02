@@ -124,6 +124,34 @@ serve(async (req) => {
 
     // Send email based on integration type
     if (integrationId === 'google' || !integrationId) {
+      // Format body as proper HTML email if it's not already HTML
+      const isHtml = body.trim().startsWith('<') && (body.includes('<html') || body.includes('<div') || body.includes('<p') || body.includes('<br'));
+      
+      // Convert plain text to properly formatted HTML email
+      const htmlBody = isHtml ? body : `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #333333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    p {
+      margin: 0 0 16px 0;
+    }
+  </style>
+</head>
+<body>
+${body.split('\n').map((line: string) => line.trim() ? `<p>${line}</p>` : '').join('\n')}
+</body>
+</html>`;
+
       // Send via Gmail API
       const emailContent = [
         `To: ${to}`,
@@ -131,8 +159,8 @@ serve(async (req) => {
         'MIME-Version: 1.0',
         'Content-Type: text/html; charset=utf-8',
         '',
-        body
-      ].join('\n');
+        htmlBody
+      ].join('\r\n');
 
       const encodedEmail = btoa(emailContent)
         .replace(/\+/g, '-')
