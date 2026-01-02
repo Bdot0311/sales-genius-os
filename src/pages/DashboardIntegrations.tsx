@@ -44,10 +44,7 @@ const integrations: Integration[] = [
     description: 'Access Gmail and Google Calendar with one connection',
     icon: Mail,
     color: 'text-blue-500',
-    fields: [
-      { name: 'clientId', label: 'Client ID', type: 'text', placeholder: 'Your Google Client ID' },
-      { name: 'clientSecret', label: 'Client Secret', type: 'password', placeholder: 'Your Google Client Secret' }
-    ]
+    // No fields - uses platform OAuth
   },
   {
     id: "calendly",
@@ -168,128 +165,45 @@ const DashboardIntegrations = () => {
     if (!code) return;
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      let integrationId = 'google';
-      let clientId, clientSecret;
-
-      // Parse state if available
-      if (stateParam) {
-        try {
-          const state = JSON.parse(stateParam);
-          integrationId = state.integrationId;
-          clientId = state.clientId;
-          clientSecret = state.clientSecret;
-        } catch (e) {
-          console.error('Failed to parse state:', e);
-        }
-      }
-
-      // If no state, try to find existing Google integration
-      if (!clientId || !clientSecret) {
-        const { data: googleIntegration } = await supabase
-          .from('integrations')
-          .select('config, integration_id')
-          .eq('user_id', user.id)
-          .eq('integration_id', 'google')
-          .maybeSingle();
-
-        if (googleIntegration) {
-          const config = googleIntegration.config as any;
-          clientId = config.clientId;
-          clientSecret = config.clientSecret;
-        }
-      }
-      
-      if (!clientId || !clientSecret) {
-        throw new Error('OAuth credentials not found');
-      }
-
-      // Exchange code for tokens
-      const redirectUri = `${window.location.origin}/integrations`;
-      
-      const tokenRequestBody = {
-        code,
-        client_id: clientId,
-        client_secret: clientSecret,
-        redirect_uri: redirectUri,
-        grant_type: 'authorization_code',
-      };
-      
-      console.log('Token exchange request:', {
-        redirectUri,
-        clientId: clientId,
-        hasClientSecret: !!clientSecret,
-        codeLength: code.length,
-      });
-      
-      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams(tokenRequestBody as any).toString(),
-      });
-
-      if (!tokenResponse.ok) {
-        const errorData = await tokenResponse.json();
-        console.error('Google OAuth token exchange failed:', {
-          status: tokenResponse.status,
-          error: errorData,
-          requestDetails: {
-            clientId: clientId,
-            redirectUri,
-            hasCode: !!code,
-            hasClientSecret: !!clientSecret
-          }
-        });
-        
-        // Show detailed error to user
-        const errorMessage = errorData.error_description || errorData.error || 'Failed to exchange code for tokens';
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
         toast({
-          title: "OAuth Token Exchange Failed",
-          description: `${errorMessage}. Check console for details.`,
+          title: "Authentication Required",
+          description: "Please sign in to connect Google",
           variant: "destructive",
         });
-        throw new Error(errorMessage);
+        return;
       }
 
-      const tokens = await tokenResponse.json();
-      
-      const tokenData = {
-        clientId: clientId,
-        clientSecret: clientSecret,
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
-        expiresAt: Date.now() + tokens.expires_in * 1000,
-      };
+      const redirectUri = `${window.location.origin}/integrations`;
 
-      // Update the Google integration
-      await supabase
-        .from('integrations')
-        .upsert({
-          user_id: user.id,
-          integration_id: integrationId,
-          integration_name: 'Google',
-          config: tokenData,
-          is_active: true,
-        }, {
-          onConflict: 'user_id,integration_id'
-        });
+      // Call edge function to exchange code for tokens
+      const { data, error } = await supabase.functions.invoke('google-oauth-callback', {
+        body: { 
+          code, 
+          redirectUri,
+          state: stateParam 
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       toast({
         title: "Google Connected!",
-        description: "Successfully connected Gmail and Google Calendar",
+        description: data.googleEmail 
+          ? `Successfully connected ${data.googleEmail}` 
+          : "Successfully connected Gmail and Google Calendar",
       });
 
-      // Clean up URL
+      // Clean up URL and reload integrations
       window.history.replaceState({}, '', '/integrations');
       loadIntegrations();
     } catch (error: any) {
+      console.error('OAuth callback error:', error);
       toast({
         title: "OAuth Error",
-        description: error.message,
+        description: error.message || "Failed to connect Google",
         variant: "destructive",
       });
       window.history.replaceState({}, '', '/integrations');
@@ -309,6 +223,44 @@ const DashboardIntegrations = () => {
       });
 
   const handleConnect = async (integration: Integration) => {
+    // Handle Google OAuth flow directly (no credentials needed)
+    if (integration.id === 'google') {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          toast({
+            title: "Authentication Required",
+            description: "Please sign in to connect Google",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const redirectUri = `${window.location.origin}/integrations`;
+        
+        // Call edge function to get OAuth URL
+        const { data, error } = await supabase.functions.invoke('google-oauth-init', {
+          body: { redirectUri },
+        });
+
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+
+        // Redirect to Google OAuth
+        window.location.href = data.authUrl;
+        return;
+      } catch (error: any) {
+        console.error('Google OAuth init error:', error);
+        toast({
+          title: "Connection Error",
+          description: error.message || "Failed to start Google connection",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // For other integrations with fields, show the dialog
     if (integration.fields && integration.fields.length > 0) {
       setSelectedIntegration(integration);
       
@@ -333,41 +285,6 @@ const DashboardIntegrations = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
-
-      // Handle OAuth flow for Google
-      if (selectedIntegration.id === 'google') {
-        const redirectUri = `${window.location.origin}/integrations`;
-        const scope = 'https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/userinfo.email';
-        
-        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-          `client_id=${encodeURIComponent(formData.clientId)}&` +
-          `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-          `response_type=code&` +
-          `scope=${encodeURIComponent(scope)}&` +
-          `access_type=offline&` +
-          `prompt=consent&` +
-          `state=${encodeURIComponent(JSON.stringify({ 
-            integrationId: selectedIntegration.id,
-            clientId: formData.clientId,
-            clientSecret: formData.clientSecret 
-          }))}`;
-        
-        // Save client credentials first
-        await supabase
-          .from('integrations')
-          .upsert({
-            user_id: user.id,
-            integration_id: selectedIntegration.id,
-            integration_name: selectedIntegration.name,
-            config: { clientId: formData.clientId, clientSecret: formData.clientSecret },
-            is_active: false,
-          }, {
-            onConflict: 'user_id,integration_id'
-          });
-
-        window.location.href = authUrl;
-        return;
-      }
 
       const { error } = await supabase
         .from('integrations')

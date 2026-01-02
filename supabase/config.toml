@@ -50,3 +50,9 @@ verify_jwt = false
 
 [functions.notify-admin-signup]
 verify_jwt = false
+
+[functions.google-oauth-init]
+verify_jwt = true
+
+[functions.google-oauth-callback]
+verify_jwt = true
