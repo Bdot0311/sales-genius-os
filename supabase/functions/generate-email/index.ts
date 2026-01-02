@@ -12,7 +12,7 @@ const sanitizeString = (input: string, maxLength: number): string => {
 };
 
 const VALID_TONES = ['professional', 'friendly', 'casual', 'formal'];
-const VALID_GOALS = ['introduction', 'follow-up', 'meeting', 'demo', 'proposal'];
+const VALID_GOALS = ['introduction', 'follow-up', 'meeting', 'demo', 'proposal', 'subject_only', 'custom'];
 
 const validateEmailInputs = (data: any) => {
   const errors: string[] = [];
@@ -67,6 +67,7 @@ serve(async (req) => {
     const lead = requestData.lead;
     const tone = typeof requestData.tone === 'string' ? requestData.tone.trim().toLowerCase() : '';
     const goal = typeof requestData.goal === 'string' ? requestData.goal.trim().toLowerCase() : '';
+    const subjectLine = typeof requestData.subjectLine === 'string' ? requestData.subjectLine.trim() : '';
 
     // Validate inputs
     const validationErrors = validateEmailInputs({ lead, tone, goal });
@@ -102,16 +103,55 @@ serve(async (req) => {
     const sanitizedIndustry = lead.industry ? sanitizeString(lead.industry, 100) : 'Not specified';
     const sanitizedCompanySize = lead.company_size ? sanitizeString(lead.company_size, 50) : 'Not specified';
 
-    const systemPrompt = `You are an expert sales email writer. Generate a personalized, compelling email body based on the lead information and goal provided. The email should be ${tone} in tone and focused on ${goal}.
+    let systemPrompt: string;
+    let userPrompt: string;
+
+    if (goal === 'subject_only') {
+      // Generate just a subject line
+      systemPrompt = `You are an expert sales email copywriter. Generate compelling, attention-grabbing email subject lines that are personalized and relevant.`;
+      
+      userPrompt = `Generate a single compelling email subject line for the following lead. The subject should be ${tone} in tone.
+
+Lead Information:
+- Name: ${sanitizedContactName}
+- Company: ${sanitizedCompanyName}
+- Industry: ${sanitizedIndustry}
+- Company Size: ${sanitizedCompanySize}
+
+Return ONLY the subject line text, nothing else. No quotes, no "Subject:" prefix, just the subject line itself. Keep it under 60 characters for best email deliverability.`;
+    } else if (goal === 'custom' && subjectLine) {
+      // Generate email body based on custom subject line
+      systemPrompt = `You are an expert sales email writer. Generate a personalized, compelling email body that matches the given subject line. The email should be ${tone} in tone.
 
 IMPORTANT: Generate ONLY the email body content. Do NOT include:
 - Subject line or "Subject:" prefix
 - Email headers
 - Any meta information
 
-Start directly with the greeting (e.g., "Hi [Name],") and end with the signature.`;
+Start directly with the greeting (e.g., "Hi ${sanitizedContactName},") and end with the signature.`;
 
-    const userPrompt = `Write a sales email BODY ONLY (no subject line) for the following lead:
+      userPrompt = `Write a sales email BODY ONLY that matches this subject line: "${subjectLine}"
+
+Lead Information:
+- Name: ${sanitizedContactName}
+- Company: ${sanitizedCompanyName}
+- Industry: ${sanitizedIndustry}
+- Company Size: ${sanitizedCompanySize}
+- ICP Score: ${lead.icp_score || 0}/100
+
+Write an email body that directly relates to and delivers on the promise of the subject line "${subjectLine}". Start with the greeting and end with the signature. Do NOT include the subject line in the body. Keep it concise and engaging with a clear call to action.`;
+    } else {
+      // Original behavior for predefined goals
+      systemPrompt = `You are an expert sales email writer. Generate a personalized, compelling email body based on the lead information and goal provided. The email should be ${tone} in tone and focused on ${goal}.
+
+IMPORTANT: Generate ONLY the email body content. Do NOT include:
+- Subject line or "Subject:" prefix
+- Email headers
+- Any meta information
+
+Start directly with the greeting (e.g., "Hi ${sanitizedContactName},") and end with the signature.`;
+
+      userPrompt = `Write a sales email BODY ONLY (no subject line) for the following lead:
     
 Lead Information:
 - Name: ${sanitizedContactName}
@@ -123,6 +163,7 @@ Lead Information:
 Goal: ${goal}
 
 Write ONLY the email body - start with the greeting and end with the signature. Do NOT include a subject line. Keep it concise and engaging with a clear call to action.`;
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
