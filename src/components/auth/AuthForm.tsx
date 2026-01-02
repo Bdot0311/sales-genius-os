@@ -262,42 +262,44 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
           </TabsList>
 
           <TabsContent value="signin">
-            <form onSubmit={handleSignIn} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="signin-email">Email</Label>
-                <Input
-                  id="signin-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  placeholder="you@company.com"
-                />
-              </div>
+            <div className="space-y-4">
+              <form onSubmit={handleSignIn} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="signin-email">Email</Label>
+                  <Input
+                    id="signin-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    placeholder="you@company.com"
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="signin-password">Password</Label>
-                <Input
-                  id="signin-password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  placeholder="••••••••"
-                  minLength={8}
-                />
-                <p className="text-xs text-muted-foreground">Minimum 8 characters</p>
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signin-password">Password</Label>
+                  <Input
+                    id="signin-password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    placeholder="••••••••"
+                    minLength={8}
+                  />
+                  <p className="text-xs text-muted-foreground">Minimum 8 characters</p>
+                </div>
 
-              <Button
-                type="submit"
-                variant="hero"
-                className="w-full"
-                disabled={loading}
-              >
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Sign In
-              </Button>
+                <Button
+                  type="submit"
+                  variant="hero"
+                  className="w-full"
+                  disabled={loading}
+                >
+                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Sign In
+                </Button>
+              </form>
 
               <div className="text-center">
                 <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
@@ -313,7 +315,13 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
                         Enter your email address and we'll send you a link to reset your password.
                       </DialogDescription>
                     </DialogHeader>
-                    <form onSubmit={handleResetPassword} className="space-y-4">
+                    <form
+                      onSubmit={(e) => {
+                        e.stopPropagation();
+                        handleResetPassword(e);
+                      }}
+                      className="space-y-4"
+                    >
                       <div className="space-y-2">
                         <Label htmlFor="reset-email">Email</Label>
                         <Input
@@ -325,11 +333,7 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
                           placeholder="you@company.com"
                         />
                       </div>
-                      <Button
-                        type="submit"
-                        className="w-full"
-                        disabled={resetLoading}
-                      >
+                      <Button type="submit" className="w-full" disabled={resetLoading}>
                         {resetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Send Reset Link
                       </Button>
@@ -337,7 +341,7 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
                   </DialogContent>
                 </Dialog>
               </div>
-            </form>
+            </div>
           </TabsContent>
 
           <TabsContent value="signup">
