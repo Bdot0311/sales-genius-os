@@ -83,7 +83,7 @@ serve(async (req) => {
             "Authorization": `Bearer ${resendApiKey}`,
           },
           body: JSON.stringify({
-            from: "SalesOS <noreply@yourdomain.com>", // Update this to your verified domain
+            from: "SalesOS <noreply@bdotindustries.com>",
             to: [email],
             subject: "Welcome to SalesOS - Your Account Credentials",
             html: `
@@ -121,7 +121,7 @@ serve(async (req) => {
                       <p>For your security, please change your password immediately after your first login. Click the "Forgot Password" link on the sign-in page to set your own secure password.</p>
                       
                       <div class="footer">
-                        <p>Need help? Contact us at <a href="mailto:support@yourdomain.com">support@yourdomain.com</a></p>
+                        <p>Need help? Contact us at <a href="mailto:support@bdotindustries.com">support@bdotindustries.com</a></p>
                         <p>&copy; ${new Date().getFullYear()} SalesOS. All rights reserved.</p>
                       </div>
                     </div>

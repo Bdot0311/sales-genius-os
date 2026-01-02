@@ -58,7 +58,7 @@ const RequestIntegration = () => {
       setTimeout(() => navigate('/'), 2000);
     } catch (error: any) {
       console.error("Error sending integration request:", error);
-      toast.error("Failed to send request. Please try again or email us directly at support@alephwave.io");
+      toast.error("Failed to send request. Please try again or email us directly at support@bdotindustries.com");
     } finally {
       setLoading(false);
     }
