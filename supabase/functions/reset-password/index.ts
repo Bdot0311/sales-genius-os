@@ -79,32 +79,33 @@ serve(async (req) => {
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
           </head>
-          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5; margin: 0; padding: 40px 20px;">
-            <div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); overflow: hidden;">
-              <div style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); padding: 30px; text-align: center;">
+          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0a0a; margin: 0; padding: 40px 20px;">
+            <div style="max-width: 500px; margin: 0 auto; background-color: #141414; border-radius: 12px; box-shadow: 0 4px 20px rgba(155, 109, 255, 0.15); overflow: hidden; border: 1px solid #333333;">
+              <div style="background: linear-gradient(135deg, #9b6dff 0%, #b366e6 100%); padding: 30px; text-align: center;">
+                <img src="https://salesos.io/salesos-logo.webp" alt="SalesOS Logo" style="width: 48px; height: 48px; border-radius: 10px; margin-bottom: 12px;" />
                 <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">SalesOS</h1>
               </div>
               <div style="padding: 40px 30px;">
-                <h2 style="color: #18181b; margin: 0 0 20px 0; font-size: 20px; font-weight: 600;">Reset Your Password</h2>
-                <p style="color: #52525b; line-height: 1.6; margin: 0 0 24px 0;">
+                <h2 style="color: #fafafa; margin: 0 0 20px 0; font-size: 20px; font-weight: 600;">Reset Your Password</h2>
+                <p style="color: #a1a1aa; line-height: 1.6; margin: 0 0 24px 0;">
                   We received a request to reset your password. Click the button below to create a new password:
                 </p>
                 <div style="text-align: center; margin: 32px 0;">
-                  <a href="${resetLink}" style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
+                  <a href="${resetLink}" style="display: inline-block; background: linear-gradient(135deg, #9b6dff 0%, #b366e6 100%); color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
                     Reset Password
                   </a>
                 </div>
                 <p style="color: #71717a; font-size: 14px; line-height: 1.6; margin: 24px 0 0 0;">
                   If you didn't request this password reset, you can safely ignore this email. This link will expire in 24 hours.
                 </p>
-                <hr style="border: none; border-top: 1px solid #e4e4e7; margin: 30px 0;">
-                <p style="color: #a1a1aa; font-size: 12px; margin: 0;">
+                <hr style="border: none; border-top: 1px solid #333333; margin: 30px 0;">
+                <p style="color: #71717a; font-size: 12px; margin: 0;">
                   If the button doesn't work, copy and paste this link into your browser:<br>
-                  <a href="${resetLink}" style="color: #3b82f6; word-break: break-all;">${resetLink}</a>
+                  <a href="${resetLink}" style="color: #9b6dff; word-break: break-all;">${resetLink}</a>
                 </p>
               </div>
-              <div style="background-color: #fafafa; padding: 20px 30px; text-align: center;">
-                <p style="color: #a1a1aa; font-size: 12px; margin: 0;">
+              <div style="background-color: #0a0a0a; padding: 20px 30px; text-align: center; border-top: 1px solid #333333;">
+                <p style="color: #71717a; font-size: 12px; margin: 0;">
                   © ${new Date().getFullYear()} BDØT Industries LLC. All rights reserved.
                 </p>
               </div>
