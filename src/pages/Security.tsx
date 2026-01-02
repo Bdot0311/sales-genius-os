@@ -157,7 +157,7 @@ const Security = () => {
                   If you discover a security vulnerability, we encourage responsible disclosure. Please report security issues to:
                 </p>
                 <address className="not-italic mb-4">
-                  <strong>Email:</strong> <a href="mailto:support@alephwave.io" className="text-primary hover:underline">support@alephwave.io</a>
+                  <strong>Email:</strong> <a href="mailto:support@bdotindustries.com" className="text-primary hover:underline">support@bdotindustries.com</a>
                 </address>
                 <p className="text-sm text-muted-foreground">
                   We take all security reports seriously and will respond promptly to valid concerns. Please do not publicly disclose issues until we have had a chance to address them.
@@ -168,8 +168,8 @@ const Security = () => {
                 <h2 id="security-questions" className="text-2xl font-semibold mb-4">Questions?</h2>
                 <address className="not-italic text-muted-foreground">
                   If you have questions about our security practices, please contact us at:{" "}
-                  <a href="mailto:support@alephwave.io" className="text-primary hover:underline">
-                    support@alephwave.io
+                  <a href="mailto:support@bdotindustries.com" className="text-primary hover:underline">
+                    support@bdotindustries.com
                   </a>
                 </address>
               </section>
