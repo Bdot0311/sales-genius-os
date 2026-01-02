@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Send, Sparkles, CalendarPlus, Settings2, Image } from "lucide-react";
+import { Loader2, Send, Sparkles, CalendarPlus, Settings2, Image, Upload } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 const Outreach = () => {
   const { toast } = useToast();
@@ -22,6 +23,7 @@ const Outreach = () => {
   const [signature, setSignature] = useState("");
   const [signatureDialogOpen, setSignatureDialogOpen] = useState(false);
   const [isSavingSignature, setIsSavingSignature] = useState(false);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
   useEffect(() => {
     loadLeads();
@@ -74,6 +76,69 @@ const Outreach = () => {
       });
     } finally {
       setIsSavingSignature(false);
+    }
+  };
+
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload an image file (PNG, JPG, etc.)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please upload an image smaller than 2MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    setIsUploadingLogo(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/logo-${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('signature-logos')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('signature-logos')
+        .getPublicUrl(fileName);
+
+      // Insert the image HTML at cursor position or append
+      const imgHtml = `<img src="${publicUrl}" alt="Logo" width="150" style="max-width: 150px;" />`;
+      setSignature(prev => prev ? `${prev}\n${imgHtml}` : imgHtml);
+
+      toast({
+        title: "Logo uploaded",
+        description: "Your logo has been added to the signature",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error uploading logo",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploadingLogo(false);
+      // Reset the input
+      event.target.value = '';
     }
   };
 
@@ -302,12 +367,41 @@ For logos, use HTML:
                     className="min-h-[200px] font-mono text-sm"
                   />
                 </div>
-                <div className="bg-muted/50 p-3 rounded-lg">
-                  <p className="text-sm text-muted-foreground flex items-center gap-2">
-                    <Image className="w-4 h-4" />
-                    To add a logo, upload it to a hosting service and use: 
-                    <code className="bg-muted px-1 rounded">&lt;img src="URL" width="150" /&gt;</code>
-                  </p>
+                <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                  <div className="flex-1">
+                    <p className="text-sm text-muted-foreground flex items-center gap-2">
+                      <Image className="w-4 h-4" />
+                      Upload your logo or company image
+                    </p>
+                  </div>
+                  <div>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoUpload}
+                      className="hidden"
+                      id="logo-upload"
+                      disabled={isUploadingLogo}
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => document.getElementById('logo-upload')?.click()}
+                      disabled={isUploadingLogo}
+                    >
+                      {isUploadingLogo ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4 mr-2" />
+                          Upload Logo
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
                 {signature && (
                   <div>
