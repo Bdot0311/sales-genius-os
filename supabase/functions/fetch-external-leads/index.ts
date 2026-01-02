@@ -367,28 +367,25 @@ serve(async (req) => {
       const errorText = await response.text();
       console.error('Railway API error:', response.status, errorText);
       
-      let errorMessage = `Railway API error: ${response.status}`;
+      // Log full details server-side but return generic error to client
+      let clientMessage = 'Lead search failed. Please try again.';
       let errorCode = 'api_error';
       
-      try {
-        const errorJson = JSON.parse(errorText);
-        if (errorJson.detail) errorMessage = errorJson.detail;
-        if (errorJson.error) errorMessage = errorJson.error;
-      } catch {
-        if (errorText) errorMessage = errorText;
-      }
-      
-      // Handle 400 Bad Request
+      // Handle specific status codes with user-friendly messages
       if (response.status === 400) {
         errorCode = 'invalid_request';
-        if (errorMessage.includes('search parameter')) {
-          errorMessage = 'At least one search filter is required. Please specify a job title, industry, or location.';
-        }
+        clientMessage = 'Invalid search parameters. Please specify at least one filter.';
+      } else if (response.status === 401 || response.status === 403) {
+        errorCode = 'auth_error';
+        clientMessage = 'Authentication error. Please try again.';
+      } else if (response.status === 500) {
+        errorCode = 'server_error';
+        clientMessage = 'Service temporarily unavailable. Please try again later.';
       }
       
       return new Response(
         JSON.stringify({ 
-          error: errorMessage, 
+          error: clientMessage, 
           error_code: errorCode,
           leads: []
         }),
@@ -482,15 +479,22 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in fetch-external-leads:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch leads';
+    
+    // Return generic error message, log details server-side only
+    const isAuthError = error instanceof Error && error.message === 'Invalid user token';
+    const clientMessage = isAuthError 
+      ? 'Authentication required. Please sign in again.'
+      : 'Failed to fetch leads. Please try again.';
+    
     return new Response(
       JSON.stringify({ 
-        error: errorMessage,
+        error: clientMessage,
+        error_code: isAuthError ? 'auth_error' : 'fetch_error',
         leads: [] 
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: errorMessage === 'Invalid user token' ? 401 : 500 
+        status: isAuthError ? 401 : 500 
       }
     );
   }

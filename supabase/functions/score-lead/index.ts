@@ -132,7 +132,8 @@ Notes: ${sanitizedNotes}`
 
       const errorText = await response.text();
       console.error('AI gateway error:', response.status, errorText);
-      throw new Error(`AI gateway error: ${response.status}`);
+      // Return generic error - don't expose AI gateway details
+      throw new Error('AI scoring service temporarily unavailable');
     }
 
     const data = await response.json();
@@ -155,9 +156,10 @@ Notes: ${sanitizedNotes}`
 
   } catch (error) {
     console.error('Error in score-lead function:', error);
+    // Return generic error message - log details server-side only
     return new Response(
       JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: 'Lead scoring temporarily unavailable',
         score: 50,
         reasoning: 'Unable to score lead automatically. Manual review recommended.',
         recommendations: ['Review lead manually', 'Add more information']
