@@ -83,50 +83,54 @@ serve(async (req) => {
             "Authorization": `Bearer ${resendApiKey}`,
           },
           body: JSON.stringify({
-            from: "SalesOS <noreply@bdotindustries.com>",
+            from: "SalesOS <support@bdotindustries.com>",
             to: [email],
             subject: "Welcome to SalesOS - Your Account Credentials",
             html: `
               <!DOCTYPE html>
               <html>
-                <head>
-                  <style>
-                    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; line-height: 1.6; color: #333; }
-                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-                    .header h1 { color: white; margin: 0; font-size: 28px; }
-                    .content { background: #ffffff; padding: 40px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
-                    .credentials { background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea; }
-                    .button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
-                    .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
-                  </style>
-                </head>
-                <body>
-                  <div class="container">
-                    <div class="header">
-                      <h1>Welcome to SalesOS!</h1>
-                    </div>
-                    <div class="content">
-                      <p>Thank you for choosing SalesOS. Your subscription has been activated and your account is ready to use.</p>
-                      
-                      <div class="credentials">
-                        <h2 style="margin-top: 0; color: #111827;">Your Login Credentials</h2>
-                        <p><strong>Email:</strong> ${email}</p>
-                        <p><strong>Temporary Password:</strong> <code style="background: #e5e7eb; padding: 4px 8px; border-radius: 4px;">${tempPassword}</code></p>
-                      </div>
-                      
-                      <a href="${req.headers.get("origin")}/confirmation" class="button">Get Started</a>
-                      
-                      <p><strong>Important Security Notice:</strong></p>
-                      <p>For your security, please change your password immediately after your first login. Click the "Forgot Password" link on the sign-in page to set your own secure password.</p>
-                      
-                      <div class="footer">
-                        <p>Need help? Contact us at <a href="mailto:support@bdotindustries.com">support@bdotindustries.com</a></p>
-                        <p>&copy; ${new Date().getFullYear()} SalesOS. All rights reserved.</p>
-                      </div>
-                    </div>
+              <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              </head>
+              <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0a0a; margin: 0; padding: 40px 20px;">
+                <div style="max-width: 500px; margin: 0 auto; background-color: #141414; border-radius: 12px; box-shadow: 0 4px 20px rgba(155, 109, 255, 0.15); overflow: hidden; border: 1px solid #333333;">
+                  <div style="background: linear-gradient(135deg, #9b6dff 0%, #b366e6 100%); padding: 30px; text-align: center;">
+                    <img src="https://salesos.alephwavex.io/salesos-logo.webp" alt="SalesOS Logo" style="width: 48px; height: 48px; border-radius: 10px; margin-bottom: 12px;" />
+                    <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">Welcome to SalesOS!</h1>
                   </div>
-                </body>
+                  <div style="padding: 40px 30px;">
+                    <p style="color: #a1a1aa; line-height: 1.6; margin: 0 0 24px 0;">
+                      Thank you for choosing SalesOS. Your subscription has been activated and your account is ready to use.
+                    </p>
+                    
+                    <div style="background-color: #1a1a1a; border-radius: 8px; padding: 20px; margin: 24px 0; border: 1px solid #333333; border-left: 4px solid #9b6dff;">
+                      <h3 style="color: #fafafa; margin: 0 0 16px 0; font-size: 16px; font-weight: 600;">Your Login Credentials</h3>
+                      <p style="color: #a1a1aa; margin: 0 0 8px 0;"><strong style="color: #fafafa;">Email:</strong> ${email}</p>
+                      <p style="color: #a1a1aa; margin: 0;"><strong style="color: #fafafa;">Temporary Password:</strong> <code style="background: #333333; padding: 4px 8px; border-radius: 4px; color: #9b6dff;">${tempPassword}</code></p>
+                    </div>
+                    
+                    <div style="text-align: center; margin: 32px 0;">
+                      <a href="${req.headers.get("origin")}/auth" style="display: inline-block; background: linear-gradient(135deg, #9b6dff 0%, #b366e6 100%); color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
+                        Sign In Now
+                      </a>
+                    </div>
+                    
+                    <p style="color: #71717a; font-size: 14px; line-height: 1.6; margin: 24px 0 0 0;">
+                      <strong style="color: #fafafa;">Important:</strong> For your security, please change your password immediately after your first login.
+                    </p>
+                    <hr style="border: none; border-top: 1px solid #333333; margin: 30px 0;">
+                    <p style="color: #71717a; font-size: 12px; margin: 0; text-align: center;">
+                      Need help? Contact us at <a href="mailto:support@bdotindustries.com" style="color: #9b6dff;">support@bdotindustries.com</a>
+                    </p>
+                  </div>
+                  <div style="background-color: #0a0a0a; padding: 20px 30px; text-align: center; border-top: 1px solid #333333;">
+                    <p style="color: #71717a; font-size: 12px; margin: 0;">
+                      © ${new Date().getFullYear()} BDØT Industries LLC. All rights reserved.
+                    </p>
+                  </div>
+                </div>
+              </body>
               </html>
             `,
           }),
