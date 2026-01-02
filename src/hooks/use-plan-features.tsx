@@ -10,7 +10,8 @@ export const usePlanFeatures = () => {
   const [gatedFeature, setGatedFeature] = useState<UpgradeFeature | null>(null);
   
   const currentPlan: PlanType = subscription?.plan || 'growth';
-  const features = PLAN_FEATURES[currentPlan];
+  // Admins get elite-level features
+  const features = isAdmin ? PLAN_FEATURES.elite : PLAN_FEATURES[currentPlan];
 
   // Check if a feature is available on the current plan (admins have access to everything)
   const hasFeature = useCallback((feature: UpgradeFeature): boolean => {
@@ -32,10 +33,11 @@ export const usePlanFeatures = () => {
     return current < limit;
   }, [features, isAdmin]);
 
-  // Get the limit value for a feature
+  // Get the limit value for a feature (admins get unlimited)
   const getLimit = useCallback((limitKey: keyof typeof features): number => {
+    if (isAdmin) return -1; // unlimited for admins
     return features[limitKey] as number;
-  }, [features]);
+  }, [features, isAdmin]);
 
   // Trigger the gate modal for a feature
   const triggerGate = useCallback((feature: UpgradeFeature) => {
@@ -67,7 +69,7 @@ export const usePlanFeatures = () => {
   }, [checkLimit, triggerGate]);
 
   return {
-    currentPlan,
+    currentPlan: isAdmin ? 'elite' as PlanType : currentPlan,
     features,
     loading,
     hasFeature,
@@ -79,5 +81,6 @@ export const usePlanFeatures = () => {
     gateModalOpen,
     setGateModalOpen,
     gatedFeature,
+    isAdmin,
   };
 };
