@@ -275,10 +275,10 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  placeholder="••••••••••••"
-                  minLength={12}
+                  placeholder="••••••••"
+                  minLength={8}
                 />
-                <p className="text-xs text-muted-foreground">Minimum 12 characters</p>
+                <p className="text-xs text-muted-foreground">Minimum 8 characters</p>
               </div>
 
               <Button
@@ -354,10 +354,10 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  placeholder="Create a secure password (12+ chars)"
-                  minLength={12}
+                  placeholder="Create a secure password (8+ chars)"
+                  minLength={8}
                 />
-                <p className="text-xs text-muted-foreground">Minimum 12 characters required</p>
+                <p className="text-xs text-muted-foreground">Minimum 8 characters required</p>
               </div>
 
               <Button
