@@ -153,7 +153,7 @@ serve(async (req) => {
                           
                           <h2 style="color: #ffffff; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Hey ${customerName}! 👋</h2>
                           <p style="color: #a1a1aa; line-height: 1.7; margin: 0 0 28px 0; font-size: 16px;">
-                            Your subscription is active and your account has been created. Here are your login credentials:
+                            You just joined thousands of sales professionals using SalesOS to find better leads, close more deals, and save hours every week.
                           </p>
                           
                           <!-- Credentials Box -->
@@ -190,66 +190,82 @@ serve(async (req) => {
                             </tr>
                           </table>
                           
-                          <!-- CTA Button -->
-                          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#141414">
-                            <tr>
-                              <td bgcolor="#141414" align="center" style="background-color: #141414; padding: 8px 0 32px 0;">
-                                <a href="${appUrl}/auth" style="display: inline-block; background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #ffffff; padding: 18px 48px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px; box-shadow: 0 4px 14px rgba(124, 58, 237, 0.4);">
-                                  Sign In to SalesOS →
-                                </a>
-                              </td>
-                            </tr>
-                          </table>
-                          
                           <!-- Quick Start Guide Box -->
                           <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#1a1a1a" style="background-color: #1a1a1a; border-radius: 12px; border: 1px solid #333333; margin-bottom: 28px;">
                             <tr>
                               <td bgcolor="#1a1a1a" style="background-color: #1a1a1a; padding: 24px;">
                                 <h3 style="color: #9b6dff; margin: 0 0 20px 0; font-size: 16px; font-weight: 700;">🚀 Quick Start Guide</h3>
                                 
-                                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 14px;">
+                                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 18px;">
                                   <tr>
-                                    <td width="28" valign="top">
-                                      <div style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #fff; width: 24px; height: 24px; border-radius: 50%; text-align: center; line-height: 24px; font-weight: 700; font-size: 12px;">1</div>
+                                    <td width="32" valign="top">
+                                      <div style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #fff; width: 28px; height: 28px; border-radius: 50%; text-align: center; line-height: 28px; font-weight: 700; font-size: 14px;">1</div>
                                     </td>
-                                    <td valign="top" style="padding-left: 10px;">
-                                      <p style="color: #ffffff; margin: 0; font-size: 14px;"><strong>Sign in</strong> with the credentials above</p>
+                                    <td valign="top" style="padding-left: 12px;">
+                                      <p style="color: #ffffff; margin: 0 0 4px 0; font-size: 15px; font-weight: 600;">Sign in to your account</p>
+                                      <p style="color: #a1a1aa; margin: 0; font-size: 14px; line-height: 1.5;">Head to <a href="https://salesos.alephwavex.io/auth" style="color: #9b6dff; text-decoration: none;">salesos.alephwavex.io/auth</a> and log in with your email.</p>
                                     </td>
                                   </tr>
                                 </table>
                                 
-                                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 14px;">
+                                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 18px;">
                                   <tr>
-                                    <td width="28" valign="top">
-                                      <div style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #fff; width: 24px; height: 24px; border-radius: 50%; text-align: center; line-height: 24px; font-weight: 700; font-size: 12px;">2</div>
+                                    <td width="32" valign="top">
+                                      <div style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #fff; width: 28px; height: 28px; border-radius: 50%; text-align: center; line-height: 28px; font-weight: 700; font-size: 14px;">2</div>
                                     </td>
-                                    <td valign="top" style="padding-left: 10px;">
-                                      <p style="color: #ffffff; margin: 0; font-size: 14px;"><strong>Search leads</strong> using AI-powered search</p>
+                                    <td valign="top" style="padding-left: 12px;">
+                                      <p style="color: #ffffff; margin: 0 0 4px 0; font-size: 15px; font-weight: 600;">Search for your first leads</p>
+                                      <p style="color: #a1a1aa; margin: 0; font-size: 14px; line-height: 1.5;">Go to <strong style="color: #ffffff;">Leads → Find Leads</strong> and use AI-powered search to discover decision-makers.</p>
                                     </td>
                                   </tr>
                                 </table>
                                 
-                                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 14px;">
+                                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 18px;">
                                   <tr>
-                                    <td width="28" valign="top">
-                                      <div style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #fff; width: 24px; height: 24px; border-radius: 50%; text-align: center; line-height: 24px; font-weight: 700; font-size: 12px;">3</div>
+                                    <td width="32" valign="top">
+                                      <div style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #fff; width: 28px; height: 28px; border-radius: 50%; text-align: center; line-height: 28px; font-weight: 700; font-size: 14px;">3</div>
                                     </td>
-                                    <td valign="top" style="padding-left: 10px;">
-                                      <p style="color: #ffffff; margin: 0; font-size: 14px;"><strong>Enrich</strong> to unlock emails & phone numbers</p>
+                                    <td valign="top" style="padding-left: 12px;">
+                                      <p style="color: #ffffff; margin: 0 0 4px 0; font-size: 15px; font-weight: 600;">Save leads & get contact info</p>
+                                      <p style="color: #a1a1aa; margin: 0; font-size: 14px; line-height: 1.5;">Click <strong style="color: #ffffff;">Save</strong> to add leads, then <strong style="color: #ffffff;">Enrich</strong> to unlock emails and phone numbers.</p>
+                                    </td>
+                                  </tr>
+                                </table>
+                                
+                                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 18px;">
+                                  <tr>
+                                    <td width="32" valign="top">
+                                      <div style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #fff; width: 28px; height: 28px; border-radius: 50%; text-align: center; line-height: 28px; font-weight: 700; font-size: 14px;">4</div>
+                                    </td>
+                                    <td valign="top" style="padding-left: 12px;">
+                                      <p style="color: #ffffff; margin: 0 0 4px 0; font-size: 15px; font-weight: 600;">Build your sales pipeline</p>
+                                      <p style="color: #a1a1aa; margin: 0; font-size: 14px; line-height: 1.5;">Head to <strong style="color: #ffffff;">Pipeline</strong> to create deals and track your sales process.</p>
                                     </td>
                                   </tr>
                                 </table>
                                 
                                 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                                   <tr>
-                                    <td width="28" valign="top">
-                                      <div style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #fff; width: 24px; height: 24px; border-radius: 50%; text-align: center; line-height: 24px; font-weight: 700; font-size: 12px;">4</div>
+                                    <td width="32" valign="top">
+                                      <div style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #fff; width: 28px; height: 28px; border-radius: 50%; text-align: center; line-height: 28px; font-weight: 700; font-size: 14px;">5</div>
                                     </td>
-                                    <td valign="top" style="padding-left: 10px;">
-                                      <p style="color: #ffffff; margin: 0; font-size: 14px;"><strong>Build pipeline</strong> & close more deals</p>
+                                    <td valign="top" style="padding-left: 12px;">
+                                      <p style="color: #ffffff; margin: 0 0 4px 0; font-size: 15px; font-weight: 600;">Get AI sales coaching</p>
+                                      <p style="color: #a1a1aa; margin: 0; font-size: 14px; line-height: 1.5;">Visit the <strong style="color: #ffffff;">Coach</strong> tab for personalized tips and email drafts.</p>
                                     </td>
                                   </tr>
                                 </table>
+                              </td>
+                            </tr>
+                          </table>
+                          
+                          <!-- Primary CTA Button -->
+                          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#141414">
+                            <tr>
+                              <td bgcolor="#141414" align="center" style="background-color: #141414; padding: 8px 0 32px 0;">
+                                <a href="${appUrl}/auth" style="display: inline-block; background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #ffffff; padding: 18px 48px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px; box-shadow: 0 4px 14px rgba(124, 58, 237, 0.4);">
+                                  Sign In to SalesOS →
+                                </a>
                               </td>
                             </tr>
                           </table>
