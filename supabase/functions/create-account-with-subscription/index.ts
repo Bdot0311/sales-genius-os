@@ -72,7 +72,7 @@ serve(async (req) => {
 
     // Always use production domain for email links
     const appUrl = "https://salesos.io";
-    const logoUrl = "https://salesos.io/salesos-logo.webp";
+    const logoUrl = "https://ghgfjnepvxvxrncmskys.supabase.co/storage/v1/object/public/email-assets/salesos-logo.webp";
 
     // Send credentials email via Resend SDK
     try {
