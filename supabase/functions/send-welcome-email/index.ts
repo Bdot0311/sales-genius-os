@@ -33,7 +33,8 @@ serve(async (req) => {
     const displayName = name || "there";
     // Always use production domain for email links
     const appUrl = "https://salesos.io";
-    const logoUrl = "https://salesos.io/salesos-logo.webp";
+    // Use Supabase storage for logo - upload to email-assets bucket
+    const logoUrl = "https://ghgfjnepvxvxrncmskys.supabase.co/storage/v1/object/public/email-assets/salesos-logo.webp";
 
     const { data: emailData, error: emailError } = await resend.emails.send({
       from: "SalesOS <support@bdotindustries.com>",
