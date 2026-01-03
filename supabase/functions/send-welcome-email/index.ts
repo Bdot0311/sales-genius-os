@@ -31,24 +31,22 @@ serve(async (req) => {
 
     const resend = new Resend(resendApiKey);
     const displayName = name || "there";
-    // Always use production domain for email links (not request origin which may be Supabase URL)
+    // Always use production domain for email links
     const appUrl = "https://salesos.io";
     const logoUrl = "https://salesos.io/salesos-logo.webp";
 
     const { data: emailData, error: emailError } = await resend.emails.send({
       from: "SalesOS <support@bdotindustries.com>",
       to: [email],
-      subject: "Welcome to SalesOS — Let's get you set up in 3 minutes ⚡",
+      subject: "Welcome to SalesOS — Your Quick Start Guide 🚀",
       html: `
         <!DOCTYPE html>
-        <html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+        <html lang="en">
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <meta http-equiv="X-UA-Compatible" content="IE=edge">
           <meta name="x-apple-disable-message-reformatting">
-          <meta name="color-scheme" content="dark only">
-          <meta name="supported-color-schemes" content="dark only">
           <title>Welcome to SalesOS</title>
           <!--[if mso]>
           <style type="text/css">
@@ -56,163 +54,164 @@ serve(async (req) => {
           </style>
           <![endif]-->
         </head>
-        <body style="margin: 0; padding: 0; background-color: #0a0a0a; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%;">
-          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#0a0a0a" style="background-color: #0a0a0a;">
+        <body style="margin: 0; padding: 0; background-color: #f4f4f5; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f4f4f5;">
             <tr>
-              <td align="center" bgcolor="#0a0a0a" style="background-color: #0a0a0a; padding: 40px 20px;">
+              <td align="center" style="padding: 40px 20px;">
                 <!-- Main Card -->
-                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="540" bgcolor="#141414" style="max-width: 540px; background-color: #141414; border-radius: 16px; border: 1px solid #2a2a2a;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08);">
+                  
                   <!-- Purple Header Banner -->
                   <tr>
-                    <td bgcolor="#9b6dff" align="center" style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); padding: 32px 40px; border-radius: 16px 16px 0 0;">
-                      <table role="presentation" cellpadding="0" cellspacing="0" border="0">
-                        <tr>
-                          <td align="center">
-                            <img src="${logoUrl}" alt="SalesOS" width="56" height="56" style="display: block; border-radius: 12px; margin-bottom: 16px;" />
-                          </td>
-                        </tr>
-                        <tr>
-                          <td align="center">
-                            <h1 style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">Welcome to SalesOS</h1>
-                          </td>
-                        </tr>
-                        <tr>
-                          <td align="center" style="padding-top: 8px;">
-                            <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: rgba(255,255,255,0.85); margin: 0; font-size: 16px;">Your AI-powered sales operating system</p>
-                          </td>
-                        </tr>
-                      </table>
+                    <td align="center" style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); padding: 40px; border-radius: 16px 16px 0 0;">
+                      <img src="${logoUrl}" alt="SalesOS" width="64" height="64" style="display: block; border-radius: 14px; margin-bottom: 20px; border: 3px solid rgba(255,255,255,0.2);" />
+                      <h1 style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #ffffff; margin: 0; font-size: 32px; font-weight: 700; letter-spacing: -0.5px;">Welcome to SalesOS!</h1>
+                      <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: rgba(255,255,255,0.9); margin: 12px 0 0 0; font-size: 16px;">Your AI-powered sales operating system</p>
                     </td>
                   </tr>
-                  <!-- Content Area - Nested table for dark background -->
+                  
+                  <!-- Content Area -->
                   <tr>
-                    <td bgcolor="#141414" style="background-color: #141414;">
-                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#141414" style="background-color: #141414;">
+                    <td style="padding: 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                      
+                      <!-- Greeting -->
+                      <h2 style="color: #18181b; margin: 0 0 16px 0; font-size: 24px; font-weight: 600;">Hey ${displayName}! 👋</h2>
+                      <p style="color: #52525b; line-height: 1.7; margin: 0 0 32px 0; font-size: 16px;">
+                        You just joined thousands of sales professionals using SalesOS to find better leads, close more deals, and save hours every week.
+                      </p>
+                      
+                      <!-- Quick Start Guide Box -->
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%); border-radius: 12px; border: 1px solid #e9d5ff; margin-bottom: 32px;">
                         <tr>
-                          <td bgcolor="#141414" style="background-color: #141414; padding: 40px 36px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-                            <!-- Greeting -->
-                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#141414" style="background-color: #141414;">
+                          <td style="padding: 28px;">
+                            <h3 style="color: #7c3aed; margin: 0 0 24px 0; font-size: 18px; font-weight: 700;">🚀 Quick Start Guide</h3>
+                            
+                            <!-- Step 1: Sign In -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 20px;">
                               <tr>
-                                <td bgcolor="#141414" style="background-color: #141414;">
-                                  <h2 style="color: #ffffff; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Hey ${displayName}! 👋</h2>
-                                  <p style="color: #a1a1aa; line-height: 1.7; margin: 0 0 28px 0; font-size: 16px;">
-                                    You just joined thousands of sales pros using SalesOS to find better leads, close more deals, and save hours every week. Here's how to hit the ground running:
-                                  </p>
+                                <td width="44" valign="top">
+                                  <div style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #fff; width: 32px; height: 32px; border-radius: 50%; text-align: center; line-height: 32px; font-weight: 700; font-size: 14px;">1</div>
+                                </td>
+                                <td valign="top" style="padding-left: 12px;">
+                                  <p style="color: #18181b; margin: 0 0 4px 0; font-size: 16px; font-weight: 600;">Sign in to your account</p>
+                                  <p style="color: #71717a; margin: 0; font-size: 14px; line-height: 1.5;">Head to <a href="${appUrl}/auth" style="color: #7c3aed; text-decoration: none; font-weight: 500;">salesos.io/auth</a> and log in with your email. Use "Forgot password" if you need to set one up.</p>
                                 </td>
                               </tr>
                             </table>
                             
-                            <!-- Getting Started Steps -->
-                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#1a1a1a" style="background-color: #1a1a1a; border-radius: 12px; border: 1px solid #2a2a2a; margin-bottom: 28px;">
+                            <!-- Step 2: Search Leads -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 20px;">
                               <tr>
-                                <td bgcolor="#1a1a1a" style="background-color: #1a1a1a; padding: 24px;">
-                                  <h3 style="color: #ffffff; margin: 0 0 20px 0; font-size: 16px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">🚀 Get Started in 3 Steps</h3>
-                                  
-                                  <!-- Step 1 -->
-                                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#1a1a1a" style="background-color: #1a1a1a; margin-bottom: 16px;">
-                                    <tr>
-                                      <td bgcolor="#1a1a1a" width="36" valign="top" style="background-color: #1a1a1a;">
-                                        <div style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #fff; width: 28px; height: 28px; border-radius: 50%; text-align: center; line-height: 28px; font-weight: 600; font-size: 14px;">1</div>
-                                      </td>
-                                      <td bgcolor="#1a1a1a" valign="top" style="background-color: #1a1a1a; padding-left: 12px;">
-                                        <p style="color: #ffffff; margin: 0 0 4px 0; font-size: 15px; font-weight: 600;">Search for your first leads</p>
-                                        <p style="color: #71717a; margin: 0; font-size: 14px; line-height: 1.5;">Use AI-powered search to find decision-makers at your target companies.</p>
-                                      </td>
-                                    </tr>
-                                  </table>
-                                  
-                                  <!-- Step 2 -->
-                                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#1a1a1a" style="background-color: #1a1a1a; margin-bottom: 16px;">
-                                    <tr>
-                                      <td bgcolor="#1a1a1a" width="36" valign="top" style="background-color: #1a1a1a;">
-                                        <div style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #fff; width: 28px; height: 28px; border-radius: 50%; text-align: center; line-height: 28px; font-weight: 600; font-size: 14px;">2</div>
-                                      </td>
-                                      <td bgcolor="#1a1a1a" valign="top" style="background-color: #1a1a1a; padding-left: 12px;">
-                                        <p style="color: #ffffff; margin: 0 0 4px 0; font-size: 15px; font-weight: 600;">Enrich & score contacts</p>
-                                        <p style="color: #71717a; margin: 0; font-size: 14px; line-height: 1.5;">Get verified emails, phone numbers, and AI-powered ICP scoring.</p>
-                                      </td>
-                                    </tr>
-                                  </table>
-                                  
-                                  <!-- Step 3 -->
-                                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#1a1a1a" style="background-color: #1a1a1a;">
-                                    <tr>
-                                      <td bgcolor="#1a1a1a" width="36" valign="top" style="background-color: #1a1a1a;">
-                                        <div style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #fff; width: 28px; height: 28px; border-radius: 50%; text-align: center; line-height: 28px; font-weight: 600; font-size: 14px;">3</div>
-                                      </td>
-                                      <td bgcolor="#1a1a1a" valign="top" style="background-color: #1a1a1a; padding-left: 12px;">
-                                        <p style="color: #ffffff; margin: 0 0 4px 0; font-size: 15px; font-weight: 600;">Build your pipeline</p>
-                                        <p style="color: #71717a; margin: 0; font-size: 14px; line-height: 1.5;">Add deals, track progress, and let AI coach you to close faster.</p>
-                                      </td>
-                                    </tr>
-                                  </table>
+                                <td width="44" valign="top">
+                                  <div style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #fff; width: 32px; height: 32px; border-radius: 50%; text-align: center; line-height: 32px; font-weight: 700; font-size: 14px;">2</div>
+                                </td>
+                                <td valign="top" style="padding-left: 12px;">
+                                  <p style="color: #18181b; margin: 0 0 4px 0; font-size: 16px; font-weight: 600;">Search for your first leads</p>
+                                  <p style="color: #71717a; margin: 0; font-size: 14px; line-height: 1.5;">Go to <strong>Leads → Find Leads</strong> and use our AI-powered search to discover decision-makers at your target companies.</p>
                                 </td>
                               </tr>
                             </table>
                             
-                            <!-- CTA Button -->
-                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#141414" style="background-color: #141414;">
+                            <!-- Step 3: Save & Enrich -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 20px;">
                               <tr>
-                                <td bgcolor="#141414" align="center" style="background-color: #141414; padding: 8px 0 32px 0;">
-                                  <a href="${appUrl}/dashboard" style="display: inline-block; background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #ffffff; padding: 16px 40px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px; letter-spacing: 0.3px;">
-                                    Open Your Dashboard →
-                                  </a>
+                                <td width="44" valign="top">
+                                  <div style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #fff; width: 32px; height: 32px; border-radius: 50%; text-align: center; line-height: 32px; font-weight: 700; font-size: 14px;">3</div>
+                                </td>
+                                <td valign="top" style="padding-left: 12px;">
+                                  <p style="color: #18181b; margin: 0 0 4px 0; font-size: 16px; font-weight: 600;">Save leads & get contact info</p>
+                                  <p style="color: #71717a; margin: 0; font-size: 14px; line-height: 1.5;">Click <strong>Save</strong> to add leads to your list. Use <strong>Enrich</strong> to unlock verified emails, phone numbers, and company data.</p>
                                 </td>
                               </tr>
                             </table>
                             
-                            <!-- Bonus Features -->
-                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#141414" style="background-color: #141414; margin-bottom: 24px;">
+                            <!-- Step 4: Build Pipeline -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 20px;">
                               <tr>
-                                <td bgcolor="#141414" style="background-color: #141414;">
-                                  <p style="color: #a1a1aa; margin: 0 0 12px 0; font-size: 14px; font-weight: 600;">Also explore:</p>
+                                <td width="44" valign="top">
+                                  <div style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #fff; width: 32px; height: 32px; border-radius: 50%; text-align: center; line-height: 32px; font-weight: 700; font-size: 14px;">4</div>
                                 </td>
-                              </tr>
-                              <tr>
-                                <td bgcolor="#141414" style="background-color: #141414;">
-                                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#141414" style="background-color: #141414;">
-                                    <tr>
-                                      <td bgcolor="#141414" style="background-color: #141414; color: #71717a; font-size: 14px; padding: 4px 0;">🤖 <span style="color: #a1a1aa;">AI Sales Coach</span> — Get personalized advice</td>
-                                    </tr>
-                                    <tr>
-                                      <td bgcolor="#141414" style="background-color: #141414; color: #71717a; font-size: 14px; padding: 4px 0;">⚡ <span style="color: #a1a1aa;">Automations</span> — Set up smart workflows</td>
-                                    </tr>
-                                    <tr>
-                                      <td bgcolor="#141414" style="background-color: #141414; color: #71717a; font-size: 14px; padding: 4px 0;">📊 <span style="color: #a1a1aa;">Analytics</span> — Track your performance</td>
-                                    </tr>
-                                  </table>
+                                <td valign="top" style="padding-left: 12px;">
+                                  <p style="color: #18181b; margin: 0 0 4px 0; font-size: 16px; font-weight: 600;">Build your sales pipeline</p>
+                                  <p style="color: #71717a; margin: 0; font-size: 14px; line-height: 1.5;">Head to <strong>Pipeline</strong> to create deals, track stages, and manage your entire sales process visually.</p>
                                 </td>
                               </tr>
                             </table>
                             
-                            <!-- Divider -->
-                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#141414" style="background-color: #141414;">
+                            <!-- Step 5: AI Coach -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                               <tr>
-                                <td bgcolor="#141414" style="background-color: #141414; padding: 16px 0;">
-                                  <div style="border-top: 1px solid #2a2a2a;"></div>
+                                <td width="44" valign="top">
+                                  <div style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #fff; width: 32px; height: 32px; border-radius: 50%; text-align: center; line-height: 32px; font-weight: 700; font-size: 14px;">5</div>
                                 </td>
-                              </tr>
-                            </table>
-                            
-                            <!-- Help Section -->
-                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#141414" style="background-color: #141414;">
-                              <tr>
-                                <td bgcolor="#141414" style="background-color: #141414;">
-                                  <p style="color: #71717a; font-size: 14px; line-height: 1.6; margin: 0;">
-                                    <strong style="color: #a1a1aa;">Need help?</strong> Just reply to this email — we typically respond within a few hours. Or email us at <a href="mailto:support@bdotindustries.com" style="color: #9b6dff; text-decoration: none;">support@bdotindustries.com</a>
-                                  </p>
+                                <td valign="top" style="padding-left: 12px;">
+                                  <p style="color: #18181b; margin: 0 0 4px 0; font-size: 16px; font-weight: 600;">Get AI sales coaching</p>
+                                  <p style="color: #71717a; margin: 0; font-size: 14px; line-height: 1.5;">Visit the <strong>Coach</strong> tab for personalized tips, email drafts, and strategies to close deals faster.</p>
                                 </td>
                               </tr>
                             </table>
                           </td>
                         </tr>
                       </table>
+                      
+                      <!-- Primary CTA Button -->
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                        <tr>
+                          <td align="center" style="padding: 8px 0 32px 0;">
+                            <a href="${appUrl}/auth" style="display: inline-block; background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #ffffff; padding: 18px 48px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px; box-shadow: 0 4px 14px rgba(124, 58, 237, 0.4);">
+                              Sign In to SalesOS →
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+                      
+                      <!-- Pro Tips Section -->
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #fafafa; border-radius: 10px; margin-bottom: 28px;">
+                        <tr>
+                          <td style="padding: 24px;">
+                            <h4 style="color: #18181b; margin: 0 0 16px 0; font-size: 15px; font-weight: 600;">💡 Pro Tips</h4>
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                              <tr>
+                                <td style="color: #52525b; font-size: 14px; padding: 6px 0; line-height: 1.5;">✓ Use <strong>filters</strong> to narrow down leads by industry, location, and company size</td>
+                              </tr>
+                              <tr>
+                                <td style="color: #52525b; font-size: 14px; padding: 6px 0; line-height: 1.5;">✓ Set up <strong>automations</strong> to save time on repetitive tasks</td>
+                              </tr>
+                              <tr>
+                                <td style="color: #52525b; font-size: 14px; padding: 6px 0; line-height: 1.5;">✓ Check your <strong>Analytics</strong> dashboard weekly to track performance</td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
+                      
+                      <!-- Divider -->
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                        <tr>
+                          <td style="padding: 8px 0 24px 0;">
+                            <div style="border-top: 1px solid #e4e4e7;"></div>
+                          </td>
+                        </tr>
+                      </table>
+                      
+                      <!-- Help Section -->
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                        <tr>
+                          <td>
+                            <p style="color: #71717a; font-size: 14px; line-height: 1.6; margin: 0;">
+                              <strong style="color: #18181b;">Need help getting started?</strong><br>
+                              Reply to this email or reach out to <a href="mailto:support@bdotindustries.com" style="color: #7c3aed; text-decoration: none;">support@bdotindustries.com</a> — we typically respond within a few hours.
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
                     </td>
                   </tr>
+                  
                   <!-- Footer -->
                   <tr>
-                    <td bgcolor="#0f0f0f" align="center" style="background-color: #0f0f0f; padding: 24px 36px; border-top: 1px solid #2a2a2a; border-radius: 0 0 16px 16px;">
-                      <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #52525b; font-size: 12px; margin: 0;">
+                    <td align="center" style="background-color: #fafafa; padding: 24px 40px; border-top: 1px solid #e4e4e7; border-radius: 0 0 16px 16px;">
+                      <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #a1a1aa; font-size: 12px; margin: 0;">
                         © ${new Date().getFullYear()} BDØT Industries LLC. All rights reserved.
                       </p>
                     </td>
