@@ -234,7 +234,7 @@ serve(async (req) => {
     console.log("Welcome email sent successfully:", emailData?.id);
 
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ success: true, id: emailData?.id ?? null, to: email }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
   } catch (error: any) {
