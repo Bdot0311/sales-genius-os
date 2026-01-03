@@ -34,7 +34,7 @@ serve(async (req) => {
     const planName = plan || "Growth";
     const planAmount = amount || "$29";
     // Always use production domain for email links
-    const appUrl = "https://salesos.io";
+    const appUrl = "https://salesos.alephwavex.io";
     const logoUrl = "https://ghgfjnepvxvxrncmskys.supabase.co/storage/v1/object/public/email-assets/salesos-logo.webp";
 
     const planFeatures: Record<string, string[]> = {
