@@ -18,18 +18,61 @@ interface OnboardingChecklistProps {
   onStartTour: () => void;
 }
 
+const STEP_KEYS: (keyof OnboardingProgress)[] = [
+  "completed_tour",
+  "completed_profile", 
+  "added_first_lead",
+  "created_first_deal",
+  "set_up_integration"
+];
+
 export const OnboardingChecklist = ({ onClose, onStartTour }: OnboardingChecklistProps) => {
   const [progress, setProgress] = useState<OnboardingProgress | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     loadProgress();
   }, []);
 
+  // Set up real-time subscription
+  useEffect(() => {
+    if (!userId) return;
+
+    const channel = supabase
+      .channel('onboarding-progress-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'onboarding_progress',
+          filter: `user_id=eq.${userId}`
+        },
+        (payload) => {
+          console.log("Onboarding progress updated:", payload.new);
+          setProgress({
+            completed_profile: payload.new.completed_profile,
+            added_first_lead: payload.new.added_first_lead,
+            created_first_deal: payload.new.created_first_deal,
+            set_up_integration: payload.new.set_up_integration,
+            completed_tour: payload.new.completed_tour,
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId]);
+
   const loadProgress = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+
+      setUserId(user.id);
 
       const { data, error } = await supabase
         .from("onboarding_progress")
@@ -50,9 +93,23 @@ export const OnboardingChecklist = ({ onClose, onStartTour }: OnboardingChecklis
           .select()
           .single();
         
-        setProgress(newProgress);
+        if (newProgress) {
+          setProgress({
+            completed_profile: newProgress.completed_profile,
+            added_first_lead: newProgress.added_first_lead,
+            created_first_deal: newProgress.created_first_deal,
+            set_up_integration: newProgress.set_up_integration,
+            completed_tour: newProgress.completed_tour,
+          });
+        }
       } else {
-        setProgress(data);
+        setProgress({
+          completed_profile: data.completed_profile,
+          added_first_lead: data.added_first_lead,
+          created_first_deal: data.created_first_deal,
+          set_up_integration: data.set_up_integration,
+          completed_tour: data.completed_tour,
+        });
       }
     } catch (error) {
       console.error("Error:", error);
@@ -97,8 +154,9 @@ export const OnboardingChecklist = ({ onClose, onStartTour }: OnboardingChecklis
 
   if (loading) return null;
 
+  // Only count the actual step keys, not other fields like id, user_id, etc.
   const completedSteps = progress 
-    ? Object.values(progress).filter(Boolean).length 
+    ? STEP_KEYS.filter(key => progress[key] === true).length
     : 0;
   const totalSteps = steps.length;
   const progressPercentage = (completedSteps / totalSteps) * 100;
