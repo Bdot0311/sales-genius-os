@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { email, name, tempPassword } = await req.json();
+    const { email, name } = await req.json();
     
     if (!email || typeof email !== 'string' || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
       return new Response(
@@ -21,7 +21,7 @@ serve(async (req) => {
       );
     }
 
-    console.log("Sending welcome email to:", email, "with credentials:", !!tempPassword);
+    console.log("Sending welcome email to:", email);
 
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     if (!resendApiKey) {
@@ -34,56 +34,10 @@ serve(async (req) => {
     const appUrl = "https://salesos.alephwavex.io";
     const logoUrl = "https://ghgfjnepvxvxrncmskys.supabase.co/storage/v1/object/public/email-assets/salesos-logo.webp";
 
-    // If tempPassword is provided, send credentials email; otherwise send regular welcome
-    const hasCredentials = !!tempPassword;
-    const subject = hasCredentials 
-      ? "Welcome to SalesOS — Your Login Credentials 🔐" 
-      : "Welcome to SalesOS — Your Quick Start Guide 🚀";
-
-    const credentialsSection = hasCredentials ? `
-      <!-- Credentials Box -->
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#1a1a1a" style="background-color: #1a1a1a; border-radius: 12px; border: 1px solid #2a2a2a; border-left: 4px solid #9b6dff; margin-bottom: 28px;">
-        <tr>
-          <td bgcolor="#1a1a1a" style="background-color: #1a1a1a; padding: 24px;">
-            <h3 style="color: #9b6dff; margin: 0 0 16px 0; font-size: 16px; font-weight: 600;">🔐 Your Login Credentials</h3>
-            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#1a1a1a" style="background-color: #1a1a1a;">
-              <tr>
-                <td bgcolor="#1a1a1a" style="background-color: #1a1a1a; color: #a1a1aa; padding: 8px 0; font-size: 15px;">
-                  <strong style="color: #ffffff;">Email:</strong><br>
-                  <span style="color: #ffffff;">${email}</span>
-                </td>
-              </tr>
-              <tr>
-                <td bgcolor="#1a1a1a" style="background-color: #1a1a1a; color: #a1a1aa; padding: 8px 0; font-size: 15px;">
-                  <strong style="color: #ffffff;">Temporary Password:</strong><br>
-                  <code style="background: #333333; padding: 6px 12px; border-radius: 6px; color: #9b6dff; font-family: monospace; font-size: 16px; display: inline-block; margin-top: 4px;">${tempPassword}</code>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </table>
-      
-      <!-- Security Notice -->
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#1a1a1a" style="background-color: #1a1a1a; border-radius: 10px; border: 1px solid #333333; margin-bottom: 28px;">
-        <tr>
-          <td bgcolor="#1a1a1a" style="background-color: #1a1a1a; padding: 16px 20px;">
-            <p style="color: #fbbf24; font-size: 14px; line-height: 1.6; margin: 0;">
-              ⚠️ <strong>Security Notice:</strong> Please change your password after your first login.
-            </p>
-          </td>
-        </tr>
-      </table>
-    ` : '';
-
-    const introText = hasCredentials 
-      ? "Your subscription is active and your account has been created. Here are your login credentials:"
-      : "You just joined thousands of sales professionals using SalesOS to find better leads, close more deals, and save hours every week.";
-
     const { data: emailData, error: emailError } = await resend.emails.send({
       from: "SalesOS <support@bdotindustries.com>",
       to: [email],
-      subject,
+      subject: "Welcome to SalesOS — Your Quick Start Guide 🚀",
       html: `
         <!DOCTYPE html>
         <html lang="en">
@@ -119,10 +73,8 @@ serve(async (req) => {
                       <!-- Greeting -->
                       <h2 style="color: #ffffff; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Hey ${displayName}! 👋</h2>
                       <p style="color: #a1a1aa; line-height: 1.7; margin: 0 0 28px 0; font-size: 16px;">
-                        ${introText}
+                        You just joined thousands of sales professionals using SalesOS to find better leads, close more deals, and save hours every week.
                       </p>
-                      
-                      ${credentialsSection}
                       
                       <!-- Quick Start Guide Box -->
                       <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#1a1a1a" style="background-color: #1a1a1a; border-radius: 12px; border: 1px solid #333333; margin-bottom: 28px;">
@@ -136,7 +88,7 @@ serve(async (req) => {
                                   <div style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #fff; width: 24px; height: 24px; border-radius: 50%; text-align: center; line-height: 24px; font-weight: 700; font-size: 12px;">1</div>
                                 </td>
                                 <td valign="top" style="padding-left: 10px;">
-                                  <p style="color: #ffffff; margin: 0; font-size: 14px;"><strong>Sign in</strong> with your email${hasCredentials ? ' and temp password above' : ''}</p>
+                                  <p style="color: #ffffff; margin: 0; font-size: 14px;"><strong>Sign in</strong> with your email</p>
                                 </td>
                               </tr>
                             </table>
