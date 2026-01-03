@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Send, Sparkles, CalendarPlus, Settings2, Image, Upload, Wand2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import DOMPurify from "dompurify";
 
 const Outreach = () => {
   const { toast } = useToast();
@@ -445,7 +446,7 @@ For logos, use HTML:
                     <Label className="text-muted-foreground">Preview</Label>
                     <div 
                       className="mt-2 p-4 border rounded-lg bg-background prose prose-sm max-w-none"
-                      dangerouslySetInnerHTML={{ __html: signature.replace(/\n/g, '<br/>') }}
+                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(signature.replace(/\n/g, '<br/>')) }}
                     />
                   </div>
                 )}
