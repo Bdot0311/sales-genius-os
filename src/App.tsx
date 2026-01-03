@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
+import { useWhiteLabel } from "./hooks/use-white-label";
 
 // Lazy load non-critical pages
 const Auth = lazy(() => import("./pages/Auth"));
@@ -39,41 +40,49 @@ const PageLoader = () => (
   </div>
 );
 
+// Component that applies white label settings
+const WhiteLabelProvider = ({ children }: { children: React.ReactNode }) => {
+  useWhiteLabel();
+  return <>{children}</>;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/pricing" element={<PricingPage />} />
-            <Route path="/api-docs" element={<ApiDocs />} />
-            <Route path="/api-status" element={<ApiStatus />} />
-            <Route path="/request-integration" element={<RequestIntegration />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/security" element={<Security />} />
-            <Route path="/confirmation" element={<Confirmation />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/dashboard/leads" element={<Leads />} />
-            <Route path="/dashboard/leads/saved" element={<SavedLeads />} />
-            <Route path="/dashboard/coach" element={<Coach />} />
-            <Route path="/dashboard/pipeline" element={<Pipeline />} />
-            <Route path="/dashboard/outreach" element={<Outreach />} />
-            <Route path="/dashboard/calendar" element={<Calendar />} />
-            <Route path="/dashboard/analytics" element={<Analytics />} />
-            <Route path="/dashboard/automations" element={<Automations />} />
-            <Route path="/integrations" element={<DashboardIntegrations />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/admin/*" element={<Admin />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
-      </BrowserRouter>
+      <WhiteLabelProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/pricing" element={<PricingPage />} />
+              <Route path="/api-docs" element={<ApiDocs />} />
+              <Route path="/api-status" element={<ApiStatus />} />
+              <Route path="/request-integration" element={<RequestIntegration />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/security" element={<Security />} />
+              <Route path="/confirmation" element={<Confirmation />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/dashboard/leads" element={<Leads />} />
+              <Route path="/dashboard/leads/saved" element={<SavedLeads />} />
+              <Route path="/dashboard/coach" element={<Coach />} />
+              <Route path="/dashboard/pipeline" element={<Pipeline />} />
+              <Route path="/dashboard/outreach" element={<Outreach />} />
+              <Route path="/dashboard/calendar" element={<Calendar />} />
+              <Route path="/dashboard/analytics" element={<Analytics />} />
+              <Route path="/dashboard/automations" element={<Automations />} />
+              <Route path="/integrations" element={<DashboardIntegrations />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/admin/*" element={<Admin />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+        </BrowserRouter>
+      </WhiteLabelProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
