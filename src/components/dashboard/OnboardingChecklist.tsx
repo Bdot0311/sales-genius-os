@@ -137,13 +137,13 @@ export const OnboardingChecklist = ({ onClose, onStartTour }: OnboardingChecklis
       key: "added_first_lead" as keyof OnboardingProgress,
       title: "Add Your First Lead",
       description: "Import or create a lead",
-      link: "/leads"
+      link: "/dashboard/leads"
     },
     {
       key: "created_first_deal" as keyof OnboardingProgress,
       title: "Create Your First Deal",
       description: "Start tracking opportunities",
-      link: "/pipeline"
+      link: "/dashboard/pipeline"
     },
     {
       key: "set_up_integration" as keyof OnboardingProgress,
