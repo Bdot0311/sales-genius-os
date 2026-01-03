@@ -82,10 +82,10 @@ serve(async (req) => {
                       </p>
                       
                       <!-- Quick Start Guide Box -->
-                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%); border-radius: 12px; border: 1px solid #e9d5ff; margin-bottom: 32px;">
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #1a1a1a; border-radius: 12px; border: 1px solid #333333; margin-bottom: 32px;">
                         <tr>
                           <td style="padding: 28px;">
-                            <h3 style="color: #7c3aed; margin: 0 0 24px 0; font-size: 18px; font-weight: 700;">🚀 Quick Start Guide</h3>
+                            <h3 style="color: #9b6dff; margin: 0 0 24px 0; font-size: 18px; font-weight: 700;">🚀 Quick Start Guide</h3>
                             
                             <!-- Step 1: Sign In -->
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 20px;">
@@ -94,8 +94,8 @@ serve(async (req) => {
                                   <div style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #fff; width: 32px; height: 32px; border-radius: 50%; text-align: center; line-height: 32px; font-weight: 700; font-size: 14px;">1</div>
                                 </td>
                                 <td valign="top" style="padding-left: 12px;">
-                                  <p style="color: #18181b; margin: 0 0 4px 0; font-size: 16px; font-weight: 600;">Sign in to your account</p>
-                                  <p style="color: #71717a; margin: 0; font-size: 14px; line-height: 1.5;">Head to <a href="${appUrl}/auth" style="color: #7c3aed; text-decoration: none; font-weight: 500;">salesos.io/auth</a> and log in with your email. Use "Forgot password" if you need to set one up.</p>
+                                  <p style="color: #ffffff; margin: 0 0 4px 0; font-size: 16px; font-weight: 600;">Sign in to your account</p>
+                                  <p style="color: #a1a1aa; margin: 0; font-size: 14px; line-height: 1.5;">Head to <a href="${appUrl}/auth" style="color: #9b6dff; text-decoration: none; font-weight: 500;">salesos.alephwavex.io/auth</a> and log in with your email.</p>
                                 </td>
                               </tr>
                             </table>
@@ -107,8 +107,8 @@ serve(async (req) => {
                                   <div style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #fff; width: 32px; height: 32px; border-radius: 50%; text-align: center; line-height: 32px; font-weight: 700; font-size: 14px;">2</div>
                                 </td>
                                 <td valign="top" style="padding-left: 12px;">
-                                  <p style="color: #18181b; margin: 0 0 4px 0; font-size: 16px; font-weight: 600;">Search for your first leads</p>
-                                  <p style="color: #71717a; margin: 0; font-size: 14px; line-height: 1.5;">Go to <strong>Leads → Find Leads</strong> and use our AI-powered search to discover decision-makers at your target companies.</p>
+                                  <p style="color: #ffffff; margin: 0 0 4px 0; font-size: 16px; font-weight: 600;">Search for your first leads</p>
+                                  <p style="color: #a1a1aa; margin: 0; font-size: 14px; line-height: 1.5;">Go to <strong style="color: #ffffff;">Leads → Find Leads</strong> and use AI-powered search to discover decision-makers.</p>
                                 </td>
                               </tr>
                             </table>
@@ -120,8 +120,8 @@ serve(async (req) => {
                                   <div style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #fff; width: 32px; height: 32px; border-radius: 50%; text-align: center; line-height: 32px; font-weight: 700; font-size: 14px;">3</div>
                                 </td>
                                 <td valign="top" style="padding-left: 12px;">
-                                  <p style="color: #18181b; margin: 0 0 4px 0; font-size: 16px; font-weight: 600;">Save leads & get contact info</p>
-                                  <p style="color: #71717a; margin: 0; font-size: 14px; line-height: 1.5;">Click <strong>Save</strong> to add leads to your list. Use <strong>Enrich</strong> to unlock verified emails, phone numbers, and company data.</p>
+                                  <p style="color: #ffffff; margin: 0 0 4px 0; font-size: 16px; font-weight: 600;">Save leads & get contact info</p>
+                                  <p style="color: #a1a1aa; margin: 0; font-size: 14px; line-height: 1.5;">Click <strong style="color: #ffffff;">Save</strong> to add leads, then <strong style="color: #ffffff;">Enrich</strong> to unlock emails and phone numbers.</p>
                                 </td>
                               </tr>
                             </table>
@@ -133,8 +133,8 @@ serve(async (req) => {
                                   <div style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #fff; width: 32px; height: 32px; border-radius: 50%; text-align: center; line-height: 32px; font-weight: 700; font-size: 14px;">4</div>
                                 </td>
                                 <td valign="top" style="padding-left: 12px;">
-                                  <p style="color: #18181b; margin: 0 0 4px 0; font-size: 16px; font-weight: 600;">Build your sales pipeline</p>
-                                  <p style="color: #71717a; margin: 0; font-size: 14px; line-height: 1.5;">Head to <strong>Pipeline</strong> to create deals, track stages, and manage your entire sales process visually.</p>
+                                  <p style="color: #ffffff; margin: 0 0 4px 0; font-size: 16px; font-weight: 600;">Build your sales pipeline</p>
+                                  <p style="color: #a1a1aa; margin: 0; font-size: 14px; line-height: 1.5;">Head to <strong style="color: #ffffff;">Pipeline</strong> to create deals and track your sales process.</p>
                                 </td>
                               </tr>
                             </table>
@@ -146,8 +146,8 @@ serve(async (req) => {
                                   <div style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #fff; width: 32px; height: 32px; border-radius: 50%; text-align: center; line-height: 32px; font-weight: 700; font-size: 14px;">5</div>
                                 </td>
                                 <td valign="top" style="padding-left: 12px;">
-                                  <p style="color: #18181b; margin: 0 0 4px 0; font-size: 16px; font-weight: 600;">Get AI sales coaching</p>
-                                  <p style="color: #71717a; margin: 0; font-size: 14px; line-height: 1.5;">Visit the <strong>Coach</strong> tab for personalized tips, email drafts, and strategies to close deals faster.</p>
+                                  <p style="color: #ffffff; margin: 0 0 4px 0; font-size: 16px; font-weight: 600;">Get AI sales coaching</p>
+                                  <p style="color: #a1a1aa; margin: 0; font-size: 14px; line-height: 1.5;">Visit the <strong style="color: #ffffff;">Coach</strong> tab for personalized tips and email drafts.</p>
                                 </td>
                               </tr>
                             </table>
