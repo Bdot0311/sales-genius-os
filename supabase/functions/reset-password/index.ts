@@ -29,8 +29,10 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const origin = req.headers.get("origin") || "https://salesos.io";
-    const redirectUrl = `${origin}/auth?type=recovery`;
+    // Always use production domain for email links
+    const appUrl = "https://salesos.io";
+    const logoUrl = "https://salesos.io/salesos-logo.webp";
+    const redirectUrl = `${appUrl}/auth?type=recovery`;
     
     console.log("Redirect URL:", redirectUrl);
 
@@ -95,7 +97,7 @@ serve(async (req) => {
                         <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                           <tr>
                             <td align="center">
-                              <img src="https://salesos.alephwavex.io/salesos-logo.webp" alt="SalesOS" width="56" height="56" style="display: block; border-radius: 12px; margin-bottom: 16px;" />
+                              <img src="${logoUrl}" alt="SalesOS" width="56" height="56" style="display: block; border-radius: 12px; margin-bottom: 16px;" />
                             </td>
                           </tr>
                           <tr>
