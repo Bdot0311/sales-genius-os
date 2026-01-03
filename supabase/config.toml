@@ -68,3 +68,6 @@ verify_jwt = false
 
 [functions.create-account-with-subscription]
 verify_jwt = false
+
+[functions.upload-email-logo]
+verify_jwt = false
