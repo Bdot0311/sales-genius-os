@@ -33,7 +33,9 @@ serve(async (req) => {
     const displayName = name || "there";
     const planName = plan || "Growth";
     const planAmount = amount || "$29";
-    const origin = req.headers.get("origin") || "https://salesos.io";
+    // Always use production domain for email links
+    const appUrl = "https://salesos.io";
+    const logoUrl = "https://salesos.io/salesos-logo.webp";
 
     const planFeatures: Record<string, string[]> = {
       growth: [
@@ -93,7 +95,7 @@ serve(async (req) => {
                       <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                         <tr>
                           <td align="center">
-                            <img src="https://salesos.alephwavex.io/salesos-logo.webp" alt="SalesOS" width="56" height="56" style="display: block; border-radius: 12px; margin-bottom: 16px;" />
+                            <img src="${logoUrl}" alt="SalesOS" width="56" height="56" style="display: block; border-radius: 12px; margin-bottom: 16px;" />
                           </td>
                         </tr>
                         <tr>
@@ -159,7 +161,7 @@ serve(async (req) => {
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#141414" style="background-color: #141414;">
                               <tr>
                                 <td bgcolor="#141414" align="center" style="background-color: #141414; padding: 8px 0 32px 0;">
-                                  <a href="${origin}/dashboard" style="display: inline-block; background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #ffffff; padding: 16px 40px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px;">
+                                  <a href="${appUrl}/dashboard" style="display: inline-block; background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #ffffff; padding: 16px 40px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px;">
                                     Start Using SalesOS →
                                   </a>
                                 </td>
