@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Circle, X } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-
 interface OnboardingProgress {
   completed_profile: boolean;
   added_first_lead: boolean;
@@ -27,6 +27,7 @@ const STEP_KEYS: (keyof OnboardingProgress)[] = [
 ];
 
 export const OnboardingChecklist = ({ onClose, onStartTour }: OnboardingChecklistProps) => {
+  const navigate = useNavigate();
   const [progress, setProgress] = useState<OnboardingProgress | null>(null);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
@@ -216,7 +217,7 @@ export const OnboardingChecklist = ({ onClose, onStartTour }: OnboardingChecklis
                       if (step.action) {
                         step.action();
                       } else if (step.link) {
-                        window.location.href = step.link;
+                        navigate(step.link);
                       }
                     }}
                   >
