@@ -30,7 +30,7 @@ serve(async (req) => {
     );
 
     // Always use production domain for email links
-    const appUrl = "https://salesos.io";
+    const appUrl = "https://salesos.alephwavex.io";
     const logoUrl = "https://ghgfjnepvxvxrncmskys.supabase.co/storage/v1/object/public/email-assets/salesos-logo.webp";
     const redirectUrl = `${appUrl}/auth?type=recovery`;
     
