@@ -248,6 +248,13 @@ async function fetchCachedResults(railwayBaseUrl: string): Promise<{ searches: a
   }
 }
 
+// Plan credit configuration - must match stripe-config.ts
+const PLAN_CREDITS = {
+  growth: { monthlyCredits: 200, dailyLimit: 25 },
+  pro: { monthlyCredits: 700, dailyLimit: 100 },
+  elite: { monthlyCredits: 2000, dailyLimit: 500 },
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -274,6 +281,159 @@ serve(async (req) => {
     
     if (userError || !user) {
       throw new Error('Invalid user token');
+    }
+
+    // CRITICAL: Check if user is admin (bypass all credit checks)
+    const { data: adminRole } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
+
+    const isAdmin = adminRole?.role === 'admin';
+    console.log('User check:', { userId: user.id, isAdmin });
+
+    // CRITICAL: Enforce subscription and credit limits (unless admin)
+    if (!isAdmin) {
+      // Get user's subscription
+      const { data: subscription, error: subError } = await supabase
+        .from('subscriptions')
+        .select('plan, status, account_status, search_credits_remaining, daily_searches_used, daily_searches_reset_at, stripe_subscription_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (subError) {
+        console.error('Error fetching subscription:', subError);
+        throw new Error('Failed to verify subscription');
+      }
+
+      // Check if user has an active paid subscription
+      if (!subscription || subscription.status !== 'active') {
+        console.log('User has no active subscription:', { userId: user.id });
+        return new Response(
+          JSON.stringify({ 
+            error: 'Active subscription required',
+            error_code: 'no_subscription',
+            leads: [] 
+          }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Check if account is locked
+      if (subscription.account_status === 'locked') {
+        console.log('User account is locked:', { userId: user.id });
+        return new Response(
+          JSON.stringify({ 
+            error: 'Account is locked. Please contact support.',
+            error_code: 'account_locked',
+            leads: [] 
+          }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // IMPORTANT: Check if user is on a trial without Stripe subscription (trial users can't access leads)
+      if (subscription.account_status === 'trial' && !subscription.stripe_subscription_id) {
+        console.log('Trial user attempting lead search:', { userId: user.id });
+        return new Response(
+          JSON.stringify({ 
+            error: 'Lead generation requires a paid subscription',
+            error_code: 'trial_access_denied',
+            leads: [] 
+          }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Get plan limits
+      const plan = subscription.plan as keyof typeof PLAN_CREDITS;
+      const planConfig = PLAN_CREDITS[plan] || PLAN_CREDITS.growth;
+
+      // Check daily limit reset
+      const now = new Date();
+      const resetAt = subscription.daily_searches_reset_at ? new Date(subscription.daily_searches_reset_at) : null;
+      let dailyUsed = subscription.daily_searches_used || 0;
+
+      if (!resetAt || now >= resetAt) {
+        // Reset daily counter
+        dailyUsed = 0;
+        const nextReset = new Date();
+        nextReset.setHours(24, 0, 0, 0); // Reset at midnight
+
+        await supabase
+          .from('subscriptions')
+          .update({ 
+            daily_searches_used: 0,
+            daily_searches_reset_at: nextReset.toISOString()
+          })
+          .eq('user_id', user.id);
+      }
+
+      // Check daily limit
+      if (dailyUsed >= planConfig.dailyLimit) {
+        console.log('Daily limit reached:', { userId: user.id, dailyUsed, limit: planConfig.dailyLimit });
+        return new Response(
+          JSON.stringify({ 
+            error: 'Daily search limit reached. Try again tomorrow.',
+            error_code: 'daily_limit_reached',
+            daily_used: dailyUsed,
+            daily_limit: planConfig.dailyLimit,
+            leads: [] 
+          }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Check monthly credits
+      const remainingCredits = subscription.search_credits_remaining || 0;
+      if (remainingCredits <= 0) {
+        console.log('Monthly credits exhausted:', { userId: user.id, remaining: remainingCredits });
+        return new Response(
+          JSON.stringify({ 
+            error: 'Monthly search credits exhausted. Add more credits or wait for reset.',
+            error_code: 'credits_exhausted',
+            remaining_credits: remainingCredits,
+            leads: [] 
+          }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Deduct credit and increment daily usage BEFORE making external call
+      const newRemaining = remainingCredits - 1;
+      const newDailyUsed = dailyUsed + 1;
+
+      const { error: updateError } = await supabase
+        .from('subscriptions')
+        .update({
+          search_credits_remaining: newRemaining,
+          daily_searches_used: newDailyUsed,
+        })
+        .eq('user_id', user.id);
+
+      if (updateError) {
+        console.error('Error updating credits:', updateError);
+        throw new Error('Failed to update credits');
+      }
+
+      // Log the transaction
+      await supabase.from('search_transactions').insert({
+        user_id: user.id,
+        type: 'usage',
+        amount: -1,
+        balance_after: newRemaining,
+        description: `Lead search: ${filters.job_title || filters.industry || 'general'}`,
+      });
+
+      console.log('Credit deducted:', { 
+        userId: user.id, 
+        plan,
+        newRemaining, 
+        newDailyUsed, 
+        dailyLimit: planConfig.dailyLimit 
+      });
     }
 
     // Get Railway API URL from secrets
