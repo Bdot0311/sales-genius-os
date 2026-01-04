@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { CreditCard, TrendingUp, Check, RefreshCw, User, Save, Loader2, Palette, Activity, Bell, Key, GitBranch, Code2, Webhook, FileText, RotateCcw, Users, History, FileSearch, Globe } from "lucide-react";
+import { CreditCard, TrendingUp, Check, RefreshCw, User, Save, Loader2, Palette, Activity, Bell, Key, GitBranch, Code2, Webhook, FileText, RotateCcw, Users, History, FileSearch, Globe, Coins } from "lucide-react";
 import { APIKeysTab } from "@/components/settings/APIKeysTab";
 import { TeamMembersTab } from "@/components/settings/TeamMembersTab";
 import { WhiteLabelTab } from "@/components/settings/WhiteLabelTab";
@@ -27,6 +27,7 @@ import { WebhookDeliveryLogs } from "@/components/settings/WebhookDeliveryLogs";
 import { APIVersionsTab } from "@/components/settings/APIVersionsTab";
 import { WebhookReplayTab } from "@/components/settings/WebhookReplayTab";
 import { GraphQLPlayground } from "@/components/settings/GraphQLPlayground";
+import { CreditsUsageTab } from "@/components/settings/CreditsUsageTab";
 
 const Settings = () => {
   const { subscription, loading: subLoading } = useSubscription();
@@ -220,6 +221,10 @@ const Settings = () => {
                 <TabsTrigger value="subscription" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
                   <CreditCard className="h-4 w-4" />
                   Plan
+                </TabsTrigger>
+                <TabsTrigger value="credits" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                  <Coins className="h-4 w-4" />
+                  Credits
                 </TabsTrigger>
                 <TabsTrigger value="usage" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
                   <TrendingUp className="h-4 w-4" />
@@ -446,6 +451,10 @@ const Settings = () => {
                 );
               })}
             </div>
+          </TabsContent>
+
+          <TabsContent value="credits" className="space-y-6">
+            <CreditsUsageTab />
           </TabsContent>
 
           <TabsContent value="usage" className="space-y-6">
