@@ -1,7 +1,7 @@
 // Stripe Price ID Configuration
 export const STRIPE_PRICE_IDS = {
   // Base subscription plans
-  growth: 'price_1SS44wFTerosS6hiCkKQnnoD',
+  growth: 'price_1SmM2hFTerosS6hiiDXBDIxl',
   pro: 'price_1SS456FTerosS6hisBSDPwo4',
   elite: 'price_1SS45HFTerosS6hiQtxsNVL4',
   // Search credit add-ons (monthly recurring)
@@ -10,7 +10,7 @@ export const STRIPE_PRICE_IDS = {
 } as const;
 
 export const STRIPE_PRODUCT_IDS = {
-  growth: 'prod_TOropirqoOz7Ed',
+  growth: 'prod_TjpiXbauY0T3RF',
   pro: 'prod_TOrozUbuuN18RP',
   elite: 'prod_TOrod7SaIV2D7s',
   addon500: 'prod_TiLYPvYYIpq6I9',
