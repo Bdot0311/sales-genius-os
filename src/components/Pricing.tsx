@@ -12,11 +12,11 @@ const plans = [
   {
     key: 'growth' as const,
     name: "Growth",
-    price: "$99",
+    price: "$149",
     period: "/ month",
     tagline: "For solo founders and early outbound",
     includes: [
-      "200 search credits / month",
+      "350 search credits / month",
       "Lead Intelligence Engine",
       "In-app enrichment & lead scoring",
       "AI Outreach Studio",
