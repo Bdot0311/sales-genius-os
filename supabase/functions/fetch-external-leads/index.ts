@@ -492,32 +492,14 @@ serve(async (req) => {
       body: JSON.stringify(requestBody),
     });
 
-    // Handle 402 Payment Required - try cache fallback
+    // Handle 402 Payment Required - NO cache fallback (must match search criteria)
     if (response.status === 402) {
-      console.log('PDL credits exhausted (402), trying cache fallback...');
-      const cacheFallback = await fetchCacheAllFallback(railwayUrl);
-      
-      if (cacheFallback.leads.length > 0) {
-        return new Response(
-          JSON.stringify({
-            success: true,
-            leads: cacheFallback.leads,
-            total: cacheFallback.leads.length,
-            from_cache: true,
-            message: 'Results from cache (PDL credits may be exhausted)'
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      // No cache available
-      const cacheData = await fetchCachedResults(railwayUrl);
+      console.log('PDL credits exhausted (402) - returning empty results');
       return new Response(
         JSON.stringify({ 
-          error: 'Search credits exhausted and no cached results available.',
+          error: 'Search credits exhausted. Please add more credits to continue searching.',
           error_code: 'credits_exhausted',
-          leads: [],
-          cached_searches: cacheData.searches
+          leads: []
         }),
         { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -584,33 +566,16 @@ serve(async (req) => {
       console.log('First raw lead:', JSON.stringify(rawLeads[0], null, 2));
     }
 
-    // If no leads found, try cache fallback
+    // If no leads found, return empty - NO cache fallback (must match search criteria)
     if (rawLeads.length === 0) {
-      console.log('No leads returned, trying cache fallback...');
-      const cacheFallback = await fetchCacheAllFallback(railwayUrl);
-      
-      if (cacheFallback.leads.length > 0) {
-        return new Response(
-          JSON.stringify({
-            success: true,
-            leads: cacheFallback.leads,
-            total: cacheFallback.leads.length,
-            from_cache: true,
-            message: 'No new results found. Showing cached leads.'
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      const cacheData = await fetchCachedResults(railwayUrl);
+      console.log('No leads returned for search criteria');
       return new Response(
         JSON.stringify({ 
           success: true,
           leads: [],
           total: 0,
           from_cache: false,
-          message: 'No leads found for this search. Try different search criteria.',
-          cached_searches: cacheData.searches
+          message: 'No leads found for this search. Try different search criteria.'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
