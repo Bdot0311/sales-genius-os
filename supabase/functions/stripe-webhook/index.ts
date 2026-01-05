@@ -8,6 +8,20 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Price ID to plan mapping
+const PRICE_TO_PLAN: Record<string, { plan: 'growth' | 'pro' | 'elite', credits: number, dailyLimit: number, leadsLimit: number }> = {
+  'price_1SmM2hFTerosS6hiiDXBDIxl': { plan: 'growth', credits: 350, dailyLimit: 25, leadsLimit: 1000 },
+  'price_1SS456FTerosS6hisBSDPwo4': { plan: 'pro', credits: 700, dailyLimit: 100, leadsLimit: 10000 },
+  'price_1SS45HFTerosS6hiQtxsNVL4': { plan: 'elite', credits: 2000, dailyLimit: 500, leadsLimit: 999999 },
+};
+
+// Product ID to plan mapping (fallback)
+const PRODUCT_TO_PLAN: Record<string, 'growth' | 'pro' | 'elite'> = {
+  'prod_TjpiXbauY0T3RF': 'growth',
+  'prod_TOrozUbuuN18RP': 'pro',
+  'prod_TOrod7SaIV2D7s': 'elite',
+};
+
 const generateTempPassword = () => {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%";
   let password = "";
@@ -15,6 +29,11 @@ const generateTempPassword = () => {
     password += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return password;
+};
+
+const logStep = (step: string, details?: any) => {
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+  console.log(`[STRIPE-WEBHOOK] ${step}${detailsStr}`);
 };
 
 serve(async (req) => {
@@ -49,21 +68,34 @@ serve(async (req) => {
     return new Response(`Webhook Error: ${err.message}`, { status: 400 });
   }
 
-  console.log("Received Stripe event:", event.type);
+  logStep("Received Stripe event", { type: event.type });
+
+  const supabaseAdmin = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+  );
 
   // Handle checkout.session.completed - this is when subscription is created
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
     
+    logStep("Checkout session completed", { 
+      mode: session.mode, 
+      customerId: session.customer,
+      subscriptionId: session.subscription 
+    });
+
     // Only process subscription checkouts
     if (session.mode !== "subscription") {
-      console.log("Not a subscription checkout, skipping account creation");
+      logStep("Not a subscription checkout, skipping account creation");
       return new Response(JSON.stringify({ received: true }), { 
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
       });
     }
 
     const customerEmail = session.customer_email || session.customer_details?.email;
+    const customerId = session.customer as string;
+    const subscriptionId = session.subscription as string;
     
     if (!customerEmail) {
       console.error("No email found in checkout session");
@@ -73,25 +105,71 @@ serve(async (req) => {
       });
     }
 
-    console.log("Processing new subscription for:", customerEmail);
+    logStep("Processing new subscription", { email: customerEmail, customerId, subscriptionId });
 
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
+    // Get subscription details to determine plan
+    let planDetails = PRICE_TO_PLAN['price_1SmM2hFTerosS6hiiDXBDIxl']; // Default to growth
+    let priceId = '';
+    
+    if (subscriptionId) {
+      try {
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+        priceId = subscription.items.data[0]?.price?.id || '';
+        const productId = subscription.items.data[0]?.price?.product as string;
+        
+        logStep("Retrieved subscription details", { priceId, productId });
+        
+        if (priceId && PRICE_TO_PLAN[priceId]) {
+          planDetails = PRICE_TO_PLAN[priceId];
+        } else if (productId && PRODUCT_TO_PLAN[productId]) {
+          const planName = PRODUCT_TO_PLAN[productId];
+          planDetails = PRICE_TO_PLAN[Object.keys(PRICE_TO_PLAN).find(k => PRICE_TO_PLAN[k].plan === planName) || ''] || planDetails;
+        }
+        
+        logStep("Determined plan", { plan: planDetails.plan, credits: planDetails.credits });
+      } catch (err) {
+        logStep("Error retrieving subscription, using default plan", { error: err });
+      }
+    }
 
     // Check if user already exists
     const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
-    const userExists = existingUsers?.users?.some(u => u.email === customerEmail);
+    const existingUser = existingUsers?.users?.find(u => u.email === customerEmail);
 
-    if (userExists) {
-      console.log("User already exists, skipping account creation for:", customerEmail);
-      return new Response(JSON.stringify({ received: true, message: "User already exists" }), { 
+    if (existingUser) {
+      logStep("User already exists, updating subscription", { userId: existingUser.id });
+      
+      // Update existing user's subscription
+      const { error: updateError } = await supabaseAdmin
+        .from('subscriptions')
+        .update({
+          plan: planDetails.plan,
+          status: 'active',
+          account_status: 'active',
+          stripe_customer_id: customerId,
+          stripe_subscription_id: subscriptionId,
+          search_credits_base: planDetails.credits,
+          search_credits_remaining: planDetails.credits,
+          leads_limit: planDetails.leadsLimit,
+          current_period_start: new Date().toISOString(),
+          current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          credits_reset_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', existingUser.id);
+
+      if (updateError) {
+        logStep("Error updating subscription", { error: updateError });
+      } else {
+        logStep("Subscription updated successfully for existing user");
+      }
+
+      return new Response(JSON.stringify({ received: true, message: "Subscription updated" }), { 
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
       });
     }
 
-    // Generate temp password and create user
+    // Generate temp password and create new user
     const tempPassword = generateTempPassword();
 
     try {
@@ -102,11 +180,37 @@ serve(async (req) => {
       });
 
       if (userError) {
-        console.error("Error creating user:", userError);
+        logStep("Error creating user", { error: userError });
         throw userError;
       }
 
-      console.log("User created successfully:", userData.user?.id);
+      logStep("User created successfully", { userId: userData.user?.id });
+
+      // Update the subscription that was auto-created by the trigger
+      if (userData.user?.id) {
+        const { error: subError } = await supabaseAdmin
+          .from('subscriptions')
+          .update({
+            plan: planDetails.plan,
+            status: 'active',
+            account_status: 'active',
+            stripe_customer_id: customerId,
+            stripe_subscription_id: subscriptionId,
+            search_credits_base: planDetails.credits,
+            search_credits_remaining: planDetails.credits,
+            leads_limit: planDetails.leadsLimit,
+            current_period_start: new Date().toISOString(),
+            current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            credits_reset_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          })
+          .eq('user_id', userData.user.id);
+
+        if (subError) {
+          logStep("Error updating new user subscription", { error: subError });
+        } else {
+          logStep("New user subscription updated", { plan: planDetails.plan, credits: planDetails.credits });
+        }
+      }
 
       // Send welcome email with credentials
       const resendApiKey = Deno.env.get("RESEND_API_KEY");
@@ -116,11 +220,12 @@ serve(async (req) => {
         const logoUrl = "https://ghgfjnepvxvxrncmskys.supabase.co/storage/v1/object/public/email-assets/salesos-logo.webp";
         
         const customerName = session.customer_details?.name || "there";
+        const planName = planDetails.plan.charAt(0).toUpperCase() + planDetails.plan.slice(1);
 
         const { error: emailError } = await resend.emails.send({
           from: "SalesOS <support@bdotindustries.com>",
           to: [customerEmail],
-          subject: "Welcome to SalesOS — Your Login Credentials 🔐",
+          subject: `Welcome to SalesOS ${planName} — Your Login Credentials 🔐`,
           html: `
             <!DOCTYPE html>
             <html lang="en">
@@ -143,7 +248,7 @@ serve(async (req) => {
                       <tr>
                         <td bgcolor="#9b6dff" align="center" style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); padding: 32px 40px; border-radius: 16px 16px 0 0;">
                           <img src="${logoUrl}" alt="SalesOS" width="56" height="56" style="display: block; border-radius: 12px; margin-bottom: 16px;" />
-                          <h1 style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">Welcome to SalesOS!</h1>
+                          <h1 style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">Welcome to SalesOS ${planName}!</h1>
                           <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: rgba(255,255,255,0.9); margin: 12px 0 0 0; font-size: 16px;">Your AI-powered sales operating system</p>
                         </td>
                       </tr>
@@ -155,6 +260,21 @@ serve(async (req) => {
                           <p style="color: #a1a1aa; line-height: 1.7; margin: 0 0 28px 0; font-size: 16px;">
                             You just joined thousands of sales professionals using SalesOS to find better leads, close more deals, and save hours every week.
                           </p>
+                          
+                          <!-- Plan Details Box -->
+                          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#1a1a1a" style="background-color: #1a1a1a; border-radius: 12px; border: 1px solid #2a2a2a; margin-bottom: 20px;">
+                            <tr>
+                              <td bgcolor="#1a1a1a" style="background-color: #1a1a1a; padding: 20px;">
+                                <h3 style="color: #9b6dff; margin: 0 0 12px 0; font-size: 16px; font-weight: 600;">📊 Your ${planName} Plan Includes:</h3>
+                                <p style="color: #ffffff; margin: 0; font-size: 15px;">
+                                  • <strong>${planDetails.credits.toLocaleString()}</strong> search credits/month<br>
+                                  • Up to <strong>${planDetails.dailyLimit}</strong> searches/day<br>
+                                  • Lead Intelligence Engine<br>
+                                  • AI-powered enrichment & scoring
+                                </p>
+                              </td>
+                            </tr>
+                          </table>
                           
                           <!-- Credentials Box -->
                           <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#1a1a1a" style="background-color: #1a1a1a; border-radius: 12px; border: 1px solid #2a2a2a; border-left: 4px solid #9b6dff; margin-bottom: 28px;">
@@ -186,75 +306,6 @@ serve(async (req) => {
                                 <p style="color: #fbbf24; font-size: 14px; line-height: 1.6; margin: 0;">
                                   ⚠️ <strong>Security Notice:</strong> Please change your password after your first login for security.
                                 </p>
-                              </td>
-                            </tr>
-                          </table>
-                          
-                          <!-- Quick Start Guide Box -->
-                          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#1a1a1a" style="background-color: #1a1a1a; border-radius: 12px; border: 1px solid #333333; margin-bottom: 28px;">
-                            <tr>
-                              <td bgcolor="#1a1a1a" style="background-color: #1a1a1a; padding: 24px;">
-                                <h3 style="color: #9b6dff; margin: 0 0 20px 0; font-size: 16px; font-weight: 700;">🚀 Quick Start Guide</h3>
-                                
-                                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 18px;">
-                                  <tr>
-                                    <td width="32" valign="top">
-                                      <div style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #fff; width: 28px; height: 28px; border-radius: 50%; text-align: center; line-height: 28px; font-weight: 700; font-size: 14px;">1</div>
-                                    </td>
-                                    <td valign="top" style="padding-left: 12px;">
-                                      <p style="color: #ffffff; margin: 0 0 4px 0; font-size: 15px; font-weight: 600;">Sign in to your account</p>
-                                      <p style="color: #a1a1aa; margin: 0; font-size: 14px; line-height: 1.5;">Head to <a href="https://salesos.alephwavex.io/auth" style="color: #9b6dff; text-decoration: none;">salesos.alephwavex.io/auth</a> and log in with your email.</p>
-                                    </td>
-                                  </tr>
-                                </table>
-                                
-                                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 18px;">
-                                  <tr>
-                                    <td width="32" valign="top">
-                                      <div style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #fff; width: 28px; height: 28px; border-radius: 50%; text-align: center; line-height: 28px; font-weight: 700; font-size: 14px;">2</div>
-                                    </td>
-                                    <td valign="top" style="padding-left: 12px;">
-                                      <p style="color: #ffffff; margin: 0 0 4px 0; font-size: 15px; font-weight: 600;">Search for your first leads</p>
-                                      <p style="color: #a1a1aa; margin: 0; font-size: 14px; line-height: 1.5;">Go to <strong style="color: #ffffff;">Leads → Find Leads</strong> and use AI-powered search to discover decision-makers.</p>
-                                    </td>
-                                  </tr>
-                                </table>
-                                
-                                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 18px;">
-                                  <tr>
-                                    <td width="32" valign="top">
-                                      <div style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #fff; width: 28px; height: 28px; border-radius: 50%; text-align: center; line-height: 28px; font-weight: 700; font-size: 14px;">3</div>
-                                    </td>
-                                    <td valign="top" style="padding-left: 12px;">
-                                      <p style="color: #ffffff; margin: 0 0 4px 0; font-size: 15px; font-weight: 600;">Save leads & get contact info</p>
-                                      <p style="color: #a1a1aa; margin: 0; font-size: 14px; line-height: 1.5;">Click <strong style="color: #ffffff;">Save</strong> to add leads, then <strong style="color: #ffffff;">Enrich</strong> to unlock emails and phone numbers.</p>
-                                    </td>
-                                  </tr>
-                                </table>
-                                
-                                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 18px;">
-                                  <tr>
-                                    <td width="32" valign="top">
-                                      <div style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #fff; width: 28px; height: 28px; border-radius: 50%; text-align: center; line-height: 28px; font-weight: 700; font-size: 14px;">4</div>
-                                    </td>
-                                    <td valign="top" style="padding-left: 12px;">
-                                      <p style="color: #ffffff; margin: 0 0 4px 0; font-size: 15px; font-weight: 600;">Build your sales pipeline</p>
-                                      <p style="color: #a1a1aa; margin: 0; font-size: 14px; line-height: 1.5;">Head to <strong style="color: #ffffff;">Pipeline</strong> to create deals and track your sales process.</p>
-                                    </td>
-                                  </tr>
-                                </table>
-                                
-                                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
-                                  <tr>
-                                    <td width="32" valign="top">
-                                      <div style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #fff; width: 28px; height: 28px; border-radius: 50%; text-align: center; line-height: 28px; font-weight: 700; font-size: 14px;">5</div>
-                                    </td>
-                                    <td valign="top" style="padding-left: 12px;">
-                                      <p style="color: #ffffff; margin: 0 0 4px 0; font-size: 15px; font-weight: 600;">Get AI sales coaching</p>
-                                      <p style="color: #a1a1aa; margin: 0; font-size: 14px; line-height: 1.5;">Visit the <strong style="color: #ffffff;">Coach</strong> tab for personalized tips and email drafts.</p>
-                                    </td>
-                                  </tr>
-                                </table>
                               </td>
                             </tr>
                           </table>
@@ -308,22 +359,23 @@ serve(async (req) => {
         });
 
         if (emailError) {
-          console.error("Error sending welcome email:", emailError);
+          logStep("Error sending welcome email", { error: emailError });
         } else {
-          console.log("Welcome email sent successfully to:", customerEmail);
+          logStep("Welcome email sent successfully", { email: customerEmail });
         }
       }
 
       return new Response(JSON.stringify({ 
         received: true, 
         message: "Account created successfully",
-        userId: userData.user?.id 
+        userId: userData.user?.id,
+        plan: planDetails.plan
       }), { 
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
       });
 
     } catch (error: any) {
-      console.error("Error in account creation:", error);
+      logStep("Error in account creation", { error: error.message });
       return new Response(JSON.stringify({ error: error.message }), { 
         headers: { ...corsHeaders, "Content-Type": "application/json" }, 
         status: 500 
@@ -331,11 +383,146 @@ serve(async (req) => {
     }
   }
 
+  // Handle subscription updates (plan changes, renewals)
+  if (event.type === "customer.subscription.updated") {
+    const subscription = event.data.object as Stripe.Subscription;
+    const customerId = subscription.customer as string;
+    const priceId = subscription.items.data[0]?.price?.id || '';
+    
+    logStep("Subscription updated", { subscriptionId: subscription.id, priceId, status: subscription.status });
+    
+    // Get customer email to find user
+    try {
+      const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
+      const customerEmail = customer.email;
+      
+      if (customerEmail) {
+        // Find user by email
+        const { data: profile } = await supabaseAdmin
+          .from('profiles')
+          .select('id')
+          .eq('email', customerEmail)
+          .single();
+        
+        if (profile) {
+          const planDetails = PRICE_TO_PLAN[priceId] || PRICE_TO_PLAN['price_1SmM2hFTerosS6hiiDXBDIxl'];
+          
+          const { error: updateError } = await supabaseAdmin
+            .from('subscriptions')
+            .update({
+              plan: planDetails.plan,
+              status: subscription.status === 'active' ? 'active' : 'inactive',
+              account_status: subscription.status === 'active' ? 'active' : subscription.status,
+              stripe_subscription_id: subscription.id,
+              search_credits_base: planDetails.credits,
+              leads_limit: planDetails.leadsLimit,
+              current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+              current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq('user_id', profile.id);
+          
+          if (updateError) {
+            logStep("Error updating subscription on renewal", { error: updateError });
+          } else {
+            logStep("Subscription updated successfully", { userId: profile.id, plan: planDetails.plan });
+          }
+        }
+      }
+    } catch (err) {
+      logStep("Error processing subscription update", { error: err });
+    }
+  }
+
+  // Handle invoice paid (credits reset on billing cycle)
+  if (event.type === "invoice.paid") {
+    const invoice = event.data.object as Stripe.Invoice;
+    const customerId = invoice.customer as string;
+    const subscriptionId = invoice.subscription as string;
+    
+    logStep("Invoice paid", { invoiceId: invoice.id, customerId, subscriptionId });
+    
+    if (subscriptionId) {
+      try {
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+        const priceId = subscription.items.data[0]?.price?.id || '';
+        const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
+        const customerEmail = customer.email;
+        
+        if (customerEmail) {
+          const { data: profile } = await supabaseAdmin
+            .from('profiles')
+            .select('id')
+            .eq('email', customerEmail)
+            .single();
+          
+          if (profile) {
+            const planDetails = PRICE_TO_PLAN[priceId] || PRICE_TO_PLAN['price_1SmM2hFTerosS6hiiDXBDIxl'];
+            
+            // Reset credits on new billing cycle
+            const { error: updateError } = await supabaseAdmin
+              .from('subscriptions')
+              .update({
+                search_credits_remaining: planDetails.credits,
+                daily_searches_used: 0,
+                credits_reset_at: new Date(subscription.current_period_end * 1000).toISOString(),
+                current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+                current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+                updated_at: new Date().toISOString(),
+              })
+              .eq('user_id', profile.id);
+            
+            if (updateError) {
+              logStep("Error resetting credits", { error: updateError });
+            } else {
+              logStep("Credits reset on new billing cycle", { userId: profile.id, credits: planDetails.credits });
+            }
+          }
+        }
+      } catch (err) {
+        logStep("Error processing invoice paid", { error: err });
+      }
+    }
+  }
+
   // Handle subscription cancellation
   if (event.type === "customer.subscription.deleted") {
     const subscription = event.data.object as Stripe.Subscription;
-    console.log("Subscription cancelled:", subscription.id);
-    // You can add logic here to deactivate user account if needed
+    const customerId = subscription.customer as string;
+    
+    logStep("Subscription cancelled", { subscriptionId: subscription.id });
+    
+    try {
+      const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
+      const customerEmail = customer.email;
+      
+      if (customerEmail) {
+        const { data: profile } = await supabaseAdmin
+          .from('profiles')
+          .select('id')
+          .eq('email', customerEmail)
+          .single();
+        
+        if (profile) {
+          const { error: updateError } = await supabaseAdmin
+            .from('subscriptions')
+            .update({
+              status: 'cancelled',
+              account_status: 'cancelled',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('user_id', profile.id);
+          
+          if (updateError) {
+            logStep("Error updating cancelled subscription", { error: updateError });
+          } else {
+            logStep("Subscription marked as cancelled", { userId: profile.id });
+          }
+        }
+      }
+    } catch (err) {
+      logStep("Error processing subscription cancellation", { error: err });
+    }
   }
 
   return new Response(JSON.stringify({ received: true }), { 
