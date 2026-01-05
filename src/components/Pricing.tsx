@@ -30,7 +30,7 @@ const plans = [
     ],
     bestFor: "Validating outbound without overcommitment.",
     highlighted: false,
-    paymentLink: "https://buy.stripe.com/aFabJ1a8LgqzbZ06wu1B60r",
+    paymentLink: "https://buy.stripe.com/9B6dR9ep1a2b0gi1ca1B60u",
   },
   {
     key: 'pro' as const,
@@ -84,11 +84,13 @@ const addons = [
     credits: 500,
     price: "$199",
     priceId: STRIPE_PRICE_IDS.addon500,
+    paymentLink: "https://buy.stripe.com/5kQbJ1ep1cajgfg8EC1B60s",
   },
   {
     credits: 1500,
     price: "$499",
     priceId: STRIPE_PRICE_IDS.addon1500,
+    paymentLink: "https://buy.stripe.com/3cIeVdep13DN5AC6wu1B60t",
   },
 ];
 
