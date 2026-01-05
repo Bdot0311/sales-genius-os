@@ -14,6 +14,16 @@ export interface UserSubscription {
   leadsLimit: number;
   // Plan feature details
   features: typeof PLAN_FEATURES[PlanType];
+  // Extended subscription details
+  status?: string;
+  accountStatus?: string;
+  stripeCustomerId?: string | null;
+  stripeSubscriptionId?: string | null;
+  searchCreditsBase?: number;
+  searchCreditsRemaining?: number;
+  currentPeriodStart?: string;
+  currentPeriodEnd?: string;
+  creditsResetAt?: string;
 }
 
 export const useSubscription = () => {
@@ -27,9 +37,46 @@ export const useSubscription = () => {
 
   const loadSubscription = async () => {
     try {
+      // Get basic plan info from RPC
       const { data, error } = await supabase.rpc('get_user_plan');
       
       if (error) throw error;
+      
+      // Get extended subscription details
+      const { data: { user } } = await supabase.auth.getUser();
+      let extendedDetails = {
+        status: 'active',
+        accountStatus: 'active',
+        stripeCustomerId: null as string | null,
+        stripeSubscriptionId: null as string | null,
+        searchCreditsBase: 350,
+        searchCreditsRemaining: 350,
+        currentPeriodStart: undefined as string | undefined,
+        currentPeriodEnd: undefined as string | undefined,
+        creditsResetAt: undefined as string | undefined,
+      };
+
+      if (user) {
+        const { data: subData } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        if (subData) {
+          extendedDetails = {
+            status: subData.status || 'active',
+            accountStatus: subData.account_status || 'active',
+            stripeCustomerId: subData.stripe_customer_id,
+            stripeSubscriptionId: subData.stripe_subscription_id,
+            searchCreditsBase: subData.search_credits_base || 350,
+            searchCreditsRemaining: subData.search_credits_remaining || 350,
+            currentPeriodStart: subData.current_period_start,
+            currentPeriodEnd: subData.current_period_end,
+            creditsResetAt: subData.credits_reset_at || undefined,
+          };
+        }
+      }
       
       if (data && data.length > 0) {
         const planData = data[0];
@@ -44,6 +91,7 @@ export const useSubscription = () => {
           hasApiAccess: planData.has_api_access,
           leadsLimit: planData.leads_limit,
           features,
+          ...extendedDetails,
         });
       } else {
         // Default to growth plan
@@ -55,6 +103,7 @@ export const useSubscription = () => {
           hasApiAccess: false,
           leadsLimit: 500,
           features: PLAN_FEATURES.growth,
+          ...extendedDetails,
         });
       }
     } catch (error) {
@@ -68,6 +117,12 @@ export const useSubscription = () => {
         hasApiAccess: false,
         leadsLimit: 500,
         features: PLAN_FEATURES.growth,
+        status: 'active',
+        accountStatus: 'active',
+        stripeCustomerId: null,
+        stripeSubscriptionId: null,
+        searchCreditsBase: 350,
+        searchCreditsRemaining: 350,
       });
     } finally {
       setLoading(false);

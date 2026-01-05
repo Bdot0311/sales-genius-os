@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { CreditCard, TrendingUp, Check, RefreshCw, User, Save, Loader2, Palette, Activity, Bell, Key, GitBranch, Code2, Webhook, FileText, RotateCcw, Users, History, FileSearch, Globe, Coins } from "lucide-react";
+import { CreditCard, TrendingUp, Check, RefreshCw, User, Save, Loader2, Palette, Activity, Bell, Key, GitBranch, Code2, Webhook, FileText, RotateCcw, Users, History, FileSearch, Globe, Coins, ExternalLink, Settings2 } from "lucide-react";
 import { APIKeysTab } from "@/components/settings/APIKeysTab";
 import { TeamMembersTab } from "@/components/settings/TeamMembersTab";
 import { WhiteLabelTab } from "@/components/settings/WhiteLabelTab";
@@ -112,34 +112,35 @@ const Settings = () => {
     }
   };
 
+  const [openingPortal, setOpeningPortal] = useState(false);
+
   const plans = [
     {
       name: 'Growth',
       value: 'growth',
-      price: '$99',
-      description: 'Perfect for solo founders and small teams',
+      price: '$149',
+      description: 'For solo founders and early outbound',
       features: [
+        '350 search credits / month',
         'Lead Intelligence Engine',
+        'In-app enrichment & lead scoring',
         'AI Outreach Studio',
         'Smart Deal Pipeline',
-        'Calendar Integration',
-        'Up to 1,000 leads/month',
         'Email support'
       ],
-      paymentLink: 'https://buy.stripe.com/cNibJ1bcPden1km8EC1B60o'
+      paymentLink: 'https://buy.stripe.com/9B6dR9ep1a2b0gi1ca1B60u'
     },
     {
       name: 'Pro',
       value: 'pro',
       price: '$299',
-      description: 'For scaling sales teams',
+      description: 'For teams booking meetings consistently',
       features: [
+        '700 search credits / month',
         'Everything in Growth, plus:',
-        'Automation Builder',
+        'Advanced automation builder',
         'AI Sales Coach',
-        'Advanced Analytics',
-        'AI Recommendations',
-        'Up to 10,000 leads/month',
+        'Performance analytics',
         'Priority support'
       ],
       highlighted: true,
@@ -149,14 +150,13 @@ const Settings = () => {
       name: 'Elite',
       value: 'elite',
       price: '$799',
-      description: 'For high-performance organizations',
+      description: 'For high-volume outbound operations',
       features: [
+        '2,000 search credits / month',
         'Everything in Pro, plus:',
-        'Up to 10 team accounts',
-        'White-label customization',
-        'API access',
         'Unlimited automation workflows',
-        'Unlimited leads',
+        'API access',
+        'White-label customization',
         'Dedicated success manager'
       ],
       paymentLink: 'https://buy.stripe.com/8x2bJ15Svfmvd341ca1B60q'
@@ -168,6 +168,7 @@ const Settings = () => {
   };
 
   const handleManageSubscription = async () => {
+    setOpeningPortal(true);
     try {
       const { data, error } = await supabase.functions.invoke('customer-portal');
 
@@ -176,9 +177,15 @@ const Settings = () => {
       if (data?.url) {
         window.open(data.url, '_blank');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Portal error:', error);
-      toast.error('Failed to open customer portal');
+      if (error.message?.includes('No Stripe customer')) {
+        toast.error('No subscription found. Please subscribe to a plan first.');
+      } else {
+        toast.error('Failed to open customer portal. Please try again.');
+      }
+    } finally {
+      setOpeningPortal(false);
     }
   };
 
@@ -217,6 +224,10 @@ const Settings = () => {
                 <TabsTrigger value="profile" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
                   <User className="h-4 w-4" />
                   Profile
+                </TabsTrigger>
+                <TabsTrigger value="billing" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                  <Settings2 className="h-4 w-4" />
+                  Billing
                 </TabsTrigger>
                 <TabsTrigger value="subscription" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
                   <CreditCard className="h-4 w-4" />
@@ -366,6 +377,128 @@ const Settings = () => {
                     </>
                   )}
                 </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="billing" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5" />
+                  Subscription & Billing
+                </CardTitle>
+                <CardDescription>
+                  Manage your subscription, payment methods, and billing history
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Current Plan Summary */}
+                <div className="p-4 bg-muted/50 rounded-lg border">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Current Plan</p>
+                      <p className="text-2xl font-bold capitalize">{subscription?.plan || 'None'}</p>
+                    </div>
+                    <Badge variant={subscription?.status === 'active' ? 'default' : 'secondary'}>
+                      {subscription?.status || 'No subscription'}
+                    </Badge>
+                  </div>
+                  
+                  {subscription?.stripeSubscriptionId && (
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">Search Credits</p>
+                        <p className="font-medium">
+                          {subscription.searchCreditsRemaining?.toLocaleString() || 0} / {subscription.searchCreditsBase?.toLocaleString() || 0}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Renews</p>
+                        <p className="font-medium">
+                          {subscription.currentPeriodEnd 
+                            ? new Date(subscription.currentPeriodEnd).toLocaleDateString()
+                            : 'N/A'
+                          }
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Customer Portal Button */}
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold">Manage Your Subscription</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Update payment methods, view invoices, change plans, or cancel your subscription through Stripe's secure customer portal.
+                  </p>
+                  <Button
+                    onClick={handleManageSubscription}
+                    disabled={openingPortal || !subscription?.stripeCustomerId}
+                    className="gap-2"
+                    variant="hero"
+                  >
+                    {openingPortal ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Opening Portal...
+                      </>
+                    ) : (
+                      <>
+                        <ExternalLink className="h-4 w-4" />
+                        Open Customer Portal
+                      </>
+                    )}
+                  </Button>
+                  {!subscription?.stripeCustomerId && (
+                    <p className="text-sm text-amber-600">
+                      Subscribe to a plan to access billing management.
+                    </p>
+                  )}
+                </div>
+
+                {/* Quick Actions */}
+                <div className="border-t pt-6 space-y-3">
+                  <h3 className="text-lg font-semibold">Quick Actions</h3>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <Button
+                      variant="outline"
+                      onClick={handleManageSubscription}
+                      disabled={openingPortal || !subscription?.stripeCustomerId}
+                      className="justify-start gap-2"
+                    >
+                      <CreditCard className="h-4 w-4" />
+                      Update Payment Method
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={handleManageSubscription}
+                      disabled={openingPortal || !subscription?.stripeCustomerId}
+                      className="justify-start gap-2"
+                    >
+                      <FileText className="h-4 w-4" />
+                      View Invoices
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={handleRefreshSubscription}
+                      disabled={syncing}
+                      className="justify-start gap-2"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+                      Refresh Status
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={handleManageSubscription}
+                      disabled={openingPortal || !subscription?.stripeCustomerId}
+                      className="justify-start gap-2 text-destructive hover:text-destructive"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      Cancel Subscription
+                    </Button>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
