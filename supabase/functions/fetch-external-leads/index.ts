@@ -467,6 +467,9 @@ serve(async (req) => {
       company_size: filters.company_size || '',
       seniority: filters.seniority || '',
       limit: Math.min(filters.limit || 10, 100),
+      // Tell Railway to fetch from PDL if cache is empty
+      skip_cache: false,
+      fallback_to_pdl: true,
     };
 
     // Check if we have at least one search parameter
