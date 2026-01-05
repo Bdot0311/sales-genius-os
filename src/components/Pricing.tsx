@@ -30,7 +30,7 @@ const plans = [
     ],
     bestFor: "Validating outbound without overcommitment.",
     highlighted: false,
-    paymentLink: "https://buy.stripe.com/cNibJ1bcPden1km8EC1B60o",
+    paymentLink: "https://buy.stripe.com/aFabJ1a8LgqzbZ06wu1B60r",
   },
   {
     key: 'pro' as const,
