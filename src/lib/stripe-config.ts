@@ -24,8 +24,8 @@ export type AddonType = 'addon500' | 'addon1500';
 export const PLAN_CONFIG = {
   growth: {
     name: 'Growth',
-    price: 99,
-    monthlySearchCredits: 200,
+    price: 149,
+    monthlySearchCredits: 350,
     dailySearchLimit: 25,
     exportTier: 'standard' as const,
   },
