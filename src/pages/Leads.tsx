@@ -2,6 +2,7 @@ import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AddLeadDialog } from "@/components/dashboard/AddLeadDialog";
 import { ImportLeadsDialog } from "@/components/dashboard/ImportLeadsDialog";
 import { ExternalLeadsTable } from "@/components/dashboard/ExternalLeadsTable";
@@ -20,6 +21,7 @@ const Leads = () => {
   const [externalFilters, setExternalFilters] = useState<ExternalLeadFilters>({});
   const [showExternalLeads, setShowExternalLeads] = useState(false);
   const [aiSearchQuery, setAiSearchQuery] = useState("");
+  const [pageSize, setPageSize] = useState(10);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { status: subscriptionStatus, loading: subscriptionLoading } = useSubscriptionStatus();
@@ -139,7 +141,7 @@ const Leads = () => {
                   
                   const aiFilters = data?.filters || {};
                   const newFilters: ExternalLeadFilters = {
-                    limit: aiFilters.limit || 50,
+                    limit: pageSize,
                   };
                   
                   // Use job titles if available
@@ -176,7 +178,7 @@ const Leads = () => {
                 } catch (error) {
                   console.error('AI parsing failed, using fallback:', error);
                   const lowerQuery = query.toLowerCase();
-                  const newFilters: ExternalLeadFilters = { limit: 50 };
+                  const newFilters: ExternalLeadFilters = { limit: pageSize };
                   
                   if (lowerQuery.includes('ceo') || lowerQuery.includes('founder')) {
                     newFilters.job_title = lowerQuery.includes('ceo') ? 'CEO' : 'Founder';
@@ -262,11 +264,38 @@ const Leads = () => {
                   />
                   
                   {/* Pagination Controls */}
-                  {pagination.totalPages > 1 && (
-                    <div className="flex items-center justify-between border-t pt-4">
+                  <div className="flex items-center justify-between border-t pt-4">
+                    <div className="flex items-center gap-4">
                       <p className="text-sm text-muted-foreground">
                         Page {pagination.currentPage} of {pagination.totalPages} ({pagination.totalResults} total leads)
                       </p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">Show:</span>
+                        <Select
+                          value={pageSize.toString()}
+                          onValueChange={(value) => {
+                            const newSize = parseInt(value);
+                            setPageSize(newSize);
+                            // Re-fetch with new page size if we have filters
+                            if (Object.keys(externalFilters).length > 0) {
+                              fetchExternalLeads({ ...externalFilters, limit: newSize, page: 1 });
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="w-20 h-8">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="10">10</SelectItem>
+                            <SelectItem value="25">25</SelectItem>
+                            <SelectItem value="50">50</SelectItem>
+                            <SelectItem value="100">100</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <span className="text-sm text-muted-foreground">per page</span>
+                      </div>
+                    </div>
+                    {pagination.totalPages > 1 && (
                       <div className="flex items-center gap-2">
                         <Button
                           variant="outline"
@@ -317,8 +346,8 @@ const Leads = () => {
                           <ChevronRight className="w-4 h-4 ml-1" />
                         </Button>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
