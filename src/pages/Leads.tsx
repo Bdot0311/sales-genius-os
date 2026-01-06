@@ -148,12 +148,22 @@ const Leads = () => {
                   if (aiFilters.jobTitles?.length > 0) {
                     newFilters.job_title = aiFilters.jobTitles.join(' OR ');
                   }
-                  if (aiFilters.industries?.length > 0) {
-                    newFilters.industry = aiFilters.industries[0];
+
+                  // Industry: ignore generic "B2B" (it kills recall in Railway)
+                  const rawIndustry = aiFilters.industries?.[0]?.trim();
+                  if (rawIndustry && !/^b2b$/i.test(rawIndustry)) {
+                    newFilters.industry = rawIndustry;
+                  } else if (rawIndustry) {
+                    newFilters.keywords = [...(newFilters.keywords || []), rawIndustry];
                   }
-                  if (aiFilters.companySizes?.length > 0) {
-                    newFilters.company_size = aiFilters.companySizes[0];
+
+                  // Company size: only allow known buckets
+                  const rawSize = aiFilters.companySizes?.[0]?.trim();
+                  const allowedSizes = new Set(["1-10","11-50","51-200","201-500","501-1000","1000+"]);
+                  if (rawSize && allowedSizes.has(rawSize)) {
+                    newFilters.company_size = rawSize;
                   }
+
                   if (aiFilters.locations?.length > 0) {
                     newFilters.country = aiFilters.locations[0];
                   }

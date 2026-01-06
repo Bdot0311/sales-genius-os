@@ -463,16 +463,21 @@ serve(async (req) => {
     const page = filters.page || 1;
     const limit = Math.min(filters.limit || 10, 100);
     const offset = (page - 1) * limit;
-    
+
+    // Railway: avoid overly-generic industry values like "B2B"
+    const industry = (filters.industry || '').trim();
+    const normalizedIndustry = /^b2b$/i.test(industry) ? '' : industry;
+
+    // Only send offset for page > 1 to preserve legacy behavior
     const requestBody: Record<string, any> = {
       job_title: jobTitle || '',
       location: filters.country || '',
-      industry: filters.industry || '',
+      industry: normalizedIndustry,
       company: filters.company || '',
       company_size: filters.company_size || '',
       seniority: filters.seniority || '',
       limit,
-      offset,
+      ...(page > 1 ? { offset } : {}),
     };
 
     // Check if we have at least one search parameter
