@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { question, userData } = await req.json();
+    const { question, userData, conversationId, conversationHistory } = await req.json();
     
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -26,16 +26,19 @@ serve(async (req) => {
     let recentLeads: any[] = [];
     let recentActivities: any[] = [];
     let subscriptionInfo = null;
+    let userId: string | null = null;
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     if (authHeader) {
-      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-      const supabase = createClient(supabaseUrl, supabaseKey);
-      
       const token = authHeader.replace('Bearer ', '');
       const { data: { user }, error: userError } = await supabase.auth.getUser(token);
       
       if (user && !userError) {
+        userId = user.id;
+        
         // Fetch user profile
         const { data: profile } = await supabase
           .from('profiles')
@@ -118,12 +121,12 @@ USER PROFILE:
 - Plan: ${subscriptionInfo?.plan || 'Unknown'}
 
 CURRENT SALES METRICS:
-- Total Leads: ${userData.totalLeads}
-- Active Deals: ${userData.activeDeals}
-- Pipeline Value: $${userData.pipelineValue?.toLocaleString() || 0}
-- Average Deal Size: $${userData.avgDealSize?.toLocaleString() || 0}
-- Close Rate: ${userData.closeRate}%
-- Upcoming Meetings: ${userData.upcomingMeetings}
+- Total Leads: ${userData?.totalLeads || 0}
+- Active Deals: ${userData?.activeDeals || 0}
+- Pipeline Value: $${userData?.pipelineValue?.toLocaleString() || 0}
+- Average Deal Size: $${userData?.avgDealSize?.toLocaleString() || 0}
+- Close Rate: ${userData?.closeRate || 0}%
+- Upcoming Meetings: ${userData?.upcomingMeetings || 0}
 
 DEAL PIPELINE BREAKDOWN:
 ${Object.entries(dealsByStage).map(([stage, count]) => `- ${stage}: ${count} deals`).join('\n') || '- No deals yet'}
@@ -163,7 +166,23 @@ When coaching:
 
 Keep responses concise (2-3 focused paragraphs) unless they ask for detailed analysis. Always end with 1-2 specific action items.`;
 
-    console.log('AI Coach context:', context.substring(0, 500) + '...');
+    // Build messages array with conversation history
+    const messages: { role: string; content: string }[] = [
+      { role: "system", content: systemPrompt },
+      { role: "system", content: context },
+    ];
+
+    // Add conversation history if provided
+    if (conversationHistory && Array.isArray(conversationHistory)) {
+      for (const msg of conversationHistory) {
+        messages.push({ role: msg.role, content: msg.content });
+      }
+    }
+
+    // Add current question
+    messages.push({ role: "user", content: question });
+
+    console.log('AI Coach streaming request with', messages.length, 'messages');
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -173,11 +192,8 @@ Keep responses concise (2-3 focused paragraphs) unless they ask for detailed ana
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "system", content: context },
-          { role: "user", content: question },
-        ],
+        messages,
+        stream: true,
       }),
     });
 
@@ -199,13 +215,10 @@ Keep responses concise (2-3 focused paragraphs) unless they ask for detailed ana
       throw new Error("Failed to get coaching response");
     }
 
-    const data = await response.json();
-    const coaching = data.choices[0].message.content;
-
-    return new Response(
-      JSON.stringify({ coaching }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    // Return the stream directly
+    return new Response(response.body, {
+      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+    });
   } catch (error: any) {
     console.error("Error in ai-coach function:", error.message);
     
