@@ -3,13 +3,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Mic, Send, TrendingUp, Target, Lightbulb, Loader2, Sparkles, BookOpen, Radio } from "lucide-react";
-import { useState, useEffect } from "react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Mic, Send, TrendingUp, Target, Lightbulb, Loader2, Sparkles, BookOpen, Radio, MessageSquare, Plus, Trash2, History } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
-import { FeatureHighlight } from "@/components/dashboard/FeatureHighlight";
+
+interface Message {
+  id?: string;
+  role: 'user' | 'assistant';
+  content: string;
+  created_at?: string;
+}
+
+interface Conversation {
+  id: string;
+  title: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 const Coach = () => {
   const { 
@@ -24,7 +38,10 @@ const Coach = () => {
   
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [coachingResponse, setCoachingResponse] = useState("");
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
   const [stats, setStats] = useState({
     totalLeads: 0,
     activeDeals: 0,
@@ -34,6 +51,15 @@ const Coach = () => {
     upcomingMeetings: 0,
   });
   const { toast } = useToast();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const loadStats = async () => {
     try {
@@ -65,36 +91,106 @@ const Coach = () => {
     }
   };
 
+  const loadConversations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("coaching_conversations")
+        .select("*")
+        .order("updated_at", { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+      setConversations(data || []);
+    } catch (error) {
+      console.error("Error loading conversations:", error);
+    }
+  };
+
+  const loadConversationMessages = async (conversationId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("coaching_messages")
+        .select("*")
+        .eq("conversation_id", conversationId)
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+      setMessages(data?.map(m => ({ 
+        id: m.id, 
+        role: m.role as 'user' | 'assistant', 
+        content: m.content,
+        created_at: m.created_at 
+      })) || []);
+      setCurrentConversationId(conversationId);
+      setShowHistory(false);
+    } catch (error) {
+      console.error("Error loading messages:", error);
+    }
+  };
+
+  const createNewConversation = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      const { data, error } = await supabase
+        .from("coaching_conversations")
+        .insert({ user_id: user.id, title: "New Coaching Session" })
+        .select()
+        .single();
+
+      if (error) throw error;
+      await loadConversations();
+      return data.id;
+    } catch (error) {
+      console.error("Error creating conversation:", error);
+      return null;
+    }
+  };
+
+  const saveMessage = async (conversationId: string, role: 'user' | 'assistant', content: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      await supabase
+        .from("coaching_messages")
+        .insert({ conversation_id: conversationId, user_id: user.id, role, content });
+
+      // Update conversation title if it's the first user message
+      if (role === 'user') {
+        const title = content.length > 50 ? content.substring(0, 50) + "..." : content;
+        await supabase
+          .from("coaching_conversations")
+          .update({ title, updated_at: new Date().toISOString() })
+          .eq("id", conversationId);
+      }
+    } catch (error) {
+      console.error("Error saving message:", error);
+    }
+  };
+
+  const deleteConversation = async (conversationId: string) => {
+    try {
+      await supabase
+        .from("coaching_conversations")
+        .delete()
+        .eq("id", conversationId);
+
+      if (currentConversationId === conversationId) {
+        setCurrentConversationId(null);
+        setMessages([]);
+      }
+      await loadConversations();
+      toast({ title: "Conversation deleted" });
+    } catch (error) {
+      console.error("Error deleting conversation:", error);
+    }
+  };
+
   useEffect(() => {
     loadStats();
-    
-    // Set up real-time subscriptions
-    const leadsChannel = supabase
-      .channel('leads-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => {
-        loadStats();
-      })
-      .subscribe();
-
-    const dealsChannel = supabase
-      .channel('deals-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'deals' }, () => {
-        loadStats();
-      })
-      .subscribe();
-
-    const activitiesChannel = supabase
-      .channel('activities-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'activities' }, () => {
-        loadStats();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(leadsChannel);
-      supabase.removeChannel(dealsChannel);
-      supabase.removeChannel(activitiesChannel);
-    };
+    loadConversations();
   }, []);
 
   if (planLoading) {
@@ -107,33 +203,122 @@ const Coach = () => {
     );
   }
 
-  const coachingLevel = features.coachingLevel;
   const hasLiveCoaching = features.liveCoaching;
   const hasCustomPlaybooks = features.customPlaybooks;
 
   const handleSubmit = async () => {
     if (!input.trim()) return;
 
+    const userMessage = input.trim();
+    setInput("");
     setLoading(true);
-    setCoachingResponse("");
+
+    // Add user message to UI immediately
+    const newUserMessage: Message = { role: 'user', content: userMessage };
+    setMessages(prev => [...prev, newUserMessage]);
+
+    // Create or use existing conversation
+    let convId = currentConversationId;
+    if (!convId) {
+      convId = await createNewConversation();
+      if (!convId) {
+        toast({ title: "Error", description: "Failed to create conversation", variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+      setCurrentConversationId(convId);
+    }
+
+    // Save user message
+    await saveMessage(convId, 'user', userMessage);
+
+    // Add empty assistant message for streaming
+    setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+
     try {
-      const { data, error } = await supabase.functions.invoke("ai-coach", {
-        body: { 
-          question: input,
-          userData: stats
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-coach`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
+        body: JSON.stringify({ 
+          question: userMessage,
+          userData: stats,
+          conversationId: convId,
+          conversationHistory: messages.map(m => ({ role: m.role, content: m.content })),
+        }),
       });
 
-      if (error) throw error;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to get response");
+      }
 
-      setCoachingResponse(data.coaching);
-      setInput("");
+      if (!response.body) throw new Error("No response body");
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullContent = "";
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        
+        // Process complete lines
+        let newlineIndex: number;
+        while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
+          let line = buffer.slice(0, newlineIndex);
+          buffer = buffer.slice(newlineIndex + 1);
+
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (line.startsWith(":") || line.trim() === "") continue;
+          if (!line.startsWith("data: ")) continue;
+
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") continue;
+
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (content) {
+              fullContent += content;
+              setMessages(prev => {
+                const updated = [...prev];
+                const lastIdx = updated.length - 1;
+                if (lastIdx >= 0 && updated[lastIdx].role === 'assistant') {
+                  updated[lastIdx] = { ...updated[lastIdx], content: fullContent };
+                }
+                return updated;
+              });
+            }
+          } catch {
+            // Incomplete JSON, put back
+            buffer = line + "\n" + buffer;
+            break;
+          }
+        }
+      }
+
+      // Save assistant response
+      if (fullContent) {
+        await saveMessage(convId, 'assistant', fullContent);
+        await loadConversations();
+      }
     } catch (error: any) {
+      console.error("Streaming error:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to get coaching response",
         variant: "destructive",
       });
+      // Remove empty assistant message on error
+      setMessages(prev => prev.filter(m => m.content !== ''));
     } finally {
       setLoading(false);
     }
@@ -143,12 +328,16 @@ const Coach = () => {
     setInput(question);
   };
 
+  const startNewSession = () => {
+    setCurrentConversationId(null);
+    setMessages([]);
+  };
+
   const handleLiveCoaching = () => {
     if (!hasLiveCoaching) {
       triggerGate('liveCoaching');
       return;
     }
-    // Live coaching logic
   };
 
   const handleCustomPlaybooks = () => {
@@ -156,7 +345,6 @@ const Coach = () => {
       triggerGate('customPlaybooks');
       return;
     }
-    // Custom playbooks logic
   };
 
   return (
@@ -177,6 +365,11 @@ const Coach = () => {
             </p>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowHistory(!showHistory)}>
+              <History className="w-4 h-4 mr-2" />
+              History
+              {conversations.length > 0 && <Badge variant="secondary" className="ml-2">{conversations.length}</Badge>}
+            </Button>
             <Button variant="outline" onClick={handleLiveCoaching}>
               <Radio className="w-4 h-4 mr-2" />
               Live Coaching
@@ -189,6 +382,46 @@ const Coach = () => {
             </Button>
           </div>
         </div>
+
+        {showHistory && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5" />
+                Conversation History
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {conversations.length === 0 ? (
+                <p className="text-muted-foreground text-center py-4">No previous conversations</p>
+              ) : (
+                <div className="space-y-2">
+                  {conversations.map(conv => (
+                    <div 
+                      key={conv.id} 
+                      className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer hover:bg-accent/50 transition-colors ${currentConversationId === conv.id ? 'bg-accent' : ''}`}
+                      onClick={() => loadConversationMessages(conv.id)}
+                    >
+                      <div>
+                        <p className="font-medium">{conv.title || "Untitled"}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(conv.updated_at).toLocaleDateString()} at {new Date(conv.updated_at).toLocaleTimeString()}
+                        </p>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={(e) => { e.stopPropagation(); deleteConversation(conv.id); }}
+                      >
+                        <Trash2 className="w-4 h-4 text-muted-foreground" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card>
@@ -276,13 +509,23 @@ const Coach = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Ask Your AI Coach</CardTitle>
-            <CardDescription>
-              Get personalized advice, practice objection handling, or analyze your sales calls
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Ask Your AI Coach</CardTitle>
+                <CardDescription>
+                  Get personalized advice, practice objection handling, or analyze your sales calls
+                </CardDescription>
+              </div>
+              {messages.length > 0 && (
+                <Button variant="outline" size="sm" onClick={startNewSession}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  New Session
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-4">
+            {messages.length === 0 && (
               <div className="flex gap-2 flex-wrap">
                 <Button 
                   variant="outline" 
@@ -306,12 +549,57 @@ const Coach = () => {
                   Handle objections
                 </Button>
               </div>
+            )}
 
+            {messages.length > 0 && (
+              <ScrollArea className="h-[400px] pr-4">
+                <div className="space-y-4">
+                  {messages.map((msg, idx) => (
+                    <div 
+                      key={idx} 
+                      className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div 
+                        className={`max-w-[80%] p-4 rounded-lg ${
+                          msg.role === 'user' 
+                            ? 'bg-primary text-primary-foreground' 
+                            : 'bg-muted'
+                        }`}
+                      >
+                        {msg.role === 'assistant' && (
+                          <div className="flex items-center gap-2 mb-2">
+                            <Lightbulb className="w-4 h-4 text-primary" />
+                            <span className="text-sm font-medium">Coach</span>
+                          </div>
+                        )}
+                        <p className="text-sm whitespace-pre-wrap">
+                          {msg.content || (loading && msg.role === 'assistant' ? (
+                            <span className="flex items-center gap-2">
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              Thinking...
+                            </span>
+                          ) : '')}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  <div ref={messagesEndRef} />
+                </div>
+              </ScrollArea>
+            )}
+
+            <div className="space-y-2">
               <Textarea
                 placeholder="Type your question or describe a sales scenario you need help with..."
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                className="min-h-[120px]"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmit();
+                  }
+                }}
+                className="min-h-[80px]"
               />
 
               <div className="flex gap-2">
@@ -328,32 +616,24 @@ const Coach = () => {
                   ) : (
                     <>
                       <Send className="w-4 h-4 mr-2" />
-                      Get Coaching
+                      Send
                     </>
                   )}
                 </Button>
               </div>
-
-              {coachingResponse && (
-                <div className="mt-4 p-4 bg-primary/5 border border-primary/20 rounded-lg">
-                  <h4 className="font-semibold mb-2 flex items-center gap-2">
-                    <Lightbulb className="w-4 h-4 text-primary" />
-                    Coach's Advice:
-                  </h4>
-                  <p className="text-sm whitespace-pre-wrap">{coachingResponse}</p>
-                </div>
-              )}
             </div>
 
-            <div className="mt-6 p-4 bg-accent/50 rounded-lg">
-              <h4 className="font-semibold mb-2">Example Questions:</h4>
-              <ul className="space-y-1 text-sm text-muted-foreground">
-                <li>• "How do I handle price objections for enterprise deals?"</li>
-                <li>• "What's the best way to follow up after a demo?"</li>
-                <li>• "Help me prepare for a call with a CFO"</li>
-                <li>• "Review my email template for cold outreach"</li>
-              </ul>
-            </div>
+            {messages.length === 0 && (
+              <div className="mt-6 p-4 bg-accent/50 rounded-lg">
+                <h4 className="font-semibold mb-2">Example Questions:</h4>
+                <ul className="space-y-1 text-sm text-muted-foreground">
+                  <li>• "How do I handle price objections for enterprise deals?"</li>
+                  <li>• "What's the best way to follow up after a demo?"</li>
+                  <li>• "Help me prepare for a call with a CFO"</li>
+                  <li>• "Review my email template for cold outreach"</li>
+                </ul>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
