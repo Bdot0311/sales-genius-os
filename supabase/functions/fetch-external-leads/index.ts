@@ -488,61 +488,68 @@ serve(async (req) => {
     console.log('URL:', railwayUrl);
     console.log('Request body:', JSON.stringify(requestBody, null, 2));
 
-    // Call Railway backend
-    const response = await fetch(railwayUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
-    });
+    const fetchRailway = async (body: Record<string, any>) => {
+      const res = await fetch(railwayUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
 
-    // Handle 402 Payment Required - NO cache fallback (must match search criteria)
-    if (response.status === 402) {
-      console.log('PDL credits exhausted (402) - returning empty results');
+      // Handle 402 Payment Required
+      if (res.status === 402) {
+        console.log('PDL credits exhausted (402)');
+        return { status: 402, data: null as any };
+      }
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('Railway API error:', res.status, errorText);
+        return { status: res.status, data: { _errorText: errorText } as any };
+      }
+
+      const json = await res.json();
+      return { status: res.status, data: json };
+    };
+
+    // 1) First call (DB/cache first, with Railway-controlled fallback_to_pdl)
+    const first = await fetchRailway(requestBody);
+
+    if (first.status === 402) {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'Search credits exhausted. Please add more credits to continue searching.',
           error_code: 'credits_exhausted',
-          leads: []
+          leads: [],
         }),
         { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Railway API error:', response.status, errorText);
-      
+    if (first.status >= 400) {
       // Log full details server-side but return generic error to client
       let clientMessage = 'Lead search failed. Please try again.';
       let errorCode = 'api_error';
-      
-      // Handle specific status codes with user-friendly messages
-      if (response.status === 400) {
+
+      if (first.status === 400) {
         errorCode = 'invalid_request';
         clientMessage = 'Invalid search parameters. Please specify at least one filter.';
-      } else if (response.status === 401 || response.status === 403) {
+      } else if (first.status === 401 || first.status === 403) {
         errorCode = 'auth_error';
         clientMessage = 'Authentication error. Please try again.';
-      } else if (response.status === 500) {
+      } else if (first.status === 500) {
         errorCode = 'server_error';
         clientMessage = 'Service temporarily unavailable. Please try again later.';
       }
-      
+
       return new Response(
-        JSON.stringify({ 
-          error: clientMessage, 
-          error_code: errorCode,
-          leads: []
-        }),
-        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: clientMessage, error_code: errorCode, leads: [] }),
+        { status: first.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const data = await response.json();
-    console.log('=== RESPONSE FROM RAILWAY ===');
-    console.log('Response status:', response.status);
+    let data = first.data;
+    console.log('=== RESPONSE FROM RAILWAY (primary) ===');
+    console.log('Response status:', first.status);
     console.log('Response data keys:', Object.keys(data));
     console.log('from_cache:', data.from_cache);
     console.log('source:', data.source);
@@ -563,6 +570,39 @@ serve(async (req) => {
     } else if (data.results && Array.isArray(data.results)) {
       console.log('Using data.results array');
       rawLeads = data.results;
+    }
+
+    // 2) If Railway returned an empty cached response, force a fresh lookup (DB then PDL)
+    if (rawLeads.length === 0 && (data.from_cache === true || data.source === 'cache')) {
+      console.log('Empty cached result from Railway; forcing fresh lookup with skip_cache=true');
+      const retryBody = { ...requestBody, skip_cache: true, fallback_to_pdl: true };
+      const retry = await fetchRailway(retryBody);
+
+      if (retry.status === 402) {
+        return new Response(
+          JSON.stringify({
+            error: 'Search credits exhausted. Please add more credits to continue searching.',
+            error_code: 'credits_exhausted',
+            leads: [],
+          }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (retry.status < 400) {
+        data = retry.data;
+        console.log('=== RESPONSE FROM RAILWAY (forced fresh) ===');
+        console.log('Response status:', retry.status);
+        console.log('from_cache:', data.from_cache);
+        console.log('source:', data.source);
+        console.log('count:', data.count);
+
+        rawLeads = [];
+        if (data.leads && Array.isArray(data.leads)) rawLeads = data.leads;
+        else if (Array.isArray(data)) rawLeads = data;
+        else if (data.data && Array.isArray(data.data)) rawLeads = data.data;
+        else if (data.results && Array.isArray(data.results)) rawLeads = data.results;
+      }
     }
 
     console.log('=== LEAD DATA ===');
