@@ -467,6 +467,8 @@ serve(async (req) => {
       company_size: filters.company_size || '',
       seniority: filters.seniority || '',
       limit: Math.min(filters.limit || 10, 100),
+      // IMPORTANT: pass keywords through so Railway can query DB/cache accurately
+      ...(filters.keywords && filters.keywords.length > 0 ? { keywords: filters.keywords } : {}),
       // Tell Railway to fetch from PDL if cache is empty
       skip_cache: false,
       fallback_to_pdl: true,
