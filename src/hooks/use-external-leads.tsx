@@ -12,6 +12,7 @@ export interface ExternalLeadFilters {
   seniority?: string;
   keywords?: string[];
   limit?: number;
+  page?: number;
 }
 
 export interface LeadScores {
@@ -36,16 +37,40 @@ export interface ExternalLead {
   buying_signals: string[];
 }
 
+export interface PaginationInfo {
+  currentPage: number;
+  totalPages: number;
+  totalResults: number;
+  pageSize: number;
+}
+
 export function useExternalLeads() {
   const [leads, setLeads] = useState<ExternalLead[]>([]);
   const [loading, setLoading] = useState(false);
   const [activatingLead, setActivatingLead] = useState<string | null>(null);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    currentPage: 1,
+    totalPages: 1,
+    totalResults: 0,
+    pageSize: 10,
+  });
+  const [lastFilters, setLastFilters] = useState<ExternalLeadFilters | null>(null);
   const { toast } = useToast();
 
-  const fetchLeads = async (filters: ExternalLeadFilters) => {
-    // Clear previous results immediately when starting a new search
-    setLeads([]);
+  const fetchLeads = async (filters: ExternalLeadFilters, isPageChange = false) => {
+    // Clear previous results immediately when starting a new search (not page change)
+    if (!isPageChange) {
+      setLeads([]);
+      setPagination({
+        currentPage: 1,
+        totalPages: 1,
+        totalResults: 0,
+        pageSize: filters.limit || 10,
+      });
+    }
     setLoading(true);
+    setLastFilters(filters);
+    
     try {
       console.log('Fetching leads with filters:', filters);
       const { data, error } = await supabase.functions.invoke('fetch-external-leads', {
@@ -62,6 +87,19 @@ export function useExternalLeads() {
       const newLeads = data.leads || [];
       console.log(`Received ${newLeads.length} leads matching search criteria`);
       setLeads(newLeads);
+      
+      // Update pagination info
+      const pageSize = filters.limit || 10;
+      const total = data.total || newLeads.length;
+      const currentPage = filters.page || 1;
+      const totalPages = Math.max(1, Math.ceil(total / pageSize));
+      
+      setPagination({
+        currentPage,
+        totalPages,
+        totalResults: total,
+        pageSize,
+      });
       
       if (data.credits_used) {
         console.log(`PDL credits used: ${data.credits_used}`);
@@ -95,6 +133,13 @@ export function useExternalLeads() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const goToPage = async (page: number) => {
+    if (!lastFilters || page < 1 || page > pagination.totalPages) return;
+    
+    const filtersWithPage = { ...lastFilters, page };
+    await fetchLeads(filtersWithPage, true);
   };
 
   const activateLead = async (lead: ExternalLead) => {
@@ -250,14 +295,25 @@ export function useExternalLeads() {
     }
   };
 
-  const clearLeads = () => setLeads([]);
+  const clearLeads = () => {
+    setLeads([]);
+    setPagination({
+      currentPage: 1,
+      totalPages: 1,
+      totalResults: 0,
+      pageSize: 10,
+    });
+    setLastFilters(null);
+  };
 
   return {
     leads,
     loading,
     activatingLead,
+    pagination,
     fetchLeads,
     activateLead,
     clearLeads,
+    goToPage,
   };
 }

@@ -6,7 +6,7 @@ import { AddLeadDialog } from "@/components/dashboard/AddLeadDialog";
 import { ImportLeadsDialog } from "@/components/dashboard/ImportLeadsDialog";
 import { ExternalLeadsTable } from "@/components/dashboard/ExternalLeadsTable";
 import { AILeadCommand } from "@/components/dashboard/AILeadCommand";
-import { Sparkles, Loader2, Users, RefreshCw, Lock, CreditCard } from "lucide-react";
+import { Sparkles, Loader2, Users, RefreshCw, Lock, CreditCard, ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useExternalLeads, ExternalLeadFilters } from "@/hooks/use-external-leads";
 import { useSubscriptionStatus } from "@/hooks/use-subscription-status";
 import { useSearchCredits } from "@/hooks/use-search-credits";
+
 const Leads = () => {
   const [leads, setLeads] = useState<any[]>([]);
   const [externalFilters, setExternalFilters] = useState<ExternalLeadFilters>({});
@@ -28,9 +29,11 @@ const Leads = () => {
     leads: externalLeads,
     loading: externalLoading,
     activatingLead: externalActivating,
+    pagination,
     fetchLeads: fetchExternalLeads,
     activateLead: activateExternalLead,
     clearLeads: clearExternalLeads,
+    goToPage,
   } = useExternalLeads();
 
   // Check if user can access lead gen (must be paid, not trial)
@@ -251,11 +254,72 @@ const Leads = () => {
                   <span>Searching B2B data sources...</span>
                 </div>
               ) : externalLeads.length > 0 ? (
-                <ExternalLeadsTable
-                  leads={externalLeads}
-                  activatingLead={externalActivating}
-                  onActivateLead={activateExternalLead}
-                />
+                <div className="space-y-4">
+                  <ExternalLeadsTable
+                    leads={externalLeads}
+                    activatingLead={externalActivating}
+                    onActivateLead={activateExternalLead}
+                  />
+                  
+                  {/* Pagination Controls */}
+                  {pagination.totalPages > 1 && (
+                    <div className="flex items-center justify-between border-t pt-4">
+                      <p className="text-sm text-muted-foreground">
+                        Page {pagination.currentPage} of {pagination.totalPages} ({pagination.totalResults} total leads)
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => goToPage(pagination.currentPage - 1)}
+                          disabled={pagination.currentPage <= 1 || externalLoading}
+                        >
+                          <ChevronLeft className="w-4 h-4 mr-1" />
+                          Previous
+                        </Button>
+                        
+                        {/* Page number buttons */}
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                            let pageNum: number;
+                            if (pagination.totalPages <= 5) {
+                              pageNum = i + 1;
+                            } else if (pagination.currentPage <= 3) {
+                              pageNum = i + 1;
+                            } else if (pagination.currentPage >= pagination.totalPages - 2) {
+                              pageNum = pagination.totalPages - 4 + i;
+                            } else {
+                              pageNum = pagination.currentPage - 2 + i;
+                            }
+                            
+                            return (
+                              <Button
+                                key={pageNum}
+                                variant={pageNum === pagination.currentPage ? "default" : "outline"}
+                                size="sm"
+                                className="w-8 h-8 p-0"
+                                onClick={() => goToPage(pageNum)}
+                                disabled={externalLoading}
+                              >
+                                {pageNum}
+                              </Button>
+                            );
+                          })}
+                        </div>
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => goToPage(pagination.currentPage + 1)}
+                          disabled={pagination.currentPage >= pagination.totalPages || externalLoading}
+                        >
+                          Next
+                          <ChevronRight className="w-4 h-4 ml-1" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   No leads found matching your criteria. Try a different query.
