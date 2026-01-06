@@ -16,6 +16,7 @@ interface ExternalLeadFilters {
   seniority?: string;
   keywords?: string[];
   limit?: number;
+  page?: number;
 }
 
 interface LeadScores {
@@ -458,7 +459,11 @@ serve(async (req) => {
       console.log('Extracted job title from keywords:', jobTitle);
     }
 
-    // Build request body matching exact PDL schema
+    // Build request body matching exact PDL schema with pagination
+    const page = filters.page || 1;
+    const limit = Math.min(filters.limit || 10, 100);
+    const offset = (page - 1) * limit;
+    
     const requestBody: Record<string, any> = {
       job_title: jobTitle || '',
       location: filters.country || '',
@@ -466,7 +471,8 @@ serve(async (req) => {
       company: filters.company || '',
       company_size: filters.company_size || '',
       seniority: filters.seniority || '',
-      limit: Math.min(filters.limit || 10, 100),
+      limit,
+      offset,
     };
 
     // Check if we have at least one search parameter
