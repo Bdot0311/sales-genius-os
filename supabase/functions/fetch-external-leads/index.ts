@@ -448,37 +448,40 @@ serve(async (req) => {
 
     console.log('Calling Railway API:', railwayUrl);
 
-    // Prepare request body for Railway API - exact PDL format
+    // Prepare request body for Railway API
+    // IMPORTANT: omit empty fields entirely (some providers treat empty strings as real filters)
     let jobTitle: string | undefined = filters.job_title;
     if (!jobTitle && filters.keywords && filters.keywords.length > 0) {
       const extractedTitle = extractJobTitleFromKeywords(filters.keywords);
-      if (extractedTitle) {
-        jobTitle = extractedTitle;
-      }
+      if (extractedTitle) jobTitle = extractedTitle;
       console.log('Extracted job title from keywords:', jobTitle);
     }
 
-    // Build request body matching exact PDL schema
     const requestBody: Record<string, any> = {
-      job_title: jobTitle || '',
-      location: filters.country || '',
-      industry: filters.industry || '',
-      company: filters.company || '',
-      company_size: filters.company_size || '',
-      seniority: filters.seniority || '',
-      limit: Math.min(filters.limit || 10, 100),
-      // IMPORTANT: pass keywords through so Railway can query DB/cache accurately
+      ...(jobTitle ? { job_title: jobTitle } : {}),
+      ...(filters.country ? { location: filters.country } : {}),
+      ...(filters.industry ? { industry: filters.industry } : {}),
+      ...(filters.company ? { company: filters.company } : {}),
+      ...(filters.company_size ? { company_size: filters.company_size } : {}),
+      ...(filters.seniority ? { seniority: filters.seniority } : {}),
       ...(filters.keywords && filters.keywords.length > 0 ? { keywords: filters.keywords } : {}),
+      limit: Math.min(filters.limit || 10, 100),
       // Tell Railway to fetch from PDL if cache is empty
       skip_cache: false,
       fallback_to_pdl: true,
     };
 
-    // Check if we have at least one search parameter
-    const hasSearchParam = requestBody.job_title || requestBody.location || 
-                           requestBody.industry || requestBody.company || 
-                           requestBody.company_size || requestBody.seniority;
-    
+    // Check if we have at least one real search parameter
+    const hasSearchParam = Boolean(
+      requestBody.job_title ||
+      requestBody.location ||
+      requestBody.industry ||
+      requestBody.company ||
+      requestBody.company_size ||
+      requestBody.seniority ||
+      (requestBody.keywords && requestBody.keywords.length > 0)
+    );
+
     if (!hasSearchParam) {
       console.warn('No search parameters provided, adding default job_title');
       requestBody.job_title = 'CEO OR Founder OR CTO OR Director';
