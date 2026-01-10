@@ -63,39 +63,24 @@ const Calendar = () => {
     try {
       let accessToken = config.accessToken;
 
-      // Check if token is expired and refresh if needed
-      if (config.expiresAt && Date.now() >= config.expiresAt && config.refreshToken) {
-        const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            client_id: config.clientId,
-            client_secret: config.clientSecret,
-            refresh_token: config.refreshToken,
-            grant_type: 'refresh_token',
-          }),
-        });
-
-        if (tokenResponse.ok) {
-          const tokens = await tokenResponse.json();
-          accessToken = tokens.access_token;
-          
-          // Update tokens in database
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            await supabase
-              .from('integrations')
-              .update({
-                config: {
-                  ...config,
-                  accessToken: tokens.access_token,
-                  expiresAt: Date.now() + tokens.expires_in * 1000,
-                },
-              })
-              .eq('user_id', user.id)
-              .eq('integration_id', 'google');
+      // Check if token is expired and refresh via server-side function
+      if (config.expiresAt && Date.now() >= config.expiresAt - 60000) { // 1 min buffer
+        const { data: refreshData, error: refreshError } = await supabase.functions.invoke('refresh-google-token');
+        
+        if (refreshError || !refreshData?.success) {
+          if (refreshData?.needsReconnect) {
+            setHasGoogleCalendar(false);
+            toast({
+              title: "Google Calendar Disconnected",
+              description: "Please reconnect your Google account in Integrations.",
+              variant: "destructive",
+            });
+            return;
           }
+          throw new Error(refreshData?.error || refreshError?.message || 'Failed to refresh token');
         }
+        
+        accessToken = refreshData.accessToken;
       }
 
       const now = new Date();
@@ -113,6 +98,40 @@ const Calendar = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
+        
+        // If unauthorized, try refreshing token once
+        if (response.status === 401) {
+          const { data: refreshData } = await supabase.functions.invoke('refresh-google-token');
+          
+          if (refreshData?.needsReconnect) {
+            setHasGoogleCalendar(false);
+            toast({
+              title: "Google Calendar Disconnected", 
+              description: "Please reconnect your Google account in Integrations.",
+              variant: "destructive",
+            });
+            return;
+          }
+          
+          if (refreshData?.success) {
+            // Retry with new token
+            const retryResponse = await fetch(
+              `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime&maxResults=10`,
+              {
+                headers: {
+                  Authorization: `Bearer ${refreshData.accessToken}`,
+                },
+              }
+            );
+            
+            if (retryResponse.ok) {
+              const data = await retryResponse.json();
+              setGoogleEvents(data.items || []);
+              return;
+            }
+          }
+        }
+        
         throw new Error(errorData.error?.message || 'Failed to fetch calendar');
       }
 
