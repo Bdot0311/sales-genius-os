@@ -8,67 +8,66 @@ import { FAQSchema } from "@/components/seo";
 
 const faqs = [
   {
-    question: "How does the AI-powered email generation work?",
-    answer: "Our AI analyzes your lead's profile, company data, and your specified tone/goal to craft personalized emails. It uses advanced language models to ensure each message feels authentic and relevant to the recipient."
+    question: "What does the 14-day trial include?",
+    answer: "Everything. Full access to lead search, email sequences, pipeline management, and analytics. You can search for leads, send emails, and track deals just like a paying customer. We don't limit features during the trial."
   },
   {
-    question: "Can I integrate SalesOS with my existing CRM?",
-    answer: "Yes! SalesOS integrates with popular CRMs like HubSpot, Salesforce, and many others. You can also use Zapier to connect with 5000+ apps for custom workflows."
+    question: "How does lead search work?",
+    answer: "You type a description of who you want to reach. Example: \"VP of Marketing at e-commerce companies, 50-200 employees, based in the US.\" SalesOS searches its database and returns matching leads with contact info, company data, and LinkedIn profiles. Each search uses one credit."
   },
   {
-    question: "What's included in the free trial?",
-    answer: "The free trial includes full access to all features for 14 days - lead management, AI email generation, pipeline tracking, analytics, and all integrations. No credit card required."
+    question: "Where does the lead data come from?",
+    answer: "We aggregate data from multiple commercial data providers and public sources. Each lead is verified before being returned. If an email bounces, we flag it in your pipeline."
   },
   {
-    question: "How accurate is the lead scoring system?",
-    answer: "Our AI lead scoring uses machine learning trained on millions of sales interactions. It analyzes multiple data points including engagement history, company fit, and behavioral signals to predict conversion likelihood with over 85% accuracy."
+    question: "Can I import my existing leads?",
+    answer: "Yes. CSV import works. You can also add leads manually. Leads you import get enriched with additional data from our database - company info, social profiles, and an ICP score."
   },
   {
-    question: "Can I cancel my subscription anytime?",
-    answer: "Absolutely. You can cancel your subscription at any time from your account settings. There are no long-term contracts or cancellation fees."
+    question: "Does it integrate with my CRM?",
+    answer: "We integrate with HubSpot, Salesforce, and Pipedrive for two-way sync. For other CRMs, you can use Zapier or our API. Some teams use SalesOS as their primary pipeline and skip the CRM entirely."
   },
   {
-    question: "Do you offer team collaboration features?",
-    answer: "Yes! All paid plans include team collaboration features like shared pipelines, deal assignments, activity tracking, and team performance analytics."
+    question: "How does billing work?",
+    answer: "Monthly subscription with search credits. Each plan includes a set number of credits that reset monthly. You can add more credits if you need them. All enrichment, scoring, and email sending is included - credits only apply to searching for new leads."
   },
   {
-    question: "How secure is my data?",
-    answer: "We take security seriously. All data is encrypted in transit and at rest, we're SOC 2 Type II certified, and we're fully GDPR compliant. Your data is stored in secure data centers with regular backups."
+    question: "Can I cancel anytime?",
+    answer: "Yes. No long-term contracts. Cancel from your account settings and you won't be charged for the next month. Your data stays accessible for 30 days after cancellation."
   },
   {
-    question: "What kind of support do you offer?",
-    answer: "We offer email support for all users, with priority support and dedicated account managers available for Pro and Enterprise plans."
+    question: "Is there a free plan?",
+    answer: "No. We offer a 14-day trial with full access. If SalesOS isn't worth paying for, we'd rather you know that before you start relying on it."
   }
 ];
 
 export const FAQ = () => {
   return (
-    <section id="faq" className="py-24 bg-background" aria-labelledby="faq-heading">
+    <section id="faq" className="py-16 sm:py-20 bg-background">
       <FAQSchema faqs={faqs} />
       
-      <div className="container mx-auto px-6">
-        <header className="text-center mb-16">
-          <h2 id="faq-heading" className="text-4xl md:text-5xl font-bold mb-4">
-            Frequently Asked
-            <span className="bg-gradient-primary bg-clip-text text-transparent"> Questions</span>
+      <div className="container mx-auto px-4 sm:px-6">
+        <div className="max-w-3xl mx-auto mb-12">
+          <h2 className="text-2xl sm:text-3xl font-bold mb-4">
+            Common questions
           </h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Everything you need to know about SalesOS
+          <p className="text-muted-foreground">
+            If your question isn't here, email us. We respond within a few hours.
           </p>
-        </header>
+        </div>
 
         <div className="max-w-3xl mx-auto">
-          <Accordion type="single" collapsible className="space-y-4">
+          <Accordion type="single" collapsible className="space-y-3">
             {faqs.map((faq, index) => (
               <AccordionItem 
                 key={index} 
                 value={`item-${index}`}
-                className="bg-card border border-border rounded-lg px-6 hover:border-primary/50 transition-colors"
+                className="bg-card border border-border rounded-lg px-6"
               >
-                <AccordionTrigger className="text-left hover:no-underline py-6">
-                  <span className="font-semibold">{faq.question}</span>
+                <AccordionTrigger className="text-left hover:no-underline py-5">
+                  <span className="font-medium text-sm sm:text-base">{faq.question}</span>
                 </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground pb-6">
+                <AccordionContent className="text-sm text-muted-foreground pb-5 leading-relaxed">
                   {faq.answer}
                 </AccordionContent>
               </AccordionItem>
