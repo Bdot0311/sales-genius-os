@@ -1,13 +1,10 @@
 import { Navbar } from "@/components/Navbar";
 import { Hero } from "@/components/Hero";
-import { WhoItsFor } from "@/components/WhoItsFor";
 import { Features } from "@/components/Features";
-import { HowItWorks } from "@/components/HowItWorks";
-import { WhyThisExists } from "@/components/WhyThisExists";
-import { Proof } from "@/components/Proof";
+import { Testimonials } from "@/components/Testimonials";
 import { Integrations } from "@/components/Integrations";
+import { Demo } from "@/components/Demo";
 import { FAQ } from "@/components/FAQ";
-import { FinalCTA } from "@/components/FinalCTA";
 import { Footer } from "@/components/Footer";
 import { 
   SEOHead, 
@@ -15,54 +12,60 @@ import {
   SoftwareApplicationSchema, 
   WebSiteSchema,
   ServiceSchema,
+  SpeakableSchema,
   HowToSchema,
   ItemListSchema
 } from "@/components/seo";
+import { AnimatedBackground } from "@/components/ui/AnimatedBackground";
 
-// Structured content for SEO
+// AEO: Define clear, structured content for AI answer engines
 const gettingStartedSteps = [
   {
-    name: "Search for leads",
-    text: "Type a plain-language query describing who you want to reach. SalesOS searches its database and returns matching leads with verified contact info."
+    name: "Sign up for a free trial",
+    text: "Create your SalesOS account in under 2 minutes. No credit card required. Get instant access to all features including AI lead generation and email automation."
   },
   {
-    name: "Review and add to pipeline",
-    text: "Preview results, filter as needed, and add leads to your pipeline. Each lead gets enriched with company data and scored automatically."
+    name: "Import or find leads",
+    text: "Import your existing leads via CSV or use our AI-powered lead discovery to find prospects that match your ideal customer profile. Our system scores each lead automatically."
   },
   {
-    name: "Send personalized outreach",
-    text: "Write emails or use AI-generated content. Set up multi-step sequences with automatic follow-ups scheduled at optimal times."
+    name: "Set up email templates",
+    text: "Create personalized email templates or let our AI generate high-converting outreach messages based on each prospect's profile and company data."
   },
   {
-    name: "Track deals to close",
-    text: "Move deals through your pipeline stages. See every touchpoint and conversation in one place. Close deals and track revenue."
+    name: "Configure automations",
+    text: "Set up automated workflows for lead nurturing, follow-ups, and deal stage transitions. Save hours every week with intelligent automation."
+  },
+  {
+    name: "Start closing deals",
+    text: "Use the visual pipeline to track deals, get AI coaching insights, and close more deals faster. Most users see results within the first week."
   }
 ];
 
 const keyFeatures = [
   {
-    name: "Lead Search",
-    description: "Find leads using natural language queries. Get verified emails, company data, and LinkedIn profiles."
+    name: "AI Lead Scoring",
+    description: "Machine learning analyzes engagement, company fit, and behavioral signals to predict conversion likelihood with over 85% accuracy."
   },
   {
-    name: "Email Sequences",
-    description: "Send personalized outreach with multi-step sequences and automatic follow-ups."
+    name: "Intelligent Email Generation",
+    description: "AI crafts personalized emails for each lead based on their profile, company data, and your specified tone and goals."
   },
   {
-    name: "Deal Pipeline",
-    description: "Drag-and-drop kanban board to track deals through your sales stages."
+    name: "Visual Pipeline Management",
+    description: "Drag-and-drop interface to manage deals through custom stages with real-time analytics and forecasting."
   },
   {
-    name: "Performance Analytics",
-    description: "Track open rates, reply rates, meetings booked, and deals closed by campaign and rep."
+    name: "Real-Time AI Coaching",
+    description: "Get instant suggestions and insights to improve your sales approach and close rates."
   },
   {
-    name: "Sales Coaching",
-    description: "AI-powered insights based on your pipeline data to improve close rates."
+    name: "Workflow Automation",
+    description: "Automate repetitive tasks like follow-ups, lead assignments, and status updates with visual workflow builder."
   },
   {
-    name: "Calendar Sync",
-    description: "Connect Google Calendar or Outlook. Leads book time directly from emails."
+    name: "CRM Integrations",
+    description: "Seamlessly connect with HubSpot, Salesforce, Pipedrive, and 5000+ apps via Zapier."
   }
 ];
 
@@ -70,41 +73,45 @@ const Index = () => {
   return (
     <>
       <SEOHead 
-        title="SalesOS - Sales Execution System | Find Leads, Send Emails, Close Deals"
-        description="SalesOS is a sales execution system. Search for leads using plain language, enrich and score them automatically, and send personalized outreach from one place. Start your 14-day free trial."
-        keywords="sales execution, lead generation, email sequences, sales pipeline, B2B sales, outbound sales, lead enrichment"
+        title="SalesOS - AI-Powered Sales Operating System | Close More Deals"
+        description="Close more deals with SalesOS. AI-powered lead generation, intelligent outreach automation, automated scheduling, and real-time sales coaching. Trusted by 500+ SaaS companies. Start your free 14-day trial today."
+        keywords="sales automation, AI sales, lead generation, CRM, sales intelligence, email automation, sales coaching, SaaS sales, B2B sales, sales pipeline, AI lead scoring, best sales software 2025"
         canonicalUrl="https://salesos.com/"
       />
       
+      {/* Core Schema Markup */}
       <OrganizationSchema />
       <SoftwareApplicationSchema />
       <WebSiteSchema />
       <ServiceSchema />
+      <SpeakableSchema />
       
+      {/* AEO: HowTo Schema for "How to use SalesOS" queries */}
       <HowToSchema 
-        name="How to use SalesOS for outbound sales"
-        description="A step-by-step guide to finding leads, sending outreach, and closing deals with SalesOS."
+        name="How to Get Started with SalesOS"
+        description="Learn how to set up SalesOS and start closing more deals with AI-powered sales automation in just 5 easy steps."
         steps={gettingStartedSteps}
-        totalTime="PT15M"
+        totalTime="PT10M"
       />
       
+      {/* AEO: ItemList for feature discovery */}
       <ItemListSchema 
-        name="SalesOS Features"
+        name="SalesOS Key Features"
         items={keyFeatures}
       />
       
-      <div className="min-h-screen bg-background text-foreground">
+      <div className="min-h-screen bg-transparent text-foreground relative">
+        <AnimatedBackground />
         <Navbar />
-        <main>
-          <Hero />
-          <WhoItsFor />
-          <Features />
-          <HowItWorks />
-          <WhyThisExists />
-          <Proof />
-          <Integrations />
-          <FAQ />
-          <FinalCTA />
+        <main itemScope itemType="https://schema.org/WebPage">
+          <article>
+            <Hero />
+            <Features />
+            <Integrations />
+            <Demo />
+            <Testimonials />
+            <FAQ />
+          </article>
         </main>
         <Footer />
       </div>

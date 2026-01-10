@@ -1,72 +1,98 @@
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Mail, Calendar, MessageSquare, Zap, Building2, Cloud } from "lucide-react";
+import { Rocket, TrendingUp, Calendar, CalendarClock, Mail, MessageSquare, Zap, Building2, Cloud } from "lucide-react";
 
 const integrations = [
   {
-    name: "Google Workspace",
-    description: "Gmail for sending. Calendar for scheduling. OAuth connection, no passwords.",
+    name: "Google",
+    category: "Email & Calendar",
+    description: "Access Gmail and Google Calendar with one connection",
     icon: Mail,
+    color: "bg-blue-500"
   },
   {
-    name: "Microsoft 365",
-    description: "Outlook email and calendar. Same deal.",
-    icon: Calendar,
-  },
-  {
-    name: "HubSpot",
-    description: "Two-way sync. Leads, deals, and activities flow between systems.",
-    icon: Building2,
-  },
-  {
-    name: "Salesforce",
-    description: "Push leads and deals to Salesforce. Pull existing data in.",
-    icon: Cloud,
+    name: "Calendly",
+    category: "Scheduling",
+    description: "Embed booking links in outreach campaigns",
+    icon: CalendarClock,
+    color: "bg-blue-400"
   },
   {
     name: "Slack",
-    description: "Get notified when leads reply or deals move stages.",
+    category: "Communication",
+    description: "Get real-time notifications for deal updates",
     icon: MessageSquare,
+    color: "bg-purple-500"
   },
   {
     name: "Zapier",
-    description: "Connect to 5,000+ apps if we don't have a native integration.",
+    category: "Automation",
+    description: "Connect to 5000+ apps with custom workflows",
     icon: Zap,
+    color: "bg-orange-500"
+  },
+  {
+    name: "HubSpot",
+    category: "CRM",
+    description: "Two-way sync with HubSpot CRM",
+    icon: Building2,
+    color: "bg-orange-600"
+  },
+  {
+    name: "Salesforce",
+    category: "CRM",
+    description: "Bi-directional data sync with Salesforce",
+    icon: Cloud,
+    color: "bg-blue-500"
   }
 ];
+
+const categories = ["All", "Lead Generation", "Scheduling", "Email", "CRM", "Automation"];
 
 export const Integrations = () => {
   const navigate = useNavigate();
 
   return (
-    <section id="integrations" className="py-16 sm:py-20 bg-background">
-      <div className="container mx-auto px-4 sm:px-6">
-        <div className="max-w-3xl mx-auto mb-12">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-4">
-            Integrations
+    <section id="integrations" className="py-24 bg-gradient-hero relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden opacity-30">
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-accent/20 rounded-full blur-3xl" />
+      </div>
+
+      <div className="container relative z-10 mx-auto px-6">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl md:text-5xl font-bold mb-4">
+            Connect Your
+            <span className="bg-gradient-primary bg-clip-text text-transparent"> Entire Stack</span>
           </h2>
-          <p className="text-muted-foreground">
-            SalesOS works with the tools you already use. 
-            Connect once, data syncs automatically.
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            SalesOS integrates with all your favorite tools to create a seamless sales workflow
           </p>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto mb-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
           {integrations.map((integration, index) => {
             const Icon = integration.icon;
             return (
               <Card 
                 key={index}
-                className="p-5 bg-card border-border"
+                className="p-6 bg-card border-border hover:border-primary/50 transition-all duration-300 hover:shadow-glow group"
               >
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-foreground/5 flex items-center justify-center shrink-0">
-                    <Icon className="w-5 h-5 text-foreground" />
+                  <div className={`w-12 h-12 ${integration.color} rounded-lg flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform duration-300`}>
+                    <Icon className="w-6 h-6" />
                   </div>
-                  <div>
-                    <h3 className="font-medium text-sm mb-1">{integration.name}</h3>
-                    <p className="text-xs text-muted-foreground leading-relaxed">{integration.description}</p>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="font-semibold">{integration.name}</h3>
+                      <Badge variant="secondary" className="text-xs">
+                        {integration.category}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{integration.description}</p>
                   </div>
                 </div>
               </Card>
@@ -75,15 +101,11 @@ export const Integrations = () => {
         </div>
 
         <div className="text-center">
-          <p className="text-sm text-muted-foreground mb-4">
-            Need something else? Let us know.
+          <p className="text-muted-foreground mb-4">
+            Don't see your tool? We're adding new integrations every week.
           </p>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => navigate('/request-integration')}
-          >
-            Request an integration
+          <Button variant="hero" onClick={() => navigate('/request-integration')}>
+            Request an Integration
           </Button>
         </div>
       </div>
