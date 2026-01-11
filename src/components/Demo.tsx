@@ -1110,72 +1110,71 @@ export const Demo = () => {
               )}
             </div>
 
-            {/* Navigation */}
-            <div className="flex items-center justify-between p-3 sm:p-4 border-t border-border/50 bg-muted/30">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={prevStep}
-                className="flex items-center gap-1 text-xs sm:text-sm px-2 sm:px-3"
-              >
-                <ChevronLeft className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden xs:inline">Previous</span>
-              </Button>
+            {/* Navigation with feature icons */}
+            <div className="border-t border-border/50 bg-muted/30">
+              {/* Feature icon navigation */}
+              {!isFullscreen && (
+                <div className="px-3 sm:px-4 pt-3 sm:pt-4">
+                  <div className="flex items-center justify-center gap-1 sm:gap-2 overflow-x-auto scrollbar-hide">
+                    {demoSteps.map((step, index) => (
+                      <button
+                        key={step.id}
+                        onClick={() => goToStep(index)}
+                        className={`flex flex-col items-center gap-1 p-1.5 sm:p-2 rounded-lg transition-all duration-300 min-w-[48px] sm:min-w-[56px] ${
+                          index === currentStep
+                            ? 'bg-primary/15 scale-105'
+                            : 'hover:bg-muted/50'
+                        }`}
+                      >
+                        <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center transition-colors ${
+                          index === currentStep 
+                            ? 'bg-primary text-primary-foreground' 
+                            : index < currentStep
+                            ? 'bg-primary/30 text-primary'
+                            : 'bg-muted text-muted-foreground'
+                        }`}>
+                          <step.icon className="w-3 h-3 sm:w-4 sm:h-4" />
+                        </div>
+                        <span className={`text-[8px] sm:text-[10px] font-medium truncate max-w-[40px] sm:max-w-[50px] ${
+                          index === currentStep ? 'text-primary' : 'text-muted-foreground'
+                        }`}>
+                          {step.title.split(' ')[0]}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Prev/Next controls */}
+              <div className="flex items-center justify-between p-3 sm:p-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={prevStep}
+                  className="flex items-center gap-1 text-xs sm:text-sm px-2 sm:px-3"
+                >
+                  <ChevronLeft className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden xs:inline">Previous</span>
+                </Button>
 
-              {/* Step indicators */}
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                {demoSteps.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => goToStep(index)}
-                    className={`h-1.5 sm:h-2 rounded-full transition-all duration-300 ${
-                      index === currentStep
-                        ? 'w-6 sm:w-8 bg-primary'
-                        : index < currentStep
-                        ? 'w-1.5 sm:w-2 bg-primary/50'
-                        : 'w-1.5 sm:w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50'
-                    }`}
-                  />
-                ))}
+                {/* Step counter */}
+                <span className="text-xs sm:text-sm text-muted-foreground">
+                  {currentStep + 1} / {demoSteps.length}
+                </span>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={nextStep}
+                  className="flex items-center gap-1 text-xs sm:text-sm px-2 sm:px-3"
+                >
+                  <span className="hidden xs:inline">Next</span>
+                  <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4" />
+                </Button>
               </div>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={nextStep}
-                className="flex items-center gap-1 text-xs sm:text-sm px-2 sm:px-3"
-              >
-                <span className="hidden xs:inline">Next</span>
-                <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4" />
-              </Button>
             </div>
           </Card>
-
-          {/* Feature quick links */}
-          {!isFullscreen && (
-            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3 mt-6 sm:mt-8">
-              {demoSteps.map((step, index) => (
-                <button
-                  key={step.id}
-                  onClick={() => goToStep(index)}
-                  className={`p-2 sm:p-3 rounded-lg sm:rounded-xl border text-center transition-all duration-300 ${
-                    index === currentStep
-                      ? 'bg-primary/10 border-primary/50 scale-105'
-                      : 'bg-card border-border hover:border-primary/30 hover:bg-muted/50'
-                  }`}
-                >
-                  <step.icon className={`w-4 h-4 sm:w-5 sm:h-5 mx-auto mb-1 sm:mb-1.5 ${
-                    index === currentStep ? 'text-primary' : 'text-muted-foreground'
-                  }`} />
-                  <div className={`text-[10px] sm:text-xs font-medium truncate ${
-                    index === currentStep ? 'text-primary' : 'text-muted-foreground'
-                  }`}>
-                    {step.title.split(' ')[0]}
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
 
           {/* Keyboard shortcuts hint */}
           {isFullscreen && (
