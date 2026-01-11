@@ -141,14 +141,6 @@ export const Hero = () => {
         className="container relative z-10 mx-auto px-4 sm:px-6 py-20 sm:py-28 md:py-32 text-center"
         style={{ transform: `translate3d(0, ${scrollY * 0.15}px, 0)` }}
       >
-        {/* Badge */}
-        <div 
-          className={`inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 mb-6 sm:mb-8 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-        >
-          <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-primary animate-pulse" aria-hidden="true" />
-          <span className="text-xs sm:text-sm text-muted-foreground">AI-Powered Sales Operating System</span>
-        </div>
-
         {/* Main headline - H1 for SEO */}
         <h1 
           className={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-4 sm:mb-6 px-2 transition-all duration-700 delay-100 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
