@@ -77,3 +77,6 @@ verify_jwt = false
 
 [functions.customer-portal]
 verify_jwt = false
+
+[functions.elevenlabs-demo-tts]
+verify_jwt = false

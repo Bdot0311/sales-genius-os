@@ -582,7 +582,7 @@ export const Demo = () => {
       audioCache.current.set(stepIndex, audioUrl);
       return audioUrl;
     } catch (error) {
-      console.error("Failed to fetch audio:", error);
+      // Silently fail - demo works without voiceover
       return null;
     }
   }, []);
