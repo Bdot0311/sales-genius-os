@@ -38,7 +38,10 @@ export const Navbar = () => {
           ) : (
             <>
               <img src={salesosLogo} alt="SalesOS Logo" className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg" width={32} height={32} decoding="async" />
-              <span className="text-lg sm:text-xl font-bold">{whiteLabelSettings?.company_name || "SalesOS"}</span>
+              <span className="text-lg sm:text-xl font-bold">
+                <span className="text-white">{whiteLabelSettings?.company_name ? whiteLabelSettings.company_name : "Sales"}</span>
+                {!whiteLabelSettings?.company_name && <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">OS</span>}
+              </span>
             </>
           )}
         </div>
