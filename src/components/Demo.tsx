@@ -676,12 +676,9 @@ export const Demo = () => {
     };
   }, [currentStep, isPlaying, isVisible]);
 
-  // Auto-play with transitions
+  // Auto-advance steps (audio is played separately on step change, not here)
   useEffect(() => {
     if (!isPlaying || !isVisible) return;
-
-    // Play audio for current step
-    playStepAudio(currentStep);
 
     const interval = setInterval(() => {
       setIsTransitioning(true);
@@ -692,7 +689,15 @@ export const Demo = () => {
     }, STEP_DURATION);
 
     return () => clearInterval(interval);
-  }, [isPlaying, isVisible, currentStep, playStepAudio]);
+  }, [isPlaying, isVisible]);
+
+  // Play audio when step changes (but not on initial mount)
+  const hasStartedRef = useRef(false);
+  useEffect(() => {
+    if (isPlaying && isVisible && !isMuted && hasStartedRef.current) {
+      playStepAudio(currentStep);
+    }
+  }, [currentStep, isPlaying, isVisible, isMuted, playStepAudio]);
 
   // Handle mute toggle
   useEffect(() => {
@@ -731,6 +736,7 @@ export const Demo = () => {
   const handleTogglePlay = useCallback(() => {
     if (!isPlaying) {
       setIsPlaying(true);
+      hasStartedRef.current = true;
       if (!isMuted) {
         // Start voiceover from user gesture
         playStepAudio(currentStep);
