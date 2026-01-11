@@ -729,37 +729,18 @@ export const Demo = () => {
       }
 
       const audioBlob = await response.blob();
-      console.log("Background music blob received:", audioBlob.size, "bytes, type:", audioBlob.type);
-      
       const audioUrl = URL.createObjectURL(audioBlob);
       bgMusicUrlRef.current = audioUrl;
-      
+
       const audio = new Audio(audioUrl);
       audio.volume = BACKGROUND_MUSIC_VOLUME;
       audio.loop = true;
-      
-      audio.oncanplaythrough = () => {
-        console.log("Background music can play through");
-      };
-      audio.onerror = (e) => {
-        console.error("Background music error:", e);
-      };
-      audio.onloadeddata = () => {
-        console.log("Background music loaded");
-      };
-      
       bgMusicRef.current = audio;
-      
-      // Always try to play since we're in a user-initiated action
-      try {
-        console.log("Attempting to play background music...");
-        await audio.play();
-        console.log("Background music playing successfully");
-      } catch (playError) {
-        console.error("Failed to auto-play background music:", playError);
-      }
-    } catch (error) {
-      console.error("Background music fetch error:", error);
+
+      // Try to play; may be blocked unless called from a user gesture
+      await audio.play();
+    } catch {
+      // Silently fail - demo works without background music
     }
   }, [isMuted, isPlaying]);
 
@@ -824,6 +805,21 @@ export const Demo = () => {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
+  const handleTogglePlay = useCallback(() => {
+    // Important: kick off bg music play from the actual user gesture to avoid autoplay blocks.
+    if (!isPlaying) {
+      setIsPlaying(true);
+      if (!isMuted) {
+        // Start voiceover + background music under it
+        playStepAudio(currentStep);
+        // Don't await (keeps browser "user activation" in the promise chain)
+        fetchAndPlayBgMusic();
+      }
+    } else {
+      setIsPlaying(false);
+    }
+  }, [isPlaying, isMuted, currentStep, playStepAudio, fetchAndPlayBgMusic]);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeydown = (e: KeyboardEvent) => {
@@ -831,7 +827,7 @@ export const Demo = () => {
         document.exitFullscreen();
       } else if (e.key === ' ') {
         e.preventDefault();
-        setIsPlaying(prev => !prev);
+        handleTogglePlay();
       } else if (e.key === 'm') {
         setIsMuted(prev => !prev);
       } else if (e.key === 'ArrowRight') {
@@ -843,7 +839,7 @@ export const Demo = () => {
 
     window.addEventListener('keydown', handleKeydown);
     return () => window.removeEventListener('keydown', handleKeydown);
-  }, [isFullscreen]);
+  }, [isFullscreen, handleTogglePlay]);
 
   const goToStep = (index: number) => {
     setIsTransitioning(true);
@@ -970,7 +966,7 @@ export const Demo = () => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setIsPlaying(!isPlaying)}
+                  onClick={handleTogglePlay}
                   className="text-muted-foreground hover:text-foreground h-8 w-8"
                 >
                   {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
