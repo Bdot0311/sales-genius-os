@@ -149,17 +149,11 @@ const IntroMockup = ({ isActive }: { isActive: boolean }) => {
   return (
     <div className="flex flex-col items-center justify-center h-full space-y-4 sm:space-y-6 py-4">
       <div className={`transition-all duration-700 ${showElements >= 1 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-        <div className="flex items-center justify-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-          <img 
-            src="/salesos-logo.webp" 
-            alt="SalesOS" 
-            className="h-10 sm:h-14 w-auto"
-          />
-          <span className="text-xl sm:text-3xl font-bold">
-            <span className="text-white">Sales</span>
-            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">OS</span>
-          </span>
-        </div>
+        <img 
+          src="/salesos-logo.webp" 
+          alt="SalesOS" 
+          className="h-12 sm:h-16 w-auto mx-auto mb-3 sm:mb-4"
+        />
         <h3 className="text-lg sm:text-2xl font-bold text-center bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
           The Future of Sales
         </h3>
@@ -648,17 +642,11 @@ const EndScreenMockup = ({ isActive }: { isActive: boolean }) => {
     <div className="space-y-4 sm:space-y-6 text-center py-4">
       {/* Main CTA heading */}
       <div className={`transition-all duration-500 ${showElements >= 1 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-        <div className="flex items-center justify-center gap-2 sm:gap-3 mb-4">
-          <img 
-            src="/salesos-logo.webp" 
-            alt="SalesOS" 
-            className="h-10 sm:h-14 w-auto"
-          />
-          <span className="text-xl sm:text-3xl font-bold">
-            <span className="text-white">Sales</span>
-            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">OS</span>
-          </span>
-        </div>
+        <img 
+          src="/salesos-logo.webp" 
+          alt="SalesOS" 
+          className="h-12 sm:h-16 w-auto mx-auto mb-4"
+        />
         <h3 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2">
           Ready to Transform Your Sales?
         </h3>
