@@ -10,7 +10,10 @@ export const Footer = () => {
         <div className="md:hidden text-center mb-6">
           <div className="flex items-center justify-center gap-2 mb-3">
             <img src={salesosLogo} alt="SalesOS Logo" className="w-7 h-7 rounded-lg" />
-            <span className="text-lg font-bold">SalesOS</span>
+            <span className="text-lg font-bold">
+              <span className="text-white">Sales</span>
+              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">OS</span>
+            </span>
           </div>
           <p className="text-xs text-muted-foreground max-w-xs mx-auto">
             The AI-powered sales operating system that helps you close more deals, faster.
@@ -21,7 +24,10 @@ export const Footer = () => {
         <div className="hidden md:block text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-3">
             <img src={salesosLogo} alt="SalesOS Logo" className="w-8 h-8 rounded-lg" />
-            <span className="text-xl font-bold">SalesOS</span>
+            <span className="text-xl font-bold">
+              <span className="text-white">Sales</span>
+              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">OS</span>
+            </span>
           </div>
           <p className="text-sm text-muted-foreground max-w-md mx-auto">
             The AI-powered sales operating system that helps you close more deals, faster.
