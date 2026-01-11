@@ -80,3 +80,6 @@ verify_jwt = false
 
 [functions.elevenlabs-demo-tts]
 verify_jwt = false
+
+[functions.elevenlabs-demo-music]
+verify_jwt = false
