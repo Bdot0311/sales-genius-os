@@ -24,17 +24,7 @@ import {
   Minimize,
   AudioLines
 } from "lucide-react";
-import { toast } from "sonner";
 
-// Voiceover scripts for each step
-const voiceoverScripts = [
-  "Just type what you're looking for. Find fifty SaaS founders in Europe, and watch the AI do the rest. No more complex filters. Just natural language.",
-  "Every lead gets enriched automatically. Company size, contact details, social profiles. All the intel you need, in seconds.",
-  "Drag and drop your deals across stages. See your entire pipeline at a glance. Never lose track of an opportunity again.",
-  "Generate personalized emails that convert. Our AI crafts messages based on each lead's profile, company news, and your winning templates.",
-  "Track every metric that matters. Real-time insights into leads, meetings, revenue, and conversion rates. Data-driven decisions, made easy.",
-  "Get intelligent recommendations from your AI coach. Actionable insights to help you close more deals, faster."
-];
 
 const demoSteps = [
   {
@@ -540,109 +530,45 @@ export const Demo = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
-  const [audioLoading, setAudioLoading] = useState(false);
   const [stepProgress, setStepProgress] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [voiceoverDisabled, setVoiceoverDisabled] = useState(false);
   
   const sectionRef = useRef<HTMLElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const audioCache = useRef<Map<number, string>>(new Map());
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Two alternating voices for a conversational feel
-  // Voice 1: Laura (female) - FGY2WhTYpPnrIDTdsKH5
-  // Voice 2: George (male) - JBFqnCBsd6RMkjVDRZzb
-  const VOICE_IDS = ["FGY2WhTYpPnrIDTdsKH5", "JBFqnCBsd6RMkjVDRZzb"];
+  // Local podcast audio file
+  const PODCAST_AUDIO_URL = "/audio/demo-podcast.mp3";
   
   const STEP_DURATION = 10000; // 10 seconds per step
 
-  // Fetch voiceover audio for a step with alternating voices
-  const fetchAudio = useCallback(async (stepIndex: number): Promise<string | null> => {
-    if (voiceoverDisabled) return null;
+  // Start/resume audio playback
+  const startAudio = useCallback(() => {
+    if (isMuted) return;
 
-    if (audioCache.current.has(stepIndex)) {
-      return audioCache.current.get(stepIndex) || null;
-    }
-
-    // Alternate between two voices for conversational feel
-    const voiceId = VOICE_IDS[stepIndex % 2];
-
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-demo-tts`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ text: voiceoverScripts[stepIndex], voiceId }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => "");
-        console.error("TTS request failed:", response.status, errorText);
-
-        // If ElevenLabs quota is exceeded, disable voiceovers to prevent repeated 401 spam
-        if (response.status === 401 && errorText.includes("quota_exceeded")) {
-          setVoiceoverDisabled(true);
-        }
-
-        return null;
-      }
-
-      const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
-      audioCache.current.set(stepIndex, audioUrl);
-      return audioUrl;
-    } catch {
-      // Silently fail - demo works without voiceover
-      return null;
-    }
-  }, [voiceoverDisabled]);
-
-
-  // Play audio for current step
-  const playStepAudio = useCallback(async (stepIndex: number) => {
-    if (isMuted || voiceoverDisabled) return;
-
-    // Stop current audio
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-    }
-
-    setAudioLoading(true);
-    const audioUrl = await fetchAudio(stepIndex);
-    setAudioLoading(false);
-
-    if (audioUrl && !isMuted && !voiceoverDisabled) {
-      const audio = new Audio(audioUrl);
+    if (!audioRef.current) {
+      const audio = new Audio(PODCAST_AUDIO_URL);
+      audio.loop = true;
       audioRef.current = audio;
 
       audio.onplay = () => setIsAudioPlaying(true);
+      audio.onpause = () => setIsAudioPlaying(false);
       audio.onended = () => setIsAudioPlaying(false);
       audio.onerror = () => setIsAudioPlaying(false);
-
-      try {
-        await audio.play();
-      } catch (error) {
-        console.error("Audio playback failed:", error);
-      }
     }
-  }, [isMuted, voiceoverDisabled, fetchAudio]);
 
-  // Pre-fetch next step audio
-  useEffect(() => {
-    if (isVisible && !isMuted && !voiceoverDisabled) {
-      const nextStep = (currentStep + 1) % demoSteps.length;
-      fetchAudio(nextStep);
+    audioRef.current.play().catch((error) => {
+      console.error("Audio playback failed:", error);
+    });
+  }, [isMuted]);
+
+  // Pause audio playback
+  const pauseAudio = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
     }
-  }, [currentStep, isVisible, isMuted, voiceoverDisabled, fetchAudio]);
+  }, []);
 
 
   // Intersection observer
@@ -703,23 +629,26 @@ export const Demo = () => {
     return () => clearInterval(interval);
   }, [isPlaying, isVisible]);
 
-  // Play audio when step changes (but not on initial mount)
-  const hasStartedRef = useRef(false);
-  useEffect(() => {
-    if (isPlaying && isVisible && !isMuted && hasStartedRef.current) {
-      playStepAudio(currentStep);
-    }
-  }, [currentStep, isPlaying, isVisible, isMuted, playStepAudio]);
+  // No longer needed - we use a single podcast audio that plays continuously
 
-  // Handle mute toggle
+  // Handle mute toggle and play state
   useEffect(() => {
-    if (isMuted) {
+    if (isMuted || !isPlaying) {
+      pauseAudio();
+    } else if (isPlaying && !isMuted) {
+      startAudio();
+    }
+  }, [isMuted, isPlaying, startAudio, pauseAudio]);
+
+  // Cleanup audio on unmount
+  useEffect(() => {
+    return () => {
       if (audioRef.current) {
         audioRef.current.pause();
-        setIsAudioPlaying(false);
+        audioRef.current = null;
       }
-    }
-  }, [isMuted]);
+    };
+  }, []);
 
   // Fullscreen handling
   const toggleFullscreen = useCallback(() => {
@@ -748,15 +677,14 @@ export const Demo = () => {
   const handleTogglePlay = useCallback(() => {
     if (!isPlaying) {
       setIsPlaying(true);
-      hasStartedRef.current = true;
       if (!isMuted) {
-        // Start voiceover from user gesture
-        playStepAudio(currentStep);
+        startAudio();
       }
     } else {
       setIsPlaying(false);
+      pauseAudio();
     }
-  }, [isPlaying, isMuted, currentStep, playStepAudio]);
+  }, [isPlaying, isMuted, startAudio, pauseAudio]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -785,7 +713,7 @@ export const Demo = () => {
       setCurrentStep(index);
       setIsTransitioning(false);
       setIsPlaying(false);
-      playStepAudio(index);
+      pauseAudio();
     }, 300);
   };
 
@@ -886,9 +814,9 @@ export const Demo = () => {
               {/* Control buttons */}
               <div className="flex items-center gap-1 sm:gap-2">
                 {/* Audio indicator */}
-                {(isAudioPlaying || audioLoading) && (
+                {isAudioPlaying && (
                   <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded-full mr-1">
-                    <AudioLines className={`w-3 h-3 text-primary ${audioLoading ? 'animate-pulse' : ''}`} />
+                    <AudioLines className="w-3 h-3 text-primary" />
                     <AudioWaveform isPlaying={isAudioPlaying} />
                   </div>
                 )}
