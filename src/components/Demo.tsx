@@ -30,7 +30,7 @@ import {
 // Audio timestamps (in seconds) - synced to podcast script
 const SLIDE_TIMESTAMPS = [
   0,      // Slide 0: Intro - "The sales industry is undergoing a significant transformation..."
-  18,     // Slide 1: AI Lead Discovery - "AI lead discovery is changing the game..."
+  22.31,  // Slide 1: AI Lead Discovery - "AI lead discovery is changing the game..."
   55,     // Slide 2: Smart Enrichment - "Once leads are identified, smart enrichment takes over..."
   88,     // Slide 3: Pipeline Management - "Pipeline management has been reimagined..."
   126,    // Slide 4: AI Outreach Studio - "The AI Outreach Stud is perhaps one of the most exciting..."
