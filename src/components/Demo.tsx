@@ -26,14 +26,24 @@ import {
 } from "lucide-react";
 
 
-// Audio timestamps (in seconds) for each slide - adjust these to match your podcast
+// Audio timestamps (in seconds) for each slide - matches the podcast timing
 const SLIDE_TIMESTAMPS = [
-  0,     // Slide 1: AI Lead Discovery starts at 0:00
-  15,    // Slide 2: Smart Enrichment starts at 0:15
-  30,    // Slide 3: Pipeline Management starts at 0:30
-  45,    // Slide 4: AI Outreach Studio starts at 0:45
-  60,    // Slide 5: Analytics Dashboard starts at 1:00
-  75,    // Slide 6: AI Sales Coach starts at 1:15
+  0,      // Slide 1: AI Lead Discovery starts at 0:00
+  16,     // Slide 2: Smart Enrichment starts at 0:16
+  31,     // Slide 3: Pipeline Management starts at 0:31
+  46,     // Slide 4: AI Outreach Studio starts at 0:46
+  61,     // Slide 5: Analytics Dashboard starts at 1:01
+  76,     // Slide 6: AI Sales Coach starts at 1:16
+];
+
+// Captions that sync with the audio narration
+const SLIDE_CAPTIONS = [
+  "Discover your ideal customers using natural language. Just describe who you're looking for, and our AI instantly finds matching leads across millions of verified contacts.",
+  "Automatically enrich every lead with company data, direct contact information, social profiles, and key insights—all in real-time with no manual research required.",
+  "Visualize your entire sales pipeline with intuitive drag-and-drop kanban boards. Track deals across stages and never lose sight of opportunities.",
+  "Generate hyper-personalized emails that convert using AI-powered content. Each message is tailored to the prospect based on their profile and company data.",
+  "Track your performance with real-time analytics and actionable insights. Understand what's working and optimize your outreach strategy instantly.",
+  "Get intelligent recommendations from your AI sales coach. Receive data-driven suggestions to close more deals faster and hit your targets.",
 ];
 
 const demoSteps = [
@@ -43,6 +53,7 @@ const demoSteps = [
     description: "Find your ideal customers with natural language. Just describe who you're looking for.",
     icon: Sparkles,
     audioStart: SLIDE_TIMESTAMPS[0],
+    caption: SLIDE_CAPTIONS[0],
   },
   {
     id: 2,
@@ -50,6 +61,7 @@ const demoSteps = [
     description: "Automatically enrich leads with company data, contact info, and social profiles.",
     icon: Building2,
     audioStart: SLIDE_TIMESTAMPS[1],
+    caption: SLIDE_CAPTIONS[1],
   },
   {
     id: 3,
@@ -57,6 +69,7 @@ const demoSteps = [
     description: "Visualize your deals across stages with drag-and-drop kanban boards.",
     icon: Kanban,
     audioStart: SLIDE_TIMESTAMPS[2],
+    caption: SLIDE_CAPTIONS[2],
   },
   {
     id: 4,
@@ -64,6 +77,7 @@ const demoSteps = [
     description: "Generate personalized emails that convert using AI-powered content.",
     icon: Mail,
     audioStart: SLIDE_TIMESTAMPS[3],
+    caption: SLIDE_CAPTIONS[3],
   },
   {
     id: 5,
@@ -71,6 +85,7 @@ const demoSteps = [
     description: "Track performance with real-time metrics and actionable insights.",
     icon: BarChart3,
     audioStart: SLIDE_TIMESTAMPS[4],
+    caption: SLIDE_CAPTIONS[4],
   },
   {
     id: 6,
@@ -78,6 +93,7 @@ const demoSteps = [
     description: "Get intelligent recommendations to close more deals faster.",
     icon: MessageSquare,
     audioStart: SLIDE_TIMESTAMPS[5],
+    caption: SLIDE_CAPTIONS[5],
   },
 ];
 
@@ -906,7 +922,7 @@ export const Demo = () => {
             </div>
 
             {/* Main demo area */}
-            <div className={`p-4 sm:p-6 bg-gradient-to-b from-background to-muted/20 ${
+            <div className={`p-4 sm:p-6 bg-gradient-to-b from-background to-muted/20 relative ${
               isFullscreen ? 'min-h-[400px] sm:min-h-[500px]' : 'min-h-[280px] sm:min-h-[300px] md:min-h-[320px]'
             }`}>
               <div className="mb-3 sm:mb-4">
@@ -915,6 +931,19 @@ export const Demo = () => {
               <div className={`transition-all duration-300 ${isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
                 <CurrentMockup isActive={isVisible && !isTransitioning} />
               </div>
+              
+              {/* Synced captions overlay */}
+              {isPlaying && !isMuted && currentStepData.caption && (
+                <div className="absolute bottom-4 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-6">
+                  <div className={`bg-black/80 backdrop-blur-sm rounded-lg px-3 py-2 sm:px-4 sm:py-3 transition-all duration-500 ${
+                    isTransitioning ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'
+                  }`}>
+                    <p className="text-white text-xs sm:text-sm leading-relaxed text-center">
+                      {currentStepData.caption}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Navigation */}
