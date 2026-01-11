@@ -26,15 +26,14 @@ import {
 } from "lucide-react";
 
 
-// Audio timestamps (in seconds) for each slide - based on podcast script timing
-// Adjust these if needed after testing playback
+// Audio timestamps (in seconds) - calculated from script word count at ~2.5 words/sec
 const SLIDE_TIMESTAMPS = [
-  18,     // Slide 1: AI Lead Discovery - "AI lead discovery is changing the game..."
-  52,     // Slide 2: Smart Enrichment - "Once leads are identified, smart enrichment takes over..."
-  88,     // Slide 3: Pipeline Management - "Pipeline management has been reimagined..."
-  124,    // Slide 4: AI Outreach Studio - "The AI Outreach Stud is perhaps one of the most exciting..."
-  162,    // Slide 5: Analytics Dashboard - "To keep track of performance..."
-  198,    // Slide 6: AI Sales Coach - "The AI sales coach offers intelligent recommendations..."
+  0,      // Slide 1: AI Lead Discovery - starts after intro (~47 words intro)
+  37,     // Slide 2: Smart Enrichment - "Once leads are identified..." (~92 words in slide 1)
+  70,     // Slide 3: Pipeline Management - "Pipeline management has been reimagined..." (~82 words in slide 2)
+  108,    // Slide 4: AI Outreach Studio - "The AI Outreach Stud is perhaps..." (~95 words in slide 3)
+  152,    // Slide 5: Analytics Dashboard - "To keep track of performance..." (~109 words in slide 4)
+  187,    // Slide 6: AI Sales Coach - "The AI sales coach offers..." (~87 words in slide 5)
 ];
 
 // Captions matching the podcast script
