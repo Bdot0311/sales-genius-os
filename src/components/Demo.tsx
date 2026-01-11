@@ -29,13 +29,14 @@ import {
 
 // Audio timestamps (in seconds) - synced to podcast script
 const SLIDE_TIMESTAMPS = [
-  0,      // Slide 0: Intro - "The sales industry is undergoing a significant transformation..."
-  22.31,  // Slide 1: AI Lead Discovery - "AI lead discovery is changing the game..."
-  55,     // Slide 2: Smart Enrichment - "Once leads are identified, smart enrichment takes over..."
-  88,     // Slide 3: Pipeline Management - "Pipeline management has been reimagined..."
-  126,    // Slide 4: AI Outreach Studio - "The AI Outreach Stud is perhaps one of the most exciting..."
-  170,    // Slide 5: Analytics Dashboard - "To keep track of performance..."
-  205,    // Slide 6: AI Sales Coach - "The AI sales coach offers intelligent recommendations..."
+  0,      // Slide 0: Intro
+  22.31,  // Slide 1: AI Lead Discovery
+  63,     // Slide 2: Smart Enrichment (1:03)
+  96,     // Slide 3: Pipeline Management (1:36)
+  135,    // Slide 4: AI Outreach Studio (2:15)
+  173,    // Slide 5: Analytics Dashboard (2:53)
+  210,    // Slide 6: AI Sales Coach (3:30)
+  245,    // End screen (4:05)
 ];
 
 // Captions matching the podcast script
