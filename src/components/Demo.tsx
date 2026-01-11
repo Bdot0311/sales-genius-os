@@ -23,7 +23,10 @@ import {
   Maximize,
   Minimize,
   AudioLines,
-  Zap
+  Zap,
+  Rocket,
+  ArrowRight,
+  CheckCircle2
 } from "lucide-react";
 
 
@@ -48,6 +51,7 @@ const SLIDE_CAPTIONS = [
   "The AI Outreach Studio leverages artificial intelligence to generate personalized emails designed to convert. The AI analyzes each lead's profile and recent company news to craft messages that resonate.",
   "The analytics dashboard provides real-time insights into key metrics. Sales teams can monitor leads, meetings, revenue, and conversion rates all in one place for more informed decision-making.",
   "The AI sales coach offers intelligent recommendations to help close more deals faster. This virtual mentor provides actionable insights based on historical data, market trends, and best practices.",
+  "Ready to transform your sales process? Start your free trial today and experience the future of AI-powered sales. Join thousands of teams already closing more deals with SalesOS.",
 ];
 
 const demoSteps = [
@@ -106,6 +110,14 @@ const demoSteps = [
     icon: MessageSquare,
     audioStart: SLIDE_TIMESTAMPS[6],
     caption: SLIDE_CAPTIONS[6],
+  },
+  {
+    id: 7,
+    title: "Get Started Today",
+    description: "Transform your sales process with AI-powered intelligence.",
+    icon: Rocket,
+    audioStart: SLIDE_TIMESTAMPS[7],
+    caption: SLIDE_CAPTIONS[7],
   },
 ];
 
@@ -597,6 +609,87 @@ const CoachMockup = ({ isActive }: { isActive: boolean }) => {
   );
 };
 
+// End Screen CTA Mockup
+const EndScreenMockup = ({ isActive }: { isActive: boolean }) => {
+  const [showElements, setShowElements] = useState(0);
+
+  useEffect(() => {
+    if (!isActive) {
+      setShowElements(0);
+      return;
+    }
+
+    const timers = [
+      setTimeout(() => setShowElements(1), 200),
+      setTimeout(() => setShowElements(2), 500),
+      setTimeout(() => setShowElements(3), 800),
+      setTimeout(() => setShowElements(4), 1100),
+    ];
+
+    return () => timers.forEach(clearTimeout);
+  }, [isActive]);
+
+  const benefits = [
+    "AI-powered lead discovery",
+    "Smart data enrichment",
+    "Intelligent pipeline management",
+    "Personalized outreach at scale",
+  ];
+
+  return (
+    <div className="space-y-4 sm:space-y-6 text-center py-4">
+      {/* Main CTA heading */}
+      <div className={`transition-all duration-500 ${showElements >= 1 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+        <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-primary via-accent to-primary mb-4 mx-auto">
+          <Rocket className="w-8 h-8 sm:w-10 sm:h-10 text-primary-foreground" />
+        </div>
+        <h3 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2">
+          Ready to Transform Your Sales?
+        </h3>
+        <p className="text-sm sm:text-base text-muted-foreground max-w-md mx-auto">
+          Join thousands of sales teams already closing more deals with SalesOS
+        </p>
+      </div>
+
+      {/* Benefits checklist */}
+      <div className={`flex flex-wrap justify-center gap-2 sm:gap-3 transition-all duration-500 ${showElements >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+        {benefits.map((benefit, i) => (
+          <div
+            key={i}
+            className="flex items-center gap-1.5 bg-primary/10 border border-primary/20 rounded-full px-3 py-1.5"
+            style={{ transitionDelay: `${i * 100}ms` }}
+          >
+            <CheckCircle2 className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+            <span className="text-xs sm:text-sm font-medium">{benefit}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* CTA Buttons */}
+      <div className={`flex flex-col sm:flex-row items-center justify-center gap-3 pt-2 transition-all duration-500 ${showElements >= 3 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+        <a
+          href="/auth"
+          className="inline-flex items-center gap-2 bg-gradient-to-r from-primary to-accent text-primary-foreground font-semibold px-6 py-3 rounded-xl hover:opacity-90 transition-opacity shadow-lg shadow-primary/25"
+        >
+          Start Free Trial
+          <ArrowRight className="w-4 h-4" />
+        </a>
+        <a
+          href="/pricing"
+          className="inline-flex items-center gap-2 bg-muted hover:bg-muted/80 text-foreground font-medium px-6 py-3 rounded-xl transition-colors"
+        >
+          View Pricing
+        </a>
+      </div>
+
+      {/* Trust indicator */}
+      <div className={`text-xs text-muted-foreground transition-all duration-500 ${showElements >= 4 ? 'opacity-100' : 'opacity-0'}`}>
+        No credit card required • 14-day free trial • Cancel anytime
+      </div>
+    </div>
+  );
+};
+
 const mockupComponents = [
   IntroMockup,
   AILeadDiscoveryMockup,
@@ -605,6 +698,7 @@ const mockupComponents = [
   OutreachMockup,
   AnalyticsMockup,
   CoachMockup,
+  EndScreenMockup,
 ];
 
 // Audio waveform visualization component
