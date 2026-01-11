@@ -22,22 +22,25 @@ import {
   VolumeX,
   Maximize,
   Minimize,
-  AudioLines
+  AudioLines,
+  Zap
 } from "lucide-react";
 
 
-// Audio timestamps (in seconds) - calculated from script word count at ~2.5 words/sec
+// Audio timestamps (in seconds) - synced to podcast script
 const SLIDE_TIMESTAMPS = [
-  0,      // Slide 1: AI Lead Discovery - starts after intro (~47 words intro)
-  37,     // Slide 2: Smart Enrichment - "Once leads are identified..." (~92 words in slide 1)
-  70,     // Slide 3: Pipeline Management - "Pipeline management has been reimagined..." (~82 words in slide 2)
-  108,    // Slide 4: AI Outreach Studio - "The AI Outreach Stud is perhaps..." (~95 words in slide 3)
-  152,    // Slide 5: Analytics Dashboard - "To keep track of performance..." (~109 words in slide 4)
-  187,    // Slide 6: AI Sales Coach - "The AI sales coach offers..." (~87 words in slide 5)
+  0,      // Slide 0: Intro - "The sales industry is undergoing a significant transformation..."
+  18,     // Slide 1: AI Lead Discovery - "AI lead discovery is changing the game..."
+  55,     // Slide 2: Smart Enrichment - "Once leads are identified, smart enrichment takes over..."
+  88,     // Slide 3: Pipeline Management - "Pipeline management has been reimagined..."
+  126,    // Slide 4: AI Outreach Studio - "The AI Outreach Stud is perhaps one of the most exciting..."
+  170,    // Slide 5: Analytics Dashboard - "To keep track of performance..."
+  205,    // Slide 6: AI Sales Coach - "The AI sales coach offers intelligent recommendations..."
 ];
 
 // Captions matching the podcast script
 const SLIDE_CAPTIONS = [
+  "The sales industry is undergoing a significant transformation, thanks to the integration of artificial intelligence. These innovations are streamlining processes and providing sales teams with powerful tools to improve their performance.",
   "AI lead discovery is changing the game. Gone are the days of complex filters. Now, sales professionals can simply type what they're looking for using natural language, and the AI does the rest.",
   "Once leads are identified, smart enrichment takes over. This feature automatically enhances each lead with crucial data—company size, contact details, and social profiles—providing a 360-degree view of prospects.",
   "Pipeline management has been reimagined for maximum visibility and control. The drag-and-drop interface allows sales teams to easily move deals across different stages, making it easier to identify bottlenecks and prioritize opportunities.",
@@ -48,54 +51,121 @@ const SLIDE_CAPTIONS = [
 
 const demoSteps = [
   {
+    id: 0,
+    title: "AI-Powered Sales",
+    description: "Revolutionizing how sales teams work with intelligent automation.",
+    icon: Zap,
+    audioStart: SLIDE_TIMESTAMPS[0],
+    caption: SLIDE_CAPTIONS[0],
+  },
+  {
     id: 1,
     title: "AI Lead Discovery",
     description: "Find your ideal customers with natural language. Just describe who you're looking for.",
     icon: Sparkles,
-    audioStart: SLIDE_TIMESTAMPS[0],
-    caption: SLIDE_CAPTIONS[0],
+    audioStart: SLIDE_TIMESTAMPS[1],
+    caption: SLIDE_CAPTIONS[1],
   },
   {
     id: 2,
     title: "Smart Enrichment",
     description: "Automatically enrich leads with company data, contact info, and social profiles.",
     icon: Building2,
-    audioStart: SLIDE_TIMESTAMPS[1],
-    caption: SLIDE_CAPTIONS[1],
+    audioStart: SLIDE_TIMESTAMPS[2],
+    caption: SLIDE_CAPTIONS[2],
   },
   {
     id: 3,
     title: "Pipeline Management",
     description: "Visualize your deals across stages with drag-and-drop kanban boards.",
     icon: Kanban,
-    audioStart: SLIDE_TIMESTAMPS[2],
-    caption: SLIDE_CAPTIONS[2],
+    audioStart: SLIDE_TIMESTAMPS[3],
+    caption: SLIDE_CAPTIONS[3],
   },
   {
     id: 4,
     title: "AI Outreach Studio",
     description: "Generate personalized emails that convert using AI-powered content.",
     icon: Mail,
-    audioStart: SLIDE_TIMESTAMPS[3],
-    caption: SLIDE_CAPTIONS[3],
+    audioStart: SLIDE_TIMESTAMPS[4],
+    caption: SLIDE_CAPTIONS[4],
   },
   {
     id: 5,
     title: "Analytics Dashboard",
     description: "Track performance with real-time metrics and actionable insights.",
     icon: BarChart3,
-    audioStart: SLIDE_TIMESTAMPS[4],
-    caption: SLIDE_CAPTIONS[4],
+    audioStart: SLIDE_TIMESTAMPS[5],
+    caption: SLIDE_CAPTIONS[5],
   },
   {
     id: 6,
     title: "AI Sales Coach",
     description: "Get intelligent recommendations to close more deals faster.",
     icon: MessageSquare,
-    audioStart: SLIDE_TIMESTAMPS[5],
-    caption: SLIDE_CAPTIONS[5],
+    audioStart: SLIDE_TIMESTAMPS[6],
+    caption: SLIDE_CAPTIONS[6],
   },
 ];
+
+// Intro Slide Mockup
+const IntroMockup = ({ isActive }: { isActive: boolean }) => {
+  const [showElements, setShowElements] = useState(0);
+
+  useEffect(() => {
+    if (!isActive) {
+      setShowElements(0);
+      return;
+    }
+
+    const intervals = [500, 1000, 1500, 2000];
+    const timers = intervals.map((delay, i) => 
+      setTimeout(() => setShowElements(i + 1), delay)
+    );
+
+    return () => timers.forEach(clearTimeout);
+  }, [isActive]);
+
+  const features = [
+    { icon: Sparkles, label: "AI Lead Discovery" },
+    { icon: Building2, label: "Smart Enrichment" },
+    { icon: Kanban, label: "Pipeline Management" },
+    { icon: Mail, label: "AI Outreach" },
+  ];
+
+  return (
+    <div className="flex flex-col items-center justify-center h-full space-y-4 sm:space-y-6 py-4">
+      <div className={`transition-all duration-700 ${showElements >= 1 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-primary via-accent to-primary flex items-center justify-center mx-auto mb-3 sm:mb-4 animate-pulse">
+          <Zap className="w-8 h-8 sm:w-10 sm:h-10 text-primary-foreground" />
+        </div>
+        <h3 className="text-lg sm:text-2xl font-bold text-center bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+          The Future of Sales
+        </h3>
+        <p className="text-xs sm:text-sm text-muted-foreground text-center mt-1 sm:mt-2 max-w-xs mx-auto">
+          AI-powered tools transforming how teams sell
+        </p>
+      </div>
+      
+      <div className={`grid grid-cols-2 gap-2 sm:gap-3 w-full max-w-xs transition-all duration-700 ${showElements >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+        {features.map((feature, i) => (
+          <div 
+            key={i}
+            className={`bg-background/40 backdrop-blur-sm rounded-lg p-2 sm:p-3 border border-border/40 flex items-center gap-2 transition-all duration-500 ${
+              showElements >= 3 + Math.floor(i / 2) ? 'opacity-100 scale-100' : 'opacity-50 scale-95'
+            }`}
+            style={{ transitionDelay: `${i * 100}ms` }}
+          >
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-primary/20 flex items-center justify-center flex-shrink-0">
+              <feature.icon className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
+            </div>
+            <span className="text-[10px] sm:text-xs font-medium truncate">{feature.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 // Step 1: AI Lead Discovery Mockup
 const AILeadDiscoveryMockup = ({ isActive }: { isActive: boolean }) => {
@@ -527,6 +597,7 @@ const CoachMockup = ({ isActive }: { isActive: boolean }) => {
 };
 
 const mockupComponents = [
+  IntroMockup,
   AILeadDiscoveryMockup,
   EnrichmentMockup,
   PipelineMockup,
