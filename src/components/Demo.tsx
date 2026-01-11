@@ -149,9 +149,11 @@ const IntroMockup = ({ isActive }: { isActive: boolean }) => {
   return (
     <div className="flex flex-col items-center justify-center h-full space-y-4 sm:space-y-6 py-4">
       <div className={`transition-all duration-700 ${showElements >= 1 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-primary via-accent to-primary flex items-center justify-center mx-auto mb-3 sm:mb-4 animate-pulse">
-          <Zap className="w-8 h-8 sm:w-10 sm:h-10 text-primary-foreground" />
-        </div>
+        <img 
+          src="/salesos-logo.webp" 
+          alt="SalesOS" 
+          className="h-12 sm:h-16 w-auto mx-auto mb-3 sm:mb-4"
+        />
         <h3 className="text-lg sm:text-2xl font-bold text-center bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
           The Future of Sales
         </h3>
@@ -640,9 +642,11 @@ const EndScreenMockup = ({ isActive }: { isActive: boolean }) => {
     <div className="space-y-4 sm:space-y-6 text-center py-4">
       {/* Main CTA heading */}
       <div className={`transition-all duration-500 ${showElements >= 1 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-        <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-primary via-accent to-primary mb-4 mx-auto">
-          <Rocket className="w-8 h-8 sm:w-10 sm:h-10 text-primary-foreground" />
-        </div>
+        <img 
+          src="/salesos-logo.webp" 
+          alt="SalesOS" 
+          className="h-12 sm:h-16 w-auto mx-auto mb-4"
+        />
         <h3 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2">
           Ready to Transform Your Sales?
         </h3>
@@ -665,20 +669,14 @@ const EndScreenMockup = ({ isActive }: { isActive: boolean }) => {
         ))}
       </div>
 
-      {/* CTA Buttons */}
-      <div className={`flex flex-col sm:flex-row items-center justify-center gap-3 pt-2 transition-all duration-500 ${showElements >= 3 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+      {/* CTA Button */}
+      <div className={`flex items-center justify-center pt-2 transition-all duration-500 ${showElements >= 3 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
         <a
-          href="/auth"
-          className="inline-flex items-center gap-2 bg-gradient-to-r from-primary to-accent text-primary-foreground font-semibold px-6 py-3 rounded-xl hover:opacity-90 transition-opacity shadow-lg shadow-primary/25"
+          href="/pricing"
+          className="inline-flex items-center gap-2 bg-gradient-to-r from-primary to-accent text-primary-foreground font-semibold px-8 py-3 rounded-xl hover:opacity-90 transition-opacity shadow-lg shadow-primary/25"
         >
           Start Free Trial
           <ArrowRight className="w-4 h-4" />
-        </a>
-        <a
-          href="/pricing"
-          className="inline-flex items-center gap-2 bg-muted hover:bg-muted/80 text-foreground font-medium px-6 py-3 rounded-xl transition-colors"
-        >
-          View Pricing
         </a>
       </div>
 
