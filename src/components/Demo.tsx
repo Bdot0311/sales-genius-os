@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -18,8 +18,23 @@ import {
   Linkedin,
   Globe,
   TrendingUp,
-  ArrowRight
+  Volume2,
+  VolumeX,
+  Maximize,
+  Minimize,
+  AudioLines
 } from "lucide-react";
+import { toast } from "sonner";
+
+// Voiceover scripts for each step
+const voiceoverScripts = [
+  "Just type what you're looking for. Find fifty SaaS founders in Europe, and watch the AI do the rest. No more complex filters. Just natural language.",
+  "Every lead gets enriched automatically. Company size, contact details, social profiles. All the intel you need, in seconds.",
+  "Drag and drop your deals across stages. See your entire pipeline at a glance. Never lose track of an opportunity again.",
+  "Generate personalized emails that convert. Our AI crafts messages based on each lead's profile, company news, and your winning templates.",
+  "Track every metric that matters. Real-time insights into leads, meetings, revenue, and conversion rates. Data-driven decisions, made easy.",
+  "Get intelligent recommendations from your AI coach. Actionable insights to help you close more deals, faster."
+];
 
 const demoSteps = [
   {
@@ -498,12 +513,119 @@ const mockupComponents = [
   CoachMockup,
 ];
 
+// Audio waveform visualization component
+const AudioWaveform = ({ isPlaying }: { isPlaying: boolean }) => {
+  return (
+    <div className="flex items-center gap-0.5 h-4">
+      {[0.4, 0.7, 0.5, 0.9, 0.6, 0.8, 0.5].map((height, i) => (
+        <div
+          key={i}
+          className={`w-0.5 bg-primary rounded-full transition-all duration-150 ${
+            isPlaying ? 'animate-pulse' : ''
+          }`}
+          style={{
+            height: isPlaying ? `${height * 100}%` : '20%',
+            animationDelay: `${i * 100}ms`,
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
 export const Demo = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const [isVisible, setIsVisible] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [audioLoading, setAudioLoading] = useState(false);
+  const [stepProgress, setStepProgress] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  
   const sectionRef = useRef<HTMLElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioCache = useRef<Map<number, string>>(new Map());
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const STEP_DURATION = 10000; // 10 seconds per step
 
+  // Fetch voiceover audio for a step
+  const fetchAudio = useCallback(async (stepIndex: number): Promise<string | null> => {
+    if (audioCache.current.has(stepIndex)) {
+      return audioCache.current.get(stepIndex) || null;
+    }
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-demo-tts`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ text: voiceoverScripts[stepIndex] }),
+        }
+      );
+
+      if (!response.ok) {
+        console.error("TTS request failed:", response.status);
+        return null;
+      }
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      audioCache.current.set(stepIndex, audioUrl);
+      return audioUrl;
+    } catch (error) {
+      console.error("Failed to fetch audio:", error);
+      return null;
+    }
+  }, []);
+
+  // Play audio for current step
+  const playStepAudio = useCallback(async (stepIndex: number) => {
+    if (isMuted) return;
+
+    // Stop current audio
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+
+    setAudioLoading(true);
+    const audioUrl = await fetchAudio(stepIndex);
+    setAudioLoading(false);
+
+    if (audioUrl && !isMuted) {
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+      
+      audio.onplay = () => setIsAudioPlaying(true);
+      audio.onended = () => setIsAudioPlaying(false);
+      audio.onerror = () => setIsAudioPlaying(false);
+      
+      try {
+        await audio.play();
+      } catch (error) {
+        console.error("Audio playback failed:", error);
+      }
+    }
+  }, [isMuted, fetchAudio]);
+
+  // Pre-fetch next step audio
+  useEffect(() => {
+    if (isVisible && !isMuted) {
+      const nextStep = (currentStep + 1) % demoSteps.length;
+      fetchAudio(nextStep);
+    }
+  }, [currentStep, isVisible, isMuted, fetchAudio]);
+
+  // Intersection observer
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -521,60 +643,194 @@ export const Demo = () => {
     return () => observer.disconnect();
   }, []);
 
-  // Auto-play functionality
+  // Progress bar animation
+  useEffect(() => {
+    if (!isPlaying || !isVisible) {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+      return;
+    }
+
+    setStepProgress(0);
+    const startTime = Date.now();
+
+    progressIntervalRef.current = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min((elapsed / STEP_DURATION) * 100, 100);
+      setStepProgress(progress);
+    }, 50);
+
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+    };
+  }, [currentStep, isPlaying, isVisible]);
+
+  // Auto-play with transitions
   useEffect(() => {
     if (!isPlaying || !isVisible) return;
 
+    // Play audio for current step
+    playStepAudio(currentStep);
+
     const interval = setInterval(() => {
-      setCurrentStep((prev) => (prev + 1) % demoSteps.length);
-    }, 5000);
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setCurrentStep((prev) => (prev + 1) % demoSteps.length);
+        setIsTransitioning(false);
+      }, 300);
+    }, STEP_DURATION);
 
     return () => clearInterval(interval);
-  }, [isPlaying, isVisible]);
+  }, [isPlaying, isVisible, currentStep, playStepAudio]);
+
+  // Handle mute toggle
+  useEffect(() => {
+    if (isMuted && audioRef.current) {
+      audioRef.current.pause();
+      setIsAudioPlaying(false);
+    }
+  }, [isMuted]);
+
+  // Fullscreen handling
+  const toggleFullscreen = useCallback(() => {
+    if (!containerRef.current) return;
+
+    if (!isFullscreen) {
+      if (containerRef.current.requestFullscreen) {
+        containerRef.current.requestFullscreen();
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  }, [isFullscreen]);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeydown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        document.exitFullscreen();
+      } else if (e.key === ' ') {
+        e.preventDefault();
+        setIsPlaying(prev => !prev);
+      } else if (e.key === 'm') {
+        setIsMuted(prev => !prev);
+      } else if (e.key === 'ArrowRight') {
+        nextStep();
+      } else if (e.key === 'ArrowLeft') {
+        prevStep();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeydown);
+    return () => window.removeEventListener('keydown', handleKeydown);
+  }, [isFullscreen]);
 
   const goToStep = (index: number) => {
-    setCurrentStep(index);
-    setIsPlaying(false);
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setCurrentStep(index);
+      setIsTransitioning(false);
+      setIsPlaying(false);
+      playStepAudio(index);
+    }, 300);
   };
 
   const nextStep = () => {
-    setCurrentStep((prev) => (prev + 1) % demoSteps.length);
-    setIsPlaying(false);
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setCurrentStep((prev) => (prev + 1) % demoSteps.length);
+      setIsTransitioning(false);
+      setIsPlaying(false);
+    }, 300);
   };
 
   const prevStep = () => {
-    setCurrentStep((prev) => (prev - 1 + demoSteps.length) % demoSteps.length);
-    setIsPlaying(false);
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setCurrentStep((prev) => (prev - 1 + demoSteps.length) % demoSteps.length);
+      setIsTransitioning(false);
+      setIsPlaying(false);
+    }, 300);
   };
 
   const CurrentMockup = mockupComponents[currentStep];
   const currentStepData = demoSteps[currentStep];
 
   return (
-    <section ref={sectionRef} id="demo" className="py-12 sm:py-16 md:py-24 bg-background relative overflow-hidden">
+    <section 
+      ref={sectionRef} 
+      id="demo" 
+      className={`py-12 sm:py-16 md:py-24 bg-background relative overflow-hidden transition-all duration-500 ${
+        isFullscreen ? 'fixed inset-0 z-50 py-0 flex items-center justify-center bg-black' : ''
+      }`}
+    >
       {/* Background accent */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
       </div>
 
-      <div className="container mx-auto px-4 sm:px-6 relative">
-        <div className={`text-center mb-8 sm:mb-12 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4">
-            See SalesOS
-            <span className="text-gradient-animated"> In Action</span>
-          </h2>
-          <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-2">
-            Explore how top sales teams are using SalesOS to close more deals
-          </p>
-        </div>
+      <div 
+        ref={containerRef}
+        className={`container mx-auto px-4 sm:px-6 relative ${
+          isFullscreen ? 'max-w-6xl w-full h-full flex flex-col justify-center' : ''
+        }`}
+      >
+        {!isFullscreen && (
+          <div className={`text-center mb-8 sm:mb-12 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+            <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 mb-4">
+              <Play className="w-3 h-3 text-primary" />
+              <span className="text-xs font-medium text-primary">Watch Demo</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4">
+              See SalesOS
+              <span className="text-gradient-animated"> In Action</span>
+            </h2>
+            <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-2">
+              Explore how top sales teams are using SalesOS to close more deals
+            </p>
+          </div>
+        )}
 
-        <div className="max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto">
+        <div className={`mx-auto ${isFullscreen ? 'w-full max-w-5xl' : 'max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl'}`}>
           <Card 
             className={`overflow-hidden bg-card border-border relative transition-all duration-700 delay-200 ${
               isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
-            }`}
+            } ${isFullscreen ? 'border-0 rounded-none bg-black/95' : ''}`}
           >
+            {/* Video-like progress bar */}
+            <div className="h-1 bg-muted/30 relative overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-100 ease-linear"
+                style={{ width: `${stepProgress}%` }}
+              />
+              {/* Step markers */}
+              <div className="absolute inset-0 flex">
+                {demoSteps.map((_, i) => (
+                  <div
+                    key={i}
+                    className={`flex-1 border-r border-background/50 last:border-r-0 ${
+                      i < currentStep ? 'bg-primary/30' : ''
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+
             {/* Header with step info */}
             <div className="flex items-center justify-between p-3 sm:p-4 border-b border-border/50 bg-muted/30">
               <div className="flex items-center gap-2 sm:gap-3">
@@ -586,22 +842,54 @@ export const Demo = () => {
                   <div className="text-xs sm:text-sm text-muted-foreground">Step {currentStep + 1} of {demoSteps.length}</div>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsPlaying(!isPlaying)}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-              </Button>
+              
+              {/* Control buttons */}
+              <div className="flex items-center gap-1 sm:gap-2">
+                {/* Audio indicator */}
+                {(isAudioPlaying || audioLoading) && (
+                  <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded-full mr-1">
+                    <AudioLines className={`w-3 h-3 text-primary ${audioLoading ? 'animate-pulse' : ''}`} />
+                    <AudioWaveform isPlaying={isAudioPlaying} />
+                  </div>
+                )}
+                
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsMuted(!isMuted)}
+                  className="text-muted-foreground hover:text-foreground h-8 w-8"
+                >
+                  {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsPlaying(!isPlaying)}
+                  className="text-muted-foreground hover:text-foreground h-8 w-8"
+                >
+                  {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleFullscreen}
+                  className="text-muted-foreground hover:text-foreground h-8 w-8 hidden sm:flex"
+                >
+                  {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+                </Button>
+              </div>
             </div>
 
             {/* Main demo area */}
-            <div className="p-4 sm:p-6 min-h-[280px] sm:min-h-[300px] md:min-h-[320px] bg-gradient-to-b from-background to-muted/20">
+            <div className={`p-4 sm:p-6 bg-gradient-to-b from-background to-muted/20 ${
+              isFullscreen ? 'min-h-[400px] sm:min-h-[500px]' : 'min-h-[280px] sm:min-h-[300px] md:min-h-[320px]'
+            }`}>
               <div className="mb-3 sm:mb-4">
                 <p className="text-sm sm:text-base text-muted-foreground">{currentStepData.description}</p>
               </div>
-              <CurrentMockup isActive={isVisible} />
+              <div className={`transition-all duration-300 ${isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
+                <CurrentMockup isActive={isVisible && !isTransitioning} />
+              </div>
             </div>
 
             {/* Navigation */}
@@ -622,10 +910,12 @@ export const Demo = () => {
                   <button
                     key={index}
                     onClick={() => goToStep(index)}
-                    className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-all duration-300 ${
+                    className={`h-1.5 sm:h-2 rounded-full transition-all duration-300 ${
                       index === currentStep
-                        ? 'w-4 sm:w-6 bg-primary'
-                        : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                        ? 'w-6 sm:w-8 bg-primary'
+                        : index < currentStep
+                        ? 'w-1.5 sm:w-2 bg-primary/50'
+                        : 'w-1.5 sm:w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50'
                     }`}
                   />
                 ))}
@@ -644,28 +934,40 @@ export const Demo = () => {
           </Card>
 
           {/* Feature quick links */}
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3 mt-6 sm:mt-8">
-            {demoSteps.map((step, index) => (
-              <button
-                key={step.id}
-                onClick={() => goToStep(index)}
-                className={`p-2 sm:p-3 rounded-lg sm:rounded-xl border text-center transition-all duration-300 ${
-                  index === currentStep
-                    ? 'bg-primary/10 border-primary/50 scale-105'
-                    : 'bg-card border-border hover:border-primary/30 hover:bg-muted/50'
-                }`}
-              >
-                <step.icon className={`w-4 h-4 sm:w-5 sm:h-5 mx-auto mb-1 sm:mb-1.5 ${
-                  index === currentStep ? 'text-primary' : 'text-muted-foreground'
-                }`} />
-                <div className={`text-[10px] sm:text-xs font-medium truncate ${
-                  index === currentStep ? 'text-primary' : 'text-muted-foreground'
-                }`}>
-                  {step.title.split(' ')[0]}
-                </div>
-              </button>
-            ))}
-          </div>
+          {!isFullscreen && (
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3 mt-6 sm:mt-8">
+              {demoSteps.map((step, index) => (
+                <button
+                  key={step.id}
+                  onClick={() => goToStep(index)}
+                  className={`p-2 sm:p-3 rounded-lg sm:rounded-xl border text-center transition-all duration-300 ${
+                    index === currentStep
+                      ? 'bg-primary/10 border-primary/50 scale-105'
+                      : 'bg-card border-border hover:border-primary/30 hover:bg-muted/50'
+                  }`}
+                >
+                  <step.icon className={`w-4 h-4 sm:w-5 sm:h-5 mx-auto mb-1 sm:mb-1.5 ${
+                    index === currentStep ? 'text-primary' : 'text-muted-foreground'
+                  }`} />
+                  <div className={`text-[10px] sm:text-xs font-medium truncate ${
+                    index === currentStep ? 'text-primary' : 'text-muted-foreground'
+                  }`}>
+                    {step.title.split(' ')[0]}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Keyboard shortcuts hint */}
+          {isFullscreen && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-4 text-xs text-muted-foreground bg-black/50 rounded-full px-4 py-2">
+              <span><kbd className="bg-muted/30 px-1.5 py-0.5 rounded">Space</kbd> Play/Pause</span>
+              <span><kbd className="bg-muted/30 px-1.5 py-0.5 rounded">M</kbd> Mute</span>
+              <span><kbd className="bg-muted/30 px-1.5 py-0.5 rounded">←</kbd><kbd className="bg-muted/30 px-1.5 py-0.5 rounded ml-0.5">→</kbd> Navigate</span>
+              <span><kbd className="bg-muted/30 px-1.5 py-0.5 rounded">Esc</kbd> Exit</span>
+            </div>
+          )}
         </div>
       </div>
     </section>
