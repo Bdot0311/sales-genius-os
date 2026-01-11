@@ -26,24 +26,25 @@ import {
 } from "lucide-react";
 
 
-// Audio timestamps (in seconds) for each slide - matches the podcast timing
+// Audio timestamps (in seconds) for each slide - based on podcast script timing
+// Adjust these if needed after testing playback
 const SLIDE_TIMESTAMPS = [
-  0,      // Slide 1: AI Lead Discovery starts at 0:00
-  16,     // Slide 2: Smart Enrichment starts at 0:16
-  31,     // Slide 3: Pipeline Management starts at 0:31
-  46,     // Slide 4: AI Outreach Studio starts at 0:46
-  61,     // Slide 5: Analytics Dashboard starts at 1:01
-  76,     // Slide 6: AI Sales Coach starts at 1:16
+  18,     // Slide 1: AI Lead Discovery - "AI lead discovery is changing the game..."
+  52,     // Slide 2: Smart Enrichment - "Once leads are identified, smart enrichment takes over..."
+  88,     // Slide 3: Pipeline Management - "Pipeline management has been reimagined..."
+  124,    // Slide 4: AI Outreach Studio - "The AI Outreach Stud is perhaps one of the most exciting..."
+  162,    // Slide 5: Analytics Dashboard - "To keep track of performance..."
+  198,    // Slide 6: AI Sales Coach - "The AI sales coach offers intelligent recommendations..."
 ];
 
-// Captions that sync with the audio narration
+// Captions matching the podcast script
 const SLIDE_CAPTIONS = [
-  "Discover your ideal customers using natural language. Just describe who you're looking for, and our AI instantly finds matching leads across millions of verified contacts.",
-  "Automatically enrich every lead with company data, direct contact information, social profiles, and key insights—all in real-time with no manual research required.",
-  "Visualize your entire sales pipeline with intuitive drag-and-drop kanban boards. Track deals across stages and never lose sight of opportunities.",
-  "Generate hyper-personalized emails that convert using AI-powered content. Each message is tailored to the prospect based on their profile and company data.",
-  "Track your performance with real-time analytics and actionable insights. Understand what's working and optimize your outreach strategy instantly.",
-  "Get intelligent recommendations from your AI sales coach. Receive data-driven suggestions to close more deals faster and hit your targets.",
+  "AI lead discovery is changing the game. Gone are the days of complex filters. Now, sales professionals can simply type what they're looking for using natural language, and the AI does the rest.",
+  "Once leads are identified, smart enrichment takes over. This feature automatically enhances each lead with crucial data—company size, contact details, and social profiles—providing a 360-degree view of prospects.",
+  "Pipeline management has been reimagined for maximum visibility and control. The drag-and-drop interface allows sales teams to easily move deals across different stages, making it easier to identify bottlenecks and prioritize opportunities.",
+  "The AI Outreach Studio leverages artificial intelligence to generate personalized emails designed to convert. The AI analyzes each lead's profile and recent company news to craft messages that resonate.",
+  "The analytics dashboard provides real-time insights into key metrics. Sales teams can monitor leads, meetings, revenue, and conversion rates all in one place for more informed decision-making.",
+  "The AI sales coach offers intelligent recommendations to help close more deals faster. This virtual mentor provides actionable insights based on historical data, market trends, and best practices.",
 ];
 
 const demoSteps = [
