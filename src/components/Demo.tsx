@@ -26,42 +26,58 @@ import {
 } from "lucide-react";
 
 
+// Audio timestamps (in seconds) for each slide - adjust these to match your podcast
+const SLIDE_TIMESTAMPS = [
+  0,     // Slide 1: AI Lead Discovery starts at 0:00
+  15,    // Slide 2: Smart Enrichment starts at 0:15
+  30,    // Slide 3: Pipeline Management starts at 0:30
+  45,    // Slide 4: AI Outreach Studio starts at 0:45
+  60,    // Slide 5: Analytics Dashboard starts at 1:00
+  75,    // Slide 6: AI Sales Coach starts at 1:15
+];
+
 const demoSteps = [
   {
     id: 1,
     title: "AI Lead Discovery",
     description: "Find your ideal customers with natural language. Just describe who you're looking for.",
     icon: Sparkles,
+    audioStart: SLIDE_TIMESTAMPS[0],
   },
   {
     id: 2,
     title: "Smart Enrichment",
     description: "Automatically enrich leads with company data, contact info, and social profiles.",
     icon: Building2,
+    audioStart: SLIDE_TIMESTAMPS[1],
   },
   {
     id: 3,
     title: "Pipeline Management",
     description: "Visualize your deals across stages with drag-and-drop kanban boards.",
     icon: Kanban,
+    audioStart: SLIDE_TIMESTAMPS[2],
   },
   {
     id: 4,
     title: "AI Outreach Studio",
     description: "Generate personalized emails that convert using AI-powered content.",
     icon: Mail,
+    audioStart: SLIDE_TIMESTAMPS[3],
   },
   {
     id: 5,
     title: "Analytics Dashboard",
     description: "Track performance with real-time metrics and actionable insights.",
     icon: BarChart3,
+    audioStart: SLIDE_TIMESTAMPS[4],
   },
   {
     id: 6,
     title: "AI Sales Coach",
     description: "Get intelligent recommendations to close more deals faster.",
     icon: MessageSquare,
+    audioStart: SLIDE_TIMESTAMPS[5],
   },
 ];
 
@@ -541,21 +557,35 @@ export const Demo = () => {
   // Local podcast audio file
   const PODCAST_AUDIO_URL = "/audio/demo-podcast.mp3";
   
-  const STEP_DURATION = 10000; // 10 seconds per step
+  // Duration per slide = time between timestamps (or 15s default)
+  const getStepDuration = useCallback((stepIndex: number) => {
+    const currentStart = SLIDE_TIMESTAMPS[stepIndex] || 0;
+    const nextStart = SLIDE_TIMESTAMPS[stepIndex + 1];
+    if (nextStart !== undefined) {
+      return (nextStart - currentStart) * 1000; // Convert to ms
+    }
+    return 15000; // Default 15 seconds for last slide
+  }, []);
 
-  // Start/resume audio playback
-  const startAudio = useCallback(() => {
+  // Start/resume audio playback at specific timestamp
+  const startAudio = useCallback((seekToStep?: number) => {
     if (isMuted) return;
 
     if (!audioRef.current) {
       const audio = new Audio(PODCAST_AUDIO_URL);
-      audio.loop = true;
+      audio.loop = false; // Don't loop - we'll handle slide transitions
       audioRef.current = audio;
 
       audio.onplay = () => setIsAudioPlaying(true);
       audio.onpause = () => setIsAudioPlaying(false);
       audio.onended = () => setIsAudioPlaying(false);
       audio.onerror = () => setIsAudioPlaying(false);
+    }
+
+    // Seek to the correct timestamp for the current slide
+    if (seekToStep !== undefined) {
+      const timestamp = SLIDE_TIMESTAMPS[seekToStep] || 0;
+      audioRef.current.currentTime = timestamp;
     }
 
     audioRef.current.play().catch((error) => {
@@ -598,12 +628,13 @@ export const Demo = () => {
       return;
     }
 
+    const stepDuration = getStepDuration(currentStep);
     setStepProgress(0);
     const startTime = Date.now();
 
     progressIntervalRef.current = setInterval(() => {
       const elapsed = Date.now() - startTime;
-      const progress = Math.min((elapsed / STEP_DURATION) * 100, 100);
+      const progress = Math.min((elapsed / stepDuration) * 100, 100);
       setStepProgress(progress);
     }, 50);
 
@@ -612,31 +643,38 @@ export const Demo = () => {
         clearInterval(progressIntervalRef.current);
       }
     };
-  }, [currentStep, isPlaying, isVisible]);
+  }, [currentStep, isPlaying, isVisible, getStepDuration]);
 
-  // Auto-advance steps (audio is played separately on step change, not here)
+  // Auto-advance steps synced with audio timestamps
   useEffect(() => {
     if (!isPlaying || !isVisible) return;
 
-    const interval = setInterval(() => {
+    const stepDuration = getStepDuration(currentStep);
+
+    const timeout = setTimeout(() => {
       setIsTransitioning(true);
       setTimeout(() => {
-        setCurrentStep((prev) => (prev + 1) % demoSteps.length);
+        const nextStep = (currentStep + 1) % demoSteps.length;
+        setCurrentStep(nextStep);
         setIsTransitioning(false);
+        // Seek audio to the next slide's timestamp
+        if (audioRef.current && !isMuted) {
+          audioRef.current.currentTime = SLIDE_TIMESTAMPS[nextStep] || 0;
+        }
       }, 300);
-    }, STEP_DURATION);
+    }, stepDuration);
 
-    return () => clearInterval(interval);
-  }, [isPlaying, isVisible]);
+    return () => clearTimeout(timeout);
+  }, [isPlaying, isVisible, currentStep, getStepDuration, isMuted]);
 
   // No longer needed - we use a single podcast audio that plays continuously
 
-  // Handle mute toggle and play state
+  // Handle mute toggle and play state - sync audio to current step
   useEffect(() => {
     if (isMuted || !isPlaying) {
       pauseAudio();
     } else if (isPlaying && !isMuted) {
-      startAudio();
+      startAudio(currentStep);
     }
   }, [isMuted, isPlaying, startAudio, pauseAudio]);
 
@@ -678,13 +716,13 @@ export const Demo = () => {
     if (!isPlaying) {
       setIsPlaying(true);
       if (!isMuted) {
-        startAudio();
+        startAudio(currentStep);
       }
     } else {
       setIsPlaying(false);
       pauseAudio();
     }
-  }, [isPlaying, isMuted, startAudio, pauseAudio]);
+  }, [isPlaying, isMuted, startAudio, pauseAudio, currentStep]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -712,26 +750,45 @@ export const Demo = () => {
     setTimeout(() => {
       setCurrentStep(index);
       setIsTransitioning(false);
-      setIsPlaying(false);
-      pauseAudio();
+      // Seek audio to the selected slide's timestamp
+      if (audioRef.current) {
+        audioRef.current.currentTime = SLIDE_TIMESTAMPS[index] || 0;
+      }
+      if (isPlaying && !isMuted) {
+        startAudio(index);
+      }
     }, 300);
   };
 
   const nextStep = () => {
     setIsTransitioning(true);
     setTimeout(() => {
-      setCurrentStep((prev) => (prev + 1) % demoSteps.length);
+      const next = (currentStep + 1) % demoSteps.length;
+      setCurrentStep(next);
       setIsTransitioning(false);
-      setIsPlaying(false);
+      // Seek audio to the next slide's timestamp
+      if (audioRef.current) {
+        audioRef.current.currentTime = SLIDE_TIMESTAMPS[next] || 0;
+      }
+      if (isPlaying && !isMuted) {
+        startAudio(next);
+      }
     }, 300);
   };
 
   const prevStep = () => {
     setIsTransitioning(true);
     setTimeout(() => {
-      setCurrentStep((prev) => (prev - 1 + demoSteps.length) % demoSteps.length);
+      const prev = (currentStep - 1 + demoSteps.length) % demoSteps.length;
+      setCurrentStep(prev);
       setIsTransitioning(false);
-      setIsPlaying(false);
+      // Seek audio to the previous slide's timestamp
+      if (audioRef.current) {
+        audioRef.current.currentTime = SLIDE_TIMESTAMPS[prev] || 0;
+      }
+      if (isPlaying && !isMuted) {
+        startAudio(prev);
+      }
     }, 300);
   };
 
