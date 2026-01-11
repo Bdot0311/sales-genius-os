@@ -55,10 +55,11 @@ serve(async (req) => {
       const errorText = await response.text();
       console.error("ElevenLabs API error:", response.status, errorText);
       return new Response(
-        JSON.stringify({ error: "Failed to generate audio" }),
+        JSON.stringify({ error: "Failed to generate audio", details: errorText }),
         { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
 
     const audioBuffer = await response.arrayBuffer();
 

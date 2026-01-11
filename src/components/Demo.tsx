@@ -543,6 +543,7 @@ export const Demo = () => {
   const [audioLoading, setAudioLoading] = useState(false);
   const [stepProgress, setStepProgress] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [voiceoverDisabled, setVoiceoverDisabled] = useState(false);
   
   const sectionRef = useRef<HTMLElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -559,6 +560,8 @@ export const Demo = () => {
 
   // Fetch voiceover audio for a step with alternating voices
   const fetchAudio = useCallback(async (stepIndex: number): Promise<string | null> => {
+    if (voiceoverDisabled) return null;
+
     if (audioCache.current.has(stepIndex)) {
       return audioCache.current.get(stepIndex) || null;
     }
@@ -581,7 +584,14 @@ export const Demo = () => {
       );
 
       if (!response.ok) {
-        console.error("TTS request failed:", response.status);
+        const errorText = await response.text().catch(() => "");
+        console.error("TTS request failed:", response.status, errorText);
+
+        // If ElevenLabs quota is exceeded, disable voiceovers to prevent repeated 401 spam
+        if (response.status === 401 && errorText.includes("quota_exceeded")) {
+          setVoiceoverDisabled(true);
+        }
+
         return null;
       }
 
@@ -589,15 +599,16 @@ export const Demo = () => {
       const audioUrl = URL.createObjectURL(audioBlob);
       audioCache.current.set(stepIndex, audioUrl);
       return audioUrl;
-    } catch (error) {
+    } catch {
       // Silently fail - demo works without voiceover
       return null;
     }
-  }, []);
+  }, [voiceoverDisabled]);
+
 
   // Play audio for current step
   const playStepAudio = useCallback(async (stepIndex: number) => {
-    if (isMuted) return;
+    if (isMuted || voiceoverDisabled) return;
 
     // Stop current audio
     if (audioRef.current) {
@@ -609,29 +620,30 @@ export const Demo = () => {
     const audioUrl = await fetchAudio(stepIndex);
     setAudioLoading(false);
 
-    if (audioUrl && !isMuted) {
+    if (audioUrl && !isMuted && !voiceoverDisabled) {
       const audio = new Audio(audioUrl);
       audioRef.current = audio;
-      
+
       audio.onplay = () => setIsAudioPlaying(true);
       audio.onended = () => setIsAudioPlaying(false);
       audio.onerror = () => setIsAudioPlaying(false);
-      
+
       try {
         await audio.play();
       } catch (error) {
         console.error("Audio playback failed:", error);
       }
     }
-  }, [isMuted, fetchAudio]);
+  }, [isMuted, voiceoverDisabled, fetchAudio]);
 
   // Pre-fetch next step audio
   useEffect(() => {
-    if (isVisible && !isMuted) {
+    if (isVisible && !isMuted && !voiceoverDisabled) {
       const nextStep = (currentStep + 1) % demoSteps.length;
       fetchAudio(nextStep);
     }
-  }, [currentStep, isVisible, isMuted, fetchAudio]);
+  }, [currentStep, isVisible, isMuted, voiceoverDisabled, fetchAudio]);
+
 
   // Intersection observer
   useEffect(() => {
