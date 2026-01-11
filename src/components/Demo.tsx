@@ -729,19 +729,37 @@ export const Demo = () => {
       }
 
       const audioBlob = await response.blob();
+      console.log("Background music blob received:", audioBlob.size, "bytes, type:", audioBlob.type);
+      
       const audioUrl = URL.createObjectURL(audioBlob);
       bgMusicUrlRef.current = audioUrl;
       
       const audio = new Audio(audioUrl);
       audio.volume = BACKGROUND_MUSIC_VOLUME;
       audio.loop = true;
+      
+      audio.oncanplaythrough = () => {
+        console.log("Background music can play through");
+      };
+      audio.onerror = (e) => {
+        console.error("Background music error:", e);
+      };
+      audio.onloadeddata = () => {
+        console.log("Background music loaded");
+      };
+      
       bgMusicRef.current = audio;
       
-      if (!isMuted && isPlaying) {
+      // Always try to play since we're in a user-initiated action
+      try {
+        console.log("Attempting to play background music...");
         await audio.play();
+        console.log("Background music playing successfully");
+      } catch (playError) {
+        console.error("Failed to auto-play background music:", playError);
       }
     } catch (error) {
-      // Silently fail - demo works without background music
+      console.error("Background music fetch error:", error);
     }
   }, [isMuted, isPlaying]);
 
