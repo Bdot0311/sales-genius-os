@@ -547,8 +547,12 @@ export const Demo = () => {
   const sectionRef = useRef<HTMLElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const bgMusicRef = useRef<HTMLAudioElement | null>(null);
+  const bgMusicUrlRef = useRef<string | null>(null);
   const audioCache = useRef<Map<number, string>>(new Map());
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const BACKGROUND_MUSIC_VOLUME = 0.15; // Soft background volume
   
   const STEP_DURATION = 10000; // 10 seconds per step
 
@@ -686,13 +690,97 @@ export const Demo = () => {
     return () => clearInterval(interval);
   }, [isPlaying, isVisible, currentStep, playStepAudio]);
 
+  // Fetch and play background music
+  const fetchAndPlayBgMusic = useCallback(async () => {
+    if (bgMusicUrlRef.current) {
+      // Already have music, just play it
+      if (bgMusicRef.current) {
+        bgMusicRef.current.volume = BACKGROUND_MUSIC_VOLUME;
+        bgMusicRef.current.loop = true;
+        try {
+          await bgMusicRef.current.play();
+        } catch (e) {
+          console.error("Failed to play background music:", e);
+        }
+      }
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-demo-music`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ 
+            prompt: "Soft ambient corporate background music, modern technology feel, subtle and unobtrusive, smooth electronic, minimal beats, professional atmosphere",
+            duration: 60 
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        console.error("Background music request failed:", response.status);
+        return;
+      }
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      bgMusicUrlRef.current = audioUrl;
+      
+      const audio = new Audio(audioUrl);
+      audio.volume = BACKGROUND_MUSIC_VOLUME;
+      audio.loop = true;
+      bgMusicRef.current = audio;
+      
+      if (!isMuted && isPlaying) {
+        await audio.play();
+      }
+    } catch (error) {
+      // Silently fail - demo works without background music
+    }
+  }, [isMuted, isPlaying]);
+
+  // Start/stop background music based on play state
+  useEffect(() => {
+    if (isPlaying && isVisible && !isMuted) {
+      fetchAndPlayBgMusic();
+    } else if (bgMusicRef.current) {
+      bgMusicRef.current.pause();
+    }
+  }, [isPlaying, isVisible, isMuted, fetchAndPlayBgMusic]);
+
   // Handle mute toggle
   useEffect(() => {
-    if (isMuted && audioRef.current) {
-      audioRef.current.pause();
-      setIsAudioPlaying(false);
+    if (isMuted) {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        setIsAudioPlaying(false);
+      }
+      if (bgMusicRef.current) {
+        bgMusicRef.current.pause();
+      }
+    } else if (isPlaying && bgMusicRef.current) {
+      bgMusicRef.current.play().catch(() => {});
     }
-  }, [isMuted]);
+  }, [isMuted, isPlaying]);
+
+  // Cleanup background music on unmount
+  useEffect(() => {
+    return () => {
+      if (bgMusicRef.current) {
+        bgMusicRef.current.pause();
+        bgMusicRef.current = null;
+      }
+      if (bgMusicUrlRef.current) {
+        URL.revokeObjectURL(bgMusicUrlRef.current);
+      }
+    };
+  }, []);
 
   // Fullscreen handling
   const toggleFullscreen = useCallback(() => {
