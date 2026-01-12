@@ -1308,6 +1308,39 @@ export type Database = {
         }
         Relationships: []
       }
+      security_events: {
+        Row: {
+          created_at: string
+          details: Json | null
+          event_type: string
+          id: string
+          ip_address: string | null
+          severity: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          details?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          severity?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          severity?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           account_status: string | null
@@ -1842,6 +1875,17 @@ export type Database = {
         Returns: boolean
       }
       lock_expired_trials: { Args: never; Returns: undefined }
+      log_security_event: {
+        Args: {
+          _details?: Json
+          _event_type: string
+          _ip_address?: string
+          _severity?: string
+          _user_agent?: string
+          _user_id?: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       app_role: "admin" | "user"

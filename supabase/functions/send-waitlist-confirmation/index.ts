@@ -53,10 +53,27 @@ serve(async (req) => {
     const clientIP = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
                      req.headers.get("cf-connecting-ip") || 
                      "unknown";
+    const userAgent = req.headers.get("user-agent") || null;
+    
+    // Create admin client for security logging
+    const supabaseAdmin = createClient(
+      SUPABASE_URL ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
     
     // Check rate limit
     if (!checkRateLimit(clientIP)) {
       console.log("Rate limit exceeded for IP:", clientIP);
+      
+      // Log security event
+      await supabaseAdmin.rpc('log_security_event', {
+        _event_type: 'waitlist_rate_limit',
+        _severity: 'warning',
+        _ip_address: clientIP,
+        _user_agent: userAgent,
+        _details: { reason: 'Rate limit exceeded for waitlist signup' }
+      });
+      
       return new Response(
         JSON.stringify({ error: "Too many requests. Please try again later." }),
         { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -68,6 +85,16 @@ serve(async (req) => {
     // Honeypot check - if filled, it's likely a bot
     if (honeypot) {
       console.log("Honeypot triggered, rejecting request");
+      
+      // Log security event for bot detection
+      await supabaseAdmin.rpc('log_security_event', {
+        _event_type: 'waitlist_bot_detected',
+        _severity: 'warning',
+        _ip_address: clientIP,
+        _user_agent: userAgent,
+        _details: { reason: 'Honeypot field filled - likely bot' }
+      });
+      
       // Return success to not tip off the bot
       return new Response(
         JSON.stringify({ success: true }),
