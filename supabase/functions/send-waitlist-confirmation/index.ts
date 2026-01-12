@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
@@ -11,10 +12,33 @@ interface WaitlistEmailRequest {
   email: string;
   source?: string;
   waitlistCount?: number;
+  honeypot?: string; // Honeypot field for spam protection
 }
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+
+// Simple in-memory rate limiter (per-function instance)
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_MAX = 5; // Max requests per IP
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour window
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const record = rateLimitMap.get(ip);
+  
+  if (!record || now > record.resetTime) {
+    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+  
+  if (record.count >= RATE_LIMIT_MAX) {
+    return false;
+  }
+  
+  record.count++;
+  return true;
+}
 
 serve(async (req) => {
   console.log("send-waitlist-confirmation function called");
@@ -25,11 +49,50 @@ serve(async (req) => {
   }
 
   try {
-    const { email, source, waitlistCount }: WaitlistEmailRequest = await req.json();
+    // Get client IP for rate limiting
+    const clientIP = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
+                     req.headers.get("cf-connecting-ip") || 
+                     "unknown";
+    
+    // Check rate limit
+    if (!checkRateLimit(clientIP)) {
+      console.log("Rate limit exceeded for IP:", clientIP);
+      return new Response(
+        JSON.stringify({ error: "Too many requests. Please try again later." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { email, source, waitlistCount, honeypot }: WaitlistEmailRequest = await req.json();
+    
+    // Honeypot check - if filled, it's likely a bot
+    if (honeypot) {
+      console.log("Honeypot triggered, rejecting request");
+      // Return success to not tip off the bot
+      return new Response(
+        JSON.stringify({ success: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
     console.log("Sending confirmation email to:", email);
 
-    if (!email) {
+    // Email validation
+    if (!email || typeof email !== 'string') {
       throw new Error("Email is required");
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      throw new Error("Invalid email format");
+    }
+    
+    // Block disposable email domains (common ones)
+    const disposableDomains = ['tempmail.com', 'guerrillamail.com', '10minutemail.com', 'mailinator.com'];
+    const emailDomain = email.split('@')[1]?.toLowerCase();
+    if (disposableDomains.includes(emailDomain)) {
+      throw new Error("Please use a valid business email address");
     }
 
     if (!RESEND_API_KEY) {
