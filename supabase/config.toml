@@ -83,3 +83,9 @@ verify_jwt = false
 
 [functions.elevenlabs-demo-music]
 verify_jwt = false
+
+[functions.send-security-alert]
+verify_jwt = false
+
+[functions.detect-suspicious-activity]
+verify_jwt = false
