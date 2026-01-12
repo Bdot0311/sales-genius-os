@@ -173,6 +173,25 @@ serve(async (req) => {
     if (currentTokens < 1) {
       const resetTime = new Date(now.getTime() + ((1 - currentTokens) / refillRate) * 1000);
       
+      // Log security event for rate limit hit
+      const clientIP = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
+                       req.headers.get("cf-connecting-ip") || null;
+      const userAgent = req.headers.get("user-agent") || null;
+      
+      await supabase.rpc('log_security_event', {
+        _event_type: 'rate_limit_exceeded',
+        _severity: 'warning',
+        _user_id: userId,
+        _ip_address: clientIP,
+        _user_agent: userAgent,
+        _details: {
+          api_key_id: apiKeyId,
+          endpoint,
+          tokens_remaining: currentTokens,
+          bucket_capacity: bucketCapacity
+        }
+      });
+      
       return new Response(
         JSON.stringify({
           allowed: false,

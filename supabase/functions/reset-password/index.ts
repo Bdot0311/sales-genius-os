@@ -40,9 +40,27 @@ serve(async (req) => {
                      req.headers.get("cf-connecting-ip") || 
                      "unknown";
     
+    const userAgent = req.headers.get("user-agent") || null;
+    
+    // Create admin client for logging
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+    
     // Check rate limit - return generic success to prevent enumeration
     if (!checkRateLimit(clientIP)) {
       console.log("Rate limit exceeded for password reset, IP:", clientIP);
+      
+      // Log security event for rate limit hit
+      await supabaseAdmin.rpc('log_security_event', {
+        _event_type: 'password_reset_rate_limit',
+        _severity: 'warning',
+        _ip_address: clientIP,
+        _user_agent: userAgent,
+        _details: { reason: 'Rate limit exceeded for password reset' }
+      });
+      
       // Return success to prevent email enumeration
       return new Response(
         JSON.stringify({ success: true }),
@@ -61,11 +79,6 @@ serve(async (req) => {
     }
 
     console.log("Processing password reset for email:", email);
-
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
 
     // Always use production domain for email links
     const appUrl = "https://salesos.alephwavex.io";
