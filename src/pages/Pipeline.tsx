@@ -111,7 +111,10 @@ const Pipeline = () => {
       triggerGate('customPipelines');
       return;
     }
-    // Custom pipelines logic
+    toast({
+      title: "Custom Pipelines",
+      description: "Create custom stages by contacting support for now. Full customization coming soon!",
+    });
   };
 
   const handleForecasting = () => {
@@ -119,7 +122,20 @@ const Pipeline = () => {
       triggerGate('revenueForecasting');
       return;
     }
-    // Forecasting logic
+    
+    // Calculate weighted forecast based on probability
+    const weightedValue = deals.reduce((sum, deal) => {
+      return sum + (Number(deal.value) || 0) * ((deal.probability || 0) / 100);
+    }, 0);
+    
+    const closedWonValue = deals
+      .filter(d => d.stage === 'closed-won')
+      .reduce((sum, deal) => sum + (Number(deal.value) || 0), 0);
+    
+    toast({
+      title: "Revenue Forecast",
+      description: `Weighted Pipeline: $${Math.round(weightedValue).toLocaleString()} | Closed Won: $${closedWonValue.toLocaleString()}`,
+    });
   };
 
   if (planLoading) {

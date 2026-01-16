@@ -116,12 +116,40 @@ const Analytics = () => {
     },
   ];
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!features.dataExports) {
       triggerGate('dataExports');
       return;
     }
-    // Export logic would go here
+    
+    try {
+      const { data: leads } = await supabase.from("leads").select("*");
+      const { data: deals } = await supabase.from("deals").select("*");
+      
+      const exportData = {
+        exportDate: new Date().toISOString(),
+        summary: {
+          totalLeads: stats.totalLeads,
+          totalDeals: stats.totalDeals,
+          totalValue: stats.totalValue,
+          avgDealSize: stats.avgDealSize,
+        },
+        dealsByStage,
+        leadsOverTime,
+        leads: leads || [],
+        deals: deals || [],
+      };
+      
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `salesos-analytics-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export failed:', error);
+    }
   };
 
   const handleCustomReport = () => {
@@ -129,7 +157,27 @@ const Analytics = () => {
       triggerGate('customReports');
       return;
     }
-    // Custom report logic would go here
+    
+    // Generate and download CSV report
+    const csvRows = [
+      ['Metric', 'Value'],
+      ['Total Leads', stats.totalLeads.toString()],
+      ['Total Deals', stats.totalDeals.toString()],
+      ['Pipeline Value', `$${stats.totalValue.toLocaleString()}`],
+      ['Avg Deal Size', `$${Math.round(stats.avgDealSize).toLocaleString()}`],
+      [''],
+      ['Stage', 'Deal Count'],
+      ...dealsByStage.map(d => [d.stage, d.count.toString()]),
+    ];
+    
+    const csvContent = csvRows.map(row => row.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `salesos-report-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -241,7 +289,34 @@ const Analytics = () => {
         {features.repPerformance ? (
           <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4">Rep Performance</h2>
-            <p className="text-muted-foreground">Performance metrics for your team will appear here.</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 rounded-lg bg-muted/50">
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="w-5 h-5 text-primary" />
+                  <span className="font-medium">Total Leads Managed</span>
+                </div>
+                <p className="text-3xl font-bold">{stats.totalLeads}</p>
+                <p className="text-sm text-muted-foreground mt-1">Leads in pipeline</p>
+              </div>
+              <div className="p-4 rounded-lg bg-muted/50">
+                <div className="flex items-center gap-2 mb-2">
+                  <Target className="w-5 h-5 text-green-500" />
+                  <span className="font-medium">Conversion Rate</span>
+                </div>
+                <p className="text-3xl font-bold">
+                  {stats.totalLeads > 0 ? Math.round((stats.totalDeals / stats.totalLeads) * 100) : 0}%
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">Leads to deals</p>
+              </div>
+              <div className="p-4 rounded-lg bg-muted/50">
+                <div className="flex items-center gap-2 mb-2">
+                  <DollarSign className="w-5 h-5 text-yellow-500" />
+                  <span className="font-medium">Avg Deal Value</span>
+                </div>
+                <p className="text-3xl font-bold">${Math.round(stats.avgDealSize).toLocaleString()}</p>
+                <p className="text-sm text-muted-foreground mt-1">Per closed deal</p>
+              </div>
+            </div>
           </Card>
         ) : (
           <Card className="p-6 border-dashed border-2 border-primary/20">
