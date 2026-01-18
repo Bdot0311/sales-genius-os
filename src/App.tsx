@@ -40,9 +40,15 @@ const PageLoader = () => (
   </div>
 );
 
-// Component that applies white label settings
+// Component that applies white label settings - wrapped in error boundary for safety
 const WhiteLabelProvider = ({ children }: { children: React.ReactNode }) => {
-  useWhiteLabel();
+  // Only load white label settings, don't block rendering
+  try {
+    useWhiteLabel();
+  } catch (e) {
+    // Silently catch errors during hydration to prevent app crash
+    console.error("WhiteLabel initialization error:", e);
+  }
   return <>{children}</>;
 };
 
