@@ -10,11 +10,11 @@ const Security = () => {
         title="Security - SalesOS"
         description="Learn about SalesOS security practices. Enterprise-grade data protection with encryption, SOC 2 compliance, GDPR/CCPA compliance, and 24/7 monitoring."
         keywords="SalesOS security, data encryption, SOC 2, GDPR compliance, enterprise security, data protection"
-        canonicalUrl="https://salesos.com/security"
+        canonicalUrl="https://salesos.alephwavex.io/security"
       />
       <BreadcrumbSchema items={[
-        { name: "Home", url: "https://salesos.com" },
-        { name: "Security", url: "https://salesos.com/security" }
+        { name: "Home", url: "https://salesos.alephwavex.io" },
+        { name: "Security", url: "https://salesos.alephwavex.io/security" }
       ]} />
       
       <div className="min-h-screen bg-background text-foreground">

@@ -7,6 +7,7 @@ import { Copy, Check, ExternalLink, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { SEOHead, BreadcrumbSchema } from "@/components/seo";
 
 const ApiDocs = () => {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
@@ -307,7 +308,18 @@ end`,
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <>
+      <SEOHead 
+        title="API Documentation - SalesOS"
+        description="Complete SalesOS API reference with interactive examples. Learn how to integrate leads, deals, and automation into your applications."
+        keywords="SalesOS API, sales API, lead generation API, CRM API, REST API documentation"
+        canonicalUrl="https://salesos.alephwavex.io/api-docs"
+      />
+      <BreadcrumbSchema items={[
+        { name: "Home", url: "https://salesos.alephwavex.io" },
+        { name: "API Documentation", url: "https://salesos.alephwavex.io/api-docs" }
+      ]} />
+      <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
       <div className="flex-1 container mx-auto px-4 pt-24 pb-12 max-w-6xl">
         <div className="space-y-6">
@@ -539,6 +551,7 @@ end`,
       </div>
       <Footer />
     </div>
+    </>
   );
 };
 
