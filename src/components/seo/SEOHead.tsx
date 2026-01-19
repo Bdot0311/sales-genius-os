@@ -18,11 +18,13 @@ interface SEOHeadProps {
   preloadImages?: string[];
 }
 
+const BASE_URL = 'https://salesos.alephwavex.io';
+
 export const SEOHead = ({
-  title = "SalesOS - AI-Powered Sales Operating System",
-  description = "Close more deals with SalesOS. AI-powered lead generation, intelligent outreach automation, automated scheduling, and real-time sales coaching for SaaS companies.",
+  title = "SalesOS - AI Sales Automation & Lead Generation Platform",
+  description = "Close more deals with SalesOS AI-powered sales automation. Lead generation, email outreach, pipeline management & real-time coaching. Start free trial.",
   canonicalUrl,
-  ogImage = "https://storage.googleapis.com/gpt-engineer-file-uploads/ZFJK1zezovOpOdjy9TptFukIhhc2/social-images/social-1761024274309-image 2.png",
+  ogImage = "https://storage.googleapis.com/gpt-engineer-file-uploads/ZFJK1zezovOpOdjy9TptFukIhhc2/social-images/social-1768238149761-SalesOS full logo.png",
   ogType = "website",
   noIndex = false,
   keywords = "sales automation, AI sales, lead generation, CRM, sales intelligence, email automation, sales coaching, SaaS sales, B2B sales, sales pipeline, AI lead scoring, sales productivity, outreach automation",
@@ -36,6 +38,7 @@ export const SEOHead = ({
   preloadImages = []
 }: SEOHeadProps) => {
   const fullTitle = title.includes('SalesOS') ? title : `${title} | SalesOS`;
+  const fullCanonicalUrl = canonicalUrl || BASE_URL;
   
   // Generate alternate keywords for better coverage
   const expandedKeywords = [
@@ -72,10 +75,11 @@ export const SEOHead = ({
       <meta name="geo.placename" content="United States" />
       
       {/* Canonical URL */}
-      {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
+      <link rel="canonical" href={fullCanonicalUrl} />
       
       {/* Open Graph / Facebook */}
       <meta property="og:type" content={ogType} />
+      <meta property="og:url" content={fullCanonicalUrl} />
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={description} />
       <meta property="og:image" content={ogImage} />
@@ -87,7 +91,6 @@ export const SEOHead = ({
       {alternateLocales.map((loc) => (
         <meta key={loc} property="og:locale:alternate" content={loc} />
       ))}
-      {canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
       
       {/* Article specific meta tags */}
       {publishedTime && <meta property="article:published_time" content={publishedTime} />}

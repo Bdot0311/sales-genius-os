@@ -1,5 +1,5 @@
 # SalesOS Robots.txt
-# https://salesos.com/robots.txt
+# https://salesos.alephwavex.io/robots.txt
 # Optimized for SEO and AI Search Engines (AEO)
 
 # Main Search Engine Crawlers
@@ -132,6 +132,7 @@ Disallow: /calendar
 Disallow: /coach
 Disallow: /saved-leads
 Disallow: /integrations
+Disallow: /confirmation
 
 # Allow public pages
 Allow: /
@@ -142,10 +143,9 @@ Allow: /api-status
 Allow: /privacy
 Allow: /terms
 Allow: /security
-Allow: /waitlist
 
 # Sitemap location
-Sitemap: https://salesos.com/sitemap.xml
+Sitemap: https://salesos.alephwavex.io/sitemap.xml
 
 # Crawl budget optimization hints
 # These pages are most important for indexing:

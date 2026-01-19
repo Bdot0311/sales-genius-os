@@ -9,11 +9,11 @@ const Terms = () => {
         title="Terms of Service - SalesOS"
         description="Review the SalesOS Terms of Service. Understand your rights and responsibilities when using our AI-powered sales platform."
         keywords="SalesOS terms of service, terms and conditions, user agreement, service agreement"
-        canonicalUrl="https://salesos.com/terms"
+        canonicalUrl="https://salesos.alephwavex.io/terms"
       />
       <BreadcrumbSchema items={[
-        { name: "Home", url: "https://salesos.com" },
-        { name: "Terms of Service", url: "https://salesos.com/terms" }
+        { name: "Home", url: "https://salesos.alephwavex.io" },
+        { name: "Terms of Service", url: "https://salesos.alephwavex.io/terms" }
       ]} />
       
       <div className="min-h-screen bg-background text-foreground">
