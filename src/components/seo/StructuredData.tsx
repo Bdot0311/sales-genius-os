@@ -1,5 +1,7 @@
 import { Helmet } from 'react-helmet-async';
 
+const BASE_URL = 'https://salesos.alephwavex.io';
+
 interface FAQItem {
   question: string;
   answer: string;
@@ -59,13 +61,13 @@ interface ArticleSchemaProps {
 export const OrganizationSchema = ({
   name = "SalesOS",
   description = "SalesOS is an AI-Powered Sales Operating System that helps SaaS companies close more deals with intelligent lead generation, automated outreach, and real-time coaching. Founded to revolutionize B2B sales through artificial intelligence.",
-  url = "https://salesos.com",
+  url = BASE_URL,
   logo = "https://storage.googleapis.com/gpt-engineer-file-uploads/ZFJK1zezovOpOdjy9TptFukIhhc2/uploads/1761024288225-image 2.png"
 }: OrganizationSchemaProps) => {
   const schema = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    "@id": "https://salesos.com/#organization",
+    "@id": `${BASE_URL}/#organization`,
     "name": name,
     "alternateName": ["SalesOS AI", "Sales OS", "SalesOS Platform"],
     "description": description,
@@ -135,16 +137,16 @@ export const SoftwareApplicationSchema = () => {
   const schema = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
-    "@id": "https://salesos.com/#software",
+    "@id": `${BASE_URL}/#software`,
     "name": "SalesOS",
     "alternateName": "SalesOS AI Sales Platform",
     "applicationCategory": "BusinessApplication",
     "applicationSubCategory": "Sales Automation Software",
     "operatingSystem": "Web Browser (Chrome, Firefox, Safari, Edge)",
     "description": "SalesOS is the #1 AI-powered sales operating system for B2B SaaS companies. Generate leads, automate outreach, manage pipelines, and close more deals with intelligent sales automation and real-time AI coaching.",
-    "url": "https://salesos.com",
-    "downloadUrl": "https://salesos.com/auth",
-    "screenshot": "https://storage.googleapis.com/gpt-engineer-file-uploads/ZFJK1zezovOpOdjy9TptFukIhhc2/social-images/social-1761024274309-image 2.png",
+    "url": BASE_URL,
+    "downloadUrl": `${BASE_URL}/auth`,
+    "screenshot": "https://storage.googleapis.com/gpt-engineer-file-uploads/ZFJK1zezovOpOdjy9TptFukIhhc2/social-images/social-1768238149761-SalesOS full logo.png",
     "softwareVersion": "2.0",
     "releaseNotes": "Latest release includes enhanced AI lead scoring, improved email generation, and new CRM integrations.",
     "offers": {
@@ -159,7 +161,7 @@ export const SoftwareApplicationSchema = () => {
           "name": "Growth Plan",
           "price": "49",
           "priceCurrency": "USD",
-          "priceValidUntil": "2025-12-31",
+          "priceValidUntil": "2027-12-31",
           "availability": "https://schema.org/InStock",
           "description": "Perfect for startups - 500 leads, AI email generation, basic analytics"
         },
@@ -168,7 +170,7 @@ export const SoftwareApplicationSchema = () => {
           "name": "Pro Plan",
           "price": "99",
           "priceCurrency": "USD",
-          "priceValidUntil": "2025-12-31",
+          "priceValidUntil": "2027-12-31",
           "availability": "https://schema.org/InStock",
           "description": "For growing teams - 2500 leads, API access, advanced analytics, automations"
         },
@@ -177,7 +179,7 @@ export const SoftwareApplicationSchema = () => {
           "name": "Elite Plan",
           "price": "299",
           "priceCurrency": "USD",
-          "priceValidUntil": "2025-12-31",
+          "priceValidUntil": "2027-12-31",
           "availability": "https://schema.org/InStock",
           "description": "Enterprise-grade - Unlimited leads, AI coach, white-label, dedicated support"
         }
@@ -234,7 +236,7 @@ export const SoftwareApplicationSchema = () => {
     "permissions": "Internet access required",
     "author": {
       "@type": "Organization",
-      "@id": "https://salesos.com/#organization"
+      "@id": `${BASE_URL}/#organization`
     }
   };
 
@@ -252,7 +254,7 @@ export const FAQSchema = ({ faqs }: FAQSchemaProps) => {
   const schema = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    "@id": "https://salesos.com/#faq",
+    "@id": `${BASE_URL}/#faq`,
     "mainEntity": faqs.map(faq => ({
       "@type": "Question",
       "name": faq.question,
@@ -289,10 +291,10 @@ export const ProductSchema = ({ name, description, price, priceCurrency = "USD" 
       "price": price,
       "priceCurrency": priceCurrency,
       "availability": "https://schema.org/InStock",
-      "priceValidUntil": "2025-12-31",
+      "priceValidUntil": "2027-12-31",
       "seller": {
         "@type": "Organization",
-        "@id": "https://salesos.com/#organization"
+        "@id": `${BASE_URL}/#organization`
       }
     },
     "aggregateRating": {
@@ -316,34 +318,34 @@ export const WebSiteSchema = () => {
   const schema = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    "@id": "https://salesos.com/#website",
+    "@id": `${BASE_URL}/#website`,
     "name": "SalesOS",
     "alternateName": "SalesOS - AI Sales Platform",
-    "url": "https://salesos.com",
+    "url": BASE_URL,
     "description": "SalesOS is the leading AI-powered sales operating system. Generate leads, automate outreach, and close more deals.",
     "publisher": {
       "@type": "Organization",
-      "@id": "https://salesos.com/#organization"
+      "@id": `${BASE_URL}/#organization`
     },
     "potentialAction": [
       {
         "@type": "SearchAction",
         "target": {
           "@type": "EntryPoint",
-          "urlTemplate": "https://salesos.com/search?q={search_term_string}"
+          "urlTemplate": `${BASE_URL}/search?q={search_term_string}`
         },
         "query-input": "required name=search_term_string"
       },
       {
         "@type": "ReadAction",
-        "target": "https://salesos.com/"
+        "target": BASE_URL
       }
     ],
     "inLanguage": "en-US",
     "copyrightYear": new Date().getFullYear().toString(),
     "copyrightHolder": {
       "@type": "Organization",
-      "@id": "https://salesos.com/#organization"
+      "@id": `${BASE_URL}/#organization`
     }
   };
 
@@ -378,7 +380,7 @@ export const BreadcrumbSchema = ({ items }: { items: { name: string; url: string
   );
 };
 
-// NEW: HowTo Schema for AEO - Great for "How to" queries
+// HowTo Schema for AEO - Great for "How to" queries
 export const HowToSchema = ({ name, description, steps, totalTime = "PT10M" }: HowToSchemaProps) => {
   const schema = {
     "@context": "https://schema.org",
@@ -409,7 +411,7 @@ export const HowToSchema = ({ name, description, steps, totalTime = "PT10M" }: H
   );
 };
 
-// NEW: Video Schema for video content
+// Video Schema for video content
 export const VideoSchema = ({ 
   name, 
   description, 
@@ -431,7 +433,7 @@ export const VideoSchema = ({
     ...(embedUrl && { embedUrl }),
     "publisher": {
       "@type": "Organization",
-      "@id": "https://salesos.com/#organization"
+      "@id": `${BASE_URL}/#organization`
     }
   };
 
@@ -444,7 +446,7 @@ export const VideoSchema = ({
   );
 };
 
-// NEW: Article Schema for blog/content pages
+// Article Schema for blog/content pages
 export const ArticleSchema = ({ 
   headline, 
   description, 
@@ -464,14 +466,14 @@ export const ArticleSchema = ({
     },
     "publisher": {
       "@type": "Organization",
-      "@id": "https://salesos.com/#organization"
+      "@id": `${BASE_URL}/#organization`
     },
     "datePublished": datePublished,
     "dateModified": dateModified || datePublished,
     ...(image && { image }),
     "mainEntityOfPage": {
       "@type": "WebPage",
-      "@id": "https://salesos.com/"
+      "@id": BASE_URL
     }
   };
 
@@ -484,18 +486,18 @@ export const ArticleSchema = ({
   );
 };
 
-// NEW: Service Schema - Great for describing what SalesOS offers
+// Service Schema - Great for describing what SalesOS offers
 export const ServiceSchema = () => {
   const schema = {
     "@context": "https://schema.org",
     "@type": "Service",
-    "@id": "https://salesos.com/#service",
+    "@id": `${BASE_URL}/#service`,
     "serviceType": "Sales Automation Software",
     "name": "SalesOS Sales Automation Platform",
     "description": "Comprehensive AI-powered sales automation service including lead generation, email automation, pipeline management, and AI coaching for B2B SaaS companies.",
     "provider": {
       "@type": "Organization",
-      "@id": "https://salesos.com/#organization"
+      "@id": `${BASE_URL}/#organization`
     },
     "areaServed": {
       "@type": "Place",
@@ -509,8 +511,7 @@ export const ServiceSchema = () => {
           "@type": "Offer",
           "itemOffered": {
             "@type": "Service",
-            "name": "Growth Plan",
-            "description": "AI-powered lead generation and email automation for startups"
+            "name": "Growth Plan"
           },
           "price": "49",
           "priceCurrency": "USD"
@@ -519,8 +520,7 @@ export const ServiceSchema = () => {
           "@type": "Offer",
           "itemOffered": {
             "@type": "Service",
-            "name": "Pro Plan",
-            "description": "Advanced sales automation with API access and analytics"
+            "name": "Pro Plan"
           },
           "price": "99",
           "priceCurrency": "USD"
@@ -529,20 +529,12 @@ export const ServiceSchema = () => {
           "@type": "Offer",
           "itemOffered": {
             "@type": "Service",
-            "name": "Elite Plan",
-            "description": "Enterprise sales platform with AI coach and white-label options"
+            "name": "Elite Plan"
           },
           "price": "299",
           "priceCurrency": "USD"
         }
       ]
-    },
-    "termsOfService": "https://salesos.com/terms",
-    "offers": {
-      "@type": "AggregateOffer",
-      "lowPrice": "49",
-      "highPrice": "299",
-      "priceCurrency": "USD"
     }
   };
 
@@ -555,23 +547,16 @@ export const ServiceSchema = () => {
   );
 };
 
-// NEW: Speakable Schema for voice search/AEO
-export const SpeakableSchema = () => {
+// Speakable Schema for voice search optimization
+export const SpeakableSchema = ({ cssSelectors }: { cssSelectors: string[] }) => {
   const schema = {
     "@context": "https://schema.org",
     "@type": "WebPage",
-    "@id": "https://salesos.com/#webpage",
-    "name": "SalesOS - AI-Powered Sales Operating System",
-    "description": "SalesOS is the leading AI-powered sales operating system for B2B SaaS companies. Close more deals with intelligent lead generation, automated outreach, and real-time AI coaching.",
     "speakable": {
       "@type": "SpeakableSpecification",
-      "cssSelector": ["h1", ".hero-description", ".feature-title", ".faq-answer"]
+      "cssSelector": cssSelectors
     },
-    "url": "https://salesos.com",
-    "mainEntity": {
-      "@type": "SoftwareApplication",
-      "@id": "https://salesos.com/#software"
-    }
+    "url": BASE_URL
   };
 
   return (
@@ -583,15 +568,22 @@ export const SpeakableSchema = () => {
   );
 };
 
-// NEW: ItemList Schema for Features/Benefits lists
-export const ItemListSchema = ({ items, name }: { items: { name: string; description: string }[]; name: string }) => {
+// ItemList Schema for features/benefits lists
+export const ItemListSchema = ({ 
+  name, 
+  items 
+}: { 
+  name: string; 
+  items: { name: string; description: string; position: number }[] 
+}) => {
   const schema = {
     "@context": "https://schema.org",
     "@type": "ItemList",
     "name": name,
-    "itemListElement": items.map((item, index) => ({
+    "numberOfItems": items.length,
+    "itemListElement": items.map(item => ({
       "@type": "ListItem",
-      "position": index + 1,
+      "position": item.position,
       "name": item.name,
       "description": item.description
     }))
@@ -606,76 +598,33 @@ export const ItemListSchema = ({ items, name }: { items: { name: string; descrip
   );
 };
 
-// NEW: Comparison Schema - For pricing/feature comparisons
-export const ComparisonSchema = () => {
+// Comparison Schema for pricing/product comparisons
+export const ComparisonSchema = ({ 
+  plans 
+}: { 
+  plans: { name: string; price: string; features: string[] }[] 
+}) => {
   const schema = {
     "@context": "https://schema.org",
     "@type": "ItemList",
     "name": "SalesOS Pricing Plans Comparison",
-    "description": "Compare SalesOS pricing plans - Growth, Pro, and Elite",
-    "numberOfItems": 3,
-    "itemListElement": [
-      {
-        "@type": "ListItem",
-        "position": 1,
-        "item": {
-          "@type": "Product",
-          "name": "SalesOS Growth",
-          "description": "Perfect for startups - 500 leads/month, AI email generation, basic analytics",
-          "offers": {
-            "@type": "Offer",
-            "price": "49",
-            "priceCurrency": "USD",
-            "priceSpecification": {
-              "@type": "UnitPriceSpecification",
-              "price": "49",
-              "priceCurrency": "USD",
-              "billingDuration": "P1M"
-            }
-          }
-        }
-      },
-      {
-        "@type": "ListItem",
-        "position": 2,
-        "item": {
-          "@type": "Product",
-          "name": "SalesOS Pro",
-          "description": "For growing teams - 2500 leads/month, API access, advanced analytics, automations",
-          "offers": {
-            "@type": "Offer",
-            "price": "99",
-            "priceCurrency": "USD",
-            "priceSpecification": {
-              "@type": "UnitPriceSpecification",
-              "price": "99",
-              "priceCurrency": "USD",
-              "billingDuration": "P1M"
-            }
-          }
-        }
-      },
-      {
-        "@type": "ListItem",
-        "position": 3,
-        "item": {
-          "@type": "Product",
-          "name": "SalesOS Elite",
-          "description": "Enterprise-grade - Unlimited leads, AI coach, white-label, dedicated support",
-          "offers": {
-            "@type": "Offer",
-            "price": "299",
-            "priceCurrency": "USD",
-            "priceSpecification": {
-              "@type": "UnitPriceSpecification",
-              "price": "299",
-              "priceCurrency": "USD",
-              "billingDuration": "P1M"
-            }
-          }
+    "description": "Compare SalesOS pricing plans to find the right fit for your sales team",
+    "numberOfItems": plans.length,
+    "itemListElement": plans.map((plan, index) => ({
+      "@type": "ListItem",
+      "position": index + 1,
+      "item": {
+        "@type": "Product",
+        "name": `SalesOS ${plan.name}`,
+        "description": plan.features.join(", "),
+        "offers": {
+          "@type": "Offer",
+          "price": plan.price,
+          "priceCurrency": "USD",
+          "availability": "https://schema.org/InStock"
         }
       }
-    ]
+    }))
   };
 
   return (

@@ -9,11 +9,11 @@ const Privacy = () => {
         title="Privacy Policy - SalesOS"
         description="Learn how SalesOS collects, uses, and protects your personal data. We're committed to transparency and GDPR/CCPA compliance."
         keywords="SalesOS privacy policy, data protection, GDPR compliance, CCPA compliance, personal data"
-        canonicalUrl="https://salesos.com/privacy"
+        canonicalUrl="https://salesos.alephwavex.io/privacy"
       />
       <BreadcrumbSchema items={[
-        { name: "Home", url: "https://salesos.com" },
-        { name: "Privacy Policy", url: "https://salesos.com/privacy" }
+        { name: "Home", url: "https://salesos.alephwavex.io" },
+        { name: "Privacy Policy", url: "https://salesos.alephwavex.io/privacy" }
       ]} />
       
       <div className="min-h-screen bg-background text-foreground">

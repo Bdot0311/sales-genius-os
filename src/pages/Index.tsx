@@ -45,27 +45,33 @@ const gettingStartedSteps = [
 const keyFeatures = [
   {
     name: "AI Lead Scoring",
-    description: "Machine learning analyzes engagement, company fit, and behavioral signals to predict conversion likelihood with over 85% accuracy."
+    description: "Machine learning analyzes engagement, company fit, and behavioral signals to predict conversion likelihood with over 85% accuracy.",
+    position: 1
   },
   {
     name: "Intelligent Email Generation",
-    description: "AI crafts personalized emails for each lead based on their profile, company data, and your specified tone and goals."
+    description: "AI crafts personalized emails for each lead based on their profile, company data, and your specified tone and goals.",
+    position: 2
   },
   {
     name: "Visual Pipeline Management",
-    description: "Drag-and-drop interface to manage deals through custom stages with real-time analytics and forecasting."
+    description: "Drag-and-drop interface to manage deals through custom stages with real-time analytics and forecasting.",
+    position: 3
   },
   {
     name: "Real-Time AI Coaching",
-    description: "Get instant suggestions and insights to improve your sales approach and close rates."
+    description: "Get instant suggestions and insights to improve your sales approach and close rates.",
+    position: 4
   },
   {
     name: "Workflow Automation",
-    description: "Automate repetitive tasks like follow-ups, lead assignments, and status updates with visual workflow builder."
+    description: "Automate repetitive tasks like follow-ups, lead assignments, and status updates with visual workflow builder.",
+    position: 5
   },
   {
     name: "CRM Integrations",
-    description: "Seamlessly connect with HubSpot, Salesforce, Pipedrive, and 5000+ apps via Zapier."
+    description: "Seamlessly connect with HubSpot, Salesforce, Pipedrive, and 5000+ apps via Zapier.",
+    position: 6
   }
 ];
 
@@ -76,7 +82,7 @@ const Index = () => {
         title="SalesOS - AI-Powered Sales Operating System | Close More Deals"
         description="Close more deals with SalesOS. AI-powered lead generation, intelligent outreach automation, automated scheduling, and real-time sales coaching. Trusted by 500+ SaaS companies. Start your free 14-day trial today."
         keywords="sales automation, AI sales, lead generation, CRM, sales intelligence, email automation, sales coaching, SaaS sales, B2B sales, sales pipeline, AI lead scoring, best sales software 2025"
-        canonicalUrl="https://salesos.com/"
+        canonicalUrl="https://salesos.alephwavex.io/"
       />
       
       {/* Core Schema Markup */}
@@ -84,7 +90,7 @@ const Index = () => {
       <SoftwareApplicationSchema />
       <WebSiteSchema />
       <ServiceSchema />
-      <SpeakableSchema />
+      <SpeakableSchema cssSelectors={["h1", "h2", ".hero-description", ".feature-description"]} />
       
       {/* AEO: HowTo Schema for "How to use SalesOS" queries */}
       <HowToSchema 

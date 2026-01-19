@@ -8,13 +8,13 @@ const PricingPage = () => {
     <>
       <SEOHead 
         title="Pricing Plans - SalesOS"
-        description="Choose the right SalesOS plan for your team. Start with a 14-day free trial. Plans from $99/month for Growth to $799/month for Elite with unlimited leads."
+        description="Choose the right SalesOS plan for your team. Start with a 14-day free trial. Plans from $49/month for Growth to $299/month for Elite with unlimited leads."
         keywords="SalesOS pricing, sales software pricing, CRM pricing, lead generation pricing, sales automation cost"
-        canonicalUrl="https://salesos.com/pricing"
+        canonicalUrl="https://salesos.alephwavex.io/pricing"
       />
       <BreadcrumbSchema items={[
-        { name: "Home", url: "https://salesos.com" },
-        { name: "Pricing", url: "https://salesos.com/pricing" }
+        { name: "Home", url: "https://salesos.alephwavex.io" },
+        { name: "Pricing", url: "https://salesos.alephwavex.io/pricing" }
       ]} />
       
       <div className="min-h-screen bg-background text-foreground pt-16">
