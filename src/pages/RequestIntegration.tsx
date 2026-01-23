@@ -229,10 +229,16 @@ const RequestIntegration = () => {
             <CardHeader>
               <CardTitle className="text-lg">Need Help?</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                If you have questions about integrations or need immediate assistance, 
-                reach out to us directly at{" "}
+                Visit our{" "}
+                <a href="/help" className="text-primary hover:underline">
+                  Help Center
+                </a>{" "}
+                for guides on setting up integrations.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Need immediate assistance? Reach out to{" "}
                 <a 
                   href="mailto:support@bdotindustries.com" 
                   className="text-primary hover:underline"

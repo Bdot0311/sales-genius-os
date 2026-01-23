@@ -167,7 +167,9 @@ const Security = () => {
               <section className="mt-12" aria-labelledby="security-questions">
                 <h2 id="security-questions" className="text-2xl font-semibold mb-4">Questions?</h2>
                 <address className="not-italic text-muted-foreground">
-                  If you have questions about our security practices, please contact us at:{" "}
+                  For security-related questions, visit our{" "}
+                  <a href="/help" className="text-primary hover:underline">Help Center</a>{" "}
+                  or contact us at:{" "}
                   <a href="mailto:support@bdotindustries.com" className="text-primary hover:underline">
                     support@bdotindustries.com
                   </a>

@@ -114,7 +114,8 @@ const Privacy = () => {
               <section aria-labelledby="contact-privacy">
                 <h2 id="contact-privacy" className="text-2xl font-semibold mb-4">Contact Us</h2>
                 <address className="not-italic">
-                  If you have questions about this Privacy Policy, please contact us at:
+                  If you have questions about this Privacy Policy, visit our{" "}
+                  <a href="/help" className="text-primary hover:underline">Help Center</a> or contact us at:
                   <br />
                   <strong>Email:</strong> <a href="mailto:support@bdotindustries.com" className="text-primary hover:underline">support@bdotindustries.com</a>
                 </address>

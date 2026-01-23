@@ -265,7 +265,11 @@ const Confirmation = () => {
         {/* Support Note */}
         <div className="mt-8 sm:mt-12 text-center px-4">
           <p className="text-xs sm:text-sm text-muted-foreground">
-            Need help? Contact us at{" "}
+            Need help getting started? Visit our{" "}
+            <a href="/help" className="text-primary hover:underline">
+              Help Center
+            </a>{" "}
+            or contact us at{" "}
             <a href="mailto:support@bdotindustries.com" className="text-primary hover:underline">
               support@bdotindustries.com
             </a>

@@ -146,7 +146,8 @@ const Terms = () => {
               <section aria-labelledby="contact-terms">
                 <h2 id="contact-terms" className="text-2xl font-semibold mb-4">Contact Us</h2>
                 <address className="not-italic">
-                  If you have questions about these Terms, please contact us at:
+                  If you have questions about these Terms, visit our{" "}
+                  <a href="/help" className="text-primary hover:underline">Help Center</a> or contact us at:
                   <br />
                   <strong>Email:</strong> <a href="mailto:support@bdotindustries.com" className="text-primary hover:underline">support@bdotindustries.com</a>
                 </address>
