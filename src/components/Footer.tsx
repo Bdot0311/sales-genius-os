@@ -36,14 +36,23 @@ export const Footer = () => {
 
         {/* Product & Legal columns side by side, centered */}
         <div className="mb-6 sm:mb-8">
-          <div className="grid grid-cols-2 gap-12 max-w-sm mx-auto text-center md:max-w-none md:text-left">
+          <div className="grid grid-cols-3 gap-8 max-w-lg mx-auto text-center md:max-w-none md:text-left">
             <div>
               <h4 className="font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Product</h4>
               <ul className="space-y-2 text-xs sm:text-sm text-muted-foreground">
                 <li><a href="#features" className="hover:text-foreground transition-colors inline-block md:inline">Features</a></li>
                 <li><a href="/pricing" className="hover:text-foreground transition-colors inline-block md:inline">Pricing</a></li>
                 <li><a href="#integrations" className="hover:text-foreground transition-colors inline-block md:inline">Integrations</a></li>
-                <li><a href="/api-docs" className="hover:text-foreground transition-colors inline-block md:inline">API Docs</a></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Support</h4>
+              <ul className="space-y-2 text-xs sm:text-sm text-muted-foreground">
+                <li><Link to="/help" className="hover:text-foreground transition-colors inline-block md:inline">Help Center</Link></li>
+                <li><Link to="/api-docs" className="hover:text-foreground transition-colors inline-block md:inline">API Docs</Link></li>
+                <li><Link to="/api-status" className="hover:text-foreground transition-colors inline-block md:inline">API Status</Link></li>
+                <li><a href="mailto:support@bdotindustries.com" className="hover:text-foreground transition-colors inline-block md:inline">Contact Us</a></li>
               </ul>
             </div>
 
