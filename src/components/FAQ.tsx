@@ -74,6 +74,16 @@ export const FAQ = () => {
               </AccordionItem>
             ))}
           </Accordion>
+          
+          <div className="text-center mt-8">
+            <p className="text-muted-foreground mb-4">Still have questions?</p>
+            <a 
+              href="/help" 
+              className="inline-flex items-center gap-2 text-primary hover:underline font-medium"
+            >
+              Visit our Help Center →
+            </a>
+          </div>
         </div>
       </div>
     </section>

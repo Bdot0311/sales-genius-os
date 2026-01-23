@@ -29,6 +29,7 @@ const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Security = lazy(() => import("./pages/Security"));
 const Confirmation = lazy(() => import("./pages/Confirmation"));
+const HelpCenter = lazy(() => import("./pages/HelpCenter"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -71,6 +72,9 @@ const App = () => (
               <Route path="/terms" element={<Terms />} />
               <Route path="/security" element={<Security />} />
               <Route path="/confirmation" element={<Confirmation />} />
+              <Route path="/help" element={<HelpCenter />} />
+              <Route path="/help/category/:category" element={<HelpCenter />} />
+              <Route path="/help/article/:slug" element={<HelpCenter />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/dashboard/leads" element={<Leads />} />
               <Route path="/dashboard/leads/saved" element={<SavedLeads />} />

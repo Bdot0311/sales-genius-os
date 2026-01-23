@@ -51,6 +51,7 @@ export const Navbar = () => {
           <Button variant="ghost" onClick={() => handleNavigation('/pricing')}>Pricing</Button>
           <Button variant="ghost" onClick={() => handleNavigation('#integrations')}>Integrations</Button>
           <Button variant="ghost" onClick={() => handleNavigation('/api-docs')}>API Docs</Button>
+          <Button variant="ghost" onClick={() => handleNavigation('/help')}>Help</Button>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-4">
@@ -76,6 +77,7 @@ export const Navbar = () => {
             <Button variant="ghost" className="w-full justify-start" onClick={() => handleNavigation('/pricing')}>Pricing</Button>
             <Button variant="ghost" className="w-full justify-start" onClick={() => handleNavigation('#integrations')}>Integrations</Button>
             <Button variant="ghost" className="w-full justify-start" onClick={() => handleNavigation('/api-docs')}>API Docs</Button>
+            <Button variant="ghost" className="w-full justify-start" onClick={() => handleNavigation('/help')}>Help</Button>
           </div>
         </div>
       )}
