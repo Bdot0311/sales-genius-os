@@ -16,9 +16,9 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { to, subject, body, integrationId } = await req.json();
+    const { to, subject, body, integrationId, leadId } = await req.json();
     
-    console.log('Send email request received:', { to, subject, integrationId });
+    console.log('Send email request received:', { to, subject, integrationId, leadId });
 
     // Get authorization header
     const authHeader = req.headers.get('Authorization');
@@ -182,6 +182,18 @@ ${body.split('\n').map((line: string) => line.trim() ? `<p>${line}</p>` : '').jo
         const error = await gmailResponse.text();
         console.error('Gmail API error:', gmailResponse.status, error);
         
+        // Store failed email in sent_emails table
+        await supabase.from('sent_emails').insert({
+          user_id: user.id,
+          lead_id: leadId || null,
+          to_email: to,
+          subject: subject,
+          body_html: htmlBody,
+          body_text: body,
+          status: 'failed',
+          sent_at: new Date().toISOString(),
+        });
+        
         if (gmailResponse.status === 401) {
           return new Response(
             JSON.stringify({ error: 'Gmail authentication failed. Please reconnect your Gmail account.' }),
@@ -192,10 +204,48 @@ ${body.split('\n').map((line: string) => line.trim() ? `<p>${line}</p>` : '').jo
         throw new Error(`Failed to send email via Gmail: ${error}`);
       }
 
-      console.log('Email sent successfully via Gmail');
+      const gmailResult = await gmailResponse.json();
+      console.log('Email sent successfully via Gmail. Message ID:', gmailResult.id);
+
+      // Store sent email in sent_emails table
+      const { error: insertError } = await supabase.from('sent_emails').insert({
+        user_id: user.id,
+        lead_id: leadId || null,
+        to_email: to,
+        subject: subject,
+        body_html: htmlBody,
+        body_text: body,
+        status: 'sent',
+        gmail_message_id: gmailResult.id,
+        gmail_thread_id: gmailResult.threadId,
+        sent_at: new Date().toISOString(),
+      });
+
+      if (insertError) {
+        console.error('Failed to store sent email:', insertError);
+        // Don't fail the request, email was sent successfully
+      }
+
+      // Update lead's last_contacted_at if leadId is provided
+      if (leadId) {
+        const { error: updateError } = await supabase
+          .from('leads')
+          .update({ last_contacted_at: new Date().toISOString() })
+          .eq('id', leadId)
+          .eq('user_id', user.id);
+
+        if (updateError) {
+          console.error('Failed to update lead last_contacted_at:', updateError);
+        }
+      }
 
       return new Response(
-        JSON.stringify({ success: true, provider: 'gmail' }),
+        JSON.stringify({ 
+          success: true, 
+          provider: 'gmail',
+          messageId: gmailResult.id,
+          threadId: gmailResult.threadId
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     } else {
@@ -205,7 +255,7 @@ ${body.split('\n').map((line: string) => line.trim() ? `<p>${line}</p>` : '').jo
       );
     }
   } catch (error: any) {
-    console.error('Error sending email:', error.message); // Log internally
+    console.error('Error sending email:', error.message);
     
     // Return generic error to client - don't expose internal details
     return new Response(

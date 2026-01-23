@@ -678,6 +678,53 @@ export type Database = {
           },
         ]
       }
+      email_drafts: {
+        Row: {
+          body: string | null
+          created_at: string | null
+          id: string
+          lead_id: string | null
+          opener_word: string | null
+          subject: string | null
+          tone: string | null
+          trigger_context: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          opener_word?: string | null
+          subject?: string | null
+          tone?: string | null
+          trigger_context?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          opener_word?: string | null
+          subject?: string | null
+          tone?: string | null
+          trigger_context?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_drafts_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_templates: {
         Row: {
           body_html: string
@@ -1176,6 +1223,7 @@ export type Database = {
           email_signature: string | null
           full_name: string | null
           id: string
+          social_proof: string | null
           updated_at: string
         }
         Insert: {
@@ -1185,6 +1233,7 @@ export type Database = {
           email_signature?: string | null
           full_name?: string | null
           id: string
+          social_proof?: string | null
           updated_at?: string
         }
         Update: {
@@ -1194,6 +1243,7 @@ export type Database = {
           email_signature?: string | null
           full_name?: string | null
           id?: string
+          social_proof?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -1340,6 +1390,59 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      sent_emails: {
+        Row: {
+          body_html: string | null
+          body_text: string | null
+          created_at: string | null
+          gmail_message_id: string | null
+          gmail_thread_id: string | null
+          id: string
+          lead_id: string | null
+          sent_at: string | null
+          status: string | null
+          subject: string
+          to_email: string
+          user_id: string
+        }
+        Insert: {
+          body_html?: string | null
+          body_text?: string | null
+          created_at?: string | null
+          gmail_message_id?: string | null
+          gmail_thread_id?: string | null
+          id?: string
+          lead_id?: string | null
+          sent_at?: string | null
+          status?: string | null
+          subject: string
+          to_email: string
+          user_id: string
+        }
+        Update: {
+          body_html?: string | null
+          body_text?: string | null
+          created_at?: string | null
+          gmail_message_id?: string | null
+          gmail_thread_id?: string | null
+          id?: string
+          lead_id?: string | null
+          sent_at?: string | null
+          status?: string | null
+          subject?: string
+          to_email?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sent_emails_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscriptions: {
         Row: {
