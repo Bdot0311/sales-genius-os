@@ -24,6 +24,7 @@ import {
   Clock,
   Search,
   Zap,
+  HelpCircle,
 } from "lucide-react";
 import { User } from "@supabase/supabase-js";
 import { useSubscription } from "@/hooks/use-subscription";
@@ -47,6 +48,7 @@ const navigation = [
   { name: "Automations", icon: Workflow, href: "/dashboard/automations" },
   { name: "Integrations", icon: Puzzle, href: "/integrations" },
   { name: "Settings", icon: Settings, href: "/settings" },
+  { name: "Help Center", icon: HelpCircle, href: "/help" },
 ];
 
 export const DashboardLayout = ({ children }: DashboardLayoutProps) => {

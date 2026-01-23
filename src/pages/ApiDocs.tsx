@@ -540,6 +540,9 @@ end`,
           </CardHeader>
           <CardContent className="space-y-2">
             <p className="text-sm text-muted-foreground">
+              Visit our <Button variant="link" className="p-0 h-auto" asChild><a href="/help">Help Center</a></Button> for guides and troubleshooting
+            </p>
+            <p className="text-sm text-muted-foreground">
               Check our <Button variant="link" className="p-0 h-auto" asChild><a href="/api-status">API Status Page</a></Button> for real-time system status
             </p>
             <p className="text-sm text-muted-foreground">

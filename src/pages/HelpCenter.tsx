@@ -95,7 +95,7 @@ const HelpCenter = () => {
         <SEOHead
           title={`${categoryInfo.title} - Help Center`}
           description={categoryInfo.description}
-          canonical={`https://salesos.alephwavex.io/help/category/${category}`}
+          canonicalUrl={`https://salesos.alephwavex.io/help/category/${category}`}
         />
         <Navbar />
         <main className="flex-1 pt-24 pb-16 container mx-auto px-6">
@@ -147,7 +147,7 @@ const HelpCenter = () => {
         <SEOHead
           title={`Search: ${searchQuery} - Help Center`}
           description={`Search results for "${searchQuery}" in SalesOS Help Center`}
-          canonical="https://salesos.alephwavex.io/help"
+          canonicalUrl="https://salesos.alephwavex.io/help"
         />
         <Navbar />
         <main className="flex-1 pt-24 pb-16 container mx-auto px-6">
@@ -201,7 +201,7 @@ const HelpCenter = () => {
       <SEOHead
         title="Help Center - SalesOS Support & Documentation"
         description="Get instant answers to your SalesOS questions. Guides, troubleshooting, API docs, and direct support."
-        canonical="https://salesos.alephwavex.io/help"
+        canonicalUrl="https://salesos.alephwavex.io/help"
         keywords="SalesOS help, support, documentation, guides, troubleshooting, FAQ"
       />
       <BreadcrumbSchema
