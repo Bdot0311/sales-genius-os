@@ -307,7 +307,7 @@ const Outreach = () => {
           tone: emailTone,
           goal: "subject_only",
           triggerContext,
-          openerWord,
+          openerWord: openerWord === "auto" ? "" : openerWord,
         },
       });
 
@@ -329,19 +329,10 @@ const Outreach = () => {
   };
 
   const generateEmail = async () => {
-    if (!selectedLead || !subjectLine) {
+    if (!selectedLead) {
       toast({
         title: "Missing information",
-        description: "Please select a lead and add a subject line",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (subjectLine.length > 200) {
-      toast({
-        title: "Invalid input",
-        description: "Subject line must be less than 200 characters",
+        description: "Please select a lead to generate a personalized email",
         variant: "destructive",
       });
       return;
@@ -360,14 +351,33 @@ const Outreach = () => {
     setIsGenerating(true);
     try {
       const lead = leads.find((l) => l.id === selectedLead);
+      
+      // If no subject line, generate one first
+      let finalSubjectLine = subjectLine;
+      if (!finalSubjectLine) {
+        const { data: subjectData, error: subjectError } = await supabase.functions.invoke("generate-email", {
+          body: {
+            lead,
+            tone: emailTone,
+            goal: "subject_only",
+            triggerContext,
+            openerWord: openerWord === "auto" ? "" : openerWord,
+          },
+        });
+        if (subjectError) throw subjectError;
+        finalSubjectLine = subjectData.email.replace(/^Subject:\s*/i, '').trim();
+        setSubjectLine(finalSubjectLine);
+      }
+      
+      // Now generate the email body
       const { data, error } = await supabase.functions.invoke("generate-email", {
         body: {
           lead,
           tone: emailTone,
           goal: "custom",
-          subjectLine,
+          subjectLine: finalSubjectLine,
           triggerContext,
-          openerWord,
+          openerWord: openerWord === "auto" ? "" : openerWord,
           socialProof,
         },
       });
@@ -376,7 +386,7 @@ const Outreach = () => {
       setGeneratedEmail(data.email);
       toast({
         title: "Email generated",
-        description: "AI has created a personalized cold email for you",
+        description: "AI created a personalized sales email designed to book meetings",
       });
     } catch (error: any) {
       toast({
@@ -791,35 +801,43 @@ For logos, use HTML:
                     </div>
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="space-y-3">
                     <Button
                       onClick={generateEmail}
-                      disabled={isGenerating}
-                      className="flex-1"
+                      disabled={isGenerating || !selectedLead}
+                      className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90"
+                      size="lg"
                     >
                       {isGenerating ? (
                         <>
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Generating...
+                          Generating Personalized Email...
                         </>
                       ) : (
                         <>
                           <Sparkles className="w-4 h-4 mr-2" />
-                          Generate Email
+                          Generate Sales Email with AI
                         </>
                       )}
                     </Button>
-                    <Button
-                      variant="outline"
-                      onClick={saveDraft}
-                      disabled={isSavingDraft || (!selectedLead && !subjectLine && !generatedEmail)}
-                    >
-                      {isSavingDraft ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Save className="w-4 h-4" />
-                      )}
-                    </Button>
+                    <p className="text-xs text-muted-foreground text-center">
+                      AI will auto-generate subject line if empty • Uses proven 4-sentence framework
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={saveDraft}
+                        disabled={isSavingDraft || (!selectedLead && !subjectLine && !generatedEmail)}
+                        className="flex-1"
+                      >
+                        {isSavingDraft ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <Save className="w-4 h-4 mr-2" />
+                        )}
+                        Save Draft
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </Card>
@@ -838,10 +856,38 @@ For logos, use HTML:
                         {subjectLine || "Add a subject line"}
                       </p>
                     </div>
+                    <div className="flex items-center justify-between mb-2">
+                      <Label className="text-sm font-medium">Email Body</Label>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={generateEmail}
+                              disabled={isGenerating || !selectedLead}
+                            >
+                              {isGenerating ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <Wand2 className="w-4 h-4 mr-1" />
+                                  Regenerate
+                                </>
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Regenerate email with AI</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
                     <Textarea
                       value={generatedEmail}
                       onChange={(e) => setGeneratedEmail(e.target.value)}
                       className="min-h-[280px]"
+                      placeholder="Your personalized sales email will appear here..."
                     />
                     <div className="flex gap-2">
                       <Button 
