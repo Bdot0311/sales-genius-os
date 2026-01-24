@@ -12,7 +12,7 @@ const sanitizeString = (input: string, maxLength: number): string => {
 };
 
 const VALID_TONES = ['professional', 'friendly', 'casual', 'formal'];
-const VALID_GOALS = ['introduction', 'follow-up', 'meeting', 'demo', 'proposal', 'subject_only', 'custom'];
+const VALID_GOALS = ['introduction', 'follow-up', 'meeting', 'demo', 'proposal', 'subject_only', 'custom', 'trigger_context', 'social_proof'];
 const VALID_OPENERS = ['you', 'saw', 'how', 'spoke', 'noticed', 'referred', 'remember'];
 
 const validateEmailInputs = (data: any) => {
@@ -195,6 +195,50 @@ Lead Information:
 ${triggerContext ? `- Trigger/Context: ${triggerContext}` : ''}
 
 Return ONLY the subject line text, nothing else. No quotes, no "Subject:" prefix, just the subject line itself.`;
+    } else if (goal === 'trigger_context') {
+      // Generate personalized trigger context opener
+      systemPrompt = `You are an expert B2B sales researcher. Generate a personalized trigger/context opener for cold emails.
+
+RULES:
+- Start with one of these 7 power words: You, Saw, How, Spoke, Noticed, Referred, Remember
+- Reference something SPECIFIC about the prospect: recent news, funding, job change, company growth, product launch, hiring, etc.
+- Keep it under 50 words
+- Make it feel personal and researched
+- Be genuine, not sycophantic`;
+      
+      userPrompt = `Generate a personalized trigger/context opener for this lead:
+
+Lead Information:
+- Name: ${sanitizedContactName}
+- Company: ${sanitizedCompanyName}
+- Job Title: ${sanitizedJobTitle}
+- Industry: ${sanitizedIndustry}
+- Company Size: ${sanitizedCompanySize}
+- Seniority: ${sanitizedSeniority}
+${openerWord && VALID_OPENERS.includes(openerWord) ? `\nPreferred Opening Word: Start with "${openerWord.charAt(0).toUpperCase() + openerWord.slice(1)}"` : ''}
+
+Return ONLY the trigger context sentence, nothing else. No quotes, no explanations. Just the opener text like "Saw you recently raised Series A from Accel" or "Noticed you just expanded your sales team".`;
+    } else if (goal === 'social_proof') {
+      // Generate social proof text
+      systemPrompt = `You are an expert B2B sales copywriter. Generate compelling social proof text for cold emails.
+
+RULES:
+- Mention 1-2 company names as customers (make them sound plausible for the industry)
+- Include a SPECIFIC metric or result (e.g., "cut prep time by 70%", "increased conversion by 40%")
+- Keep it under 40 words
+- Make it relevant to the prospect's industry/role
+- Format: "[Company names] are customers of ours. We helped them [specific result]."`;
+      
+      userPrompt = `Generate social proof text relevant to this lead:
+
+Lead Information:
+- Name: ${sanitizedContactName}
+- Company: ${sanitizedCompanyName}
+- Job Title: ${sanitizedJobTitle}
+- Industry: ${sanitizedIndustry}
+- Company Size: ${sanitizedCompanySize}
+
+Return ONLY the social proof text, nothing else. No quotes, no explanations. Example format: "Spot and Ignite are customers of ours. We helped them cut board prep time by 50%."`;
     } else if (goal === 'custom' && subjectLine) {
       // Generate email body based on custom subject line using cold email framework
       systemPrompt = `${COLD_EMAIL_FRAMEWORK}
