@@ -97,6 +97,8 @@ const Outreach = () => {
   const [socialProof, setSocialProof] = useState("");
   const [subjectLine, setSubjectLine] = useState("");
   const [isGeneratingSubject, setIsGeneratingSubject] = useState(false);
+  const [isGeneratingTrigger, setIsGeneratingTrigger] = useState(false);
+  const [isGeneratingSocialProof, setIsGeneratingSocialProof] = useState(false);
   const [generatedEmail, setGeneratedEmail] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -374,6 +376,85 @@ const Outreach = () => {
       });
     } finally {
       setIsGeneratingSubject(false);
+    }
+  };
+
+  const generateTriggerContext = async () => {
+    if (!selectedLead) {
+      toast({
+        title: "Select a lead first",
+        description: "Please select a lead to generate trigger context",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingTrigger(true);
+    try {
+      const lead = leads.find((l) => l.id === selectedLead);
+      const { data, error } = await supabase.functions.invoke("generate-email", {
+        body: {
+          lead,
+          tone: emailTone,
+          goal: "trigger_context",
+          openerWord: openerWord === "auto" ? "" : openerWord,
+        },
+      });
+
+      if (error) throw error;
+      setTriggerContext(data.email.trim());
+      toast({
+        title: "Trigger context generated",
+        description: "AI created a personalized opener for you",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error generating trigger",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingTrigger(false);
+    }
+  };
+
+  const generateSocialProofText = async () => {
+    if (!selectedLead) {
+      toast({
+        title: "Select a lead first",
+        description: "Please select a lead to generate social proof",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingSocialProof(true);
+    try {
+      const lead = leads.find((l) => l.id === selectedLead);
+      const { data, error } = await supabase.functions.invoke("generate-email", {
+        body: {
+          lead,
+          tone: emailTone,
+          goal: "social_proof",
+        },
+      });
+
+      if (error) throw error;
+      const newProof = data.email.trim();
+      setSocialProof(newProof);
+      saveSocialProof(newProof);
+      toast({
+        title: "Social proof generated",
+        description: "AI created social proof text for you",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error generating social proof",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingSocialProof(false);
     }
   };
 
@@ -918,12 +999,36 @@ For logos, use HTML:
                         </Tooltip>
                       </TooltipProvider>
                     </Label>
-                    <Input
-                      value={triggerContext}
-                      onChange={(e) => setTriggerContext(e.target.value)}
-                      placeholder="e.g., Saw you just raised Series A from Accel..."
-                      maxLength={300}
-                    />
+                    <div className="flex gap-2">
+                      <Input
+                        value={triggerContext}
+                        onChange={(e) => setTriggerContext(e.target.value)}
+                        placeholder="e.g., Saw you just raised Series A from Accel..."
+                        maxLength={300}
+                        className="flex-1"
+                      />
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={generateTriggerContext}
+                              disabled={isGeneratingTrigger || !selectedLead}
+                            >
+                              {isGeneratingTrigger ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Wand2 className="w-4 h-4" />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Generate trigger context with AI</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
                     <p className="text-xs text-muted-foreground mt-1">
                       This becomes your personalized email opener
                     </p>
@@ -934,13 +1039,37 @@ For logos, use HTML:
                       Social Proof
                       <Badge variant="outline" className="ml-2 text-xs">Saved</Badge>
                     </Label>
-                    <Textarea
-                      value={socialProof}
-                      onChange={(e) => handleSocialProofChange(e.target.value)}
-                      placeholder="e.g., Spot and Ignite are customers of ours. We helped them cut board prep time by 50%..."
-                      className="min-h-[80px]"
-                      maxLength={500}
-                    />
+                    <div className="flex gap-2">
+                      <Textarea
+                        value={socialProof}
+                        onChange={(e) => handleSocialProofChange(e.target.value)}
+                        placeholder="e.g., Spot and Ignite are customers of ours. We helped them cut board prep time by 50%..."
+                        className="min-h-[80px] flex-1"
+                        maxLength={500}
+                      />
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="shrink-0 self-start"
+                              onClick={generateSocialProofText}
+                              disabled={isGeneratingSocialProof || !selectedLead}
+                            >
+                              {isGeneratingSocialProof ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Wand2 className="w-4 h-4" />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Generate social proof with AI</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
                     <p className="text-xs text-muted-foreground mt-1">
                       Customer references and results to include in emails
                     </p>
