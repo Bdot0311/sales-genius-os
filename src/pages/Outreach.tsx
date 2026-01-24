@@ -17,6 +17,7 @@ import { SentEmailsTable } from "@/components/outreach/SentEmailsTable";
 import { EmailDraftsTable } from "@/components/outreach/EmailDraftsTable";
 import { Badge } from "@/components/ui/badge";
 import { debounce } from "@/lib/utils";
+import { EmailTemplateManager, UserEmailTemplate } from "@/components/outreach/EmailTemplateManager";
 
 // Opener words for the cold email framework
 const OPENER_WORDS = [
@@ -885,11 +886,30 @@ For logos, use HTML:
               <Card className="p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-semibold">Email Configuration</h2>
-                  {currentDraftId && (
-                    <Button variant="ghost" size="sm" onClick={clearForm}>
-                      New Email
-                    </Button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <EmailTemplateManager
+                      currentTemplate={{
+                        goal: selectedTemplate ? EMAIL_TEMPLATES.find(t => t.value === selectedTemplate)?.goal : undefined,
+                        suggestedSubject: subjectLine,
+                        triggerContext,
+                        socialProof,
+                      }}
+                      onLoadTemplate={(template: UserEmailTemplate) => {
+                        if (template.suggested_subject) setSubjectLine(template.suggested_subject);
+                        if (template.trigger_context) setTriggerContext(template.trigger_context);
+                        if (template.social_proof) setSocialProof(template.social_proof);
+                        if (template.goal) {
+                          const matchingTemplate = EMAIL_TEMPLATES.find(t => t.goal === template.goal);
+                          if (matchingTemplate) setSelectedTemplate(matchingTemplate.value);
+                        }
+                      }}
+                    />
+                    {currentDraftId && (
+                      <Button variant="ghost" size="sm" onClick={clearForm}>
+                        New Email
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-4">
                   <div>

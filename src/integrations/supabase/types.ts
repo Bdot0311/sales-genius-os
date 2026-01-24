@@ -1615,6 +1615,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_email_templates: {
+        Row: {
+          created_at: string
+          goal: string | null
+          id: string
+          name: string
+          social_proof: string | null
+          suggested_subject: string | null
+          trigger_context: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          goal?: string | null
+          id?: string
+          name: string
+          social_proof?: string | null
+          suggested_subject?: string | null
+          trigger_context?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          goal?: string | null
+          id?: string
+          name?: string
+          social_proof?: string | null
+          suggested_subject?: string | null
+          trigger_context?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
