@@ -856,39 +856,39 @@ For logos, use HTML:
                         {subjectLine || "Add a subject line"}
                       </p>
                     </div>
-                    <div className="flex items-center justify-between mb-2">
-                      <Label className="text-sm font-medium">Email Body</Label>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={generateEmail}
-                              disabled={isGenerating || !selectedLead}
-                            >
-                              {isGenerating ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <>
-                                  <Wand2 className="w-4 h-4 mr-1" />
-                                  Regenerate
-                                </>
-                              )}
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Regenerate email with AI</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                    <div>
+                      <Label>Email Body</Label>
+                      <div className="flex gap-2 mt-1.5">
+                        <Textarea
+                          value={generatedEmail}
+                          onChange={(e) => setGeneratedEmail(e.target.value)}
+                          className="min-h-[280px] flex-1"
+                          placeholder="Your personalized sales email will appear here..."
+                        />
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="shrink-0 self-start"
+                                onClick={generateEmail}
+                                disabled={isGenerating || !selectedLead}
+                              >
+                                {isGenerating ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Wand2 className="w-4 h-4" />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Generate email with AI</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
                     </div>
-                    <Textarea
-                      value={generatedEmail}
-                      onChange={(e) => setGeneratedEmail(e.target.value)}
-                      className="min-h-[280px]"
-                      placeholder="Your personalized sales email will appear here..."
-                    />
                     <div className="flex gap-2">
                       <Button 
                         className="flex-1"
