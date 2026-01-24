@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Send, Sparkles, CalendarPlus, Settings2, Image, Upload, Wand2, Mail, FileText, Save } from "lucide-react";
+import { Loader2, Send, Sparkles, CalendarPlus, Settings2, Image, Upload, Wand2, Mail, FileText, Save, Shuffle, Check, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import DOMPurify from "dompurify";
@@ -28,6 +28,51 @@ const OPENER_WORDS = [
   { value: "referred", label: "Referred", example: "Referred by [name]..." },
   { value: "remember", label: "Remember", example: "Remember when we met..." },
 ];
+
+// Email templates for quick selection
+const EMAIL_TEMPLATES = [
+  { 
+    value: "meeting_request", 
+    label: "Meeting Request", 
+    description: "Request a quick call or meeting",
+    goal: "meeting",
+    suggestedSubject: "Quick question about {company}"
+  },
+  { 
+    value: "demo_invite", 
+    label: "Demo Invite", 
+    description: "Invite to see a product demo",
+    goal: "demo",
+    suggestedSubject: "15-min demo for {company}?"
+  },
+  { 
+    value: "follow_up", 
+    label: "Follow-up", 
+    description: "Follow up on previous outreach",
+    goal: "follow-up",
+    suggestedSubject: "Following up, {name}"
+  },
+  { 
+    value: "introduction", 
+    label: "Cold Introduction", 
+    description: "First contact introduction",
+    goal: "introduction",
+    suggestedSubject: "Idea for {company}"
+  },
+  { 
+    value: "proposal", 
+    label: "Proposal", 
+    description: "Send a proposal or offer",
+    goal: "proposal",
+    suggestedSubject: "Proposal for {company}"
+  },
+];
+
+interface EmailVariant {
+  id: string;
+  subject: string;
+  body: string;
+}
 
 interface EmailDraft {
   id: string;
@@ -63,6 +108,10 @@ const Outreach = () => {
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
   const [sentCount, setSentCount] = useState(0);
   const [draftsCount, setDraftsCount] = useState(0);
+  const [selectedTemplate, setSelectedTemplate] = useState("");
+  const [emailVariants, setEmailVariants] = useState<EmailVariant[]>([]);
+  const [isGeneratingVariants, setIsGeneratingVariants] = useState(false);
+  const [showVariantPicker, setShowVariantPicker] = useState(false);
 
   useEffect(() => {
     loadLeads();
@@ -399,6 +448,105 @@ const Outreach = () => {
     }
   };
 
+  const handleTemplateSelect = (templateValue: string) => {
+    setSelectedTemplate(templateValue);
+    const template = EMAIL_TEMPLATES.find(t => t.value === templateValue);
+    if (template && selectedLead) {
+      const lead = leads.find(l => l.id === selectedLead);
+      if (lead) {
+        const populatedSubject = template.suggestedSubject
+          .replace('{company}', lead.company_name || 'your company')
+          .replace('{name}', lead.contact_name?.split(' ')[0] || 'there');
+        setSubjectLine(populatedSubject);
+      }
+    }
+  };
+
+  const generateABVariants = async () => {
+    if (!selectedLead) {
+      toast({
+        title: "Select a lead first",
+        description: "Please select a lead to generate email variants",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingVariants(true);
+    setShowVariantPicker(true);
+    setEmailVariants([]);
+
+    try {
+      const lead = leads.find((l) => l.id === selectedLead);
+      const template = EMAIL_TEMPLATES.find(t => t.value === selectedTemplate);
+      const goal = template?.goal || "introduction";
+
+      // Generate 3 variants in parallel
+      const variantPromises = [1, 2, 3].map(async (num) => {
+        // Generate subject
+        const { data: subjectData } = await supabase.functions.invoke("generate-email", {
+          body: {
+            lead,
+            tone: emailTone,
+            goal: "subject_only",
+            triggerContext,
+            openerWord: openerWord === "auto" ? "" : openerWord,
+            variantNum: num,
+          },
+        });
+        const subject = subjectData?.email?.replace(/^Subject:\s*/i, '').trim() || `Variant ${num}`;
+
+        // Generate body
+        const { data: bodyData } = await supabase.functions.invoke("generate-email", {
+          body: {
+            lead,
+            tone: emailTone,
+            goal,
+            subjectLine: subject,
+            triggerContext,
+            openerWord: openerWord === "auto" ? "" : openerWord,
+            socialProof,
+            variantNum: num,
+          },
+        });
+
+        return {
+          id: `variant-${num}`,
+          subject,
+          body: bodyData?.email || '',
+        };
+      });
+
+      const variants = await Promise.all(variantPromises);
+      setEmailVariants(variants);
+
+      toast({
+        title: "Variants generated",
+        description: "3 email variants ready for comparison",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error generating variants",
+        description: error.message,
+        variant: "destructive",
+      });
+      setShowVariantPicker(false);
+    } finally {
+      setIsGeneratingVariants(false);
+    }
+  };
+
+  const selectVariant = (variant: EmailVariant) => {
+    setSubjectLine(variant.subject);
+    setGeneratedEmail(variant.body);
+    setShowVariantPicker(false);
+    setEmailVariants([]);
+    toast({
+      title: "Variant selected",
+      description: "Email variant applied to composer",
+    });
+  };
+
   const sendEmail = async () => {
     if (!selectedLead || !generatedEmail) {
       toast({
@@ -679,6 +827,37 @@ For logos, use HTML:
                     </Select>
                   </div>
 
+                  <div>
+                    <Label>
+                      Email Template
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="ml-1 text-muted-foreground cursor-help">ⓘ</span>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p>Choose a template to guide the AI's email structure and purpose</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </Label>
+                    <Select value={selectedTemplate} onValueChange={handleTemplateSelect}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a template (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {EMAIL_TEMPLATES.map((template) => (
+                          <SelectItem key={template.value} value={template.value}>
+                            <div className="flex flex-col">
+                              <span>{template.label}</span>
+                              <span className="text-xs text-muted-foreground">{template.description}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label>Email Tone</Label>
@@ -802,26 +981,49 @@ For logos, use HTML:
                   </div>
 
                   <div className="space-y-3">
-                    <Button
-                      onClick={generateEmail}
-                      disabled={isGenerating || !selectedLead}
-                      className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90"
-                      size="lg"
-                    >
-                      {isGenerating ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Generating Personalized Email...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-4 h-4 mr-2" />
-                          Generate Sales Email with AI
-                        </>
-                      )}
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={generateEmail}
+                        disabled={isGenerating || !selectedLead}
+                        className="flex-1 bg-gradient-to-r from-primary to-accent hover:opacity-90"
+                        size="lg"
+                      >
+                        {isGenerating ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Generating...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-4 h-4 mr-2" />
+                            Generate Email
+                          </>
+                        )}
+                      </Button>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="lg"
+                              onClick={generateABVariants}
+                              disabled={isGeneratingVariants || !selectedLead}
+                            >
+                              {isGeneratingVariants ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Shuffle className="w-4 h-4" />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Generate 3 A/B variants to compare</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
                     <p className="text-xs text-muted-foreground text-center">
-                      AI will auto-generate subject line if empty • Uses proven 4-sentence framework
+                      Uses proven 4-sentence framework • Click shuffle for A/B testing
                     </p>
                     <div className="flex gap-2">
                       <Button
@@ -839,6 +1041,55 @@ For logos, use HTML:
                       </Button>
                     </div>
                   </div>
+
+                  {/* A/B Variant Picker */}
+                  {showVariantPicker && (
+                    <div className="mt-4 p-4 border rounded-lg bg-muted/20">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-semibold text-sm">A/B Email Variants</h3>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => {
+                            setShowVariantPicker(false);
+                            setEmailVariants([]);
+                          }}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      {isGeneratingVariants ? (
+                        <div className="flex items-center justify-center py-8">
+                          <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                          <span className="text-sm text-muted-foreground">Generating 3 variants...</span>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {emailVariants.map((variant, index) => (
+                            <div
+                              key={variant.id}
+                              className="p-3 border rounded-lg bg-background hover:border-primary cursor-pointer transition-colors"
+                              onClick={() => selectVariant(variant)}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <Badge variant="outline" className="mb-2">Variant {index + 1}</Badge>
+                                  <p className="text-sm font-medium truncate">{variant.subject}</p>
+                                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                    {variant.body.slice(0, 120)}...
+                                  </p>
+                                </div>
+                                <Button variant="ghost" size="icon" className="shrink-0">
+                                  <Check className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </Card>
 

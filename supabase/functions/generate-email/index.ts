@@ -129,6 +129,7 @@ serve(async (req) => {
     const triggerContext = typeof requestData.triggerContext === 'string' ? requestData.triggerContext.trim() : '';
     const openerWord = typeof requestData.openerWord === 'string' ? requestData.openerWord.trim().toLowerCase() : '';
     const socialProof = typeof requestData.socialProof === 'string' ? requestData.socialProof.trim() : '';
+    const variantNum = typeof requestData.variantNum === 'number' ? requestData.variantNum : 0;
 
     // Validate inputs
     const validationErrors = validateEmailInputs({ lead, tone, goal });
@@ -264,6 +265,9 @@ Write ONLY the email body following the 4-sentence cold email framework:
 Start with the greeting and end with a simple sign-off like "Thanks," or "Best,". Do NOT include a subject line.`;
     }
 
+    // Use higher temperature for variants to get more diverse outputs
+    const temperature = variantNum > 0 ? 0.9 : 0.7;
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -274,9 +278,9 @@ Start with the greeting and end with a simple sign-off like "Thanks," or "Best,"
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
+          { role: "user", content: userPrompt + (variantNum > 0 ? `\n\n[Generate a UNIQUE variant #${variantNum} - be creative with different angles and approaches while maintaining the framework]` : '') },
         ],
-        temperature: 0.7,
+        temperature,
       }),
     });
 
