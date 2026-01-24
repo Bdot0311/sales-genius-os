@@ -98,11 +98,13 @@ export const LeadAssignmentDialog = ({ open, onOpenChange, selectedLeads }: Lead
                     <Loader2 className="h-4 w-4 animate-spin" />
                   </div>
                 ) : teamMembers && teamMembers.length > 0 ? (
-                  teamMembers.map((member) => (
-                    <SelectItem key={member.id} value={member.member_user_id || ""}>
-                      {member.member_email}
-                    </SelectItem>
-                  ))
+                  teamMembers
+                    .filter((member) => member.member_user_id)
+                    .map((member) => (
+                      <SelectItem key={member.id} value={member.member_user_id!}>
+                        {member.member_email}
+                      </SelectItem>
+                    ))
                 ) : (
                   <div className="p-2 text-sm text-muted-foreground">
                     No team members available. Add team members in Settings.

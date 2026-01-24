@@ -704,7 +704,7 @@ For logos, use HTML:
                           <SelectValue placeholder="Auto-select" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Auto-select</SelectItem>
+                          <SelectItem value="auto">Auto-select</SelectItem>
                           {OPENER_WORDS.map((word) => (
                             <SelectItem key={word.value} value={word.value}>
                               {word.label} - {word.example}
