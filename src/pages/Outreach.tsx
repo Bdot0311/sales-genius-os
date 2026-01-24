@@ -1095,51 +1095,51 @@ For logos, use HTML:
 
               <Card className="p-6">
                 <h2 className="text-xl font-semibold mb-4">Generated Email</h2>
-                {generatedEmail ? (
-                  <div className="space-y-4">
-                    <div className="bg-muted/30 p-3 rounded-lg border mb-2">
-                      <p className="text-sm">
-                        <span className="text-muted-foreground">To:</span>{" "}
-                        {leads.find(l => l.id === selectedLead)?.contact_email || "Select a lead"}
-                      </p>
-                      <p className="text-sm">
-                        <span className="text-muted-foreground">Subject:</span>{" "}
-                        {subjectLine || "Add a subject line"}
-                      </p>
+                <div className="space-y-4">
+                  <div className="bg-muted/30 p-3 rounded-lg border mb-2">
+                    <p className="text-sm">
+                      <span className="text-muted-foreground">To:</span>{" "}
+                      {leads.find(l => l.id === selectedLead)?.contact_email || "Select a lead"}
+                    </p>
+                    <p className="text-sm">
+                      <span className="text-muted-foreground">Subject:</span>{" "}
+                      {subjectLine || "Add a subject line"}
+                    </p>
+                  </div>
+                  <div>
+                    <Label>Email Body</Label>
+                    <div className="flex gap-2 mt-1.5">
+                      <Textarea
+                        value={generatedEmail}
+                        onChange={(e) => setGeneratedEmail(e.target.value)}
+                        className="min-h-[280px] flex-1"
+                        placeholder="Your personalized sales email will appear here. Click the wand icon to generate with AI..."
+                      />
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="shrink-0 self-start"
+                              onClick={generateEmail}
+                              disabled={isGenerating || !selectedLead}
+                            >
+                              {isGenerating ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Wand2 className="w-4 h-4" />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Generate email with AI</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
-                    <div>
-                      <Label>Email Body</Label>
-                      <div className="flex gap-2 mt-1.5">
-                        <Textarea
-                          value={generatedEmail}
-                          onChange={(e) => setGeneratedEmail(e.target.value)}
-                          className="min-h-[280px] flex-1"
-                          placeholder="Your personalized sales email will appear here..."
-                        />
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                className="shrink-0 self-start"
-                                onClick={generateEmail}
-                                disabled={isGenerating || !selectedLead}
-                              >
-                                {isGenerating ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <Wand2 className="w-4 h-4" />
-                                )}
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Generate email with AI</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                    </div>
+                  </div>
+                  {generatedEmail && (
                     <div className="flex gap-2">
                       <Button 
                         className="flex-1"
@@ -1168,16 +1168,8 @@ For logos, use HTML:
                         </Button>
                       )}
                     </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground">
-                    <Sparkles className="w-12 h-12 mb-4 opacity-20" />
-                    <p>Generate an email to see it here</p>
-                    <p className="text-sm mt-2 text-center max-w-xs">
-                      Using the 4-sentence cold email framework with proven opener words
-                    </p>
-                  </div>
-                )}
+                  )}
+                </div>
               </Card>
             </div>
           </TabsContent>
