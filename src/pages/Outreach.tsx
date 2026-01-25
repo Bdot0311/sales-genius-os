@@ -1027,27 +1027,19 @@ For logos, use HTML:
                         maxLength={300}
                         className="flex-1"
                       />
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={generateTriggerContext}
-                              disabled={isGeneratingTrigger || !selectedLead}
-                            >
-                              {isGeneratingTrigger ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <Wand2 className="w-4 h-4" />
-                              )}
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Generate trigger context with AI</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={generateTriggerContext}
+                        disabled={isGeneratingTrigger || !selectedLead}
+                        title="Generate trigger context with AI"
+                      >
+                        {isGeneratingTrigger ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Wand2 className="w-4 h-4" />
+                        )}
+                      </Button>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
                       This becomes your personalized email opener
@@ -1067,28 +1059,20 @@ For logos, use HTML:
                         className="min-h-[80px] flex-1"
                         maxLength={500}
                       />
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="shrink-0 self-start"
-                              onClick={generateSocialProofText}
-                              disabled={isGeneratingSocialProof || !selectedLead}
-                            >
-                              {isGeneratingSocialProof ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <Wand2 className="w-4 h-4" />
-                              )}
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Generate social proof with AI</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="shrink-0 self-start"
+                        onClick={generateSocialProofText}
+                        disabled={isGeneratingSocialProof || !selectedLead}
+                        title="Generate social proof with AI"
+                      >
+                        {isGeneratingSocialProof ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Wand2 className="w-4 h-4" />
+                        )}
+                      </Button>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
                       Customer references and results to include in emails
@@ -1105,27 +1089,19 @@ For logos, use HTML:
                         className="flex-1"
                         maxLength={200}
                       />
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={generateSubjectLine}
-                              disabled={isGeneratingSubject || !selectedLead}
-                            >
-                              {isGeneratingSubject ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <Wand2 className="w-4 h-4" />
-                              )}
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Generate subject line with AI</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={generateSubjectLine}
+                        disabled={isGeneratingSubject || !selectedLead}
+                        title="Generate subject line with AI"
+                      >
+                        {isGeneratingSubject ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Wand2 className="w-4 h-4" />
+                        )}
+                      </Button>
                     </div>
                   </div>
 
