@@ -126,6 +126,33 @@ const Outreach = () => {
     loadCounts();
   }, []);
 
+  // Keyboard shortcuts: Ctrl+G to generate, Ctrl+Enter to send
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only trigger when on compose tab and not in a text input that needs these keys
+      if (activeTab !== "compose") return;
+
+      // Ctrl+G to generate email
+      if (e.ctrlKey && e.key === 'g') {
+        e.preventDefault();
+        if (!isGenerating && selectedLead) {
+          generateEmail();
+        }
+      }
+
+      // Ctrl+Enter to send email
+      if (e.ctrlKey && e.key === 'Enter') {
+        e.preventDefault();
+        if (!isSending && selectedLead && generatedEmail) {
+          sendEmail();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeTab, isGenerating, isSending, selectedLead, generatedEmail]);
+
   const loadCounts = async () => {
     const [sentResult, draftsResult] = await Promise.all([
       supabase.from('sent_emails').select('id', { count: 'exact', head: true }),
