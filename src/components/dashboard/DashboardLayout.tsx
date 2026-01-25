@@ -48,7 +48,6 @@ const navigation = [
   { name: "Automations", icon: Workflow, href: "/dashboard/automations" },
   { name: "Integrations", icon: Puzzle, href: "/integrations" },
   { name: "Settings", icon: Settings, href: "/settings" },
-  { name: "Help Center", icon: HelpCircle, href: "/help" },
 ];
 
 export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
@@ -164,6 +163,19 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               </button>
             )}
           </nav>
+
+          {/* Help prompt */}
+          <div className="flex-shrink-0 px-4 py-3 border-t border-border bg-muted/30">
+            <a 
+              href="/help" 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <HelpCircle className="w-4 h-4" />
+              <span>Need help? Visit our Help Center</span>
+            </a>
+          </div>
 
           {/* User section - fixed at bottom */}
           <div className="flex-shrink-0 p-4 border-t border-border bg-card">
