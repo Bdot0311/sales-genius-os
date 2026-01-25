@@ -1395,43 +1395,58 @@ export type Database = {
         Row: {
           body_html: string | null
           body_text: string | null
+          clicked_at: string | null
           created_at: string | null
           gmail_message_id: string | null
           gmail_thread_id: string | null
           id: string
           lead_id: string | null
+          opened_at: string | null
+          replied_at: string | null
           sent_at: string | null
           status: string | null
           subject: string
+          template_id: string | null
           to_email: string
+          tracking_pixel_id: string | null
           user_id: string
         }
         Insert: {
           body_html?: string | null
           body_text?: string | null
+          clicked_at?: string | null
           created_at?: string | null
           gmail_message_id?: string | null
           gmail_thread_id?: string | null
           id?: string
           lead_id?: string | null
+          opened_at?: string | null
+          replied_at?: string | null
           sent_at?: string | null
           status?: string | null
           subject: string
+          template_id?: string | null
           to_email: string
+          tracking_pixel_id?: string | null
           user_id: string
         }
         Update: {
           body_html?: string | null
           body_text?: string | null
+          clicked_at?: string | null
           created_at?: string | null
           gmail_message_id?: string | null
           gmail_thread_id?: string | null
           id?: string
           lead_id?: string | null
+          opened_at?: string | null
+          replied_at?: string | null
           sent_at?: string | null
           status?: string | null
           subject?: string
+          template_id?: string | null
           to_email?: string
+          tracking_pixel_id?: string | null
           user_id?: string
         }
         Relationships: [
@@ -1440,6 +1455,20 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sent_emails_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "template_performance"
+            referencedColumns: ["template_id"]
+          },
+          {
+            foreignKeyName: "sent_emails_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "user_email_templates"
             referencedColumns: ["id"]
           },
         ]
@@ -1927,7 +1956,21 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      template_performance: {
+        Row: {
+          click_rate: number | null
+          open_rate: number | null
+          reply_rate: number | null
+          template_id: string | null
+          template_name: string | null
+          total_clicked: number | null
+          total_opened: number | null
+          total_replied: number | null
+          total_sent: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       admin_delete_user: { Args: { _user_id: string }; Returns: undefined }

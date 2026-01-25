@@ -16,9 +16,9 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { to, subject, body, integrationId, leadId } = await req.json();
+    const { to, subject, body, integrationId, leadId, templateId } = await req.json();
     
-    console.log('Send email request received:', { to, subject, integrationId, leadId });
+    console.log('Send email request received:', { to, subject, integrationId, leadId, templateId });
 
     // Get authorization header
     const authHeader = req.headers.get('Authorization');
@@ -186,6 +186,7 @@ ${body.split('\n').map((line: string) => line.trim() ? `<p>${line}</p>` : '').jo
         await supabase.from('sent_emails').insert({
           user_id: user.id,
           lead_id: leadId || null,
+          template_id: templateId || null,
           to_email: to,
           subject: subject,
           body_html: htmlBody,
@@ -211,6 +212,7 @@ ${body.split('\n').map((line: string) => line.trim() ? `<p>${line}</p>` : '').jo
       const { error: insertError } = await supabase.from('sent_emails').insert({
         user_id: user.id,
         lead_id: leadId || null,
+        template_id: templateId || null,
         to_email: to,
         subject: subject,
         body_html: htmlBody,
