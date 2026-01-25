@@ -110,11 +110,12 @@ export function useExternalLeads() {
       const errorMessage = error.message || 'Failed to fetch leads';
       
       // Check for credit-related errors
-      if (errorMessage.includes('credits') || errorMessage.includes('402') || errorMessage.includes('Payment')) {
+      if (errorMessage.includes('credits') || errorMessage.includes('402') || errorMessage.includes('Payment') || errorMessage.includes('exhausted')) {
         toast({
-          title: 'Search Credits Exhausted',
-          description: 'Your PDL search credits have been used up. Please add more credits to your People Data Labs account to continue.',
+          title: 'Data Provider Credits Exhausted',
+          description: 'Your external data provider credits have been used up. Contact support or add more credits to continue searching.',
           variant: 'destructive',
+          duration: 10000,
         });
       } else if (errorMessage.includes('search parameter') || errorMessage.includes('filter')) {
         toast({
