@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Send, Sparkles, CalendarPlus, Settings2, Image, Upload, Wand2, Mail, FileText, Save, Shuffle, Check, X } from "lucide-react";
+import { Loader2, Send, Sparkles, CalendarPlus, Settings2, Image, Upload, Wand2, Mail, FileText, Save, Shuffle, Check, X, Keyboard } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import DOMPurify from "dompurify";
@@ -811,8 +811,19 @@ const Outreach = () => {
               Generate AI-powered cold emails using proven frameworks
             </p>
           </div>
-          <Dialog open={signatureDialogOpen} onOpenChange={setSignatureDialogOpen}>
-            <DialogTrigger asChild>
+          <div className="flex items-center gap-3">
+            {/* Keyboard Shortcuts Card */}
+            <div className="hidden md:flex items-center gap-2 px-3 py-2 bg-muted/50 border rounded-lg text-xs text-muted-foreground">
+              <Keyboard className="w-4 h-4" />
+              <div className="flex items-center gap-3">
+                <span><kbd className="px-1.5 py-0.5 bg-background border rounded text-[10px] font-mono">Ctrl+G</kbd> Generate</span>
+                <span><kbd className="px-1.5 py-0.5 bg-background border rounded text-[10px] font-mono">Ctrl+S</kbd> Save</span>
+                <span><kbd className="px-1.5 py-0.5 bg-background border rounded text-[10px] font-mono">Ctrl+Enter</kbd> Send</span>
+                <span><kbd className="px-1.5 py-0.5 bg-background border rounded text-[10px] font-mono">Ctrl+D</kbd> Drafts</span>
+              </div>
+            </div>
+            <Dialog open={signatureDialogOpen} onOpenChange={setSignatureDialogOpen}>
+              <DialogTrigger asChild>
               <Button variant="outline" size="sm">
                 <Settings2 className="w-4 h-4 mr-2" />
                 {signature ? "Edit Signature" : "Add Signature"}
@@ -901,7 +912,8 @@ For logos, use HTML:
                 </div>
               </div>
             </DialogContent>
-          </Dialog>
+            </Dialog>
+          </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -920,7 +932,6 @@ For logos, use HTML:
             <TabsTrigger value="drafts" className="flex items-center gap-2">
               <FileText className="w-4 h-4" />
               Drafts
-              <Badge variant="outline" className="ml-1 text-xs">Ctrl+D</Badge>
               {draftsCount > 0 && (
                 <Badge variant="secondary" className="ml-1 text-xs">{draftsCount}</Badge>
               )}
@@ -1187,7 +1198,6 @@ For logos, use HTML:
                           <>
                             <Sparkles className="w-4 h-4 mr-2" />
                             Generate Email
-                            <Badge variant="secondary" className="ml-2 text-xs">Ctrl+G</Badge>
                           </>
                         )}
                       </Button>
@@ -1229,7 +1239,6 @@ For logos, use HTML:
                           <>
                             <Save className="w-4 h-4 mr-2" />
                             Save Draft
-                            <Badge variant="secondary" className="ml-2 text-xs">Ctrl+S</Badge>
                           </>
                         )}
                       </Button>
@@ -1340,7 +1349,6 @@ For logos, use HTML:
                           <>
                             <Send className="w-4 h-4 mr-2" />
                             Send Email
-                            <Badge variant="secondary" className="ml-2 text-xs">Ctrl+Enter</Badge>
                           </>
                         )}
                       </Button>
