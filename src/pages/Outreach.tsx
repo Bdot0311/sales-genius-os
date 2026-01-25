@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { debounce } from "@/lib/utils";
 import { EmailTemplateManager, UserEmailTemplate } from "@/components/outreach/EmailTemplateManager";
 import { EmailPerformanceStats } from "@/components/outreach/EmailPerformanceStats";
+import { FollowUpSuggestion, FollowUpData } from "@/components/outreach/FollowUpSuggestion";
 import { BarChart3 } from "lucide-react";
 
 // Opener words for the cold email framework
@@ -119,6 +120,14 @@ const Outreach = () => {
   const [showVariantPicker, setShowVariantPicker] = useState(false);
   const [currentTemplateId, setCurrentTemplateId] = useState<string | null>(null);
   const [showShortcuts, setShowShortcuts] = useState(true);
+  const [showFollowUpSuggestion, setShowFollowUpSuggestion] = useState(false);
+  const [lastSentEmailInfo, setLastSentEmailInfo] = useState<{
+    leadId: string;
+    leadName: string;
+    leadEmail: string;
+    companyName: string;
+    subject: string;
+  } | null>(null);
 
   useEffect(() => {
     loadLeads();
@@ -726,6 +735,15 @@ const Outreach = () => {
 
       if (error) throw error;
       
+      // Store info for follow-up suggestion before clearing form
+      const sentLeadInfo = {
+        leadId: selectedLead,
+        leadName: lead.contact_name,
+        leadEmail: lead.contact_email,
+        companyName: lead.company_name,
+        subject: subjectLine,
+      };
+      
       toast({
         title: "Email sent!",
         description: `Email sent to ${lead.contact_name} at ${lead.contact_email}`,
@@ -743,6 +761,10 @@ const Outreach = () => {
       setOpenerWord("");
       setCurrentTemplateId(null);
       loadCounts();
+      
+      // Show AI follow-up suggestion for introductory emails
+      setLastSentEmailInfo(sentLeadInfo);
+      setShowFollowUpSuggestion(true);
     } catch (error: any) {
       toast({
         title: "Error sending email",
@@ -800,6 +822,31 @@ const Outreach = () => {
     setGeneratedEmail("");
     setTriggerContext("");
     setOpenerWord("");
+  };
+
+  const handleSetupFollowUp = (suggestion: FollowUpData) => {
+    if (!lastSentEmailInfo) return;
+    
+    // Set up the compose form with follow-up content
+    setSelectedLead(lastSentEmailInfo.leadId);
+    setSubjectLine(suggestion.suggestedSubject);
+    setGeneratedEmail(suggestion.suggestedBody);
+    setTriggerContext(suggestion.triggerContext);
+    setSelectedTemplate("follow_up");
+    
+    // Dismiss the suggestion
+    setShowFollowUpSuggestion(false);
+    setLastSentEmailInfo(null);
+    
+    toast({
+      title: "Follow-up ready!",
+      description: "Email composer has been set up with your follow-up. Edit and send when ready.",
+    });
+  };
+
+  const handleDismissFollowUp = () => {
+    setShowFollowUpSuggestion(false);
+    setLastSentEmailInfo(null);
   };
 
   return (
@@ -958,6 +1005,19 @@ For logos, use HTML:
               <X className="w-4 h-4" />
             </Button>
           </div>
+        )}
+
+        {/* AI Follow-up Suggestion */}
+        {showFollowUpSuggestion && lastSentEmailInfo && (
+          <FollowUpSuggestion
+            leadId={lastSentEmailInfo.leadId}
+            leadName={lastSentEmailInfo.leadName}
+            leadEmail={lastSentEmailInfo.leadEmail}
+            companyName={lastSentEmailInfo.companyName}
+            originalSubject={lastSentEmailInfo.subject}
+            onSetupFollowUp={handleSetupFollowUp}
+            onDismiss={handleDismissFollowUp}
+          />
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
