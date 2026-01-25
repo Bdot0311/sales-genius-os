@@ -18,6 +18,8 @@ import { EmailDraftsTable } from "@/components/outreach/EmailDraftsTable";
 import { Badge } from "@/components/ui/badge";
 import { debounce } from "@/lib/utils";
 import { EmailTemplateManager, UserEmailTemplate } from "@/components/outreach/EmailTemplateManager";
+import { EmailPerformanceStats } from "@/components/outreach/EmailPerformanceStats";
+import { BarChart3 } from "lucide-react";
 
 // Opener words for the cold email framework
 const OPENER_WORDS = [
@@ -115,6 +117,7 @@ const Outreach = () => {
   const [emailVariants, setEmailVariants] = useState<EmailVariant[]>([]);
   const [isGeneratingVariants, setIsGeneratingVariants] = useState(false);
   const [showVariantPicker, setShowVariantPicker] = useState(false);
+  const [currentTemplateId, setCurrentTemplateId] = useState<string | null>(null);
 
   useEffect(() => {
     loadLeads();
@@ -676,6 +679,7 @@ const Outreach = () => {
           body: fullEmailBody,
           integrationId,
           leadId: selectedLead,
+          templateId: currentTemplateId,
         }
       });
 
@@ -696,6 +700,7 @@ const Outreach = () => {
       setSubjectLine("");
       setTriggerContext("");
       setOpenerWord("");
+      setCurrentTemplateId(null);
       loadCounts();
     } catch (error: any) {
       toast({
@@ -879,6 +884,10 @@ For logos, use HTML:
                 <Badge variant="secondary" className="ml-1 text-xs">{draftsCount}</Badge>
               )}
             </TabsTrigger>
+            <TabsTrigger value="performance" className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              Performance
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="compose" className="mt-6">
@@ -902,6 +911,7 @@ For logos, use HTML:
                           const matchingTemplate = EMAIL_TEMPLATES.find(t => t.goal === template.goal);
                           if (matchingTemplate) setSelectedTemplate(matchingTemplate.value);
                         }
+                        setCurrentTemplateId(template.id);
                       }}
                     />
                     {currentDraftId && (
@@ -1311,6 +1321,10 @@ For logos, use HTML:
               <h2 className="text-xl font-semibold mb-4">Email Drafts</h2>
               <EmailDraftsTable onLoadDraft={loadDraft} />
             </Card>
+          </TabsContent>
+
+          <TabsContent value="performance" className="mt-6">
+            <EmailPerformanceStats />
           </TabsContent>
         </Tabs>
       </div>
