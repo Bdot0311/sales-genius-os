@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -118,6 +118,7 @@ const Outreach = () => {
   const [isGeneratingVariants, setIsGeneratingVariants] = useState(false);
   const [showVariantPicker, setShowVariantPicker] = useState(false);
   const [currentTemplateId, setCurrentTemplateId] = useState<string | null>(null);
+  const [showShortcuts, setShowShortcuts] = useState(true);
 
   useEffect(() => {
     loadLeads();
@@ -811,24 +812,31 @@ const Outreach = () => {
               Generate AI-powered cold emails using proven frameworks
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            {/* Keyboard Shortcuts Card */}
-            <div className="hidden md:flex items-center gap-2 px-3 py-2 bg-muted/50 border rounded-lg text-xs text-muted-foreground">
-              <Keyboard className="w-4 h-4" />
-              <div className="flex items-center gap-3">
-                <span><kbd className="px-1.5 py-0.5 bg-background border rounded text-[10px] font-mono">Ctrl+G</kbd> Generate</span>
-                <span><kbd className="px-1.5 py-0.5 bg-background border rounded text-[10px] font-mono">Ctrl+S</kbd> Save</span>
-                <span><kbd className="px-1.5 py-0.5 bg-background border rounded text-[10px] font-mono">Ctrl+Enter</kbd> Send</span>
-                <span><kbd className="px-1.5 py-0.5 bg-background border rounded text-[10px] font-mono">Ctrl+D</kbd> Drafts</span>
-              </div>
-            </div>
+          <div className="flex items-center gap-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={showShortcuts ? "secondary" : "outline"}
+                    size="sm"
+                    onClick={() => setShowShortcuts(!showShortcuts)}
+                    className="hidden md:flex"
+                  >
+                    <Keyboard className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{showShortcuts ? "Hide" : "Show"} keyboard shortcuts</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <Dialog open={signatureDialogOpen} onOpenChange={setSignatureDialogOpen}>
               <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Settings2 className="w-4 h-4 mr-2" />
-                {signature ? "Edit Signature" : "Add Signature"}
-              </Button>
-            </DialogTrigger>
+                <Button variant="outline" size="sm">
+                  <Settings2 className="w-4 h-4 mr-2" />
+                  {signature ? "Edit Signature" : "Add Signature"}
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Email Signature</DialogTitle>
@@ -915,6 +923,42 @@ For logos, use HTML:
             </Dialog>
           </div>
         </div>
+
+        {/* Collapsible Keyboard Shortcuts Card */}
+        {showShortcuts && (
+          <div className="hidden md:flex items-center justify-between px-4 py-3 bg-muted/50 border rounded-lg animate-fade-in">
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <Keyboard className="w-4 h-4 text-primary" />
+              <span className="font-medium text-foreground">Shortcuts:</span>
+              <div className="flex items-center gap-4">
+                <span className="flex items-center gap-1.5">
+                  <kbd className="px-2 py-1 bg-background border rounded text-xs font-mono shadow-sm">Ctrl+G</kbd>
+                  <span>Generate</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <kbd className="px-2 py-1 bg-background border rounded text-xs font-mono shadow-sm">Ctrl+S</kbd>
+                  <span>Save</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <kbd className="px-2 py-1 bg-background border rounded text-xs font-mono shadow-sm">Ctrl+Enter</kbd>
+                  <span>Send</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <kbd className="px-2 py-1 bg-background border rounded text-xs font-mono shadow-sm">Ctrl+D</kbd>
+                  <span>Drafts</span>
+                </span>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowShortcuts(false)}
+              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
