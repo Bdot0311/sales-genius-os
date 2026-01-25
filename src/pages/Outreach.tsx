@@ -130,10 +130,9 @@ const Outreach = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Only trigger when on compose tab and not in a text input that needs these keys
-      if (activeTab !== "compose") return;
 
       // Ctrl+G to generate email
-      if (e.ctrlKey && e.key === 'g') {
+      if (activeTab === "compose" && e.ctrlKey && e.key === 'g') {
         e.preventDefault();
         if (!isGenerating && selectedLead) {
           generateEmail();
@@ -141,17 +140,31 @@ const Outreach = () => {
       }
 
       // Ctrl+Enter to send email
-      if (e.ctrlKey && e.key === 'Enter') {
+      if (activeTab === "compose" && e.ctrlKey && e.key === 'Enter') {
         e.preventDefault();
         if (!isSending && selectedLead && generatedEmail) {
           sendEmail();
         }
       }
+
+      // Ctrl+S to save draft
+      if (activeTab === "compose" && e.ctrlKey && e.key === 's') {
+        e.preventDefault();
+        if (!isSavingDraft && (selectedLead || subjectLine || generatedEmail)) {
+          saveDraft();
+        }
+      }
+
+      // Ctrl+D to switch to drafts tab
+      if (e.ctrlKey && e.key === 'd') {
+        e.preventDefault();
+        setActiveTab("drafts");
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeTab, isGenerating, isSending, selectedLead, generatedEmail]);
+  }, [activeTab, isGenerating, isSending, selectedLead, generatedEmail, isSavingDraft, subjectLine]);
 
   const loadCounts = async () => {
     const [sentResult, draftsResult] = await Promise.all([
@@ -907,6 +920,7 @@ For logos, use HTML:
             <TabsTrigger value="drafts" className="flex items-center gap-2">
               <FileText className="w-4 h-4" />
               Drafts
+              <Badge variant="outline" className="ml-1 text-xs">Ctrl+D</Badge>
               {draftsCount > 0 && (
                 <Badge variant="secondary" className="ml-1 text-xs">{draftsCount}</Badge>
               )}
@@ -1069,7 +1083,7 @@ For logos, use HTML:
                         size="icon"
                         onClick={generateTriggerContext}
                         disabled={isGeneratingTrigger || !selectedLead}
-                        title="Generate trigger context with AI"
+                        className="shrink-0"
                       >
                         {isGeneratingTrigger ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -1078,6 +1092,11 @@ For logos, use HTML:
                         )}
                       </Button>
                     </div>
+                    {!selectedLead && (
+                      <p className="text-xs text-amber-600 mt-1">
+                        ⚠️ Select a lead above to enable AI generation
+                      </p>
+                    )}
                     <p className="text-xs text-muted-foreground mt-1">
                       This becomes your personalized email opener
                     </p>
@@ -1102,7 +1121,6 @@ For logos, use HTML:
                         className="shrink-0 self-start"
                         onClick={generateSocialProofText}
                         disabled={isGeneratingSocialProof || !selectedLead}
-                        title="Generate social proof with AI"
                       >
                         {isGeneratingSocialProof ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -1111,6 +1129,11 @@ For logos, use HTML:
                         )}
                       </Button>
                     </div>
+                    {!selectedLead && (
+                      <p className="text-xs text-amber-600 mt-1">
+                        ⚠️ Select a lead above to enable AI generation
+                      </p>
+                    )}
                     <p className="text-xs text-muted-foreground mt-1">
                       Customer references and results to include in emails
                     </p>
@@ -1131,7 +1154,7 @@ For logos, use HTML:
                         size="icon"
                         onClick={generateSubjectLine}
                         disabled={isGeneratingSubject || !selectedLead}
-                        title="Generate subject line with AI"
+                        className="shrink-0"
                       >
                         {isGeneratingSubject ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -1140,6 +1163,11 @@ For logos, use HTML:
                         )}
                       </Button>
                     </div>
+                    {!selectedLead && (
+                      <p className="text-xs text-amber-600 mt-1">
+                        ⚠️ Select a lead above to enable AI generation
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-3">
@@ -1159,6 +1187,7 @@ For logos, use HTML:
                           <>
                             <Sparkles className="w-4 h-4 mr-2" />
                             Generate Email
+                            <Badge variant="secondary" className="ml-2 text-xs">Ctrl+G</Badge>
                           </>
                         )}
                       </Button>
@@ -1197,9 +1226,12 @@ For logos, use HTML:
                         {isSavingDraft ? (
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                         ) : (
-                          <Save className="w-4 h-4 mr-2" />
+                          <>
+                            <Save className="w-4 h-4 mr-2" />
+                            Save Draft
+                            <Badge variant="secondary" className="ml-2 text-xs">Ctrl+S</Badge>
+                          </>
                         )}
-                        Save Draft
                       </Button>
                     </div>
                   </div>
@@ -1277,28 +1309,19 @@ For logos, use HTML:
                         className="min-h-[280px] flex-1"
                         placeholder="Your personalized sales email will appear here. Click the wand icon to generate with AI..."
                       />
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="shrink-0 self-start"
-                              onClick={generateEmail}
-                              disabled={isGenerating || !selectedLead}
-                            >
-                              {isGenerating ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <Wand2 className="w-4 h-4" />
-                              )}
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Generate email with AI</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="shrink-0 self-start"
+                        onClick={generateEmail}
+                        disabled={isGenerating || !selectedLead}
+                      >
+                        {isGenerating ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Wand2 className="w-4 h-4" />
+                        )}
+                      </Button>
                     </div>
                   </div>
                   {generatedEmail && (
@@ -1317,6 +1340,7 @@ For logos, use HTML:
                           <>
                             <Send className="w-4 h-4 mr-2" />
                             Send Email
+                            <Badge variant="secondary" className="ml-2 text-xs">Ctrl+Enter</Badge>
                           </>
                         )}
                       </Button>
