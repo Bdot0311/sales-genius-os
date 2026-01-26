@@ -1,13 +1,17 @@
 <!doctype html>
 <html lang="en" prefix="og: https://ogp.me/ns#">
   <head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-92ZVN964CE"></script>
+    <!-- Google tag (gtag.js) - deferred for better performance -->
+    <script defer src="https://www.googletagmanager.com/gtag/js?id=G-92ZVN964CE"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      gtag('config', 'G-92ZVN964CE');
+      gtag('config', 'G-92ZVN964CE', { 'send_page_view': false });
+      // Send page view after load for better performance
+      window.addEventListener('load', function() {
+        gtag('event', 'page_view');
+      });
     </script>
     
     <meta charset="UTF-8" />
