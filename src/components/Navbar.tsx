@@ -16,12 +16,16 @@ export const Navbar = () => {
       if (location.pathname !== '/') {
         navigate('/');
         setTimeout(() => {
-          const element = document.querySelector(path);
-          element?.scrollIntoView({ behavior: 'smooth' });
+          requestAnimationFrame(() => {
+            const element = document.querySelector(path);
+            element?.scrollIntoView({ behavior: 'smooth' });
+          });
         }, 100);
       } else {
-        const element = document.querySelector(path);
-        element?.scrollIntoView({ behavior: 'smooth' });
+        requestAnimationFrame(() => {
+          const element = document.querySelector(path);
+          element?.scrollIntoView({ behavior: 'smooth' });
+        });
       }
     } else {
       navigate(path);

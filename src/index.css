@@ -320,6 +320,18 @@ All colors MUST be HSL.
   will-change: transform;
 }
 
+/* Optimize ScrollArea viewport to reduce forced reflows */
+[data-radix-scroll-area-viewport] {
+  contain: layout style;
+  will-change: scroll-position;
+}
+
+/* Optimize resizable panels */
+[data-panel],
+[data-panel-group] {
+  contain: layout;
+}
+
 /* Remove will-change after animation completes to free GPU memory */
 .animation-complete {
   will-change: auto;
