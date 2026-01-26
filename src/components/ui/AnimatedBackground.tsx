@@ -56,6 +56,8 @@ export const AnimatedBackground = () => {
             animationDuration: `${orb.duration}s`,
             animationDelay: `${orb.delay}s`,
             transform: "translate(-50%, -50%)",
+            willChange: "transform",
+            contain: "layout paint",
           }}
         />
       ))}
