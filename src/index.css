@@ -279,6 +279,7 @@ All colors MUST be HSL.
   will-change: transform, opacity;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 /* Containment for accordion to prevent layout thrashing */
@@ -298,6 +299,25 @@ All colors MUST be HSL.
 [data-radix-select-content] {
   contain: layout paint;
   will-change: transform, opacity;
+}
+
+/* Optimize dialog/popover/tooltip to prevent forced reflows */
+[data-radix-dialog-content],
+[data-radix-popover-content],
+[data-radix-tooltip-content],
+[data-radix-dropdown-menu-content],
+[data-radix-context-menu-content],
+[data-radix-hover-card-content] {
+  contain: layout paint;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
+/* Optimize sheet/drawer content */
+[data-vaul-drawer],
+[role="dialog"] {
+  contain: layout paint;
+  will-change: transform;
 }
 
 /* Remove will-change after animation completes to free GPU memory */
