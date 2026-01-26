@@ -269,3 +269,38 @@ All colors MUST be HSL.
 .magnetic-btn:active {
   transform: scale(0.98);
 }
+
+/* GPU acceleration for all animated elements to prevent forced reflows */
+[class*="animate-"],
+.transition-all,
+.transition-transform,
+.transition-colors,
+.transition-opacity {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Containment for accordion to prevent layout thrashing */
+[data-radix-accordion-content],
+[data-radix-collapsible-content] {
+  contain: layout paint;
+  will-change: height, opacity;
+}
+
+/* Optimize navigation menu viewport */
+[data-radix-navigation-menu-viewport] {
+  contain: layout paint;
+  will-change: transform, opacity;
+}
+
+/* Optimize select content */
+[data-radix-select-content] {
+  contain: layout paint;
+  will-change: transform, opacity;
+}
+
+/* Remove will-change after animation completes to free GPU memory */
+.animation-complete {
+  will-change: auto;
+}
