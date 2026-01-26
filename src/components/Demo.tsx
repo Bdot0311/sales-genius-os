@@ -154,6 +154,8 @@ const IntroMockup = ({ isActive }: { isActive: boolean }) => {
           alt="SalesOS" 
           width="64"
           height="64"
+          loading="lazy"
+          decoding="async"
           className="h-12 sm:h-16 w-auto mx-auto mb-3 sm:mb-4"
         />
         <h3 className="text-lg sm:text-2xl font-bold text-center bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
