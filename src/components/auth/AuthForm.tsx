@@ -192,6 +192,14 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
       if (error) throw error;
 
       if (data.user) {
+        // Track signup conversion in Google Analytics
+        if (typeof window !== 'undefined' && (window as any).gtag) {
+          (window as any).gtag('event', 'sign_up', {
+            method: 'email',
+            user_id: data.user.id,
+          });
+        }
+
         // Send welcome email in background
         supabase.functions.invoke('send-welcome-email', {
           body: { 

@@ -73,15 +73,40 @@ const Confirmation = () => {
     };
   }, [plan, isVerifying]);
 
+  // Track purchase conversion and send confirmation email
   useEffect(() => {
     // Scroll to top on mount
     window.scrollTo(0, 0);
+
+    // Track purchase conversion when subscription is verified
+    if (subscriptionVerified && !emailSentRef.current) {
+      const planPrices: Record<string, number> = {
+        growth: 149,
+        pro: 299,
+        elite: 799
+      };
+
+      // Track purchase conversion in Google Analytics
+      if (typeof window !== 'undefined' && (window as any).gtag) {
+        (window as any).gtag('event', 'purchase', {
+          transaction_id: `sub_${Date.now()}`,
+          value: planPrices[verifiedPlan || plan] || 149,
+          currency: 'USD',
+          items: [{
+            item_id: verifiedPlan || plan,
+            item_name: `SalesOS ${(verifiedPlan || plan).charAt(0).toUpperCase() + (verifiedPlan || plan).slice(1)} Plan`,
+            price: planPrices[verifiedPlan || plan] || 149,
+            quantity: 1
+          }]
+        });
+      }
+    }
 
     // Send subscription confirmation email (only once, after verification)
     if (email && !emailSentRef.current && subscriptionVerified) {
       emailSentRef.current = true;
       
-      const planPrices: Record<string, string> = {
+      const planPricesStr: Record<string, string> = {
         growth: "$149",
         pro: "$299",
         elite: "$799"
@@ -92,7 +117,7 @@ const Confirmation = () => {
           email,
           name: email.split('@')[0],
           plan: (verifiedPlan || plan).charAt(0).toUpperCase() + (verifiedPlan || plan).slice(1),
-          amount: planPrices[verifiedPlan || plan] || "$149"
+          amount: planPricesStr[verifiedPlan || plan] || "$149"
         }
       }).catch(err => console.error('Subscription email error:', err));
     }
