@@ -72,13 +72,12 @@
     <!-- <meta name="google-site-verification" content="YOUR_GOOGLE_CODE" /> -->
     <!-- <meta name="msvalidate.01" content="YOUR_BING_CODE" /> -->
     
-    <!-- Preload critical assets -->
-    <link rel="preload" href="/src/main.tsx" as="script" crossorigin />
-    
-    <!-- DNS Prefetch & Preconnect -->
+    <!-- DNS Prefetch & Preconnect for external origins -->
+    <link rel="dns-prefetch" href="//www.googletagmanager.com" />
     <link rel="dns-prefetch" href="//fonts.googleapis.com" />
     <link rel="dns-prefetch" href="//fonts.gstatic.com" />
     <link rel="dns-prefetch" href="//storage.googleapis.com" />
+    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     
