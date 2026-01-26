@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import salesosLogo from "@/assets/salesos-logo.webp";
+import salesosLogo from "@/assets/salesos-logo-64.webp";
 import {
   LayoutDashboard,
   Users,

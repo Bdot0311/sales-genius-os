@@ -150,7 +150,7 @@ const IntroMockup = ({ isActive }: { isActive: boolean }) => {
     <div className="flex flex-col items-center justify-center h-full space-y-4 sm:space-y-6 py-4">
       <div className={`transition-all duration-700 ${showElements >= 1 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
         <img 
-          src="/salesos-logo.webp" 
+          src="/salesos-logo-small.webp" 
           alt="SalesOS" 
           width="64"
           height="64"
@@ -645,7 +645,7 @@ const EndScreenMockup = ({ isActive }: { isActive: boolean }) => {
       {/* Main CTA heading */}
       <div className={`transition-all duration-500 ${showElements >= 1 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
         <img 
-          src="/salesos-logo.webp" 
+          src="/salesos-logo-small.webp" 
           alt="SalesOS" 
           width="64"
           height="64"
