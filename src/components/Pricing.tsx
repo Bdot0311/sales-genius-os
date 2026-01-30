@@ -141,10 +141,10 @@ export const Pricing = () => {
       <div className="container relative z-10 mx-auto px-4 sm:px-6">
         {/* Header */}
         <div className="text-center mb-12 sm:mb-16">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 px-4">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 px-4">
             SalesOS
             <span className="bg-gradient-primary bg-clip-text text-transparent"> Pricing</span>
-          </h2>
+          </h1>
           <p className="text-lg sm:text-xl md:text-2xl font-medium text-foreground mb-2">
             Search smarter. Enrich instantly. Scale predictably.
           </p>
