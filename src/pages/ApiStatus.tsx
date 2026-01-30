@@ -7,6 +7,7 @@ import { CheckCircle, XCircle, AlertCircle, Activity, Clock, TrendingUp, ArrowLe
 import { useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { SEOHead, BreadcrumbSchema } from "@/components/seo";
 
 interface ServiceStatus {
   name: string;
@@ -165,8 +166,37 @@ const ApiStatus = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
+    <>
+      <SEOHead 
+        title="API Status & System Uptime - SalesOS Developer Platform"
+        description="Real-time SalesOS API status, system uptime monitoring, and incident history. Check REST API, GraphQL, webhooks, and edge function availability."
+        keywords="SalesOS API status, system uptime, API monitoring, developer platform, service status"
+        canonicalUrl="https://salesos.alephwavex.io/api-status"
+        noIndex={false}
+      />
+      <BreadcrumbSchema items={[
+        { name: "Home", url: "https://salesos.alephwavex.io" },
+        { name: "API Status", url: "https://salesos.alephwavex.io/api-status" }
+      ]} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebPage",
+            "name": "SalesOS API Status",
+            "description": "Real-time system status and incident history for SalesOS API services",
+            "url": "https://salesos.alephwavex.io/api-status",
+            "publisher": {
+              "@type": "Organization",
+              "name": "SalesOS",
+              "url": "https://salesos.alephwavex.io"
+            }
+          })
+        }}
+      />
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navbar />
       <div className="flex-1 container mx-auto px-4 pt-24 pb-12 max-w-6xl">
         <div className="space-y-6">
           <div className="mb-6">
@@ -385,8 +415,9 @@ const ApiStatus = () => {
         </Card>
         </div>
       </div>
-      <Footer />
-    </div>
+        <Footer />
+      </div>
+    </>
   );
 };
 
