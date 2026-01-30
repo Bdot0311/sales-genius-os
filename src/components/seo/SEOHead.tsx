@@ -1,5 +1,3 @@
-import { Helmet } from 'react-helmet-async';
-
 interface SEOHeadProps {
   title?: string;
   description?: string;
@@ -53,17 +51,22 @@ export const SEOHead = ({
     "sales intelligence platform",
     "revenue operations software"
   ].join(', ');
+
+  const robotsContent = noIndex 
+    ? "noindex, nofollow" 
+    : "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1";
   
+  // React 19 supports rendering head elements directly - they are hoisted automatically
   return (
-    <Helmet>
+    <>
       {/* Primary Meta Tags */}
       <title>{fullTitle}</title>
       <meta name="title" content={fullTitle} />
       <meta name="description" content={description} />
       <meta name="keywords" content={expandedKeywords} />
       <meta name="author" content={author} />
-      <meta name="robots" content={noIndex ? "noindex, nofollow" : "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"} />
-      <meta name="googlebot" content={noIndex ? "noindex, nofollow" : "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"} />
+      <meta name="robots" content={robotsContent} />
+      <meta name="googlebot" content={robotsContent} />
       <meta name="bingbot" content={noIndex ? "noindex, nofollow" : "index, follow"} />
       
       {/* Language */}
@@ -144,6 +147,6 @@ export const SEOHead = ({
       {/* Preconnect for faster loading */}
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-    </Helmet>
+    </>
   );
 };
