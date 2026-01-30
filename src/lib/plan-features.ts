@@ -4,9 +4,9 @@
 export const PLAN_FEATURES = {
   growth: {
     name: 'Growth',
-    price: 99,
+    price: 149,
     
-    // Search Credits (NEW credit-based system)
+    // Search Credits
     monthlySearchCredits: 200,
     dailySearchLimit: 25,
     exportTier: 'standard' as const,
@@ -22,6 +22,17 @@ export const PLAN_FEATURES = {
     personalizationLevel: 'basic',
     aiFirstLines: false,
     multiChannelLogic: false,
+    
+    // Email Sequences (NEW)
+    stepsPerSequence: 3,
+    sequenceType: 'basic' as const, // time-delay only
+    replyAnalysis: false,
+    handoffAlerts: 'none' as const,
+    relevanceFilter: false,
+    messageBlocks: 5,
+    engagementStates: 'basic' as const,
+    sequenceABTesting: 0,
+    sequenceAnalytics: 'basic' as const,
     
     // Meeting Automator
     calendarConnections: 1,
@@ -61,7 +72,7 @@ export const PLAN_FEATURES = {
     name: 'Pro',
     price: 299,
     
-    // Search Credits (NEW credit-based system)
+    // Search Credits
     monthlySearchCredits: 700,
     dailySearchLimit: 100,
     exportTier: 'advanced' as const,
@@ -77,6 +88,17 @@ export const PLAN_FEATURES = {
     personalizationLevel: 'advanced',
     aiFirstLines: true,
     multiChannelLogic: false,
+    
+    // Email Sequences (NEW)
+    stepsPerSequence: 7,
+    sequenceType: 'behavioral' as const, // state-based branching
+    replyAnalysis: true,
+    handoffAlerts: 'email' as const,
+    relevanceFilter: 'basic' as const,
+    messageBlocks: 25,
+    engagementStates: 'full' as const,
+    sequenceABTesting: 2,
+    sequenceAnalytics: 'advanced' as const,
     
     // Meeting Automator
     calendarConnections: 5,
@@ -116,7 +138,7 @@ export const PLAN_FEATURES = {
     name: 'Elite',
     price: 799,
     
-    // Search Credits (NEW credit-based system)
+    // Search Credits
     monthlySearchCredits: 2000,
     dailySearchLimit: 500,
     exportTier: 'unlimited' as const,
@@ -132,6 +154,19 @@ export const PLAN_FEATURES = {
     personalizationLevel: 'premium',
     aiFirstLines: true,
     multiChannelLogic: true,
+    
+    // Email Sequences (NEW)
+    stepsPerSequence: -1, // unlimited
+    sequenceType: 'custom' as const, // custom triggers + webhooks
+    replyAnalysis: true,
+    replyAnalysisCustomSignals: true, // Elite exclusive
+    handoffAlerts: 'webhook' as const, // includes Slack
+    relevanceFilter: 'advanced' as const,
+    messageBlocks: -1, // unlimited
+    messageBlocksTeamSharing: true, // Elite exclusive
+    engagementStates: 'custom' as const,
+    sequenceABTesting: -1, // unlimited
+    sequenceAnalytics: 'premium' as const,
     
     // Meeting Automator
     calendarConnections: -1, // unlimited
@@ -251,6 +286,52 @@ export const UPGRADE_MESSAGES = {
   higherLimits: {
     title: 'Higher Limits',
     description: 'Increase your capacity for leads, sequences, and automations.',
+    availableOn: 'pro',
+  },
+  // NEW: Email Sequence Features
+  stateBasedSequences: {
+    title: 'State-Based Sequences',
+    description: 'Create different follow-up paths based on prospect behavior (opens, clicks, silence).',
+    availableOn: 'pro',
+  },
+  replyAnalysis: {
+    title: 'AI Reply Scoring',
+    description: 'Automatically identify high-intent replies that deserve immediate attention.',
+    availableOn: 'pro',
+  },
+  handoffAlerts: {
+    title: 'Smart Handoff Alerts',
+    description: 'Get notified when prospects show buying signals so you can jump in at the right moment.',
+    availableOn: 'pro',
+  },
+  relevanceFilter: {
+    title: 'Relevance Filter',
+    description: 'Ensure only qualified leads enter sequences with role and title matching.',
+    availableOn: 'pro',
+  },
+  webhookHandoffs: {
+    title: 'Webhook Handoffs',
+    description: 'Route handoff alerts to Slack, your CRM, or any tool via webhooks.',
+    availableOn: 'elite',
+  },
+  customReplySignals: {
+    title: 'Custom Reply Signals',
+    description: 'Train AI to detect your unique buying signals and objection patterns.',
+    availableOn: 'elite',
+  },
+  advancedRelevanceFilter: {
+    title: 'Advanced Relevance Rules',
+    description: 'Gate sequence enrollment with lead scores, custom fields, and buying intent signals.',
+    availableOn: 'elite',
+  },
+  messageBlocksTeamSharing: {
+    title: 'Team Message Blocks',
+    description: 'Share approved content blocks across your entire team for consistent messaging.',
+    availableOn: 'elite',
+  },
+  sequenceABTesting: {
+    title: 'Sequence A/B Testing',
+    description: 'Test different subject lines and CTAs to optimize your outreach performance.',
     availableOn: 'pro',
   },
 } as const;
