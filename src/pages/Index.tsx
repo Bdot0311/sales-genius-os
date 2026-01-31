@@ -5,7 +5,6 @@ import {
   HowItWorks,
   OutcomesSection,
   ModulesSection,
-  LogoBar,
   TestimonialsSection,
   IntegrationsSection,
   PricingTeaser,
@@ -137,7 +136,6 @@ const Index = () => {
             <Demo />
             
             {/* 6. Proof section */}
-            <LogoBar />
             <TestimonialsSection />
             
             {/* 7. Integrations */}
