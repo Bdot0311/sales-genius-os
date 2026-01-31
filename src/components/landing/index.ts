@@ -1,3 +1,14 @@
+export { HeroSection } from './HeroSection';
+export { HowItWorks } from './HowItWorks';
+export { OutcomesSection } from './OutcomesSection';
+export { ModulesSection } from './ModulesSection';
+export { LogoBar } from './LogoBar';
+export { TestimonialsSection } from './TestimonialsSection';
+export { IntegrationsSection } from './IntegrationsSection';
+export { PricingTeaser } from './PricingTeaser';
+export { FAQSection } from './FAQSection';
+export { FinalCTA } from './FinalCTA';
+export { FooterSection } from './FooterSection';
 export { LogoMarquee } from './LogoMarquee';
 export { SocialProof } from './SocialProof';
 export { CTASection } from './CTASection';

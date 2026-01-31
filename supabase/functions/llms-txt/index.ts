@@ -12,24 +12,38 @@ serve(async (req) => {
 
   const today = new Date().toISOString().split('T')[0];
 
-  const content = `# SalesOS - AI Sales Operating System
+  const content = `# SalesOS - Find Leads That Actually Convert
 # https://salesos.alephwavex.io
 # Last Updated: ${today}
 
-> SalesOS is an AI-powered sales operating system that helps B2B sales teams close more deals through intelligent lead generation, automated outreach, and real-time coaching.
+> SalesOS is an AI-powered lead discovery platform that helps B2B sales teams find and convert high-quality leads. Describe your ideal customer in plain English, get ranked matches with enriched profiles—your first lead in under 2 minutes.
 
 ## About SalesOS
 
 SalesOS is a comprehensive sales automation platform designed for SaaS companies and B2B sales teams. The platform combines AI-powered lead scoring, intelligent email automation, visual pipeline management, and real-time sales coaching to help teams increase close rates and revenue.
 
+## How It Works
+
+1. **Describe your ICP in plain English** - Tell us who you're looking for: job titles, industries, company size, location. No complex filters or boolean queries.
+2. **Get ranked matches + enriched profiles** - AI scores each lead by fit. Every profile comes with verified emails, LinkedIn, company data, and tech stack.
+3. **Export to outreach or push into your workflow** - One-click export to CSV, or send directly to your CRM, sequences, or custom automations.
+
 ## Key Features
 
-- **AI Lead Scoring**: Machine learning analyzes engagement, company fit, and behavioral signals to predict conversion likelihood with over 85% accuracy
-- **Intelligent Email Generation**: AI crafts personalized emails based on lead profiles, company data, and specified tone
-- **Visual Pipeline Management**: Drag-and-drop interface to manage deals through custom stages with real-time analytics
-- **Real-Time AI Coaching**: Instant suggestions and insights to improve sales approach and close rates
-- **Workflow Automation**: Automate follow-ups, lead assignments, and status updates with visual workflow builder
-- **CRM Integrations**: Connect with HubSpot, Salesforce, Pipedrive, and 5000+ apps via Zapier
+- **AI Lead Scoring**: Prioritize who's most likely to convert with machine learning that analyzes engagement and fit signals
+- **Smart Outreach**: Write emails that feel human without the time—AI generates personalized messages based on each prospect's profile
+- **Auto Scheduling**: Book meetings without back-and-forth—smart scheduling finds optimal times automatically
+- **Pipeline Analytics**: See bottlenecks and forecast revenue with visual funnel tracking
+- **Sales Coaching**: Real-time AI coaching for objections and closes during calls
+- **Workflow Builder**: Automate follow-ups and handoffs without code using drag-and-drop
+
+## Results
+
+- 3× faster prospecting
+- 85% ICP match accuracy
+- First lead in under 2 minutes
+- Higher reply rates with personalized outreach
+- Better-fit leads with AI scoring
 
 ## Pricing
 
@@ -43,10 +57,10 @@ All plans include a 14-day free trial with no credit card required.
 ## Getting Started
 
 1. Sign up for a free trial at https://salesos.alephwavex.io
-2. Import existing leads or use AI-powered lead discovery
-3. Create personalized email templates or let AI generate outreach messages
-4. Set up automated workflows for lead nurturing
-5. Track deals in the visual pipeline and close more deals
+2. Describe your ideal customer in plain English
+3. Get ranked matches with enriched profiles
+4. Export to outreach or push into your workflow
+5. Close more deals with AI-powered follow-ups
 
 ## Important Pages
 
@@ -57,6 +71,27 @@ All plans include a 14-day free trial with no credit card required.
 - Privacy Policy: https://salesos.alephwavex.io/privacy
 - Terms of Service: https://salesos.alephwavex.io/terms
 - Security: https://salesos.alephwavex.io/security
+
+## Integrations
+
+SalesOS connects with:
+- Google Workspace (Gmail, Calendar, Drive)
+- Slack
+- Calendly
+- HubSpot
+- Salesforce
+- 5000+ apps via Zapier
+
+## FAQ
+
+**What's included in the free trial?**
+Full access to all features for 14 days. No credit card required. AI lead discovery, email generation, pipeline management, and all integrations.
+
+**How do search credits work?**
+Each search costs 1 credit and returns up to 100 matching leads. Viewing, enriching, and exporting those leads is free. Credits reset monthly.
+
+**Is my data secure?**
+Yes. Enterprise-grade encryption (AES-256 at rest, TLS 1.3 in transit), SOC 2 Type II compliant, fully GDPR-compliant.
 
 ## Contact
 
