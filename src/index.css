@@ -79,20 +79,64 @@ All colors MUST be HSL.
   animation: float-orb linear infinite;
 }
 
-/* Glow pulse animation */
+/* Glow pulse animation - more intense */
 @keyframes glow-pulse {
   0%, 100% {
-    opacity: 0.3;
+    opacity: 0.4;
     transform: scale(1);
   }
   50% {
-    opacity: 0.5;
-    transform: scale(1.1);
+    opacity: 0.7;
+    transform: scale(1.15);
   }
 }
 
 .animate-glow-pulse {
-  animation: glow-pulse 4s ease-in-out infinite;
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+/* Aurora effect */
+@keyframes aurora {
+  0%, 100% {
+    background-position: 0% 50%;
+    filter: hue-rotate(0deg);
+  }
+  50% {
+    background-position: 100% 50%;
+    filter: hue-rotate(30deg);
+  }
+}
+
+.animate-aurora {
+  background: linear-gradient(
+    45deg,
+    hsl(261 75% 65% / 0.3),
+    hsl(280 75% 60% / 0.2),
+    hsl(320 75% 60% / 0.3),
+    hsl(261 75% 65% / 0.2)
+  );
+  background-size: 400% 400%;
+  animation: aurora 8s ease infinite;
+}
+
+/* Morph animation for blobs */
+@keyframes morph {
+  0%, 100% {
+    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+  }
+  25% {
+    border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%;
+  }
+  50% {
+    border-radius: 50% 60% 30% 60% / 30% 60% 70% 40%;
+  }
+  75% {
+    border-radius: 60% 40% 60% 30% / 70% 30% 50% 60%;
+  }
+}
+
+.animate-morph {
+  animation: morph 8s ease-in-out infinite;
 }
 
 /* Scroll reveal animations */

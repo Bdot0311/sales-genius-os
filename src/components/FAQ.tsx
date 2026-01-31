@@ -7,6 +7,7 @@ import {
 import { FAQSchema } from "@/components/seo";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { HelpCircle, ArrowRight } from "lucide-react";
 
 const faqs = [
   {
@@ -60,41 +61,45 @@ export const FAQ = () => {
     <section 
       ref={sectionRef}
       id="faq" 
-      className="py-24 md:py-32 bg-background"
+      className="py-24 md:py-32 bg-muted/20 relative overflow-hidden"
       aria-labelledby="faq-heading"
     >
       <FAQSchema faqs={faqs} />
       
-      <div className="container mx-auto px-6">
+      {/* Background */}
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[150px] pointer-events-none" />
+      
+      <div className="container relative z-10 mx-auto px-6">
         <div className="max-w-3xl mx-auto">
           {/* Header */}
-          <div className={`text-center mb-12 transition-all duration-700 ${
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          <div className={`text-center mb-12 transition-all duration-1000 ${
+            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
           }`}>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted text-sm text-muted-foreground mb-6">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-              FAQ
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card mb-6">
+              <HelpCircle className="w-4 h-4 text-primary" />
+              <span className="text-sm font-medium text-primary">FAQ</span>
             </div>
-            <h2 id="faq-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
-              Frequently asked questions
+            <h2 id="faq-heading" className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4">
+              Frequently asked{" "}
+              <span className="text-gradient-animated">questions</span>
             </h2>
-            <p className="text-muted-foreground">
+            <p className="text-lg text-muted-foreground">
               Everything you need to know about SalesOS
             </p>
           </div>
 
-          {/* Accordion */}
-          <div className={`transition-all duration-700 delay-200 ${
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+          {/* Accordion with enhanced styling */}
+          <div className={`transition-all duration-1000 delay-200 ${
+            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
           }`}>
             <Accordion type="single" collapsible className="space-y-3">
               {faqs.map((faq, index) => (
                 <AccordionItem 
                   key={index} 
                   value={`item-${index}`}
-                  className="border border-border/50 rounded-xl px-6 bg-card/30 data-[state=open]:bg-card/60 transition-colors"
+                  className="group border border-border/50 rounded-xl px-6 bg-card/30 backdrop-blur-sm data-[state=open]:bg-card/60 data-[state=open]:border-primary/30 data-[state=open]:shadow-lg data-[state=open]:shadow-primary/5 transition-all duration-300 overflow-hidden"
                 >
-                  <AccordionTrigger className="text-left py-5 hover:no-underline">
+                  <AccordionTrigger className="text-left py-5 hover:no-underline group-hover:text-primary transition-colors">
                     <span className="font-medium">{faq.question}</span>
                   </AccordionTrigger>
                   <AccordionContent className="pb-5 text-muted-foreground leading-relaxed">
@@ -105,15 +110,16 @@ export const FAQ = () => {
             </Accordion>
           </div>
           
-          <div className={`text-center mt-10 transition-all duration-700 delay-400 ${
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+          <div className={`text-center mt-12 transition-all duration-1000 delay-400 ${
+            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
           }`}>
-            <p className="text-muted-foreground mb-3">Still have questions?</p>
+            <p className="text-muted-foreground mb-4">Still have questions?</p>
             <Link 
               to="/help" 
-              className="inline-flex items-center gap-2 text-primary hover:underline font-medium"
+              className="inline-flex items-center gap-2 text-primary hover:gap-3 font-medium transition-all duration-300 group"
             >
-              Visit our Help Center →
+              Visit our Help Center
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
         </div>
