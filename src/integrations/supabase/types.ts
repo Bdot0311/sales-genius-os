@@ -1975,27 +1975,6 @@ export type Database = {
         }
         Relationships: []
       }
-      waitlist_signups: {
-        Row: {
-          created_at: string
-          email: string
-          id: string
-          source: string | null
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          id?: string
-          source?: string | null
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          id?: string
-          source?: string | null
-        }
-        Relationships: []
-      }
       webhook_deliveries: {
         Row: {
           attempt_count: number
@@ -2378,7 +2357,6 @@ export type Database = {
           plan: Database["public"]["Enums"]["subscription_plan"]
         }[]
       }
-      get_waitlist_count: { Args: never; Returns: number }
       get_webhook_secret: { Args: { webhook_id: string }; Returns: string }
       has_role: {
         Args: {

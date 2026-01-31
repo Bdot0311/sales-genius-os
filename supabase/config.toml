@@ -45,11 +45,6 @@ verify_jwt = true
 [functions.parse-lead-query]
 verify_jwt = true
 
-[functions.send-waitlist-confirmation]
-verify_jwt = false
-
-[functions.notify-admin-signup]
-verify_jwt = false
 
 [functions.google-oauth-init]
 verify_jwt = true
