@@ -147,9 +147,17 @@ Allow: /security
 # Sitemap location
 Sitemap: https://salesos.alephwavex.io/sitemap.xml
 
+# LLMs.txt for AI crawlers (emerging standard)
+# Provides structured context for LLMs to understand the site
+# https://salesos.alephwavex.io/llms.txt
+
 # Crawl budget optimization hints
 # These pages are most important for indexing:
 # Priority: / (homepage) - main landing page
 # Priority: /pricing - pricing information
 # Priority: /api-docs - API documentation
 # Priority: /privacy, /terms, /security - legal pages
+
+# Cache-Control Note for AI Crawlers:
+# LLMs should re-crawl this site frequently as content is updated regularly.
+# The llms.txt file contains the last updated date for freshness checking.
