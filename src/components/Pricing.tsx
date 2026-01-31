@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Check, Loader2, HelpCircle, ChevronDown } from "lucide-react";
+import { Check, X, Loader2, HelpCircle, Coins } from "lucide-react";
 import { STRIPE_PRICE_IDS } from "@/lib/stripe-config";
 import { useSearchCredits } from "@/hooks/use-search-credits";
 import { supabase } from "@/integrations/supabase/client";
@@ -79,6 +79,71 @@ const addons = [
   },
 ];
 
+// Feature comparison table data
+const comparisonCategories = [
+  {
+    name: "Search Credits",
+    features: [
+      { name: "Monthly search credits", growth: "350", pro: "700", elite: "2,000" },
+      { name: "Daily search limit", growth: "25", pro: "100", elite: "500" },
+      { name: "Results per search", growth: "25", pro: "100", elite: "500" },
+    ]
+  },
+  {
+    name: "Lead Intelligence",
+    features: [
+      { name: "Lead enrichment & scoring", growth: true, pro: true, elite: true },
+      { name: "Advanced filters", growth: false, pro: true, elite: true },
+      { name: "API access", growth: false, pro: false, elite: true },
+    ]
+  },
+  {
+    name: "Outreach & Sequences",
+    features: [
+      { name: "Active sequences", growth: "3", pro: "15", elite: "Unlimited" },
+      { name: "Steps per sequence", growth: "3", pro: "7", elite: "Unlimited" },
+      { name: "AI personalization", growth: "Basic", pro: "Advanced", elite: "Premium" },
+      { name: "Reply analysis", growth: false, pro: true, elite: true },
+      { name: "Multi-channel logic", growth: false, pro: false, elite: true },
+    ]
+  },
+  {
+    name: "Pipeline & Analytics",
+    features: [
+      { name: "Visual pipeline", growth: true, pro: true, elite: true },
+      { name: "Automated stage progression", growth: false, pro: true, elite: true },
+      { name: "Revenue forecasting", growth: false, pro: true, elite: true },
+      { name: "Custom pipelines", growth: false, pro: false, elite: true },
+      { name: "Custom reports & exports", growth: false, pro: false, elite: true },
+    ]
+  },
+  {
+    name: "AI Sales Coach",
+    features: [
+      { name: "Coaching level", growth: "Basic", pro: "Advanced", elite: "Premium" },
+      { name: "Real-time analysis", growth: "Limited", pro: "Full", elite: "Full" },
+      { name: "Live coaching", growth: false, pro: false, elite: true },
+      { name: "Custom playbooks", growth: false, pro: false, elite: true },
+    ]
+  },
+  {
+    name: "Automations",
+    features: [
+      { name: "Automation rules", growth: "5", pro: "25", elite: "Unlimited" },
+      { name: "Advanced workflows", growth: false, pro: true, elite: true },
+      { name: "White-label customization", growth: false, pro: false, elite: true },
+    ]
+  },
+  {
+    name: "Support",
+    features: [
+      { name: "Email support", growth: true, pro: true, elite: true },
+      { name: "Priority support", growth: false, pro: true, elite: true },
+      { name: "Dedicated success manager", growth: false, pro: false, elite: true },
+    ]
+  },
+];
+
 const creditFAQs = [
   {
     question: "What are search credits?",
@@ -105,6 +170,18 @@ const creditFAQs = [
     answer: "Yes, you can upgrade or downgrade your plan at any time. When upgrading, the new credit allocation takes effect immediately. When downgrading, the change applies at the start of your next billing cycle to ensure you keep your current benefits."
   },
 ];
+
+// Helper to render feature value in comparison table
+const renderFeatureValue = (value: boolean | string) => {
+  if (typeof value === 'boolean') {
+    return value ? (
+      <Check className="w-5 h-5 text-primary mx-auto" />
+    ) : (
+      <X className="w-5 h-5 text-muted-foreground/40 mx-auto" />
+    );
+  }
+  return <span className="text-sm font-medium">{value}</span>;
+};
 
 export const Pricing = () => {
   const { credits, addAddon, removeAddon } = useSearchCredits();
@@ -247,6 +324,64 @@ export const Pricing = () => {
               </Button>
             </div>
           ))}
+        </div>
+
+        {/* Feature Comparison Table */}
+        <div className={`max-w-6xl mx-auto mb-20 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '200ms' } as React.CSSProperties}>
+          <div className="text-center mb-10">
+            <h2 className="text-2xl font-semibold mb-2">Compare plans</h2>
+            <p className="text-muted-foreground">See what's included in each plan</p>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              {/* Header */}
+              <thead>
+                <tr className="border-b border-border/30">
+                  <th className="text-left py-4 px-4 font-medium text-muted-foreground w-1/4">Features</th>
+                  <th className="text-center py-4 px-4 w-1/4">
+                    <div className="font-semibold">Growth</div>
+                    <div className="text-sm text-muted-foreground">$149/mo</div>
+                  </th>
+                  <th className="text-center py-4 px-4 w-1/4 bg-primary/5 rounded-t-lg">
+                    <div className="font-semibold text-primary">Pro</div>
+                    <div className="text-sm text-muted-foreground">$299/mo</div>
+                  </th>
+                  <th className="text-center py-4 px-4 w-1/4">
+                    <div className="font-semibold">Elite</div>
+                    <div className="text-sm text-muted-foreground">$799/mo</div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {comparisonCategories.map((category, catIndex) => (
+                  <>
+                    {/* Category Header */}
+                    <tr key={`cat-${catIndex}`} className="border-b border-border/20">
+                      <td colSpan={4} className="py-4 px-4">
+                        <div className="flex items-center gap-2 font-semibold text-foreground">
+                          <Coins className="w-4 h-4 text-primary" />
+                          {category.name}
+                        </div>
+                      </td>
+                    </tr>
+                    {/* Feature Rows */}
+                    {category.features.map((feature, featureIndex) => (
+                      <tr 
+                        key={`feature-${catIndex}-${featureIndex}`} 
+                        className="border-b border-border/10 hover:bg-muted/30 transition-colors"
+                      >
+                        <td className="py-3 px-4 text-sm text-muted-foreground">{feature.name}</td>
+                        <td className="py-3 px-4 text-center">{renderFeatureValue(feature.growth)}</td>
+                        <td className="py-3 px-4 text-center bg-primary/5">{renderFeatureValue(feature.pro)}</td>
+                        <td className="py-3 px-4 text-center">{renderFeatureValue(feature.elite)}</td>
+                      </tr>
+                    ))}
+                  </>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Add-ons Section */}
