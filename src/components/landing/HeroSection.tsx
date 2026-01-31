@@ -100,26 +100,24 @@ const LeadSearchDemo = () => {
   ];
 
   return (
-    <div className="relative rounded-2xl border border-border/30 bg-card/80 backdrop-blur-sm overflow-hidden shadow-2xl group">
+    <div className="relative rounded-2xl border border-border/30 bg-card/80 backdrop-blur-sm overflow-hidden shadow-2xl group mt-8 lg:mt-0">
       {/* Cursor-follow spotlight effect */}
       <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none spotlight-card" />
-      
-      {/* Live product label */}
-      <div className="absolute top-4 right-4 z-20 px-3 py-1 rounded-full bg-primary/10 border border-primary/20">
-        <span className="text-xs font-medium text-primary">Live product view</span>
-      </div>
 
-      {/* Browser chrome */}
+      {/* Browser chrome with Live product view label */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-border/40 bg-muted/30">
         <div className="flex gap-1.5">
           <div className="w-3 h-3 rounded-full bg-destructive/60" aria-hidden="true" />
           <div className="w-3 h-3 rounded-full bg-primary/60" aria-hidden="true" />
           <div className="w-3 h-3 rounded-full bg-muted-foreground/40" aria-hidden="true" />
         </div>
-        <div className="flex-1 flex justify-center">
+        <div className="flex-1 flex items-center justify-center gap-3">
           <div className="px-4 py-1.5 rounded-lg bg-muted/50 text-xs text-muted-foreground font-mono flex items-center gap-2">
             <Zap className="w-3 h-3 text-primary" aria-hidden="true" />
             app.salesos.io/leads
+          </div>
+          <div className="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 flex-shrink-0">
+            <span className="text-xs font-medium text-primary whitespace-nowrap">Live product view</span>
           </div>
         </div>
       </div>
