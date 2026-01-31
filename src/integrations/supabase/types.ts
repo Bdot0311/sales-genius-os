@@ -2050,6 +2050,13 @@ export type Database = {
             referencedRelation: "webhooks"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "webhook_deliveries_webhook_id_fkey"
+            columns: ["webhook_id"]
+            isOneToOne: false
+            referencedRelation: "webhooks_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       webhook_tests: {
@@ -2098,6 +2105,13 @@ export type Database = {
             columns: ["webhook_id"]
             isOneToOne: false
             referencedRelation: "webhooks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "webhook_tests_webhook_id_fkey"
+            columns: ["webhook_id"]
+            isOneToOne: false
+            referencedRelation: "webhooks_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -2245,6 +2259,48 @@ export type Database = {
         }
         Relationships: []
       }
+      webhooks_safe: {
+        Row: {
+          created_at: string | null
+          events: string[] | null
+          has_secret: boolean | null
+          id: string | null
+          is_active: boolean | null
+          last_triggered_at: string | null
+          name: string | null
+          secret_masked: string | null
+          total_triggers: number | null
+          url: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          events?: string[] | null
+          has_secret?: never
+          id?: string | null
+          is_active?: boolean | null
+          last_triggered_at?: string | null
+          name?: string | null
+          secret_masked?: never
+          total_triggers?: number | null
+          url?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          events?: string[] | null
+          has_secret?: never
+          id?: string | null
+          is_active?: boolean | null
+          last_triggered_at?: string | null
+          name?: string | null
+          secret_masked?: never
+          total_triggers?: number | null
+          url?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       admin_delete_user: { Args: { _user_id: string }; Returns: undefined }
@@ -2323,6 +2379,7 @@ export type Database = {
         }[]
       }
       get_waitlist_count: { Args: never; Returns: number }
+      get_webhook_secret: { Args: { webhook_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
