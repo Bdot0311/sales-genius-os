@@ -6,6 +6,7 @@ import { Integrations } from "@/components/Integrations";
 import { Demo } from "@/components/Demo";
 import { FAQ } from "@/components/FAQ";
 import { Footer } from "@/components/Footer";
+import { LogoMarquee, SocialProof, CTASection } from "@/components/landing";
 import { 
   SEOHead, 
   OrganizationSchema, 
@@ -111,11 +112,14 @@ const Index = () => {
         <main itemScope itemType="https://schema.org/WebPage">
           <article>
             <Hero />
+            <LogoMarquee />
             <Features />
-            <Integrations />
+            <SocialProof />
             <Demo />
+            <Integrations />
             <Testimonials />
             <FAQ />
+            <CTASection />
           </article>
         </main>
         <Footer />
