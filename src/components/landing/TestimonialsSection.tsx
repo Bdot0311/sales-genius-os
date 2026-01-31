@@ -65,11 +65,11 @@ export const TestimonialsSection = () => {
     <section 
       ref={sectionRef}
       id="testimonials" 
-      className="relative py-24 bg-background"
+      className="relative py-24 md:py-32 bg-background"
       aria-labelledby="testimonials-heading"
     >
       {/* Top hairline separator */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
       
       <div className="container mx-auto px-6">
         <div className="max-w-[1120px] mx-auto">
@@ -78,27 +78,27 @@ export const TestimonialsSection = () => {
             <h2 id="testimonials-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
               What sales teams are saying
             </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
               Real results from teams using SalesOS to grow their pipeline.
             </p>
           </div>
 
           {/* Testimonials grid */}
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 gap-5">
             {testimonials.map((testimonial, index) => (
               <div 
                 key={index}
-                className={`group relative p-6 rounded-xl border border-border/40 bg-card/50 card-hover-lift scroll-reveal ${
+                className={`group relative p-6 rounded-xl border border-border/30 bg-card/40 card-hover-lift scroll-reveal ${
                   isVisible ? 'visible' : ''
                 }`}
                 style={{ '--reveal-delay': `${index * 80}ms` } as React.CSSProperties}
               >
                 {/* Spotlight effect on hover */}
-                <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none spotlight-card" />
+                <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none spotlight-card" />
                 
                 <div className="relative z-10">
                   {/* Stars */}
-                  <div className="flex gap-1 mb-4" aria-label="5 out of 5 stars">
+                  <div className="flex gap-0.5 mb-4" aria-label="5 out of 5 stars">
                     {[...Array(5)].map((_, i) => (
                       <Star key={i} className="w-4 h-4 fill-primary text-primary" aria-hidden="true" />
                     ))}
@@ -110,12 +110,12 @@ export const TestimonialsSection = () => {
                   </blockquote>
                   
                   {/* Footer */}
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-sm font-semibold text-primary-foreground">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-sm font-semibold text-primary-foreground flex-shrink-0">
                         {testimonial.initials}
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <div className="font-medium text-sm">{testimonial.name}</div>
                         <div className="text-xs text-muted-foreground">
                           {testimonial.role}, {testimonial.company}
@@ -125,7 +125,7 @@ export const TestimonialsSection = () => {
                         </div>
                       </div>
                     </div>
-                    <div className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                    <div className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium whitespace-nowrap flex-shrink-0">
                       {testimonial.metric}
                     </div>
                   </div>
@@ -137,7 +137,7 @@ export const TestimonialsSection = () => {
       </div>
       
       {/* Bottom hairline separator */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
     </section>
   );
 };

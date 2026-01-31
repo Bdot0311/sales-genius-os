@@ -60,42 +60,42 @@ export const ModulesSection = () => {
     <section 
       ref={sectionRef}
       id="features" 
-      className="relative py-24 bg-muted/30"
+      className="relative py-24 md:py-32 bg-muted/20"
       aria-labelledby="modules-heading"
     >
       {/* Top hairline separator */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
       
       <div className="container mx-auto px-6">
         <div className="max-w-[1120px] mx-auto">
           {/* Header */}
           <div className={`text-center mb-16 scroll-reveal ${isVisible ? 'visible' : ''}`}>
-            <h2 id="modules-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
+            <h2 id="modules-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-4 max-w-2xl mx-auto">
               Everything you need to close more deals
             </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
               Six modules working together to automate your entire sales workflow.
             </p>
           </div>
 
           {/* Modules grid - 6 cards */}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-12">
             {modules.map((module, index) => (
               <article 
                 key={index}
-                className={`group relative p-6 rounded-xl border border-border/40 bg-card/50 card-hover-lift scroll-reveal ${
+                className={`group relative p-6 rounded-xl border border-border/30 bg-card/40 card-hover-lift scroll-reveal ${
                   isVisible ? 'visible' : ''
                 }`}
                 style={{ '--reveal-delay': `${index * 70}ms` } as React.CSSProperties}
               >
                 {/* Spotlight effect on hover */}
-                <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none spotlight-card" />
+                <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none spotlight-card" />
                 
                 <div className="relative z-10">
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors duration-250">
-                    <module.icon className="w-6 h-6 text-primary" aria-hidden="true" />
+                  <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/15 transition-colors duration-200">
+                    <module.icon className="w-5 h-5 text-primary" aria-hidden="true" />
                   </div>
-                  <h3 className="font-semibold mb-2 group-hover:text-primary transition-colors duration-250 feature-description">
+                  <h3 className="font-semibold mb-2 group-hover:text-primary transition-colors duration-200 feature-description">
                     {module.title}
                   </h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
@@ -121,7 +121,7 @@ export const ModulesSection = () => {
       </div>
       
       {/* Bottom hairline separator */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
     </section>
   );
 };

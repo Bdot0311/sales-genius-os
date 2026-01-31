@@ -100,9 +100,9 @@ const LeadSearchDemo = () => {
   ];
 
   return (
-    <div className="relative rounded-2xl border border-border/40 bg-card/90 backdrop-blur-sm overflow-hidden shadow-2xl group">
+    <div className="relative rounded-2xl border border-border/30 bg-card/80 backdrop-blur-sm overflow-hidden shadow-2xl group">
       {/* Cursor-follow spotlight effect */}
-      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none spotlight-card" />
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none spotlight-card" />
       
       {/* Live product label */}
       <div className="absolute top-4 right-4 z-20 px-3 py-1 rounded-full bg-primary/10 border border-primary/20">
@@ -160,12 +160,19 @@ const LeadSearchDemo = () => {
             leads.map((lead, i) => (
               <div
                 key={i}
-                className={`group/card p-4 rounded-xl border border-border/40 bg-background/50 hover:bg-background/80 hover:border-primary/30 transition-all duration-250 cursor-pointer card-hover-lift ${
-                  currentResultIndex > i ? 'opacity-100 translate-y-0 blur-0' : 'opacity-0 translate-y-3 blur-[2px]'
-                }`}
-                style={{ transitionDelay: `${i * 60}ms` }}
+                className={`group/card relative p-4 rounded-xl border border-border/40 bg-background/50 hover:bg-background/80 hover:border-primary/25 cursor-pointer card-hover-lift`}
+                style={{ 
+                  opacity: currentResultIndex > i ? 1 : 0,
+                  transform: currentResultIndex > i ? 'translateY(0)' : 'translateY(10px)',
+                  filter: currentResultIndex > i ? 'blur(0)' : 'blur(6px)',
+                  transition: 'opacity 0.28s ease-out, transform 0.28s ease-out, filter 0.28s ease-out',
+                  transitionDelay: `${i * 70}ms`
+                }}
               >
-                <div className="flex items-center gap-4">
+                {/* Spotlight effect on hover */}
+                <div className="absolute inset-0 rounded-xl opacity-0 group-hover/card:opacity-100 transition-opacity duration-200 pointer-events-none spotlight-card" />
+                
+                <div className="relative z-10 flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0">
                     <User className="w-5 h-5 text-primary" />
                   </div>
@@ -184,7 +191,7 @@ const LeadSearchDemo = () => {
                       {lead.role} at <span className="text-foreground">{lead.company}</span> · {lead.location}
                     </div>
                   </div>
-                  <div className="flex gap-2 opacity-0 group-hover/card:opacity-100 transition-opacity">
+                  <div className="flex gap-2 opacity-0 group-hover/card:opacity-100 transition-opacity duration-200">
                     <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors">
                       <Linkedin className="w-4 h-4 text-primary" />
                     </div>
@@ -206,13 +213,38 @@ export const HeroSection = () => {
   const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
+  const [scrollY, setScrollY] = useState(0);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
   useEffect(() => {
-    // Respect reduced motion
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const timer = setTimeout(() => setIsVisible(true), prefersReducedMotion ? 0 : 100);
-    return () => clearTimeout(timer);
+    // Check reduced motion preference
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReducedMotion(mediaQuery.matches);
+    
+    const handleChange = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+    mediaQuery.addEventListener('change', handleChange);
+    
+    const timer = setTimeout(() => setIsVisible(true), mediaQuery.matches ? 0 : 100);
+    
+    return () => {
+      clearTimeout(timer);
+      mediaQuery.removeEventListener('change', handleChange);
+    };
   }, []);
+
+  // Subtle parallax on scroll (desktop only, respects reduced motion)
+  useEffect(() => {
+    if (prefersReducedMotion) return;
+    
+    const handleScroll = () => {
+      setScrollY(window.scrollY);
+    };
+    
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [prefersReducedMotion]);
+
+  const parallaxOffset = prefersReducedMotion ? 0 : Math.min(scrollY * 0.04, 6);
 
   return (
     <section 
@@ -220,33 +252,33 @@ export const HeroSection = () => {
       className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20 pb-16"
       aria-labelledby="hero-heading"
     >
-      {/* Radial purple glow behind hero */}
+      {/* Layer 1: Faint grid with subtle parallax */}
       <div 
-        className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[900px] h-[600px] pointer-events-none"
-        style={{
-          background: 'radial-gradient(ellipse at center, hsl(261 75% 50% / 0.12) 0%, hsl(280 75% 50% / 0.05) 40%, transparent 70%)',
+        className="absolute inset-0 grid-bg pointer-events-none parallax-grid"
+        style={{ 
+          transform: `translateY(${parallaxOffset}px)`,
+          opacity: 0.5
         }}
+        aria-hidden="true"
       />
       
-      {/* Faint grid */}
+      {/* Layer 2: Aurora ambient glow - animated */}
       <div 
-        className="absolute inset-0 opacity-[0.02] pointer-events-none"
-        style={{
-          backgroundImage: `
-            linear-gradient(hsl(var(--foreground) / 0.15) 1px, transparent 1px),
-            linear-gradient(90deg, hsl(var(--foreground) / 0.15) 1px, transparent 1px)
-          `,
-          backgroundSize: '64px 64px',
-        }}
+        className="absolute top-1/3 left-1/2 w-[1000px] h-[700px] aurora-ambient pointer-events-none"
+        aria-hidden="true"
       />
       
-      {/* Noise texture */}
+      {/* Layer 3: Secondary radial glow for depth */}
       <div 
-        className="absolute inset-0 opacity-[0.015] pointer-events-none"
+        className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[500px] pointer-events-none"
         style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+          background: 'radial-gradient(ellipse at center, hsl(261 75% 55% / 0.08) 0%, transparent 60%)',
         }}
+        aria-hidden="true"
       />
+      
+      {/* Layer 4: Noise texture to prevent banding */}
+      <div className="noise-texture" aria-hidden="true" />
 
       <div className="container relative z-10 mx-auto px-6">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center max-w-[1120px] mx-auto">

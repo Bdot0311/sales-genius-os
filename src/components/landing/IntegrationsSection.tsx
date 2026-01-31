@@ -38,11 +38,11 @@ export const IntegrationsSection = () => {
     <section 
       ref={sectionRef}
       id="integrations" 
-      className="relative py-24 bg-muted/30"
+      className="relative py-24 md:py-32 bg-muted/20"
       aria-labelledby="integrations-heading"
     >
       {/* Top hairline separator */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
       
       <div className="container mx-auto px-6">
         <div className="max-w-[1120px] mx-auto">
@@ -51,26 +51,31 @@ export const IntegrationsSection = () => {
             <h2 id="integrations-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
               Works with your stack
             </h2>
-            <p className="text-lg text-muted-foreground max-w-xl mx-auto">
+            <p className="text-lg text-muted-foreground max-w-md mx-auto leading-relaxed">
               Connect to the tools you already use. No disruption to your workflow.
             </p>
           </div>
 
           {/* Integration grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
             {integrations.map((integration, index) => (
               <div 
                 key={integration.name}
-                className={`group relative p-4 rounded-xl border border-border/40 bg-card/50 text-center card-hover-lift scroll-reveal ${
+                className={`group relative p-4 rounded-xl border border-border/30 bg-card/40 text-center card-hover-lift scroll-reveal ${
                   isVisible ? 'visible' : ''
                 }`}
                 style={{ '--reveal-delay': `${index * 50}ms` } as React.CSSProperties}
               >
-                <div className="w-10 h-10 mx-auto mb-3 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors duration-250">
-                  <Plug className="w-5 h-5 text-primary" aria-hidden="true" />
+                {/* Spotlight effect */}
+                <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none spotlight-card" />
+                
+                <div className="relative z-10">
+                  <div className="w-10 h-10 mx-auto mb-3 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/15 transition-colors duration-200">
+                    <Plug className="w-5 h-5 text-primary" aria-hidden="true" />
+                  </div>
+                  <div className="font-medium text-sm mb-0.5">{integration.name}</div>
+                  <div className="text-xs text-muted-foreground">{integration.description}</div>
                 </div>
-                <div className="font-medium text-sm mb-1">{integration.name}</div>
-                <div className="text-xs text-muted-foreground">{integration.description}</div>
               </div>
             ))}
           </div>
@@ -79,18 +84,18 @@ export const IntegrationsSection = () => {
           <div className={`text-center scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '300ms' } as React.CSSProperties}>
             <Button 
               variant="link"
-              className="text-muted-foreground hover:text-primary"
+              className="text-muted-foreground hover:text-primary group"
               onClick={() => navigate('/request-integration')}
             >
               Request an integration
-              <ArrowRight className="w-4 h-4 ml-1" aria-hidden="true" />
+              <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-0.5 transition-transform duration-150" aria-hidden="true" />
             </Button>
           </div>
         </div>
       </div>
       
       {/* Bottom hairline separator */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
     </section>
   );
 };

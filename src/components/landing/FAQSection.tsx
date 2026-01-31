@@ -61,11 +61,11 @@ export const FAQSection = () => {
     <section 
       ref={sectionRef}
       id="faq" 
-      className="relative py-24 bg-muted/30"
+      className="relative py-24 md:py-32 bg-muted/20"
       aria-labelledby="faq-heading"
     >
       {/* Top hairline separator */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
       
       <FAQSchema faqs={faqs} />
       
@@ -76,24 +76,24 @@ export const FAQSection = () => {
             <h2 id="faq-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
               Frequently asked questions
             </h2>
-            <p className="text-lg text-muted-foreground">
+            <p className="text-lg text-muted-foreground max-w-md mx-auto leading-relaxed">
               Everything you need to know about SalesOS.
             </p>
           </div>
 
           {/* Accordion */}
           <div className={`scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '100ms' } as React.CSSProperties}>
-            <Accordion type="single" collapsible className="space-y-3">
+            <Accordion type="single" collapsible className="space-y-2">
               {faqs.map((faq, index) => (
                 <AccordionItem 
                   key={index} 
                   value={`item-${index}`}
-                  className="border border-border/40 rounded-xl px-6 bg-card/50 data-[state=open]:bg-card data-[state=open]:border-primary/30 transition-all duration-250"
+                  className="border border-border/30 rounded-xl px-6 bg-card/40 data-[state=open]:bg-card/60 data-[state=open]:border-primary/20 transition-all duration-200"
                 >
                   <AccordionTrigger className="text-left py-4 hover:no-underline hover:text-primary transition-colors duration-200">
-                    <span className="font-medium">{faq.question}</span>
+                    <span className="font-medium text-[15px]">{faq.question}</span>
                   </AccordionTrigger>
-                  <AccordionContent className="pb-4 text-muted-foreground leading-relaxed">
+                  <AccordionContent className="pb-4 text-muted-foreground text-sm leading-relaxed">
                     {faq.answer}
                   </AccordionContent>
                 </AccordionItem>
@@ -105,17 +105,17 @@ export const FAQSection = () => {
             <p className="text-muted-foreground mb-3 text-sm">Still have questions?</p>
             <Link 
               to="/help" 
-              className="inline-flex items-center gap-2 text-primary hover:underline font-medium text-sm"
+              className="inline-flex items-center gap-2 text-primary hover:underline font-medium text-sm group"
             >
               Visit our Help Center
-              <ArrowRight className="w-4 h-4" aria-hidden="true" />
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform duration-150" aria-hidden="true" />
             </Link>
           </div>
         </div>
       </div>
       
       {/* Bottom hairline separator */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
     </section>
   );
 };
