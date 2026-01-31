@@ -107,7 +107,7 @@ serve(async (req) => {
     const { data: rateLimitEvents } = await supabaseClient
       .from("security_events")
       .select("ip_address, event_type, created_at, details")
-      .in("event_type", ["rate_limit_exceeded", "password_reset_rate_limit", "waitlist_rate_limit"])
+      .in("event_type", ["rate_limit_exceeded", "password_reset_rate_limit"])
       .gte("created_at", oneHourAgo);
 
     const rateLimitsByIp: Record<string, number> = {};
@@ -137,7 +137,7 @@ serve(async (req) => {
     const { data: botEvents } = await supabaseClient
       .from("security_events")
       .select("ip_address, details")
-      .eq("event_type", "waitlist_bot_detected")
+      .eq("event_type", "bot_detected")
       .gte("created_at", oneHourAgo);
 
     if (botEvents && botEvents.length >= 3) {
@@ -145,7 +145,7 @@ serve(async (req) => {
       alerts.push({
         type: "bot_attack_detected",
         severity: "error",
-        target: "waitlist_form",
+        target: "application",
         details: {
           bot_attempts: botEvents.length,
           unique_ips: uniqueIps.size,
