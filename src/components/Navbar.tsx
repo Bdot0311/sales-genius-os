@@ -102,7 +102,7 @@ export const Navbar = () => {
                 <button
                   key={link.label}
                   onClick={() => handleNavigation(link.path)}
-                  className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className="px-4 py-2 text-sm text-muted-foreground hover:text-primary transition-colors rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
                 >
                   {link.label}
                 </button>
