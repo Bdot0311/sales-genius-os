@@ -109,9 +109,9 @@ export const Pricing = () => {
             <span className="w-1.5 h-1.5 rounded-full bg-primary" />
             Pricing
           </div>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4">
             Simple, transparent pricing
-          </h2>
+          </h1>
           <p className="text-lg text-muted-foreground">
             Start free. Upgrade when you're ready. No hidden fees.
           </p>

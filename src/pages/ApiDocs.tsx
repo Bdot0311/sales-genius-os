@@ -310,10 +310,10 @@ end`,
   return (
     <>
       <SEOHead 
-        title="API Documentation - SalesOS"
-        description="Complete SalesOS API reference with interactive examples. Learn how to integrate leads, deals, and automation into your applications."
-        keywords="SalesOS API, sales API, lead generation API, CRM API, REST API documentation"
-        canonicalUrl="https://salesos.alephwavex.io/api-docs"
+        title="API Documentation & Integration Guide - SalesOS Developer Portal"
+        description="Complete SalesOS API reference with code examples in JavaScript, Python, PHP & cURL. Integrate leads, deals, webhooks and automation into your apps."
+        keywords="SalesOS API, sales API, lead generation API, CRM API, REST API documentation, webhook integration"
+        ogImage="https://storage.googleapis.com/gpt-engineer-file-uploads/ZFJK1zezovOpOdjy9TptFukIhhc2/social-images/social-1768238149761-SalesOS full logo.png"
       />
       <BreadcrumbSchema items={[
         { name: "Home", url: "https://salesos.alephwavex.io" },
