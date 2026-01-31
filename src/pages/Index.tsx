@@ -30,7 +30,7 @@ import { useSpotlightEffect } from "@/hooks/use-spotlight-effect";
 const gettingStartedSteps = [
   {
     name: "Sign up for a free trial",
-    text: "Create your SalesOS account in under 2 minutes. No credit card required. Get instant access to AI lead discovery and email automation."
+    text: "Create your SalesOS account in under 2 minutes. No credit card required. Get instant access to lead discovery, outreach, and pipeline tools."
   },
   {
     name: "Describe your ideal customer",
@@ -41,12 +41,12 @@ const gettingStartedSteps = [
     text: "AI scores each lead by fit. Every profile comes with verified emails, LinkedIn, company data, and tech stack."
   },
   {
-    name: "Export to outreach or push into your workflow",
-    text: "One-click export to CSV, or send directly to your CRM, sequences, or custom automations."
+    name: "Engage with personalized outreach",
+    text: "Generate AI-crafted emails that feel human. Automate follow-ups and track opens, clicks, and replies in real-time."
   },
   {
-    name: "Start closing deals",
-    text: "Use AI-generated emails and automated follow-ups to move leads through your pipeline faster."
+    name: "Close more deals",
+    text: "Manage your pipeline visually, get real-time coaching on objections, and forecast revenue with confidence."
   }
 ];
 
@@ -90,9 +90,9 @@ const Index = () => {
   return (
     <>
       <SEOHead 
-        title="SalesOS - Find Leads That Actually Convert | AI-Powered Lead Discovery"
-        description="Describe your ideal customer in plain English. Get ranked matches with enriched profiles—your first lead in under 2 minutes. 14-day free trial, no credit card required."
-        keywords="AI lead discovery, lead generation, sales automation, ICP matching, B2B sales, email automation, sales intelligence, prospecting tool"
+        title="SalesOS - Find, Engage & Close More Deals | AI Sales Platform"
+        description="AI-powered lead discovery, personalized outreach, pipeline management, and sales coaching—all in one platform. Your first lead in under 2 minutes. 14-day free trial."
+        keywords="AI sales platform, lead discovery, sales automation, personalized outreach, pipeline management, B2B sales, AI email generation, sales coaching, CRM"
         ogImage="https://ghgfjnepvxvxrncmskys.supabase.co/storage/v1/object/public/social-images/salesos-logo.png"
       />
       
@@ -106,7 +106,7 @@ const Index = () => {
       {/* AEO: HowTo Schema for "How to use SalesOS" queries */}
       <HowToSchema 
         name="How to Get Started with SalesOS"
-        description="Learn how to find leads that actually convert with SalesOS in just 5 easy steps."
+        description="Learn how to find, engage, and close more deals with SalesOS in just 5 easy steps."
         steps={gettingStartedSteps}
         totalTime="PT5M"
       />

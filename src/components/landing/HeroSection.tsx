@@ -335,11 +335,11 @@ export const HeroSection = () => {
               {[
                 { icon: Zap, text: "3× faster prospecting" },
                 { icon: Target, text: "85% ICP match accuracy" },
-                { icon: Clock, text: "First lead in under 2 min" },
+                { icon: Clock, text: "First lead in under 2 minutes" },
               ].map((stat, i) => (
-                <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <stat.icon className="w-4 h-4 text-primary" aria-hidden="true" />
-                  <span>{stat.text}</span>
+                <div key={i} className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                  <stat.icon className="w-4 h-4 text-primary flex-shrink-0" aria-hidden="true" />
+                  <span className="whitespace-nowrap">{stat.text}</span>
                 </div>
               ))}
             </div>
