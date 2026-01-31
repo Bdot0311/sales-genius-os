@@ -29,6 +29,7 @@ interface LeadEngagementBadgeProps {
   state: EngagementState | string | null;
   className?: string;
   showTooltip?: boolean;
+  size?: 'sm' | 'md';
 }
 
 const stateConfig: Record<EngagementState, {
@@ -91,17 +92,20 @@ export function LeadEngagementBadge({
   state, 
   className = '',
   showTooltip = true,
+  size = 'md',
 }: LeadEngagementBadgeProps) {
   const normalizedState = (state || 'new') as EngagementState;
   const config = stateConfig[normalizedState] || stateConfig.new;
   const Icon = config.icon;
 
+  const sizeClasses = size === 'sm' ? 'text-xs px-1.5 py-0.5' : '';
+
   const badge = (
     <Badge 
       variant="outline" 
-      className={`${config.color} ${className}`}
+      className={`${config.color} ${sizeClasses} ${className}`}
     >
-      <Icon className="w-3 h-3 mr-1" />
+      <Icon className={size === 'sm' ? 'w-2.5 h-2.5 mr-0.5' : 'w-3 h-3 mr-1'} />
       {config.label}
     </Badge>
   );

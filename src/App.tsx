@@ -20,6 +20,7 @@ const Analytics = lazy(() => import("./pages/Analytics"));
 const Automations = lazy(() => import("./pages/Automations"));
 const Sequences = lazy(() => import("./pages/Sequences"));
 const SequenceDetail = lazy(() => import("./pages/SequenceDetail"));
+const MessageBlocks = lazy(() => import("./pages/MessageBlocks"));
 const DashboardIntegrations = lazy(() => import("./pages/DashboardIntegrations"));
 const PricingPage = lazy(() => import("./pages/PricingPage"));
 const ApiDocs = lazy(() => import("./pages/ApiDocs"));
@@ -88,6 +89,7 @@ const App = () => (
               <Route path="/dashboard/automations" element={<Automations />} />
               <Route path="/dashboard/sequences" element={<Sequences />} />
               <Route path="/dashboard/sequences/:id" element={<SequenceDetail />} />
+              <Route path="/dashboard/message-blocks" element={<MessageBlocks />} />
               <Route path="/integrations" element={<DashboardIntegrations />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/admin/*" element={<Admin />} />
