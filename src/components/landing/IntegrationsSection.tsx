@@ -163,10 +163,20 @@ export const IntegrationsSection = () => {
             ))}
           </div>
 
-          {/* Request integration link */}
-          <div className={`text-center scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '300ms' } as React.CSSProperties}>
+          {/* CTA buttons */}
+          <div className={`flex flex-col sm:flex-row items-center justify-center gap-3 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '300ms' } as React.CSSProperties}>
+            <Button 
+              variant="outline"
+              size="sm"
+              className="group"
+              onClick={() => navigate('/auth')}
+            >
+              Connect your tools
+              <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-0.5 transition-transform duration-150" aria-hidden="true" />
+            </Button>
             <Button 
               variant="link"
+              size="sm"
               className="text-muted-foreground hover:text-primary group"
               onClick={() => navigate('/request-integration')}
             >
