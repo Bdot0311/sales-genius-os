@@ -46,13 +46,23 @@ interface VideoSchemaProps {
   embedUrl?: string;
 }
 
+interface ArticleAuthor {
+  name: string;
+  url?: string;
+  image?: string;
+}
+
 interface ArticleSchemaProps {
   headline: string;
   description: string;
-  author: string;
+  author: string | ArticleAuthor | ArticleAuthor[];
   datePublished: string;
   dateModified?: string;
   image?: string;
+  wordCount?: number;
+  articleSection?: string;
+  keywords?: string[];
+  url?: string;
 }
 
 // Helper component to render JSON-LD scripts (React 19 native head hoisting)
@@ -404,34 +414,210 @@ export const VideoSchema = ({
   return <JsonLdScript schema={schema} />;
 };
 
-// Article Schema for blog/content pages
+// Enhanced Article Schema for blog/content pages with multiple author support
 export const ArticleSchema = ({ 
   headline, 
   description, 
   author, 
   datePublished,
   dateModified,
-  image 
+  image,
+  wordCount,
+  articleSection,
+  keywords,
+  url
 }: ArticleSchemaProps) => {
+  // Normalize author(s) to array
+  const normalizeAuthors = (auth: string | ArticleAuthor | ArticleAuthor[]): ArticleAuthor[] => {
+    if (Array.isArray(auth)) return auth;
+    if (typeof auth === 'string') return [{ name: auth }];
+    return [auth];
+  };
+  
+  const authors = normalizeAuthors(author);
+  
+  // Calculate reading time if word count provided
+  const readingTimeMinutes = wordCount ? Math.ceil(wordCount / 225) : undefined;
+  
   const schema = {
     "@context": "https://schema.org",
     "@type": "Article",
     "headline": headline,
     "description": description,
+    "author": authors.length === 1 
+      ? {
+          "@type": "Person",
+          "name": authors[0].name,
+          ...(authors[0].url && { "url": authors[0].url }),
+          ...(authors[0].image && { "image": authors[0].image })
+        }
+      : authors.map(a => ({
+          "@type": "Person",
+          "name": a.name,
+          ...(a.url && { "url": a.url }),
+          ...(a.image && { "image": a.image })
+        })),
+    "publisher": {
+      "@type": "Organization",
+      "@id": `${BASE_URL}/#organization`,
+      "name": "SalesOS",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://storage.googleapis.com/gpt-engineer-file-uploads/ZFJK1zezovOpOdjy9TptFukIhhc2/uploads/1761024288225-image 2.png"
+      }
+    },
+    "datePublished": datePublished,
+    "dateModified": dateModified || datePublished,
+    ...(image && { "image": image }),
+    ...(wordCount && { "wordCount": wordCount }),
+    ...(readingTimeMinutes && { "timeRequired": `PT${readingTimeMinutes}M` }),
+    ...(articleSection && { "articleSection": articleSection }),
+    ...(keywords && keywords.length > 0 && { "keywords": keywords.join(", ") }),
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": url || BASE_URL
+    },
+    "inLanguage": "en-US"
+  };
+
+  return <JsonLdScript schema={schema} />;
+};
+
+// BlogPosting Schema - more specific than Article for blog content
+interface BlogPostingSchemaProps extends ArticleSchemaProps {
+  categories?: string[];
+}
+
+export const BlogPostingSchema = ({ 
+  headline, 
+  description, 
+  author, 
+  datePublished,
+  dateModified,
+  image,
+  wordCount,
+  articleSection,
+  keywords,
+  url,
+  categories
+}: BlogPostingSchemaProps) => {
+  // Normalize author(s)
+  const normalizeAuthors = (auth: string | ArticleAuthor | ArticleAuthor[]): ArticleAuthor[] => {
+    if (Array.isArray(auth)) return auth;
+    if (typeof auth === 'string') return [{ name: auth }];
+    return [auth];
+  };
+  
+  const authors = normalizeAuthors(author);
+  const readingTimeMinutes = wordCount ? Math.ceil(wordCount / 225) : undefined;
+  
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": headline,
+    "description": description,
+    "author": authors.map(a => ({
+      "@type": "Person",
+      "name": a.name,
+      ...(a.url && { "url": a.url }),
+      ...(a.image && { "image": a.image })
+    })),
+    "publisher": {
+      "@type": "Organization",
+      "@id": `${BASE_URL}/#organization`,
+      "name": "SalesOS",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://storage.googleapis.com/gpt-engineer-file-uploads/ZFJK1zezovOpOdjy9TptFukIhhc2/uploads/1761024288225-image 2.png"
+      }
+    },
+    "datePublished": datePublished,
+    "dateModified": dateModified || datePublished,
+    ...(image && { "image": image }),
+    ...(wordCount && { "wordCount": wordCount }),
+    ...(readingTimeMinutes && { "timeRequired": `PT${readingTimeMinutes}M` }),
+    ...(articleSection && { "articleSection": articleSection }),
+    ...(keywords && keywords.length > 0 && { "keywords": keywords.join(", ") }),
+    ...(categories && categories.length > 0 && { "articleSection": categories[0] }),
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": url || BASE_URL
+    },
+    "isAccessibleForFree": true,
+    "inLanguage": "en-US"
+  };
+
+  return <JsonLdScript schema={schema} />;
+};
+
+// Review Schema for testimonials
+interface ReviewSchemaProps {
+  itemReviewed: {
+    name: string;
+    type?: string;
+  };
+  author: string;
+  reviewBody: string;
+  ratingValue: number;
+  datePublished?: string;
+}
+
+export const ReviewSchema = ({ 
+  itemReviewed, 
+  author, 
+  reviewBody, 
+  ratingValue,
+  datePublished 
+}: ReviewSchemaProps) => {
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "Review",
+    "itemReviewed": {
+      "@type": itemReviewed.type || "SoftwareApplication",
+      "name": itemReviewed.name
+    },
     "author": {
       "@type": "Person",
       "name": author
     },
-    "publisher": {
-      "@type": "Organization",
-      "@id": `${BASE_URL}/#organization`
+    "reviewBody": reviewBody,
+    "reviewRating": {
+      "@type": "Rating",
+      "ratingValue": ratingValue,
+      "bestRating": 5,
+      "worstRating": 1
     },
-    "datePublished": datePublished,
-    "dateModified": dateModified || datePublished,
-    ...(image && { image }),
-    "mainEntityOfPage": {
-      "@type": "WebPage",
-      "@id": BASE_URL
+    ...(datePublished && { "datePublished": datePublished })
+  };
+
+  return <JsonLdScript schema={schema} />;
+};
+
+// AggregateRating Schema
+interface AggregateRatingSchemaProps {
+  itemName: string;
+  ratingValue: number;
+  ratingCount: number;
+  reviewCount?: number;
+}
+
+export const AggregateRatingSchema = ({ 
+  itemName, 
+  ratingValue, 
+  ratingCount,
+  reviewCount 
+}: AggregateRatingSchemaProps) => {
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": itemName,
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": ratingValue,
+      "ratingCount": ratingCount,
+      ...(reviewCount && { "reviewCount": reviewCount }),
+      "bestRating": 5,
+      "worstRating": 1
     }
   };
 
