@@ -6,10 +6,10 @@ const Privacy = () => {
   return (
     <>
       <SEOHead 
-        title="Privacy Policy - SalesOS"
+        title="Privacy Policy - Data Protection & GDPR Compliance | SalesOS"
         description="Learn how SalesOS collects, uses, and protects your personal data. We're committed to transparency and GDPR/CCPA compliance."
         keywords="SalesOS privacy policy, data protection, GDPR compliance, CCPA compliance, personal data"
-        canonicalUrl="https://salesos.alephwavex.io/privacy"
+        ogImage="https://storage.googleapis.com/gpt-engineer-file-uploads/ZFJK1zezovOpOdjy9TptFukIhhc2/social-images/social-1768238149761-SalesOS full logo.png"
       />
       <BreadcrumbSchema items={[
         { name: "Home", url: "https://salesos.alephwavex.io" },
