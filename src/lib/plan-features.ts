@@ -7,7 +7,7 @@ export const PLAN_FEATURES = {
     price: 149,
     
     // Search Credits
-    monthlySearchCredits: 200,
+    monthlySearchCredits: 350,
     dailySearchLimit: 25,
     exportTier: 'standard' as const,
     
