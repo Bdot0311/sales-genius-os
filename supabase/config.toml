@@ -89,3 +89,15 @@ verify_jwt = false
 
 [functions.detect-suspicious-activity]
 verify_jwt = false
+
+[functions.analyze-reply]
+verify_jwt = true
+
+[functions.check-handoff-triggers]
+verify_jwt = false
+
+[functions.calculate-relevance-score]
+verify_jwt = true
+
+[functions.process-sequence-step]
+verify_jwt = false

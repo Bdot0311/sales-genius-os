@@ -26,6 +26,7 @@ import {
   Zap,
   HelpCircle,
   ListOrdered,
+  FileText,
 } from "lucide-react";
 import { User } from "@supabase/supabase-js";
 import { useSubscription } from "@/hooks/use-subscription";
@@ -44,6 +45,7 @@ const navigation = [
   { name: "Pipeline", icon: TrendingUp, href: "/dashboard/pipeline" },
   { name: "Outreach", icon: Mail, href: "/dashboard/outreach" },
   { name: "Sequences", icon: ListOrdered, href: "/dashboard/sequences" },
+  { name: "Message Blocks", icon: FileText, href: "/dashboard/message-blocks" },
   { name: "Calendar", icon: Calendar, href: "/dashboard/calendar" },
   { name: "Analytics", icon: BarChart3, href: "/dashboard/analytics" },
   { name: "Coach", icon: Mic, href: "/dashboard/coach" },
