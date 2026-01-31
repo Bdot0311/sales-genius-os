@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Zap, Shield, Clock } from "lucide-react";
+import { ArrowRight, CreditCard, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export const FinalCTA = () => {
@@ -28,20 +28,22 @@ export const FinalCTA = () => {
   return (
     <section 
       ref={ref} 
-      className="relative py-24 md:py-32 bg-background overflow-hidden"
+      className="relative py-24 md:py-32 overflow-hidden"
       aria-labelledby="final-cta-heading"
     >
+      {/* Unified background - matching hero */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div 
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] aurora-ambient"
+          style={{
+            background: 'radial-gradient(ellipse at center, hsl(261 75% 50% / 0.1) 0%, transparent 60%)',
+          }}
+          aria-hidden="true"
+        />
+      </div>
+      
       {/* Top hairline separator */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
-      
-      {/* Subtle ambient glow */}
-      <div 
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] pointer-events-none"
-        style={{
-          background: 'radial-gradient(ellipse at center, hsl(261 75% 50% / 0.06) 0%, transparent 60%)',
-        }}
-        aria-hidden="true"
-      />
       
       <div className="container relative z-10 mx-auto px-6">
         <div className="max-w-[1120px] mx-auto">
@@ -67,7 +69,7 @@ export const FinalCTA = () => {
                     className="h-12 px-6 text-base font-semibold bg-foreground text-background hover:bg-foreground/90 rounded-lg group btn-glow-hover"
                     onClick={() => navigate('/auth')}
                   >
-                    Start free trial — no credit card
+                    Start 14-day free trial
                     <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" aria-hidden="true" />
                   </Button>
                   <Button
@@ -82,16 +84,14 @@ export const FinalCTA = () => {
 
                 {/* Trust bullets */}
                 <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
-                  {[
-                    { icon: Zap, text: "14-day free trial" },
-                    { icon: Shield, text: "No credit card required" },
-                    { icon: Clock, text: "Setup in 2 minutes" },
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <item.icon className="w-4 h-4 text-primary flex-shrink-0" aria-hidden="true" />
-                      <span>{item.text}</span>
-                    </div>
-                  ))}
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-primary flex-shrink-0" aria-hidden="true" />
+                    <span>14-day free trial</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="w-4 h-4 text-primary flex-shrink-0" aria-hidden="true" />
+                    <span>Credit card required</span>
+                  </div>
                 </div>
               </div>
             </div>

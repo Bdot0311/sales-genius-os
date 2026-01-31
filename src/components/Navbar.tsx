@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Menu, X, ArrowRight } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import salesosLogo from "@/assets/salesos-logo-64.webp";
@@ -114,18 +114,10 @@ export const Navbar = () => {
               <Button 
                 variant="ghost" 
                 size="sm"
-                className="hidden sm:inline-flex text-muted-foreground hover:text-foreground"
+                className="text-muted-foreground hover:text-foreground font-medium"
                 onClick={() => navigate("/auth")}
               >
-                Log in
-              </Button>
-              <Button 
-                size="sm" 
-                className="bg-foreground text-background hover:bg-foreground/90 font-medium group"
-                onClick={() => navigate("/auth")}
-              >
-                Start free trial
-                <ArrowRight className="w-3.5 h-3.5 ml-1.5 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200" aria-hidden="true" />
+                Login
               </Button>
               
               {/* Mobile menu button */}
@@ -168,7 +160,7 @@ export const Navbar = () => {
                 className="w-full bg-foreground text-background hover:bg-foreground/90"
                 onClick={() => navigate("/auth")}
               >
-                Start free trial
+                Login
               </Button>
             </div>
           </div>

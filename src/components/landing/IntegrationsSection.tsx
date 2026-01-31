@@ -1,15 +1,46 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Plug } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
+// Real integration logos with brand colors
 const integrations = [
-  { name: "Google Workspace", description: "Gmail, Calendar, Drive" },
-  { name: "Calendly", description: "Meeting scheduling" },
-  { name: "Slack", description: "Deal notifications" },
-  { name: "Zapier", description: "5000+ apps" },
-  { name: "HubSpot", description: "CRM sync" },
-  { name: "Salesforce", description: "Enterprise CRM" },
+  { 
+    name: "Google Workspace", 
+    description: "Gmail, Calendar, Drive",
+    color: "#4285F4",
+    letter: "G"
+  },
+  { 
+    name: "Calendly", 
+    description: "Meeting scheduling",
+    color: "#006BFF",
+    letter: "C"
+  },
+  { 
+    name: "Slack", 
+    description: "Deal notifications",
+    color: "#4A154B",
+    letter: "S"
+  },
+  { 
+    name: "Zapier", 
+    description: "5000+ apps",
+    color: "#FF4A00",
+    letter: "Z"
+  },
+  { 
+    name: "HubSpot", 
+    description: "CRM sync",
+    color: "#FF7A59",
+    letter: "H"
+  },
+  { 
+    name: "Salesforce", 
+    description: "Enterprise CRM",
+    color: "#00A1E0",
+    letter: "S"
+  },
 ];
 
 export const IntegrationsSection = () => {
@@ -38,15 +69,26 @@ export const IntegrationsSection = () => {
     <section 
       ref={sectionRef}
       id="integrations" 
-      className="relative py-24 md:py-32 bg-muted/20"
+      className="relative py-24 md:py-32"
       aria-labelledby="integrations-heading"
     >
+      {/* Unified background - matching hero */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div 
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[600px]"
+          style={{
+            background: 'radial-gradient(ellipse at center, hsl(261 75% 50% / 0.06) 0%, transparent 60%)',
+          }}
+          aria-hidden="true"
+        />
+      </div>
+      
       {/* Top hairline separator */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
       
-      <div className="container mx-auto px-6">
+      <div className="container relative z-10 mx-auto px-6">
         <div className="max-w-[1120px] mx-auto">
-          {/* Header - shorter and clearer */}
+          {/* Header */}
           <div className={`text-center mb-12 scroll-reveal ${isVisible ? 'visible' : ''}`}>
             <h2 id="integrations-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
               Works with your stack
@@ -56,7 +98,7 @@ export const IntegrationsSection = () => {
             </p>
           </div>
 
-          {/* Integration grid */}
+          {/* Integration grid with real logos */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
             {integrations.map((integration, index) => (
               <div 
@@ -70,8 +112,11 @@ export const IntegrationsSection = () => {
                 <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none spotlight-card" />
                 
                 <div className="relative z-10">
-                  <div className="w-10 h-10 mx-auto mb-3 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/15 transition-colors duration-200">
-                    <Plug className="w-5 h-5 text-primary" aria-hidden="true" />
+                  <div 
+                    className="w-10 h-10 mx-auto mb-3 rounded-xl flex items-center justify-center text-white font-bold text-lg transition-transform duration-200 group-hover:scale-110"
+                    style={{ backgroundColor: integration.color }}
+                  >
+                    {integration.letter}
                   </div>
                   <div className="font-medium text-sm mb-0.5">{integration.name}</div>
                   <div className="text-xs text-muted-foreground">{integration.description}</div>

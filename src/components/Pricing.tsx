@@ -1,10 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, HelpCircle, ChevronDown } from "lucide-react";
 import { STRIPE_PRICE_IDS } from "@/lib/stripe-config";
 import { useSearchCredits } from "@/hooks/use-search-credits";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 const plans = [
   {
@@ -73,10 +79,56 @@ const addons = [
   },
 ];
 
+const creditFAQs = [
+  {
+    question: "What are search credits?",
+    answer: "Search credits are used when you discover new leads through our Lead Intelligence Engine. Each search query that returns results uses credits based on the number of leads found. Previewing results, viewing lead details, enrichment, and exports are all free and don't consume credits."
+  },
+  {
+    question: "How do credits reset?",
+    answer: "Your search credits reset on a monthly basis, aligned with your billing cycle. Unused credits do not roll over to the next month. If you need more credits mid-cycle, you can purchase add-on packs that are added immediately to your balance."
+  },
+  {
+    question: "What happens when I run out of credits?",
+    answer: "When you exhaust your monthly credits, you can still access all your saved leads, enrichment data, and pipeline features. To continue discovering new leads, you can either wait for your monthly reset or purchase a credit add-on pack."
+  },
+  {
+    question: "Can I get a refund on unused credits?",
+    answer: "Credits are non-refundable and expire at the end of each billing cycle. We recommend starting with a plan that matches your expected usage and adjusting as you learn your needs. Our team can help you estimate the right plan based on your sales volume."
+  },
+  {
+    question: "What's included in the 14-day free trial?",
+    answer: "All plans include a 14-day free trial with full access to features and a starter credit allocation. A credit card is required to begin your trial. You can cancel anytime during the trial period without being charged."
+  },
+  {
+    question: "Can I change plans later?",
+    answer: "Yes, you can upgrade or downgrade your plan at any time. When upgrading, the new credit allocation takes effect immediately. When downgrading, the change applies at the start of your next billing cycle to ensure you keep your current benefits."
+  },
+];
+
 export const Pricing = () => {
   const { credits, addAddon, removeAddon } = useSearchCredits();
   const [addingAddon, setAddingAddon] = useState<string | null>(null);
   const [removingAddon, setRemovingAddon] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setIsVisible(true);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
 
   const handleCheckout = (paymentLink: string) => {
     window.open(paymentLink, '_blank');
@@ -101,10 +153,25 @@ export const Pricing = () => {
   };
 
   return (
-    <section id="pricing" className="py-24 md:py-32 bg-background relative">
-      <div className="container mx-auto px-6">
+    <section 
+      ref={sectionRef}
+      id="pricing" 
+      className="relative py-24 md:py-32 overflow-hidden"
+    >
+      {/* Unified background - matching hero */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div 
+          className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[700px] aurora-ambient"
+          style={{
+            background: 'radial-gradient(ellipse at center, hsl(261 75% 50% / 0.08) 0%, transparent 60%)',
+          }}
+          aria-hidden="true"
+        />
+      </div>
+      
+      <div className="container relative z-10 mx-auto px-6">
         {/* Header */}
-        <div className="max-w-3xl mx-auto text-center mb-16">
+        <div className={`max-w-3xl mx-auto text-center mb-16 scroll-reveal ${isVisible ? 'visible' : ''}`}>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted text-sm text-muted-foreground mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-primary" />
             Pricing
@@ -113,28 +180,34 @@ export const Pricing = () => {
             Simple, transparent pricing
           </h1>
           <p className="text-lg text-muted-foreground">
-            Start free. Upgrade when you're ready. No hidden fees.
+            Start with a 14-day free trial. Upgrade when you're ready. No hidden fees.
           </p>
         </div>
 
         {/* Plan Cards */}
-        <div className="grid lg:grid-cols-3 gap-6 max-w-6xl mx-auto mb-20">
-          {plans.map((plan) => (
+        <div className={`grid lg:grid-cols-3 gap-6 max-w-6xl mx-auto mb-20 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '100ms' } as React.CSSProperties}>
+          {plans.map((plan, index) => (
             <div 
               key={plan.key}
-              className={`relative p-8 rounded-2xl border transition-all duration-300 ${
+              className={`group relative p-8 rounded-2xl border transition-all duration-300 card-hover-lift ${
                 plan.highlighted 
                   ? 'bg-primary text-primary-foreground border-primary scale-[1.02] shadow-xl shadow-primary/20' 
-                  : 'bg-card border-border hover:border-primary/50'
+                  : 'bg-card border-border/30 hover:border-primary/50'
               }`}
+              style={{ '--reveal-delay': `${(index + 1) * 80}ms` } as React.CSSProperties}
             >
+              {/* Spotlight effect for non-highlighted cards */}
+              {!plan.highlighted && (
+                <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none spotlight-card" />
+              )}
+              
               {plan.highlighted && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-foreground text-background text-xs font-medium">
                   Most popular
                 </div>
               )}
               
-              <div className="mb-6">
+              <div className="relative z-10 mb-6">
                 <h3 className="text-xl font-semibold mb-2">{plan.name}</h3>
                 <div className="flex items-baseline gap-1 mb-2">
                   <span className="text-4xl font-bold">{plan.price}</span>
@@ -147,7 +220,7 @@ export const Pricing = () => {
                 </p>
               </div>
 
-              <ul className="space-y-3 mb-8">
+              <ul className="relative z-10 space-y-3 mb-8">
                 {plan.features.map((feature, i) => (
                   <li key={i} className="flex items-start gap-3">
                     <Check className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
@@ -163,21 +236,21 @@ export const Pricing = () => {
               </ul>
 
               <Button 
-                className={`w-full h-12 font-semibold rounded-xl ${
+                className={`relative z-10 w-full h-12 font-semibold rounded-xl ${
                   plan.highlighted 
                     ? 'bg-foreground text-background hover:bg-foreground/90' 
                     : 'bg-primary text-primary-foreground hover:bg-primary/90'
                 }`}
                 onClick={() => handleCheckout(plan.paymentLink)}
               >
-                Start free trial
+                Start 14-day free trial
               </Button>
             </div>
           ))}
         </div>
 
         {/* Add-ons Section */}
-        <div className="max-w-2xl mx-auto">
+        <div className={`max-w-2xl mx-auto mb-20 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '300ms' } as React.CSSProperties}>
           <div className="text-center mb-8">
             <h3 className="text-xl font-semibold mb-2">Need more credits?</h3>
             <p className="text-muted-foreground text-sm">
@@ -193,39 +266,72 @@ export const Pricing = () => {
               return (
                 <div 
                   key={addon.credits}
-                  className={`p-6 rounded-xl border text-center transition-all ${
-                    isCurrentAddon ? 'border-primary bg-primary/5' : 'border-border bg-card hover:border-primary/50'
+                  className={`group relative p-6 rounded-xl border text-center transition-all card-hover-lift ${
+                    isCurrentAddon ? 'border-primary bg-primary/5' : 'border-border/30 bg-card/40 hover:border-primary/50'
                   }`}
                 >
-                  <div className="text-2xl font-bold mb-1">+{addon.credits.toLocaleString()}</div>
-                  <div className="text-sm text-muted-foreground mb-3">credits per month</div>
-                  <div className="text-lg font-semibold text-primary mb-4">{addon.price}/mo</div>
+                  {/* Spotlight effect */}
+                  <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none spotlight-card" />
                   
-                  {isCurrentAddon ? (
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="w-full"
-                      onClick={handleRemoveAddon}
-                      disabled={removingAddon}
-                    >
-                      {removingAddon ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Removing...</> : 'Remove'}
-                    </Button>
-                  ) : (
-                    <Button 
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                      onClick={() => handleAddAddon(addon.priceId)}
-                      disabled={isLoading || addingAddon !== null}
-                    >
-                      {isLoading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Adding...</> : 'Add to plan'}
-                    </Button>
-                  )}
+                  <div className="relative z-10">
+                    <div className="text-2xl font-bold mb-1">+{addon.credits.toLocaleString()}</div>
+                    <div className="text-sm text-muted-foreground mb-3">credits per month</div>
+                    <div className="text-lg font-semibold text-primary mb-4">{addon.price}/mo</div>
+                    
+                    {isCurrentAddon ? (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="w-full"
+                        onClick={handleRemoveAddon}
+                        disabled={removingAddon}
+                      >
+                        {removingAddon ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Removing...</> : 'Remove'}
+                      </Button>
+                    ) : (
+                      <Button 
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => handleAddAddon(addon.priceId)}
+                        disabled={isLoading || addingAddon !== null}
+                      >
+                        {isLoading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Adding...</> : 'Add to plan'}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               );
             })}
           </div>
+        </div>
+
+        {/* Credit FAQs */}
+        <div className={`max-w-3xl mx-auto scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '400ms' } as React.CSSProperties}>
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center gap-2 text-muted-foreground mb-2">
+              <HelpCircle className="w-5 h-5" />
+              <span className="text-sm font-medium">FAQs</span>
+            </div>
+            <h3 className="text-2xl font-semibold">How credits work</h3>
+          </div>
+
+          <Accordion type="single" collapsible className="w-full space-y-3">
+            {creditFAQs.map((faq, index) => (
+              <AccordionItem 
+                key={index} 
+                value={`item-${index}`}
+                className="border border-border/30 rounded-xl px-6 bg-card/40 data-[state=open]:bg-card/60 transition-colors"
+              >
+                <AccordionTrigger className="text-left hover:no-underline py-4">
+                  <span className="font-medium">{faq.question}</span>
+                </AccordionTrigger>
+                <AccordionContent className="pb-4 text-muted-foreground leading-relaxed">
+                  {faq.answer}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
         </div>
       </div>
     </section>

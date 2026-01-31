@@ -12,7 +12,7 @@ import { ArrowRight } from "lucide-react";
 const faqs = [
   {
     question: "What's included in the free trial?",
-    answer: "You get full access to all SalesOS features for 14 days, including AI lead discovery, email generation, pipeline management, and all integrations. No credit card required to start. At the end of your trial, you can choose a plan that fits your needs or continue with limited free access."
+    answer: "You get full access to all SalesOS features for 14 days, including AI lead discovery, email generation, pipeline management, and all integrations. A credit card is required to start your trial. At the end of your trial, you can choose a plan that fits your needs or cancel without being charged."
   },
   {
     question: "How do search credits work?",
@@ -61,15 +61,26 @@ export const FAQSection = () => {
     <section 
       ref={sectionRef}
       id="faq" 
-      className="relative py-24 md:py-32 bg-muted/20"
+      className="relative py-24 md:py-32 overflow-hidden"
       aria-labelledby="faq-heading"
     >
+      {/* Unified background - matching hero */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div 
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px]"
+          style={{
+            background: 'radial-gradient(ellipse at center, hsl(261 75% 50% / 0.06) 0%, transparent 60%)',
+          }}
+          aria-hidden="true"
+        />
+      </div>
+      
       {/* Top hairline separator */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
       
       <FAQSchema faqs={faqs} />
       
-      <div className="container mx-auto px-6">
+      <div className="container relative z-10 mx-auto px-6">
         <div className="max-w-[720px] mx-auto">
           {/* Header */}
           <div className={`text-center mb-12 scroll-reveal ${isVisible ? 'visible' : ''}`}>

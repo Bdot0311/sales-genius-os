@@ -48,13 +48,24 @@ export const OutcomesSection = () => {
   return (
     <section 
       ref={sectionRef}
-      className="relative py-24 md:py-32 bg-background"
+      className="relative py-24 md:py-32 overflow-hidden"
       aria-labelledby="outcomes-heading"
     >
+      {/* Unified background - matching hero */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div 
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[600px]"
+          style={{
+            background: 'radial-gradient(ellipse at center, hsl(261 75% 50% / 0.06) 0%, transparent 60%)',
+          }}
+          aria-hidden="true"
+        />
+      </div>
+      
       {/* Top hairline separator */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
       
-      <div className="container mx-auto px-6">
+      <div className="container relative z-10 mx-auto px-6">
         <div className="max-w-[1120px] mx-auto">
           {/* Header */}
           <div className={`text-center mb-16 scroll-reveal ${isVisible ? 'visible' : ''}`}>
