@@ -73,8 +73,9 @@ export const FinalCTA = () => {
                     <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" aria-hidden="true" />
                   </Button>
                   <Button
+                    variant="outline"
                     size="lg"
-                    className="h-12 px-6 text-base font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90"
+                    className="h-12 px-6 text-base font-medium rounded-lg btn-outline-hover"
                     onClick={() => navigate('/pricing')}
                   >
                     View pricing
