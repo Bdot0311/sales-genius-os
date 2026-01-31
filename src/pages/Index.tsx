@@ -117,8 +117,6 @@ const Index = () => {
             <Integrations />
             <Testimonials />
             <FAQ />
-            <Testimonials />
-            <FAQ />
             <CTASection />
           </article>
         </main>
