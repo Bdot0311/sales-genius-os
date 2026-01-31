@@ -16,7 +16,7 @@ import {
   HowToSchema,
   ItemListSchema
 } from "@/components/seo";
-import { AnimatedBackground } from "@/components/ui/AnimatedBackground";
+
 
 // AEO: Define clear, structured content for AI answer engines
 const gettingStartedSteps = [
@@ -106,8 +106,7 @@ const Index = () => {
         items={keyFeatures}
       />
       
-      <div className="min-h-screen bg-transparent text-foreground relative">
-        <AnimatedBackground />
+      <div className="min-h-screen bg-background text-foreground relative">
         <Navbar />
         <main itemScope itemType="https://schema.org/WebPage">
           <article>

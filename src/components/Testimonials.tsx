@@ -1,81 +1,46 @@
-import { Card } from "@/components/ui/card";
-import { Avatar } from "@/components/ui/avatar";
-import { Star } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-const betaTesters = [
+const testimonials = [
   {
-    name: "Sarah C.",
-    role: "Beta Tester, Sales Leader",
+    name: "Sarah Chen",
+    role: "VP of Sales",
+    company: "TechFlow",
     image: "SC",
-    rating: 5,
-    text: "Incredible potential! During the beta, the AI outreach feature generated personalized sequences that felt genuinely human. Can't wait for the full launch."
+    text: "SalesOS transformed how we approach outbound. The AI-generated emails feel genuinely personal, and our response rates increased 3x.",
+    metric: "3x response rate"
   },
   {
-    name: "Marcus R.",
-    role: "Beta Tester, Startup Founder",
+    name: "Marcus Rodriguez",
+    role: "Founder & CEO",
+    company: "DataSync",
     image: "MR",
-    rating: 5,
-    text: "The automation workflows are game-changing. In just 2 weeks of testing, I could see how this would save hours of manual work."
+    text: "The automation workflows saved us 20+ hours per week. What used to take our team days now happens automatically.",
+    metric: "20+ hours saved weekly"
   },
   {
-    name: "Emily W.",
-    role: "Beta Tester, Sales Director",
+    name: "Emily Watson",
+    role: "Sales Director",
+    company: "CloudBase",
     image: "EW",
-    rating: 5,
-    text: "The lead scoring accuracy during beta testing was impressive. This is exactly what modern sales teams need."
+    text: "Lead scoring accuracy is impressive. We're now focusing only on prospects most likely to convert. Game changer for our team.",
+    metric: "85% scoring accuracy"
   },
   {
-    name: "David K.",
-    role: "Beta Tester, CEO",
+    name: "David Kim",
+    role: "Head of Growth",
+    company: "ScaleUp",
     image: "DK",
-    rating: 5,
-    text: "SalesOS has serious potential. The analytics dashboard in beta gave insights I've never seen in other tools. Excited for launch day!"
+    text: "Finally, a platform that understands modern sales. The pipeline analytics gave us insights we never had before.",
+    metric: "40% pipeline visibility"
   }
 ];
 
-const betaStats = [
-  { value: "50+", label: "Beta testers" },
-  { value: "94%", label: "Would recommend" },
-  { value: "4.8", label: "Avg. satisfaction score" },
-  { value: "12+", label: "Features tested" }
+const stats = [
+  { value: "500+", label: "Companies using SalesOS" },
+  { value: "2M+", label: "Leads enriched" },
+  { value: "94%", label: "Customer satisfaction" },
+  { value: "$12M+", label: "Pipeline influenced" }
 ];
-
-const AnimatedCounter = ({ value, isVisible }: { value: string; isVisible: boolean }) => {
-  const [displayValue, setDisplayValue] = useState("0");
-  
-  useEffect(() => {
-    if (!isVisible) return;
-    
-    const numericMatch = value.match(/[\d.]+/);
-    if (!numericMatch) {
-      setDisplayValue(value);
-      return;
-    }
-    
-    const target = parseFloat(numericMatch[0]);
-    const suffix = value.replace(numericMatch[0], "");
-    const duration = 2000;
-    const steps = 60;
-    const increment = target / steps;
-    let current = 0;
-    
-    const timer = setInterval(() => {
-      current += increment;
-      if (current >= target) {
-        setDisplayValue(value);
-        clearInterval(timer);
-      } else {
-        const formatted = target >= 10 ? Math.floor(current).toString() : current.toFixed(1);
-        setDisplayValue(formatted + suffix);
-      }
-    }, duration / steps);
-    
-    return () => clearInterval(timer);
-  }, [value, isVisible]);
-  
-  return <span className="count-up">{displayValue}</span>;
-};
 
 export const Testimonials = () => {
   const [statsVisible, setStatsVisible] = useState(false);
@@ -101,7 +66,7 @@ export const Testimonials = () => {
             if (index !== -1) {
               setTimeout(() => {
                 setCardsVisible((prev) => new Set([...prev, index]));
-              }, index * 150);
+              }, index * 100);
             }
           }
         });
@@ -124,82 +89,81 @@ export const Testimonials = () => {
   }, []);
 
   return (
-    <section id="testimonials" className="py-24 bg-background relative overflow-hidden">
-      {/* Subtle background glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl pointer-events-none" />
-      
-      <div className="container mx-auto px-6 relative">
+    <section id="testimonials" className="py-24 md:py-32 bg-muted/30 relative">
+      <div className="container mx-auto px-6">
         {/* Stats Section */}
-        <div ref={statsRef} className="mb-24">
-          <div className={`text-center mb-12 transition-all duration-700 ${statsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-4">
-              <span>🧪 Beta Program Results</span>
+        <div ref={statsRef} className="mb-20">
+          <div className={`text-center mb-12 transition-all duration-700 ${
+            statsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          }`}>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-background text-sm text-muted-foreground mb-6">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+              Trusted by teams worldwide
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              Early Feedback From
-              <span className="text-gradient-animated"> Beta Testers</span>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4">
+              Results that speak for themselves
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Real feedback from our exclusive beta testing program
-            </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {betaStats.map((stat, index) => (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 max-w-4xl mx-auto">
+            {stats.map((stat, index) => (
               <div 
                 key={index} 
-                className={`text-center transition-all duration-700 ${statsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+                className={`text-center p-6 rounded-2xl bg-background border border-border/50 transition-all duration-500 ${
+                  statsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+                }`}
                 style={{ transitionDelay: `${index * 100 + 200}ms` }}
               >
-                <div className="text-5xl md:text-6xl font-bold text-gradient-animated mb-2">
-                  <AnimatedCounter value={stat.value} isVisible={statsVisible} />
+                <div className="text-3xl md:text-4xl font-bold text-foreground mb-1">
+                  {stat.value}
                 </div>
-                <p className="text-muted-foreground">{stat.label}</p>
+                <p className="text-sm text-muted-foreground">{stat.label}</p>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Beta Testers Section */}
-        <div className={`text-center mb-16 transition-all duration-700 ${statsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: '600ms' }}>
-          <h2 className="text-4xl md:text-5xl font-bold mb-4">
-            What Beta Testers
-            <span className="text-gradient-animated"> Are Saying</span>
-          </h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Early impressions from our exclusive testing program
-          </p>
+        {/* Testimonials Section */}
+        <div className={`text-center mb-12 transition-all duration-700 ${
+          statsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+        }`} style={{ transitionDelay: '400ms' }}>
+          <h3 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            What our customers say
+          </h3>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          {betaTesters.map((tester, index) => (
-            <Card 
+        <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+          {testimonials.map((testimonial, index) => (
+            <div 
               key={index}
               ref={(el) => (cardRefs.current[index] = el)}
-              className={`p-8 bg-card border-border card-interactive transition-all duration-500 ${
-                cardsVisible.has(index) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
+              className={`p-6 rounded-2xl bg-background border border-border/50 transition-all duration-500 hover:border-primary/30 ${
+                cardsVisible.has(index) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
               }`}
             >
-              <div className="flex items-center gap-4 mb-4">
-                <Avatar className="w-12 h-12 bg-gradient-primary flex items-center justify-center text-white font-semibold animate-float" style={{ animationDelay: `${index * 0.5}s` }}>
-                  {tester.image}
-                </Avatar>
-                <div className="flex-1">
-                  <div className="font-semibold">{tester.name}</div>
-                  <div className="text-sm text-muted-foreground">{tester.role}</div>
+              {/* Quote */}
+              <p className="text-foreground leading-relaxed mb-6">
+                "{testimonial.text}"
+              </p>
+              
+              {/* Footer */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-sm font-semibold text-white">
+                    {testimonial.image}
+                  </div>
+                  <div>
+                    <div className="font-semibold text-sm">{testimonial.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {testimonial.role}, {testimonial.company}
+                    </div>
+                  </div>
                 </div>
-                <div className="flex gap-1">
-                  {[...Array(tester.rating)].map((_, i) => (
-                    <Star 
-                      key={i} 
-                      className="w-4 h-4 fill-primary text-primary transition-transform duration-300 hover:scale-125" 
-                      style={{ animationDelay: `${i * 0.1}s` }}
-                    />
-                  ))}
+                <div className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                  {testimonial.metric}
                 </div>
               </div>
-              <p className="text-muted-foreground leading-relaxed">{tester.text}</p>
-            </Card>
+            </div>
           ))}
         </div>
       </div>

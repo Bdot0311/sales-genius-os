@@ -6,51 +6,48 @@ import {
   Mic, 
   Workflow, 
   BarChart3,
-  Lightbulb 
+  Lightbulb,
+  ArrowRight
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 const features = [
   {
     icon: Brain,
-    title: "Lead Intelligence Engine",
-    description: "Import and enrich leads from the SalesOS Lead Intelligence Network. Auto-score by ICP match for laser-focused targeting."
+    title: "AI Lead Scoring",
+    description: "Machine learning analyzes engagement and company fit to predict which leads are most likely to convert.",
+    gradient: "from-violet-500 to-purple-500"
   },
   {
     icon: Mail,
-    title: "AI Outreach Studio",
-    description: "Generate personalized cold emails and LinkedIn messages with dynamic variables and tone calibration."
+    title: "Smart Outreach",
+    description: "Generate personalized emails and sequences that feel human. AI adapts tone and messaging per prospect.",
+    gradient: "from-blue-500 to-cyan-500"
   },
   {
     icon: Calendar,
-    title: "Meeting Automator",
-    description: "Auto-schedule calls based on availability and lead responsiveness. Integrates with Google Calendar, Outlook, and Calendly."
+    title: "Auto Scheduling",
+    description: "Book meetings without the back-and-forth. Smart scheduling finds optimal times for both parties.",
+    gradient: "from-amber-500 to-orange-500"
   },
   {
     icon: TrendingUp,
-    title: "Smart Deal Pipeline",
-    description: "Kanban-style CRM with automatic stage advancement and built-in notifications for every deal milestone."
+    title: "Pipeline Analytics",
+    description: "Visualize your funnel health. Track conversion rates, identify bottlenecks, forecast revenue.",
+    gradient: "from-green-500 to-emerald-500"
   },
   {
     icon: Mic,
-    title: "AI Sales Coach",
-    description: "Real-time call analysis with objection rebuttals and closing tips based on proven sales frameworks."
+    title: "Sales Coaching",
+    description: "Real-time AI coaching during calls. Get objection handling tips and closing strategies on demand.",
+    gradient: "from-pink-500 to-rose-500"
   },
   {
     icon: Workflow,
-    title: "Automation Builder",
-    description: "Drag-and-drop flow designer for complex sales automations. If-then rules for every scenario."
+    title: "Workflow Builder",
+    description: "Drag-and-drop automation for every scenario. Build complex sequences without writing code.",
+    gradient: "from-indigo-500 to-violet-500"
   },
-  {
-    icon: BarChart3,
-    title: "Analytics Dashboard",
-    description: "Track reply rates, booking ratios, conversion rates, and revenue by rep, channel, and campaign."
-  },
-  {
-    icon: Lightbulb,
-    title: "AI Recommendations",
-    description: "Predictive insights on when to follow up, which channels convert best, and how to optimize messaging."
-  }
 ];
 
 export const Features = () => {
@@ -68,7 +65,7 @@ export const Features = () => {
             if (index !== -1) {
               setTimeout(() => {
                 setVisibleItems((prev) => new Set([...prev, index]));
-              }, index * 100);
+              }, index * 80);
             }
           }
         });
@@ -103,38 +100,53 @@ export const Features = () => {
     <section 
       ref={sectionRef}
       id="features" 
-      className="py-16 sm:py-20 md:py-24 bg-background relative" 
-      aria-labelledby="features-heading"
+      className="py-24 md:py-32 bg-background relative"
     >
-      <div className="container mx-auto px-4 sm:px-6">
-        <header className={`text-center mb-12 sm:mb-16 transition-all duration-700 ${headerVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-          <h2 id="features-heading" className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 px-4">
-            Everything You Need to
-            <span className="text-gradient-animated"> Dominate Sales</span>
+      <div className="container mx-auto px-6">
+        {/* Section header */}
+        <div className={`max-w-3xl mx-auto text-center mb-16 md:mb-20 transition-all duration-700 ${
+          headerVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+        }`}>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted text-sm text-muted-foreground mb-6">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+            Features
+          </div>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-6">
+            Everything you need to{" "}
+            <span className="text-primary">sell smarter</span>
           </h2>
-          <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
-            8 powerful modules that work together to automate your entire sales process
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Six powerful modules working together to automate your entire sales workflow—from discovery to close.
           </p>
-        </header>
+        </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6" role="list">
+        {/* Features grid */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((feature, index) => (
             <article 
               key={index}
               ref={(el) => (itemRefs.current[index] = el)}
-              role="listitem"
-              className={`p-5 sm:p-6 bg-card border border-border rounded-lg card-interactive group cursor-default transition-all duration-500 ${
-                visibleItems.has(index) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
+              className={`group relative p-6 rounded-2xl border border-border/50 bg-card/30 hover:bg-card/60 hover:border-primary/30 transition-all duration-500 cursor-default ${
+                visibleItems.has(index) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
               }`}
             >
-              <div 
-                className="mb-3 sm:mb-4 w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-gradient-primary flex items-center justify-center icon-bounce" 
-                aria-hidden="true"
-              >
-                <feature.icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+              {/* Icon */}
+              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300`}>
+                <feature.icon className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-base sm:text-lg font-semibold mb-2 group-hover:text-primary transition-colors duration-300">{feature.title}</h3>
-              <p className="text-xs sm:text-sm text-muted-foreground">{feature.description}</p>
+              
+              {/* Content */}
+              <h3 className="text-lg font-semibold mb-2 group-hover:text-primary transition-colors">
+                {feature.title}
+              </h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {feature.description}
+              </p>
+              
+              {/* Hover arrow */}
+              <div className="absolute bottom-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                <ArrowRight className="w-5 h-5 text-primary" />
+              </div>
             </article>
           ))}
         </div>
