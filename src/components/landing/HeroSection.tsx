@@ -315,11 +315,11 @@ export const HeroSection = () => {
             >
               <Button 
                 size="lg" 
-                className="h-12 px-6 text-base font-semibold bg-foreground text-background hover:bg-foreground/90 rounded-lg group btn-glow-hover"
+                className="h-12 px-6 text-base font-semibold bg-foreground text-background hover:bg-foreground/90 rounded-lg group btn-glow-hover inline-flex items-center justify-center"
                 onClick={() => navigate('/auth')}
-                aria-label="Start free trial - no credit card required"
+                aria-label="Start 14-day free trial"
               >
-                Start free trial — no credit card
+                <span>Start 14-day free trial</span>
                 <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
               </Button>
               <Button 
