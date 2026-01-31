@@ -5,8 +5,6 @@ import {
   TrendingUp, 
   Mic, 
   Workflow, 
-  BarChart3,
-  Lightbulb,
   ArrowRight
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -16,37 +14,31 @@ const features = [
     icon: Brain,
     title: "AI Lead Scoring",
     description: "Machine learning analyzes engagement and company fit to predict which leads are most likely to convert.",
-    gradient: "from-violet-500 to-purple-500"
   },
   {
     icon: Mail,
     title: "Smart Outreach",
     description: "Generate personalized emails and sequences that feel human. AI adapts tone and messaging per prospect.",
-    gradient: "from-blue-500 to-cyan-500"
   },
   {
     icon: Calendar,
     title: "Auto Scheduling",
     description: "Book meetings without the back-and-forth. Smart scheduling finds optimal times for both parties.",
-    gradient: "from-amber-500 to-orange-500"
   },
   {
     icon: TrendingUp,
     title: "Pipeline Analytics",
     description: "Visualize your funnel health. Track conversion rates, identify bottlenecks, forecast revenue.",
-    gradient: "from-green-500 to-emerald-500"
   },
   {
     icon: Mic,
     title: "Sales Coaching",
     description: "Real-time AI coaching during calls. Get objection handling tips and closing strategies on demand.",
-    gradient: "from-pink-500 to-rose-500"
   },
   {
     icon: Workflow,
     title: "Workflow Builder",
     description: "Drag-and-drop automation for every scenario. Build complex sequences without writing code.",
-    gradient: "from-indigo-500 to-violet-500"
   },
 ];
 
@@ -65,7 +57,7 @@ export const Features = () => {
             if (index !== -1) {
               setTimeout(() => {
                 setVisibleItems((prev) => new Set([...prev, index]));
-              }, index * 80);
+              }, index * 100);
             }
           }
         });
@@ -100,9 +92,12 @@ export const Features = () => {
     <section 
       ref={sectionRef}
       id="features" 
-      className="py-24 md:py-32 bg-background relative"
+      className="py-24 md:py-32 bg-background relative overflow-hidden"
     >
-      <div className="container mx-auto px-6">
+      {/* Background accent */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] bg-primary/5 rounded-full blur-[150px] pointer-events-none" />
+      
+      <div className="container relative z-10 mx-auto px-6">
         {/* Section header */}
         <div className={`max-w-3xl mx-auto text-center mb-16 md:mb-20 transition-all duration-700 ${
           headerVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
@@ -120,19 +115,19 @@ export const Features = () => {
           </p>
         </div>
 
-        {/* Features grid */}
+        {/* Features grid with bento-style layout */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((feature, index) => (
             <article 
               key={index}
               ref={(el) => (itemRefs.current[index] = el)}
-              className={`group relative p-6 rounded-2xl border border-border/50 bg-card/30 hover:bg-card/60 hover:border-primary/30 transition-all duration-500 cursor-default ${
-                visibleItems.has(index) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              className={`group relative p-6 rounded-2xl border border-border/50 bg-card/30 backdrop-blur-sm hover:bg-card/60 hover:border-primary/30 transition-all duration-500 cursor-default spotlight hover-lift ${
+                visibleItems.has(index) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
               }`}
             >
-              {/* Icon */}
-              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300`}>
-                <feature.icon className="w-6 h-6 text-white" />
+              {/* Icon with primary background */}
+              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-5 group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
+                <feature.icon className="w-6 h-6 text-primary" />
               </div>
               
               {/* Content */}
@@ -144,7 +139,7 @@ export const Features = () => {
               </p>
               
               {/* Hover arrow */}
-              <div className="absolute bottom-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute bottom-6 right-6 opacity-0 translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
                 <ArrowRight className="w-5 h-5 text-primary" />
               </div>
             </article>
