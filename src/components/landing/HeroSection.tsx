@@ -274,9 +274,9 @@ export const HeroSection = () => {
               }`}
               style={{ '--reveal-delay': '60ms' } as React.CSSProperties}
             >
-              Find leads that{" "}
+              Find, engage, and{" "}
               <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                actually convert.
+                close more deals.
               </span>
             </h1>
 
@@ -287,7 +287,7 @@ export const HeroSection = () => {
               }`}
               style={{ '--reveal-delay': '120ms' } as React.CSSProperties}
             >
-              Describe your ideal customer in plain English. Get ranked matches with enriched profiles—your first lead in under 2 minutes.
+              AI-powered lead discovery, personalized outreach, pipeline management, and sales coaching—all in one platform. Your first lead in under 2 minutes.
             </p>
 
             {/* CTA Buttons */}
