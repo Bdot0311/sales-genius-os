@@ -1,5 +1,3 @@
-import { Helmet } from 'react-helmet-async';
-
 const BASE_URL = 'https://salesos.alephwavex.io';
 
 interface FAQItem {
@@ -56,6 +54,14 @@ interface ArticleSchemaProps {
   dateModified?: string;
   image?: string;
 }
+
+// Helper component to render JSON-LD scripts (React 19 native head hoisting)
+const JsonLdScript = ({ schema }: { schema: object }) => (
+  <script
+    type="application/ld+json"
+    dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+  />
+);
 
 // Organization Schema for brand recognition - Enhanced for AEO
 export const OrganizationSchema = ({
@@ -123,13 +129,7 @@ export const OrganizationSchema = ({
     "areaServed": "Worldwide"
   };
 
-  return (
-    <Helmet>
-      <script type="application/ld+json">
-        {JSON.stringify(schema)}
-      </script>
-    </Helmet>
-  );
+  return <JsonLdScript schema={schema} />;
 };
 
 // Software Application Schema - Enhanced with more details
@@ -240,13 +240,7 @@ export const SoftwareApplicationSchema = () => {
     }
   };
 
-  return (
-    <Helmet>
-      <script type="application/ld+json">
-        {JSON.stringify(schema)}
-      </script>
-    </Helmet>
-  );
+  return <JsonLdScript schema={schema} />;
 };
 
 // FAQ Schema for rich snippets - Enhanced
@@ -265,13 +259,7 @@ export const FAQSchema = ({ faqs }: FAQSchemaProps) => {
     }))
   };
 
-  return (
-    <Helmet>
-      <script type="application/ld+json">
-        {JSON.stringify(schema)}
-      </script>
-    </Helmet>
-  );
+  return <JsonLdScript schema={schema} />;
 };
 
 // Product/Pricing Schema - Enhanced
@@ -304,13 +292,7 @@ export const ProductSchema = ({ name, description, price, priceCurrency = "USD" 
     }
   };
 
-  return (
-    <Helmet>
-      <script type="application/ld+json">
-        {JSON.stringify(schema)}
-      </script>
-    </Helmet>
-  );
+  return <JsonLdScript schema={schema} />;
 };
 
 // WebSite Schema with SearchAction for sitelinks - Enhanced
@@ -349,13 +331,7 @@ export const WebSiteSchema = () => {
     }
   };
 
-  return (
-    <Helmet>
-      <script type="application/ld+json">
-        {JSON.stringify(schema)}
-      </script>
-    </Helmet>
-  );
+  return <JsonLdScript schema={schema} />;
 };
 
 // Breadcrumb Schema - Enhanced
@@ -371,13 +347,7 @@ export const BreadcrumbSchema = ({ items }: { items: { name: string; url: string
     }))
   };
 
-  return (
-    <Helmet>
-      <script type="application/ld+json">
-        {JSON.stringify(schema)}
-      </script>
-    </Helmet>
-  );
+  return <JsonLdScript schema={schema} />;
 };
 
 // HowTo Schema for AEO - Great for "How to" queries
@@ -402,13 +372,7 @@ export const HowToSchema = ({ name, description, steps, totalTime = "PT10M" }: H
     }))
   };
 
-  return (
-    <Helmet>
-      <script type="application/ld+json">
-        {JSON.stringify(schema)}
-      </script>
-    </Helmet>
-  );
+  return <JsonLdScript schema={schema} />;
 };
 
 // Video Schema for video content
@@ -437,13 +401,7 @@ export const VideoSchema = ({
     }
   };
 
-  return (
-    <Helmet>
-      <script type="application/ld+json">
-        {JSON.stringify(schema)}
-      </script>
-    </Helmet>
-  );
+  return <JsonLdScript schema={schema} />;
 };
 
 // Article Schema for blog/content pages
@@ -477,13 +435,7 @@ export const ArticleSchema = ({
     }
   };
 
-  return (
-    <Helmet>
-      <script type="application/ld+json">
-        {JSON.stringify(schema)}
-      </script>
-    </Helmet>
-  );
+  return <JsonLdScript schema={schema} />;
 };
 
 // Service Schema - Great for describing what SalesOS offers
@@ -538,13 +490,7 @@ export const ServiceSchema = () => {
     }
   };
 
-  return (
-    <Helmet>
-      <script type="application/ld+json">
-        {JSON.stringify(schema)}
-      </script>
-    </Helmet>
-  );
+  return <JsonLdScript schema={schema} />;
 };
 
 // Speakable Schema for voice search optimization
@@ -559,13 +505,7 @@ export const SpeakableSchema = ({ cssSelectors }: { cssSelectors: string[] }) =>
     "url": BASE_URL
   };
 
-  return (
-    <Helmet>
-      <script type="application/ld+json">
-        {JSON.stringify(schema)}
-      </script>
-    </Helmet>
-  );
+  return <JsonLdScript schema={schema} />;
 };
 
 // ItemList Schema for features/benefits lists
@@ -589,13 +529,7 @@ export const ItemListSchema = ({
     }))
   };
 
-  return (
-    <Helmet>
-      <script type="application/ld+json">
-        {JSON.stringify(schema)}
-      </script>
-    </Helmet>
-  );
+  return <JsonLdScript schema={schema} />;
 };
 
 // Comparison Schema for pricing/product comparisons
@@ -627,11 +561,5 @@ export const ComparisonSchema = ({
     }))
   };
 
-  return (
-    <Helmet>
-      <script type="application/ld+json">
-        {JSON.stringify(schema)}
-      </script>
-    </Helmet>
-  );
+  return <JsonLdScript schema={schema} />;
 };
