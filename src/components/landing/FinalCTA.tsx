@@ -28,14 +28,15 @@ export const FinalCTA = () => {
   return (
     <section 
       ref={ref} 
-      className="py-24 bg-background"
+      className="relative py-24 bg-background"
       aria-labelledby="final-cta-heading"
     >
+      {/* Top hairline separator */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
+      
       <div className="container mx-auto px-6">
         <div className="max-w-[1120px] mx-auto">
-          <div className={`max-w-3xl mx-auto text-center transition-all duration-700 ${
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-          }`}>
+          <div className={`max-w-3xl mx-auto text-center scroll-reveal ${isVisible ? 'visible' : ''}`}>
             {/* Main content card */}
             <div className="p-10 md:p-12 rounded-2xl border border-border/40 bg-gradient-to-b from-primary/5 to-transparent">
               <h2 id="final-cta-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
@@ -50,16 +51,16 @@ export const FinalCTA = () => {
               <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-8">
                 <Button 
                   size="lg"
-                  className="h-12 px-6 text-base font-semibold bg-foreground text-background hover:bg-foreground/90 rounded-lg group"
+                  className="h-12 px-6 text-base font-semibold bg-foreground text-background hover:bg-foreground/90 rounded-lg group btn-glow-hover"
                   onClick={() => navigate('/auth')}
                 >
                   Start free trial — no credit card
-                  <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" aria-hidden="true" />
+                  <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" aria-hidden="true" />
                 </Button>
                 <Button
                   variant="outline"
                   size="lg"
-                  className="h-12 px-6 text-base font-medium rounded-lg"
+                  className="h-12 px-6 text-base font-medium rounded-lg btn-outline-hover"
                   onClick={() => navigate('/pricing')}
                 >
                   View pricing

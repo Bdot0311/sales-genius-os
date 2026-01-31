@@ -47,15 +47,16 @@ export const HowItWorks = () => {
     <section 
       ref={sectionRef}
       id="how-it-works" 
-      className="py-24 bg-muted/30 border-y border-border/40"
+      className="relative py-24 bg-muted/30"
       aria-labelledby="how-it-works-heading"
     >
+      {/* Top hairline separator */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
+      
       <div className="container mx-auto px-6">
         <div className="max-w-[1120px] mx-auto">
           {/* Header */}
-          <div className={`text-center mb-16 transition-all duration-700 ${
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-          }`}>
+          <div className={`text-center mb-16 scroll-reveal ${isVisible ? 'visible' : ''}`}>
             <h2 id="how-it-works-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
               How it works
             </h2>
@@ -69,10 +70,8 @@ export const HowItWorks = () => {
             {steps.map((step, index) => (
               <div 
                 key={index}
-                className={`relative transition-all duration-700 ${
-                  isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-                }`}
-                style={{ transitionDelay: `${index * 150}ms` }}
+                className={`relative scroll-reveal ${isVisible ? 'visible' : ''}`}
+                style={{ '--reveal-delay': `${index * 90}ms` } as React.CSSProperties}
               >
                 {/* Connector line - hidden on mobile and last item */}
                 {index < steps.length - 1 && (
@@ -99,6 +98,9 @@ export const HowItWorks = () => {
           </div>
         </div>
       </div>
+      
+      {/* Bottom hairline separator */}
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
     </section>
   );
 };
