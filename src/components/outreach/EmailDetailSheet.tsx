@@ -4,7 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
 import { Mail, Building2, User, Clock, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
+import DOMPurify from "dompurify";
 interface SentEmail {
   id: string;
   to_email: string;
@@ -98,7 +98,7 @@ export const EmailDetailSheet = ({ email, open, onOpenChange }: EmailDetailSheet
               {email.body_html ? (
                 <div 
                   className="prose prose-sm dark:prose-invert max-w-none"
-                  dangerouslySetInnerHTML={{ __html: email.body_html }}
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(email.body_html) }}
                 />
               ) : (
                 <p className="text-sm whitespace-pre-wrap">{email.body_text}</p>
