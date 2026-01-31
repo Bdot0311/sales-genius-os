@@ -284,20 +284,6 @@ export const HeroSection = () => {
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center max-w-[1120px] mx-auto">
           {/* Left side - Content */}
           <div className="text-center lg:text-left">
-            {/* Beta Badge */}
-            <div 
-              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-6 scroll-reveal ${
-                isVisible ? 'visible' : ''
-              }`}
-              style={{ '--reveal-delay': '0ms' } as React.CSSProperties}
-            >
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-              </span>
-              <span className="text-sm font-medium text-primary">Now in Beta</span>
-            </div>
-
             {/* Main headline */}
             <h1 
               id="hero-heading"
