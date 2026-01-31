@@ -114,7 +114,7 @@ export const Navbar = () => {
               <Button 
                 variant="ghost" 
                 size="sm"
-                className="text-muted-foreground hover:text-foreground font-medium"
+                className="text-muted-foreground hover:text-primary hover:bg-primary/10 font-medium"
                 onClick={() => navigate("/auth")}
               >
                 Login
