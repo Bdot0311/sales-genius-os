@@ -33,11 +33,17 @@ interface WebhookType {
   name: string;
   url: string;
   events: string[];
-  secret: string;
+  secret_masked: string;
+  has_secret: boolean;
   is_active: boolean;
   created_at: string;
   last_triggered_at: string | null;
   total_triggers: number;
+}
+
+// Used for newly created webhooks where we have the full secret
+interface NewlyCreatedWebhook extends WebhookType {
+  fullSecret?: string;
 }
 
 const AVAILABLE_EVENTS = [
@@ -51,12 +57,13 @@ const AVAILABLE_EVENTS = [
 ];
 
 export const WebhooksTab = () => {
-  const [webhooks, setWebhooks] = useState<WebhookType[]>([]);
+  const [webhooks, setWebhooks] = useState<NewlyCreatedWebhook[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [creating, setCreating] = useState(false);
   const [deleteWebhookId, setDeleteWebhookId] = useState<string | null>(null);
   const [testWebhook, setTestWebhook] = useState<WebhookType | null>(null);
+  const [newlyCreatedId, setNewlyCreatedId] = useState<string | null>(null);
   const [newWebhook, setNewWebhook] = useState({
     name: "",
     url: "",
@@ -69,8 +76,9 @@ export const WebhooksTab = () => {
 
   const loadWebhooks = async () => {
     try {
+      // Use the safe view that doesn't expose full secrets
       const { data, error } = await supabase
-        .from("webhooks")
+        .from("webhooks_safe")
         .select("*")
         .order("created_at", { ascending: false });
 
@@ -153,7 +161,7 @@ export const WebhooksTab = () => {
       // Generate webhook secret
       const secret = crypto.randomUUID();
 
-      const { error } = await supabase
+      const { data: insertedWebhook, error } = await supabase
         .from("webhooks")
         .insert({
           user_id: user.id,
@@ -161,14 +169,28 @@ export const WebhooksTab = () => {
           url: newWebhook.url,
           events: newWebhook.events,
           secret,
-        });
+        })
+        .select("id")
+        .single();
 
       if (error) throw error;
 
+      // Store the newly created webhook ID so we can show the full secret once
+      setNewlyCreatedId(insertedWebhook.id);
+      
+      // Store the full secret temporarily for the newly created webhook
       await loadWebhooks();
+      
+      // Add the full secret to the newly created webhook in state
+      setWebhooks(prev => prev.map(w => 
+        w.id === insertedWebhook.id 
+          ? { ...w, fullSecret: secret }
+          : w
+      ));
+      
       setShowCreateDialog(false);
       setNewWebhook({ name: "", url: "", events: [] });
-      toast.success("Webhook created successfully");
+      toast.success("Webhook created! Copy your secret now - it won't be shown again.");
     } catch (error: any) {
       console.error("Error creating webhook:", error);
       toast.error("Failed to create webhook");
@@ -213,9 +235,36 @@ export const WebhooksTab = () => {
     }
   };
 
-  const copySecret = (secret: string) => {
-    navigator.clipboard.writeText(secret);
-    toast.success("Secret copied to clipboard");
+  const copySecret = async (webhookId: string, fullSecret?: string) => {
+    try {
+      let secretToCopy = fullSecret;
+      
+      if (!secretToCopy) {
+        // Call the secure function to get the full secret
+        const { data, error } = await supabase.rpc('get_webhook_secret', {
+          webhook_id: webhookId
+        });
+        
+        if (error) throw error;
+        secretToCopy = data;
+      }
+      
+      if (secretToCopy) {
+        navigator.clipboard.writeText(secretToCopy);
+        toast.success("Secret copied to clipboard");
+        
+        // Clear the newly created flag after copying
+        if (fullSecret) {
+          setNewlyCreatedId(null);
+          setWebhooks(prev => prev.map(w => 
+            w.id === webhookId ? { ...w, fullSecret: undefined } : w
+          ));
+        }
+      }
+    } catch (error) {
+      console.error("Error copying secret:", error);
+      toast.error("Failed to copy secret");
+    }
   };
 
   if (loading) {
@@ -286,13 +335,25 @@ export const WebhooksTab = () => {
                       )}
                     </div>
                     <div className="flex items-center gap-2 mt-2">
-                      <code className="text-xs bg-muted px-2 py-1 rounded">
-                        {webhook.secret.substring(0, 20)}...
-                      </code>
+                      {webhook.fullSecret ? (
+                        <>
+                          <code className="text-xs bg-primary/20 text-primary px-2 py-1 rounded border border-primary/30">
+                            {webhook.fullSecret}
+                          </code>
+                          <span className="text-xs text-destructive">
+                            ⚠️ Copy now - won't be shown again!
+                          </span>
+                        </>
+                      ) : (
+                        <code className="text-xs bg-muted px-2 py-1 rounded">
+                          {webhook.secret_masked}
+                        </code>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => copySecret(webhook.secret)}
+                        onClick={() => copySecret(webhook.id, webhook.fullSecret)}
+                        title={webhook.fullSecret ? "Copy full secret" : "Copy secret to clipboard"}
                       >
                         <Copy className="h-3 w-3" />
                       </Button>
