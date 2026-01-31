@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+All colors MUST be HSL. Using 8px spacing scale.
 */
 
 @layer base {
@@ -44,8 +44,10 @@ All colors MUST be HSL.
     
     --shadow-glow: 0 0 40px hsl(261 75% 65% / 0.3);
     --shadow-card: 0 10px 40px hsl(0 0% 0% / 0.5);
+    --shadow-card-hover: 0 20px 48px hsl(0 0% 0% / 0.4), 0 0 0 1px hsl(261 75% 65% / 0.1);
     
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-fast: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
@@ -542,4 +544,155 @@ All colors MUST be HSL.
 /* Remove will-change after animation completes to free GPU memory */
 .animation-complete {
   will-change: auto;
+}
+
+/* ===== PREMIUM VISUAL EFFECTS ===== */
+
+/* Scroll reveal animation - 12px fade-up with slight blur */
+@keyframes scroll-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(12px);
+  filter: blur(4px);
+  transition: opacity 0.26s ease-out, transform 0.26s ease-out, filter 0.26s ease-out;
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+.scroll-reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+
+/* Reduced motion: opacity only, no transforms or blur */
+@media (prefers-reduced-motion: reduce) {
+  .scroll-reveal {
+    transform: none;
+    filter: none;
+    transition: opacity 0.26s ease-out;
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+  
+  .scroll-reveal.visible {
+    transform: none;
+    filter: none;
+  }
+  
+  .card-hover-lift:hover {
+    transform: none;
+  }
+  
+  .btn-glow-hover:hover,
+  .btn-outline-hover:hover {
+    transform: none;
+  }
+  
+  [class*="animate-"] {
+    animation: none !important;
+  }
+}
+
+/* Card hover lift with shadow */
+.card-hover-lift {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), 
+              box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-card-hover);
+  border-color: hsl(261 75% 65% / 0.3);
+}
+
+/* Spotlight effect inside cards (cursor-follow simulated with gradient) */
+.spotlight-card {
+  background: radial-gradient(
+    400px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    hsl(261 75% 65% / 0.06) 0%,
+    transparent 100%
+  );
+  border-radius: inherit;
+}
+
+/* Button glow on hover */
+.btn-glow-hover {
+  position: relative;
+  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+}
+
+.btn-glow-hover:hover {
+  box-shadow: 0 0 20px hsl(261 75% 65% / 0.25), 0 0 40px hsl(261 75% 65% / 0.1);
+}
+
+.btn-glow-hover:focus-visible {
+  outline: 2px solid hsl(261 75% 65%);
+  outline-offset: 2px;
+}
+
+.btn-glow-hover:active {
+  transform: scale(0.98);
+}
+
+/* Outline button hover */
+.btn-outline-hover {
+  transition: transform 0.15s ease-out, border-color 0.15s ease-out, background-color 0.15s ease-out;
+}
+
+.btn-outline-hover:hover {
+  border-color: hsl(261 75% 65% / 0.5);
+  background-color: hsl(261 75% 65% / 0.05);
+}
+
+.btn-outline-hover:focus-visible {
+  outline: 2px solid hsl(261 75% 65%);
+  outline-offset: 2px;
+}
+
+.btn-outline-hover:active {
+  transform: scale(0.98);
+}
+
+/* One-time shimmer animation for loading state (1.2s, doesn't loop) */
+@keyframes shimmer-once {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer-once {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 0%,
+    hsl(261 75% 65% / 0.15) 50%,
+    hsl(var(--muted)) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer-once 1.2s ease-out forwards;
+}
+
+/* Duration utility */
+.duration-250 {
+  transition-duration: 250ms;
+}
+
+/* Hairline gradient separator utility */
+.hairline-separator {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, hsl(var(--border) / 0.5), transparent);
 }

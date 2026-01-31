@@ -60,15 +60,16 @@ export const ModulesSection = () => {
     <section 
       ref={sectionRef}
       id="features" 
-      className="py-24 bg-muted/30 border-y border-border/40"
+      className="relative py-24 bg-muted/30"
       aria-labelledby="modules-heading"
     >
+      {/* Top hairline separator */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
+      
       <div className="container mx-auto px-6">
         <div className="max-w-[1120px] mx-auto">
           {/* Header */}
-          <div className={`text-center mb-16 transition-all duration-700 ${
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-          }`}>
+          <div className={`text-center mb-16 scroll-reveal ${isVisible ? 'visible' : ''}`}>
             <h2 id="modules-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
               Everything you need to close more deals
             </h2>
@@ -82,31 +83,34 @@ export const ModulesSection = () => {
             {modules.map((module, index) => (
               <article 
                 key={index}
-                className={`group p-6 rounded-xl border border-border/40 bg-card/50 transition-all duration-500 hover:border-primary/30 hover:bg-card/80 ${
-                  isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                className={`group relative p-6 rounded-xl border border-border/40 bg-card/50 card-hover-lift scroll-reveal ${
+                  isVisible ? 'visible' : ''
                 }`}
-                style={{ transitionDelay: `${index * 80}ms` }}
+                style={{ '--reveal-delay': `${index * 70}ms` } as React.CSSProperties}
               >
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                  <module.icon className="w-6 h-6 text-primary" aria-hidden="true" />
+                {/* Spotlight effect on hover */}
+                <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none spotlight-card" />
+                
+                <div className="relative z-10">
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors duration-250">
+                    <module.icon className="w-6 h-6 text-primary" aria-hidden="true" />
+                  </div>
+                  <h3 className="font-semibold mb-2 group-hover:text-primary transition-colors duration-250 feature-description">
+                    {module.title}
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {module.description}
+                  </p>
                 </div>
-                <h3 className="font-semibold mb-2 group-hover:text-primary transition-colors feature-description">
-                  {module.title}
-                </h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {module.description}
-                </p>
               </article>
             ))}
           </div>
 
           {/* Watch demo link */}
-          <div className={`text-center transition-all duration-700 delay-500 ${
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-          }`}>
+          <div className={`text-center scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '400ms' } as React.CSSProperties}>
             <Button 
               variant="outline"
-              className="group"
+              className="group btn-outline-hover"
               onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}
             >
               <Play className="w-4 h-4 mr-2" aria-hidden="true" />
@@ -115,6 +119,9 @@ export const ModulesSection = () => {
           </div>
         </div>
       </div>
+      
+      {/* Bottom hairline separator */}
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
     </section>
   );
 };

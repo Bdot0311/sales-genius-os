@@ -23,6 +23,7 @@ import {
   HowToSchema,
   ItemListSchema
 } from "@/components/seo";
+import { useSpotlightEffect } from "@/hooks/use-spotlight-effect";
 
 
 // AEO: Define clear, structured content for AI answer engines
@@ -83,6 +84,9 @@ const keyFeatures = [
 ];
 
 const Index = () => {
+  // Enable cursor-following spotlight effect on cards
+  useSpotlightEffect();
+  
   return (
     <>
       <SEOHead 

@@ -61,17 +61,18 @@ export const FAQSection = () => {
     <section 
       ref={sectionRef}
       id="faq" 
-      className="py-24 bg-muted/30 border-y border-border/40"
+      className="relative py-24 bg-muted/30"
       aria-labelledby="faq-heading"
     >
+      {/* Top hairline separator */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
+      
       <FAQSchema faqs={faqs} />
       
       <div className="container mx-auto px-6">
         <div className="max-w-[720px] mx-auto">
           {/* Header */}
-          <div className={`text-center mb-12 transition-all duration-700 ${
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-          }`}>
+          <div className={`text-center mb-12 scroll-reveal ${isVisible ? 'visible' : ''}`}>
             <h2 id="faq-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
               Frequently asked questions
             </h2>
@@ -81,17 +82,15 @@ export const FAQSection = () => {
           </div>
 
           {/* Accordion */}
-          <div className={`transition-all duration-700 delay-200 ${
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-          }`}>
+          <div className={`scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '100ms' } as React.CSSProperties}>
             <Accordion type="single" collapsible className="space-y-3">
               {faqs.map((faq, index) => (
                 <AccordionItem 
                   key={index} 
                   value={`item-${index}`}
-                  className="border border-border/40 rounded-xl px-6 bg-card/50 data-[state=open]:bg-card data-[state=open]:border-primary/30 transition-all duration-200"
+                  className="border border-border/40 rounded-xl px-6 bg-card/50 data-[state=open]:bg-card data-[state=open]:border-primary/30 transition-all duration-250"
                 >
-                  <AccordionTrigger className="text-left py-4 hover:no-underline hover:text-primary transition-colors">
+                  <AccordionTrigger className="text-left py-4 hover:no-underline hover:text-primary transition-colors duration-200">
                     <span className="font-medium">{faq.question}</span>
                   </AccordionTrigger>
                   <AccordionContent className="pb-4 text-muted-foreground leading-relaxed">
@@ -102,9 +101,7 @@ export const FAQSection = () => {
             </Accordion>
           </div>
           
-          <div className={`text-center mt-10 transition-all duration-700 delay-400 ${
-            isVisible ? 'opacity-100' : 'opacity-0'
-          }`}>
+          <div className={`text-center mt-10 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '200ms' } as React.CSSProperties}>
             <p className="text-muted-foreground mb-3 text-sm">Still have questions?</p>
             <Link 
               to="/help" 
@@ -116,6 +113,9 @@ export const FAQSection = () => {
           </div>
         </div>
       </div>
+      
+      {/* Bottom hairline separator */}
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
     </section>
   );
 };

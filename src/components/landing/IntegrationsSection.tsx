@@ -38,15 +38,16 @@ export const IntegrationsSection = () => {
     <section 
       ref={sectionRef}
       id="integrations" 
-      className="py-24 bg-muted/30 border-y border-border/40"
+      className="relative py-24 bg-muted/30"
       aria-labelledby="integrations-heading"
     >
+      {/* Top hairline separator */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
+      
       <div className="container mx-auto px-6">
         <div className="max-w-[1120px] mx-auto">
           {/* Header - shorter and clearer */}
-          <div className={`text-center mb-12 transition-all duration-700 ${
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-          }`}>
+          <div className={`text-center mb-12 scroll-reveal ${isVisible ? 'visible' : ''}`}>
             <h2 id="integrations-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
               Works with your stack
             </h2>
@@ -60,12 +61,12 @@ export const IntegrationsSection = () => {
             {integrations.map((integration, index) => (
               <div 
                 key={integration.name}
-                className={`p-4 rounded-xl border border-border/40 bg-card/50 text-center transition-all duration-500 hover:border-primary/30 ${
-                  isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+                className={`group relative p-4 rounded-xl border border-border/40 bg-card/50 text-center card-hover-lift scroll-reveal ${
+                  isVisible ? 'visible' : ''
                 }`}
-                style={{ transitionDelay: `${index * 50}ms` }}
+                style={{ '--reveal-delay': `${index * 50}ms` } as React.CSSProperties}
               >
-                <div className="w-10 h-10 mx-auto mb-3 rounded-xl bg-primary/10 flex items-center justify-center">
+                <div className="w-10 h-10 mx-auto mb-3 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors duration-250">
                   <Plug className="w-5 h-5 text-primary" aria-hidden="true" />
                 </div>
                 <div className="font-medium text-sm mb-1">{integration.name}</div>
@@ -75,9 +76,7 @@ export const IntegrationsSection = () => {
           </div>
 
           {/* Request integration link */}
-          <div className={`text-center transition-all duration-700 delay-300 ${
-            isVisible ? 'opacity-100' : 'opacity-0'
-          }`}>
+          <div className={`text-center scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '300ms' } as React.CSSProperties}>
             <Button 
               variant="link"
               className="text-muted-foreground hover:text-primary"
@@ -89,6 +88,9 @@ export const IntegrationsSection = () => {
           </div>
         </div>
       </div>
+      
+      {/* Bottom hairline separator */}
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
     </section>
   );
 };

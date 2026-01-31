@@ -48,15 +48,16 @@ export const OutcomesSection = () => {
   return (
     <section 
       ref={sectionRef}
-      className="py-24 bg-background"
+      className="relative py-24 bg-background"
       aria-labelledby="outcomes-heading"
     >
+      {/* Top hairline separator */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
+      
       <div className="container mx-auto px-6">
         <div className="max-w-[1120px] mx-auto">
           {/* Header */}
-          <div className={`text-center mb-16 transition-all duration-700 ${
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-          }`}>
+          <div className={`text-center mb-16 scroll-reveal ${isVisible ? 'visible' : ''}`}>
             <h2 id="outcomes-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
               Results you can measure
             </h2>
@@ -70,21 +71,29 @@ export const OutcomesSection = () => {
             {outcomes.map((outcome, index) => (
               <div 
                 key={index}
-                className={`p-6 rounded-xl border border-border/40 bg-card/50 transition-all duration-700 hover:border-primary/30 hover:bg-card/80 ${
-                  isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                className={`group relative p-6 rounded-xl border border-border/40 bg-card/50 card-hover-lift scroll-reveal ${
+                  isVisible ? 'visible' : ''
                 }`}
-                style={{ transitionDelay: `${index * 100}ms` }}
+                style={{ '--reveal-delay': `${index * 70}ms` } as React.CSSProperties}
               >
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
-                  <outcome.icon className="w-6 h-6 text-primary" aria-hidden="true" />
+                {/* Spotlight effect on hover */}
+                <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none spotlight-card" />
+                
+                <div className="relative z-10">
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors duration-250">
+                    <outcome.icon className="w-6 h-6 text-primary" aria-hidden="true" />
+                  </div>
+                  <h3 className="font-semibold mb-2 group-hover:text-primary transition-colors duration-250">{outcome.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{outcome.description}</p>
                 </div>
-                <h3 className="font-semibold mb-2">{outcome.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{outcome.description}</p>
               </div>
             ))}
           </div>
         </div>
       </div>
+      
+      {/* Bottom hairline separator */}
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
     </section>
   );
 };
