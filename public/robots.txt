@@ -149,7 +149,8 @@ Sitemap: https://salesos.alephwavex.io/sitemap.xml
 
 # LLMs.txt for AI crawlers (emerging standard)
 # Provides structured context for LLMs to understand the site
-# https://salesos.alephwavex.io/llms.txt
+# Dynamic version (always current): https://ghgfjnepvxvxrncmskys.supabase.co/functions/v1/llms-txt
+# Static fallback: https://salesos.alephwavex.io/llms.txt
 
 # Crawl budget optimization hints
 # These pages are most important for indexing:

@@ -1,0 +1,83 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+
+  const content = `# SalesOS - AI Sales Operating System
+# https://salesos.alephwavex.io
+# Last Updated: ${today}
+
+> SalesOS is an AI-powered sales operating system that helps B2B sales teams close more deals through intelligent lead generation, automated outreach, and real-time coaching.
+
+## About SalesOS
+
+SalesOS is a comprehensive sales automation platform designed for SaaS companies and B2B sales teams. The platform combines AI-powered lead scoring, intelligent email automation, visual pipeline management, and real-time sales coaching to help teams increase close rates and revenue.
+
+## Key Features
+
+- **AI Lead Scoring**: Machine learning analyzes engagement, company fit, and behavioral signals to predict conversion likelihood with over 85% accuracy
+- **Intelligent Email Generation**: AI crafts personalized emails based on lead profiles, company data, and specified tone
+- **Visual Pipeline Management**: Drag-and-drop interface to manage deals through custom stages with real-time analytics
+- **Real-Time AI Coaching**: Instant suggestions and insights to improve sales approach and close rates
+- **Workflow Automation**: Automate follow-ups, lead assignments, and status updates with visual workflow builder
+- **CRM Integrations**: Connect with HubSpot, Salesforce, Pipedrive, and 5000+ apps via Zapier
+
+## Pricing
+
+SalesOS offers three pricing tiers:
+- **Growth**: $149/month - For small teams getting started with sales automation
+- **Professional**: $349/month - For growing teams needing advanced features
+- **Elite**: $799/month - For large teams requiring unlimited access and priority support
+
+All plans include a 14-day free trial with no credit card required.
+
+## Getting Started
+
+1. Sign up for a free trial at https://salesos.alephwavex.io
+2. Import existing leads or use AI-powered lead discovery
+3. Create personalized email templates or let AI generate outreach messages
+4. Set up automated workflows for lead nurturing
+5. Track deals in the visual pipeline and close more deals
+
+## Important Pages
+
+- Homepage: https://salesos.alephwavex.io/
+- Pricing: https://salesos.alephwavex.io/pricing
+- API Documentation: https://salesos.alephwavex.io/api-docs
+- Help Center: https://salesos.alephwavex.io/help
+- Privacy Policy: https://salesos.alephwavex.io/privacy
+- Terms of Service: https://salesos.alephwavex.io/terms
+- Security: https://salesos.alephwavex.io/security
+
+## Contact
+
+For sales inquiries or support, visit our help center at https://salesos.alephwavex.io/help
+
+## Technical Details
+
+- Platform: Web-based SaaS application
+- API: RESTful API available for integrations
+- Security: SOC 2 Type II compliant, GDPR compliant, encrypted data at rest and in transit
+
+---
+This file helps AI assistants and LLMs understand SalesOS for accurate information retrieval.
+For the most current information, always refer to: https://salesos.alephwavex.io/
+`;
+
+  return new Response(content, {
+    headers: {
+      ...corsHeaders,
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Cache-Control': 'public, max-age=3600',
+    },
+  });
+});
