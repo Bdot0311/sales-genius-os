@@ -63,35 +63,22 @@ export const FinalCTA = () => {
                 </p>
 
                 {/* CTA buttons */}
-                <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-8">
+                <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
                   <Button 
                     size="lg"
-                    className="h-12 px-6 text-base font-semibold bg-foreground text-background hover:bg-foreground/90 rounded-lg group btn-glow-hover"
+                    className="h-12 px-6 text-base font-semibold bg-foreground text-background hover:bg-foreground/90 rounded-lg group btn-glow-hover inline-flex items-center justify-center"
                     onClick={() => navigate('/auth')}
                   >
-                    Start 14-day free trial
+                    <span>Start 14-day free trial</span>
                     <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" aria-hidden="true" />
                   </Button>
                   <Button
-                    variant="outline"
                     size="lg"
-                    className="h-12 px-6 text-base font-medium rounded-lg btn-outline-hover"
+                    className="h-12 px-6 text-base font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90"
                     onClick={() => navigate('/pricing')}
                   >
                     View pricing
                   </Button>
-                </div>
-
-                {/* Trust bullets */}
-                <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-primary flex-shrink-0" aria-hidden="true" />
-                    <span>14-day free trial</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CreditCard className="w-4 h-4 text-primary flex-shrink-0" aria-hidden="true" />
-                    <span>Credit card required</span>
-                  </div>
                 </div>
               </div>
             </div>
