@@ -1,13 +1,11 @@
 import { useEffect, useRef, useState } from "react";
+import { Shield, Zap, Lock, Globe } from "lucide-react";
 
-// Placeholder logos - professionally formatted
-const logos = [
-  { name: "Acme Corp", initials: "AC" },
-  { name: "TechStart", initials: "TS" },
-  { name: "GrowthCo", initials: "GC" },
-  { name: "ScaleUp", initials: "SU" },
-  { name: "Innovate", initials: "IN" },
-  { name: "Velocity", initials: "VL" },
+const trustSignals = [
+  { icon: Shield, label: "SOC 2 Compliant" },
+  { icon: Lock, label: "Data Encrypted" },
+  { icon: Zap, label: "99.9% Uptime" },
+  { icon: Globe, label: "GDPR Ready" },
 ];
 
 export const LogoBar = () => {
@@ -42,21 +40,22 @@ export const LogoBar = () => {
       <div className="container mx-auto px-6">
         <div className="max-w-[1120px] mx-auto">
           <p className={`text-center text-sm text-muted-foreground/80 mb-8 scroll-reveal ${isVisible ? 'visible' : ''}`}>
-            Trusted by growing sales teams
+            Built with enterprise-grade security
           </p>
-          <div className="flex flex-wrap justify-center items-center gap-8 md:gap-10">
-            {logos.map((logo, i) => (
-              <div 
-                key={i}
-                className={`flex items-center gap-2 text-muted-foreground/50 hover:text-muted-foreground/80 transition-colors duration-200 scroll-reveal ${isVisible ? 'visible' : ''}`}
-                style={{ '--reveal-delay': `${i * 50}ms` } as React.CSSProperties}
-              >
-                <div className="w-8 h-8 rounded-lg bg-muted/40 flex items-center justify-center text-xs font-semibold">
-                  {logo.initials}
+          <div className="flex flex-wrap justify-center items-center gap-8 md:gap-12">
+            {trustSignals.map((signal, i) => {
+              const Icon = signal.icon;
+              return (
+                <div 
+                  key={i}
+                  className={`flex items-center gap-2 text-muted-foreground/60 scroll-reveal ${isVisible ? 'visible' : ''}`}
+                  style={{ '--reveal-delay': `${i * 50}ms` } as React.CSSProperties}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span className="text-sm font-medium">{signal.label}</span>
                 </div>
-                <span className="text-sm font-medium">{logo.name}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
