@@ -548,12 +548,46 @@ All colors MUST be HSL. Using 8px spacing scale.
 
 /* ===== PREMIUM VISUAL EFFECTS ===== */
 
+/* Aurora ambient animation - ultra subtle, 16s cycle */
+@keyframes aurora-ambient {
+  0%, 100% {
+    opacity: 0.4;
+    transform: translate(-50%, -50%) scale(1) rotate(0deg);
+    filter: hue-rotate(0deg);
+  }
+  25% {
+    opacity: 0.5;
+    transform: translate(-52%, -48%) scale(1.02) rotate(1deg);
+  }
+  50% {
+    opacity: 0.45;
+    transform: translate(-48%, -52%) scale(0.98) rotate(-1deg);
+    filter: hue-rotate(15deg);
+  }
+  75% {
+    opacity: 0.55;
+    transform: translate(-51%, -49%) scale(1.01) rotate(0.5deg);
+  }
+}
+
+.aurora-ambient {
+  background: radial-gradient(
+    ellipse 80% 60% at 50% 50%,
+    hsl(261 75% 50% / 0.12) 0%,
+    hsl(280 70% 45% / 0.08) 30%,
+    hsl(300 60% 40% / 0.04) 60%,
+    transparent 100%
+  );
+  animation: aurora-ambient 16s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
 /* Scroll reveal animation - 12px fade-up with slight blur */
 @keyframes scroll-reveal {
   0% {
     opacity: 0;
     transform: translateY(12px);
-    filter: blur(4px);
+    filter: blur(6px);
   }
   100% {
     opacity: 1;
@@ -565,8 +599,11 @@ All colors MUST be HSL. Using 8px spacing scale.
 .scroll-reveal {
   opacity: 0;
   transform: translateY(12px);
-  filter: blur(4px);
-  transition: opacity 0.26s ease-out, transform 0.26s ease-out, filter 0.26s ease-out;
+  filter: blur(6px);
+  transition: 
+    opacity 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    filter 0.28s cubic-bezier(0.4, 0, 0.2, 1);
   transition-delay: var(--reveal-delay, 0ms);
 }
 
@@ -581,7 +618,7 @@ All colors MUST be HSL. Using 8px spacing scale.
   .scroll-reveal {
     transform: none;
     filter: none;
-    transition: opacity 0.26s ease-out;
+    transition: opacity 0.28s ease-out;
     transition-delay: var(--reveal-delay, 0ms);
   }
   
@@ -599,42 +636,59 @@ All colors MUST be HSL. Using 8px spacing scale.
     transform: none;
   }
   
+  .aurora-ambient {
+    animation: none;
+    opacity: 0.4;
+    transform: translate(-50%, -50%);
+  }
+  
+  .parallax-grid {
+    transform: none !important;
+  }
+  
   [class*="animate-"] {
     animation: none !important;
   }
 }
 
-/* Card hover lift with shadow */
+/* Card hover lift with shadow - refined timing */
 .card-hover-lift {
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), 
-              box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-              border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: 
+    transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), 
+    box-shadow 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .card-hover-lift:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-card-hover);
-  border-color: hsl(261 75% 65% / 0.3);
+  transform: translateY(-3px);
+  box-shadow: 
+    0 12px 32px hsl(0 0% 0% / 0.35),
+    0 0 0 1px hsl(261 75% 65% / 0.1);
+  border-color: hsl(261 75% 65% / 0.25);
 }
 
 /* Spotlight effect inside cards (cursor-follow simulated with gradient) */
 .spotlight-card {
   background: radial-gradient(
-    400px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
-    hsl(261 75% 65% / 0.06) 0%,
+    350px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    hsl(261 75% 65% / 0.05) 0%,
     transparent 100%
   );
   border-radius: inherit;
 }
 
-/* Button glow on hover */
+/* Primary button glow on hover */
 .btn-glow-hover {
   position: relative;
-  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+  transition: 
+    transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), 
+    box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .btn-glow-hover:hover {
-  box-shadow: 0 0 20px hsl(261 75% 65% / 0.25), 0 0 40px hsl(261 75% 65% / 0.1);
+  box-shadow: 
+    0 0 16px hsl(261 75% 65% / 0.2), 
+    0 0 32px hsl(261 75% 65% / 0.08);
 }
 
 .btn-glow-hover:focus-visible {
@@ -646,14 +700,17 @@ All colors MUST be HSL. Using 8px spacing scale.
   transform: scale(0.98);
 }
 
-/* Outline button hover */
+/* Outline button hover - subtle underline/arrow effect */
 .btn-outline-hover {
-  transition: transform 0.15s ease-out, border-color 0.15s ease-out, background-color 0.15s ease-out;
+  transition: 
+    transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), 
+    border-color 0.15s cubic-bezier(0.4, 0, 0.2, 1), 
+    background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .btn-outline-hover:hover {
-  border-color: hsl(261 75% 65% / 0.5);
-  background-color: hsl(261 75% 65% / 0.05);
+  border-color: hsl(261 75% 65% / 0.4);
+  background-color: hsl(261 75% 65% / 0.04);
 }
 
 .btn-outline-hover:focus-visible {
@@ -679,7 +736,7 @@ All colors MUST be HSL. Using 8px spacing scale.
   background: linear-gradient(
     90deg,
     hsl(var(--muted)) 0%,
-    hsl(261 75% 65% / 0.15) 50%,
+    hsl(261 75% 65% / 0.12) 50%,
     hsl(var(--muted)) 100%
   );
   background-size: 200% 100%;
@@ -691,8 +748,59 @@ All colors MUST be HSL. Using 8px spacing scale.
   transition-duration: 250ms;
 }
 
-/* Hairline gradient separator utility */
+/* Hairline gradient separator utility - refined */
 .hairline-separator {
   height: 1px;
-  background: linear-gradient(90deg, transparent, hsl(var(--border) / 0.5), transparent);
+  background: linear-gradient(
+    90deg, 
+    transparent 0%, 
+    hsl(261 75% 65% / 0.15) 20%,
+    hsl(var(--border) / 0.4) 50%,
+    hsl(261 75% 65% / 0.15) 80%,
+    transparent 100%
+  );
+}
+
+/* Noise texture overlay */
+.noise-texture {
+  position: absolute;
+  inset: 0;
+  opacity: 0.015;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+/* Faint grid background */
+.grid-bg {
+  background-image: 
+    linear-gradient(hsl(var(--foreground) / 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--foreground) / 0.03) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+/* Parallax grid for desktop */
+.parallax-grid {
+  transition: transform 0.1s ease-out;
+  will-change: transform;
+}
+
+/* Focus visible global styles for accessibility */
+:focus-visible {
+  outline: 2px solid hsl(261 75% 65%);
+  outline-offset: 2px;
+}
+
+/* Skip to main content link for accessibility */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 0;
+  background: hsl(var(--background));
+  padding: 0.5rem 1rem;
+  z-index: 100;
+  transition: top 0.2s;
+}
+
+.skip-link:focus {
+  top: 0;
 }

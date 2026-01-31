@@ -985,14 +985,19 @@ export const Demo = () => {
     <section 
       ref={sectionRef} 
       id="demo" 
-      className={`py-12 sm:py-16 md:py-24 bg-background relative overflow-hidden transition-all duration-500 ${
+      className={`py-12 sm:py-16 md:py-28 bg-background relative overflow-hidden transition-all duration-500 ${
         isFullscreen ? 'fixed inset-0 z-50 py-0 flex items-center justify-center bg-black' : ''
       }`}
     >
-      {/* Background accent */}
+      {/* Top hairline separator */}
+      {!isFullscreen && (
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
+      )}
+      
+      {/* Background accent - more subtle */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-primary/3 rounded-full blur-[120px]" />
+        <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-primary/2 rounded-full blur-[100px]" />
       </div>
 
       <div 
@@ -1193,6 +1198,11 @@ export const Demo = () => {
           )}
         </div>
       </div>
+      
+      {/* Bottom hairline separator */}
+      {!isFullscreen && (
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
+      )}
     </section>
   );
 };

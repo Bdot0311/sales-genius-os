@@ -47,11 +47,11 @@ export const HowItWorks = () => {
     <section 
       ref={sectionRef}
       id="how-it-works" 
-      className="relative py-24 bg-muted/30"
+      className="relative py-24 md:py-32 bg-muted/20"
       aria-labelledby="how-it-works-heading"
     >
       {/* Top hairline separator */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
       
       <div className="container mx-auto px-6">
         <div className="max-w-[1120px] mx-auto">
@@ -60,13 +60,13 @@ export const HowItWorks = () => {
             <h2 id="how-it-works-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
               How it works
             </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
               From ICP description to qualified leads in three simple steps.
             </p>
           </div>
 
           {/* Steps - horizontal on desktop, stacked on mobile */}
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-8 md:gap-6">
             {steps.map((step, index) => (
               <div 
                 key={index}
@@ -75,23 +75,23 @@ export const HowItWorks = () => {
               >
                 {/* Connector line - hidden on mobile and last item */}
                 {index < steps.length - 1 && (
-                  <div className="hidden md:block absolute top-12 left-[calc(50%+48px)] w-[calc(100%-96px)] h-px bg-border/60">
-                    <ArrowRight className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
+                  <div className="hidden md:block absolute top-12 left-[calc(50%+48px)] w-[calc(100%-96px)] h-px bg-border/40">
+                    <ArrowRight className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/30" />
                   </div>
                 )}
 
                 <div className="text-center">
                   {/* Step number */}
-                  <div className="text-xs font-mono text-primary mb-4">{step.number}</div>
+                  <div className="text-xs font-mono text-primary/70 mb-4 tracking-wider">{step.number}</div>
                   
                   {/* Icon */}
-                  <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-primary/10 flex items-center justify-center">
-                    <step.icon className="w-7 h-7 text-primary" aria-hidden="true" />
+                  <div className="w-14 h-14 mx-auto mb-5 rounded-2xl bg-primary/10 flex items-center justify-center">
+                    <step.icon className="w-6 h-6 text-primary" aria-hidden="true" />
                   </div>
                   
                   {/* Content */}
-                  <h3 className="text-lg font-semibold mb-3">{step.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{step.description}</p>
+                  <h3 className="text-lg font-semibold mb-2">{step.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed max-w-xs mx-auto">{step.description}</p>
                 </div>
               </div>
             ))}
@@ -100,7 +100,7 @@ export const HowItWorks = () => {
       </div>
       
       {/* Bottom hairline separator */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
     </section>
   );
 };
