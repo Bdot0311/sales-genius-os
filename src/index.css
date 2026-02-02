@@ -804,3 +804,13 @@ All colors MUST be HSL. Using 8px spacing scale.
 .skip-link:focus {
   top: 0;
 }
+
+/* Hide scrollbar utility for horizontal scroll */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

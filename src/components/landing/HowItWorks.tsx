@@ -77,7 +77,7 @@ export const HowItWorks = () => {
           </div>
 
           {/* Steps - horizontal on desktop, stacked on mobile */}
-          <div className="grid md:grid-cols-3 gap-8 md:gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-6">
             {steps.map((step, index) => (
               <div 
                 key={index}

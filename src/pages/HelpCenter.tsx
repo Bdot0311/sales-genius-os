@@ -214,12 +214,12 @@ const HelpCenter = () => {
 
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="pt-32 pb-16 bg-gradient-to-b from-primary/5 to-background">
+        <section className="pt-24 sm:pt-32 pb-12 md:pb-16 bg-gradient-to-b from-primary/5 to-background">
           <div className="container mx-auto px-6 text-center">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
               How can we <span className="bg-gradient-primary bg-clip-text text-transparent">help you?</span>
             </h1>
-            <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
+            <p className="text-base sm:text-lg text-muted-foreground mb-6 sm:mb-8 max-w-xl mx-auto">
               Find answers, guides, and documentation to get the most out of SalesOS
             </p>
             <HelpSearch className="max-w-2xl mx-auto" />
@@ -253,10 +253,10 @@ const HelpCenter = () => {
         </section>
 
         {/* Categories */}
-        <section className="py-16">
+        <section className="py-12 md:py-16">
           <div className="container mx-auto px-6">
-            <h2 className="text-2xl font-bold mb-8 text-center">Browse by Category</h2>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <h2 className="text-xl sm:text-2xl font-bold mb-6 md:mb-8 text-center">Browse by Category</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {helpCategories.map((category) => (
                 <HelpCategoryCard key={category.id} category={category} />
               ))}
@@ -265,9 +265,9 @@ const HelpCenter = () => {
         </section>
 
         {/* Popular Articles */}
-        <section className="py-16 bg-card/50">
+        <section className="py-12 md:py-16 bg-card/50">
           <div className="container mx-auto px-6">
-            <h2 className="text-2xl font-bold mb-8 text-center">Popular Articles</h2>
+            <h2 className="text-xl sm:text-2xl font-bold mb-6 md:mb-8 text-center">Popular Articles</h2>
             <div className="max-w-3xl mx-auto">
               <Accordion type="single" collapsible className="space-y-4">
                 {popularArticles.map((article, index) => (

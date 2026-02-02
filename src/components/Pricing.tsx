@@ -233,7 +233,7 @@ export const Pricing = () => {
     <section 
       ref={sectionRef}
       id="pricing" 
-      className="relative py-24 md:py-32 overflow-hidden"
+      className="relative py-16 md:py-24 lg:py-32 overflow-hidden"
     >
       {/* Unified background - matching hero */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -246,23 +246,23 @@ export const Pricing = () => {
         />
       </div>
       
-      <div className="container relative z-10 mx-auto px-6">
+      <div className="container relative z-10 mx-auto px-4 sm:px-6">
         {/* Header */}
-        <div className={`max-w-3xl mx-auto text-center mb-16 scroll-reveal ${isVisible ? 'visible' : ''}`}>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted text-sm text-muted-foreground mb-6">
+        <div className={`max-w-3xl mx-auto text-center mb-10 md:mb-16 scroll-reveal ${isVisible ? 'visible' : ''}`}>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted text-sm text-muted-foreground mb-4 sm:mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-primary" />
             Pricing
           </div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight mb-3 sm:mb-4">
             Simple, transparent pricing
           </h1>
-          <p className="text-lg text-muted-foreground">
+          <p className="text-base sm:text-lg text-muted-foreground">
             Start with a 14-day free trial. Upgrade when you're ready. No hidden fees.
           </p>
         </div>
 
         {/* Plan Cards */}
-        <div className={`grid lg:grid-cols-3 gap-6 max-w-6xl mx-auto mb-20 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '100ms' } as React.CSSProperties}>
+        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto mb-16 md:mb-20 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '100ms' } as React.CSSProperties}>
           {plans.map((plan, index) => (
             <div 
               key={plan.key}
@@ -327,29 +327,34 @@ export const Pricing = () => {
         </div>
 
         {/* Feature Comparison Table */}
-        <div className={`max-w-6xl mx-auto mb-20 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '200ms' } as React.CSSProperties}>
-          <div className="text-center mb-10">
-            <h2 className="text-2xl font-semibold mb-2">Compare plans</h2>
-            <p className="text-muted-foreground">See what's included in each plan</p>
+        <div className={`max-w-6xl mx-auto mb-16 md:mb-20 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '200ms' } as React.CSSProperties}>
+          <div className="text-center mb-8 md:mb-10">
+            <h2 className="text-xl sm:text-2xl font-semibold mb-2">Compare plans</h2>
+            <p className="text-sm sm:text-base text-muted-foreground">See what's included in each plan</p>
           </div>
           
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
+          {/* Horizontal scroll hint on mobile */}
+          <div className="lg:hidden text-center mb-3">
+            <p className="text-xs text-muted-foreground">← Scroll to compare →</p>
+          </div>
+          
+          <div className="overflow-x-auto -mx-6 px-6 pb-4 scrollbar-hide">
+            <table className="w-full border-collapse min-w-[640px]">
               {/* Header */}
               <thead>
                 <tr className="border-b border-border/30">
-                  <th className="text-left py-4 px-4 font-medium text-muted-foreground w-1/4">Features</th>
-                  <th className="text-center py-4 px-4 w-1/4">
-                    <div className="font-semibold">Growth</div>
-                    <div className="text-sm text-muted-foreground">$149/mo</div>
+                  <th className="text-left py-3 sm:py-4 px-3 sm:px-4 font-medium text-muted-foreground text-sm min-w-[140px] sm:min-w-[180px]">Features</th>
+                  <th className="text-center py-3 sm:py-4 px-2 sm:px-4 min-w-[100px] sm:min-w-[120px]">
+                    <div className="font-semibold text-sm sm:text-base">Growth</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">$149/mo</div>
                   </th>
-                  <th className="text-center py-4 px-4 w-1/4 bg-primary/5 rounded-t-lg">
-                    <div className="font-semibold text-primary">Pro</div>
-                    <div className="text-sm text-muted-foreground">$299/mo</div>
+                  <th className="text-center py-3 sm:py-4 px-2 sm:px-4 bg-primary/5 rounded-t-lg min-w-[100px] sm:min-w-[120px]">
+                    <div className="font-semibold text-primary text-sm sm:text-base">Pro</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">$299/mo</div>
                   </th>
-                  <th className="text-center py-4 px-4 w-1/4">
-                    <div className="font-semibold">Elite</div>
-                    <div className="text-sm text-muted-foreground">$799/mo</div>
+                  <th className="text-center py-3 sm:py-4 px-2 sm:px-4 min-w-[100px] sm:min-w-[120px]">
+                    <div className="font-semibold text-sm sm:text-base">Elite</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">$799/mo</div>
                   </th>
                 </tr>
               </thead>
@@ -358,9 +363,9 @@ export const Pricing = () => {
                   <>
                     {/* Category Header */}
                     <tr key={`cat-${catIndex}`} className="border-b border-border/20">
-                      <td colSpan={4} className="py-4 px-4">
-                        <div className="flex items-center gap-2 font-semibold text-foreground">
-                          <Coins className="w-4 h-4 text-primary" />
+                      <td colSpan={4} className="py-3 sm:py-4 px-3 sm:px-4">
+                        <div className="flex items-center gap-2 font-semibold text-foreground text-sm sm:text-base">
+                          <Coins className="w-4 h-4 text-primary flex-shrink-0" />
                           {category.name}
                         </div>
                       </td>
@@ -371,10 +376,10 @@ export const Pricing = () => {
                         key={`feature-${catIndex}-${featureIndex}`} 
                         className="border-b border-border/10 hover:bg-muted/30 transition-colors"
                       >
-                        <td className="py-3 px-4 text-sm text-muted-foreground">{feature.name}</td>
-                        <td className="py-3 px-4 text-center">{renderFeatureValue(feature.growth)}</td>
-                        <td className="py-3 px-4 text-center bg-primary/5">{renderFeatureValue(feature.pro)}</td>
-                        <td className="py-3 px-4 text-center">{renderFeatureValue(feature.elite)}</td>
+                        <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-xs sm:text-sm text-muted-foreground">{feature.name}</td>
+                        <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center">{renderFeatureValue(feature.growth)}</td>
+                        <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center bg-primary/5">{renderFeatureValue(feature.pro)}</td>
+                        <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center">{renderFeatureValue(feature.elite)}</td>
                       </tr>
                     ))}
                   </>
@@ -385,15 +390,15 @@ export const Pricing = () => {
         </div>
 
         {/* Add-ons Section */}
-        <div className={`max-w-2xl mx-auto mb-20 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '300ms' } as React.CSSProperties}>
-          <div className="text-center mb-8">
-            <h3 className="text-xl font-semibold mb-2">Need more credits?</h3>
+        <div className={`max-w-2xl mx-auto mb-16 md:mb-20 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '300ms' } as React.CSSProperties}>
+          <div className="text-center mb-6 sm:mb-8">
+            <h3 className="text-lg sm:text-xl font-semibold mb-2">Need more credits?</h3>
             <p className="text-muted-foreground text-sm">
               Add extra search credits to your plan anytime.
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             {addons.map((addon) => {
               const isCurrentAddon = credits?.addonPriceId === addon.priceId;
               const isLoading = addingAddon === addon.priceId;
@@ -443,25 +448,25 @@ export const Pricing = () => {
 
         {/* Credit FAQs */}
         <div className={`max-w-3xl mx-auto scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '400ms' } as React.CSSProperties}>
-          <div className="text-center mb-8">
+          <div className="text-center mb-6 sm:mb-8">
             <div className="inline-flex items-center gap-2 text-muted-foreground mb-2">
               <HelpCircle className="w-5 h-5" />
               <span className="text-sm font-medium">FAQs</span>
             </div>
-            <h3 className="text-2xl font-semibold">How credits work</h3>
+            <h3 className="text-xl sm:text-2xl font-semibold">How credits work</h3>
           </div>
 
-          <Accordion type="single" collapsible className="w-full space-y-3">
+          <Accordion type="single" collapsible className="w-full space-y-2 sm:space-y-3">
             {creditFAQs.map((faq, index) => (
               <AccordionItem 
                 key={index} 
                 value={`item-${index}`}
-                className="border border-border/30 rounded-xl px-6 bg-card/40 data-[state=open]:bg-card/60 transition-colors"
+                className="border border-border/30 rounded-xl px-4 sm:px-6 bg-card/40 data-[state=open]:bg-card/60 transition-colors"
               >
-                <AccordionTrigger className="text-left hover:no-underline py-4">
-                  <span className="font-medium">{faq.question}</span>
+                <AccordionTrigger className="text-left hover:no-underline py-3 sm:py-4">
+                  <span className="font-medium text-sm sm:text-base">{faq.question}</span>
                 </AccordionTrigger>
-                <AccordionContent className="pb-4 text-muted-foreground leading-relaxed">
+                <AccordionContent className="pb-3 sm:pb-4 text-muted-foreground leading-relaxed text-sm">
                   {faq.answer}
                 </AccordionContent>
               </AccordionItem>
