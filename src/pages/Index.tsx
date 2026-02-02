@@ -2,6 +2,7 @@ import { Navbar } from "@/components/Navbar";
 import { Demo } from "@/components/Demo";
 import { 
   HeroSection,
+  TrustedByBar,
   HowItWorks,
   OutcomesSection,
   ModulesSection,
@@ -122,6 +123,9 @@ const Index = () => {
           <article>
             {/* 1. Hero */}
             <HeroSection />
+            
+            {/* 1b. Trusted by bar */}
+            <TrustedByBar />
             
             {/* 2. How it works */}
             <HowItWorks />
