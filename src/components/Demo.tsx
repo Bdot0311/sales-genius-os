@@ -1022,11 +1022,11 @@ export const Demo = () => {
           </div>
         )}
 
-        <div className={`mx-auto ${isFullscreen ? 'w-full max-w-5xl' : 'max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl'}`}>
+        <div className={`mx-auto ${isFullscreen ? 'w-full max-w-5xl' : 'max-w-[calc(100vw-2rem)] sm:max-w-2xl md:max-w-3xl lg:max-w-4xl'}`}>
           <Card 
             className={`overflow-hidden bg-card border-border relative transition-all duration-700 delay-200 ${
               isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
-            } ${isFullscreen ? 'border-0 rounded-none bg-black/95' : ''}`}
+            } ${isFullscreen ? 'border-0 rounded-none bg-black/95' : 'rounded-xl sm:rounded-2xl'}`}
           >
             {/* Video-like progress bar */}
             <div className="h-1 bg-muted/30 relative overflow-hidden">
@@ -1097,11 +1097,11 @@ export const Demo = () => {
             </div>
 
             {/* Main demo area */}
-            <div className={`p-4 sm:p-6 bg-gradient-to-b from-background to-muted/20 relative ${
-              isFullscreen ? 'min-h-[400px] sm:min-h-[500px]' : 'min-h-[280px] sm:min-h-[300px] md:min-h-[320px]'
+            <div className={`p-3 sm:p-4 md:p-6 bg-gradient-to-b from-background to-muted/20 relative overflow-hidden ${
+              isFullscreen ? 'min-h-[400px] sm:min-h-[500px]' : 'min-h-[260px] sm:min-h-[280px] md:min-h-[320px]'
             }`}>
-              <div className="mb-3 sm:mb-4">
-                <p className="text-sm sm:text-base text-muted-foreground">{currentStepData.description}</p>
+              <div className="mb-2 sm:mb-3 md:mb-4">
+                <p className="text-xs sm:text-sm md:text-base text-muted-foreground line-clamp-2">{currentStepData.description}</p>
               </div>
               <div className={`transition-all duration-300 ${isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
                 <CurrentMockup isActive={isVisible && !isTransitioning} />
@@ -1109,11 +1109,11 @@ export const Demo = () => {
               
               {/* Synced captions overlay */}
               {isPlaying && !isMuted && currentStepData.caption && (
-                <div className="absolute bottom-4 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-6">
-                  <div className={`bg-black/80 backdrop-blur-sm rounded-lg px-3 py-2 sm:px-4 sm:py-3 transition-all duration-500 ${
+                <div className="absolute bottom-2 left-2 right-2 sm:bottom-4 sm:left-4 sm:right-4 md:bottom-6 md:left-6 md:right-6">
+                  <div className={`bg-black/80 backdrop-blur-sm rounded-lg px-2 py-1.5 sm:px-3 sm:py-2 md:px-4 md:py-3 transition-all duration-500 ${
                     isTransitioning ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'
                   }`}>
-                    <p className="text-white text-xs sm:text-sm leading-relaxed text-center">
+                    <p className="text-white text-[10px] sm:text-xs md:text-sm leading-relaxed text-center line-clamp-3">
                       {currentStepData.caption}
                     </p>
                   </div>
@@ -1125,28 +1125,28 @@ export const Demo = () => {
             <div className="border-t border-border/50 bg-muted/30">
               {/* Feature icon navigation */}
               {!isFullscreen && (
-                <div className="px-3 sm:px-4 pt-3 sm:pt-4">
-                  <div className="flex items-center justify-center gap-1 sm:gap-2 overflow-x-auto scrollbar-hide">
+                <div className="px-2 sm:px-3 md:px-4 pt-2 sm:pt-3 md:pt-4">
+                  <div className="flex items-center justify-center gap-0.5 sm:gap-1 md:gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1">
                     {demoSteps.map((step, index) => (
                       <button
                         key={step.id}
                         onClick={() => goToStep(index)}
-                        className={`flex flex-col items-center gap-1 p-1.5 sm:p-2 rounded-lg transition-all duration-300 min-w-[48px] sm:min-w-[56px] ${
+                        className={`flex flex-col items-center gap-0.5 sm:gap-1 p-1 sm:p-1.5 md:p-2 rounded-lg transition-all duration-300 min-w-[40px] sm:min-w-[48px] md:min-w-[56px] flex-shrink-0 ${
                           index === currentStep
                             ? 'bg-primary/15 scale-105'
                             : 'hover:bg-muted/50'
                         }`}
                       >
-                        <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center transition-colors ${
+                        <div className={`w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 rounded-md sm:rounded-lg flex items-center justify-center transition-colors ${
                           index === currentStep 
                             ? 'bg-primary text-primary-foreground' 
                             : index < currentStep
                             ? 'bg-primary/30 text-primary'
                             : 'bg-muted text-muted-foreground'
                         }`}>
-                          <step.icon className="w-3 h-3 sm:w-4 sm:h-4" />
+                          <step.icon className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4" />
                         </div>
-                        <span className={`text-[8px] sm:text-[10px] font-medium truncate max-w-[40px] sm:max-w-[50px] ${
+                        <span className={`text-[7px] sm:text-[8px] md:text-[10px] font-medium truncate max-w-[36px] sm:max-w-[44px] md:max-w-[50px] ${
                           index === currentStep ? 'text-primary' : 'text-muted-foreground'
                         }`}>
                           {step.title.split(' ')[0]}
@@ -1158,19 +1158,19 @@ export const Demo = () => {
               )}
               
               {/* Prev/Next controls */}
-              <div className="flex items-center justify-between p-3 sm:p-4">
+              <div className="flex items-center justify-between p-2 sm:p-3 md:p-4">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={prevStep}
-                  className="flex items-center gap-1 text-xs sm:text-sm px-2 sm:px-3"
+                  className="flex items-center gap-1 text-xs px-2 h-8"
                 >
                   <ChevronLeft className="w-3 h-3 sm:w-4 sm:h-4" />
-                  <span className="hidden xs:inline">Previous</span>
+                  <span className="hidden sm:inline text-xs">Previous</span>
                 </Button>
 
                 {/* Step counter */}
-                <span className="text-xs sm:text-sm text-muted-foreground">
+                <span className="text-[10px] sm:text-xs md:text-sm text-muted-foreground">
                   {currentStep + 1} / {demoSteps.length}
                 </span>
 
@@ -1178,9 +1178,9 @@ export const Demo = () => {
                   variant="ghost"
                   size="sm"
                   onClick={nextStep}
-                  className="flex items-center gap-1 text-xs sm:text-sm px-2 sm:px-3"
+                  className="flex items-center gap-1 text-xs px-2 h-8"
                 >
-                  <span className="hidden xs:inline">Next</span>
+                  <span className="hidden sm:inline text-xs">Next</span>
                   <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4" />
                 </Button>
               </div>
