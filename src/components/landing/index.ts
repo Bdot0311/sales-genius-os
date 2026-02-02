@@ -1,4 +1,5 @@
 export { HeroSection } from './HeroSection';
+export { TrustedByBar } from './TrustedByBar';
 export { HowItWorks } from './HowItWorks';
 export { OutcomesSection } from './OutcomesSection';
 export { ModulesSection } from './ModulesSection';
