@@ -2,8 +2,10 @@ import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
-import salesosLogo from "@/assets/salesos-logo-64.webp";
 import { useWhiteLabel } from "@/hooks/use-white-label";
+
+// Use public path for maximum compatibility across all devices
+const LOGO_URL = "/salesos-logo-small.webp";
 
 export const Navbar = () => {
   const navigate = useNavigate();
@@ -59,12 +61,12 @@ export const Navbar = () => {
       role="navigation"
       aria-label="Main navigation"
     >
-      <div className="container mx-auto px-6">
+      <div className="container mx-auto px-4 sm:px-6">
         <div className="max-w-[1120px] mx-auto">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-14 sm:h-16">
             {/* Logo */}
             <div 
-              className="flex items-center gap-2.5 cursor-pointer" 
+              className="flex items-center gap-2 sm:gap-2.5 cursor-pointer flex-shrink-0" 
               onClick={() => navigate('/')}
               role="link"
               tabIndex={0}
@@ -75,18 +77,19 @@ export const Navbar = () => {
                 <img 
                   src={whiteLabelSettings.logo_url} 
                   alt={whiteLabelSettings.company_name || "Logo"} 
-                  className="h-8" 
+                  className="h-7 sm:h-8" 
                 />
               ) : (
                 <>
                   <img 
-                    src={salesosLogo} 
+                    src={LOGO_URL}
                     alt="SalesOS Logo" 
-                    className="w-8 h-8 rounded-lg" 
+                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-contain" 
                     width={32} 
-                    height={32} 
+                    height={32}
+                    loading="eager"
                   />
-                  <span className="text-lg font-semibold">
+                  <span className="text-base sm:text-lg font-semibold whitespace-nowrap">
                     <span className="text-foreground">{whiteLabelSettings?.company_name || "Sales"}</span>
                     {!whiteLabelSettings?.company_name && (
                       <span className="text-primary">OS</span>
@@ -102,7 +105,7 @@ export const Navbar = () => {
                 <button
                   key={link.label}
                   onClick={() => handleNavigation(link.path)}
-                  className="px-4 py-2 text-sm text-muted-foreground hover:text-primary transition-colors rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className="px-3 lg:px-4 py-2 text-sm text-muted-foreground hover:text-primary transition-colors rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
                 >
                   {link.label}
                 </button>
@@ -110,11 +113,11 @@ export const Navbar = () => {
             </div>
 
             {/* CTA Buttons */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <Button 
                 variant="ghost" 
                 size="sm"
-                className="text-muted-foreground hover:text-primary hover:bg-primary/10 font-medium"
+                className="text-sm text-muted-foreground hover:text-primary hover:bg-primary/10 font-medium px-3"
                 onClick={() => navigate("/auth")}
               >
                 Login
@@ -124,7 +127,7 @@ export const Navbar = () => {
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="md:hidden"
+                className="md:hidden w-9 h-9"
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 aria-expanded={isMenuOpen}
                 aria-label={isMenuOpen ? "Close menu" : "Open menu"}
@@ -144,18 +147,18 @@ export const Navbar = () => {
         role="menu"
       >
         <div className="bg-background/95 backdrop-blur-md border-b border-border/40">
-          <div className="container mx-auto px-6 py-4 space-y-1">
+          <div className="container mx-auto px-4 py-3 space-y-1">
             {navLinks.map((link) => (
               <button
                 key={link.label}
                 onClick={() => handleNavigation(link.path)}
-                className="w-full text-left px-4 py-3 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors"
+                className="w-full text-left px-4 py-3 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors text-base"
                 role="menuitem"
               >
                 {link.label}
               </button>
             ))}
-            <div className="pt-4 border-t border-border/40 mt-4">
+            <div className="pt-3 border-t border-border/40 mt-3">
               <Button 
                 className="w-full bg-foreground text-background hover:bg-foreground/90"
                 onClick={() => navigate("/auth")}
