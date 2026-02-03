@@ -389,7 +389,7 @@ export const HeroSection = () => {
 
             {/* Proof chips - reduced to 2, responsive layout */}
             <div 
-              className={`flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center lg:justify-start scroll-reveal ${
+              className={`flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center items-center scroll-reveal ${
                 isVisible ? 'visible' : ''
               }`}
               style={{ '--reveal-delay': '340ms' } as React.CSSProperties}
@@ -398,24 +398,24 @@ export const HeroSection = () => {
                 { icon: Zap, text: "3× faster than manual prospecting" },
                 { icon: Target, text: "85% ICP match accuracy*" },
               ].map((stat, i) => (
-                <div key={i} className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                <div key={i} className="flex items-center justify-center gap-2 text-xs sm:text-sm text-muted-foreground">
                   <stat.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" aria-hidden="true" />
-                  <span className="whitespace-nowrap">{stat.text}</span>
+                  <span className="text-center whitespace-normal">{stat.text}</span>
                 </div>
               ))}
             </div>
             
             {/* Footnote */}
-            <p className={`mt-3 text-[10px] text-muted-foreground/50 scroll-reveal ${
+            <p className={`mt-3 text-[10px] text-muted-foreground/50 text-center lg:text-left scroll-reveal ${
               isVisible ? 'visible' : ''
             }`} style={{ '--reveal-delay': '420ms' } as React.CSSProperties}>
               *Based on beta testing across 10,000+ lead matches
             </p>
           </div>
 
-          {/* Right side - Lead Search Demo - hidden on mobile */}
+          {/* Right side - Lead Search Demo */}
           <div 
-            className={`hidden lg:block scroll-reveal ${isVisible ? 'visible' : ''}`}
+            className={`w-full max-w-[calc(100vw-2rem)] sm:max-w-[560px] lg:max-w-none mx-auto scroll-reveal ${isVisible ? 'visible' : ''}`}
             style={{ '--reveal-delay': '200ms' } as React.CSSProperties}
           >
             <LeadSearchDemo />
