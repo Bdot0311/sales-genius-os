@@ -413,6 +413,33 @@ const ApiStatus = () => {
             </div>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Related Resources</CardTitle>
+            <CardDescription>Explore more SalesOS resources</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="grid sm:grid-cols-2 gap-3">
+              <li>
+                <a href="/api-docs" className="text-primary hover:underline">API Documentation</a>
+                <span className="text-sm text-muted-foreground"> – Complete integration guide</span>
+              </li>
+              <li>
+                <a href="/security" className="text-primary hover:underline">Security Practices</a>
+                <span className="text-sm text-muted-foreground"> – Data protection measures</span>
+              </li>
+              <li>
+                <a href="/help" className="text-primary hover:underline">Help Center</a>
+                <span className="text-sm text-muted-foreground"> – Guides and support</span>
+              </li>
+              <li>
+                <a href="/pricing" className="text-primary hover:underline">Pricing Plans</a>
+                <span className="text-sm text-muted-foreground"> – Find your plan</span>
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
         </div>
       </div>
         <Footer />
