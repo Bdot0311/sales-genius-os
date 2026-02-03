@@ -367,7 +367,7 @@ export const HeroSection = () => {
             <p className={`text-sm text-muted-foreground text-center lg:text-left mb-6 scroll-reveal ${
               isVisible ? 'visible' : ''
             }`} style={{ '--reveal-delay': '240ms' } as React.CSSProperties}>
-              No credit card required · Cancel anytime
+              No fluff · No lock-in · Cancel anytime
             </p>
 
             {/* Trust indicators */}
