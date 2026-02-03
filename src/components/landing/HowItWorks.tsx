@@ -5,20 +5,20 @@ const steps = [
   {
     number: "01",
     icon: MessageSquare,
-    title: "Describe your ICP in plain English",
-    description: "Tell us who you're looking for: job titles, industries, company size, location. No complex filters or boolean queries.",
+    title: "Describe who you want to sell to",
+    description: "Tell us your ideal customer in plain English. Job titles, industries, company size, location. That's it.",
   },
   {
     number: "02",
     icon: BarChart3,
-    title: "Get ranked matches + enriched profiles",
-    description: "AI scores each lead by fit. Every profile comes with verified emails, LinkedIn, company data, and tech stack.",
+    title: "Get a ranked list with verified data",
+    description: "AI scores each lead by fit. Every profile includes verified email, LinkedIn, company data, and tech stack.",
   },
   {
     number: "03",
     icon: Send,
-    title: "Export to outreach or push into your workflow",
-    description: "One-click export to CSV, or send directly to your CRM, sequences, or custom automations.",
+    title: "Push them into outreach or your CRM",
+    description: "One-click export to CSV. Or send directly to your sequences, HubSpot, Salesforce, or custom automations.",
   },
 ];
 
@@ -50,7 +50,7 @@ export const HowItWorks = () => {
       className="relative py-24 md:py-32 overflow-hidden"
       aria-labelledby="how-it-works-heading"
     >
-      {/* Unified background - matching hero */}
+      {/* Unified background */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div 
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[600px]"
@@ -77,7 +77,7 @@ export const HowItWorks = () => {
           </div>
 
           {/* Steps - horizontal on desktop, stacked on mobile */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-6 mb-10">
             {steps.map((step, index) => (
               <div 
                 key={index}
@@ -106,6 +106,13 @@ export const HowItWorks = () => {
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* No complexity line */}
+          <div className={`text-center scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '350ms' } as React.CSSProperties}>
+            <p className="text-sm text-muted-foreground/70 font-medium">
+              No boolean queries. No complex filters. No data entry.
+            </p>
           </div>
         </div>
       </div>

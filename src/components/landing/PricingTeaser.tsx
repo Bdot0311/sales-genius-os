@@ -1,32 +1,25 @@
 import { useEffect, useRef, useState } from "react";
-import { Shield, Lock, Server, CheckCircle2 } from "lucide-react";
+import { Check, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
-const trustSignals = [
-  {
-    icon: Shield,
-    title: "SOC 2 Compliant",
-    description: "Enterprise-grade security standards"
-  },
-  {
-    icon: Lock,
-    title: "End-to-End Encryption",
-    description: "Your data is always protected"
-  },
-  {
-    icon: Server,
-    title: "99.9% Uptime SLA",
-    description: "Reliable infrastructure you can count on"
-  },
-  {
-    icon: CheckCircle2,
-    title: "GDPR Ready",
-    description: "Full compliance with data regulations"
-  }
+const forYou = [
+  "B2B sales teams (5-50 reps)",
+  "Outbound-heavy agencies",
+  "Sales-led SaaS founders",
+  "Anyone tired of duct-taped sales stacks",
+];
+
+const notForYou = [
+  "E-commerce businesses",
+  "B2C companies",
+  "Teams that don't do outbound",
 ];
 
 export const PricingTeaser = () => {
   const [isVisible, setIsVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -48,10 +41,10 @@ export const PricingTeaser = () => {
   return (
     <section 
       ref={ref}
-      className="relative py-16 md:py-20 overflow-hidden"
-      aria-labelledby="trust-heading"
+      className="relative py-24 md:py-32 overflow-hidden"
+      aria-labelledby="pricing-heading"
     >
-      {/* Unified background - matching hero */}
+      {/* Unified background */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div 
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px]"
@@ -66,39 +59,83 @@ export const PricingTeaser = () => {
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
       
       <div className="container relative z-10 mx-auto px-6">
-        <div className="max-w-[1120px] mx-auto">
+        <div className="max-w-[900px] mx-auto">
           {/* Header */}
-          <div className={`text-center mb-10 scroll-reveal ${isVisible ? 'visible' : ''}`}>
-            <h2 id="trust-heading" className="text-2xl sm:text-3xl font-bold tracking-tight mb-3">
-              Built for security & compliance
+          <div className={`text-center mb-12 scroll-reveal ${isVisible ? 'visible' : ''}`}>
+            <h2 id="pricing-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
+              Simple pricing. No surprises.
             </h2>
-            <p className="text-muted-foreground max-w-md mx-auto">
-              Enterprise-ready infrastructure that protects your data and your customers.
+            <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
+              SalesOS works best for teams that sell directly to businesses. If you're running outbound, managing a pipeline, or trying to close deals faster—this is for you.
             </p>
           </div>
 
-          {/* Trust signals grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {trustSignals.map((signal, index) => (
-              <div 
-                key={signal.title}
-                className={`group relative p-5 rounded-xl border border-border/30 bg-card/40 text-center card-hover-lift scroll-reveal ${
-                  isVisible ? 'visible' : ''
-                }`}
-                style={{ '--reveal-delay': `${index * 75}ms` } as React.CSSProperties}
-              >
-                {/* Spotlight effect */}
-                <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none spotlight-card" />
-                
-                <div className="relative z-10">
-                  <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 text-primary mb-3 transition-transform duration-200 group-hover:scale-110">
-                    <signal.icon className="w-5 h-5" />
-                  </div>
-                  <div className="font-medium text-sm mb-1">{signal.title}</div>
-                  <div className="text-xs text-muted-foreground">{signal.description}</div>
-                </div>
+          {/* Two-column fit grid */}
+          <div className="grid md:grid-cols-2 gap-6 mb-10">
+            {/* Who it's for */}
+            <div 
+              className={`group relative p-6 md:p-8 rounded-xl border border-primary/20 bg-primary/[0.03] scroll-reveal ${
+                isVisible ? 'visible' : ''
+              }`}
+              style={{ '--reveal-delay': '100ms' } as React.CSSProperties}
+            >
+              <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none spotlight-card" />
+              
+              <div className="relative z-10">
+                <h3 className="font-semibold text-lg mb-5 text-primary">
+                  Who it's for
+                </h3>
+                <ul className="space-y-3">
+                  {forYou.map((item, index) => (
+                    <li key={index} className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center mt-0.5">
+                        <Check className="w-3 h-3 text-primary" aria-hidden="true" />
+                      </div>
+                      <span className="text-foreground">{item}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            ))}
+            </div>
+
+            {/* Who it's NOT for */}
+            <div 
+              className={`relative p-6 md:p-8 rounded-xl border border-border/30 bg-muted/20 scroll-reveal ${
+                isVisible ? 'visible' : ''
+              }`}
+              style={{ '--reveal-delay': '200ms' } as React.CSSProperties}
+            >
+              <div className="relative z-10">
+                <h3 className="font-semibold text-lg mb-5 text-muted-foreground">
+                  Who it's NOT for
+                </h3>
+                <ul className="space-y-3">
+                  {notForYou.map((item, index) => (
+                    <li key={index} className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-5 h-5 rounded-full bg-muted flex items-center justify-center mt-0.5">
+                        <X className="w-3 h-3 text-muted-foreground" aria-hidden="true" />
+                      </div>
+                      <span className="text-muted-foreground">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Pricing logic */}
+          <div className={`text-center scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '300ms' } as React.CSSProperties}>
+            <p className="text-lg text-foreground mb-6">
+              Plans start at <span className="font-semibold">$49/mo</span> per seat. Full access during your 14-day trial.
+            </p>
+            <Button
+              variant="outline"
+              size="lg"
+              className="h-12 px-6 text-base font-medium rounded-lg btn-outline-hover"
+              onClick={() => navigate('/pricing')}
+            >
+              View pricing
+            </Button>
           </div>
         </div>
       </div>

@@ -1,37 +1,42 @@
 import { useEffect, useRef, useState } from "react";
-import { Brain, Mail, Calendar, TrendingUp, Mic, Workflow, Play } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Brain, Mail, Calendar, TrendingUp, Mic, Workflow } from "lucide-react";
 
 const modules = [
   {
     icon: Brain,
-    title: "Prioritize who's most likely to convert",
-    description: "AI Lead Scoring analyzes engagement and fit signals to rank your leads by conversion probability.",
+    title: "AI Lead Scoring",
+    outcome: "Know exactly who to call first",
+    description: "Leads ranked by conversion probability. Stop guessing which prospects are worth your time.",
   },
   {
     icon: Mail,
-    title: "Write emails that feel human (without the time)",
-    description: "Smart Outreach generates personalized messages based on each prospect's profile and company data.",
+    title: "Smart Outreach",
+    outcome: "Send personalized emails in seconds",
+    description: "AI writes based on each lead's profile, company, and role. No more copy-paste templates.",
   },
   {
     icon: Calendar,
-    title: "Book meetings without back-and-forth",
-    description: "Auto Scheduling finds optimal times and handles the coordination so you can skip the email chains.",
+    title: "Auto Scheduling",
+    outcome: "Skip the email chains",
+    description: "Prospects book directly into your calendar. No more back-and-forth coordination.",
   },
   {
     icon: TrendingUp,
-    title: "See bottlenecks and forecast revenue",
-    description: "Pipeline Analytics visualizes your funnel health and predicts revenue with deal-stage tracking.",
+    title: "Pipeline Analytics",
+    outcome: "See where deals stall",
+    description: "Visual funnel tracking with revenue forecasting. Know exactly what's closing this month.",
   },
   {
     icon: Mic,
-    title: "Real-time coaching for objections + closes",
-    description: "Sales Coaching provides instant suggestions during calls to help you navigate tough conversations.",
+    title: "Sales Coach",
+    outcome: "Get instant suggestions",
+    description: "Real-time coaching during tough conversations. Handle objections with confidence.",
   },
   {
     icon: Workflow,
-    title: "Automate follow-ups and handoffs without code",
-    description: "Workflow Builder lets you create complex sequences with drag-and-drop simplicity.",
+    title: "Workflow Automation",
+    outcome: "Never miss a follow-up",
+    description: "Sequences run on autopilot. Leads get nurtured even when you're not working.",
   },
 ];
 
@@ -63,7 +68,7 @@ export const ModulesSection = () => {
       className="relative py-24 md:py-32 overflow-hidden"
       aria-labelledby="modules-heading"
     >
-      {/* Unified background - matching hero */}
+      {/* Unified background */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div 
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[700px]"
@@ -85,12 +90,12 @@ export const ModulesSection = () => {
               Everything you need to close more deals
             </h2>
             <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-              Six modules working together to automate your entire sales workflow.
+              Six modules. One system. Zero busywork.
             </p>
           </div>
 
-          {/* Modules grid - 6 cards */}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-12">
+          {/* Modules grid */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {modules.map((module, index) => (
               <article 
                 key={index}
@@ -106,27 +111,18 @@ export const ModulesSection = () => {
                   <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/15 transition-colors duration-200">
                     <module.icon className="w-5 h-5 text-primary" aria-hidden="true" />
                   </div>
-                  <h3 className="font-semibold mb-2 group-hover:text-primary transition-colors duration-200 feature-description">
+                  <h3 className="font-semibold mb-1 group-hover:text-primary transition-colors duration-200">
                     {module.title}
                   </h3>
+                  <p className="text-sm text-primary/80 font-medium mb-2">
+                    {module.outcome}
+                  </p>
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     {module.description}
                   </p>
                 </div>
               </article>
             ))}
-          </div>
-
-          {/* Watch demo link */}
-          <div className={`text-center scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '400ms' } as React.CSSProperties}>
-            <Button 
-              variant="outline"
-              className="group btn-outline-hover"
-              onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}
-            >
-              <Play className="w-4 h-4 mr-2" aria-hidden="true" />
-              Watch demo
-            </Button>
           </div>
         </div>
       </div>

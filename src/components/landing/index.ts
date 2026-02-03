@@ -1,8 +1,10 @@
 export { HeroSection } from './HeroSection';
 export { TrustedByBar } from './TrustedByBar';
+export { ProblemSection } from './ProblemSection';
 export { HowItWorks } from './HowItWorks';
 export { OutcomesSection } from './OutcomesSection';
 export { ModulesSection } from './ModulesSection';
+export { DifferentiationSection } from './DifferentiationSection';
 export { LogoBar } from './LogoBar';
 export { TestimonialsSection } from './TestimonialsSection';
 export { IntegrationsSection } from './IntegrationsSection';

@@ -3,9 +3,10 @@ import { Demo } from "@/components/Demo";
 import { 
   HeroSection,
   TrustedByBar,
+  ProblemSection,
   HowItWorks,
-  OutcomesSection,
   ModulesSection,
+  DifferentiationSection,
   TestimonialsSection,
   IntegrationsSection,
   PricingTeaser,
@@ -122,45 +123,48 @@ const Index = () => {
         <Navbar />
         <main itemScope itemType="https://schema.org/WebPage">
           <article>
-            {/* 1. Hero */}
+            {/* 1. Hero (Above the Fold) */}
             <HeroSection />
             
-            {/* 1b. Trusted by bar */}
+            {/* 1b. Works with your stack */}
             <TrustedByBar />
             
-            {/* 2. How it works */}
+            {/* 2. Problem Clarity - "Sound familiar?" */}
+            <ProblemSection />
+            
+            {/* 3. How it works */}
             <HowItWorks />
             
-            {/* 3. Outcomes */}
-            <OutcomesSection />
-            
-            {/* 4. Modules (Features) */}
+            {/* 4. Feature → Outcome Mapping */}
             <ModulesSection />
             
-            {/* 5. Demo */}
+            {/* 5. Differentiation - "Not another bloated CRM" */}
+            <DifferentiationSection />
+            
+            {/* 6. Demo */}
             <Demo />
             
-            {/* 6. Proof section */}
+            {/* 7. Trust & Credibility */}
             <TestimonialsSection />
             
-            {/* 6b. Mid-page CTA */}
+            {/* 8. Mid-page CTA */}
             <MidPageCTA />
             
-            {/* 7. Integrations */}
+            {/* 9. Integrations */}
             <IntegrationsSection />
             
-            {/* 8. Pricing teaser */}
+            {/* 10. Pricing & Fit */}
             <PricingTeaser />
             
-            {/* 9. FAQ */}
+            {/* 11. FAQ */}
             <FAQSection />
             
-            {/* 10. Final CTA */}
+            {/* 12. Final CTA */}
             <FinalCTA />
           </article>
         </main>
         
-        {/* 11. Footer */}
+        {/* Footer */}
         <FooterSection />
       </div>
     </>
