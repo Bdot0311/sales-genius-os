@@ -7,7 +7,7 @@ const PricingPage = () => {
   const pricingFAQs = [
     {
       question: "What's included in the free trial?",
-      answer: "All plans include a 14-day free trial with full access to features. No credit card required to start."
+      answer: "All plans include a 14-day free trial with full access to the features in your chosen plan. A credit card is required to start."
     },
     {
       question: "Can I change plans later?",
