@@ -379,7 +379,7 @@ export const HeroSection = () => {
             >
               <div className="flex items-center gap-1.5">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                <span>Enrich leads from a global B2B database</span>
+                <span>Powered by Sales Intelligence</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary" />
