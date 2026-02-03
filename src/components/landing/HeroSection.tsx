@@ -369,6 +369,31 @@ export const HeroSection = () => {
                 </p>
               </div>
             </div>
+
+            {/* Two testimonials side by side */}
+            <div 
+              className={`grid sm:grid-cols-2 gap-4 scroll-reveal ${
+                isVisible ? 'visible' : ''
+              }`}
+              style={{ '--reveal-delay': '280ms' } as React.CSSProperties}
+            >
+              <div className="p-4 rounded-lg border border-border/30 bg-card/30">
+                <p className="text-sm text-muted-foreground italic mb-2">
+                  "Cut our research time by 70%"
+                </p>
+                <p className="text-xs font-medium">
+                  Sarah Mitchell, Head of Sales, Vendora
+                </p>
+              </div>
+              <div className="p-4 rounded-lg border border-border/30 bg-card/30">
+                <p className="text-sm text-muted-foreground italic mb-2">
+                  "Found leads we would have missed"
+                </p>
+                <p className="text-xs font-medium">
+                  Marcus Chen, Co-founder, DataSync
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Right side - Demo */}
