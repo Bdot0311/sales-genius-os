@@ -115,7 +115,7 @@ const PricingPage = () => {
               <ul className="grid sm:grid-cols-2 gap-4">
                 {[
                   "AI-powered lead scoring",
-                  "Email template builder",
+                  "AI Sales Coach",
                   "Visual pipeline management",
                   "AI Outreach Studio",
                   "Smart Deal Pipeline",
