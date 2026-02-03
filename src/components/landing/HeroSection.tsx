@@ -247,7 +247,7 @@ export const HeroSection = () => {
   return (
     <section 
       ref={heroRef}
-      className="relative min-h-screen flex items-center justify-center overflow-hidden pt-24 sm:pt-28 pb-12 sm:pb-16"
+      className="relative min-h-[85vh] lg:min-h-screen flex items-center justify-center overflow-hidden pt-20 sm:pt-24 lg:pt-28 pb-8 sm:pb-12 lg:pb-16"
       aria-labelledby="hero-heading"
     >
       {/* Layer 1: Faint grid with subtle parallax */}
@@ -413,9 +413,9 @@ export const HeroSection = () => {
             </p>
           </div>
 
-          {/* Right side - Lead Search Demo */}
+          {/* Right side - Lead Search Demo - hidden on mobile */}
           <div 
-            className={`scroll-reveal ${isVisible ? 'visible' : ''}`}
+            className={`hidden lg:block scroll-reveal ${isVisible ? 'visible' : ''}`}
             style={{ '--reveal-delay': '200ms' } as React.CSSProperties}
           >
             <LeadSearchDemo />
