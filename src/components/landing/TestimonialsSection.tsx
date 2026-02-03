@@ -3,22 +3,22 @@ import { Quote } from "lucide-react";
 
 const testimonials = [
   {
-    quote: "Cut our research time by 70%. The enrichment data was spot-on. Found prospects we would've missed completely.",
-    name: "Sarah Mitchell",
-    role: "Head of Sales",
-    company: "Vendora",
-  },
-  {
-    quote: "Found prospects we would have missed completely. Pipeline visibility improved overnight. The AI scoring is shockingly accurate.",
-    name: "Marcus Chen",
-    role: "Co-founder",
-    company: "DataSync",
-  },
-  {
-    quote: "I was skeptical about another sales tool, but the results spoke for themselves. We closed 3 deals in the first week.",
+    quote: "The AI scoring is shockingly accurate. We've doubled our response rates since switching.",
     name: "David Park",
     role: "Director of Sales",
     company: "CloudBase",
+  },
+  {
+    quote: "Pipeline visibility improved overnight. I finally know where every deal stands without chasing my team.",
+    name: "Emma Wilson",
+    role: "VP of Revenue",
+    company: "Nextera",
+  },
+  {
+    quote: "I was skeptical about another sales tool, but the results spoke for themselves. We closed 3 deals in the first week.",
+    name: "James Rodriguez",
+    role: "Sales Manager",
+    company: "Growthly",
   },
 ];
 
