@@ -13,3 +13,4 @@ export { FooterSection } from './FooterSection';
 export { LogoMarquee } from './LogoMarquee';
 export { SocialProof } from './SocialProof';
 export { CTASection } from './CTASection';
+export { MidPageCTA } from './MidPageCTA';
