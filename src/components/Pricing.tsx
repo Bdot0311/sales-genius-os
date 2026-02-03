@@ -247,20 +247,6 @@ export const Pricing = () => {
       </div>
       
       <div className="container relative z-10 mx-auto px-4 sm:px-6">
-        {/* Header */}
-        <div className={`max-w-3xl mx-auto text-center mb-10 md:mb-16 scroll-reveal ${isVisible ? 'visible' : ''}`}>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted text-sm text-muted-foreground mb-4 sm:mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-            Pricing
-          </div>
-          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight mb-3 sm:mb-4">
-            Simple, transparent pricing
-          </h1>
-          <p className="text-base sm:text-lg text-muted-foreground">
-            Start with a 14-day free trial. Upgrade when you're ready. No hidden fees.
-          </p>
-        </div>
-
         {/* Plan Cards */}
         <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto mb-16 md:mb-20 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '100ms' } as React.CSSProperties}>
           {plans.map((plan, index) => (
