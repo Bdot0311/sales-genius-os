@@ -34,6 +34,23 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const getAppUrlFromRequest = () => {
+    // Prefer Origin (present on fetch/XHR), fallback to Referer.
+    const origin = req.headers.get("origin");
+    const referer = req.headers.get("referer");
+
+    const candidate = origin || referer;
+    if (!candidate) return null;
+
+    try {
+      // If referer is a full URL, grab its origin; if origin is already an origin, this still works.
+      const url = new URL(candidate);
+      return url.origin;
+    } catch {
+      return null;
+    }
+  };
+
   try {
     // Get client IP for rate limiting
     const clientIP = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
@@ -80,8 +97,9 @@ serve(async (req) => {
 
     console.log("Processing password reset for email:", email);
 
-    // Always use production domain for email links
-    const appUrl = "https://salesos.alephwavex.io";
+    // Use the same environment (preview vs live) that initiated the reset request.
+    // Fallback to production domain if we can't reliably infer it.
+    const appUrl = getAppUrlFromRequest() || "https://salesos.alephwavex.io";
     const logoUrl = "https://ghgfjnepvxvxrncmskys.supabase.co/storage/v1/object/public/email-assets/salesos-logo.webp";
     const redirectUrl = `${appUrl}/auth?type=recovery`;
     
