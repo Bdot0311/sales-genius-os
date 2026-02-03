@@ -273,14 +273,18 @@ export const HeroSection = () => {
           {/* Left side - Content */}
           <div className="text-center lg:text-left">
             {/* Product category label */}
-            <span 
-              className={`inline-block px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium mb-4 scroll-reveal ${
+            <div 
+              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 backdrop-blur-sm mb-5 scroll-reveal ${
                 isVisible ? 'visible' : ''
               }`}
               style={{ '--reveal-delay': '40ms' } as React.CSSProperties}
             >
-              Sales System
-            </span>
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+              </span>
+              <span className="text-xs font-medium text-primary">Now available</span>
+            </div>
             
             {/* Main headline */}
             <h1 
