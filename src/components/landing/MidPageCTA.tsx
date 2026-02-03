@@ -28,17 +28,17 @@ export const MidPageCTA = () => {
   return (
     <section 
       ref={ref}
-      className="relative py-12 sm:py-16 border-y border-border/10 bg-muted/5"
+      className="relative py-10 sm:py-12 lg:py-16 border-y border-border/10 bg-muted/5"
       aria-label="Get started with SalesOS"
     >
       <div className="container mx-auto px-4 sm:px-6">
-        <div className={`flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 scroll-reveal ${isVisible ? 'visible' : ''}`}>
-          <p className="text-sm sm:text-base text-muted-foreground text-center sm:text-left">
+        <div className={`flex flex-col items-center justify-center gap-4 sm:gap-5 scroll-reveal ${isVisible ? 'visible' : ''}`}>
+          <p className="text-sm sm:text-base text-muted-foreground text-center max-w-sm sm:max-w-none">
             Ready to find your next best customer?
           </p>
           <Button 
             size="lg"
-            className="h-12 sm:h-14 px-6 sm:px-8 text-sm sm:text-base font-semibold bg-foreground text-background hover:bg-foreground/90 rounded-lg group btn-glow-hover"
+            className="w-full sm:w-auto h-12 sm:h-14 px-6 sm:px-8 text-sm sm:text-base font-semibold bg-foreground text-background hover:bg-foreground/90 rounded-lg group btn-glow-hover"
             onClick={() => navigate('/auth')}
             aria-label="Start 14-day free trial"
           >

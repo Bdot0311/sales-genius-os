@@ -363,26 +363,28 @@ export const HeroSection = () => {
 
             {/* Process steps indicator - moved higher for clarity */}
             <div 
-              className={`flex items-center justify-center lg:justify-start gap-2 text-xs text-muted-foreground/70 mb-4 scroll-reveal ${
+              className={`flex flex-wrap items-center justify-center lg:justify-start gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-muted-foreground/70 mb-4 scroll-reveal ${
                 isVisible ? 'visible' : ''
               }`}
               style={{ '--reveal-delay': '260ms' } as React.CSSProperties}
             >
               <span className="font-medium">Describe ICP</span>
               <span className="text-primary">→</span>
-              <span className="font-medium">Get scored matches</span>
+              <span className="font-medium">Get matches</span>
               <span className="text-primary">→</span>
-              <span className="font-medium">Export to outreach</span>
+              <span className="font-medium">Export</span>
             </div>
             
             {/* Mini testimonial - moved up for trust */}
             <div 
-              className={`mb-4 text-sm text-muted-foreground italic scroll-reveal ${
+              className={`mb-4 text-xs sm:text-sm text-muted-foreground italic text-center lg:text-left scroll-reveal ${
                 isVisible ? 'visible' : ''
               }`}
               style={{ '--reveal-delay': '300ms' } as React.CSSProperties}
             >
-              "Cut our research time by 70%" — <span className="not-italic font-medium">Sarah Mitchell, Head of Sales, TechFlow</span>
+              <span className="block sm:inline">"Cut our research time by 70%"</span>
+              <span className="hidden sm:inline"> — </span>
+              <span className="block sm:inline not-italic font-medium mt-1 sm:mt-0">Sarah Mitchell, Head of Sales, TechFlow</span>
             </div>
 
             {/* Proof chips - reduced to 2, responsive layout */}
