@@ -364,11 +364,32 @@ export const HeroSection = () => {
             </div>
 
             {/* Risk reducer - directly under CTA */}
-            <p className={`text-sm text-muted-foreground text-center lg:text-left scroll-reveal ${
+            <p className={`text-sm text-muted-foreground text-center lg:text-left mb-6 scroll-reveal ${
               isVisible ? 'visible' : ''
             }`} style={{ '--reveal-delay': '240ms' } as React.CSSProperties}>
-              Cancel anytime.
+              No credit card required · Cancel anytime
             </p>
+
+            {/* Trust indicators */}
+            <div 
+              className={`flex flex-wrap items-center justify-center lg:justify-start gap-x-6 gap-y-2 text-xs text-muted-foreground scroll-reveal ${
+                isVisible ? 'visible' : ''
+              }`}
+              style={{ '--reveal-delay': '280ms' } as React.CSSProperties}
+            >
+              <div className="flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                <span>2M+ leads enriched</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                <span>98% data accuracy</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                <span>SOC 2 compliant</span>
+              </div>
+            </div>
           </div>
 
           {/* Right side - Demo */}
