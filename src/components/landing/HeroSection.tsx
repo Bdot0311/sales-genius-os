@@ -320,37 +320,12 @@ export const HeroSection = () => {
               Built for sales teams, agencies, and founders tired of duct-taped tools.
             </p>
 
-            {/* CTA Button - Single, larger */}
+            {/* Two testimonials side by side - above CTA */}
             <div 
-              className={`flex flex-col items-center lg:items-start mb-4 scroll-reveal ${
+              className={`grid sm:grid-cols-2 gap-4 mb-6 scroll-reveal ${
                 isVisible ? 'visible' : ''
               }`}
-              style={{ '--reveal-delay': '180ms' } as React.CSSProperties}
-            >
-              <Button 
-                size="lg" 
-                className="w-full sm:w-auto h-14 px-8 text-base font-semibold bg-foreground text-background hover:bg-foreground/90 rounded-lg group btn-glow-hover inline-flex items-center justify-center"
-                onClick={() => navigate('/auth')}
-                aria-label="Start 14-day free trial"
-              >
-                <span>Start 14-day free trial</span>
-                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
-              </Button>
-            </div>
-
-            {/* Risk reducer - directly under CTA */}
-            <p className={`text-sm text-muted-foreground mb-8 text-center lg:text-left scroll-reveal ${
-              isVisible ? 'visible' : ''
-            }`} style={{ '--reveal-delay': '220ms' } as React.CSSProperties}>
-              Cancel anytime.
-            </p>
-
-            {/* Two testimonials side by side */}
-            <div 
-              className={`grid sm:grid-cols-2 gap-4 scroll-reveal ${
-                isVisible ? 'visible' : ''
-              }`}
-              style={{ '--reveal-delay': '280ms' } as React.CSSProperties}
+              style={{ '--reveal-delay': '160ms' } as React.CSSProperties}
             >
               <div className="p-4 rounded-lg border border-border/30 bg-card/30">
                 <p className="text-sm text-muted-foreground italic mb-2">
@@ -369,6 +344,31 @@ export const HeroSection = () => {
                 </p>
               </div>
             </div>
+
+            {/* CTA Button - Single, larger */}
+            <div 
+              className={`flex flex-col items-center lg:items-start mb-4 scroll-reveal ${
+                isVisible ? 'visible' : ''
+              }`}
+              style={{ '--reveal-delay': '200ms' } as React.CSSProperties}
+            >
+              <Button 
+                size="lg" 
+                className="w-full sm:w-auto h-14 px-8 text-base font-semibold bg-foreground text-background hover:bg-foreground/90 rounded-lg group btn-glow-hover inline-flex items-center justify-center"
+                onClick={() => navigate('/auth')}
+                aria-label="Start 14-day free trial"
+              >
+                <span>Start 14-day free trial</span>
+                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
+              </Button>
+            </div>
+
+            {/* Risk reducer - directly under CTA */}
+            <p className={`text-sm text-muted-foreground text-center lg:text-left scroll-reveal ${
+              isVisible ? 'visible' : ''
+            }`} style={{ '--reveal-delay': '240ms' } as React.CSSProperties}>
+              Cancel anytime.
+            </p>
           </div>
 
           {/* Right side - Demo */}
