@@ -71,23 +71,23 @@ export const TrustedByBar = () => {
   return (
     <section 
       ref={ref} 
-      className="relative py-8 sm:py-10 border-b border-border/10"
+      className="relative py-6 sm:py-8 lg:py-10 border-b border-border/10"
       aria-label="Trusted by teams at"
     >
       <div className="container mx-auto px-4 sm:px-6">
-        <div className={`flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 scroll-reveal ${isVisible ? 'visible' : ''}`}>
-          <span className="text-xs sm:text-sm text-muted-foreground font-medium whitespace-nowrap">
+        <div className={`flex flex-col items-center gap-4 sm:gap-6 scroll-reveal ${isVisible ? 'visible' : ''}`}>
+          <span className="text-[11px] sm:text-xs text-muted-foreground font-medium whitespace-nowrap">
             Trusted by 500+ sales teams at
           </span>
-          <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-8">
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 lg:gap-8">
             {integrations.map((integration, i) => (
               <div
                 key={i}
-                className="flex items-center gap-2 opacity-50 hover:opacity-80 transition-opacity duration-200"
+                className="flex items-center gap-1.5 sm:gap-2 opacity-50 hover:opacity-80 transition-opacity duration-200"
                 style={{ '--reveal-delay': `${i * 50}ms` } as React.CSSProperties}
               >
                 <integration.Logo />
-                <span className="text-xs font-medium text-muted-foreground hidden sm:inline">
+                <span className="text-[10px] sm:text-xs font-medium text-muted-foreground hidden xs:inline sm:inline">
                   {integration.name}
                 </span>
               </div>
