@@ -384,7 +384,7 @@ export const HeroSection = () => {
             >
               <span className="block sm:inline">"Cut our research time by 70%"</span>
               <span className="hidden sm:inline"> — </span>
-              <span className="block sm:inline not-italic font-medium mt-1 sm:mt-0">Sarah Mitchell, Head of Sales, TechFlow</span>
+              <span className="block sm:inline not-italic font-medium mt-1 sm:mt-0">Sarah Mitchell, Head of Sales, Vendora</span>
             </div>
 
             {/* Proof chips - reduced to 2, responsive layout */}
