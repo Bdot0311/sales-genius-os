@@ -300,6 +300,38 @@ const HelpCenter = () => {
         </section>
 
         <ContactSupport />
+
+        {/* Related Links for SEO */}
+        <section className="py-12 border-t border-border">
+          <div className="container mx-auto px-6">
+            <h2 className="text-xl font-semibold mb-6 text-center">Explore SalesOS</h2>
+            <nav aria-label="Related pages">
+              <ul className="flex flex-wrap justify-center gap-x-8 gap-y-4 text-sm">
+                <li>
+                  <Link to="/" className="text-primary hover:underline">Home</Link>
+                </li>
+                <li>
+                  <Link to="/pricing" className="text-primary hover:underline">Pricing Plans</Link>
+                </li>
+                <li>
+                  <Link to="/api-docs" className="text-primary hover:underline">API Documentation</Link>
+                </li>
+                <li>
+                  <Link to="/api-status" className="text-primary hover:underline">System Status</Link>
+                </li>
+                <li>
+                  <Link to="/security" className="text-primary hover:underline">Security</Link>
+                </li>
+                <li>
+                  <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>
+                </li>
+                <li>
+                  <Link to="/terms" className="text-primary hover:underline">Terms of Service</Link>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        </section>
       </main>
 
       <Footer />

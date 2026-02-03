@@ -550,6 +550,33 @@ end`,
             </p>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Related Resources</CardTitle>
+            <CardDescription>Explore more SalesOS resources</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="grid sm:grid-cols-2 gap-3">
+              <li>
+                <a href="/security" className="text-primary hover:underline">Security Practices</a>
+                <span className="text-sm text-muted-foreground"> – Enterprise-grade data protection</span>
+              </li>
+              <li>
+                <a href="/pricing" className="text-primary hover:underline">Pricing Plans</a>
+                <span className="text-sm text-muted-foreground"> – Find the right plan for your team</span>
+              </li>
+              <li>
+                <a href="/privacy" className="text-primary hover:underline">Privacy Policy</a>
+                <span className="text-sm text-muted-foreground"> – How we handle your data</span>
+              </li>
+              <li>
+                <a href="/terms" className="text-primary hover:underline">Terms of Service</a>
+                <span className="text-sm text-muted-foreground"> – User agreement and policies</span>
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
         </div>
       </div>
       <Footer />

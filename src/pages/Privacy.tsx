@@ -120,6 +120,28 @@ const Privacy = () => {
                   <strong>Email:</strong> <a href="mailto:support@bdotindustries.com" className="text-primary hover:underline">support@bdotindustries.com</a>
                 </address>
               </section>
+
+              <nav aria-labelledby="related-links" className="mt-12 pt-8 border-t border-border">
+                <h2 id="related-links" className="text-xl font-semibold mb-4">Related Pages</h2>
+                <ul className="grid sm:grid-cols-2 gap-3">
+                  <li>
+                    <a href="/terms" className="text-primary hover:underline">Terms of Service</a>
+                    <span className="text-muted-foreground"> – Review our user agreement</span>
+                  </li>
+                  <li>
+                    <a href="/security" className="text-primary hover:underline">Security Practices</a>
+                    <span className="text-muted-foreground"> – How we protect your data</span>
+                  </li>
+                  <li>
+                    <a href="/help" className="text-primary hover:underline">Help Center</a>
+                    <span className="text-muted-foreground"> – Get answers to your questions</span>
+                  </li>
+                  <li>
+                    <a href="/pricing" className="text-primary hover:underline">Pricing Plans</a>
+                    <span className="text-muted-foreground"> – View our subscription options</span>
+                  </li>
+                </ul>
+              </nav>
             </div>
           </article>
         </main>

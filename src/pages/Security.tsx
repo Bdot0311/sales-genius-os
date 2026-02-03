@@ -175,6 +175,28 @@ const Security = () => {
                   </a>
                 </address>
               </section>
+
+              <nav aria-labelledby="related-links" className="mt-12 pt-8 border-t border-border">
+                <h2 id="related-links" className="text-xl font-semibold mb-4">Related Pages</h2>
+                <ul className="grid sm:grid-cols-2 gap-3">
+                  <li>
+                    <a href="/privacy" className="text-primary hover:underline">Privacy Policy</a>
+                    <span className="text-muted-foreground"> – Data protection details</span>
+                  </li>
+                  <li>
+                    <a href="/terms" className="text-primary hover:underline">Terms of Service</a>
+                    <span className="text-muted-foreground"> – User agreement</span>
+                  </li>
+                  <li>
+                    <a href="/api-docs" className="text-primary hover:underline">API Documentation</a>
+                    <span className="text-muted-foreground"> – Developer integration guide</span>
+                  </li>
+                  <li>
+                    <a href="/api-status" className="text-primary hover:underline">System Status</a>
+                    <span className="text-muted-foreground"> – Real-time uptime monitoring</span>
+                  </li>
+                </ul>
+              </nav>
             </div>
           </article>
         </main>

@@ -152,6 +152,28 @@ const Terms = () => {
                   <strong>Email:</strong> <a href="mailto:support@bdotindustries.com" className="text-primary hover:underline">support@bdotindustries.com</a>
                 </address>
               </section>
+
+              <nav aria-labelledby="related-links" className="mt-12 pt-8 border-t border-border">
+                <h2 id="related-links" className="text-xl font-semibold mb-4">Related Pages</h2>
+                <ul className="grid sm:grid-cols-2 gap-3">
+                  <li>
+                    <a href="/privacy" className="text-primary hover:underline">Privacy Policy</a>
+                    <span className="text-muted-foreground"> – How we handle your data</span>
+                  </li>
+                  <li>
+                    <a href="/security" className="text-primary hover:underline">Security Practices</a>
+                    <span className="text-muted-foreground"> – Our security measures</span>
+                  </li>
+                  <li>
+                    <a href="/help" className="text-primary hover:underline">Help Center</a>
+                    <span className="text-muted-foreground"> – Support and documentation</span>
+                  </li>
+                  <li>
+                    <a href="/pricing" className="text-primary hover:underline">Pricing Plans</a>
+                    <span className="text-muted-foreground"> – View subscription options</span>
+                  </li>
+                </ul>
+              </nav>
             </div>
           </article>
         </main>
