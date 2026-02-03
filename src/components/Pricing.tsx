@@ -233,7 +233,7 @@ export const Pricing = () => {
     <section 
       ref={sectionRef}
       id="pricing" 
-      className="relative py-16 md:py-24 lg:py-32 overflow-hidden"
+      className="relative pt-4 md:pt-6 pb-16 md:pb-24 lg:pb-32 overflow-hidden"
     >
       {/* Unified background - matching hero */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
