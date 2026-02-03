@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthForm } from "@/components/auth/AuthForm";
@@ -13,61 +13,63 @@ const Auth = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
+  
+  const isRecoveryFlow = searchParams.get("type") === "recovery";
+  
   const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [resetting, setResetting] = useState(false);
-  const [checkingRecovery, setCheckingRecovery] = useState(true);
+  const [checkingRecovery, setCheckingRecovery] = useState(isRecoveryFlow);
+  
+  // Track if we've already handled the recovery to prevent double-processing
+  const recoveryHandled = useRef(false);
 
   useEffect(() => {
-    const type = searchParams.get("type");
-    
-    // Handle recovery flow - check if user came from password reset email
-    if (type === "recovery") {
-      // Listen for the PASSWORD_RECOVERY event from Supabase
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-        console.log("Auth event:", event);
-        if (event === "PASSWORD_RECOVERY") {
-          setShowPasswordReset(true);
-          setCheckingRecovery(false);
-        } else if (event === "SIGNED_IN" && session) {
-          // User is now signed in from recovery link, show password form
+    // If this is a recovery flow, we handle it specially
+    if (isRecoveryFlow) {
+      // Set up auth listener for recovery events
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        console.log("Recovery auth event:", event, "Has session:", !!session);
+        
+        // PASSWORD_RECOVERY or SIGNED_IN with session means the token was valid
+        if ((event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") && session && !recoveryHandled.current) {
+          recoveryHandled.current = true;
           setShowPasswordReset(true);
           setCheckingRecovery(false);
         }
       });
 
-      // Also check current session in case event already fired
+      // Also check if we already have a session (token was processed before component mounted)
       supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session) {
+        if (session && !recoveryHandled.current) {
+          recoveryHandled.current = true;
           setShowPasswordReset(true);
         }
         setCheckingRecovery(false);
       });
 
       return () => subscription.unsubscribe();
-    } else {
-      setCheckingRecovery(false);
     }
 
-    // Check if user is already logged in (for non-recovery flows)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session && type !== "recovery") {
+    // Non-recovery flow: normal auth redirect logic
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
         navigate("/dashboard");
       }
-    });
+    };
+    
+    checkSession();
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session && !showPasswordReset && type !== "recovery") {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
         navigate("/dashboard");
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate, searchParams, showPasswordReset]);
+  }, [navigate, isRecoveryFlow]);
 
   const handlePasswordUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,13 +102,14 @@ const Auth = () => {
 
       toast({
         title: "Password updated!",
-        description: "Your password has been successfully reset.",
+        description: "Your password has been successfully reset. Please sign in with your new password.",
       });
 
-      // Sign out and redirect to login
+      // Sign out and redirect to clean auth page
       await supabase.auth.signOut();
       setShowPasswordReset(false);
-      navigate("/auth");
+      recoveryHandled.current = false;
+      navigate("/auth", { replace: true });
     } catch (error: any) {
       console.error("Password update error:", error);
       toast({
@@ -120,7 +123,7 @@ const Auth = () => {
   };
 
   // Show loading while checking recovery state
-  if (checkingRecovery && searchParams.get("type") === "recovery") {
+  if (checkingRecovery) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center p-4 sm:p-6 relative">
         <AnimatedBackground />
@@ -132,7 +135,7 @@ const Auth = () => {
     );
   }
 
-  // Show password reset form
+  // Show password reset form when in recovery mode
   if (showPasswordReset) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center p-4 sm:p-6 relative">
@@ -170,6 +173,7 @@ const Auth = () => {
                   required
                   placeholder="Enter new password"
                   minLength={8}
+                  autoComplete="new-password"
                 />
               </div>
 
@@ -183,6 +187,7 @@ const Auth = () => {
                   required
                   placeholder="Confirm new password"
                   minLength={8}
+                  autoComplete="new-password"
                 />
                 <p className="text-xs text-muted-foreground">Minimum 8 characters</p>
               </div>
@@ -203,6 +208,7 @@ const Auth = () => {
     );
   }
 
+  // Default: show sign in / sign up form
   return (
     <div className="min-h-screen w-full flex items-center justify-center p-4 sm:p-6 relative">
       <AnimatedBackground />
