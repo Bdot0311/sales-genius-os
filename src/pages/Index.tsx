@@ -12,6 +12,7 @@ import {
   FAQSection,
   FinalCTA,
   FooterSection,
+  MidPageCTA,
 } from "@/components/landing";
 import { 
   SEOHead, 
@@ -141,6 +142,9 @@ const Index = () => {
             
             {/* 6. Proof section */}
             <TestimonialsSection />
+            
+            {/* 6b. Mid-page CTA */}
+            <MidPageCTA />
             
             {/* 7. Integrations */}
             <IntegrationsSection />

@@ -77,7 +77,7 @@ export const TrustedByBar = () => {
       <div className="container mx-auto px-4 sm:px-6">
         <div className={`flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 scroll-reveal ${isVisible ? 'visible' : ''}`}>
           <span className="text-xs sm:text-sm text-muted-foreground font-medium whitespace-nowrap">
-            Trusted by teams at
+            Trusted by 500+ sales teams at
           </span>
           <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-8">
             {integrations.map((integration, i) => (

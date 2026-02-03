@@ -282,6 +282,16 @@ export const HeroSection = () => {
         <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 items-center max-w-[1120px] mx-auto">
           {/* Left side - Content */}
           <div className="text-center lg:text-left">
+            {/* Product category label */}
+            <span 
+              className={`inline-block px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium mb-4 scroll-reveal ${
+                isVisible ? 'visible' : ''
+              }`}
+              style={{ '--reveal-delay': '40ms' } as React.CSSProperties}
+            >
+              AI Sales Platform
+            </span>
+            
             {/* Main headline */}
             <h1 
               id="hero-heading"
@@ -313,7 +323,7 @@ export const HeroSection = () => {
               }`}
               style={{ '--reveal-delay': '140ms' } as React.CSSProperties}
             >
-              Perfect for B2B sales teams targeting SaaS founders and tech executives.
+              Perfect for B2B sales teams targeting SaaS founders, fintech leaders, and tech executives.
             </p>
 
             {/* CTA Buttons */}
@@ -325,7 +335,7 @@ export const HeroSection = () => {
             >
               <Button 
                 size="lg" 
-                className="w-full sm:w-auto h-11 sm:h-12 px-5 sm:px-6 text-sm sm:text-base font-semibold bg-foreground text-background hover:bg-foreground/90 rounded-lg group btn-glow-hover inline-flex items-center justify-center"
+                className="w-full sm:w-auto h-12 sm:h-14 px-6 sm:px-8 text-sm sm:text-base font-semibold bg-foreground text-background hover:bg-foreground/90 rounded-lg group btn-glow-hover inline-flex items-center justify-center"
                 onClick={() => navigate('/auth')}
                 aria-label="Start 14-day free trial"
               >
@@ -335,7 +345,7 @@ export const HeroSection = () => {
               <Button 
                 variant="ghost" 
                 size="default"
-                className="w-full sm:w-auto h-10 px-4 text-sm font-medium text-muted-foreground hover:text-foreground rounded-lg group"
+                className="hidden sm:flex w-auto h-10 px-4 text-sm font-medium text-muted-foreground hover:text-foreground rounded-lg group"
                 onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}
                 aria-label="Watch 90-second demo video"
               >
@@ -351,47 +361,46 @@ export const HeroSection = () => {
               Set up in 2 minutes. Cancel anytime.
             </p>
 
-            {/* Proof chips - responsive layout */}
+            {/* Process steps indicator - moved higher for clarity */}
             <div 
-              className={`flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center lg:justify-start scroll-reveal ${
+              className={`flex items-center justify-center lg:justify-start gap-2 text-xs text-muted-foreground/70 mb-4 scroll-reveal ${
+                isVisible ? 'visible' : ''
+              }`}
+              style={{ '--reveal-delay': '260ms' } as React.CSSProperties}
+            >
+              <span className="font-medium">Describe ICP</span>
+              <span className="text-primary">→</span>
+              <span className="font-medium">Get scored matches</span>
+              <span className="text-primary">→</span>
+              <span className="font-medium">Export to outreach</span>
+            </div>
+            
+            {/* Mini testimonial - moved up for trust */}
+            <div 
+              className={`mb-4 text-sm text-muted-foreground italic scroll-reveal ${
                 isVisible ? 'visible' : ''
               }`}
               style={{ '--reveal-delay': '300ms' } as React.CSSProperties}
             >
+              "Cut our research time by 70%" — <span className="not-italic font-medium">Sarah Mitchell, Head of Sales, TechFlow</span>
+            </div>
+
+            {/* Proof chips - reduced to 2, responsive layout */}
+            <div 
+              className={`flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center lg:justify-start scroll-reveal ${
+                isVisible ? 'visible' : ''
+              }`}
+              style={{ '--reveal-delay': '340ms' } as React.CSSProperties}
+            >
               {[
                 { icon: Zap, text: "3× faster than manual prospecting" },
                 { icon: Target, text: "85% ICP match accuracy*" },
-                { icon: Clock, text: "First lead in under 2 minutes" },
               ].map((stat, i) => (
                 <div key={i} className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
                   <stat.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" aria-hidden="true" />
                   <span className="whitespace-nowrap">{stat.text}</span>
                 </div>
               ))}
-            </div>
-            
-            {/* Process steps indicator */}
-            <div 
-              className={`flex items-center justify-center lg:justify-start gap-2 text-xs text-muted-foreground/70 mt-4 scroll-reveal ${
-                isVisible ? 'visible' : ''
-              }`}
-              style={{ '--reveal-delay': '340ms' } as React.CSSProperties}
-            >
-              <span>Describe ICP</span>
-              <span className="text-primary">→</span>
-              <span>Get scored matches</span>
-              <span className="text-primary">→</span>
-              <span>Export to outreach</span>
-            </div>
-            
-            {/* Mini testimonial */}
-            <div 
-              className={`mt-4 text-xs text-muted-foreground/80 italic scroll-reveal ${
-                isVisible ? 'visible' : ''
-              }`}
-              style={{ '--reveal-delay': '380ms' } as React.CSSProperties}
-            >
-              "Cut our research time by 70%" — Sarah M., Beta Tester
             </div>
             
             {/* Footnote */}
