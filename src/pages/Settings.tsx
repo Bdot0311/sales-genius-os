@@ -35,6 +35,9 @@ const Settings = () => {
   const { manualSync } = useSubscriptionSync();
   const [syncing, setSyncing] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [profile, setProfile] = useState({
     full_name: "",
     email: "",
@@ -109,6 +112,41 @@ const Settings = () => {
       toast.error("Failed to save profile");
     } finally {
       setSavingProfile(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!newPassword) {
+      toast.error("Please enter a new password");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error("Passwords don't match");
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      toast.error("Password must be at least 8 characters");
+      return;
+    }
+
+    setSavingPassword(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) throw error;
+
+      toast.success("Password updated successfully");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error: any) {
+      console.error("Error updating password:", error);
+      toast.error(error.message || "Failed to update password");
+    } finally {
+      setSavingPassword(false);
     }
   };
 
@@ -340,16 +378,48 @@ const Settings = () => {
                     Update your email address for account notifications
                   </p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="new_password">Change Password</Label>
-                  <Input
-                    id="new_password"
-                    type="password"
-                    placeholder="Enter new password (optional)"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Leave blank to keep current password
-                  </p>
+                <div className="space-y-4 p-4 bg-muted/30 rounded-lg border border-border/50">
+                  <h4 className="font-medium text-sm">Change Password</h4>
+                  <div className="space-y-2">
+                    <Label htmlFor="new_password">New Password</Label>
+                    <Input
+                      id="new_password"
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Enter new password"
+                      minLength={8}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm_password">Confirm Password</Label>
+                    <Input
+                      id="confirm_password"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirm new password"
+                      minLength={8}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Minimum 8 characters required
+                    </p>
+                  </div>
+                  <Button
+                    onClick={handleChangePassword}
+                    disabled={savingPassword || !newPassword || !confirmPassword}
+                    variant="outline"
+                    className="gap-2"
+                  >
+                    {savingPassword ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Updating...
+                      </>
+                    ) : (
+                      "Update Password"
+                    )}
+                  </Button>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="company_name">Company Name</Label>
