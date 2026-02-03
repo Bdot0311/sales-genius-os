@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-// Inline SVG components for brand logos (reused from LogoBar)
+// Inline SVG components for brand logos
 const GoogleLogo = () => (
   <svg viewBox="0 0 24 24" className="w-6 h-6">
     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -72,12 +72,12 @@ export const TrustedByBar = () => {
     <section 
       ref={ref} 
       className="relative py-6 sm:py-8 lg:py-10 border-b border-border/10"
-      aria-label="Trusted by teams at"
+      aria-label="Works with your existing tools"
     >
       <div className="container mx-auto px-4 sm:px-6">
         <div className={`flex flex-col items-center gap-4 sm:gap-6 scroll-reveal ${isVisible ? 'visible' : ''}`}>
           <span className="text-[11px] sm:text-xs text-muted-foreground font-medium whitespace-nowrap">
-            Trusted by 500+ sales teams at
+            Works with your existing stack
           </span>
           <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 lg:gap-8">
             {integrations.map((integration, i) => (

@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Play, Sparkles, Search, User, Linkedin, Mail, Zap, Target, Clock } from "lucide-react";
+import { ArrowRight, Sparkles, Search, User, Linkedin, Mail, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 
@@ -29,7 +29,6 @@ const AnimatedCounter = ({ value, suffix = "" }: { value: number; suffix?: strin
       (entries) => {
         if (entries[0].isIntersecting && !hasAnimated) {
           setHasAnimated(true);
-          let start = 0;
           const duration = 1200;
           const startTime = performance.now();
           
@@ -73,7 +72,6 @@ const LeadSearchDemo = () => {
         index++;
       } else {
         clearInterval(typingInterval);
-        // Show shimmer for 1.2s then reveal results
         setTimeout(() => {
           setIsSearching(false);
           setShowResults(true);
@@ -101,10 +99,8 @@ const LeadSearchDemo = () => {
 
   return (
     <div className="relative rounded-xl sm:rounded-2xl border border-border/30 bg-card/80 backdrop-blur-sm overflow-hidden shadow-2xl group mt-6 lg:mt-0">
-      {/* Cursor-follow spotlight effect */}
       <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none spotlight-card" />
 
-      {/* Browser chrome with Live product view label */}
       <div className="flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 border-b border-border/40 bg-muted/30">
         <div className="flex gap-1 sm:gap-1.5">
           <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-destructive/60" aria-hidden="true" />
@@ -122,9 +118,7 @@ const LeadSearchDemo = () => {
         </div>
       </div>
 
-      {/* Search interface */}
       <div className="p-4 sm:p-6">
-        {/* AI Command input */}
         <div className="mb-4 sm:mb-6">
           <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
@@ -141,7 +135,6 @@ const LeadSearchDemo = () => {
           </div>
         </div>
 
-        {/* Results */}
         <div className="space-y-2 sm:space-y-3">
           <div className="flex items-center justify-between text-xs sm:text-sm">
             <span className="text-muted-foreground">
@@ -158,7 +151,7 @@ const LeadSearchDemo = () => {
             leads.map((lead, i) => (
               <div
                 key={i}
-                className={`group/card relative p-3 sm:p-4 rounded-lg sm:rounded-xl border border-border/40 bg-background/50 hover:bg-background/80 hover:border-primary/25 cursor-pointer card-hover-lift`}
+                className="group/card relative p-3 sm:p-4 rounded-lg sm:rounded-xl border border-border/40 bg-background/50 hover:bg-background/80 hover:border-primary/25 cursor-pointer card-hover-lift"
                 style={{ 
                   opacity: currentResultIndex > i ? 1 : 0,
                   transform: currentResultIndex > i ? 'translateY(0)' : 'translateY(10px)',
@@ -167,7 +160,6 @@ const LeadSearchDemo = () => {
                   transitionDelay: `${i * 70}ms`
                 }}
               >
-                {/* Spotlight effect on hover */}
                 <div className="absolute inset-0 rounded-lg sm:rounded-xl opacity-0 group-hover/card:opacity-100 transition-opacity duration-200 pointer-events-none spotlight-card" />
                 
                 <div className="relative z-10 flex items-center gap-3 sm:gap-4">
@@ -215,7 +207,6 @@ export const HeroSection = () => {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
   useEffect(() => {
-    // Check reduced motion preference
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     setPrefersReducedMotion(mediaQuery.matches);
     
@@ -230,7 +221,6 @@ export const HeroSection = () => {
     };
   }, []);
 
-  // Subtle parallax on scroll (desktop only, respects reduced motion)
   useEffect(() => {
     if (prefersReducedMotion) return;
     
@@ -250,7 +240,7 @@ export const HeroSection = () => {
       className="relative min-h-[85vh] lg:min-h-screen flex items-center justify-center overflow-hidden pt-20 sm:pt-24 lg:pt-28 pb-8 sm:pb-12 lg:pb-16"
       aria-labelledby="hero-heading"
     >
-      {/* Layer 1: Faint grid with subtle parallax */}
+      {/* Layer 1: Faint grid */}
       <div 
         className="absolute inset-0 grid-bg pointer-events-none parallax-grid"
         style={{ 
@@ -260,13 +250,13 @@ export const HeroSection = () => {
         aria-hidden="true"
       />
       
-      {/* Layer 2: Aurora ambient glow - animated */}
+      {/* Layer 2: Aurora ambient glow */}
       <div 
         className="absolute top-1/3 left-1/2 w-[600px] sm:w-[1000px] h-[400px] sm:h-[700px] aurora-ambient pointer-events-none"
         aria-hidden="true"
       />
       
-      {/* Layer 3: Secondary radial glow for depth */}
+      {/* Layer 3: Secondary radial glow */}
       <div 
         className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] sm:w-[800px] h-[300px] sm:h-[500px] pointer-events-none"
         style={{
@@ -275,7 +265,7 @@ export const HeroSection = () => {
         aria-hidden="true"
       />
       
-      {/* Layer 4: Noise texture to prevent banding */}
+      {/* Layer 4: Noise texture */}
       <div className="noise-texture" aria-hidden="true" />
 
       <div className="container relative z-10 mx-auto px-4 sm:px-6">
@@ -289,7 +279,7 @@ export const HeroSection = () => {
               }`}
               style={{ '--reveal-delay': '40ms' } as React.CSSProperties}
             >
-              AI Sales Platform
+              Sales System
             </span>
             
             {/* Main headline */}
@@ -300,9 +290,9 @@ export const HeroSection = () => {
               }`}
               style={{ '--reveal-delay': '60ms' } as React.CSSProperties}
             >
-              Find, engage, and{" "}
+              Find your next{" "}
               <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                close more deals.
+                847 qualified leads
               </span>
             </h1>
 
@@ -313,7 +303,7 @@ export const HeroSection = () => {
               }`}
               style={{ '--reveal-delay': '120ms' } as React.CSSProperties}
             >
-              AI-powered lead discovery with 85% ICP match accuracy. Your first qualified lead in under 2 minutes.
+              Stop wasting time on bad leads. SalesOS finds, scores, and enriches prospects so you can focus on closing.
             </p>
             
             {/* Audience context */}
@@ -323,108 +313,71 @@ export const HeroSection = () => {
               }`}
               style={{ '--reveal-delay': '140ms' } as React.CSSProperties}
             >
-              Perfect for B2B sales teams targeting SaaS founders, fintech leaders, and tech executives.
+              Built for sales teams, agencies, and founders tired of duct-taped tools.
             </p>
 
-            {/* CTA Buttons */}
+            {/* CTA Button - Single, larger */}
             <div 
-              className={`flex flex-col sm:flex-row gap-3 justify-center lg:justify-start items-center mb-4 scroll-reveal ${
+              className={`flex flex-col items-center lg:items-start mb-4 scroll-reveal ${
                 isVisible ? 'visible' : ''
               }`}
               style={{ '--reveal-delay': '180ms' } as React.CSSProperties}
             >
               <Button 
                 size="lg" 
-                className="w-full sm:w-auto h-12 sm:h-14 px-6 sm:px-8 text-sm sm:text-base font-semibold bg-foreground text-background hover:bg-foreground/90 rounded-lg group btn-glow-hover inline-flex items-center justify-center"
+                className="w-full sm:w-auto h-14 px-8 text-base font-semibold bg-foreground text-background hover:bg-foreground/90 rounded-lg group btn-glow-hover inline-flex items-center justify-center"
                 onClick={() => navigate('/auth')}
                 aria-label="Start 14-day free trial"
               >
                 <span>Start 14-day free trial</span>
                 <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
               </Button>
-              <Button 
-                variant="ghost" 
-                size="default"
-                className="hidden sm:flex w-auto h-10 px-4 text-sm font-medium text-muted-foreground hover:text-foreground rounded-lg group"
-                onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}
-                aria-label="Watch 90-second demo video"
-              >
-                <Play className="w-3.5 h-3.5 mr-1.5 fill-current" />
-                Watch demo
-              </Button>
             </div>
 
-            {/* Micro-line under CTAs */}
-            <p className={`text-xs sm:text-sm text-muted-foreground mb-6 sm:mb-8 scroll-reveal ${
+            {/* Risk reducer - directly under CTA */}
+            <p className={`text-sm text-muted-foreground mb-8 text-center lg:text-left scroll-reveal ${
               isVisible ? 'visible' : ''
-            }`} style={{ '--reveal-delay': '240ms' } as React.CSSProperties}>
-              Set up in 2 minutes. Cancel anytime.
+            }`} style={{ '--reveal-delay': '220ms' } as React.CSSProperties}>
+              No credit card required. Cancel anytime.
             </p>
 
-            {/* Process steps indicator - moved higher for clarity */}
+            {/* Two testimonials side by side */}
             <div 
-              className={`flex flex-wrap items-center justify-center lg:justify-start gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-muted-foreground/70 mb-4 scroll-reveal ${
+              className={`grid sm:grid-cols-2 gap-4 scroll-reveal ${
                 isVisible ? 'visible' : ''
               }`}
-              style={{ '--reveal-delay': '260ms' } as React.CSSProperties}
+              style={{ '--reveal-delay': '280ms' } as React.CSSProperties}
             >
-              <span className="font-medium">Describe ICP</span>
-              <span className="text-primary">→</span>
-              <span className="font-medium">Get matches</span>
-              <span className="text-primary">→</span>
-              <span className="font-medium">Export</span>
+              <div className="p-4 rounded-lg border border-border/30 bg-card/30">
+                <p className="text-sm text-muted-foreground italic mb-2">
+                  "Cut our research time by 70%"
+                </p>
+                <p className="text-xs font-medium">
+                  Sarah Mitchell, Head of Sales, Vendora
+                </p>
+              </div>
+              <div className="p-4 rounded-lg border border-border/30 bg-card/30">
+                <p className="text-sm text-muted-foreground italic mb-2">
+                  "Found leads we would have missed"
+                </p>
+                <p className="text-xs font-medium">
+                  Marcus Chen, Co-founder, DataSync
+                </p>
+              </div>
             </div>
-            
-            {/* Mini testimonial - moved up for trust */}
-            <div 
-              className={`mb-4 text-xs sm:text-sm text-muted-foreground italic text-center lg:text-left scroll-reveal ${
-                isVisible ? 'visible' : ''
-              }`}
-              style={{ '--reveal-delay': '300ms' } as React.CSSProperties}
-            >
-              <span className="block sm:inline">"Cut our research time by 70%"</span>
-              <span className="hidden sm:inline"> — </span>
-              <span className="block sm:inline not-italic font-medium mt-1 sm:mt-0">Sarah Mitchell, Head of Sales, Vendora</span>
-            </div>
-
-            {/* Proof chips - reduced to 2, responsive layout */}
-            <div 
-              className={`flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center items-center scroll-reveal ${
-                isVisible ? 'visible' : ''
-              }`}
-              style={{ '--reveal-delay': '340ms' } as React.CSSProperties}
-            >
-              {[
-                { icon: Zap, text: "3× faster than manual prospecting" },
-                { icon: Target, text: "85% ICP match accuracy*" },
-              ].map((stat, i) => (
-                <div key={i} className="flex items-center justify-center gap-2 text-xs sm:text-sm text-muted-foreground">
-                  <stat.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary flex-shrink-0" aria-hidden="true" />
-                  <span className="text-center whitespace-normal">{stat.text}</span>
-                </div>
-              ))}
-            </div>
-            
-            {/* Footnote */}
-            <p className={`mt-3 text-[10px] text-muted-foreground/50 text-center lg:text-left scroll-reveal ${
-              isVisible ? 'visible' : ''
-            }`} style={{ '--reveal-delay': '420ms' } as React.CSSProperties}>
-              *Based on beta testing across 10,000+ lead matches
-            </p>
           </div>
 
-          {/* Right side - Lead Search Demo */}
+          {/* Right side - Demo */}
           <div 
-            className={`w-full max-w-[calc(100vw-2rem)] sm:max-w-[560px] lg:max-w-none mx-auto scroll-reveal ${isVisible ? 'visible' : ''}`}
+            className={`w-full max-w-[calc(100vw-2rem)] sm:max-w-[560px] lg:max-w-none mx-auto scroll-reveal ${
+              isVisible ? 'visible' : ''
+            }`}
             style={{ '--reveal-delay': '200ms' } as React.CSSProperties}
           >
             <LeadSearchDemo />
           </div>
         </div>
       </div>
-      
-      {/* Hairline gradient separator */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
     </section>
   );
 };

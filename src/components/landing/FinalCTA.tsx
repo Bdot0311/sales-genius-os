@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, CreditCard, Clock } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export const FinalCTA = () => {
@@ -31,7 +31,7 @@ export const FinalCTA = () => {
       className="relative py-24 md:py-32 overflow-hidden"
       aria-labelledby="final-cta-heading"
     >
-      {/* Unified background - matching hero */}
+      {/* Unified background */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div 
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] aurora-ambient"
@@ -55,32 +55,27 @@ export const FinalCTA = () => {
               
               <div className="relative z-10">
                 <h2 id="final-cta-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
-                  Ready to build pipeline faster?
+                  Ready to close more deals?
                 </h2>
                 
-                <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto leading-relaxed">
-                  Find better leads, personalize outreach, and close more deals—all from one platform.
+                <p className="text-lg text-muted-foreground mb-8 max-w-md mx-auto leading-relaxed">
+                  Start your free trial. Your first lead in under 2 minutes.
                 </p>
 
-                {/* CTA buttons */}
-                <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
-                  <Button 
-                    size="lg"
-                    className="h-12 px-6 text-base font-semibold bg-foreground text-background hover:bg-foreground/90 rounded-lg group btn-glow-hover inline-flex items-center justify-center"
-                    onClick={() => navigate('/auth')}
-                  >
-                    <span>Start 14-day free trial</span>
-                    <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" aria-hidden="true" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="h-12 px-6 text-base font-medium rounded-lg btn-outline-hover"
-                    onClick={() => navigate('/pricing')}
-                  >
-                    View pricing
-                  </Button>
-                </div>
+                {/* Single CTA */}
+                <Button 
+                  size="lg"
+                  className="h-14 px-8 text-base font-semibold bg-foreground text-background hover:bg-foreground/90 rounded-lg group btn-glow-hover inline-flex items-center justify-center"
+                  onClick={() => navigate('/auth')}
+                >
+                  <span>Start free trial</span>
+                  <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" aria-hidden="true" />
+                </Button>
+
+                {/* Risk reducer */}
+                <p className="mt-4 text-sm text-muted-foreground">
+                  No credit card required
+                </p>
               </div>
             </div>
           </div>
