@@ -12,7 +12,7 @@ import { ArrowRight } from "lucide-react";
 const faqs = [
   {
     question: "What's included in the free trial?",
-    answer: "You get full access to all SalesOS features for 14 days, including AI lead discovery, email generation, pipeline management, and all integrations. A credit card is required to start your trial. At the end of your trial, you can choose a plan that fits your needs or cancel without being charged."
+    answer: "You get 14 days to try any SalesOS plan with full access to the features included in that plan. This includes AI lead discovery, email generation, pipeline management, and integrations based on your chosen tier. A credit card is required to start. Cancel anytime before the trial ends and you won't be charged."
   },
   {
     question: "How do search credits work?",
