@@ -379,15 +379,15 @@ export const HeroSection = () => {
             >
               <div className="flex items-center gap-1.5">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                <span>2M+ leads enriched</span>
+                <span>Enrich leads from a global B2B database</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                <span>98% data accuracy</span>
+                <span>Industry-leading data accuracy</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                <span>SOC 2 compliant</span>
+                <span>Built on SOC 2–compliant infrastructure</span>
               </div>
             </div>
           </div>
