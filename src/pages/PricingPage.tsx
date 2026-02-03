@@ -117,11 +117,11 @@ const PricingPage = () => {
                   "AI-powered lead scoring",
                   "Email template builder",
                   "Visual pipeline management",
-                  "Chrome extension",
-                  "CRM integrations (HubSpot, Salesforce)",
+                  "AI Outreach Studio",
+                  "Smart Deal Pipeline",
                   "Real-time analytics dashboard",
                   "Secure data encryption",
-                  "Email & chat support"
+                  "Email support"
                 ].map((feature) => (
                   <li key={feature} className="flex items-center gap-3">
                     <Check className="w-5 h-5 text-primary flex-shrink-0" />
