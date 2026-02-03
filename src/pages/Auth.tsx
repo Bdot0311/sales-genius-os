@@ -1,5 +1,5 @@
-import { useEffect, useState, useRef } from "react";
-import { useNavigate, Link, useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { AnimatedBackground } from "@/components/ui/AnimatedBackground";
@@ -11,10 +11,19 @@ import { useToast } from "@/hooks/use-toast";
 
 const Auth = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const location = useLocation();
   const { toast } = useToast();
-  
-  const isRecoveryFlow = searchParams.get("type") === "recovery";
+
+  // Supabase recovery redirects often encode `type=recovery` in the URL hash (after #)
+  // not in the query string. We must check BOTH.
+  const recoveryType = useMemo(() => {
+    const fromQuery = new URLSearchParams(location.search).get("type");
+    const hash = location.hash?.startsWith("#") ? location.hash.slice(1) : location.hash;
+    const fromHash = new URLSearchParams(hash || "").get("type");
+    return fromQuery || fromHash;
+  }, [location.search, location.hash]);
+
+  const isRecoveryFlow = recoveryType === "recovery";
   
   const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [newPassword, setNewPassword] = useState("");
@@ -26,41 +35,42 @@ const Auth = () => {
   const recoveryHandled = useRef(false);
 
   useEffect(() => {
-    // Set up a single auth listener that handles both recovery and normal flows
+    // Keep checking state in sync if the URL changes (e.g., hash-only changes)
+    setCheckingRecovery(isRecoveryFlow);
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log("Auth event:", event, "Recovery flow:", isRecoveryFlow, "Has session:", !!session);
-      
+
       if (isRecoveryFlow) {
-        // In recovery flow, show password reset form when we get a session
+        // In recovery flow, DO NOT redirect to dashboard on SIGNED_IN.
+        // Supabase commonly emits SIGNED_IN after verifying the recovery token.
         if ((event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") && session && !recoveryHandled.current) {
-          console.log("Recovery detected, showing password reset form");
           recoveryHandled.current = true;
           setShowPasswordReset(true);
           setCheckingRecovery(false);
         }
-      } else {
-        // Normal flow: redirect to dashboard when signed in
-        if (event === "SIGNED_IN" && session) {
-          navigate("/dashboard");
-        }
+        return;
+      }
+
+      // Normal flow: redirect to dashboard when signed in
+      if (event === "SIGNED_IN" && session) {
+        navigate("/dashboard");
       }
     });
 
-    // Check for existing session
+    // Check for existing session (handles refresh / already-authenticated states)
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (isRecoveryFlow) {
-        // Recovery flow: check if we have a valid session from the token
         if (session && !recoveryHandled.current) {
-          console.log("Existing session found in recovery flow, showing reset form");
           recoveryHandled.current = true;
           setShowPasswordReset(true);
         }
         setCheckingRecovery(false);
-      } else {
-        // Normal flow: redirect if already logged in
-        if (session) {
-          navigate("/dashboard");
-        }
+        return;
+      }
+
+      if (session) {
+        navigate("/dashboard");
       }
     });
 
