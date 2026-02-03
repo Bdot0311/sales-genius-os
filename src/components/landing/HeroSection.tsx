@@ -370,22 +370,22 @@ export const HeroSection = () => {
               No fluff · No lock-in · Cancel anytime
             </p>
 
-            {/* Trust indicators */}
+            {/* Trust indicators - always stacked for consistency */}
             <div 
-              className={`flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center justify-start gap-3 sm:gap-x-6 sm:gap-y-2 text-xs text-muted-foreground scroll-reveal ${
+              className={`flex flex-col gap-2 text-xs text-muted-foreground scroll-reveal ${
                 isVisible ? 'visible' : ''
               }`}
               style={{ '--reveal-delay': '280ms' } as React.CSSProperties}
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 justify-center lg:justify-start">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
                 <span>Powered by Sales Intelligence</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 justify-center lg:justify-start">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
                 <span>Industry-leading data accuracy</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 justify-center lg:justify-start">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
                 <span>Built on SOC 2–compliant infrastructure</span>
               </div>
