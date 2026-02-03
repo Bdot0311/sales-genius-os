@@ -17,7 +17,12 @@ export function ChangePasswordCard({ email }: Props) {
   const [saving, setSaving] = useState(false);
 
   const handleUpdatePassword = async () => {
-    if (!email) {
+    // IMPORTANT: The profile email can be edited and may not match the auth email.
+    // Re-auth must use the actual currently logged-in auth email.
+    const { data: { user } } = await supabase.auth.getUser();
+    const authEmail = user?.email || email;
+
+    if (!authEmail) {
       toast.error("Missing account email. Please refresh and try again.");
       return;
     }
@@ -46,10 +51,17 @@ export function ChangePasswordCard({ email }: Props) {
     try {
       // Re-auth to avoid "requires recent login" failures.
       const { error: reauthError } = await supabase.auth.signInWithPassword({
-        email,
+        email: authEmail,
         password: currentPassword,
       });
-      if (reauthError) throw reauthError;
+      if (reauthError) {
+        // Common case: the user updated profile email but not the auth email, or typed current password wrong.
+        if ((reauthError as any)?.code === "invalid_credentials") {
+          toast.error("Current password is incorrect.");
+          return;
+        }
+        throw reauthError;
+      }
 
       const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword,
