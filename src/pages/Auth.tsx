@@ -26,45 +26,41 @@ const Auth = () => {
   const recoveryHandled = useRef(false);
 
   useEffect(() => {
-    // If this is a recovery flow, we handle it specially
-    if (isRecoveryFlow) {
-      // Set up auth listener for recovery events
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-        console.log("Recovery auth event:", event, "Has session:", !!session);
-        
-        // PASSWORD_RECOVERY or SIGNED_IN with session means the token was valid
+    // Set up a single auth listener that handles both recovery and normal flows
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth event:", event, "Recovery flow:", isRecoveryFlow, "Has session:", !!session);
+      
+      if (isRecoveryFlow) {
+        // In recovery flow, show password reset form when we get a session
         if ((event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") && session && !recoveryHandled.current) {
+          console.log("Recovery detected, showing password reset form");
           recoveryHandled.current = true;
           setShowPasswordReset(true);
           setCheckingRecovery(false);
         }
-      });
+      } else {
+        // Normal flow: redirect to dashboard when signed in
+        if (event === "SIGNED_IN" && session) {
+          navigate("/dashboard");
+        }
+      }
+    });
 
-      // Also check if we already have a session (token was processed before component mounted)
-      supabase.auth.getSession().then(({ data: { session } }) => {
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (isRecoveryFlow) {
+        // Recovery flow: check if we have a valid session from the token
         if (session && !recoveryHandled.current) {
+          console.log("Existing session found in recovery flow, showing reset form");
           recoveryHandled.current = true;
           setShowPasswordReset(true);
         }
         setCheckingRecovery(false);
-      });
-
-      return () => subscription.unsubscribe();
-    }
-
-    // Non-recovery flow: normal auth redirect logic
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate("/dashboard");
-      }
-    };
-    
-    checkSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        navigate("/dashboard");
+      } else {
+        // Normal flow: redirect if already logged in
+        if (session) {
+          navigate("/dashboard");
+        }
       }
     });
 
