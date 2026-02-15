@@ -314,7 +314,7 @@ export const HeroSection = () => {
 
             {/* CTAs */}
             <div
-              className={`flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-4 transition-all duration-700 delay-300 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+              className={`flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-3 transition-all duration-700 delay-300 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
             >
               <Button
                 size="lg"
@@ -337,13 +337,24 @@ export const HeroSection = () => {
               </button>
             </div>
 
-
-            {/* Authority line */}
-            <p
-              className={`text-sm text-muted-foreground/60 text-center lg:text-left transition-all duration-700 delay-[400ms] ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+            {/* Trust proof + next step near CTA */}
+            <div
+              className={`flex flex-col gap-1.5 text-center lg:text-left transition-all duration-700 delay-[350ms] ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
             >
-              Built for founders, SDRs, and high-performance sales teams.
-            </p>
+              <p className="text-sm text-muted-foreground/70 flex items-center justify-center lg:justify-start gap-2">
+                <span className="inline-flex items-center gap-1.5">
+                  <svg className="w-3.5 h-3.5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  SOC 2-compliant infrastructure
+                </span>
+                <span className="text-muted-foreground/30">·</span>
+                <span>14-day free trial</span>
+                <span className="text-muted-foreground/30">·</span>
+                <span>Live in under 2 min</span>
+              </p>
+              <p className="text-xs text-muted-foreground/50">
+                Built for founders, SDRs, and high-performance sales teams.
+              </p>
+            </div>
           </div>
 
           {/* Right — Dashboard mockup */}
