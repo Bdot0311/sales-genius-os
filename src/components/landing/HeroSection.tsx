@@ -266,7 +266,7 @@ export const HeroSection = () => {
   return (
     <section
       ref={heroRef}
-      className="relative min-h-[85vh] lg:min-h-screen flex items-center justify-center overflow-hidden pt-20 sm:pt-24 lg:pt-28 pb-8 sm:pb-12 lg:pb-16"
+      className="relative min-h-[85vh] lg:min-h-[calc(100vh-64px)] flex items-center justify-center overflow-hidden pt-16 sm:pt-20 lg:pt-16 pb-4 sm:pb-6 lg:pb-8"
       aria-labelledby="hero-heading"
     >
       {/* Background layers */}
@@ -285,7 +285,7 @@ export const HeroSection = () => {
       <div className="noise-texture" aria-hidden="true" />
 
       <div className="container relative z-10 mx-auto px-4 sm:px-6">
-        <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center max-w-[1120px] mx-auto">
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center max-w-[1120px] mx-auto">
           {/* Left — Copy */}
           <div className="text-center lg:text-left">
 
