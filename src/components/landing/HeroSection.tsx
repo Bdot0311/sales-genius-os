@@ -337,12 +337,6 @@ export const HeroSection = () => {
               </button>
             </div>
 
-            {/* Micro-conversion line */}
-            <p
-              className={`text-xs text-muted-foreground/50 text-center lg:text-left mb-6 transition-all duration-700 delay-[350ms] ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
-            >
-              No credit card required. Full system access.
-            </p>
 
             {/* Authority line */}
             <p
