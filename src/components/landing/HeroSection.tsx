@@ -98,9 +98,11 @@ const DashboardMockup = () => {
             <div className="w-2.5 h-2.5 rounded-full bg-muted-foreground/30" />
           </div>
           <div className="flex-1 flex justify-center">
-            <div className="px-3 py-1 rounded-md bg-muted/40 text-[10px] text-muted-foreground font-mono">
-              app.salesos.io/dashboard
-            </div>
+          <div className="px-3 py-1 rounded-md bg-muted/40 text-[10px] text-muted-foreground font-mono flex items-center gap-1.5">
+            <span className="text-foreground font-semibold">Sales</span><span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent font-semibold">OS</span>
+            <span className="text-muted-foreground/50 mx-1">·</span>
+            <span>Dashboard</span>
+          </div>
           </div>
           {/* Data refresh indicator */}
           <div
