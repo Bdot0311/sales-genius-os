@@ -133,8 +133,6 @@ const Index = () => {
             {/* 1c. Stack comparison */}
             <StackComparisonSection />
             
-            {/* 2. Problem Clarity - "Sound familiar?" */}
-            <ProblemSection />
             
             {/* 3. How it works */}
             <HowItWorks />
