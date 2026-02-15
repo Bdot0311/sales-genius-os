@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Play, Search, Mail, BarChart3, Users, Zap, TrendingUp, Target, MessageSquare, Brain } from "lucide-react";
+import { ArrowRight, Play, Search, Mail, BarChart3, TrendingUp, Target, MessageSquare, Brain } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 
@@ -35,10 +35,11 @@ const AnimatedNumber = ({ value, suffix = "" }: { value: number; suffix?: string
   return <span ref={ref}>{count}{suffix}</span>;
 };
 
-// Dashboard mockup — multiple panels showing real product features
+// Dashboard mockup with living animations
 const DashboardMockup = () => {
   const [activeStep, setActiveStep] = useState(0);
   const [pipelineAnim, setPipelineAnim] = useState(false);
+  const [refreshTick, setRefreshTick] = useState(0);
 
   useEffect(() => {
     const timers = [
@@ -48,6 +49,14 @@ const DashboardMockup = () => {
       setTimeout(() => setPipelineAnim(true), 3000),
     ];
     return () => timers.forEach(clearTimeout);
+  }, []);
+
+  // Data refresh every 5 seconds to feel alive
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRefreshTick(t => t + 1);
+    }, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const leads = [
@@ -70,139 +79,172 @@ const DashboardMockup = () => {
   ];
 
   return (
-    <div className="relative rounded-xl border border-border/30 bg-card/90 backdrop-blur-sm overflow-hidden shadow-2xl">
-      {/* Subtle glow behind card */}
-      <div className="absolute -inset-1 bg-primary/5 rounded-xl blur-xl pointer-events-none" aria-hidden="true" />
+    <div className="relative">
+      {/* Ambient purple glow behind entire dashboard */}
+      <div
+        className="absolute -inset-8 rounded-3xl pointer-events-none"
+        style={{
+          background: "radial-gradient(ellipse at 50% 50%, hsl(261 75% 55% / 0.08) 0%, transparent 70%)",
+        }}
+        aria-hidden="true"
+      />
 
-      {/* Browser chrome */}
-      <div className="relative flex items-center gap-2 px-4 py-2.5 border-b border-border/30 bg-muted/20">
-        <div className="flex gap-1.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-destructive/50" />
-          <div className="w-2.5 h-2.5 rounded-full bg-primary/50" />
-          <div className="w-2.5 h-2.5 rounded-full bg-muted-foreground/30" />
-        </div>
-        <div className="flex-1 flex justify-center">
-          <div className="px-3 py-1 rounded-md bg-muted/40 text-[10px] text-muted-foreground font-mono">
-            app.salesos.io/dashboard
+      <div className="relative rounded-xl border border-border/30 bg-card/90 backdrop-blur-sm overflow-hidden shadow-2xl shadow-primary/5">
+        {/* Browser chrome */}
+        <div className="relative flex items-center gap-2 px-4 py-2.5 border-b border-border/30 bg-muted/20">
+          <div className="flex gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-destructive/50" />
+            <div className="w-2.5 h-2.5 rounded-full bg-primary/50" />
+            <div className="w-2.5 h-2.5 rounded-full bg-muted-foreground/30" />
           </div>
+          <div className="flex-1 flex justify-center">
+            <div className="px-3 py-1 rounded-md bg-muted/40 text-[10px] text-muted-foreground font-mono">
+              app.salesos.io/dashboard
+            </div>
+          </div>
+          {/* Data refresh indicator */}
+          <div
+            className="w-1.5 h-1.5 rounded-full bg-primary transition-opacity duration-300"
+            style={{ opacity: refreshTick % 2 === 0 ? 0.8 : 0.2 }}
+            aria-hidden="true"
+          />
         </div>
-      </div>
 
-      <div className="relative grid grid-cols-2 gap-3 p-4">
-        {/* Panel 1: Lead Search */}
-        <div
-          className="col-span-2 rounded-lg border border-border/20 bg-background/60 p-3 transition-all duration-500"
-          style={{
-            opacity: activeStep >= 1 ? 1 : 0,
-            transform: activeStep >= 1 ? "translateY(0)" : "translateY(8px)",
-          }}
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <Search className="w-3.5 h-3.5 text-primary" />
-            <span className="text-[11px] font-semibold text-foreground/80 uppercase tracking-wider">Lead Search</span>
+        <div className="relative grid grid-cols-2 gap-3 p-4">
+          {/* Panel 1: Lead Search */}
+          <div
+            className="col-span-2 rounded-lg border border-border/20 bg-background/60 p-3 transition-all duration-500"
+            style={{
+              opacity: activeStep >= 1 ? 1 : 0,
+              transform: activeStep >= 1 ? "translateY(0)" : "translateY(8px)",
+            }}
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <Search className="w-3.5 h-3.5 text-primary" />
+              <span className="text-[11px] font-semibold text-foreground/80 uppercase tracking-wider">Lead Search</span>
+              <div className="ml-auto text-[9px] text-muted-foreground/50 font-mono">847 results</div>
+            </div>
+            <div className="space-y-1.5">
+              {leads.map((l, i) => (
+                <div
+                  key={`${i}-${refreshTick}`}
+                  className="flex items-center justify-between px-2.5 py-1.5 rounded-md bg-muted/20 border border-border/10 transition-all duration-500"
+                  style={{
+                    opacity: activeStep >= 1 ? 1 : 0,
+                    transition: `opacity 0.3s ease ${i * 120}ms`,
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center text-[9px] font-bold text-primary">
+                      {l.name.charAt(0)}
+                    </div>
+                    <div>
+                      <span className="text-[11px] font-medium text-foreground">{l.name}</span>
+                      <span className="text-[10px] text-muted-foreground ml-1.5">{l.title}, {l.company}</span>
+                    </div>
+                  </div>
+                  <div className="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-semibold tabular-nums">
+                    <AnimatedNumber value={l.score} suffix="%" />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="space-y-1.5">
-            {leads.map((l, i) => (
+
+          {/* Panel 2: Sequence Builder */}
+          <div
+            className="rounded-lg border border-border/20 bg-background/60 p-3 transition-all duration-500"
+            style={{
+              opacity: activeStep >= 2 ? 1 : 0,
+              transform: activeStep >= 2 ? "translateY(0)" : "translateY(8px)",
+            }}
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <Mail className="w-3.5 h-3.5 text-primary" />
+              <span className="text-[11px] font-semibold text-foreground/80 uppercase tracking-wider">Sequence</span>
+            </div>
+            <div className="space-y-1.5">
+              {sequenceSteps.map((s, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-2 transition-all duration-300"
+                  style={{
+                    transform: activeStep >= 2 ? "translateX(0)" : "translateX(-8px)",
+                    opacity: activeStep >= 2 ? 1 : 0,
+                    transitionDelay: `${i * 80}ms`,
+                  }}
+                >
+                  <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${s.status === "sent" ? "bg-green-500" : s.status === "queued" ? "bg-primary animate-pulse" : "bg-muted-foreground/30"}`} />
+                  <span className="text-[10px] text-muted-foreground">{s.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Panel 3: Pipeline */}
+          <div
+            className="rounded-lg border border-border/20 bg-background/60 p-3 transition-all duration-500"
+            style={{
+              opacity: activeStep >= 3 ? 1 : 0,
+              transform: activeStep >= 3 ? "translateY(0)" : "translateY(8px)",
+            }}
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <BarChart3 className="w-3.5 h-3.5 text-primary" />
+              <span className="text-[11px] font-semibold text-foreground/80 uppercase tracking-wider">Pipeline</span>
+            </div>
+            <div className="space-y-1.5">
+              {pipelineStages.map((s, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <div className="flex-1 h-1.5 rounded-full bg-muted/30 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${s.color} transition-all duration-1000 ease-out`}
+                      style={{
+                        width: pipelineAnim ? `${(s.count / 42) * 100}%` : "0%",
+                        transitionDelay: `${i * 150}ms`,
+                      }}
+                    />
+                  </div>
+                  <span className="text-[10px] text-muted-foreground w-16 text-right">{s.label}</span>
+                  <span className="text-[10px] font-semibold text-foreground w-5 text-right tabular-nums">{s.count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Panel 4: Metrics bar */}
+          <div
+            className="col-span-2 grid grid-cols-4 gap-2 transition-all duration-500"
+            style={{
+              opacity: activeStep >= 3 ? 1 : 0,
+              transform: activeStep >= 3 ? "translateY(0)" : "translateY(6px)",
+            }}
+          >
+            {[
+              { icon: Target, label: "Match Rate", val: 92, suf: "%", glow: false },
+              { icon: TrendingUp, label: "Open Rate", val: 64, suf: "%", glow: false },
+              { icon: MessageSquare, label: "Replies", val: 38, suf: "%", glow: false },
+              { icon: Brain, label: "AI Score", val: 87, suf: "", glow: true },
+            ].map((m, i) => (
               <div
                 key={i}
-                className="flex items-center justify-between px-2.5 py-1.5 rounded-md bg-muted/20 border border-border/10"
-                style={{
-                  opacity: activeStep >= 1 ? 1 : 0,
-                  transition: `opacity 0.3s ease ${i * 120}ms`,
-                }}
+                className={`rounded-lg border bg-background/60 p-2 text-center relative overflow-hidden ${m.glow ? "border-primary/30" : "border-border/20"}`}
               >
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center text-[9px] font-bold text-primary">
-                    {l.name.charAt(0)}
-                  </div>
-                  <div>
-                    <span className="text-[11px] font-medium text-foreground">{l.name}</span>
-                    <span className="text-[10px] text-muted-foreground ml-1.5">{l.title}, {l.company}</span>
-                  </div>
-                </div>
-                <div className="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-semibold">
-                  {l.score}%
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Panel 2: Sequence Builder */}
-        <div
-          className="rounded-lg border border-border/20 bg-background/60 p-3 transition-all duration-500"
-          style={{
-            opacity: activeStep >= 2 ? 1 : 0,
-            transform: activeStep >= 2 ? "translateY(0)" : "translateY(8px)",
-          }}
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <Mail className="w-3.5 h-3.5 text-primary" />
-            <span className="text-[11px] font-semibold text-foreground/80 uppercase tracking-wider">Sequence</span>
-          </div>
-          <div className="space-y-1.5">
-            {sequenceSteps.map((s, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${s.status === "sent" ? "bg-green-500" : s.status === "queued" ? "bg-primary animate-pulse" : "bg-muted-foreground/30"}`} />
-                <span className="text-[10px] text-muted-foreground">{s.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Panel 3: Pipeline */}
-        <div
-          className="rounded-lg border border-border/20 bg-background/60 p-3 transition-all duration-500"
-          style={{
-            opacity: activeStep >= 3 ? 1 : 0,
-            transform: activeStep >= 3 ? "translateY(0)" : "translateY(8px)",
-          }}
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <BarChart3 className="w-3.5 h-3.5 text-primary" />
-            <span className="text-[11px] font-semibold text-foreground/80 uppercase tracking-wider">Pipeline</span>
-          </div>
-          <div className="space-y-1.5">
-            {pipelineStages.map((s, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <div className="flex-1 h-1.5 rounded-full bg-muted/30 overflow-hidden">
+                {/* AI Score pulse glow */}
+                {m.glow && (
                   <div
-                    className={`h-full rounded-full ${s.color} transition-all duration-700 ease-out`}
-                    style={{
-                      width: pipelineAnim ? `${(s.count / 42) * 100}%` : "0%",
-                      transitionDelay: `${i * 150}ms`,
-                    }}
+                    className="absolute inset-0 bg-primary/5 animate-pulse pointer-events-none"
+                    aria-hidden="true"
                   />
+                )}
+                <m.icon className={`w-3 h-3 mx-auto mb-1 relative ${m.glow ? "text-primary drop-shadow-[0_0_6px_hsl(261_75%_65%/0.5)]" : "text-primary"}`} />
+                <div className="text-[13px] font-bold text-foreground relative tabular-nums">
+                  <AnimatedNumber value={m.val} suffix={m.suf} />
                 </div>
-                <span className="text-[10px] text-muted-foreground w-16 text-right">{s.label}</span>
-                <span className="text-[10px] font-semibold text-foreground w-5 text-right">{s.count}</span>
+                <div className="text-[9px] text-muted-foreground relative">{m.label}</div>
               </div>
             ))}
           </div>
-        </div>
-
-        {/* Panel 4: Metrics bar */}
-        <div
-          className="col-span-2 grid grid-cols-4 gap-2 transition-all duration-500"
-          style={{
-            opacity: activeStep >= 3 ? 1 : 0,
-            transform: activeStep >= 3 ? "translateY(0)" : "translateY(6px)",
-          }}
-        >
-          {[
-            { icon: Target, label: "Match Rate", val: 92, suf: "%" },
-            { icon: TrendingUp, label: "Open Rate", val: 64, suf: "%" },
-            { icon: MessageSquare, label: "Replies", val: 38, suf: "%" },
-            { icon: Brain, label: "AI Score", val: 87, suf: "" },
-          ].map((m, i) => (
-            <div key={i} className="rounded-lg border border-border/20 bg-background/60 p-2 text-center">
-              <m.icon className="w-3 h-3 text-primary mx-auto mb-1" />
-              <div className="text-[13px] font-bold text-foreground">
-                <AnimatedNumber value={m.val} suffix={m.suf} />
-              </div>
-              <div className="text-[9px] text-muted-foreground">{m.label}</div>
-            </div>
-          ))}
         </div>
       </div>
     </div>
@@ -226,11 +268,16 @@ export const HeroSection = () => {
       aria-labelledby="hero-heading"
     >
       {/* Background layers */}
-      <div className="absolute inset-0 grid-bg pointer-events-none opacity-40" aria-hidden="true" />
+      <div className="absolute inset-0 grid-bg pointer-events-none opacity-30" aria-hidden="true" />
       <div className="absolute top-1/3 left-1/2 w-[800px] h-[600px] aurora-ambient pointer-events-none" aria-hidden="true" />
       <div
         className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[400px] pointer-events-none"
         style={{ background: "radial-gradient(ellipse at center, hsl(261 75% 55% / 0.06) 0%, transparent 60%)" }}
+        aria-hidden="true"
+      />
+      {/* Slow gradient sweep — subconscious movement */}
+      <div
+        className="absolute inset-0 pointer-events-none animate-hero-sweep"
         aria-hidden="true"
       />
       <div className="noise-texture" aria-hidden="true" />
@@ -256,7 +303,12 @@ export const HeroSection = () => {
               className={`text-3xl sm:text-4xl md:text-5xl lg:text-[3.5rem] font-bold tracking-tight mb-5 leading-[1.12] transition-all duration-700 delay-100 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
             >
               If You're Serious About Outbound,{" "}
-              <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              <span
+                className="relative inline-block text-[1.08em] bg-gradient-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent"
+                style={{
+                  filter: "drop-shadow(0 0 20px hsl(261 75% 65% / 0.35))",
+                }}
+              >
                 Build a System.
               </span>
             </h1>
@@ -265,36 +317,44 @@ export const HeroSection = () => {
             <p
               className={`hero-description text-base sm:text-lg text-muted-foreground max-w-xl mx-auto lg:mx-0 mb-8 leading-relaxed transition-all duration-700 delay-200 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
             >
-              Stop juggling Apollo, Instantly, HubSpot, spreadsheets, and disconnected AI tools. SalesOS unifies your entire outbound engine into one coordinated operating system.
+              Stop duct-taping Apollo, Instantly, HubSpot, spreadsheets, and disconnected AI tools. SalesOS turns your outbound stack into one coordinated performance engine.
             </p>
 
             {/* CTAs */}
             <div
-              className={`flex flex-col sm:flex-row gap-3 justify-center lg:justify-start mb-5 transition-all duration-700 delay-300 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+              className={`flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-4 transition-all duration-700 delay-300 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
             >
               <Button
                 size="lg"
-                className="h-14 px-8 text-base font-semibold bg-foreground text-background hover:bg-foreground/90 rounded-lg group btn-glow-hover"
+                className="h-14 px-8 text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg group shadow-[0_0_24px_hsl(261_75%_65%/0.25)] hover:shadow-[0_0_32px_hsl(261_75%_65%/0.35)] hover:-translate-y-0.5 transition-all duration-200"
                 onClick={() => navigate("/auth")}
                 aria-label="Build Your Outbound System"
               >
                 Build Your Outbound System
-                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
+                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1.5 transition-transform duration-200" />
               </Button>
-              <Button
-                variant="ghost"
-                size="lg"
-                className="h-14 px-6 text-base text-muted-foreground hover:text-foreground rounded-lg group"
+              <button
+                className="h-14 px-6 text-base text-muted-foreground hover:text-foreground transition-colors duration-200 relative group inline-flex items-center justify-center gap-2"
                 onClick={() => document.getElementById("demo")?.scrollIntoView({ behavior: "smooth" })}
               >
-                <Play className="w-4 h-4 mr-2 fill-current" />
-                Watch Demo
-              </Button>
+                <Play className="w-4 h-4 fill-current" />
+                <span className="relative">
+                  Watch Demo
+                  <span className="absolute left-0 -bottom-0.5 w-0 h-px bg-primary group-hover:w-full transition-all duration-300" />
+                </span>
+              </button>
             </div>
+
+            {/* Micro-conversion line */}
+            <p
+              className={`text-xs text-muted-foreground/50 text-center lg:text-left mb-6 transition-all duration-700 delay-[350ms] ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
+            >
+              No credit card required. Full system access.
+            </p>
 
             {/* Authority line */}
             <p
-              className={`text-sm text-muted-foreground/70 text-center lg:text-left transition-all duration-700 delay-[400ms] ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+              className={`text-sm text-muted-foreground/60 text-center lg:text-left transition-all duration-700 delay-[400ms] ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
             >
               Built for founders, SDRs, and high-performance sales teams.
             </p>

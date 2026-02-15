@@ -202,6 +202,20 @@ All colors MUST be HSL. Using 8px spacing scale.
   }
 }
 
+/* Subtle hero gradient sweep — subconscious ambient movement */
+@keyframes hero-sweep {
+  0%, 100% {
+    background: radial-gradient(ellipse 60% 40% at 20% 50%, hsl(261 75% 55% / 0.03) 0%, transparent 60%);
+  }
+  50% {
+    background: radial-gradient(ellipse 60% 40% at 80% 50%, hsl(261 75% 55% / 0.04) 0%, transparent 60%);
+  }
+}
+
+.animate-hero-sweep {
+  animation: hero-sweep 10s ease-in-out infinite;
+}
+
 .animate-reveal-up {
   animation: reveal-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   opacity: 0;
