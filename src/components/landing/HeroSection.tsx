@@ -327,7 +327,7 @@ export const HeroSection = () => {
               <Button
                 size="lg"
                 className="h-14 px-8 text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg group shadow-[0_0_24px_hsl(261_75%_65%/0.25)] hover:shadow-[0_0_32px_hsl(261_75%_65%/0.35)] hover:-translate-y-0.5 transition-all duration-200"
-                onClick={() => navigate("/auth")}
+                onClick={() => navigate("/pricing")}
                 aria-label="Build Your Outbound System"
               >
                 Build Your Outbound System
