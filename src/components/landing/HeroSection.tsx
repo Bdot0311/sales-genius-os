@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Play, Search, Mail, BarChart3, TrendingUp, Target, MessageSquare, Brain } from "lucide-react";
+import logoSmall from "@/assets/salesos-logo-64.webp";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 
@@ -99,8 +100,7 @@ const DashboardMockup = () => {
           </div>
           <div className="flex-1 flex justify-center">
           <div className="px-3 py-1 rounded-md bg-muted/40 text-[10px] text-muted-foreground font-mono flex items-center gap-1.5">
-            <span className="text-foreground font-semibold">Sales</span><span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent font-semibold">OS</span>
-            <span className="text-muted-foreground/50 mx-1">·</span>
+            <img src={logoSmall} alt="SalesOS" className="w-4 h-4 rounded-sm" />
             <span>Dashboard</span>
           </div>
           </div>
