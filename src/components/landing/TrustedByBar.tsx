@@ -30,15 +30,14 @@ export const TrustedByBar = () => {
     >
       <div className="container mx-auto px-4 sm:px-6">
         <div
-          className={`flex flex-wrap items-center justify-center gap-6 sm:gap-10 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
+          className={`grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8 max-w-3xl mx-auto transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
         >
           {signals.map((s, i) => (
             <div
               key={i}
-              className="flex items-center gap-2 text-muted-foreground/60"
-              style={{ transitionDelay: `${i * 80}ms` }}
+              className="flex items-center justify-center gap-2 text-muted-foreground/60"
             >
-              <s.icon className="w-3.5 h-3.5 text-primary/60" />
+              <s.icon className="w-3.5 h-3.5 text-primary/60 flex-shrink-0" />
               <span className="text-xs font-medium">{s.text}</span>
             </div>
           ))}
