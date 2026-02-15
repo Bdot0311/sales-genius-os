@@ -25,7 +25,7 @@ export const TrustedByBar = () => {
   return (
     <section
       ref={ref}
-      className="relative py-6 sm:py-8 border-b border-border/10"
+      className="relative -mt-8 sm:-mt-10 pb-8 sm:pb-10 pt-0 border-b border-border/10 z-10"
       aria-label="Platform signals"
     >
       <div className="container mx-auto px-4 sm:px-6">
