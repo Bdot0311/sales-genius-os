@@ -294,7 +294,7 @@ export const HeroSection = () => {
               id="hero-heading"
               className={`text-3xl sm:text-4xl md:text-5xl lg:text-[3.5rem] font-bold tracking-tight mb-5 leading-[1.12] transition-all duration-700 delay-100 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
             >
-              Outbound Was Never Meant to Be a Stack.{" "}
+              Outbound Doesn't Scale on a Stack.{" "}
               <span
                 className="relative inline-block text-[1.08em] bg-gradient-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent"
                 style={{
