@@ -146,14 +146,12 @@ const Index = () => {
             {/* 6. Demo */}
             <Demo />
             
-            {/* 7. Trust & Credibility */}
+            {/* 7. Integrations */}
+            <IntegrationsSection />
+            
+            {/* 8. Trust & Credibility */}
             <TestimonialsSection />
             
-            {/* 8. Mid-page CTA */}
-            <MidPageCTA />
-            
-            {/* 9. Integrations */}
-            <IntegrationsSection />
             
             {/* 10. Pricing & Fit */}
             <PricingTeaser />
