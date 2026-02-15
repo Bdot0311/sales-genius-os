@@ -294,14 +294,14 @@ export const HeroSection = () => {
               id="hero-heading"
               className={`text-3xl sm:text-4xl md:text-5xl lg:text-[3.5rem] font-bold tracking-tight mb-5 leading-[1.12] transition-all duration-700 delay-100 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
             >
-              Your Competitors Built a Machine.{" "}
+              Stacks Break.{" "}
               <span
                 className="relative inline-block text-[1.08em] bg-gradient-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent"
                 style={{
                   filter: "drop-shadow(0 0 20px hsl(261 75% 65% / 0.35))",
                 }}
               >
-                You Built a Stack.
+                Systems Win.
               </span>
             </h1>
 
@@ -322,7 +322,7 @@ export const HeroSection = () => {
                 onClick={() => navigate("/pricing")}
                 aria-label="Build Your Outbound System"
               >
-                Build Your Outbound Machine
+                Build Your Outbound System
                 <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1.5 transition-transform duration-200" />
               </Button>
               <button
