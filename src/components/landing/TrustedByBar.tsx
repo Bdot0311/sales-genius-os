@@ -4,7 +4,7 @@ import { Shield, Zap, BarChart3 } from "lucide-react";
 const signals = [
   { icon: Zap, text: "Replaces 5+ disconnected tools" },
   { icon: BarChart3, text: "Built for high-volume outbound" },
-  { icon: Shield, text: "SOC 2–compliant infrastructure" },
+  { icon: Shield, text: "Enterprise-grade security" },
 ];
 
 export const TrustedByBar = () => {
