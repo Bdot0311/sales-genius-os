@@ -1,198 +1,208 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles, Search, User, Linkedin, Mail, Zap } from "lucide-react";
+import { ArrowRight, Play, Search, Mail, BarChart3, Users, Zap, TrendingUp, Target, MessageSquare, Brain } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 
-// Shimmer component for loading state
-const SearchShimmer = () => (
-  <div className="space-y-3">
-    {[1, 2, 3].map((i) => (
-      <div 
-        key={i} 
-        className="h-20 rounded-xl bg-muted/30 animate-shimmer-once"
-        style={{ animationDelay: `${i * 100}ms` }}
-      />
-    ))}
-  </div>
-);
-
-// Animated counter component
-const AnimatedCounter = ({ value, suffix = "" }: { value: number; suffix?: string }) => {
+// Animated counter that counts up once
+const AnimatedNumber = ({ value, suffix = "" }: { value: number; suffix?: string }) => {
   const [count, setCount] = useState(0);
-  const [hasAnimated, setHasAnimated] = useState(false);
+  const [started, setStarted] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
-    if (hasAnimated) return;
-    
+    if (started) return;
     const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !hasAnimated) {
-          setHasAnimated(true);
-          const duration = 1200;
-          const startTime = performance.now();
-          
-          const animate = (currentTime: number) => {
-            const elapsed = currentTime - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-            const easeOut = 1 - Math.pow(1 - progress, 3);
-            setCount(Math.floor(easeOut * value));
-            
-            if (progress < 1) {
-              requestAnimationFrame(animate);
-            }
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setStarted(true);
+          const duration = 1400;
+          const start = performance.now();
+          const step = (now: number) => {
+            const p = Math.min((now - start) / duration, 1);
+            const ease = 1 - Math.pow(1 - p, 3);
+            setCount(Math.floor(ease * value));
+            if (p < 1) requestAnimationFrame(step);
           };
-          
-          requestAnimationFrame(animate);
+          requestAnimationFrame(step);
         }
       },
-      { threshold: 0.5 }
+      { threshold: 0.3 }
     );
-
     if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
-  }, [value, hasAnimated]);
+  }, [value, started]);
 
   return <span ref={ref}>{count}{suffix}</span>;
 };
 
-// AI Lead Search Demo Component
-const LeadSearchDemo = () => {
-  const [typedText, setTypedText] = useState("");
-  const [isSearching, setIsSearching] = useState(true);
-  const [showResults, setShowResults] = useState(false);
-  const [currentResultIndex, setCurrentResultIndex] = useState(0);
-  const fullText = "SaaS founders in Europe, 10-50 employees";
+// Dashboard mockup — multiple panels showing real product features
+const DashboardMockup = () => {
+  const [activeStep, setActiveStep] = useState(0);
+  const [pipelineAnim, setPipelineAnim] = useState(false);
 
   useEffect(() => {
-    let index = 0;
-    const typingInterval = setInterval(() => {
-      if (index < fullText.length) {
-        setTypedText(fullText.slice(0, index + 1));
-        index++;
-      } else {
-        clearInterval(typingInterval);
-        setTimeout(() => {
-          setIsSearching(false);
-          setShowResults(true);
-        }, 1200);
-      }
-    }, 50);
-
-    return () => clearInterval(typingInterval);
+    const timers = [
+      setTimeout(() => setActiveStep(1), 800),
+      setTimeout(() => setActiveStep(2), 1600),
+      setTimeout(() => setActiveStep(3), 2400),
+      setTimeout(() => setPipelineAnim(true), 3000),
+    ];
+    return () => timers.forEach(clearTimeout);
   }, []);
 
-  useEffect(() => {
-    if (showResults && currentResultIndex < 3) {
-      const timer = setTimeout(() => {
-        setCurrentResultIndex(prev => prev + 1);
-      }, 80);
-      return () => clearTimeout(timer);
-    }
-  }, [showResults, currentResultIndex]);
-
   const leads = [
-    { name: "Sarah Johnson", role: "Founder & CEO", company: "TechFlow", location: "London, UK", score: 94 },
-    { name: "Marcus Chen", role: "Co-founder", company: "DataSync", location: "Berlin, DE", score: 89 },
-    { name: "Emma Wilson", role: "CEO", company: "CloudBase", location: "Amsterdam, NL", score: 87 },
+    { name: "J. Park", title: "VP Sales", company: "Lattice", score: 94 },
+    { name: "A. Müller", title: "CRO", company: "Personio", score: 91 },
+    { name: "R. Shah", title: "Head of Growth", company: "Notion", score: 87 },
+  ];
+
+  const sequenceSteps = [
+    { label: "Day 0 — Intro email", status: "sent" },
+    { label: "Day 2 — Follow-up", status: "queued" },
+    { label: "Day 5 — Breakup email", status: "pending" },
+  ];
+
+  const pipelineStages = [
+    { label: "Contacted", count: 42, color: "bg-primary/40" },
+    { label: "Qualified", count: 28, color: "bg-primary/60" },
+    { label: "Proposal", count: 12, color: "bg-primary/80" },
+    { label: "Closed", count: 6, color: "bg-primary" },
   ];
 
   return (
-    <div className="relative rounded-xl sm:rounded-2xl border border-border/30 bg-card/80 backdrop-blur-sm overflow-hidden shadow-2xl group mt-6 lg:mt-0">
-      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none spotlight-card" />
+    <div className="relative rounded-xl border border-border/30 bg-card/90 backdrop-blur-sm overflow-hidden shadow-2xl">
+      {/* Subtle glow behind card */}
+      <div className="absolute -inset-1 bg-primary/5 rounded-xl blur-xl pointer-events-none" aria-hidden="true" />
 
-      <div className="flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 border-b border-border/40 bg-muted/30">
-        <div className="flex gap-1 sm:gap-1.5">
-          <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-destructive/60" aria-hidden="true" />
-          <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-primary/60" aria-hidden="true" />
-          <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-muted-foreground/40" aria-hidden="true" />
+      {/* Browser chrome */}
+      <div className="relative flex items-center gap-2 px-4 py-2.5 border-b border-border/30 bg-muted/20">
+        <div className="flex gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-destructive/50" />
+          <div className="w-2.5 h-2.5 rounded-full bg-primary/50" />
+          <div className="w-2.5 h-2.5 rounded-full bg-muted-foreground/30" />
         </div>
-        <div className="flex-1 flex items-center justify-center gap-2 sm:gap-3 overflow-hidden">
-          <div className="hidden xs:flex px-2 sm:px-4 py-1 sm:py-1.5 rounded-lg bg-muted/50 text-[10px] sm:text-xs text-muted-foreground font-mono items-center gap-1.5 sm:gap-2 truncate">
-            <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-primary flex-shrink-0" aria-hidden="true" />
-            <span className="truncate">app.salesos.io/leads</span>
-          </div>
-          <div className="px-2 sm:px-3 py-0.5 sm:py-1 rounded-full bg-primary/10 border border-primary/20 flex-shrink-0">
-            <span className="text-[10px] sm:text-xs font-medium text-primary whitespace-nowrap">Live product view</span>
+        <div className="flex-1 flex justify-center">
+          <div className="px-3 py-1 rounded-md bg-muted/40 text-[10px] text-muted-foreground font-mono">
+            app.salesos.io/dashboard
           </div>
         </div>
       </div>
 
-      <div className="p-4 sm:p-6">
-        <div className="mb-4 sm:mb-6">
-          <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
-              <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary-foreground" />
-            </div>
-            <span className="text-xs sm:text-sm font-medium text-muted-foreground">AI Lead Discovery</span>
+      <div className="relative grid grid-cols-2 gap-3 p-4">
+        {/* Panel 1: Lead Search */}
+        <div
+          className="col-span-2 rounded-lg border border-border/20 bg-background/60 p-3 transition-all duration-500"
+          style={{
+            opacity: activeStep >= 1 ? 1 : 0,
+            transform: activeStep >= 1 ? "translateY(0)" : "translateY(8px)",
+          }}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <Search className="w-3.5 h-3.5 text-primary" />
+            <span className="text-[11px] font-semibold text-foreground/80 uppercase tracking-wider">Lead Search</span>
           </div>
-          <div className="relative bg-muted/30 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-border/40">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <Search className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
-              <span className="text-sm sm:text-base text-foreground truncate">{typedText}</span>
-              <span className="w-0.5 h-4 sm:h-5 bg-primary animate-pulse flex-shrink-0" />
-            </div>
+          <div className="space-y-1.5">
+            {leads.map((l, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between px-2.5 py-1.5 rounded-md bg-muted/20 border border-border/10"
+                style={{
+                  opacity: activeStep >= 1 ? 1 : 0,
+                  transition: `opacity 0.3s ease ${i * 120}ms`,
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center text-[9px] font-bold text-primary">
+                    {l.name.charAt(0)}
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-medium text-foreground">{l.name}</span>
+                    <span className="text-[10px] text-muted-foreground ml-1.5">{l.title}, {l.company}</span>
+                  </div>
+                </div>
+                <div className="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-semibold">
+                  {l.score}%
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
-        <div className="space-y-2 sm:space-y-3">
-          <div className="flex items-center justify-between text-xs sm:text-sm">
-            <span className="text-muted-foreground">
-              {showResults ? "Found 847 matching leads" : "Searching..."}
-            </span>
-            {showResults && (
-              <span className="text-primary text-[10px] sm:text-xs font-medium">AI-scored & ranked</span>
-            )}
+        {/* Panel 2: Sequence Builder */}
+        <div
+          className="rounded-lg border border-border/20 bg-background/60 p-3 transition-all duration-500"
+          style={{
+            opacity: activeStep >= 2 ? 1 : 0,
+            transform: activeStep >= 2 ? "translateY(0)" : "translateY(8px)",
+          }}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <Mail className="w-3.5 h-3.5 text-primary" />
+            <span className="text-[11px] font-semibold text-foreground/80 uppercase tracking-wider">Sequence</span>
           </div>
-
-          {isSearching && !showResults ? (
-            <SearchShimmer />
-          ) : (
-            leads.map((lead, i) => (
-              <div
-                key={i}
-                className="group/card relative p-3 sm:p-4 rounded-lg sm:rounded-xl border border-border/40 bg-background/50 hover:bg-background/80 hover:border-primary/25 cursor-pointer card-hover-lift"
-                style={{ 
-                  opacity: currentResultIndex > i ? 1 : 0,
-                  transform: currentResultIndex > i ? 'translateY(0)' : 'translateY(10px)',
-                  filter: currentResultIndex > i ? 'blur(0)' : 'blur(6px)',
-                  transition: 'opacity 0.28s ease-out, transform 0.28s ease-out, filter 0.28s ease-out',
-                  transitionDelay: `${i * 70}ms`
-                }}
-              >
-                <div className="absolute inset-0 rounded-lg sm:rounded-xl opacity-0 group-hover/card:opacity-100 transition-opacity duration-200 pointer-events-none spotlight-card" />
-                
-                <div className="relative z-10 flex items-center gap-3 sm:gap-4">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0">
-                    <User className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 flex-wrap">
-                      <span className="font-medium text-xs sm:text-sm">{lead.name}</span>
-                      <div className="px-1.5 sm:px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] sm:text-xs font-medium">
-                        {showResults && currentResultIndex > i ? (
-                          <AnimatedCounter value={lead.score} suffix="% match" />
-                        ) : (
-                          `${lead.score}% match`
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-[10px] sm:text-xs text-muted-foreground truncate">
-                      {lead.role} at <span className="text-foreground">{lead.company}</span> · {lead.location}
-                    </div>
-                  </div>
-                  <div className="hidden sm:flex gap-2 opacity-0 group-hover/card:opacity-100 transition-opacity duration-200">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors">
-                      <Linkedin className="w-4 h-4 text-primary" />
-                    </div>
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors">
-                      <Mail className="w-4 h-4 text-primary" />
-                    </div>
-                  </div>
-                </div>
+          <div className="space-y-1.5">
+            {sequenceSteps.map((s, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${s.status === "sent" ? "bg-green-500" : s.status === "queued" ? "bg-primary animate-pulse" : "bg-muted-foreground/30"}`} />
+                <span className="text-[10px] text-muted-foreground">{s.label}</span>
               </div>
-            ))
-          )}
+            ))}
+          </div>
+        </div>
+
+        {/* Panel 3: Pipeline */}
+        <div
+          className="rounded-lg border border-border/20 bg-background/60 p-3 transition-all duration-500"
+          style={{
+            opacity: activeStep >= 3 ? 1 : 0,
+            transform: activeStep >= 3 ? "translateY(0)" : "translateY(8px)",
+          }}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <BarChart3 className="w-3.5 h-3.5 text-primary" />
+            <span className="text-[11px] font-semibold text-foreground/80 uppercase tracking-wider">Pipeline</span>
+          </div>
+          <div className="space-y-1.5">
+            {pipelineStages.map((s, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <div className="flex-1 h-1.5 rounded-full bg-muted/30 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${s.color} transition-all duration-700 ease-out`}
+                    style={{
+                      width: pipelineAnim ? `${(s.count / 42) * 100}%` : "0%",
+                      transitionDelay: `${i * 150}ms`,
+                    }}
+                  />
+                </div>
+                <span className="text-[10px] text-muted-foreground w-16 text-right">{s.label}</span>
+                <span className="text-[10px] font-semibold text-foreground w-5 text-right">{s.count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Panel 4: Metrics bar */}
+        <div
+          className="col-span-2 grid grid-cols-4 gap-2 transition-all duration-500"
+          style={{
+            opacity: activeStep >= 3 ? 1 : 0,
+            transform: activeStep >= 3 ? "translateY(0)" : "translateY(6px)",
+          }}
+        >
+          {[
+            { icon: Target, label: "Match Rate", val: 92, suf: "%" },
+            { icon: TrendingUp, label: "Open Rate", val: 64, suf: "%" },
+            { icon: MessageSquare, label: "Replies", val: 38, suf: "%" },
+            { icon: Brain, label: "AI Score", val: 87, suf: "" },
+          ].map((m, i) => (
+            <div key={i} className="rounded-lg border border-border/20 bg-background/60 p-2 text-center">
+              <m.icon className="w-3 h-3 text-primary mx-auto mb-1" />
+              <div className="text-[13px] font-bold text-foreground">
+                <AnimatedNumber value={m.val} suffix={m.suf} />
+              </div>
+              <div className="text-[9px] text-muted-foreground">{m.label}</div>
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -203,206 +213,104 @@ export const HeroSection = () => {
   const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
-  const [scrollY, setScrollY] = useState(0);
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setPrefersReducedMotion(mediaQuery.matches);
-    
-    const handleChange = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
-    mediaQuery.addEventListener('change', handleChange);
-    
-    const timer = setTimeout(() => setIsVisible(true), mediaQuery.matches ? 0 : 100);
-    
-    return () => {
-      clearTimeout(timer);
-      mediaQuery.removeEventListener('change', handleChange);
-    };
+    const timer = setTimeout(() => setIsVisible(true), 80);
+    return () => clearTimeout(timer);
   }, []);
 
-  useEffect(() => {
-    if (prefersReducedMotion) return;
-    
-    const handleScroll = () => {
-      setScrollY(window.scrollY);
-    };
-    
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [prefersReducedMotion]);
-
-  const parallaxOffset = prefersReducedMotion ? 0 : Math.min(scrollY * 0.04, 6);
-
   return (
-    <section 
+    <section
       ref={heroRef}
       className="relative min-h-[85vh] lg:min-h-screen flex items-center justify-center overflow-hidden pt-20 sm:pt-24 lg:pt-28 pb-8 sm:pb-12 lg:pb-16"
       aria-labelledby="hero-heading"
     >
-      {/* Layer 1: Faint grid */}
-      <div 
-        className="absolute inset-0 grid-bg pointer-events-none parallax-grid"
-        style={{ 
-          transform: `translateY(${parallaxOffset}px)`,
-          opacity: 0.5
-        }}
+      {/* Background layers */}
+      <div className="absolute inset-0 grid-bg pointer-events-none opacity-40" aria-hidden="true" />
+      <div className="absolute top-1/3 left-1/2 w-[800px] h-[600px] aurora-ambient pointer-events-none" aria-hidden="true" />
+      <div
+        className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[400px] pointer-events-none"
+        style={{ background: "radial-gradient(ellipse at center, hsl(261 75% 55% / 0.06) 0%, transparent 60%)" }}
         aria-hidden="true"
       />
-      
-      {/* Layer 2: Aurora ambient glow */}
-      <div 
-        className="absolute top-1/3 left-1/2 w-[600px] sm:w-[1000px] h-[400px] sm:h-[700px] aurora-ambient pointer-events-none"
-        aria-hidden="true"
-      />
-      
-      {/* Layer 3: Secondary radial glow */}
-      <div 
-        className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] sm:w-[800px] h-[300px] sm:h-[500px] pointer-events-none"
-        style={{
-          background: 'radial-gradient(ellipse at center, hsl(261 75% 55% / 0.08) 0%, transparent 60%)',
-        }}
-        aria-hidden="true"
-      />
-      
-      {/* Layer 4: Noise texture */}
       <div className="noise-texture" aria-hidden="true" />
 
       <div className="container relative z-10 mx-auto px-4 sm:px-6">
-        <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 items-center max-w-[1120px] mx-auto">
-          {/* Left side - Content */}
+        <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center max-w-[1120px] mx-auto">
+          {/* Left — Copy */}
           <div className="text-center lg:text-left">
-            {/* Product category label */}
-            <div 
-              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 backdrop-blur-sm mb-5 scroll-reveal ${
-                isVisible ? 'visible' : ''
-              }`}
-              style={{ '--reveal-delay': '40ms' } as React.CSSProperties}
+            {/* Badge */}
+            <div
+              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 mb-6 transition-all duration-500 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
             >
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
               </span>
               <span className="text-xs font-medium text-primary">Now available</span>
             </div>
-            
-            {/* Main headline */}
-            <h1 
+
+            {/* Headline */}
+            <h1
               id="hero-heading"
-              className={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-4 sm:mb-6 leading-[1.15] scroll-reveal ${
-                isVisible ? 'visible' : ''
-              }`}
-              style={{ '--reveal-delay': '60ms' } as React.CSSProperties}
+              className={`text-3xl sm:text-4xl md:text-5xl lg:text-[3.5rem] font-bold tracking-tight mb-5 leading-[1.12] transition-all duration-700 delay-100 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
             >
-              Find your next{" "}
+              If You're Serious About Outbound,{" "}
               <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                847 qualified leads
+                Build a System.
               </span>
             </h1>
 
             {/* Subheadline */}
-            <p 
-              className={`hero-description text-base sm:text-lg text-muted-foreground max-w-lg mx-auto lg:mx-0 mb-2 sm:mb-3 leading-relaxed scroll-reveal ${
-                isVisible ? 'visible' : ''
-              }`}
-              style={{ '--reveal-delay': '120ms' } as React.CSSProperties}
+            <p
+              className={`hero-description text-base sm:text-lg text-muted-foreground max-w-xl mx-auto lg:mx-0 mb-8 leading-relaxed transition-all duration-700 delay-200 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
             >
-              Stop wasting time on bad leads. SalesOS finds, scores, and enriches prospects so you can focus on closing.
-            </p>
-            
-            {/* Audience context */}
-            <p 
-              className={`text-sm text-muted-foreground/80 max-w-lg mx-auto lg:mx-0 mb-6 sm:mb-8 scroll-reveal ${
-                isVisible ? 'visible' : ''
-              }`}
-              style={{ '--reveal-delay': '140ms' } as React.CSSProperties}
-            >
-              Built for sales teams, agencies, and founders tired of duct-taped tools.
+              Stop juggling Apollo, Instantly, HubSpot, spreadsheets, and disconnected AI tools. SalesOS unifies your entire outbound engine into one coordinated operating system.
             </p>
 
-            {/* Two testimonials side by side - above CTA */}
-            <div 
-              className={`grid sm:grid-cols-2 gap-4 mb-6 scroll-reveal ${
-                isVisible ? 'visible' : ''
-              }`}
-              style={{ '--reveal-delay': '160ms' } as React.CSSProperties}
+            {/* CTAs */}
+            <div
+              className={`flex flex-col sm:flex-row gap-3 justify-center lg:justify-start mb-5 transition-all duration-700 delay-300 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
             >
-              <div className="p-4 rounded-lg border border-border/30 bg-card/30">
-                <p className="text-sm text-muted-foreground italic mb-2">
-                  "Cut our research time by 70%"
-                </p>
-                <p className="text-xs font-medium">
-                  Sarah Mitchell, Head of Sales, Vendora
-                </p>
-              </div>
-              <div className="p-4 rounded-lg border border-border/30 bg-card/30">
-                <p className="text-sm text-muted-foreground italic mb-2">
-                  "Found leads we would have missed"
-                </p>
-                <p className="text-xs font-medium">
-                  Marcus Chen, Co-founder, DataSync
-                </p>
-              </div>
-            </div>
-
-            {/* CTA Button - Single, larger */}
-            <div 
-              className={`flex flex-col items-center lg:items-start mb-4 scroll-reveal ${
-                isVisible ? 'visible' : ''
-              }`}
-              style={{ '--reveal-delay': '200ms' } as React.CSSProperties}
-            >
-              <Button 
-                size="lg" 
-                className="w-full sm:w-auto h-14 px-8 text-base font-semibold bg-foreground text-background hover:bg-foreground/90 rounded-lg group btn-glow-hover inline-flex items-center justify-center"
-                onClick={() => navigate('/auth')}
-                aria-label="Start 14-day free trial"
+              <Button
+                size="lg"
+                className="h-14 px-8 text-base font-semibold bg-foreground text-background hover:bg-foreground/90 rounded-lg group btn-glow-hover"
+                onClick={() => navigate("/auth")}
+                aria-label="Build Your Outbound System"
               >
-                <span>Start 14-day free trial</span>
+                Build Your Outbound System
                 <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="lg"
+                className="h-14 px-6 text-base text-muted-foreground hover:text-foreground rounded-lg group"
+                onClick={() => document.getElementById("demo")?.scrollIntoView({ behavior: "smooth" })}
+              >
+                <Play className="w-4 h-4 mr-2 fill-current" />
+                Watch Demo
               </Button>
             </div>
 
-            {/* Risk reducer - directly under CTA */}
-            <p className={`text-sm text-muted-foreground text-center lg:text-left mb-6 scroll-reveal ${
-              isVisible ? 'visible' : ''
-            }`} style={{ '--reveal-delay': '240ms' } as React.CSSProperties}>
-              No fluff · No lock-in · Cancel anytime
-            </p>
-
-            {/* Trust indicators - always stacked for consistency */}
-            <div 
-              className={`flex flex-col gap-2 text-xs text-muted-foreground scroll-reveal ${
-                isVisible ? 'visible' : ''
-              }`}
-              style={{ '--reveal-delay': '280ms' } as React.CSSProperties}
+            {/* Authority line */}
+            <p
+              className={`text-sm text-muted-foreground/70 text-center lg:text-left transition-all duration-700 delay-[400ms] ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
             >
-              <div className="flex items-center gap-2 justify-center lg:justify-start">
-                <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
-                <span>Powered by Sales Intelligence</span>
-              </div>
-              <div className="flex items-center gap-2 justify-center lg:justify-start">
-                <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
-                <span>Industry-leading data accuracy</span>
-              </div>
-              <div className="flex items-center gap-2 justify-center lg:justify-start">
-                <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
-                <span>Built on SOC 2–compliant infrastructure</span>
-              </div>
-            </div>
+              Built for founders, SDRs, and high-performance sales teams.
+            </p>
           </div>
 
-          {/* Right side - Demo */}
-          <div 
-            className={`w-full max-w-[calc(100vw-2rem)] sm:max-w-[560px] lg:max-w-none mx-auto scroll-reveal ${
-              isVisible ? 'visible' : ''
-            }`}
-            style={{ '--reveal-delay': '200ms' } as React.CSSProperties}
+          {/* Right — Dashboard mockup */}
+          <div
+            className={`w-full max-w-[560px] lg:max-w-none mx-auto transition-all duration-700 delay-300 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
           >
-            <LeadSearchDemo />
+            <DashboardMockup />
           </div>
         </div>
       </div>
+
+      {/* Bottom fade */}
+      <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent pointer-events-none" aria-hidden="true" />
     </section>
   );
 };
