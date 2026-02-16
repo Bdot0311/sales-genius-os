@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Play, Search, Mail, BarChart3, TrendingUp, Target, MessageSquare, Brain } from "lucide-react";
+import { ArrowRight, Play, Search, Mail, BarChart3, TrendingUp, Target, MessageSquare, Brain, Clock, Zap } from "lucide-react";
 import logoSmall from "@/assets/salesos-logo-64.webp";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
@@ -347,9 +347,15 @@ export const HeroSection = () => {
                   SOC 2-compliant infrastructure
                 </span>
                 <span className="text-muted-foreground/30">·</span>
-                <span>14-day free trial</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-primary" />
+                  14-day free trial
+                </span>
                 <span className="text-muted-foreground/30">·</span>
-                <span>Live in under 2 min</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Zap className="w-3.5 h-3.5 text-primary" />
+                  Live in under 2 min
+                </span>
               </p>
               <p className="text-xs text-muted-foreground/50">
                 Built for founders, SDRs, and high-performance sales teams.
