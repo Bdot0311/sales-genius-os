@@ -103,7 +103,10 @@ const comparisonCategories = [
       { name: "Active sequences", growth: "3", pro: "15", elite: "Unlimited" },
       { name: "Steps per sequence", growth: "3", pro: "7", elite: "Unlimited" },
       { name: "AI personalization", growth: "Basic", pro: "Advanced", elite: "Premium" },
+      { name: "Message blocks", growth: "5", pro: "25", elite: "Unlimited" },
+      { name: "A/B testing variants", growth: false, pro: "2", elite: "Unlimited" },
       { name: "Reply analysis", growth: false, pro: true, elite: true },
+      { name: "Handoff alerts", growth: false, pro: "Email", elite: "Webhook + Slack" },
       { name: "Multi-channel logic", growth: false, pro: false, elite: true },
     ]
   },

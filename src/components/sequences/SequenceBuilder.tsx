@@ -51,7 +51,7 @@ export function SequenceBuilder() {
   const navigate = useNavigate();
   const { updateSequence } = useSequences();
   const { steps, createStep, updateStep, deleteStep, isLoading: stepsLoading } = useSequenceSteps(id);
-  const { features, isAdmin } = usePlanFeatures();
+  const { features, isAdmin, currentPlan } = usePlanFeatures();
   
   const [isAddStepOpen, setIsAddStepOpen] = useState(false);
   const [editingStep, setEditingStep] = useState<SequenceStep | null>(null);
@@ -271,7 +271,7 @@ export function SequenceBuilder() {
       {!canAddMoreSteps && (
         <UpgradePrompt
           feature="More Sequence Steps"
-          requiredPlan="pro"
+          requiredPlan={currentPlan === 'growth' ? 'pro' : 'elite'}
         />
       )}
 

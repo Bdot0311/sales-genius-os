@@ -47,7 +47,7 @@ import { formatDistanceToNow } from "date-fns";
 export function SequencesList() {
   const navigate = useNavigate();
   const { sequences, isLoading, createSequence, updateSequence, deleteSequence } = useSequences();
-  const { features, getLimit, isAdmin } = usePlanFeatures();
+  const { features, getLimit, isAdmin, currentPlan } = usePlanFeatures();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [newDescription, setNewDescription] = useState("");
@@ -181,7 +181,7 @@ export function SequencesList() {
       {!canCreateMore && (
         <UpgradePrompt
           feature="More Active Sequences"
-          requiredPlan="pro"
+          requiredPlan={currentPlan === 'growth' ? 'pro' : 'elite'}
         />
       )}
 
