@@ -56,7 +56,7 @@ const PricingPage = () => {
     <>
       <SEOHead 
         title="Pricing Plans & Free Trial - SalesOS Sales Automation"
-        description="Choose the right SalesOS plan for your team. Start with a 14-day free trial. Plans from $49/month for Growth to $299/month for Elite with unlimited leads."
+        description="Choose the right SalesOS plan for your team. Start with a 14-day free trial. Plans from $149/month for Growth to $799/month for Elite with unlimited leads."
         keywords="SalesOS pricing, sales software pricing, CRM pricing, lead generation pricing, sales automation cost"
         ogImage="https://storage.googleapis.com/gpt-engineer-file-uploads/ZFJK1zezovOpOdjy9TptFukIhhc2/social-images/social-1768238149761-SalesOS full logo.png"
       />
