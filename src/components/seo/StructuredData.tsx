@@ -161,37 +161,37 @@ export const SoftwareApplicationSchema = () => {
     "releaseNotes": "Latest release includes enhanced AI lead scoring, improved email generation, and new CRM integrations.",
     "offers": {
       "@type": "AggregateOffer",
-      "lowPrice": "49",
-      "highPrice": "299",
+      "lowPrice": "149",
+      "highPrice": "799",
       "priceCurrency": "USD",
       "offerCount": "3",
       "offers": [
         {
           "@type": "Offer",
           "name": "Growth Plan",
-          "price": "49",
+          "price": "149",
           "priceCurrency": "USD",
           "priceValidUntil": "2027-12-31",
           "availability": "https://schema.org/InStock",
-          "description": "Perfect for startups - 500 leads, AI email generation, basic analytics"
+          "description": "For solo founders - 350 search credits, AI email generation, lead intelligence engine"
         },
         {
           "@type": "Offer",
           "name": "Pro Plan",
-          "price": "99",
-          "priceCurrency": "USD",
-          "priceValidUntil": "2027-12-31",
-          "availability": "https://schema.org/InStock",
-          "description": "For growing teams - 2500 leads, API access, advanced analytics, automations"
-        },
-        {
-          "@type": "Offer",
-          "name": "Elite Plan",
           "price": "299",
           "priceCurrency": "USD",
           "priceValidUntil": "2027-12-31",
           "availability": "https://schema.org/InStock",
-          "description": "Enterprise-grade - Unlimited leads, AI coach, white-label, dedicated support"
+          "description": "For growing teams - 700 search credits, AI Sales Coach, advanced analytics, automations"
+        },
+        {
+          "@type": "Offer",
+          "name": "Elite Plan",
+          "price": "799",
+          "priceCurrency": "USD",
+          "priceValidUntil": "2027-12-31",
+          "availability": "https://schema.org/InStock",
+          "description": "High-volume outbound - 2000 search credits, API access, white-label, dedicated success manager"
         }
       ]
     },
@@ -651,7 +651,7 @@ export const ServiceSchema = () => {
             "@type": "Service",
             "name": "Growth Plan"
           },
-          "price": "49",
+          "price": "149",
           "priceCurrency": "USD"
         },
         {
@@ -660,7 +660,7 @@ export const ServiceSchema = () => {
             "@type": "Service",
             "name": "Pro Plan"
           },
-          "price": "99",
+          "price": "299",
           "priceCurrency": "USD"
         },
         {
@@ -669,7 +669,7 @@ export const ServiceSchema = () => {
             "@type": "Service",
             "name": "Elite Plan"
           },
-          "price": "299",
+          "price": "799",
           "priceCurrency": "USD"
         }
       ]
