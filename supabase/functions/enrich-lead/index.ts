@@ -18,18 +18,16 @@ serve(async (req) => {
       throw new Error('Lead ID is required');
     }
 
-    // Get authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       throw new Error('No authorization header');
     }
 
-    // Create Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const pdlApiKey = Deno.env.get('PDL_API_KEY');
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get user from auth token
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     
@@ -38,15 +36,6 @@ serve(async (req) => {
     }
 
     console.log('Enriching lead for user:', user.id);
-
-    // Get enrichment provider integration
-    const { data: integration, error: integrationError } = await supabase
-      .from('integrations')
-      .select('config')
-      .eq('user_id', user.id)
-      .eq('integration_id', 'external_provider')
-      .eq('is_active', true)
-      .maybeSingle();
 
     // Get lead details
     const { data: lead, error: leadError } = await supabase
@@ -62,30 +51,104 @@ serve(async (req) => {
 
     console.log('Enriching lead:', lead.contact_name, lead.company_name);
 
-    // Prepare enrichment data object with sample data (SalesOS Lead Intelligence Network)
-    const enrichmentData: any = {
+    if (!pdlApiKey) {
+      throw new Error('PDL API key not configured');
+    }
+
+    const enrichmentData: Record<string, any> = {
       enrichment_status: 'enriched',
-      enriched_at: new Date().toISOString()
+      enriched_at: new Date().toISOString(),
     };
 
-    // Enrich with sample data from SalesOS Lead Intelligence Network
-    // In production, this would connect to actual data providers
-    if (lead.company_name) {
-      // Sample company enrichment
-      enrichmentData.company_website = lead.company_website || `https://www.${lead.company_name.toLowerCase().replace(/\s+/g, '')}.com`;
-      enrichmentData.industry = lead.industry || 'Technology';
-      enrichmentData.employee_count = lead.employee_count || '51-200';
-      enrichmentData.company_description = lead.company_description || `${lead.company_name} is a leading company in the ${lead.industry || 'technology'} sector.`;
+    // --- Person Enrichment via PDL ---
+    if (lead.contact_email || lead.linkedin_url || lead.contact_name) {
+      try {
+        const personParams: Record<string, string> = {};
+        if (lead.contact_email) personParams.email = lead.contact_email;
+        if (lead.linkedin_url) personParams.profile = lead.linkedin_url;
+        if (lead.contact_name) {
+          const parts = lead.contact_name.trim().split(/\s+/);
+          if (parts.length >= 2) {
+            personParams.first_name = parts[0];
+            personParams.last_name = parts.slice(1).join(' ');
+          }
+        }
+        if (lead.company_name) personParams.company = lead.company_name;
+
+        const qs = new URLSearchParams(personParams).toString();
+        const personRes = await fetch(`https://api.peopledatalabs.com/v5/person/enrich?${qs}`, {
+          headers: { 'X-Api-Key': pdlApiKey },
+        });
+
+        if (personRes.ok) {
+          const person = await personRes.json();
+          if (person && person.status === 200 && person.data) {
+            const p = person.data;
+            if (p.job_title) enrichmentData.job_title = p.job_title;
+            if (p.job_title_role) enrichmentData.department = p.job_title_role;
+            if (p.job_title_levels?.length) enrichmentData.seniority = p.job_title_levels[0];
+            if (p.linkedin_url) enrichmentData.linkedin_url = p.linkedin_url;
+            if (p.work_email && !lead.contact_email) enrichmentData.contact_email = p.work_email;
+            if (p.phone_numbers?.length && !lead.contact_phone) enrichmentData.contact_phone = p.phone_numbers[0];
+          }
+        } else {
+          console.warn('PDL person enrich returned', personRes.status, await personRes.text());
+        }
+      } catch (personErr) {
+        console.error('Person enrichment error:', personErr);
+      }
     }
 
-    if (lead.contact_name) {
-      // Sample contact enrichment
-      enrichmentData.job_title = lead.job_title || 'Director';
-      enrichmentData.department = lead.department || 'Sales';
-      enrichmentData.seniority = lead.seniority || 'Director';
+    // --- Company Enrichment via PDL ---
+    if (lead.company_name || lead.company_website) {
+      try {
+        const companyParams: Record<string, string> = {};
+        if (lead.company_website) {
+          try {
+            const url = new URL(lead.company_website.startsWith('http') ? lead.company_website : `https://${lead.company_website}`);
+            companyParams.website = url.hostname.replace('www.', '');
+          } catch { /* ignore bad URL */ }
+        }
+        if (!companyParams.website && lead.company_name) {
+          companyParams.name = lead.company_name;
+        }
+
+        if (Object.keys(companyParams).length > 0) {
+          const qs = new URLSearchParams(companyParams).toString();
+          const companyRes = await fetch(`https://api.peopledatalabs.com/v5/company/enrich?${qs}`, {
+            headers: { 'X-Api-Key': pdlApiKey },
+          });
+
+          if (companyRes.ok) {
+            const company = await companyRes.json();
+            if (company && company.status === 200 && company.data) {
+              const c = company.data;
+              if (c.website) enrichmentData.company_website = c.website;
+              if (c.linkedin_url) enrichmentData.company_linkedin = c.linkedin_url;
+              if (c.industry) enrichmentData.industry = c.industry;
+              if (c.summary) enrichmentData.company_description = c.summary;
+              if (c.employee_count) enrichmentData.employee_count = String(c.employee_count);
+              if (c.estimated_annual_revenue) enrichmentData.annual_revenue = c.estimated_annual_revenue;
+              if (c.tags?.length) {
+                enrichmentData.technologies = c.tags.slice(0, 20);
+              }
+            }
+          } else {
+            console.warn('PDL company enrich returned', companyRes.status, await companyRes.text());
+          }
+        }
+      } catch (companyErr) {
+        console.error('Company enrichment error:', companyErr);
+      }
     }
 
-    // Update lead with enriched data
+    // Check if we actually enriched anything beyond the status fields
+    const enrichedFields = Object.keys(enrichmentData).filter(k => k !== 'enrichment_status' && k !== 'enriched_at');
+    if (enrichedFields.length === 0) {
+      enrichmentData.enrichment_status = 'failed';
+    }
+
+    // Update lead
     const { error: updateError } = await supabase
       .from('leads')
       .update(enrichmentData)
@@ -96,43 +159,41 @@ serve(async (req) => {
       throw updateError;
     }
 
-    console.log('Lead enriched successfully:', leadId);
+    console.log('Lead enriched successfully:', leadId, 'fields:', enrichedFields);
 
     // Log enrichment history
-    const enrichedFields = Object.keys(enrichmentData).filter(k => k !== 'enrichment_status' && k !== 'enriched_at');
     await supabase
       .from('enrichment_history')
       .insert({
         lead_id: leadId,
         user_id: user.id,
         fields_enriched: enrichedFields,
-        source: 'external_provider',
-        status: 'success'
+        source: 'peopledatalabs',
+        status: enrichedFields.length > 0 ? 'success' : 'no_match',
       });
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'Lead enriched successfully',
-        enrichedFields
+        message: enrichedFields.length > 0 ? 'Lead enriched successfully' : 'No enrichment data found for this lead',
+        enrichedFields,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
     console.error('Error in enrich-lead function:', error);
-    // Return generic error messages to avoid leaking internal details
     const errorMsg = error instanceof Error ? error.message : '';
     const isAuthError = errorMsg.includes('authorization') || errorMsg.includes('token') || errorMsg.includes('No authorization');
     const isNotFound = errorMsg.includes('not found');
     
     return new Response(
       JSON.stringify({ 
-        error: isAuthError ? 'Authentication required' : isNotFound ? 'Resource not found' : 'Operation failed'
+        error: isAuthError ? 'Authentication required' : isNotFound ? 'Resource not found' : 'Operation failed',
       }),
       { 
         status: isAuthError ? 401 : isNotFound ? 404 : 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
   }
