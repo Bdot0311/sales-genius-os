@@ -33,6 +33,7 @@ const Terms = lazy(() => import("./pages/Terms"));
 const Security = lazy(() => import("./pages/Security"));
 const Confirmation = lazy(() => import("./pages/Confirmation"));
 const HelpCenter = lazy(() => import("./pages/HelpCenter"));
+const Install = lazy(() => import("./pages/Install"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -78,6 +79,7 @@ const App = () => (
               <Route path="/help" element={<HelpCenter />} />
               <Route path="/help/category/:category" element={<HelpCenter />} />
               <Route path="/help/article/:slug" element={<HelpCenter />} />
+              <Route path="/install" element={<Install />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/dashboard/leads" element={<Leads />} />
               <Route path="/dashboard/leads/saved" element={<SavedLeads />} />

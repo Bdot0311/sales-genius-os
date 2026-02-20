@@ -34,6 +34,7 @@ import { useSubscriptionStatus } from "@/hooks/use-subscription-status";
 import { useAdmin } from "@/hooks/use-admin";
 import { useWhiteLabel } from "@/hooks/use-white-label";
 import { useSearchCredits } from "@/hooks/use-search-credits";
+import { Download } from "lucide-react";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -168,8 +169,8 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             )}
           </nav>
 
-          {/* Help prompt */}
-          <div className="flex-shrink-0 px-4 py-3 border-t border-border bg-muted/30">
+          {/* Help & Install prompts */}
+          <div className="flex-shrink-0 px-4 py-3 border-t border-border bg-muted/30 space-y-2">
             <a 
               href="/help" 
               target="_blank"
@@ -179,6 +180,16 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <HelpCircle className="w-4 h-4" />
               <span>Need help? Visit our Help Center</span>
             </a>
+            <button
+              onClick={() => {
+                navigate('/install');
+                setSidebarOpen(false);
+              }}
+              className="flex items-center gap-2 text-xs text-muted-foreground hover:text-primary transition-colors w-full"
+            >
+              <Download className="w-4 h-4" />
+              <span>Install App</span>
+            </button>
           </div>
 
           {/* User section - fixed at bottom */}
