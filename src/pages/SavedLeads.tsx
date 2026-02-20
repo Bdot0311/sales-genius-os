@@ -49,6 +49,7 @@ const SavedLeads = () => {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [viewMode, setViewMode] = useState<"card" | "table">("table");
   const [enrichmentHistory, setEnrichmentHistory] = useState<any[]>([]);
+  const [isEnriching, setIsEnriching] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -197,6 +198,43 @@ const SavedLeads = () => {
   const handleLeadClick = async (lead: Lead) => {
     setSelectedLead(lead);
     await fetchEnrichmentHistory(lead.id);
+  };
+
+  const handleEnrichLead = async () => {
+    if (!selectedLead) return;
+    setIsEnriching(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('enrich-lead', {
+        body: { leadId: selectedLead.id }
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast({
+        title: "Lead enriched",
+        description: `Successfully enriched ${selectedLead.contact_name}`,
+      });
+
+      // Refresh leads and enrichment history
+      await fetchLeads();
+      await fetchEnrichmentHistory(selectedLead.id);
+
+      // Update the selected lead in state with fresh data
+      const { data: updatedLead } = await supabase
+        .from("leads")
+        .select("*")
+        .eq("id", selectedLead.id)
+        .single();
+      if (updatedLead) setSelectedLead(updatedLead as Lead);
+    } catch (error: any) {
+      toast({
+        title: "Enrichment failed",
+        description: error.message || "Could not enrich lead",
+        variant: "destructive",
+      });
+    } finally {
+      setIsEnriching(false);
+    }
   };
 
   const getScoreBadge = (score?: number | null) => {
@@ -478,8 +516,8 @@ const SavedLeads = () => {
         open={!!selectedLead}
         onOpenChange={(open) => !open && setSelectedLead(null)}
         enrichmentHistory={enrichmentHistory}
-        onEnrich={() => {}}
-        isEnriching={false}
+        onEnrich={handleEnrichLead}
+        isEnriching={isEnriching}
       />
     </DashboardLayout>
   );
