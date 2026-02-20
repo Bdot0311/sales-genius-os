@@ -1539,6 +1539,7 @@ export type Database = {
           lead_id: string | null
           opened_at: string | null
           replied_at: string | null
+          scheduled_at: string | null
           sent_at: string | null
           sequence_id: string | null
           sequence_step: number | null
@@ -1561,6 +1562,7 @@ export type Database = {
           lead_id?: string | null
           opened_at?: string | null
           replied_at?: string | null
+          scheduled_at?: string | null
           sent_at?: string | null
           sequence_id?: string | null
           sequence_step?: number | null
@@ -1583,6 +1585,7 @@ export type Database = {
           lead_id?: string | null
           opened_at?: string | null
           replied_at?: string | null
+          scheduled_at?: string | null
           sent_at?: string | null
           sequence_id?: string | null
           sequence_step?: number | null
