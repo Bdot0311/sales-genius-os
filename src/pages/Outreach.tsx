@@ -895,7 +895,7 @@ ${fullEmailBody.split('\n').map((line: string) => line.trim() ? `<p>${line}</p>`
     }
   };
 
-
+  const scheduleCalendarMeeting = async () => {
     if (!selectedLead) {
       toast({
         title: "Missing information",
@@ -1666,7 +1666,7 @@ For logos, use HTML:
                         {subjectLine.toLowerCase().includes("meeting") && (
                           <Button 
                             variant="outline"
-                            onClick={sendToCalendar}
+                            onClick={scheduleCalendarMeeting}
                           >
                             <CalendarPlus className="w-4 h-4 mr-2" />
                             Add to Calendar
