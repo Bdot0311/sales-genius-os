@@ -51,26 +51,79 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
     setLoading(true);
     try {
       const text = await file.text();
-      const rows = text.split("\n").map(row => row.split(","));
-      const headers = rows[0].map(h => h.trim().toLowerCase());
+      
+      // Parse CSV properly handling quoted fields
+      const parseCSVLine = (line: string): string[] => {
+        const values: string[] = [];
+        let current = "";
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (char === '"') {
+            if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
+              current += '"';
+              i++;
+            } else {
+              inQuotes = !inQuotes;
+            }
+          } else if (char === ',' && !inQuotes) {
+            values.push(current.trim());
+            current = "";
+          } else {
+            current += char;
+          }
+        }
+        values.push(current.trim());
+        return values;
+      };
+
+      const lines = text.split(/\r?\n/).filter(line => line.trim());
+      const headers = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase().replace(/['"]/g, ''));
       
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
 
-      const leads = rows.slice(1).filter(row => row.length > 1).map(row => {
+      // Build flexible column mapping
+      const findCol = (tests: string[]): number => {
+        return headers.findIndex(h => tests.some(t => h === t || h.includes(t)));
+      };
+
+      const companyCol = findCol(["company name", "company", "organization", "org"]);
+      const contactCol = findCol(["contact name", "full name", "fullname", "contact"]);
+      const firstNameCol = findCol(["first name", "firstname", "first"]);
+      const lastNameCol = findCol(["last name", "lastname", "last", "surname"]);
+      const nameCol = contactCol === -1 ? findCol(["name"]) : -1; // only if no specific contact col
+      const emailCol = findCol(["email", "e-mail", "mail"]);
+      const phoneCol = findCol(["phone", "telephone", "tel", "mobile"]);
+      const industryCol = findCol(["industry", "sector"]);
+      const sizeCol = findCol(["size", "employees", "employee count", "company size"]);
+      const sourceCol = findCol(["source", "lead source"]);
+      const titleCol = findCol(["title", "job title", "position", "role"]);
+
+      const leads = lines.slice(1).filter(line => line.trim()).map(line => {
+        const row = parseCSVLine(line);
         const lead: any = { user_id: session.user.id };
-        headers.forEach((header, index) => {
-          const value = row[index]?.trim();
-          if (value) {
-            if (header.includes("company")) lead.company_name = value;
-            else if (header.includes("contact") && header.includes("name")) lead.contact_name = value;
-            else if (header.includes("email")) lead.contact_email = value;
-            else if (header.includes("phone")) lead.contact_phone = value;
-            else if (header.includes("industry")) lead.industry = value;
-            else if (header.includes("size")) lead.company_size = value;
-            else if (header.includes("source")) lead.source = value;
-          }
-        });
+        
+        const getVal = (idx: number) => idx >= 0 && idx < row.length ? row[idx]?.trim().replace(/^["']|["']$/g, '') : "";
+
+        if (companyCol >= 0) lead.company_name = getVal(companyCol);
+        
+        // Try contact name, then full name, then first+last, then just "name"
+        if (contactCol >= 0) {
+          lead.contact_name = getVal(contactCol);
+        } else if (firstNameCol >= 0 || lastNameCol >= 0) {
+          lead.contact_name = `${getVal(firstNameCol)} ${getVal(lastNameCol)}`.trim();
+        } else if (nameCol >= 0) {
+          lead.contact_name = getVal(nameCol);
+        }
+
+        if (emailCol >= 0) lead.contact_email = getVal(emailCol);
+        if (phoneCol >= 0) lead.contact_phone = getVal(phoneCol);
+        if (industryCol >= 0) lead.industry = getVal(industryCol);
+        if (sizeCol >= 0) lead.company_size = getVal(sizeCol);
+        if (sourceCol >= 0 && !source) lead.source = getVal(sourceCol);
+        if (titleCol >= 0) lead.job_title = getVal(titleCol);
+
         if (!lead.company_name) lead.company_name = "Unknown Company";
         if (!lead.contact_name) lead.contact_name = "Unknown Contact";
         if (source) lead.source = source;
