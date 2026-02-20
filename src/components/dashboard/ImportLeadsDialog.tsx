@@ -369,7 +369,7 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
           Import Leads
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Import Leads</DialogTitle>
           <DialogDescription>
@@ -377,15 +377,15 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="csv">
-          <TabsList className="grid w-full grid-cols-4">
+        <Tabs defaultValue="csv" className="flex-1 min-h-0 flex flex-col">
+          <TabsList className="grid w-full grid-cols-4 shrink-0">
             <TabsTrigger value="csv">CSV Upload</TabsTrigger>
             <TabsTrigger value="integrations">Integrations</TabsTrigger>
             <TabsTrigger value="schedule">Scheduled</TabsTrigger>
             <TabsTrigger value="history">History</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="csv" className="space-y-4">
+          <TabsContent value="csv" className="space-y-4 overflow-y-auto max-h-[60vh]">
             <div>
               <Label htmlFor="source">Lead Source (Optional)</Label>
               <Select value={source} onValueChange={setSource}>
@@ -425,8 +425,8 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
             </Button>
           </TabsContent>
 
-          <TabsContent value="integrations" className="space-y-4">
-            <ScrollArea className="h-[500px] pr-4">
+          <TabsContent value="integrations" className="space-y-4 overflow-y-auto max-h-[60vh]">
+            <ScrollArea className="h-full max-h-[55vh] pr-4">
               {selectedIntegration ? (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
@@ -572,8 +572,8 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
             </ScrollArea>
           </TabsContent>
 
-          <TabsContent value="schedule" className="space-y-4">
-            <ScrollArea className="h-[500px] pr-4">
+          <TabsContent value="schedule" className="space-y-4 overflow-y-auto max-h-[60vh]">
+            <ScrollArea className="h-full max-h-[55vh] pr-4">
               {scheduledImports.length > 0 ? (
                 <div className="space-y-3">
                   {scheduledImports.map((schedule) => (
@@ -630,8 +630,8 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
             </ScrollArea>
           </TabsContent>
 
-          <TabsContent value="history" className="space-y-4">
-            <ScrollArea className="h-[500px] pr-4">
+          <TabsContent value="history" className="space-y-4 overflow-y-auto max-h-[60vh]">
+            <ScrollArea className="h-full max-h-[55vh] pr-4">
               {importHistory.length > 0 ? (
                 <div className="space-y-3">
                   {importHistory.map((entry) => (
