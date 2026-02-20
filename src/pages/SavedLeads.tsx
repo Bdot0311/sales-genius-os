@@ -518,6 +518,20 @@ const SavedLeads = () => {
         enrichmentHistory={enrichmentHistory}
         onEnrich={handleEnrichLead}
         isEnriching={isEnriching}
+        onSave={async (leadId, updates) => {
+          const { error } = await supabase
+            .from("leads")
+            .update(updates)
+            .eq("id", leadId);
+          if (error) {
+            toast({ title: "Error saving lead", description: error.message, variant: "destructive" });
+            throw error;
+          }
+          toast({ title: "Lead updated", description: "Your changes have been saved." });
+          await fetchLeads();
+          const { data: updatedLead } = await supabase.from("leads").select("*").eq("id", leadId).single();
+          if (updatedLead) setSelectedLead(updatedLead as Lead);
+        }}
       />
     </DashboardLayout>
   );
