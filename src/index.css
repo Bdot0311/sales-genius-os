@@ -493,16 +493,12 @@ All colors MUST be HSL. Using 8px spacing scale.
   pointer-events: none;
 }
 
-/* GPU acceleration for all animated elements to prevent forced reflows */
-[class*="animate-"],
-.transition-all,
-.transition-transform,
-.transition-colors,
-.transition-opacity {
+/* GPU acceleration for animated elements - avoid transform on layout containers
+   as it creates new containing blocks that break fixed positioning (e.g. dialogs) */
+[class*="animate-"] {
   will-change: transform, opacity;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  transform: translateZ(0);
 }
 
 /* Containment for accordion to prevent layout thrashing */
