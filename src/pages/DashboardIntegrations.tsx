@@ -109,6 +109,7 @@ const DashboardIntegrations = () => {
   const { toast } = useToast();
   const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
   const [connectedIntegrations, setConnectedIntegrations] = useState<Set<string>>(new Set());
+  const [connectedGoogleAccounts, setConnectedGoogleAccounts] = useState<Array<{ id: string; email: string }>>([]);
   const [integrationStatus, setIntegrationStatus] = useState<Map<string, { lastSync: string | null; error: string | null }>>(new Map());
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -125,7 +126,7 @@ const DashboardIntegrations = () => {
     try {
       const { data, error } = await supabase
         .from('integrations')
-        .select('integration_id, is_active, config, updated_at');
+        .select('id, integration_id, is_active, config, updated_at, connected_email');
       
       if (error) throw error;
       
@@ -133,6 +134,15 @@ const DashboardIntegrations = () => {
         data?.filter(i => i.is_active).map(i => i.integration_id) || []
       );
       setConnectedIntegrations(activeIds);
+
+      // Build list of connected Google accounts
+      const googleAccounts = (data || [])
+        .filter(i => i.integration_id === 'google' && i.is_active)
+        .map(i => ({
+          id: i.id,
+          email: i.connected_email || (i.config as any)?.googleEmail || 'Unknown account',
+        }));
+      setConnectedGoogleAccounts(googleAccounts);
       
       // Store full integration data for later use
       const integrationsMap = new Map(
@@ -321,22 +331,29 @@ const DashboardIntegrations = () => {
     }
   };
 
-  const handleDisconnect = async (integrationId: string) => {
+  const handleDisconnect = async (integrationId: string, rowId?: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const { error } = await supabase
-        .from('integrations')
-        .update({ is_active: false })
-        .eq('user_id', user.id)
-        .eq('integration_id', integrationId);
+      if (rowId) {
+        // Disconnect a specific Google account by row ID
+        const { error } = await supabase
+          .from('integrations')
+          .update({ is_active: false })
+          .eq('id', rowId)
+          .eq('user_id', user.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('integrations')
+          .update({ is_active: false })
+          .eq('user_id', user.id)
+          .eq('integration_id', integrationId);
+        if (error) throw error;
+      }
 
-      if (error) throw error;
-
-      const newSet = new Set(connectedIntegrations);
-      newSet.delete(integrationId);
-      setConnectedIntegrations(newSet);
+      await loadIntegrations();
       toast({
         title: "Disconnected",
         description: "Integration has been disconnected",
@@ -380,6 +397,7 @@ const DashboardIntegrations = () => {
             const Icon = integration.icon;
             const isConnected = connectedIntegrations.has(integration.id);
             const status = integrationStatus.get(integration.id);
+            const isGoogle = integration.id === 'google';
 
             return (
               <Card
@@ -413,8 +431,30 @@ const DashboardIntegrations = () => {
                   </div>
                 </div>
 
-                {/* Sync Status Indicator */}
-                {isConnected && status && (
+                {/* Connected Google accounts list */}
+                {isGoogle && connectedGoogleAccounts.length > 0 && (
+                  <div className="mb-4 space-y-2">
+                    {connectedGoogleAccounts.map((account) => (
+                      <div key={account.id} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/50 border border-border/50">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+                          <span className="text-sm truncate">{account.email}</span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs shrink-0"
+                          onClick={() => handleDisconnect('google', account.id)}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Sync Status Indicator (for non-Google integrations) */}
+                {!isGoogle && isConnected && status && (
                   <div className="mb-4 p-3 rounded-lg bg-muted/50 space-y-2">
                     {status.error ? (
                       <div className="flex items-center gap-2 text-destructive">
@@ -442,7 +482,17 @@ const DashboardIntegrations = () => {
                 )}
 
                 <div className="flex gap-2">
-                  {isConnected ? (
+                  {isGoogle ? (
+                    <Button
+                      variant={connectedGoogleAccounts.length > 0 ? "outline" : "hero"}
+                      size="sm"
+                      className="w-full"
+                      onClick={() => handleConnect(integration)}
+                    >
+                      <Mail className="w-4 h-4 mr-2" />
+                      {connectedGoogleAccounts.length > 0 ? "Add Another Account" : "Connect Google"}
+                    </Button>
+                  ) : isConnected ? (
                     <>
                       <Button
                         variant="outline"

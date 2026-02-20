@@ -128,13 +128,38 @@ const Outreach = () => {
     companyName: string;
     subject: string;
   } | null>(null);
+  
+  // Multi-sender state
+  const [connectedAccounts, setConnectedAccounts] = useState<Array<{ id: string; email: string }>>([]);
+  const [selectedSenderId, setSelectedSenderId] = useState("");
 
   useEffect(() => {
     loadLeads();
     loadSignature();
     loadSocialProof();
     loadCounts();
+    loadConnectedAccounts();
   }, []);
+
+  const loadConnectedAccounts = async () => {
+    const { data } = await supabase
+      .from('integrations')
+      .select('id, connected_email, config')
+      .eq('integration_id', 'google')
+      .eq('is_active', true);
+    
+    if (data && data.length > 0) {
+      const accounts = data.map(row => ({
+        id: row.id,
+        email: row.connected_email || (row.config as any)?.googleEmail || 'Unknown account',
+      }));
+      setConnectedAccounts(accounts);
+      // Auto-select first account if none selected
+      if (!selectedSenderId && accounts.length > 0) {
+        setSelectedSenderId(accounts[0].id);
+      }
+    }
+  };
 
   // Keyboard shortcuts: Ctrl+G to generate, Ctrl+Enter to send
   useEffect(() => {
@@ -700,23 +725,17 @@ const Outreach = () => {
         throw new Error('Lead does not have an email address');
       }
 
-      const { data: integrations } = await supabase
-        .from('integrations')
-        .select('integration_id')
-        .eq('is_active', true)
-        .eq('integration_id', 'google');
-
-      if (!integrations || integrations.length === 0) {
+      if (connectedAccounts.length === 0) {
         toast({
-          title: "Google not connected",
-          description: "Please connect Google in the Integrations page first.",
+          title: "No email accounts connected",
+          description: "Please connect a Google account in the Integrations page first.",
           variant: "destructive",
         });
         setIsSending(false);
         return;
       }
 
-      const integrationId = integrations[0].integration_id;
+      const senderAccountId = selectedSenderId || connectedAccounts[0]?.id;
 
       const fullEmailBody = signature 
         ? `${generatedEmail}\n\n${signature}`
@@ -727,7 +746,8 @@ const Outreach = () => {
           to: lead.contact_email,
           subject: subjectLine,
           body: fullEmailBody,
-          integrationId,
+          integrationId: 'google',
+          integrationRowId: senderAccountId,
           leadId: selectedLead,
           templateId: currentTemplateId,
         }
@@ -1078,6 +1098,39 @@ For logos, use HTML:
                   </div>
                 </div>
                 <div className="space-y-4">
+                  {/* Send From selector */}
+                  <div>
+                    <Label>
+                      Send From
+                      {connectedAccounts.length === 0 && (
+                        <span className="ml-2 text-xs text-destructive">No accounts connected</span>
+                      )}
+                    </Label>
+                    {connectedAccounts.length > 0 ? (
+                      <Select value={selectedSenderId} onValueChange={setSelectedSenderId}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select sending account" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {connectedAccounts.map((account) => (
+                            <SelectItem key={account.id} value={account.id}>
+                              <div className="flex items-center gap-2">
+                                <Mail className="w-3 h-3 text-muted-foreground" />
+                                {account.email}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Connect a Google account in{" "}
+                        <a href="/integrations" className="text-primary underline">Integrations</a>
+                        {" "}to start sending.
+                      </p>
+                    )}
+                  </div>
+
                   <div>
                     <Label>Select Lead</Label>
                     <Select value={selectedLead} onValueChange={setSelectedLead}>

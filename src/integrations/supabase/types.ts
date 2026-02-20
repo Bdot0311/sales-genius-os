@@ -913,6 +913,7 @@ export type Database = {
       integrations: {
         Row: {
           config: Json
+          connected_email: string | null
           created_at: string
           id: string
           integration_id: string
@@ -923,6 +924,7 @@ export type Database = {
         }
         Insert: {
           config?: Json
+          connected_email?: string | null
           created_at?: string
           id?: string
           integration_id: string
@@ -933,6 +935,7 @@ export type Database = {
         }
         Update: {
           config?: Json
+          connected_email?: string | null
           created_at?: string
           id?: string
           integration_id?: string

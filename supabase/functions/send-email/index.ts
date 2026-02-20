@@ -16,7 +16,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { to, subject, body, integrationId, leadId, templateId } = await req.json();
+    const { to, subject, body, integrationId, integrationRowId, leadId, templateId } = await req.json();
     
     console.log('Send email request received:', { to, subject, integrationId, leadId, templateId });
 
@@ -48,15 +48,35 @@ serve(async (req) => {
     }
 
     // Get the integration config for this user
-    const { data: integration, error: integrationError } = await supabase
-      .from('integrations')
-      .select('config')
-      .eq('user_id', user.id)
-      .eq('integration_id', integrationId || 'google')
-      .eq('is_active', true)
-      .single();
+    // If integrationRowId is provided, use it directly; otherwise fall back to integration_id match
+    let integration;
+    let integrationError;
 
-    console.log('Looking for integration:', integrationId || 'google', 'for user:', user.id);
+    if (integrationRowId) {
+      const result = await supabase
+        .from('integrations')
+        .select('id, config')
+        .eq('id', integrationRowId)
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .single();
+      integration = result.data;
+      integrationError = result.error;
+      console.log('Looking for integration by row ID:', integrationRowId);
+    } else {
+      const result = await supabase
+        .from('integrations')
+        .select('id, config')
+        .eq('user_id', user.id)
+        .eq('integration_id', integrationId || 'google')
+        .eq('is_active', true)
+        .limit(1)
+        .single();
+      integration = result.data;
+      integrationError = result.error;
+      console.log('Looking for integration:', integrationId || 'google', 'for user:', user.id);
+    }
+
     console.log('Integration found:', integration ? 'yes' : 'no');
     
     if (integrationError || !integration) {
@@ -101,8 +121,7 @@ serve(async (req) => {
               expiresAt: Date.now() + tokens.expires_in * 1000,
             },
           })
-          .eq('user_id', user.id)
-          .eq('integration_id', integrationId || 'google');
+          .eq('id', integration.id);
         
         console.log('Token refreshed successfully');
       } else {

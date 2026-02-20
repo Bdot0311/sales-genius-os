@@ -102,25 +102,51 @@ serve(async (req) => {
       googleEmail,
     };
 
-    const { error: upsertError } = await supabase
+    // Check if this Google email is already connected for this user
+    const { data: existing } = await supabase
       .from("integrations")
-      .upsert({
-        user_id: user.id,
-        integration_id: "google",
-        integration_name: "Google",
-        config,
-        is_active: true,
-        updated_at: new Date().toISOString(),
-      }, {
-        onConflict: "user_id,integration_id",
-      });
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("integration_id", "google")
+      .eq("connected_email", googleEmail)
+      .maybeSingle();
 
-    if (upsertError) {
-      console.error("Error saving integration:", upsertError);
-      throw new Error("Failed to save integration");
+    if (existing) {
+      // Update existing integration for this email
+      const { error: updateError } = await supabase
+        .from("integrations")
+        .update({
+          config,
+          is_active: true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", existing.id);
+
+      if (updateError) {
+        console.error("Error updating integration:", updateError);
+        throw new Error("Failed to update integration");
+      }
+      console.log("Updated existing Google integration for:", googleEmail);
+    } else {
+      // Insert new integration row for this Google account
+      const { error: insertError } = await supabase
+        .from("integrations")
+        .insert({
+          user_id: user.id,
+          integration_id: "google",
+          integration_name: "Google",
+          config,
+          is_active: true,
+          connected_email: googleEmail,
+          updated_at: new Date().toISOString(),
+        });
+
+      if (insertError) {
+        console.error("Error saving integration:", insertError);
+        throw new Error("Failed to save integration");
+      }
+      console.log("Created new Google integration for:", googleEmail);
     }
-
-    console.log("Successfully saved Google integration for user:", user.id);
 
     return new Response(
       JSON.stringify({ 
