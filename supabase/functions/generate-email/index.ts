@@ -90,6 +90,9 @@ Best,
 - Focus on THEIR pain, not your product features
 - The goal is to spark curiosity and book a meeting, NOT to sell
 - End with a signature that just says "Best," or "Thanks," — nothing more
+- **NEVER fabricate facts, company names, metrics, or claims.** Do NOT invent customer names, revenue figures, funding rounds, or results you cannot verify. If specific social proof is not provided by the user, use generic but HONEST phrasing like "teams like yours" or "companies in [industry]" instead of making up names and numbers.
+- **NEVER make false advertising claims.** Do not promise specific ROI, percentages, or outcomes unless the user explicitly provides them. Saying "we helped [fake company] cut costs by 70%" when that is not true is unacceptable.
+- If trigger/context info is vague or unavailable, use a genuine, general opener rather than inventing a fake trigger event (e.g., don't invent a funding round or product launch that didn't happen).
 `;
 
 serve(async (req) => {
@@ -201,11 +204,12 @@ Return ONLY the subject line text, nothing else. No quotes, no "Subject:" prefix
 
 RULES:
 - Start with one of these 7 power words: You, Saw, How, Spoke, Noticed, Referred, Remember
-- Reference something SPECIFIC about the prospect: recent news, funding, job change, company growth, product launch, hiring, etc.
+- Reference something about the prospect based ONLY on the data provided (job title, industry, company size, etc.)
+- Do NOT invent or fabricate events like funding rounds, product launches, or hiring news unless explicitly provided in the lead data.
 - Keep it under 50 words
-- Make it feel personal and researched
+- Make it feel personal and researched using only real, provided information
 - Be genuine, not sycophantic`;
-      
+
       userPrompt = `Generate a personalized trigger/context opener for this lead:
 
 Lead Information:
@@ -223,11 +227,12 @@ Return ONLY the trigger context sentence, nothing else. No quotes, no explanatio
       systemPrompt = `You are an expert B2B sales copywriter. Generate compelling social proof text for cold emails.
 
 RULES:
-- Mention 1-2 company names as customers (make them sound plausible for the industry)
-- Include a SPECIFIC metric or result (e.g., "cut prep time by 70%", "increased conversion by 40%")
+- Do NOT invent or fabricate company names, customer names, or specific metrics/results.
+- If the user has not provided real social proof data, use honest generic phrasing like "teams in [industry]" or "companies like yours" instead of making up names.
+- Only include specific company names or metrics if the user explicitly provides them.
 - Keep it under 40 words
 - Make it relevant to the prospect's industry/role
-- Format: "[Company names] are customers of ours. We helped them [specific result]."`;
+- Format should sound credible and honest, e.g., "We work with teams in [industry] to help them [general benefit]."`;
       
       userPrompt = `Generate social proof text relevant to this lead:
 
