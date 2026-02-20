@@ -369,7 +369,7 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
           Import Leads
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
+      <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>Import Leads</DialogTitle>
           <DialogDescription>
@@ -377,7 +377,7 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="csv" className="flex-1 min-h-0 flex flex-col">
+        <Tabs defaultValue="csv" className="flex-1 min-h-0 flex flex-col overflow-hidden">
           <TabsList className="grid w-full grid-cols-4 shrink-0">
             <TabsTrigger value="csv">CSV Upload</TabsTrigger>
             <TabsTrigger value="integrations">Integrations</TabsTrigger>
@@ -385,7 +385,7 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
             <TabsTrigger value="history">History</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="csv" className="space-y-4 overflow-y-auto max-h-[60vh]">
+          <TabsContent value="csv" className="space-y-3 overflow-y-auto flex-1 min-h-0 pr-1">
             <div>
               <Label htmlFor="source">Lead Source (Optional)</Label>
               <Select value={source} onValueChange={setSource}>
@@ -401,7 +401,7 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
               </Select>
             </div>
 
-            <div className="border-2 border-dashed rounded-lg p-8 text-center">
+            <div className="border-2 border-dashed rounded-lg p-4 text-center">
               <Input
                 id="csv-upload"
                 type="file"
@@ -411,7 +411,7 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
                 className="hidden"
               />
               <Label htmlFor="csv-upload" className="cursor-pointer">
-                <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
                 <p className="text-sm font-medium">Click to upload CSV file</p>
                 <p className="text-xs text-muted-foreground mt-2">
                   Supports: Company Name, Contact Name, Email, Phone, Industry, Company Size, Source
@@ -425,8 +425,8 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
             </Button>
           </TabsContent>
 
-          <TabsContent value="integrations" className="space-y-4 overflow-y-auto max-h-[60vh]">
-            <ScrollArea className="h-full max-h-[55vh] pr-4">
+          <TabsContent value="integrations" className="space-y-3 overflow-y-auto flex-1 min-h-0 pr-1">
+            <ScrollArea className="h-full max-h-[50vh] pr-4">
               {selectedIntegration ? (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
@@ -572,8 +572,8 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
             </ScrollArea>
           </TabsContent>
 
-          <TabsContent value="schedule" className="space-y-4 overflow-y-auto max-h-[60vh]">
-            <ScrollArea className="h-full max-h-[55vh] pr-4">
+          <TabsContent value="schedule" className="space-y-3 overflow-y-auto flex-1 min-h-0 pr-1">
+            <ScrollArea className="h-full max-h-[50vh] pr-4">
               {scheduledImports.length > 0 ? (
                 <div className="space-y-3">
                   {scheduledImports.map((schedule) => (
@@ -630,8 +630,8 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
             </ScrollArea>
           </TabsContent>
 
-          <TabsContent value="history" className="space-y-4 overflow-y-auto max-h-[60vh]">
-            <ScrollArea className="h-full max-h-[55vh] pr-4">
+          <TabsContent value="history" className="space-y-3 overflow-y-auto flex-1 min-h-0 pr-1">
+            <ScrollArea className="h-full max-h-[50vh] pr-4">
               {importHistory.length > 0 ? (
                 <div className="space-y-3">
                   {importHistory.map((entry) => (
