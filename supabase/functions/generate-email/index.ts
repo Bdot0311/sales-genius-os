@@ -132,6 +132,7 @@ serve(async (req) => {
     const triggerContext = typeof requestData.triggerContext === 'string' ? requestData.triggerContext.trim() : '';
     const openerWord = typeof requestData.openerWord === 'string' ? requestData.openerWord.trim().toLowerCase() : '';
     const socialProof = typeof requestData.socialProof === 'string' ? requestData.socialProof.trim() : '';
+    const businessDescription = typeof requestData.businessDescription === 'string' ? requestData.businessDescription.trim().slice(0, 500) : '';
     const variantNum = typeof requestData.variantNum === 'number' ? requestData.variantNum : 0;
 
     // Validate inputs
@@ -196,6 +197,7 @@ Lead Information:
 - Industry: ${sanitizedIndustry}
 - Company Size: ${sanitizedCompanySize}
 ${triggerContext ? `- Trigger/Context: ${triggerContext}` : ''}
+${businessDescription ? `\nSender's Business Description: ${businessDescription}` : ''}
 
 Return ONLY the subject line text, nothing else. No quotes, no "Subject:" prefix, just the subject line itself.`;
     } else if (goal === 'trigger_context') {
@@ -220,6 +222,7 @@ Lead Information:
 - Company Size: ${sanitizedCompanySize}
 - Seniority: ${sanitizedSeniority}
 ${openerWord && VALID_OPENERS.includes(openerWord) ? `\nPreferred Opening Word: Start with "${openerWord.charAt(0).toUpperCase() + openerWord.slice(1)}"` : ''}
+${businessDescription ? `\nSender's Business Description: ${businessDescription}` : ''}
 
 Return ONLY the trigger context sentence, nothing else. No quotes, no explanations. Just the opener text like "Saw you recently raised Series A from Accel" or "Noticed you just expanded your sales team".`;
     } else if (goal === 'social_proof') {
@@ -242,6 +245,7 @@ Lead Information:
 - Job Title: ${sanitizedJobTitle}
 - Industry: ${sanitizedIndustry}
 - Company Size: ${sanitizedCompanySize}
+${businessDescription ? `\nSender's Business Description (use this to make social proof relevant): ${businessDescription}` : ''}
 
 Return ONLY the social proof text, nothing else. No quotes, no explanations. Example format: "Spot and Ignite are customers of ours. We helped them cut board prep time by 50%."`;
     } else if (goal === 'custom' && subjectLine) {
@@ -272,6 +276,7 @@ Lead Information:
 ${triggerContext ? `\nTrigger/Context (use this as your opener): ${triggerContext}` : ''}
 ${openerWord && VALID_OPENERS.includes(openerWord) ? `\nPreferred Opening Word: Start with "${openerWord.charAt(0).toUpperCase() + openerWord.slice(1)}"` : ''}
 ${socialProof ? `\nSocial Proof to include: ${socialProof}` : ''}
+${businessDescription ? `\nSender's Business Description (use this to accurately describe what the sender's company does): ${businessDescription}` : ''}
 
 Write an email body following the 4-sentence cold email framework. Start with the greeting and end with a simple sign-off. Do NOT include the subject line.`;
     } else {
@@ -302,6 +307,7 @@ Lead Information:
 ${triggerContext ? `\nTrigger/Context (use this as your opener): ${triggerContext}` : ''}
 ${openerWord && VALID_OPENERS.includes(openerWord) ? `\nPreferred Opening Word: Start with "${openerWord.charAt(0).toUpperCase() + openerWord.slice(1)}"` : ''}
 ${socialProof ? `\nSocial Proof to include: ${socialProof}` : ''}
+${businessDescription ? `\nSender's Business Description (use this to accurately describe what the sender's company does): ${businessDescription}` : ''}
 
 Goal: ${goal}
 
