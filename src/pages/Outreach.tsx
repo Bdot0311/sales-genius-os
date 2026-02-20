@@ -1619,7 +1619,7 @@ For logos, use HTML:
                               Schedule
                             </Button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-auto p-4" align="end">
+                          <PopoverContent className="w-auto p-4 max-h-[80vh] overflow-y-auto" align="end" side="top">
                             <div className="space-y-3">
                               <p className="text-sm font-medium">Schedule Send</p>
                               <Calendar
