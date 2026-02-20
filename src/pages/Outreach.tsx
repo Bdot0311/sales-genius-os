@@ -102,6 +102,7 @@ const Outreach = () => {
   const [emailTone, setEmailTone] = useState("professional");
   const [openerWord, setOpenerWord] = useState("");
   const [triggerContext, setTriggerContext] = useState("");
+  const [businessDescription, setBusinessDescription] = useState("");
   const [socialProof, setSocialProof] = useState("");
   const [subjectLine, setSubjectLine] = useState("");
   const [isGeneratingSubject, setIsGeneratingSubject] = useState(false);
@@ -147,6 +148,7 @@ const Outreach = () => {
     loadLeads();
     loadSignature();
     loadSocialProof();
+    loadBusinessDescription();
     loadCounts();
     loadConnectedAccounts();
   }, []);
@@ -274,6 +276,41 @@ const Outreach = () => {
   const handleSocialProofChange = (value: string) => {
     setSocialProof(value);
     debouncedSaveSocialProof(value);
+  };
+
+  const loadBusinessDescription = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    
+    const { data } = await supabase
+      .from("profiles")
+      .select("business_description")
+      .eq("id", user.id)
+      .single();
+    
+    if (data?.business_description) {
+      setBusinessDescription(data.business_description);
+    }
+  };
+
+  const saveBusinessDescription = async (value: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    
+    await supabase
+      .from("profiles")
+      .update({ business_description: value } as any)
+      .eq("id", user.id);
+  };
+
+  const debouncedSaveBusinessDescription = useCallback(
+    debounce((value: string) => saveBusinessDescription(value), 1000),
+    []
+  );
+
+  const handleBusinessDescriptionChange = (value: string) => {
+    setBusinessDescription(value);
+    debouncedSaveBusinessDescription(value);
   };
 
   const saveSignature = async () => {
@@ -448,6 +485,7 @@ const Outreach = () => {
           goal: "subject_only",
           triggerContext,
           openerWord: openerWord === "auto" ? "" : openerWord,
+          businessDescription,
         },
       });
 
@@ -487,6 +525,7 @@ const Outreach = () => {
           tone: emailTone,
           goal: "trigger_context",
           openerWord: openerWord === "auto" ? "" : openerWord,
+          businessDescription,
         },
       });
 
@@ -525,6 +564,7 @@ const Outreach = () => {
           lead,
           tone: emailTone,
           goal: "social_proof",
+          businessDescription,
         },
       });
 
@@ -581,6 +621,7 @@ const Outreach = () => {
             goal: "subject_only",
             triggerContext,
             openerWord: openerWord === "auto" ? "" : openerWord,
+            businessDescription,
           },
         });
         if (subjectError) throw subjectError;
@@ -598,6 +639,7 @@ const Outreach = () => {
           triggerContext,
           openerWord: openerWord === "auto" ? "" : openerWord,
           socialProof,
+          businessDescription,
         },
       });
 
@@ -662,6 +704,7 @@ const Outreach = () => {
             triggerContext,
             openerWord: openerWord === "auto" ? "" : openerWord,
             variantNum: num,
+            businessDescription,
           },
         });
         const subject = subjectData?.email?.replace(/^Subject:\s*/i, '').trim() || `Variant ${num}`;
@@ -677,6 +720,7 @@ const Outreach = () => {
             openerWord: openerWord === "auto" ? "" : openerWord,
             socialProof,
             variantNum: num,
+            businessDescription,
           },
         });
 
@@ -1403,6 +1447,23 @@ For logos, use HTML:
                     )}
                     <p className="text-xs text-muted-foreground mt-1">
                       Customer references and results to include in emails
+                    </p>
+                   </div>
+
+                  <div>
+                    <Label>
+                      Your Business
+                      <Badge variant="outline" className="ml-2 text-xs">Saved</Badge>
+                    </Label>
+                    <Textarea
+                      value={businessDescription}
+                      onChange={(e) => handleBusinessDescriptionChange(e.target.value)}
+                      placeholder="e.g., We're an AI-powered revenue operations platform that helps B2B sales teams consolidate prospecting, enrichment, and outreach into one tool..."
+                      className="min-h-[80px]"
+                      maxLength={500}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Describe what your company does so AI generates emails with real info
                     </p>
                   </div>
 

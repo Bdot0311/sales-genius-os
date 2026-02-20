@@ -1295,6 +1295,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          business_description: string | null
           company_name: string | null
           created_at: string
           email: string
@@ -1305,6 +1306,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          business_description?: string | null
           company_name?: string | null
           created_at?: string
           email: string
@@ -1315,6 +1317,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          business_description?: string | null
           company_name?: string | null
           created_at?: string
           email?: string
