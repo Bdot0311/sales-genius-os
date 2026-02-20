@@ -9,10 +9,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Send, Sparkles, CalendarPlus, Settings2, Image, Upload, Wand2, Mail, FileText, Save, Shuffle, Check, X, Keyboard } from "lucide-react";
+import { Loader2, Send, Sparkles, CalendarPlus, Settings2, Image, Upload, Wand2, Mail, FileText, Save, Shuffle, Check, X, Keyboard, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import DOMPurify from "dompurify";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 import { SentEmailsTable } from "@/components/outreach/SentEmailsTable";
 import { EmailDraftsTable } from "@/components/outreach/EmailDraftsTable";
 import { Badge } from "@/components/ui/badge";
@@ -132,6 +136,12 @@ const Outreach = () => {
   // Multi-sender state
   const [connectedAccounts, setConnectedAccounts] = useState<Array<{ id: string; email: string }>>([]);
   const [selectedSenderId, setSelectedSenderId] = useState("");
+  
+  // Schedule state
+  const [scheduleDate, setScheduleDate] = useState<Date | undefined>(undefined);
+  const [scheduleTime, setScheduleTime] = useState("09:00");
+  const [isScheduling, setIsScheduling] = useState(false);
+  const [schedulePopoverOpen, setSchedulePopoverOpen] = useState(false);
 
   useEffect(() => {
     loadLeads();
@@ -796,7 +806,96 @@ const Outreach = () => {
     }
   };
 
-  const sendToCalendar = async () => {
+  const scheduleEmail = async () => {
+    if (!selectedLead || !generatedEmail || !scheduleDate) {
+      toast({
+        title: "Missing information",
+        description: "Please select a lead, generate an email, and pick a schedule date",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsScheduling(true);
+    try {
+      const lead = leads.find((l) => l.id === selectedLead);
+      if (!lead?.contact_email) throw new Error("Lead does not have an email address");
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      // Combine date + time
+      const [hours, minutes] = scheduleTime.split(":").map(Number);
+      const scheduledAt = new Date(scheduleDate);
+      scheduledAt.setHours(hours, minutes, 0, 0);
+
+      if (scheduledAt <= new Date()) {
+        toast({
+          title: "Invalid schedule time",
+          description: "Please select a future date and time",
+          variant: "destructive",
+        });
+        setIsScheduling(false);
+        return;
+      }
+
+      const fullEmailBody = signature
+        ? `${generatedEmail}\n\n${signature}`
+        : generatedEmail;
+
+      // Format body as HTML
+      const isHtml = fullEmailBody.trim().startsWith('<');
+      const htmlBody = isHtml ? fullEmailBody : `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.6;color:#333;max-width:600px;margin:0 auto;padding:20px}p{margin:0 0 16px}</style></head><body>
+${fullEmailBody.split('\n').map((line: string) => line.trim() ? `<p>${line}</p>` : '').join('\n')}
+</body></html>`;
+
+      const { error } = await supabase.from("sent_emails").insert({
+        user_id: user.id,
+        lead_id: selectedLead,
+        to_email: lead.contact_email,
+        subject: subjectLine,
+        body_html: htmlBody,
+        body_text: generatedEmail,
+        template_id: currentTemplateId || null,
+        status: "scheduled",
+        scheduled_at: scheduledAt.toISOString(),
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Email scheduled!",
+        description: `Email to ${lead.contact_name} scheduled for ${format(scheduledAt, "PPP 'at' p")}`,
+      });
+
+      // Clear form
+      if (currentDraftId) {
+        await supabase.from("email_drafts").delete().eq("id", currentDraftId);
+        setCurrentDraftId(null);
+      }
+      setGeneratedEmail("");
+      setSelectedLead("");
+      setSubjectLine("");
+      setTriggerContext("");
+      setOpenerWord("");
+      setCurrentTemplateId(null);
+      setScheduleDate(undefined);
+      setScheduleTime("09:00");
+      setSchedulePopoverOpen(false);
+      loadCounts();
+    } catch (error: any) {
+      toast({
+        title: "Error scheduling email",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsScheduling(false);
+    }
+  };
+
+
     if (!selectedLead) {
       toast({
         title: "Missing information",
@@ -1491,33 +1590,89 @@ For logos, use HTML:
                     </div>
                   </div>
                   {generatedEmail && (
-                    <div className="flex gap-2">
-                      <Button 
-                        className="flex-1"
-                        onClick={sendEmail}
-                        disabled={isSending}
-                      >
-                        {isSending ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Sending...
-                          </>
-                        ) : (
-                          <>
-                            <Send className="w-4 h-4 mr-2" />
-                            Send Email
-                          </>
-                        )}
-                      </Button>
-                      {subjectLine.toLowerCase().includes("meeting") && (
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
                         <Button 
-                          variant="outline"
-                          onClick={sendToCalendar}
+                          className="flex-1"
+                          onClick={sendEmail}
+                          disabled={isSending || isScheduling}
                         >
-                          <CalendarPlus className="w-4 h-4 mr-2" />
-                          Add to Calendar
+                          {isSending ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Sending...
+                            </>
+                          ) : (
+                            <>
+                              <Send className="w-4 h-4 mr-2" />
+                              Send Now
+                            </>
+                          )}
                         </Button>
-                      )}
+                        <Popover open={schedulePopoverOpen} onOpenChange={setSchedulePopoverOpen}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              disabled={isSending || isScheduling}
+                            >
+                              <Clock className="w-4 h-4 mr-2" />
+                              Schedule
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-4" align="end">
+                            <div className="space-y-3">
+                              <p className="text-sm font-medium">Schedule Send</p>
+                              <Calendar
+                                mode="single"
+                                selected={scheduleDate}
+                                onSelect={setScheduleDate}
+                                disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))}
+                                className={cn("p-3 pointer-events-auto")}
+                              />
+                              <div>
+                                <Label className="text-xs">Time</Label>
+                                <Input
+                                  type="time"
+                                  value={scheduleTime}
+                                  onChange={(e) => setScheduleTime(e.target.value)}
+                                  className="mt-1"
+                                />
+                              </div>
+                              {scheduleDate && (
+                                <p className="text-xs text-muted-foreground">
+                                  Will send on {format(scheduleDate, "PPP")} at {scheduleTime}
+                                </p>
+                              )}
+                              <Button
+                                className="w-full"
+                                onClick={scheduleEmail}
+                                disabled={isScheduling || !scheduleDate}
+                              >
+                                {isScheduling ? (
+                                  <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Scheduling...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Clock className="w-4 h-4 mr-2" />
+                                    Schedule Email
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                        {subjectLine.toLowerCase().includes("meeting") && (
+                          <Button 
+                            variant="outline"
+                            onClick={sendToCalendar}
+                          >
+                            <CalendarPlus className="w-4 h-4 mr-2" />
+                            Add to Calendar
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
