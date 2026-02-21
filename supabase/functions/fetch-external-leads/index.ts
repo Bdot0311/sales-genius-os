@@ -495,13 +495,25 @@ serve(async (req) => {
     console.log('Request body:', JSON.stringify(requestBody, null, 2));
 
     // Call Railway backend
-    const response = await fetch(railwayUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
-    });
+    let response: Response;
+    try {
+      console.log('Fetching from Railway URL:', railwayUrl);
+      response = await fetch(railwayUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+      console.log('Railway response status:', response.status);
+      console.log('Railway response headers:', JSON.stringify(Object.fromEntries(response.headers.entries())));
+    } catch (fetchError) {
+      console.error('Fetch to Railway failed entirely:', fetchError);
+      return new Response(
+        JSON.stringify({ error: 'Could not reach lead data provider.', error_code: 'network_error', leads: [] }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Handle 402 Payment Required - NO cache fallback (must match search criteria)
     if (response.status === 402) {
