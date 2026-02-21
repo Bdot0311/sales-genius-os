@@ -558,9 +558,21 @@ serve(async (req) => {
       );
     }
 
-    const data = await response.json();
-    console.log('=== RESPONSE FROM RAILWAY ===');
+    const rawText = await response.text();
+    console.log('=== RAW RESPONSE FROM RAILWAY ===');
     console.log('Response status:', response.status);
+    console.log('Raw response body (first 3000 chars):', rawText.substring(0, 3000));
+    
+    let data: any;
+    try {
+      data = JSON.parse(rawText);
+    } catch (parseErr) {
+      console.error('Failed to parse Railway response as JSON:', parseErr);
+      return new Response(
+        JSON.stringify({ error: 'Invalid response from lead provider.', leads: [] }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     console.log('Response data keys:', Object.keys(data));
     console.log('from_cache:', data.from_cache);
     console.log('source:', data.source);
