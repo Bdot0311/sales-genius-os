@@ -151,11 +151,11 @@ const Auth = () => {
           variant="ghost"
           size="sm"
           asChild
-          className="absolute top-4 left-4 z-20 text-muted-foreground hover:text-foreground"
+          className="absolute top-[calc(1rem+env(safe-area-inset-top,0px))] left-[calc(1rem+env(safe-area-inset-left,0px))] z-20 text-muted-foreground hover:text-foreground"
         >
           <Link to="/">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Home
+            Home
           </Link>
         </Button>
 
@@ -223,11 +223,11 @@ const Auth = () => {
         variant="ghost"
         size="sm"
         asChild
-        className="absolute top-4 left-4 z-20 text-muted-foreground hover:text-foreground"
+        className="absolute top-[calc(1rem+env(safe-area-inset-top,0px))] left-[calc(1rem+env(safe-area-inset-left,0px))] z-20 text-muted-foreground hover:text-foreground"
       >
         <Link to="/">
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Home
+          Home
         </Link>
       </Button>
 
