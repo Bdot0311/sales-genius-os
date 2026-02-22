@@ -531,6 +531,7 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Railway API error:', response.status, errorText);
+      console.error('Railway error response body:', JSON.stringify(errorText));
       
       // Log full details server-side but return generic error to client
       let clientMessage = 'Lead search failed. Please try again.';
