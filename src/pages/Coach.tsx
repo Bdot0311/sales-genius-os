@@ -363,25 +363,26 @@ const Coach = () => {
       />
       
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">AI Sales Coach</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl sm:text-3xl font-bold">AI Sales Coach</h1>
+            <p className="text-muted-foreground text-sm sm:text-base">
               Get personalized coaching and insights to improve your sales performance
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setShowHistory(!showHistory)}>
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" size="sm" onClick={() => setShowHistory(!showHistory)}>
               <History className="w-4 h-4 mr-2" />
               History
               {conversations.length > 0 && <Badge variant="secondary" className="ml-2">{conversations.length}</Badge>}
             </Button>
-            <Button variant="outline" onClick={handleLiveCoaching}>
+            <Button variant="outline" size="sm" onClick={handleLiveCoaching}>
               <Radio className="w-4 h-4 mr-2" />
-              Live Coaching
+              <span className="hidden sm:inline">Live Coaching</span>
+              <span className="sm:hidden">Live</span>
               {!hasLiveCoaching && <Sparkles className="w-3 h-3 ml-2 text-primary" />}
             </Button>
-            <Button variant="outline" onClick={handleCustomPlaybooks}>
+            <Button variant="outline" size="sm" onClick={handleCustomPlaybooks}>
               <BookOpen className="w-4 h-4 mr-2" />
               Playbooks
               {!hasCustomPlaybooks && <Sparkles className="w-3 h-3 ml-2 text-primary" />}

@@ -226,10 +226,10 @@ const Automations = () => {
       />
       
       <div className="space-y-6 h-[calc(100vh-8rem)]">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Automations</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">Automations</h1>
+            <p className="text-muted-foreground text-sm sm:text-base">
               Build visual workflows to automate your sales process
             </p>
           </div>

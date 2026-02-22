@@ -65,13 +65,13 @@ const Leads = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">AI Lead Generation</h1>
-            <p className="text-muted-foreground">Describe your ideal customer and let AI find them</p>
+            <h1 className="text-2xl sm:text-3xl font-bold">AI Lead Generation</h1>
+            <p className="text-muted-foreground text-sm sm:text-base">Describe your ideal customer and let AI find them</p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate('/dashboard/leads/saved')}>
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" size="sm" onClick={() => navigate('/dashboard/leads/saved')}>
               <Users className="w-4 h-4 mr-2" />
               Saved Leads
               {leads.length > 0 && <Badge variant="secondary" className="ml-2">{leads.length}</Badge>}
@@ -221,10 +221,10 @@ const Leads = () => {
             {showExternalLeads && (
           <Card>
             <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-primary" />
-                  <CardTitle>AI-Discovered Leads</CardTitle>
+                  <CardTitle className="text-base sm:text-lg">AI-Discovered Leads</CardTitle>
                   {externalLeads.length > 0 && (
                     <Badge variant="secondary">{externalLeads.length} found</Badge>
                   )}
@@ -274,25 +274,24 @@ const Leads = () => {
                   />
                   
                   {/* Pagination Controls */}
-                  <div className="flex items-center justify-between border-t pt-4">
-                    <div className="flex items-center gap-4">
-                      <p className="text-sm text-muted-foreground">
-                        Page {pagination.currentPage} of {pagination.totalPages} ({pagination.totalResults} total leads)
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-t pt-4">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+                      <p className="text-xs sm:text-sm text-muted-foreground">
+                        Page {pagination.currentPage} of {pagination.totalPages} ({pagination.totalResults} total)
                       </p>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">Show:</span>
+                        <span className="text-xs sm:text-sm text-muted-foreground">Show:</span>
                         <Select
                           value={pageSize.toString()}
                           onValueChange={(value) => {
                             const newSize = parseInt(value);
                             setPageSize(newSize);
-                            // Re-fetch with new page size if we have filters
                             if (Object.keys(externalFilters).length > 0) {
                               fetchExternalLeads({ ...externalFilters, limit: newSize, page: 1 });
                             }
                           }}
                         >
-                          <SelectTrigger className="w-20 h-8">
+                          <SelectTrigger className="w-16 h-8 text-xs">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -302,7 +301,6 @@ const Leads = () => {
                             <SelectItem value="100">100</SelectItem>
                           </SelectContent>
                         </Select>
-                        <span className="text-sm text-muted-foreground">per page</span>
                       </div>
                     </div>
                     {pagination.totalPages > 1 && (
