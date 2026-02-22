@@ -220,7 +220,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       {/* Main content */}
       <div className="lg:ml-64">
         {/* Top bar */}
-        <header className="sticky top-0 z-30 min-h-[3rem] bg-card border-b border-border flex items-center px-2 sm:px-6 py-1.5 gap-1">
+        <header className="sticky top-0 z-30 min-h-[3rem] bg-card border-b border-border flex items-center px-2 sm:px-6 py-1.5 gap-1" style={{ paddingTop: 'max(0.375rem, env(safe-area-inset-top, 0px))' }}>
           <Button
             variant="ghost"
             size="icon"
