@@ -220,22 +220,22 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       {/* Main content */}
       <div className="lg:ml-64">
         {/* Top bar */}
-        <header className="sticky top-0 z-30 h-16 bg-card border-b border-border flex items-center justify-between px-6">
+        <header className="sticky top-0 z-30 min-h-[3.5rem] bg-card border-b border-border flex items-center justify-between px-3 sm:px-6 py-2 gap-2">
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden"
+            className="lg:hidden flex-shrink-0"
             onClick={() => setSidebarOpen(true)}
           >
             <Menu className="w-5 h-5" />
           </Button>
           <div className="flex-1" />
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 flex-wrap justify-end">
             {/* Admin Badge */}
             {isAdmin && (
-              <Badge variant="default" className="flex items-center gap-1.5 bg-primary">
-                <Shield className="w-3.5 h-3.5" />
+              <Badge variant="default" className="flex items-center gap-1.5 bg-primary text-xs">
+                <Shield className="w-3 h-3" />
                 Admin
               </Badge>
             )}
@@ -245,9 +245,9 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20">
-                      <Search className="w-4 h-4 text-primary" />
-                      <span className="text-sm font-semibold">Unlimited</span>
+                    <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-primary/10 border border-primary/20">
+                      <Search className="w-3.5 h-3.5 text-primary" />
+                      <span className="text-xs sm:text-sm font-semibold">Unlimited</span>
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -257,21 +257,21 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               </TooltipProvider>
             ) : credits && (
               <TooltipProvider>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   {/* Monthly Credits */}
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border">
-                        <Search className="w-4 h-4 text-primary" />
+                      <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 border border-border">
+                        <Search className="w-3.5 h-3.5 text-primary" />
                         <div className="flex flex-col">
-                          <span className="text-xs text-muted-foreground leading-none">Credits</span>
-                          <span className="text-sm font-semibold leading-tight">
+                          <span className="text-[10px] text-muted-foreground leading-none hidden sm:block">Credits</span>
+                          <span className="text-xs sm:text-sm font-semibold leading-tight">
                             {credits.remainingCredits.toLocaleString()}/{credits.totalCredits.toLocaleString()}
                           </span>
                         </div>
                         <Progress 
                           value={(credits.remainingCredits / credits.totalCredits) * 100} 
-                          className="w-12 h-1.5"
+                          className="w-8 sm:w-12 h-1.5 hidden sm:block"
                         />
                       </div>
                     </TooltipTrigger>
@@ -286,11 +286,11 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                   {/* Daily Limit */}
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border">
-                        <Zap className="w-4 h-4 text-accent" />
+                      <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 border border-border">
+                        <Zap className="w-3.5 h-3.5 text-accent" />
                         <div className="flex flex-col">
-                          <span className="text-xs text-muted-foreground leading-none">Today</span>
-                          <span className="text-sm font-semibold leading-tight">
+                          <span className="text-[10px] text-muted-foreground leading-none hidden sm:block">Today</span>
+                          <span className="text-xs sm:text-sm font-semibold leading-tight">
                             {credits.dailySearchesUsed}/{credits.dailySearchLimit}
                           </span>
                         </div>
@@ -309,19 +309,24 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             {!isAdmin && subscriptionStatus?.isTrialUser && trialDaysRemaining !== null && (
               <Badge 
                 variant={trialDaysRemaining <= 3 ? "destructive" : "secondary"}
-                className="flex items-center gap-1.5"
+                className="flex items-center gap-1 text-xs"
               >
-                <Clock className="w-3.5 h-3.5" />
-                {trialDaysRemaining === 0 
-                  ? "Trial expires today" 
-                  : `${trialDaysRemaining} day${trialDaysRemaining === 1 ? '' : 's'} left in trial`}
+                <Clock className="w-3 h-3" />
+                <span className="hidden sm:inline">
+                  {trialDaysRemaining === 0 
+                    ? "Trial expires today" 
+                    : `${trialDaysRemaining} day${trialDaysRemaining === 1 ? '' : 's'} left`}
+                </span>
+                <span className="sm:hidden">
+                  {trialDaysRemaining}d
+                </span>
               </Badge>
             )}
           </div>
         </header>
 
         {/* Page content */}
-        <main className="p-6">{children}</main>
+        <main className="p-3 sm:p-6">{children}</main>
       </div>
     </div>
   );

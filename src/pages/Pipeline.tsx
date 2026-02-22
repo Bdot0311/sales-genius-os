@@ -159,25 +159,26 @@ const Pipeline = () => {
       
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Deal Pipeline</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">Deal Pipeline</h1>
+            <p className="text-muted-foreground text-sm sm:text-base">
               Manage your deals across all stages
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={handleForecasting}>
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" size="sm" onClick={handleForecasting}>
               <TrendingUp className="w-4 h-4 mr-2" />
               Forecast
               {!features.revenueForecasting && <Sparkles className="w-3 h-3 ml-2 text-primary" />}
             </Button>
-            <Button variant="outline" onClick={handleCustomPipelines}>
+            <Button variant="outline" size="sm" onClick={handleCustomPipelines}>
               <Settings className="w-4 h-4 mr-2" />
-              Custom Pipeline
+              <span className="hidden sm:inline">Custom Pipeline</span>
+              <span className="sm:hidden">Custom</span>
               {!features.customPipelines && <Sparkles className="w-3 h-3 ml-2 text-primary" />}
             </Button>
-            <Button variant="hero" onClick={() => setAddDialogOpen(true)}>
+            <Button variant="hero" size="sm" onClick={() => setAddDialogOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
               New Deal
             </Button>

@@ -322,10 +322,10 @@ const Calendar = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Calendar</h1>
-            <p className="text-muted-foreground">Manage your meetings and schedule</p>
+            <h1 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">Calendar</h1>
+            <p className="text-muted-foreground text-sm sm:text-base">Manage your meetings and schedule</p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);
@@ -341,7 +341,7 @@ const Calendar = () => {
             }
           }}>
             <DialogTrigger asChild>
-              <Button>
+              <Button size="sm">
                 <Plus className="w-4 h-4 mr-2" />
                 Schedule Meeting
               </Button>
