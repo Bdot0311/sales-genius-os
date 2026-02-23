@@ -1,66 +1,123 @@
 
+# Fix Lead Search: Align Edge Function with PDL API Format
 
-# Fix Lead Enrichment: Make It Actually Work
+## Problem
 
-## The Problem
+Searches return 0 results because the `fetch-external-leads` edge function sends **empty strings** for every unused field to the Railway proxy. For example, searching for "Lawyer in United States" sends:
 
-When you click "Enrich Lead Data", PDL returns "no_match" because:
-
-1. **Contact name is a job title** -- Your leads have "Founder" as the contact name (not an actual person name like "John Smith"). The function tries to split this into first/last name but "Founder" is a single word, so no name params are sent to PDL.
-2. **LinkedIn URL may not be matching** -- The LinkedIn URL is present but the function sends it as `profile` param. If the URL format doesn't match what PDL expects (e.g., missing trailing slash, or it's a partial URL), the lookup fails silently.
-3. **No email fallback** -- Without an email address, PDL has very little to identify a person with.
-4. **No re-enrichment** -- Once a lead shows "enriched" or "failed" status, the Enrich button hides or the function doesn't retry intelligently.
-
-## The Fix
-
-### 1. Improve the `enrich-lead` Edge Function
-
-**File: `supabase/functions/enrich-lead/index.ts`**
-
-Changes:
-- **Prioritize LinkedIn URL** as the strongest identifier -- clean and normalize it before sending to PDL (ensure it starts with `https://linkedin.com/in/...`)
-- **Detect job-title-as-name** -- If contact_name is a single word that matches common titles (Founder, CEO, CTO, etc.), skip sending it as a name and rely on LinkedIn/email/company instead
-- **Update contact_name from PDL results** -- If PDL returns a full name and the current contact_name looks like a job title, overwrite it with the real name
-- **Extract more data** -- Pull phone numbers, personal emails (as fallback), location, skills, education from PDL person results
-- **Better company enrichment fallback** -- If company website isn't set, try deriving domain from the email or LinkedIn company page
-- **Always allow re-enrichment** -- Remove the guard that prevents re-enriching already enriched leads; instead, only update fields that PDL returns new data for
-
-### 2. Update the Lead Detail Sheet UI
-
-**File: `src/components/dashboard/LeadDetailSheet.tsx`**
-
-Changes:
-- **Always show the Enrich button** -- Remove the `enrichment_status !== 'enriched'` check so users can re-enrich leads to refresh data
-- **Show "Re-Enrich" label** for already-enriched leads vs "Enrich Lead Data" for new ones
-- **Display failure reason** -- When enrichment returns no_match, show a helpful message like "Not enough identifying data. Add an email or LinkedIn URL and try again."
-
-### 3. Update Saved Leads Page
-
-**File: `src/pages/SavedLeads.tsx`**
-
-Changes:
-- After enrichment, properly refresh the selected lead's data in the detail sheet so users immediately see updated fields
-
-## Technical Details
-
-### Improved PDL Person Enrichment Logic
-
-```
-1. Normalize LinkedIn URL (ensure https://www.linkedin.com/in/xxx format)
-2. Build params priority: email > linkedin_url (profile) > name + company
-3. Skip name params if contact_name is a known job title pattern
-4. If PDL returns full_name and current name looks like a title, update contact_name
-5. Extract: full_name, job_title, work_email, phone_numbers, linkedin_url, location, skills
+```text
+{
+  "job_title": "Lawyer",
+  "location": "United States",
+  "industry": "",           <-- empty string breaks query
+  "company": "",             <-- empty string breaks query
+  "company_size": "",        <-- empty string breaks query
+  "seniority": "",           <-- empty string breaks query
+  "limit": 10
+}
 ```
 
-### Known Job Title Patterns to Detect
-Single-word titles like: Founder, CEO, CTO, CFO, COO, CMO, Director, Manager, Engineer, Designer, VP, President, Owner
+The Railway proxy likely passes these empty strings into its PDL Elasticsearch query builder, producing a query that tries to match `""` against fields like `job_company_industry`, which returns zero results.
 
-### Files to Modify
+Additionally, the `keywords` array from the AI parser is never forwarded to Railway.
 
-| File | Change |
-|------|--------|
-| `supabase/functions/enrich-lead/index.ts` | Improve PDL query logic, handle job-title-as-name, extract more fields |
-| `src/components/dashboard/LeadDetailSheet.tsx` | Always show enrich button, add re-enrich label, show failure guidance |
-| `src/pages/SavedLeads.tsx` | Minor: ensure enrichment refresh works correctly (already mostly works) |
+## Solution
 
+### Changes to `supabase/functions/fetch-external-leads/index.ts`
+
+**1. Strip empty/null fields from the request body**
+
+Instead of always including every field with empty string defaults, only include fields that have actual values. This ensures the Railway proxy only builds query clauses for fields the user actually specified.
+
+Before (broken):
+```text
+const requestBody = {
+  job_title: jobTitle || '',
+  location: filters.country || '',
+  industry: normalizedIndustry,
+  company: filters.company || '',
+  company_size: filters.company_size || '',
+  seniority: filters.seniority || '',
+  limit,
+};
+```
+
+After (fixed):
+```text
+const rawBody = {
+  job_title: jobTitle,
+  location: filters.country,
+  industry: normalizedIndustry,
+  company: filters.company,
+  company_size: filters.company_size,
+  seniority: filters.seniority,
+  keywords: nonJobKeywords,  // forward remaining keywords
+  limit,
+};
+// Remove empty/null/undefined values
+const requestBody = Object.fromEntries(
+  Object.entries(rawBody).filter(([_, v]) =>
+    v !== null && v !== undefined && v !== ''
+  )
+);
+```
+
+**2. Add industry normalization map**
+
+Map common user-friendly or AI-parsed industry names to PDL-compatible `job_company_industry` values:
+
+| User Input | PDL Value |
+|---|---|
+| Law, Legal | legal services |
+| AI, AI/ML, Machine Learning | computer software |
+| SaaS, Software | computer software |
+| Fintech, Finance | financial services |
+| Healthcare, Health | hospital & health care |
+| Marketing | marketing and advertising |
+| Real Estate | real estate |
+| Education, EdTech | education management |
+| Crypto, Web3, Blockchain | information technology and services |
+| E-commerce, Ecommerce | internet |
+| Consulting | management consulting |
+| Recruiting, Staffing, HR | staffing and recruiting |
+| Insurance | insurance |
+| Construction | construction |
+| Automotive | automotive |
+| Food, Restaurant | food & beverages |
+| Media, Entertainment | media production |
+| Telecom, Telecommunications | telecommunications |
+
+**3. Forward non-job keywords to Railway**
+
+Currently, keywords like `["Series A", "B2B"]` are checked for job titles but then discarded. The fix will:
+- Extract job title keywords (as before)
+- Forward remaining keywords to Railway as a `keywords` array so the proxy can use them for company description matching or other PDL fields
+
+**4. Add seniority normalization**
+
+Map seniority values to PDL's `job_title_levels` canonical values:
+
+| User Input | PDL Value |
+|---|---|
+| C-Suite, C-Level, Executive | cxo |
+| VP, Vice President | vp |
+| Director | director |
+| Manager | manager |
+| Senior | senior |
+| Entry, Junior | entry |
+| Owner | owner |
+| Partner | partner |
+
+**5. Normalize company size to PDL format**
+
+PDL uses exact ranges like `"1-10"`, `"11-50"`, `"51-200"`, `"201-500"`, `"501-1000"`, `"1001-5000"`, `"5001-10000"`, `"10001+"`. The fix will map common inputs to these canonical values.
+
+## Files Modified
+
+| File | Changes |
+|---|---|
+| `supabase/functions/fetch-external-leads/index.ts` | Remove empty string defaults; add industry/seniority/company-size normalization maps; forward keywords; clean request body |
+
+## No UI Changes Needed
+
+The frontend hook and table components already handle the response format correctly. The fix is entirely in how the request is constructed before sending to Railway.
