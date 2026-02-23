@@ -438,8 +438,8 @@ serve(async (req) => {
     }
 
     // Get Railway API URL from secrets
-    const railwayUrl = Deno.env.get('RAILWAY_LEADS_API_URL');
-    if (!railwayUrl) {
+    const railwayBaseUrl = Deno.env.get('RAILWAY_LEADS_API_URL');
+    if (!railwayBaseUrl) {
       console.error('RAILWAY_LEADS_API_URL not configured');
       return new Response(
         JSON.stringify({ error: 'Lead data provider not configured', leads: [] }),
@@ -447,6 +447,9 @@ serve(async (req) => {
       );
     }
 
+    // Ensure we always hit the /search endpoint, regardless of how the secret is configured
+    const baseUrl = railwayBaseUrl.replace(/\/+$/, '').replace(/\/(search|docs|health)$/, '');
+    const railwayUrl = `${baseUrl}/search`;
     console.log('Calling Railway API:', railwayUrl);
 
     // Prepare request body for Railway API - exact PDL format
