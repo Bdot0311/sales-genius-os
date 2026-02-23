@@ -12,10 +12,10 @@ interface AILeadCommandProps {
 }
 
 const exampleCommands = [
-  "Find 50 SaaS founders in fintech",
-  "CEOs at B2B startups with 50-200 employees",
-  "VP of Sales at healthcare companies in California",
-  "Series A startup founders in AI/ML space",
+  "Find marketing managers at financial services companies",
+  "CEOs at computer software companies with 51-200 employees",
+  "VP of Sales at hospital & health care companies in California",
+  "Directors at real estate companies in New York",
 ];
 
 export const AILeadCommand = ({ 
