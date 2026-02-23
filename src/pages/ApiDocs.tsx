@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { Copy, Check, ExternalLink, ArrowLeft } from "lucide-react";
+import { Copy, Check, ExternalLink, ArrowLeft, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -436,6 +436,57 @@ const ApiDocs = () => {
     setTimeout(() => setCopiedCode(null), 2000);
   };
 
+  const handleDownloadDocs = () => {
+    const lines: string[] = [];
+    lines.push("SALESOS API DOCUMENTATION");
+    lines.push("=".repeat(50));
+    lines.push(`Base URL: ${BASE_URL_TEMPLATE}`);
+    lines.push(`Generated: ${new Date().toISOString()}`);
+    lines.push("");
+    lines.push("AUTHENTICATION");
+    lines.push("-".repeat(30));
+    lines.push("Include your API key in the X-API-Key header:");
+    lines.push("  X-API-Key: sk_your_api_key_here");
+    lines.push("");
+
+    endpointGroups.forEach((group) => {
+      lines.push("");
+      lines.push("=".repeat(50));
+      lines.push(group.title.toUpperCase());
+      lines.push("=".repeat(50));
+      group.endpoints.forEach((ep) => {
+        lines.push("");
+        lines.push(`${ep.method} ${ep.path}`);
+        lines.push(`  ${ep.name} — ${ep.description}`);
+        if (ep.params?.length) {
+          lines.push("  Query Parameters:");
+          ep.params.forEach((p) => lines.push(`    ${p.name} (${p.type}): ${p.description}`));
+        }
+        if (ep.bodyExample) {
+          lines.push("  Request Body:");
+          JSON.stringify(ep.bodyExample, null, 2).split("\n").forEach((l) => lines.push(`    ${l}`));
+        }
+        lines.push(`  Response (${ep.responseStatus}):`);
+        JSON.stringify(ep.responseExample, null, 2).split("\n").forEach((l) => lines.push(`    ${l}`));
+      });
+    });
+
+    lines.push("");
+    lines.push("=".repeat(50));
+    lines.push("WEBHOOK VERIFICATION");
+    lines.push("=".repeat(50));
+    lines.push("Verify webhook signatures using HMAC-SHA256.");
+    lines.push("Header: X-Webhook-Signature");
+
+    const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "salesos-api-docs.txt";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <>
       <SEOHead
@@ -463,12 +514,18 @@ const ApiDocs = () => {
                 <h1 className="text-3xl font-bold">API Documentation</h1>
                 <p className="text-muted-foreground">Full REST API reference for third-party integrations</p>
               </div>
-              <Button variant="outline" asChild className="shrink-0 w-fit">
-                <a href="/api-status" className="gap-2">
-                  <ExternalLink className="w-4 h-4" />
-                  API Status
-                </a>
-              </Button>
+              <div className="flex gap-2 shrink-0">
+                <Button variant="outline" onClick={handleDownloadDocs} className="gap-2 w-fit">
+                  <Download className="w-4 h-4" />
+                  Download Docs
+                </Button>
+                <Button variant="outline" asChild className="w-fit">
+                  <a href="/api-status" className="gap-2">
+                    <ExternalLink className="w-4 h-4" />
+                    API Status
+                  </a>
+                </Button>
+              </div>
             </div>
 
             {/* Getting Started */}
