@@ -6,6 +6,48 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const JOB_TITLE_PATTERNS = new Set([
+  'founder', 'ceo', 'cto', 'cfo', 'coo', 'cmo', 'cio', 'cso',
+  'director', 'manager', 'engineer', 'designer', 'vp', 'president',
+  'owner', 'partner', 'associate', 'analyst', 'consultant', 'architect',
+  'lead', 'head', 'chief', 'officer', 'supervisor', 'coordinator',
+  'specialist', 'developer', 'administrator', 'executive', 'intern',
+]);
+
+function isJobTitle(name: string): boolean {
+  const trimmed = name.trim();
+  // Single word that matches a known title
+  if (!trimmed.includes(' ') && JOB_TITLE_PATTERNS.has(trimmed.toLowerCase())) {
+    return true;
+  }
+  // Multi-word patterns like "Co-Founder", "VP Sales", "Head of Engineering"
+  const lower = trimmed.toLowerCase();
+  if (/^(co-?founder|vice president|head of|chief .+ officer)$/i.test(lower)) {
+    return true;
+  }
+  return false;
+}
+
+function normalizeLinkedInUrl(url: string | null): string | null {
+  if (!url) return null;
+  let cleaned = url.trim();
+  // Ensure it starts with https://
+  if (!cleaned.startsWith('http')) {
+    cleaned = 'https://' + cleaned;
+  }
+  try {
+    const parsed = new URL(cleaned);
+    // Normalize to www.linkedin.com
+    let host = parsed.hostname.replace(/^(www\.)?/, 'www.');
+    if (!host.includes('linkedin.com')) return cleaned; // not a linkedin URL, return as-is
+    // Extract the path (e.g., /in/username)
+    let path = parsed.pathname.replace(/\/+$/, ''); // remove trailing slashes
+    return `https://${host}${path}`;
+  } catch {
+    return cleaned;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -60,39 +102,78 @@ serve(async (req) => {
       enriched_at: new Date().toISOString(),
     };
 
+    const nameIsTitle = isJobTitle(lead.contact_name);
+    if (nameIsTitle) {
+      console.log('Detected job title as contact name:', lead.contact_name);
+    }
+
     // --- Person Enrichment via PDL ---
-    if (lead.contact_email || lead.linkedin_url || lead.contact_name) {
+    let personFound = false;
+    if (lead.contact_email || lead.linkedin_url || (!nameIsTitle && lead.contact_name)) {
       try {
         const personParams: Record<string, string> = {};
+        
+        // Priority 1: Email (strongest identifier)
         if (lead.contact_email) personParams.email = lead.contact_email;
-        if (lead.linkedin_url) personParams.profile = lead.linkedin_url;
-        if (lead.contact_name) {
+        
+        // Priority 2: LinkedIn URL (normalize it)
+        if (lead.linkedin_url) {
+          const normalized = normalizeLinkedInUrl(lead.linkedin_url);
+          if (normalized) personParams.profile = normalized;
+        }
+        
+        // Priority 3: Name + Company (only if name is not a job title)
+        if (!nameIsTitle && lead.contact_name) {
           const parts = lead.contact_name.trim().split(/\s+/);
           if (parts.length >= 2) {
             personParams.first_name = parts[0];
             personParams.last_name = parts.slice(1).join(' ');
+          } else if (parts.length === 1 && parts[0].length > 1) {
+            // Single word that's not a job title - try as first name with company
+            personParams.first_name = parts[0];
           }
         }
         if (lead.company_name) personParams.company = lead.company_name;
 
-        const qs = new URLSearchParams(personParams).toString();
-        const personRes = await fetch(`https://api.peopledatalabs.com/v5/person/enrich?${qs}`, {
-          headers: { 'X-Api-Key': pdlApiKey },
-        });
+        // Only call PDL if we have at least one strong identifier
+        if (personParams.email || personParams.profile || (personParams.first_name && personParams.company)) {
+          const qs = new URLSearchParams(personParams).toString();
+          console.log('PDL person params:', Object.keys(personParams).join(', '));
+          
+          const personRes = await fetch(`https://api.peopledatalabs.com/v5/person/enrich?${qs}`, {
+            headers: { 'X-Api-Key': pdlApiKey },
+          });
 
-        if (personRes.ok) {
-          const person = await personRes.json();
-          if (person && person.status === 200 && person.data) {
-            const p = person.data;
-            if (p.job_title) enrichmentData.job_title = p.job_title;
-            if (p.job_title_role) enrichmentData.department = p.job_title_role;
-            if (p.job_title_levels?.length) enrichmentData.seniority = p.job_title_levels[0];
-            if (p.linkedin_url) enrichmentData.linkedin_url = p.linkedin_url;
-            if (p.work_email && !lead.contact_email) enrichmentData.contact_email = p.work_email;
-            if (p.phone_numbers?.length && !lead.contact_phone) enrichmentData.contact_phone = p.phone_numbers[0];
+          if (personRes.ok) {
+            const person = await personRes.json();
+            if (person && person.status === 200 && person.data) {
+              personFound = true;
+              const p = person.data;
+              
+              // Update contact name if current one is a job title and PDL has a real name
+              if (nameIsTitle && p.full_name) {
+                enrichmentData.contact_name = p.full_name;
+              } else if (p.full_name && !lead.contact_name) {
+                enrichmentData.contact_name = p.full_name;
+              }
+              
+              if (p.job_title) enrichmentData.job_title = p.job_title;
+              if (p.job_title_role) enrichmentData.department = p.job_title_role;
+              if (p.job_title_levels?.length) enrichmentData.seniority = p.job_title_levels[0];
+              if (p.linkedin_url) enrichmentData.linkedin_url = p.linkedin_url;
+              if (p.work_email && !lead.contact_email) enrichmentData.contact_email = p.work_email;
+              if (!enrichmentData.contact_email && p.recommended_personal_email && !lead.contact_email) {
+                enrichmentData.contact_email = p.recommended_personal_email;
+              }
+              if (p.phone_numbers?.length && !lead.contact_phone) enrichmentData.contact_phone = p.phone_numbers[0];
+              if (p.location_name) enrichmentData.notes = (lead.notes ? lead.notes + '\n' : '') + `Location: ${p.location_name}`;
+            }
+          } else {
+            const errText = await personRes.text();
+            console.warn('PDL person enrich returned', personRes.status, errText);
           }
         } else {
-          console.warn('PDL person enrich returned', personRes.status, await personRes.text());
+          console.warn('Skipping person enrichment: insufficient identifiers');
         }
       } catch (personErr) {
         console.error('Person enrichment error:', personErr);
@@ -100,15 +181,26 @@ serve(async (req) => {
     }
 
     // --- Company Enrichment via PDL ---
-    if (lead.company_name || lead.company_website) {
+    if (lead.company_name || lead.company_website || lead.contact_email) {
       try {
         const companyParams: Record<string, string> = {};
+        
+        // Try website first
         if (lead.company_website) {
           try {
             const url = new URL(lead.company_website.startsWith('http') ? lead.company_website : `https://${lead.company_website}`);
             companyParams.website = url.hostname.replace('www.', '');
           } catch { /* ignore bad URL */ }
         }
+        
+        // Try deriving domain from email if no website
+        if (!companyParams.website && lead.contact_email) {
+          const emailDomain = lead.contact_email.split('@')[1];
+          if (emailDomain && !['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com', 'aol.com'].includes(emailDomain)) {
+            companyParams.website = emailDomain;
+          }
+        }
+        
         if (!companyParams.website && lead.company_name) {
           companyParams.name = lead.company_name;
         }
@@ -123,7 +215,7 @@ serve(async (req) => {
             const company = await companyRes.json();
             if (company && company.status === 200 && company.data) {
               const c = company.data;
-              if (c.website) enrichmentData.company_website = c.website;
+              if (c.website && !lead.company_website) enrichmentData.company_website = c.website;
               if (c.linkedin_url) enrichmentData.company_linkedin = c.linkedin_url;
               if (c.industry) enrichmentData.industry = c.industry;
               if (c.summary) enrichmentData.company_description = c.summary;
@@ -144,8 +236,22 @@ serve(async (req) => {
 
     // Check if we actually enriched anything beyond the status fields
     const enrichedFields = Object.keys(enrichmentData).filter(k => k !== 'enrichment_status' && k !== 'enriched_at');
+    
+    let noMatchReason = '';
     if (enrichedFields.length === 0) {
       enrichmentData.enrichment_status = 'failed';
+      // Build a helpful reason
+      const hasEmail = !!lead.contact_email;
+      const hasLinkedin = !!lead.linkedin_url;
+      const hasRealName = !nameIsTitle && lead.contact_name?.trim().split(/\s+/).length >= 2;
+      
+      if (!hasEmail && !hasLinkedin && !hasRealName) {
+        noMatchReason = 'Not enough identifying data. Add a full name, email address, or LinkedIn URL and try again.';
+      } else if (nameIsTitle && !hasEmail && !hasLinkedin) {
+        noMatchReason = `"${lead.contact_name}" looks like a job title, not a person's name. Add an email or LinkedIn URL to identify this contact.`;
+      } else {
+        noMatchReason = 'No matching records found in our data providers. Try adding more contact details.';
+      }
     }
 
     // Update lead
@@ -170,13 +276,15 @@ serve(async (req) => {
         fields_enriched: enrichedFields,
         source: 'peopledatalabs',
         status: enrichedFields.length > 0 ? 'success' : 'no_match',
+        error_message: noMatchReason || null,
       });
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: enrichedFields.length > 0 ? 'Lead enriched successfully' : 'No enrichment data found for this lead',
+        message: enrichedFields.length > 0 ? 'Lead enriched successfully' : noMatchReason,
         enrichedFields,
+        noMatch: enrichedFields.length === 0,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

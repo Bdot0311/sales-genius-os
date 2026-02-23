@@ -210,10 +210,18 @@ const SavedLeads = () => {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      toast({
-        title: "Lead enriched",
-        description: `Successfully enriched ${selectedLead.contact_name}`,
-      });
+      if (data?.noMatch) {
+        toast({
+          title: "No match found",
+          description: data.message || "Not enough identifying data. Add an email or LinkedIn URL and try again.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Lead enriched",
+          description: `Successfully enriched with ${data?.enrichedFields?.length || 0} new fields`,
+        });
+      }
 
       // Refresh leads and enrichment history
       await fetchLeads();
