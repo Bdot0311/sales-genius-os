@@ -40,6 +40,7 @@ interface EnrichmentHistory {
   fields_enriched: string[];
   source: string;
   status: string;
+  error_message?: string | null;
 }
 
 interface LeadDetailSheetProps {
@@ -387,17 +388,40 @@ export const LeadDetailSheet = ({
                 <h3 className="font-semibold mb-3 flex items-center gap-2"><Calendar className="w-4 h-4" />Enrichment History</h3>
                 <div className="space-y-3">
                   {enrichmentHistory.map((entry) => (
-                    <div key={entry.id} className="text-sm border rounded-lg p-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <Badge variant={entry.status === 'success' ? 'default' : 'destructive'}>{entry.status}</Badge>
+                    <div key={entry.id} className="text-sm border rounded-lg p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Badge variant={entry.status === 'success' ? 'default' : entry.status === 'no_match' ? 'secondary' : 'destructive'}>
+                          {entry.status === 'success' ? '✓ Enriched' : entry.status === 'no_match' ? 'No Match' : 'Failed'}
+                        </Badge>
                         <span className="text-xs text-muted-foreground">{format(new Date(entry.enriched_at), 'PPp')}</span>
                       </div>
-                      <div className="text-xs text-muted-foreground">Source: {entry.source}</div>
+                      <div className="text-xs text-muted-foreground">Source: {entry.source === 'peopledatalabs' ? 'People Data Labs' : entry.source}</div>
+                      {entry.error_message && (
+                        <p className="text-xs text-muted-foreground bg-muted/50 rounded p-2 italic">{entry.error_message}</p>
+                      )}
                       {entry.fields_enriched.length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-1">
-                          {entry.fields_enriched.map((field, idx) => (
-                            <Badge key={idx} variant="outline" className="text-xs">{field}</Badge>
-                          ))}
+                        <div className="space-y-1.5 mt-1">
+                          <p className="text-xs font-medium text-muted-foreground">{entry.fields_enriched.length} field{entry.fields_enriched.length > 1 ? 's' : ''} enriched:</p>
+                          <div className="grid grid-cols-2 gap-1">
+                            {entry.fields_enriched.map((field: string, idx: number) => {
+                              const fieldLabels: Record<string, string> = {
+                                job_title: 'Job Title', department: 'Department', seniority: 'Seniority',
+                                linkedin_url: 'LinkedIn', contact_email: 'Email', contact_phone: 'Phone',
+                                contact_name: 'Contact Name', company_website: 'Website', company_linkedin: 'Company LinkedIn',
+                                industry: 'Industry', company_description: 'Description', employee_count: 'Employees',
+                                annual_revenue: 'Revenue', technologies: 'Technologies', notes: 'Location',
+                              };
+                              const label = fieldLabels[field] || field.replace(/_/g, ' ');
+                              const value = lead[field as keyof Lead];
+                              const displayValue = Array.isArray(value) ? value.slice(0, 3).join(', ') + (value.length > 3 ? '…' : '') : value;
+                              return (
+                                <div key={idx} className="flex flex-col text-xs bg-muted/30 rounded px-2 py-1">
+                                  <span className="text-muted-foreground">{label}</span>
+                                  {displayValue && <span className="font-medium truncate">{String(displayValue)}</span>}
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
                       )}
                     </div>

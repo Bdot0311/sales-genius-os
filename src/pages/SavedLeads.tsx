@@ -8,7 +8,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { LeadAssignmentDialog } from "@/components/dashboard/LeadAssignmentDialog";
 import { LeadDetailSheet } from "@/components/dashboard/LeadDetailSheet";
-import { Search, Download, ArrowUpDown, Trash2, UserPlus, LayoutGrid, Table as TableIcon, ArrowLeft, CheckCircle } from "lucide-react";
+import { Search, Download, ArrowUpDown, Trash2, UserPlus, LayoutGrid, Table as TableIcon, ArrowLeft, CheckCircle, Sparkles } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -50,6 +51,8 @@ const SavedLeads = () => {
   const [viewMode, setViewMode] = useState<"card" | "table">("table");
   const [enrichmentHistory, setEnrichmentHistory] = useState<any[]>([]);
   const [isEnriching, setIsEnriching] = useState(false);
+  const [bulkEnriching, setBulkEnriching] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0, succeeded: 0, failed: 0 });
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -245,6 +248,45 @@ const SavedLeads = () => {
     }
   };
 
+  const handleBulkEnrich = async () => {
+    const leadIds = Array.from(selectedLeads);
+    if (leadIds.length === 0) return;
+    
+    setBulkEnriching(true);
+    setBulkProgress({ current: 0, total: leadIds.length, succeeded: 0, failed: 0 });
+    
+    let succeeded = 0;
+    let failed = 0;
+    
+    for (let i = 0; i < leadIds.length; i++) {
+      setBulkProgress(prev => ({ ...prev, current: i + 1 }));
+      try {
+        const { data, error } = await supabase.functions.invoke('enrich-lead', {
+          body: { leadId: leadIds[i] }
+        });
+        if (error || data?.error || data?.noMatch) {
+          failed++;
+        } else {
+          succeeded++;
+        }
+      } catch {
+        failed++;
+      }
+    }
+    
+    setBulkProgress({ current: leadIds.length, total: leadIds.length, succeeded, failed });
+    await fetchLeads();
+    
+    toast({
+      title: "Bulk enrichment complete",
+      description: `${succeeded} enriched, ${failed} failed out of ${leadIds.length} leads`,
+      variant: failed === leadIds.length ? "destructive" : "default",
+    });
+    
+    setBulkEnriching(false);
+    setSelectedLeads(new Set());
+  };
+
   const getScoreBadge = (score?: number | null) => {
     if (!score) return null;
     let color = "bg-muted text-muted-foreground";
@@ -309,6 +351,16 @@ const SavedLeads = () => {
 
               {selectedLeads.size > 0 && (
                 <>
+                  <Button 
+                    variant="hero" 
+                    onClick={handleBulkEnrich}
+                    disabled={bulkEnriching}
+                  >
+                    <Sparkles className={`w-4 h-4 mr-2 ${bulkEnriching ? 'animate-spin' : ''}`} />
+                    {bulkEnriching 
+                      ? `Enriching ${bulkProgress.current}/${bulkProgress.total}...` 
+                      : `Enrich (${selectedLeads.size})`}
+                  </Button>
                   <Button variant="outline" onClick={() => setShowAssignDialog(true)}>
                     <UserPlus className="w-4 h-4 mr-2" />
                     Assign ({selectedLeads.size})
@@ -348,6 +400,20 @@ const SavedLeads = () => {
                 </Button>
               </div>
             </div>
+
+            {bulkEnriching && (
+              <div className="space-y-2 p-4 border rounded-lg bg-muted/30">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    Enriching leads... {bulkProgress.current}/{bulkProgress.total}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    ✓ {bulkProgress.succeeded} enriched · ✗ {bulkProgress.failed} failed
+                  </span>
+                </div>
+                <Progress value={(bulkProgress.current / bulkProgress.total) * 100} className="h-2" />
+              </div>
+            )}
 
             {loading ? (
               <div className="text-center py-12 text-muted-foreground">
