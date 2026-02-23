@@ -41,6 +41,89 @@ interface ScoredLead {
   buying_signals: string[];
 }
 
+// Industry normalization map (user-friendly → PDL canonical)
+const INDUSTRY_MAP: Record<string, string> = {
+  'law': 'legal services', 'legal': 'legal services', 'legal services': 'legal services',
+  'ai': 'computer software', 'ai/ml': 'computer software', 'machine learning': 'computer software',
+  'saas': 'computer software', 'software': 'computer software', 'tech': 'information technology and services',
+  'fintech': 'financial services', 'finance': 'financial services', 'banking': 'banking',
+  'healthcare': 'hospital & health care', 'health': 'hospital & health care', 'medical': 'hospital & health care',
+  'marketing': 'marketing and advertising', 'advertising': 'marketing and advertising',
+  'real estate': 'real estate', 'realestate': 'real estate',
+  'education': 'education management', 'edtech': 'education management',
+  'crypto': 'information technology and services', 'web3': 'information technology and services', 'blockchain': 'information technology and services',
+  'e-commerce': 'internet', 'ecommerce': 'internet',
+  'consulting': 'management consulting',
+  'recruiting': 'staffing and recruiting', 'staffing': 'staffing and recruiting', 'hr': 'staffing and recruiting',
+  'insurance': 'insurance',
+  'construction': 'construction',
+  'automotive': 'automotive',
+  'food': 'food & beverages', 'restaurant': 'food & beverages',
+  'media': 'media production', 'entertainment': 'media production',
+  'telecom': 'telecommunications', 'telecommunications': 'telecommunications',
+  'logistics': 'logistics and supply chain', 'supply chain': 'logistics and supply chain',
+  'manufacturing': 'manufacturing',
+  'retail': 'retail',
+  'energy': 'oil & energy', 'oil': 'oil & energy',
+  'government': 'government administration',
+  'nonprofit': 'nonprofit organization management', 'ngo': 'nonprofit organization management',
+};
+
+// Seniority normalization map (user-friendly → PDL canonical)
+const SENIORITY_MAP: Record<string, string> = {
+  'c-suite': 'cxo', 'c-level': 'cxo', 'executive': 'cxo', 'csuite': 'cxo', 'clevel': 'cxo',
+  'vp': 'vp', 'vice president': 'vp',
+  'director': 'director',
+  'manager': 'manager',
+  'senior': 'senior',
+  'entry': 'entry', 'junior': 'entry',
+  'owner': 'owner',
+  'partner': 'partner',
+};
+
+// Company size normalization to PDL ranges
+const COMPANY_SIZE_MAP: Record<string, string> = {
+  '1-10': '1-10', 'micro': '1-10',
+  '11-50': '11-50', 'small': '11-50',
+  '51-200': '51-200', 'medium': '51-200',
+  '201-500': '201-500',
+  '501-1000': '501-1000', 'large': '501-1000',
+  '1001-5000': '1001-5000',
+  '5001-10000': '5001-10000', 'enterprise': '5001-10000',
+  '10001+': '10001+', 'mega': '10001+',
+};
+
+// Normalize industry value to PDL-compatible format
+function normalizeIndustry(raw: string): string {
+  if (!raw) return '';
+  const lower = raw.trim().toLowerCase();
+  // Check exact match first
+  if (INDUSTRY_MAP[lower]) return INDUSTRY_MAP[lower];
+  // Check if any key is contained in the input
+  for (const [key, value] of Object.entries(INDUSTRY_MAP)) {
+    if (lower.includes(key)) return value;
+  }
+  // If no match, pass through as-is (Railway/PDL may still match it)
+  return raw.trim();
+}
+
+// Normalize seniority value to PDL-compatible format
+function normalizeSeniority(raw: string): string {
+  if (!raw) return '';
+  const lower = raw.trim().toLowerCase();
+  return SENIORITY_MAP[lower] || raw.trim();
+}
+
+// Normalize company size to PDL range format
+function normalizeCompanySize(raw: string): string {
+  if (!raw) return '';
+  const lower = raw.trim().toLowerCase();
+  if (COMPANY_SIZE_MAP[lower]) return COMPANY_SIZE_MAP[lower];
+  // Try to match numeric patterns like "201-500" already in correct format
+  if (/^\d+[-–]\d+$/.test(raw.trim()) || /^\d+\+$/.test(raw.trim())) return raw.trim();
+  return raw.trim();
+}
+
 // Job-related keywords to extract from keywords array
 const JOB_KEYWORDS = [
   'ceo', 'cto', 'cfo', 'coo', 'cmo', 'cio', 'cpo', 'cro',
@@ -51,22 +134,32 @@ const JOB_KEYWORDS = [
   'partner', 'principal'
 ];
 
-// Extract job titles from keywords
-function extractJobTitleFromKeywords(keywords: string[]): string | null {
-  if (!keywords || keywords.length === 0) return null;
+// Extract job titles from keywords and return remaining keywords
+function extractJobTitleFromKeywords(keywords: string[]): { jobTitle: string | null; remaining: string[] } {
+  if (!keywords || keywords.length === 0) return { jobTitle: null, remaining: [] };
   
   const foundJobs: string[] = [];
+  const remaining: string[] = [];
+  
   for (const keyword of keywords) {
     const lower = keyword.toLowerCase();
+    let isJob = false;
     for (const jobKeyword of JOB_KEYWORDS) {
       if (lower.includes(jobKeyword)) {
         foundJobs.push(keyword);
+        isJob = true;
         break;
       }
     }
+    if (!isJob) {
+      remaining.push(keyword);
+    }
   }
   
-  return foundJobs.length > 0 ? foundJobs.join(' OR ') : null;
+  return {
+    jobTitle: foundJobs.length > 0 ? foundJobs.join(' OR ') : null,
+    remaining,
+  };
 }
 
 // Calculate scores if not provided by Railway API
@@ -452,41 +545,52 @@ serve(async (req) => {
     const railwayUrl = `${baseUrl}/search`;
     console.log('Calling Railway API:', railwayUrl);
 
-    // Prepare request body for Railway API - exact PDL format
+    // Prepare request body for Railway API - PDL format
     let jobTitle: string | undefined = filters.job_title;
-    if (!jobTitle && filters.keywords && filters.keywords.length > 0) {
-      const extractedTitle = extractJobTitleFromKeywords(filters.keywords);
-      if (extractedTitle) {
-        jobTitle = extractedTitle;
+    let nonJobKeywords: string[] = [];
+    
+    if (filters.keywords && filters.keywords.length > 0) {
+      const extracted = extractJobTitleFromKeywords(filters.keywords);
+      if (!jobTitle && extracted.jobTitle) {
+        jobTitle = extracted.jobTitle;
       }
-      console.log('Extracted job title from keywords:', jobTitle);
+      nonJobKeywords = extracted.remaining;
+      console.log('Extracted job title from keywords:', extracted.jobTitle, 'Remaining keywords:', nonJobKeywords);
     }
 
-    // Build request body matching exact PDL schema with pagination
+    // Build request body with pagination
     const page = filters.page || 1;
     const limit = Math.min(filters.limit || 10, 100);
     const offset = (page - 1) * limit;
 
-    // Railway: avoid overly-generic industry values like "B2B"
-    const industry = (filters.industry || '').trim();
-    const normalizedIndustry = /^b2b$/i.test(industry) ? '' : industry;
+    // Normalize all values through PDL-compatible maps
+    const normalizedIndustry = normalizeIndustry(filters.industry || '');
+    const normalizedSeniority = normalizeSeniority(filters.seniority || '');
+    const normalizedCompanySize = normalizeCompanySize(filters.company_size || '');
 
-    // Only send offset for page > 1 to preserve legacy behavior
-    const requestBody: Record<string, any> = {
-      job_title: jobTitle || '',
-      location: filters.country || '',
-      industry: normalizedIndustry,
-      company: filters.company || '',
-      company_size: filters.company_size || '',
-      seniority: filters.seniority || '',
+    // Build raw body — we'll strip empty values before sending
+    const rawBody: Record<string, any> = {
+      job_title: jobTitle || undefined,
+      location: filters.country || undefined,
+      industry: normalizedIndustry || undefined,
+      company: filters.company || undefined,
+      company_size: normalizedCompanySize || undefined,
+      seniority: normalizedSeniority || undefined,
+      keywords: nonJobKeywords.length > 0 ? nonJobKeywords : undefined,
       limit,
       ...(page > 1 ? { offset } : {}),
     };
 
-    // Check if we have at least one search parameter
+    // CRITICAL: Strip empty/null/undefined values so Railway doesn't build broken PDL queries
+    const requestBody: Record<string, any> = Object.fromEntries(
+      Object.entries(rawBody).filter(([_, v]) => v !== null && v !== undefined && v !== '')
+    );
+
+    // Check if we have at least one search parameter (besides limit/offset)
     const hasSearchParam = requestBody.job_title || requestBody.location || 
                            requestBody.industry || requestBody.company || 
-                           requestBody.company_size || requestBody.seniority;
+                           requestBody.company_size || requestBody.seniority ||
+                           requestBody.keywords;
     
     if (!hasSearchParam) {
       console.warn('No search parameters provided, adding default job_title');
