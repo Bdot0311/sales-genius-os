@@ -217,7 +217,7 @@ export const LeadDetailSheet = ({
         <div className="mt-6 space-y-6">
           {/* Action Buttons */}
           <div className="flex gap-2">
-            {onEnrich && lead.enrichment_status !== 'enriched' && (
+            {onEnrich && (
               <Button 
                 onClick={onEnrich} 
                 disabled={isEnriching || editing}
@@ -226,6 +226,8 @@ export const LeadDetailSheet = ({
               >
                 {isEnriching ? (
                   <><Sparkles className="w-4 h-4 mr-2 animate-spin" />Enriching...</>
+                ) : lead.enrichment_status === 'enriched' ? (
+                  <><Sparkles className="w-4 h-4 mr-2" />Re-Enrich Lead</>
                 ) : (
                   <><Sparkles className="w-4 h-4 mr-2" />Enrich Lead Data</>
                 )}
