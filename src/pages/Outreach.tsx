@@ -24,7 +24,8 @@ import { debounce } from "@/lib/utils";
 import { EmailTemplateManager, UserEmailTemplate } from "@/components/outreach/EmailTemplateManager";
 import { EmailPerformanceStats } from "@/components/outreach/EmailPerformanceStats";
 import { FollowUpSuggestion, FollowUpData } from "@/components/outreach/FollowUpSuggestion";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, ListOrdered, Layout } from "lucide-react";
+import { SequencesList, MessageBlocksList } from "@/components/sequences";
 
 // Opener words for the cold email framework
 const OPENER_WORDS = [
@@ -1189,6 +1190,14 @@ For logos, use HTML:
               <Sparkles className="w-4 h-4" />
               Compose
             </TabsTrigger>
+            <TabsTrigger value="sequences" className="flex items-center gap-2">
+              <ListOrdered className="w-4 h-4" />
+              Sequences
+            </TabsTrigger>
+            <TabsTrigger value="blocks" className="flex items-center gap-2">
+              <Layout className="w-4 h-4" />
+              Blocks
+            </TabsTrigger>
             <TabsTrigger value="sent" className="flex items-center gap-2">
               <Mail className="w-4 h-4" />
               Sent
@@ -1753,6 +1762,14 @@ For logos, use HTML:
               <h2 className="text-xl font-semibold mb-4">Email Drafts</h2>
               <EmailDraftsTable onLoadDraft={loadDraft} />
             </Card>
+          </TabsContent>
+
+          <TabsContent value="sequences" className="mt-6">
+            <SequencesList />
+          </TabsContent>
+
+          <TabsContent value="blocks" className="mt-6">
+            <MessageBlocksList />
           </TabsContent>
 
           <TabsContent value="performance" className="mt-6">
