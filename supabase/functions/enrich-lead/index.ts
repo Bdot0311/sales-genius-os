@@ -160,7 +160,7 @@ serve(async (req) => {
               if (p.job_title) enrichmentData.job_title = p.job_title;
               if (p.job_title_role) enrichmentData.department = p.job_title_role;
               if (p.job_title_levels?.length) enrichmentData.seniority = p.job_title_levels[0];
-              if (p.linkedin_url) enrichmentData.linkedin_url = p.linkedin_url;
+              if (p.linkedin_url) enrichmentData.linkedin_url = normalizeLinkedInUrl(p.linkedin_url) || p.linkedin_url;
               if (p.work_email && !lead.contact_email) enrichmentData.contact_email = p.work_email;
               if (!enrichmentData.contact_email && p.recommended_personal_email && !lead.contact_email) {
                 enrichmentData.contact_email = p.recommended_personal_email;
@@ -216,7 +216,7 @@ serve(async (req) => {
             if (company && company.status === 200 && company.data) {
               const c = company.data;
               if (c.website && !lead.company_website) enrichmentData.company_website = c.website;
-              if (c.linkedin_url) enrichmentData.company_linkedin = c.linkedin_url;
+              if (c.linkedin_url) enrichmentData.company_linkedin = normalizeLinkedInUrl(c.linkedin_url) || c.linkedin_url;
               if (c.industry) enrichmentData.industry = c.industry;
               if (c.summary) enrichmentData.company_description = c.summary;
               if (c.employee_count) enrichmentData.employee_count = String(c.employee_count);
