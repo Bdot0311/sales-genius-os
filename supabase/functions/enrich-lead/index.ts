@@ -37,12 +37,11 @@ function normalizeLinkedInUrl(url: string | null): string | null {
   }
   try {
     const parsed = new URL(cleaned);
-    // Normalize to www.linkedin.com
-    let host = parsed.hostname.replace(/^(www\.)?/, 'www.');
-    if (!host.includes('linkedin.com')) return cleaned; // not a linkedin URL, return as-is
-    // Extract the path (e.g., /in/username)
-    let path = parsed.pathname.replace(/\/+$/, ''); // remove trailing slashes
-    return `https://${host}${path}`;
+    // Check if it's a LinkedIn URL
+    if (!parsed.hostname.includes('linkedin.com')) return cleaned;
+    // Always normalize to www.linkedin.com (handles country-specific subdomains like uk.linkedin.com, de.linkedin.com)
+    const path = parsed.pathname.replace(/\/+$/, ''); // remove trailing slashes
+    return `https://www.linkedin.com${path}`;
   } catch {
     return cleaned;
   }
