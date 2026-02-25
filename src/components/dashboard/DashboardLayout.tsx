@@ -308,10 +308,17 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden flex-shrink-0 h-8 w-8"
-            onClick={() => setSidebarOpen(true)}
+            className="flex-shrink-0 h-8 w-8"
+            onClick={() => {
+              // On mobile: toggle drawer. On desktop: toggle collapse.
+              if (window.innerWidth < 1024) {
+                setSidebarOpen(true);
+              } else {
+                setSidebarCollapsed(!sidebarCollapsed);
+              }
+            }}
           >
-            <Menu className="w-4 h-4" />
+            {sidebarCollapsed ? <PanelLeft className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
           </Button>
           <div className="flex-1 min-w-0" />
           
