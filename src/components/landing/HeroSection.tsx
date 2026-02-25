@@ -266,7 +266,7 @@ export const HeroSection = () => {
   return (
     <section
       ref={heroRef}
-      className="relative min-h-[85vh] lg:min-h-[calc(100vh-64px)] flex items-center justify-center overflow-hidden pt-16 sm:pt-20 lg:pt-16 pb-4 sm:pb-6 lg:pb-8"
+      className="relative min-h-[85vh] lg:min-h-[calc(100vh-64px)] flex items-center justify-center overflow-hidden pt-24 sm:pt-28 lg:pt-24 pb-4 sm:pb-6 lg:pb-8"
       aria-labelledby="hero-heading"
     >
       {/* Background layers */}
