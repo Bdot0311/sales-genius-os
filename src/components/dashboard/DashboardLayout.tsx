@@ -112,13 +112,18 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-50 h-screen bg-card border-r border-border transition-all duration-300 ${
+        className={`fixed z-50 bg-card border-r border-border transition-all duration-300 ${
           sidebarCollapsed ? "w-[4.5rem]" : "w-64"
         } ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         } lg:translate-x-0`}
+        style={{
+          top: 'env(safe-area-inset-top, 0px)',
+          left: 0,
+          height: 'calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
+        }}
       >
-        <div className="flex flex-col h-screen overflow-hidden">
+        <div className="flex flex-col h-full overflow-hidden">
           {/* Logo */}
           <div className={`flex items-center justify-between ${sidebarCollapsed ? "p-3" : "p-6"} border-b border-border`}>
             <div className="flex items-center gap-2">
@@ -304,7 +309,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       {/* Main content */}
       <div className={`transition-all duration-300 ${sidebarCollapsed ? "lg:ml-[4.5rem]" : "lg:ml-64"}`}>
         {/* Top bar */}
-        <header className="sticky top-0 z-30 min-h-[3rem] bg-card border-b border-border flex items-center px-2 sm:px-6 py-1.5 gap-1" style={{ paddingTop: 'max(0.375rem, env(safe-area-inset-top, 0px))' }}>
+        <header className="sticky top-0 z-30 min-h-[3rem] bg-card border-b border-border flex items-center px-2 sm:px-6 py-1.5 gap-1">
           <Button
             variant="ghost"
             size="icon"
