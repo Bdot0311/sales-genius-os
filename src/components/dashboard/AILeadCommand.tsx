@@ -11,12 +11,26 @@ interface AILeadCommandProps {
   showResults?: boolean;
 }
 
-const exampleCommands = [
-  "Find marketing managers in fintech",
-  "CEOs at SaaS companies with 51-200 employees",
-  "VP of Sales at healthcare companies in USA",
-  "Founders at AI startups in California",
+const allExampleCommands = [
+  "Find 50 SaaS founders in fintech",
+  "CEOs at B2B startups with 50-200 employees",
+  "VP of Sales at healthcare companies in California",
+  "Series A startup founders in AI/ML space",
+  "CTOs at ecommerce companies in New York",
+  "Directors of Marketing at cybersecurity firms",
+  "Heads of Product at edtech startups in Europe",
+  "CFOs at logistics companies with 200+ employees",
+  "Growth leads at seed-stage climate tech startups",
+  "Engineering managers at cloud infrastructure companies",
+  "COOs at real estate tech firms in Texas",
+  "Demand gen managers at martech companies",
 ];
+
+// Show 4 random examples each time
+const getRandomExamples = () => {
+  const shuffled = [...allExampleCommands].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, 4);
+};
 
 export const AILeadCommand = ({ 
   onSearch, 
@@ -27,6 +41,7 @@ export const AILeadCommand = ({
   const [command, setCommand] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [showSteps, setShowSteps] = useState([false, false, false]);
+  const [exampleCommands] = useState(() => getRandomExamples());
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
