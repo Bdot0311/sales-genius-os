@@ -283,7 +283,7 @@ export const LeadDetailSheet = ({
                 {lead.linkedin_url && (
                   <div className="flex items-center gap-2">
                     <Linkedin className="w-4 h-4 text-muted-foreground" />
-                    <a href={lead.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">LinkedIn Profile</a>
+                    <a href={lead.linkedin_url.startsWith('http') ? lead.linkedin_url : `https://${lead.linkedin_url}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">LinkedIn Profile</a>
                   </div>
                 )}
                 {lead.job_title && (
