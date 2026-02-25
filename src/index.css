@@ -56,8 +56,19 @@ All colors MUST be HSL. Using 8px spacing scale.
     @apply border-border;
   }
 
+  html, body {
+    overflow-x: hidden;
+    width: 100%;
+  }
+
   body {
     @apply bg-background text-foreground;
+  }
+
+  #root {
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
   }
 }
 
