@@ -275,8 +275,7 @@ Lead Information:
 - ICP Score: ${lead.icp_score || 0}/100
 ${triggerContext ? `\nTrigger/Context (use this as your opener): ${triggerContext}` : ''}
 ${openerWord && VALID_OPENERS.includes(openerWord) ? `\nPreferred Opening Word: Start with "${openerWord.charAt(0).toUpperCase() + openerWord.slice(1)}"` : ''}
-${socialProof ? `\nSocial Proof to include: ${socialProof}` : ''}
-${businessDescription ? `\nSender's Business Description (use this to accurately describe what the sender's company does): ${businessDescription}` : ''}
+${businessDescription ? `\nSender's Business Description (use this to accurately describe what the sender's company does AND derive social proof / customer references from it): ${businessDescription}` : ''}
 
 Write an email body following the 4-sentence cold email framework. Start with the greeting and end with a simple sign-off. Do NOT include the subject line.`;
     } else {
@@ -306,8 +305,7 @@ Lead Information:
 - ICP Score: ${lead.icp_score || 0}/100
 ${triggerContext ? `\nTrigger/Context (use this as your opener): ${triggerContext}` : ''}
 ${openerWord && VALID_OPENERS.includes(openerWord) ? `\nPreferred Opening Word: Start with "${openerWord.charAt(0).toUpperCase() + openerWord.slice(1)}"` : ''}
-${socialProof ? `\nSocial Proof to include: ${socialProof}` : ''}
-${businessDescription ? `\nSender's Business Description (use this to accurately describe what the sender's company does): ${businessDescription}` : ''}
+${businessDescription ? `\nSender's Business Description (use this to accurately describe what the sender's company does AND derive social proof / customer references from it): ${businessDescription}` : ''}
 
 Goal: ${goal}
 

@@ -104,11 +104,10 @@ const Outreach = () => {
   const [openerWord, setOpenerWord] = useState("");
   const [triggerContext, setTriggerContext] = useState("");
   const [businessDescription, setBusinessDescription] = useState("");
-  const [socialProof, setSocialProof] = useState("");
   const [subjectLine, setSubjectLine] = useState("");
   const [isGeneratingSubject, setIsGeneratingSubject] = useState(false);
   const [isGeneratingTrigger, setIsGeneratingTrigger] = useState(false);
-  const [isGeneratingSocialProof, setIsGeneratingSocialProof] = useState(false);
+  
   const [generatedEmail, setGeneratedEmail] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -148,7 +147,6 @@ const Outreach = () => {
   useEffect(() => {
     loadLeads();
     loadSignature();
-    loadSocialProof();
     loadBusinessDescription();
     loadCounts();
     loadConnectedAccounts();
@@ -243,41 +241,6 @@ const Outreach = () => {
     }
   };
 
-  const loadSocialProof = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    
-    const { data } = await supabase
-      .from("profiles")
-      .select("social_proof")
-      .eq("id", user.id)
-      .single();
-    
-    if (data?.social_proof) {
-      setSocialProof(data.social_proof);
-    }
-  };
-
-  const saveSocialProof = async (value: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    
-    await supabase
-      .from("profiles")
-      .update({ social_proof: value })
-      .eq("id", user.id);
-  };
-
-  // Debounced social proof save
-  const debouncedSaveSocialProof = useCallback(
-    debounce((value: string) => saveSocialProof(value), 1000),
-    []
-  );
-
-  const handleSocialProofChange = (value: string) => {
-    setSocialProof(value);
-    debouncedSaveSocialProof(value);
-  };
 
   const loadBusinessDescription = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -547,46 +510,6 @@ const Outreach = () => {
     }
   };
 
-  const generateSocialProofText = async () => {
-    if (!selectedLead) {
-      toast({
-        title: "Select a lead first",
-        description: "Please select a lead to generate social proof",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsGeneratingSocialProof(true);
-    try {
-      const lead = leads.find((l) => l.id === selectedLead);
-      const { data, error } = await supabase.functions.invoke("generate-email", {
-        body: {
-          lead,
-          tone: emailTone,
-          goal: "social_proof",
-          businessDescription,
-        },
-      });
-
-      if (error) throw error;
-      const newProof = data.email.trim();
-      setSocialProof(newProof);
-      saveSocialProof(newProof);
-      toast({
-        title: "Social proof generated",
-        description: "AI created social proof text for you",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error generating social proof",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsGeneratingSocialProof(false);
-    }
-  };
 
   const generateEmail = async () => {
     if (!selectedLead) {
@@ -639,7 +562,6 @@ const Outreach = () => {
           subjectLine: finalSubjectLine,
           triggerContext,
           openerWord: openerWord === "auto" ? "" : openerWord,
-          socialProof,
           businessDescription,
         },
       });
@@ -719,7 +641,6 @@ const Outreach = () => {
             subjectLine: subject,
             triggerContext,
             openerWord: openerWord === "auto" ? "" : openerWord,
-            socialProof,
             variantNum: num,
             businessDescription,
           },
@@ -1229,12 +1150,10 @@ For logos, use HTML:
                         goal: selectedTemplate ? EMAIL_TEMPLATES.find(t => t.value === selectedTemplate)?.goal : undefined,
                         suggestedSubject: subjectLine,
                         triggerContext,
-                        socialProof,
                       }}
                       onLoadTemplate={(template: UserEmailTemplate) => {
                         if (template.suggested_subject) setSubjectLine(template.suggested_subject);
                         if (template.trigger_context) setTriggerContext(template.trigger_context);
-                        if (template.social_proof) setSocialProof(template.social_proof);
                         if (template.goal) {
                           const matchingTemplate = EMAIL_TEMPLATES.find(t => t.goal === template.goal);
                           if (matchingTemplate) setSelectedTemplate(matchingTemplate.value);
@@ -1422,42 +1341,6 @@ For logos, use HTML:
                     </p>
                   </div>
 
-                  <div>
-                    <Label>
-                      Social Proof
-                      <Badge variant="outline" className="ml-2 text-xs">Saved</Badge>
-                    </Label>
-                    <div className="flex gap-2">
-                      <Textarea
-                        value={socialProof}
-                        onChange={(e) => handleSocialProofChange(e.target.value)}
-                        placeholder="e.g., Spot and Ignite are customers of ours. We helped them cut board prep time by 50%..."
-                        className="min-h-[80px] flex-1"
-                        maxLength={500}
-                      />
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="shrink-0 self-start"
-                        onClick={generateSocialProofText}
-                        disabled={isGeneratingSocialProof || !selectedLead}
-                      >
-                        {isGeneratingSocialProof ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Wand2 className="w-4 h-4" />
-                        )}
-                      </Button>
-                    </div>
-                    {!selectedLead && (
-                      <p className="text-xs text-amber-600 mt-1">
-                        ⚠️ Select a lead above to enable AI generation
-                      </p>
-                    )}
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Customer references and results to include in emails
-                    </p>
-                   </div>
 
                   <div>
                     <Label>
