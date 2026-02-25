@@ -18,6 +18,8 @@ import {
   LogOut,
   Menu,
   X,
+  PanelLeftClose,
+  PanelLeft,
   Puzzle,
   Settings,
   Shield,
@@ -55,6 +57,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { subscription } = useSubscription();
   const { status: subscriptionStatus } = useSubscriptionStatus();
   const { isAdmin } = useAdmin();
@@ -109,20 +112,24 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-50 h-screen w-64 bg-card border-r border-border transition-transform duration-300 ${
+        className={`fixed top-0 left-0 z-50 h-screen bg-card border-r border-border transition-all duration-300 ${
+          sidebarCollapsed ? "w-[4.5rem]" : "w-64"
+        } ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         } lg:translate-x-0`}
       >
         <div className="flex flex-col h-screen overflow-hidden">
           {/* Logo */}
-          <div className="flex items-center justify-between p-6 border-b border-border">
+          <div className={`flex items-center justify-between ${sidebarCollapsed ? "p-3" : "p-6"} border-b border-border`}>
             <div className="flex items-center gap-2">
               {whiteLabelSettings?.logo_url ? (
                 <img src={whiteLabelSettings.logo_url} alt={whiteLabelSettings.company_name || "Logo"} className="h-8" />
               ) : (
                 <>
-                  <img src={salesosLogo} alt="SalesOS Logo" className="w-8 h-8 rounded-lg" />
-                  <span className="text-xl font-bold">{whiteLabelSettings?.company_name || "SalesOS"}</span>
+                  <img src={salesosLogo} alt="SalesOS Logo" className="w-8 h-8 rounded-lg flex-shrink-0" />
+                  {!sidebarCollapsed && (
+                    <span className="text-xl font-bold">{whiteLabelSettings?.company_name || "SalesOS"}</span>
+                  )}
                 </>
               )}
             </div>
@@ -137,84 +144,165 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+          <nav className={`flex-1 ${sidebarCollapsed ? "p-2" : "p-4"} space-y-1 overflow-y-auto`}>
             {navigation.map((item) => (
-              <button
-                key={item.name}
-                onClick={() => {
-                  navigate(item.href);
-                  setSidebarOpen(false);
-                }}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-              >
-                <item.icon className="w-5 h-5" />
-                <span>{item.name}</span>
-              </button>
+              <TooltipProvider key={item.name} delayDuration={0}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => {
+                        navigate(item.href);
+                        setSidebarOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-3 ${sidebarCollapsed ? "justify-center px-2" : "px-4"} py-3 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors`}
+                    >
+                      <item.icon className="w-5 h-5 flex-shrink-0" />
+                      {!sidebarCollapsed && <span>{item.name}</span>}
+                    </button>
+                  </TooltipTrigger>
+                  {sidebarCollapsed && (
+                    <TooltipContent side="right">
+                      <p>{item.name}</p>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
             ))}
             {isAdmin && (
-              <button
-                onClick={() => {
-                  navigate('/admin');
-                  setSidebarOpen(false);
-                }}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-              >
-                <Shield className="w-5 h-5" />
-                <span>Admin Panel</span>
-              </button>
+              <TooltipProvider delayDuration={0}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => {
+                        navigate('/admin');
+                        setSidebarOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-3 ${sidebarCollapsed ? "justify-center px-2" : "px-4"} py-3 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors`}
+                    >
+                      <Shield className="w-5 h-5 flex-shrink-0" />
+                      {!sidebarCollapsed && <span>Admin Panel</span>}
+                    </button>
+                  </TooltipTrigger>
+                  {sidebarCollapsed && (
+                    <TooltipContent side="right">
+                      <p>Admin Panel</p>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
             )}
           </nav>
 
           {/* Help & Install prompts */}
-          <div className="flex-shrink-0 px-4 py-3 border-t border-border bg-muted/30 space-y-2">
-            <a 
-              href="/help" 
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          {!sidebarCollapsed ? (
+            <div className="flex-shrink-0 px-4 py-3 border-t border-border bg-muted/30 space-y-2">
+              <a 
+                href="/help" 
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <HelpCircle className="w-4 h-4 flex-shrink-0" />
+                <span>Need help? Visit our Help Center</span>
+              </a>
+              <button
+                onClick={() => { navigate('/install'); setSidebarOpen(false); }}
+                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-primary transition-colors w-full"
+              >
+                <Download className="w-4 h-4 flex-shrink-0" />
+                <span>Install App</span>
+              </button>
+            </div>
+          ) : (
+            <div className="flex-shrink-0 px-2 py-3 border-t border-border bg-muted/30 flex flex-col items-center gap-2">
+              <TooltipProvider delayDuration={0}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <a href="/help" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors">
+                      <HelpCircle className="w-4 h-4" />
+                    </a>
+                  </TooltipTrigger>
+                  <TooltipContent side="right"><p>Help Center</p></TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button onClick={() => { navigate('/install'); setSidebarOpen(false); }} className="text-muted-foreground hover:text-primary transition-colors">
+                      <Download className="w-4 h-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right"><p>Install App</p></TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          )}
+
+          {/* Collapse toggle - desktop only */}
+          <div className="hidden lg:flex flex-shrink-0 justify-center py-2 border-t border-border">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             >
-              <HelpCircle className="w-4 h-4" />
-              <span>Need help? Visit our Help Center</span>
-            </a>
-            <button
-              onClick={() => {
-                navigate('/install');
-                setSidebarOpen(false);
-              }}
-              className="flex items-center gap-2 text-xs text-muted-foreground hover:text-primary transition-colors w-full"
-            >
-              <Download className="w-4 h-4" />
-              <span>Install App</span>
-            </button>
+              {sidebarCollapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+            </Button>
           </div>
 
           {/* User section - fixed at bottom */}
-          <div className="flex-shrink-0 p-4 border-t border-border bg-card">
-            <div className="flex items-center gap-3 mb-3 px-4">
-              <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-semibold">
-                {user.email?.[0].toUpperCase()}
+          <div className={`flex-shrink-0 ${sidebarCollapsed ? "p-2" : "p-4"} border-t border-border bg-card`}>
+            {sidebarCollapsed ? (
+              <div className="flex flex-col items-center gap-2">
+                <TooltipProvider delayDuration={0}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-semibold cursor-default">
+                        {user.email?.[0].toUpperCase()}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <p>{user.email}</p>
+                      <p className="text-xs text-muted-foreground capitalize">{subscription?.plan || 'Growth'} Plan</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" onClick={handleSignOut} className="h-8 w-8">
+                        <LogOut className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right"><p>Sign Out</p></TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{user.email}</p>
-                <p className="text-xs text-muted-foreground capitalize">
-                  {subscription?.plan || 'Growth'} Plan
-                </p>
-              </div>
-            </div>
-            <Button
-              variant="ghost"
-              onClick={handleSignOut}
-              className="w-full justify-start"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Sign Out
-            </Button>
+            ) : (
+              <>
+                <div className="flex items-center gap-3 mb-3 px-4">
+                  <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-semibold">
+                    {user.email?.[0].toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{user.email}</p>
+                    <p className="text-xs text-muted-foreground capitalize">
+                      {subscription?.plan || 'Growth'} Plan
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  onClick={handleSignOut}
+                  className="w-full justify-start"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign Out
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </aside>
 
       {/* Main content */}
-      <div className="lg:ml-64">
+      <div className={`transition-all duration-300 ${sidebarCollapsed ? "lg:ml-[4.5rem]" : "lg:ml-64"}`}>
         {/* Top bar */}
         <header className="sticky top-0 z-30 min-h-[3rem] bg-card border-b border-border flex items-center px-2 sm:px-6 py-1.5 gap-1" style={{ paddingTop: 'max(0.375rem, env(safe-area-inset-top, 0px))' }}>
           <Button
