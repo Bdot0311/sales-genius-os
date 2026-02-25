@@ -631,7 +631,7 @@ serve(async (req) => {
           error_code: 'credits_exhausted',
           leads: []
         }),
-        { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
