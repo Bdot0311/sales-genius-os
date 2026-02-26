@@ -96,12 +96,23 @@ serve(async (req) => {
     // Check if token needs refresh (for Google)
     if ((integrationId === 'google' || !integrationId) && config.expiresAt && Date.now() >= config.expiresAt && config.refreshToken) {
       console.log('Token expired, refreshing...');
+      const googleClientId = config.clientId || Deno.env.get('GOOGLE_CLIENT_ID');
+      const googleClientSecret = config.clientSecret || Deno.env.get('GOOGLE_CLIENT_SECRET');
+      
+      if (!googleClientId || !googleClientSecret) {
+        console.error('Missing Google OAuth credentials for token refresh');
+        return new Response(
+          JSON.stringify({ error: 'Google OAuth credentials not configured. Please reconnect Gmail.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          client_id: config.clientId,
-          client_secret: config.clientSecret,
+          client_id: googleClientId,
+          client_secret: googleClientSecret,
           refresh_token: config.refreshToken,
           grant_type: 'refresh_token',
         }),
