@@ -112,6 +112,7 @@ const Outreach = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [signature, setSignature] = useState("");
+  const [senderProfileName, setSenderProfileName] = useState("");
   const [signatureDialogOpen, setSignatureDialogOpen] = useState(false);
   const [isSavingSignature, setIsSavingSignature] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
@@ -232,15 +233,46 @@ const Outreach = () => {
     
     const { data } = await supabase
       .from("profiles")
-      .select("email_signature")
+      .select("email_signature, full_name, email")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
     
     if (data?.email_signature) {
       setSignature(data.email_signature);
     }
+
+    const defaultName = data?.full_name?.trim() || data?.email?.split("@")[0] || user.email?.split("@")[0] || "";
+    setSenderProfileName(defaultName);
   };
 
+  const getSenderName = () => {
+    if (senderProfileName.trim()) {
+      return senderProfileName.trim();
+    }
+
+    const selectedAccountEmail =
+      connectedAccounts.find((account) => account.id === selectedSenderId)?.email ||
+      connectedAccounts[0]?.email;
+
+    return selectedAccountEmail?.split("@")[0] || "";
+  };
+
+  const buildEmailBodyWithSignature = (baseEmailBody: string) => {
+    const senderName = getSenderName();
+    const normalizedSender = senderName.toLowerCase();
+    const signatureForEmail = signature
+      .replace(/width=["']150["']/gi, 'width="320"')
+      .replace(/max-width:\s*150px/gi, 'max-width:320px');
+
+    const bodyHasSender = normalizedSender && baseEmailBody.toLowerCase().includes(normalizedSender);
+    const signatureHasSender = normalizedSender && signatureForEmail.toLowerCase().includes(normalizedSender);
+
+    const bodyWithSender = senderName && !bodyHasSender && !signatureHasSender
+      ? `${baseEmailBody.trimEnd()}\n${senderName}`
+      : baseEmailBody.trimEnd();
+
+    return signatureForEmail ? `${bodyWithSender}\n\n${signatureForEmail}` : bodyWithSender;
+  };
 
   const loadBusinessDescription = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -346,7 +378,7 @@ const Outreach = () => {
         .from('signature-logos')
         .getPublicUrl(fileName);
 
-      const imgHtml = `<img src="${publicUrl}" alt="Logo" width="150" style="max-width: 150px;" />`;
+      const imgHtml = `<img src="${publicUrl}" alt="Logo" width="320" style="display:block;max-width:320px;width:100%;height:auto;margin-top:8px;" />`;
       setSignature(prev => prev ? `${prev}\n${imgHtml}` : imgHtml);
 
       toast({
@@ -713,9 +745,7 @@ const Outreach = () => {
 
       const senderAccountId = selectedSenderId || connectedAccounts[0]?.id;
 
-      const fullEmailBody = signature 
-        ? `${generatedEmail}\n\n${signature}`
-        : generatedEmail;
+      const fullEmailBody = buildEmailBodyWithSignature(generatedEmail);
 
       const { data, error } = await supabase.functions.invoke('send-email', {
         body: {
@@ -805,15 +835,29 @@ const Outreach = () => {
         return;
       }
 
-      const fullEmailBody = signature
-        ? `${generatedEmail}\n\n${signature}`
-        : generatedEmail;
+      const fullEmailBody = buildEmailBodyWithSignature(generatedEmail);
 
-      // Format body as HTML
-      const isHtml = fullEmailBody.trim().startsWith('<');
-      const htmlBody = isHtml ? fullEmailBody : `<!DOCTYPE html>
-<html><head><meta charset="utf-8"><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.6;color:#333;max-width:600px;margin:0 auto;padding:20px}p{margin:0 0 16px}</style></head><body>
-${fullEmailBody.split('\n').map((line: string) => line.trim() ? `<p>${line}</p>` : '').join('\n')}
+      // Format body as HTML while preserving signature HTML blocks
+      const isHtml = fullEmailBody.trim().startsWith('<') &&
+        (fullEmailBody.includes('<html') || fullEmailBody.includes('<div') || fullEmailBody.includes('<p') || fullEmailBody.includes('<br'));
+      const containsHtml = /<[a-z][\s\S]*>/i.test(fullEmailBody);
+
+      let formattedBody: string;
+      if (isHtml) {
+        formattedBody = fullEmailBody;
+      } else if (containsHtml) {
+        const firstHtmlIndex = fullEmailBody.search(/<[a-z][\s\S]*>/i);
+        const textPart = fullEmailBody.substring(0, firstHtmlIndex);
+        const htmlPart = fullEmailBody.substring(firstHtmlIndex);
+        const textHtml = textPart.split('\n').map((line: string) => line.trim() ? `<p>${line}</p>` : '').join('\n');
+        formattedBody = textHtml + '\n' + htmlPart;
+      } else {
+        formattedBody = fullEmailBody.split('\n').map((line: string) => line.trim() ? `<p>${line}</p>` : '').join('\n');
+      }
+
+      const htmlBody = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.6;color:#333;max-width:600px;margin:0 auto;padding:20px}p{margin:0 0 16px}img{max-width:100%;height:auto}</style></head><body>
+${formattedBody}
 </body></html>`;
 
       const { error } = await supabase.from("sent_emails").insert({
