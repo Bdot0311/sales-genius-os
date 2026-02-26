@@ -1,0 +1,2 @@
+ALTER TABLE public.activities DROP CONSTRAINT IF EXISTS activities_type_check;
+ALTER TABLE public.activities ADD CONSTRAINT activities_type_check CHECK (type IN ('call', 'email', 'meeting', 'task', 'note', 'follow_up', 'assignment', 'other'));
