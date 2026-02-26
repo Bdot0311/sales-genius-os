@@ -22,6 +22,16 @@ const toBase64Url = (input: string) => {
     .replace(/=+$/, '');
 };
 
+// RFC 2047 MIME encode subject for non-ASCII characters
+const mimeEncodeSubject = (subject: string) => {
+  // Check if subject contains non-ASCII characters
+  if (/^[\x20-\x7E]*$/.test(subject)) {
+    return subject; // Pure ASCII, no encoding needed
+  }
+  const encoded = btoa(String.fromCharCode(...new TextEncoder().encode(subject)));
+  return `=?UTF-8?B?${encoded}?=`;
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -198,10 +208,10 @@ ${body.split('\n').map((line: string) => line.trim() ? `<p>${line}</p>` : '').jo
 </body>
 </html>`;
 
-      // Send via Gmail API
+      // Send via Gmail API - use MIME encoding for subject to handle special characters
       const emailContent = [
         `To: ${to}`,
-        `Subject: ${subject}`,
+        `Subject: ${mimeEncodeSubject(subject)}`,
         'MIME-Version: 1.0',
         'Content-Type: text/html; charset=utf-8',
         '',
