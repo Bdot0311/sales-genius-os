@@ -599,7 +599,13 @@ const Outreach = () => {
       });
 
       if (error) throw error;
-      setGeneratedEmail(data.email);
+      // Append sender name to generated email so it's visible in preview
+      const senderName = getSenderName();
+      let emailBody = data.email;
+      if (senderName && !emailBody.toLowerCase().includes(senderName.toLowerCase())) {
+        emailBody = `${emailBody.trimEnd()}\n${senderName}`;
+      }
+      setGeneratedEmail(emailBody);
       toast({
         title: "Email generated",
         description: "AI created a personalized sales email designed to book meetings",
