@@ -5,8 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceToNow } from "date-fns";
-import { Mail, ExternalLink, Eye, RefreshCw } from "lucide-react";
+import { Mail, ExternalLink, Eye, RefreshCw, Pencil } from "lucide-react";
 import { EmailDetailSheet } from "./EmailDetailSheet";
+import { EditScheduledEmailDialog } from "./EditScheduledEmailDialog";
 
 interface SentEmail {
   id: string;
@@ -16,6 +17,7 @@ interface SentEmail {
   body_text: string | null;
   status: string;
   sent_at: string;
+  scheduled_at: string | null;
   lead_id: string | null;
   gmail_message_id: string | null;
   leads?: { contact_name: string; company_name: string } | null;
@@ -26,6 +28,8 @@ export const SentEmailsTable = () => {
   const [loading, setLoading] = useState(true);
   const [selectedEmail, setSelectedEmail] = useState<SentEmail | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [editEmail, setEditEmail] = useState<SentEmail | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
 
   useEffect(() => {
     loadSentEmails();
@@ -64,6 +68,7 @@ export const SentEmailsTable = () => {
           body_text,
           status,
           sent_at,
+          scheduled_at,
           lead_id,
           gmail_message_id,
           leads (
@@ -90,6 +95,8 @@ export const SentEmailsTable = () => {
       opened: { variant: "outline", label: "Opened" },
       bounced: { variant: "destructive", label: "Bounced" },
       failed: { variant: "destructive", label: "Failed" },
+      scheduled: { variant: "secondary", label: "Scheduled" },
+      cancelled: { variant: "destructive", label: "Cancelled" },
     };
     
     const statusInfo = variants[status] || { variant: "default", label: status };
@@ -167,16 +174,31 @@ export const SentEmailsTable = () => {
                   {formatDistanceToNow(new Date(email.sent_at), { addSuffix: true })}
                 </TableCell>
                 <TableCell>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleViewEmail(email);
-                    }}
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    {email.status === "scheduled" && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditEmail(email);
+                          setEditOpen(true);
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    )}
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewEmail(email);
+                      }}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -188,6 +210,13 @@ export const SentEmailsTable = () => {
         email={selectedEmail}
         open={sheetOpen}
         onOpenChange={setSheetOpen}
+      />
+
+      <EditScheduledEmailDialog
+        email={editEmail}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        onSaved={loadSentEmails}
       />
     </>
   );

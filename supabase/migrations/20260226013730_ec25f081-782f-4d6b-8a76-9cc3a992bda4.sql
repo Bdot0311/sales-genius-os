@@ -1,0 +1,2 @@
+ALTER TABLE public.sent_emails DROP CONSTRAINT sent_emails_status_check;
+ALTER TABLE public.sent_emails ADD CONSTRAINT sent_emails_status_check CHECK (status = ANY (ARRAY['draft','pending','scheduled','sent','delivered','opened','clicked','replied','bounced','failed','cancelled']));
