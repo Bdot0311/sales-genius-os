@@ -6,6 +6,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// RFC 2047 MIME encode subject for non-ASCII characters
+const mimeEncodeSubject = (subject: string) => {
+  if (/^[\x20-\x7E]*$/.test(subject)) {
+    return subject;
+  }
+  const encoded = btoa(String.fromCharCode(...new TextEncoder().encode(subject)));
+  return `=?UTF-8?B?${encoded}?=`;
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -117,14 +126,14 @@ serve(async (req) => {
         const body = email.body_html || email.body_text || "";
         const emailContent = [
           `To: ${email.to_email}`,
-          `Subject: ${email.subject}`,
+          `Subject: ${mimeEncodeSubject(email.subject)}`,
           "MIME-Version: 1.0",
           "Content-Type: text/html; charset=utf-8",
           "",
           body,
         ].join("\r\n");
 
-        const encodedEmail = btoa(emailContent)
+        const encodedEmail = btoa(String.fromCharCode(...new TextEncoder().encode(emailContent)))
           .replace(/\+/g, "-")
           .replace(/\//g, "_")
           .replace(/=+$/, "");
