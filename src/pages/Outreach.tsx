@@ -252,9 +252,32 @@ const Outreach = () => {
 
     const selectedAccountEmail =
       connectedAccounts.find((account) => account.id === selectedSenderId)?.email ||
-      connectedAccounts[0]?.email;
+      connectedAccounts[0]?.email || "";
 
-    return selectedAccountEmail?.split("@")[0] || "";
+    const localPart = selectedAccountEmail.split("@")[0] || "";
+    return localPart
+      .replace(/[._-]+/g, " ")
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
+  };
+
+  const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  const hasSenderAsOwnLine = (content: string, senderName: string) => {
+    if (!senderName) return false;
+    const senderLineRegex = new RegExp(`(^|\\n)\\s*${escapeRegExp(senderName)}\\s*(\\n|$)`, "i");
+    return senderLineRegex.test(content);
+  };
+
+  const appendSenderLine = (body: string, senderName: string) => {
+    const trimmedBody = body.trimEnd();
+    if (!senderName || hasSenderAsOwnLine(trimmedBody, senderName)) {
+      return trimmedBody;
+    }
+    return `${trimmedBody}\n${senderName}`;
   };
 
   const buildEmailBodyWithSignature = (baseEmailBody: string) => {
@@ -264,12 +287,16 @@ const Outreach = () => {
       .replace(/width=["']150["']/gi, 'width="320"')
       .replace(/max-width:\s*150px/gi, 'max-width:320px');
 
-    const bodyHasSender = normalizedSender && baseEmailBody.toLowerCase().includes(normalizedSender);
-    const signatureHasSender = normalizedSender && signatureForEmail.toLowerCase().includes(normalizedSender);
+    const signatureText = signatureForEmail
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
 
-    const bodyWithSender = senderName && !bodyHasSender && !signatureHasSender
-      ? `${baseEmailBody.trimEnd()}\n${senderName}`
-      : baseEmailBody.trimEnd();
+    const signatureHasSender = normalizedSender && signatureText.includes(normalizedSender);
+    const bodyWithSender = signatureHasSender
+      ? baseEmailBody.trimEnd()
+      : appendSenderLine(baseEmailBody, senderName);
 
     return signatureForEmail ? `${bodyWithSender}\n\n${signatureForEmail}` : bodyWithSender;
   };
@@ -601,10 +628,7 @@ const Outreach = () => {
       if (error) throw error;
       // Append sender name to generated email so it's visible in preview
       const senderName = getSenderName();
-      let emailBody = data.email;
-      if (senderName && !emailBody.toLowerCase().includes(senderName.toLowerCase())) {
-        emailBody = `${emailBody.trimEnd()}\n${senderName}`;
-      }
+      const emailBody = appendSenderLine(data.email, senderName);
       setGeneratedEmail(emailBody);
       toast({
         title: "Email generated",
