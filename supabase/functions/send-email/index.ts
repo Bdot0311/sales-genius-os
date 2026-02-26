@@ -184,7 +184,26 @@ serve(async (req) => {
       const isHtml = body.trim().startsWith('<') && (body.includes('<html') || body.includes('<div') || body.includes('<p') || body.includes('<br'));
       
       // Convert plain text to properly formatted HTML email
-      const htmlBody = isHtml ? body : `<!DOCTYPE html>
+      // Check if body contains HTML tags (e.g. signature with images)
+      const containsHtml = /<[a-z][\s\S]*>/i.test(body);
+      
+      let formattedBody: string;
+      if (isHtml) {
+        formattedBody = body;
+      } else if (containsHtml) {
+        // Body is mostly plain text but contains HTML (like a signature block)
+        // Split at the first HTML tag to separate text from signature
+        const firstHtmlIndex = body.search(/<[a-z][\s\S]*>/i);
+        const textPart = body.substring(0, firstHtmlIndex);
+        const htmlPart = body.substring(firstHtmlIndex);
+        
+        const textHtml = textPart.split('\n').map((line: string) => line.trim() ? `<p>${line}</p>` : '').join('\n');
+        formattedBody = textHtml + '\n' + htmlPart;
+      } else {
+        formattedBody = body.split('\n').map((line: string) => line.trim() ? `<p>${line}</p>` : '').join('\n');
+      }
+
+      const htmlBody = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -201,10 +220,14 @@ serve(async (req) => {
     p {
       margin: 0 0 16px 0;
     }
+    img {
+      max-width: 100%;
+      height: auto;
+    }
   </style>
 </head>
 <body>
-${body.split('\n').map((line: string) => line.trim() ? `<p>${line}</p>` : '').join('\n')}
+${formattedBody}
 </body>
 </html>`;
 
