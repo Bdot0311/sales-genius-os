@@ -245,6 +245,17 @@ const Outreach = () => {
     setSenderProfileName(defaultName);
   };
 
+  const formatNameFromEmail = (email: string) => {
+    const localPart = email.split("@")[0] || "";
+    return localPart
+      .replace(/[._-]+/g, " ")
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
+  };
+
   const getSenderName = () => {
     if (senderProfileName.trim()) {
       return senderProfileName.trim();
@@ -254,14 +265,17 @@ const Outreach = () => {
       connectedAccounts.find((account) => account.id === selectedSenderId)?.email ||
       connectedAccounts[0]?.email || "";
 
-    const localPart = selectedAccountEmail.split("@")[0] || "";
-    return localPart
-      .replace(/[._-]+/g, " ")
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean)
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(" ");
+    return formatNameFromEmail(selectedAccountEmail);
+  };
+
+  const resolveSenderName = async () => {
+    const currentSenderName = getSenderName();
+    if (currentSenderName) {
+      return currentSenderName;
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    return formatNameFromEmail(user?.email || "");
   };
 
   const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -277,11 +291,34 @@ const Outreach = () => {
     if (!senderName || hasSenderAsOwnLine(trimmedBody, senderName)) {
       return trimmedBody;
     }
+
+    const lines = trimmedBody.split(/\r?\n/);
+    let lastNonEmptyIndex = -1;
+
+    for (let i = lines.length - 1; i >= 0; i--) {
+      if (lines[i].trim()) {
+        lastNonEmptyIndex = i;
+        break;
+      }
+    }
+
+    if (lastNonEmptyIndex >= 0) {
+      const signOffLine = lines[lastNonEmptyIndex].trim();
+      const isSignOff = /^(best(?: regards)?|regards|thanks|thank you|sincerely)[\s,!.:-]*$/i.test(signOffLine);
+
+      if (isSignOff) {
+        const hasTextAfterSignOff = lines.slice(lastNonEmptyIndex + 1).some((line) => line.trim().length > 0);
+        if (!hasTextAfterSignOff) {
+          return [...lines.slice(0, lastNonEmptyIndex + 1), senderName].join("\n");
+        }
+      }
+    }
+
     return `${trimmedBody}\n${senderName}`;
   };
 
-  const buildEmailBodyWithSignature = (baseEmailBody: string) => {
-    const senderName = getSenderName();
+  const buildEmailBodyWithSignature = (baseEmailBody: string, resolvedSenderName?: string) => {
+    const senderName = (resolvedSenderName ?? getSenderName()).trim();
     const normalizedSender = senderName.toLowerCase();
     const signatureForEmail = signature
       .replace(/width=["']150["']/gi, 'width="320"')
@@ -626,9 +663,11 @@ const Outreach = () => {
       });
 
       if (error) throw error;
-      // Append sender name to generated email so it's visible in preview
-      const senderName = getSenderName();
+      const senderName = await resolveSenderName();
       const emailBody = appendSenderLine(data.email, senderName);
+      if (senderName && !senderProfileName.trim()) {
+        setSenderProfileName(senderName);
+      }
       setGeneratedEmail(emailBody);
       toast({
         title: "Email generated",
@@ -734,9 +773,10 @@ const Outreach = () => {
     }
   };
 
-  const selectVariant = (variant: EmailVariant) => {
+  const selectVariant = async (variant: EmailVariant) => {
     setSubjectLine(variant.subject);
-    setGeneratedEmail(variant.body);
+    const senderName = await resolveSenderName();
+    setGeneratedEmail(appendSenderLine(variant.body, senderName));
     setShowVariantPicker(false);
     setEmailVariants([]);
     toast({
@@ -774,8 +814,8 @@ const Outreach = () => {
       }
 
       const senderAccountId = selectedSenderId || connectedAccounts[0]?.id;
-
-      const fullEmailBody = buildEmailBodyWithSignature(generatedEmail);
+      const senderName = await resolveSenderName();
+      const fullEmailBody = buildEmailBodyWithSignature(generatedEmail, senderName);
 
       const { data, error } = await supabase.functions.invoke('send-email', {
         body: {
@@ -865,7 +905,8 @@ const Outreach = () => {
         return;
       }
 
-      const fullEmailBody = buildEmailBodyWithSignature(generatedEmail);
+      const senderName = await resolveSenderName();
+      const fullEmailBody = buildEmailBodyWithSignature(generatedEmail, senderName);
 
       // Format body as HTML while preserving signature HTML blocks
       const isHtml = fullEmailBody.trim().startsWith('<') &&
@@ -989,7 +1030,7 @@ ${formattedBody}
     // Set up the compose form with follow-up content
     setSelectedLead(lastSentEmailInfo.leadId);
     setSubjectLine(suggestion.suggestedSubject);
-    setGeneratedEmail(suggestion.suggestedBody);
+    setGeneratedEmail(appendSenderLine(suggestion.suggestedBody, getSenderName()));
     setTriggerContext(suggestion.triggerContext);
     setSelectedTemplate("follow_up");
     
