@@ -944,6 +944,28 @@ const Outreach = () => {
       const senderName = await resolveSenderName();
       const fullEmailBody = buildEmailBodyWithSignature(generatedEmail, senderName);
 
+      // Helper: convert plain text lines to HTML, collapsing sign-off + name
+      const textLinesToHtml = (text: string) => {
+        const lines = text.split('\n');
+        const result: string[] = [];
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) { result.push(''); continue; }
+          const isSignOff = /^(best(?: regards)?|regards|thanks|thank you|sincerely|cheers)[\s,!.:-]*$/i.test(line);
+          if (isSignOff) {
+            const block = [line];
+            let j = i + 1;
+            while (j < lines.length && !lines[j].trim()) j++;
+            while (j < lines.length && lines[j].trim()) { block.push(lines[j].trim()); j++; }
+            result.push(`<p style="margin:0">${block.join('<br>')}</p>`);
+            i = j - 1;
+          } else {
+            result.push(`<p>${line}</p>`);
+          }
+        }
+        return result.join('\n');
+      };
+
       // Format body as HTML while preserving signature HTML blocks
       const isHtml = fullEmailBody.trim().startsWith('<') &&
         (fullEmailBody.includes('<html') || fullEmailBody.includes('<div') || fullEmailBody.includes('<p') || fullEmailBody.includes('<br'));
@@ -956,10 +978,9 @@ const Outreach = () => {
         const firstHtmlIndex = fullEmailBody.search(/<[a-z][\s\S]*>/i);
         const textPart = fullEmailBody.substring(0, firstHtmlIndex);
         const htmlPart = fullEmailBody.substring(firstHtmlIndex);
-        const textHtml = textPart.split('\n').map((line: string) => line.trim() ? `<p>${line}</p>` : '').join('\n');
-        formattedBody = textHtml + '\n' + htmlPart;
+        formattedBody = textLinesToHtml(textPart) + '\n' + htmlPart;
       } else {
-        formattedBody = fullEmailBody.split('\n').map((line: string) => line.trim() ? `<p>${line}</p>` : '').join('\n');
+        formattedBody = textLinesToHtml(fullEmailBody);
       }
 
       const htmlBody = `<!DOCTYPE html>
