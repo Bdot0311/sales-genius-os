@@ -1133,6 +1133,9 @@ ${formattedBody}
                 loadCounts();
                 loadDailyEmailLimit();
               }}
+              onDailyLimitChange={async (newLimit) => {
+                await saveDailyLimit(newLimit);
+              }}
             />
             <TooltipProvider>
               <Tooltip>
