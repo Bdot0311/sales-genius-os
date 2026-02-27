@@ -59,6 +59,7 @@ export const BulkSendDialog = ({
   const [isSending, setIsSending] = useState(false);
   const [progress, setProgress] = useState({ sent: 0, failed: 0, total: 0 });
   const [searchQuery, setSearchQuery] = useState("");
+  const [bulkSenderId, setBulkSenderId] = useState<string>("all");
 
   const remaining = dailyEmailLimit - dailyEmailsSent;
   const emailableLeads = leads.filter((l) => l.contact_email);
@@ -168,7 +169,14 @@ export const BulkSendDialog = ({
         }
 
         const fullBody = buildBodyWithSignature(body);
-        const senderAccountId = selectedSenderId || connectedAccounts[0]?.id;
+        // Round-robin across accounts or use selected one
+        let senderAccountId: string;
+        if (bulkSenderId === "all" && connectedAccounts.length > 0) {
+          const idx = selectedLeads.indexOf(lead) % connectedAccounts.length;
+          senderAccountId = connectedAccounts[idx].id;
+        } else {
+          senderAccountId = bulkSenderId !== "all" ? bulkSenderId : (selectedSenderId || connectedAccounts[0]?.id);
+        }
 
         const { error } = await supabase.functions.invoke("send-email", {
           body: {
@@ -230,6 +238,29 @@ export const BulkSendDialog = ({
               {selectedLeadIds.size} selected
             </Badge>
           </div>
+
+          {/* Send From selector */}
+          {connectedAccounts.length > 1 && (
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Send From</Label>
+              <Select value={bulkSenderId} onValueChange={setBulkSenderId}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select sender" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All accounts (round-robin)</SelectItem>
+                  {connectedAccounts.map((acc) => (
+                    <SelectItem key={acc.id} value={acc.id}>{acc.email}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {bulkSenderId === "all" && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Emails will be distributed evenly across all {connectedAccounts.length} connected accounts
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Send mode */}
           <div>
