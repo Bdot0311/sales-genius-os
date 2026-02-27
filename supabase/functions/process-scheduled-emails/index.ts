@@ -78,12 +78,26 @@ serve(async (req) => {
 
         // Refresh token if expired
         if (config.expiresAt && Date.now() >= config.expiresAt && config.refreshToken) {
+          console.log(`Token expired for user ${email.user_id}, refreshing...`);
+          const googleClientId = config.clientId || Deno.env.get("GOOGLE_CLIENT_ID");
+          const googleClientSecret = config.clientSecret || Deno.env.get("GOOGLE_CLIENT_SECRET");
+
+          if (!googleClientId || !googleClientSecret) {
+            console.error(`Missing Google OAuth credentials for user ${email.user_id}`);
+            await supabase
+              .from("sent_emails")
+              .update({ status: "failed" })
+              .eq("id", email.id);
+            failed++;
+            continue;
+          }
+
           const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              client_id: config.clientId,
-              client_secret: config.clientSecret,
+              client_id: googleClientId,
+              client_secret: googleClientSecret,
               refresh_token: config.refreshToken,
               grant_type: "refresh_token",
             }),
@@ -102,8 +116,10 @@ serve(async (req) => {
                 },
               })
               .eq("id", integration.id);
+            console.log(`Token refreshed for user ${email.user_id}`);
           } else {
-            console.error(`Failed to refresh token for user ${email.user_id}`);
+            const errText = await tokenResponse.text();
+            console.error(`Failed to refresh token for user ${email.user_id}:`, errText);
             await supabase
               .from("sent_emails")
               .update({ status: "failed" })
@@ -114,6 +130,7 @@ serve(async (req) => {
         }
 
         if (!accessToken) {
+          console.error(`No access token for user ${email.user_id}, config keys: ${Object.keys(config).join(", ")}`);
           await supabase
             .from("sent_emails")
             .update({ status: "failed" })
