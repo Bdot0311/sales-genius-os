@@ -141,13 +141,29 @@ serve(async (req) => {
 
         // Build and send the email
         const body = email.body_html || email.body_text || "";
+
+        // Generate tracking pixel if not already present
+        let trackingPixelId = email.tracking_pixel_id;
+        let trackedBody = body;
+        if (!trackingPixelId) {
+          trackingPixelId = crypto.randomUUID();
+        }
+        // Inject tracking pixel if not already in body
+        if (!body.includes('track-email-open')) {
+          const trackingPixelUrl = `${supabaseUrl}/functions/v1/track-email-open?id=${trackingPixelId}`;
+          const trackingPixel = `<img src="${trackingPixelUrl}" width="1" height="1" style="display:none" alt="" />`;
+          trackedBody = body.includes('</body>') 
+            ? body.replace('</body>', `${trackingPixel}\n</body>`)
+            : body + trackingPixel;
+        }
+
         const emailContent = [
           `To: ${email.to_email}`,
           `Subject: ${mimeEncodeSubject(email.subject)}`,
           "MIME-Version: 1.0",
           "Content-Type: text/html; charset=utf-8",
           "",
-          body,
+          trackedBody,
         ].join("\r\n");
 
         const encodedEmail = btoa(String.fromCharCode(...new TextEncoder().encode(emailContent)))
@@ -176,6 +192,7 @@ serve(async (req) => {
               sent_at: new Date().toISOString(),
               gmail_message_id: gmailResult.id,
               gmail_thread_id: gmailResult.threadId,
+              tracking_pixel_id: trackingPixelId,
             })
             .eq("id", email.id);
 
