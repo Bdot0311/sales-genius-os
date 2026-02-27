@@ -231,6 +231,14 @@ ${formattedBody}
 </body>
 </html>`;
 
+      // Generate tracking pixel ID
+      const trackingPixelId = crypto.randomUUID();
+      const trackingPixelUrl = `${supabaseUrl}/functions/v1/track-email-open?id=${trackingPixelId}`;
+      const trackingPixel = `<img src="${trackingPixelUrl}" width="1" height="1" style="display:none" alt="" />`;
+
+      // Inject tracking pixel before closing body tag
+      const trackedHtmlBody = htmlBody.replace('</body>', `${trackingPixel}\n</body>`);
+
       // Send via Gmail API - use MIME encoding for subject to handle special characters
       const emailContent = [
         `To: ${to}`,
@@ -238,7 +246,7 @@ ${formattedBody}
         'MIME-Version: 1.0',
         'Content-Type: text/html; charset=utf-8',
         '',
-        htmlBody
+        trackedHtmlBody
       ].join('\r\n');
 
       const encodedEmail = toBase64Url(emailContent);
@@ -265,10 +273,11 @@ ${formattedBody}
           template_id: templateId || null,
           to_email: to,
           subject: subject,
-          body_html: htmlBody,
+          body_html: trackedHtmlBody,
           body_text: body,
           status: 'failed',
           sent_at: new Date().toISOString(),
+          tracking_pixel_id: trackingPixelId,
         });
         
         if (gmailResponse.status === 401) {
@@ -291,12 +300,13 @@ ${formattedBody}
         template_id: templateId || null,
         to_email: to,
         subject: subject,
-        body_html: htmlBody,
+        body_html: trackedHtmlBody,
         body_text: body,
         status: 'sent',
         gmail_message_id: gmailResult.id,
         gmail_thread_id: gmailResult.threadId,
         sent_at: new Date().toISOString(),
+        tracking_pixel_id: trackingPixelId,
       });
 
       if (insertError) {
