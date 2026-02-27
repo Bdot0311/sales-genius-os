@@ -218,6 +218,38 @@ serve(async (req) => {
       // Check if body contains HTML tags (e.g. signature with images)
       const containsHtml = /<[a-z][\s\S]*>/i.test(body);
       
+      // Helper: convert plain text lines to HTML, collapsing sign-off + name
+      const textLinesToHtml = (text: string) => {
+        const lines = text.split('\n');
+        const result: string[] = [];
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) {
+            result.push('');
+            continue;
+          }
+          // Detect sign-off line (Best, Thanks, Regards, etc.) followed by sender name
+          const isSignOff = /^(best(?: regards)?|regards|thanks|thank you|sincerely|cheers)[\s,!.:-]*$/i.test(line);
+          if (isSignOff) {
+            // Collect sign-off + following non-empty lines (name, title) into one block
+            const block = [line];
+            let j = i + 1;
+            // Skip blank lines between sign-off and name
+            while (j < lines.length && !lines[j].trim()) j++;
+            // Grab remaining non-empty lines (name, possibly title)
+            while (j < lines.length && lines[j].trim()) {
+              block.push(lines[j].trim());
+              j++;
+            }
+            result.push(`<p style="margin:0">${block.join('<br>')}</p>`);
+            i = j - 1; // skip consumed lines
+          } else {
+            result.push(`<p>${line}</p>`);
+          }
+        }
+        return result.join('\n');
+      };
+
       let formattedBody: string;
       if (isHtml) {
         formattedBody = body;
@@ -228,10 +260,9 @@ serve(async (req) => {
         const textPart = body.substring(0, firstHtmlIndex);
         const htmlPart = body.substring(firstHtmlIndex);
         
-        const textHtml = textPart.split('\n').map((line: string) => line.trim() ? `<p>${line}</p>` : '').join('\n');
-        formattedBody = textHtml + '\n' + htmlPart;
+        formattedBody = textLinesToHtml(textPart) + '\n' + htmlPart;
       } else {
-        formattedBody = body.split('\n').map((line: string) => line.trim() ? `<p>${line}</p>` : '').join('\n');
+        formattedBody = textLinesToHtml(body);
       }
 
       const htmlBody = `<!DOCTYPE html>
