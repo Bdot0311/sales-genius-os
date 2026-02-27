@@ -24,7 +24,8 @@ import { debounce } from "@/lib/utils";
 import { EmailTemplateManager, UserEmailTemplate } from "@/components/outreach/EmailTemplateManager";
 import { EmailPerformanceStats } from "@/components/outreach/EmailPerformanceStats";
 import { FollowUpSuggestion, FollowUpData } from "@/components/outreach/FollowUpSuggestion";
-import { BarChart3, ListOrdered, Layout } from "lucide-react";
+import { BarChart3, ListOrdered, Layout, Users } from "lucide-react";
+import { BulkSendDialog } from "@/components/outreach/BulkSendDialog";
 import { SequencesList, MessageBlocksList } from "@/components/sequences";
 
 // Opener words for the cold email framework
@@ -1117,6 +1118,22 @@ ${formattedBody}
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <BulkSendDialog
+              leads={leads}
+              dailyEmailLimit={dailyEmailLimit}
+              dailyEmailsSent={dailyEmailsSent}
+              connectedAccounts={connectedAccounts}
+              selectedSenderId={selectedSenderId}
+              emailTone={emailTone}
+              openerWord={openerWord}
+              businessDescription={businessDescription}
+              signature={signature}
+              senderName={getSenderName()}
+              onComplete={() => {
+                loadCounts();
+                loadDailyEmailLimit();
+              }}
+            />
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
