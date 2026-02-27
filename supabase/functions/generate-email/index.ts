@@ -186,9 +186,12 @@ RULES for subject lines:
 - Be specific and personalized
 - Create curiosity without being clickbait
 - Reference something about their company/role when possible
-- Never use spam trigger words`;
+- Never use spam trigger words
+- CRITICAL: Every generation must produce a COMPLETELY DIFFERENT subject line. Never reuse the same structure, phrasing, or angle twice. Vary your approach drastically each time — try different hooks: questions, statements, name drops, industry references, role-specific angles, company-specific angles, metric-based, outcome-based, pain-based, curiosity-based, etc.`;
       
       userPrompt = `Generate a single compelling email subject line for the following lead. The subject should be ${tone} in tone.
+
+IMPORTANT: This is generation attempt #${Date.now() % 1000}. You MUST produce a completely unique subject line that is different from any previous generation. Use a fresh angle, structure, and wording.
 
 Lead Information:
 - Name: ${sanitizedContactName}
@@ -210,9 +213,12 @@ RULES:
 - Do NOT invent or fabricate events like funding rounds, product launches, or hiring news unless explicitly provided in the lead data.
 - Keep it under 50 words
 - Make it feel personal and researched using only real, provided information
-- Be genuine, not sycophantic`;
+- Be genuine, not sycophantic
+- CRITICAL: Every generation must produce a COMPLETELY DIFFERENT trigger line. Never reuse the same structure, angle, or phrasing. Rotate between different power words. Vary the focus: sometimes highlight the person's role, sometimes the company's growth, sometimes the industry challenge, sometimes the team size, sometimes a technology angle. Be wildly creative while staying truthful.`;
 
       userPrompt = `Generate a personalized trigger/context opener for this lead:
+
+IMPORTANT: This is generation attempt #${Date.now() % 1000}. You MUST produce a completely unique trigger line — different structure, different angle, different power word from any previous attempt.
 
 Lead Information:
 - Name: ${sanitizedContactName}
@@ -224,7 +230,7 @@ Lead Information:
 ${openerWord && VALID_OPENERS.includes(openerWord) ? `\nPreferred Opening Word: Start with "${openerWord.charAt(0).toUpperCase() + openerWord.slice(1)}"` : ''}
 ${businessDescription ? `\nSender's Business Description: ${businessDescription}` : ''}
 
-Return ONLY the trigger context sentence, nothing else. No quotes, no explanations. Just the opener text like "Saw you recently raised Series A from Accel" or "Noticed you just expanded your sales team".`;
+Return ONLY the trigger context sentence, nothing else. No quotes, no explanations. Just the opener text.`;
     } else if (goal === 'social_proof') {
       // Generate social proof text
       systemPrompt = `You are an expert B2B sales copywriter. Generate compelling social proof text for cold emails.
@@ -318,8 +324,8 @@ Write ONLY the email body following the 4-sentence cold email framework:
 Start with the greeting and end with a simple sign-off like "Thanks," or "Best,". Do NOT include a subject line.`;
     }
 
-    // Use higher temperature for variants to get more diverse outputs
-    const temperature = variantNum > 0 ? 0.9 : 0.7;
+    // Use higher temperature for maximum variety on every generation
+    const temperature = variantNum > 0 ? 1.0 : 0.95;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
