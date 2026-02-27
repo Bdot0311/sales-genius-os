@@ -10,9 +10,10 @@ import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Send, Sparkles, Users, Search } from "lucide-react";
+import { Loader2, Send, Sparkles, Users, Search, Settings2, Mail } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 
 interface Lead {
   id: string;
@@ -35,6 +36,7 @@ interface BulkSendDialogProps {
   signature: string;
   senderName: string;
   onComplete: () => void;
+  onDailyLimitChange: (newLimit: number) => Promise<void>;
 }
 
 export const BulkSendDialog = ({
@@ -49,6 +51,7 @@ export const BulkSendDialog = ({
   signature,
   senderName,
   onComplete,
+  onDailyLimitChange,
 }: BulkSendDialogProps) => {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
@@ -60,6 +63,9 @@ export const BulkSendDialog = ({
   const [progress, setProgress] = useState({ sent: 0, failed: 0, total: 0 });
   const [searchQuery, setSearchQuery] = useState("");
   const [bulkSenderId, setBulkSenderId] = useState<string>("all");
+  const [bulkEnabled, setBulkEnabled] = useState(false);
+  const [editingLimit, setEditingLimit] = useState(dailyEmailLimit);
+  const [isSavingLimit, setIsSavingLimit] = useState(false);
 
   const remaining = dailyEmailLimit - dailyEmailsSent;
   const emailableLeads = leads.filter((l) => l.contact_email);
@@ -229,14 +235,66 @@ export const BulkSendDialog = ({
         </DialogHeader>
 
         <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
-          {/* Daily limit info */}
+          {/* Bulk sending toggle */}
           <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
-            <span className="text-sm text-muted-foreground">
-              Remaining today: <span className="font-semibold text-foreground">{remaining}</span> / {dailyEmailLimit}
-            </span>
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Enable Bulk Sending</span>
+            </div>
+            <Switch checked={bulkEnabled} onCheckedChange={setBulkEnabled} />
+          </div>
+
+          {!bulkEnabled ? (
+            <div className="flex-1 flex items-center justify-center text-center p-8">
+              <div className="space-y-2">
+                <Users className="w-10 h-10 mx-auto text-muted-foreground/50" />
+                <p className="text-sm text-muted-foreground">
+                  Turn on Bulk Sending above to select leads and send emails in volume.
+                </p>
+              </div>
+            </div>
+          ) : (
+          <>
+          {/* Daily limit info & settings */}
+          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
+            <div className="flex items-center gap-2 text-sm">
+              <Mail className="w-4 h-4 text-muted-foreground" />
+              <span className="text-muted-foreground">Today:</span>
+              <span className={`font-semibold ${dailyEmailsSent >= dailyEmailLimit ? "text-destructive" : "text-foreground"}`}>
+                {dailyEmailsSent} / {dailyEmailLimit}
+              </span>
+              <span className="text-muted-foreground">·</span>
+              <span className="text-muted-foreground">{remaining} remaining</span>
+            </div>
             <Badge variant={remaining > 0 ? "secondary" : "destructive"}>
               {selectedLeadIds.size} selected
             </Badge>
+          </div>
+
+          {/* Edit daily limit */}
+          <div className="flex items-center gap-2">
+            <Settings2 className="w-4 h-4 text-muted-foreground shrink-0" />
+            <Label className="text-xs text-muted-foreground shrink-0">Daily limit:</Label>
+            <Input
+              type="number"
+              min={1}
+              value={editingLimit}
+              onChange={(e) => setEditingLimit(Math.max(1, parseInt(e.target.value) || 1))}
+              className="h-7 w-20 text-xs"
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={async () => {
+                setIsSavingLimit(true);
+                await onDailyLimitChange(editingLimit);
+                setIsSavingLimit(false);
+              }}
+              disabled={isSavingLimit || editingLimit === dailyEmailLimit}
+            >
+              {isSavingLimit ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save"}
+            </Button>
           </div>
 
           {/* Send From selector */}
@@ -399,6 +457,8 @@ export const BulkSendDialog = ({
               </>
             )}
           </Button>
+          </>
+          )}
         </div>
       </DialogContent>
     </Dialog>
