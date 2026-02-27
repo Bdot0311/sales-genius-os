@@ -145,13 +145,48 @@ const Outreach = () => {
   const [isScheduling, setIsScheduling] = useState(false);
   const [schedulePopoverOpen, setSchedulePopoverOpen] = useState(false);
 
+  // Daily email limit state
+  const [dailyEmailLimit, setDailyEmailLimit] = useState(10);
+  const [dailyEmailsSent, setDailyEmailsSent] = useState(0);
+  const [isSavingLimit, setIsSavingLimit] = useState(false);
+
   useEffect(() => {
     loadLeads();
     loadSignature();
     loadBusinessDescription();
     loadCounts();
     loadConnectedAccounts();
+    loadDailyEmailLimit();
   }, []);
+
+  const loadDailyEmailLimit = async () => {
+    const { data } = await supabase
+      .from('subscriptions')
+      .select('daily_email_limit, daily_emails_sent, daily_emails_reset_at')
+      .eq('status', 'active')
+      .single();
+    if (data) {
+      const now = new Date();
+      const resetAt = data.daily_emails_reset_at ? new Date(data.daily_emails_reset_at) : new Date(0);
+      const todayMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+      setDailyEmailLimit(data.daily_email_limit || 10);
+      setDailyEmailsSent(resetAt < todayMidnight ? 0 : (data.daily_emails_sent || 0));
+    }
+  };
+
+  const saveDailyLimit = async (newLimit: number) => {
+    if (newLimit < 1) return;
+    setIsSavingLimit(true);
+    const { error } = await supabase
+      .from('subscriptions')
+      .update({ daily_email_limit: newLimit } as any)
+      .eq('status', 'active');
+    setIsSavingLimit(false);
+    if (!error) {
+      setDailyEmailLimit(newLimit);
+      toast({ title: "Daily limit updated", description: `Set to ${newLimit} emails/day` });
+    }
+  };
 
   const loadConnectedAccounts = async () => {
     const { data } = await supabase
@@ -857,6 +892,7 @@ const Outreach = () => {
       setOpenerWord("");
       setCurrentTemplateId(null);
       loadCounts();
+      setDailyEmailsSent(prev => prev + 1);
       
       // Show AI follow-up suggestion for introductory emails
       setLastSentEmailInfo(sentLeadInfo);
@@ -1659,11 +1695,49 @@ For logos, use HTML:
                   </div>
                   {generatedEmail && (
                     <div className="space-y-2">
+                      {/* Daily email limit badge */}
+                      <div className="flex items-center justify-between p-2 rounded-lg bg-muted/50 border">
+                        <div className="flex items-center gap-2 text-sm">
+                          <Mail className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-muted-foreground">Today:</span>
+                          <span className={cn("font-semibold", dailyEmailsSent >= dailyEmailLimit ? "text-destructive" : "text-foreground")}>
+                            {dailyEmailsSent} / {dailyEmailLimit}
+                          </span>
+                        </div>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-7 text-xs">
+                              <Settings2 className="w-3 h-3 mr-1" />
+                              Limit
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-48 p-3" align="end" side="top">
+                            <div className="space-y-2">
+                              <Label className="text-xs">Daily send limit</Label>
+                              <Input
+                                type="number"
+                                min={1}
+                                value={dailyEmailLimit}
+                                onChange={(e) => setDailyEmailLimit(Math.max(1, parseInt(e.target.value) || 1))}
+                                className="h-8"
+                              />
+                              <Button
+                                size="sm"
+                                className="w-full h-7 text-xs"
+                                onClick={() => saveDailyLimit(dailyEmailLimit)}
+                                disabled={isSavingLimit}
+                              >
+                                {isSavingLimit ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save"}
+                              </Button>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
                       <div className="flex gap-2">
                         <Button 
                           className="flex-1"
                           onClick={sendEmail}
-                          disabled={isSending || isScheduling}
+                          disabled={isSending || isScheduling || dailyEmailsSent >= dailyEmailLimit}
                         >
                           {isSending ? (
                             <>

@@ -1764,6 +1764,9 @@ export type Database = {
           credits_reset_at: string | null
           current_period_end: string
           current_period_start: string
+          daily_email_limit: number
+          daily_emails_reset_at: string | null
+          daily_emails_sent: number
           daily_searches_reset_at: string | null
           daily_searches_used: number
           id: string
@@ -1789,6 +1792,9 @@ export type Database = {
           credits_reset_at?: string | null
           current_period_end?: string
           current_period_start?: string
+          daily_email_limit?: number
+          daily_emails_reset_at?: string | null
+          daily_emails_sent?: number
           daily_searches_reset_at?: string | null
           daily_searches_used?: number
           id?: string
@@ -1814,6 +1820,9 @@ export type Database = {
           credits_reset_at?: string | null
           current_period_end?: string
           current_period_start?: string
+          daily_email_limit?: number
+          daily_emails_reset_at?: string | null
+          daily_emails_sent?: number
           daily_searches_reset_at?: string | null
           daily_searches_used?: number
           id?: string
@@ -2373,6 +2382,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_daily_emails_sent: {
+        Args: { _user_id: string }
+        Returns: undefined
       }
       lock_expired_trials: { Args: never; Returns: undefined }
       log_security_event: {

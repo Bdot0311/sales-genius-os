@@ -178,6 +178,37 @@ serve(async (req) => {
       );
     }
 
+    // --- Daily email limit enforcement ---
+    const { data: subscription, error: subError } = await supabase
+      .from('subscriptions')
+      .select('daily_email_limit, daily_emails_sent, daily_emails_reset_at')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .single();
+
+    if (subscription) {
+      const now = new Date();
+      const resetAt = subscription.daily_emails_reset_at ? new Date(subscription.daily_emails_reset_at) : new Date(0);
+      const todayMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+      let currentSent = subscription.daily_emails_sent || 0;
+
+      if (resetAt < todayMidnight) {
+        // Reset counter for new day
+        currentSent = 0;
+        await supabase
+          .from('subscriptions')
+          .update({ daily_emails_sent: 0, daily_emails_reset_at: todayMidnight.toISOString() })
+          .eq('user_id', user.id);
+      }
+
+      if (currentSent >= (subscription.daily_email_limit || 10)) {
+        return new Response(
+          JSON.stringify({ error: `Daily email limit reached (${subscription.daily_email_limit || 10}/day). Adjust your limit in Outreach settings.` }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     // Send email based on integration type
     if (integrationId === 'google' || !integrationId) {
       // Format body as proper HTML email if it's not already HTML
@@ -313,6 +344,15 @@ ${formattedBody}
         console.error('Failed to store sent email:', insertError);
         // Don't fail the request, email was sent successfully
       }
+
+      // Increment daily email counter
+      await supabase.rpc('increment_daily_emails_sent', { _user_id: user.id }).catch(() => {
+        // Fallback: direct update
+        supabase
+          .from('subscriptions')
+          .update({ daily_emails_sent: (subscription?.daily_emails_sent || 0) + 1 })
+          .eq('user_id', user.id);
+      });
 
       // Update lead's last_contacted_at if leadId is provided
       if (leadId) {

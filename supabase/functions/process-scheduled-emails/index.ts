@@ -51,8 +51,37 @@ serve(async (req) => {
     let processed = 0;
     let failed = 0;
 
+    // Pre-fetch daily limits for all unique users
+    const userIds = [...new Set(scheduledEmails.map((e: any) => e.user_id))];
+    const userLimits: Record<string, { limit: number; sent: number }> = {};
+    for (const uid of userIds) {
+      const { data: sub } = await supabase
+        .from('subscriptions')
+        .select('daily_email_limit, daily_emails_sent, daily_emails_reset_at')
+        .eq('user_id', uid)
+        .eq('status', 'active')
+        .single();
+      if (sub) {
+        const now = new Date();
+        const resetAt = sub.daily_emails_reset_at ? new Date(sub.daily_emails_reset_at) : new Date(0);
+        const todayMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+        let currentSent = sub.daily_emails_sent || 0;
+        if (resetAt < todayMidnight) {
+          currentSent = 0;
+          await supabase.from('subscriptions').update({ daily_emails_sent: 0, daily_emails_reset_at: todayMidnight.toISOString() }).eq('user_id', uid);
+        }
+        userLimits[uid] = { limit: sub.daily_email_limit || 10, sent: currentSent };
+      }
+    }
+
     for (const email of scheduledEmails) {
       try {
+        // Check daily limit
+        const ul = userLimits[email.user_id];
+        if (ul && ul.sent >= ul.limit) {
+          console.log(`Daily limit reached for user ${email.user_id} (${ul.sent}/${ul.limit}), skipping email ${email.id}`);
+          continue; // Skip, don't fail — will retry next cron run
+        }
         // Get user's integration for sending
         const { data: integration } = await supabase
           .from("integrations")
@@ -204,6 +233,10 @@ serve(async (req) => {
               .eq("id", email.lead_id)
               .eq("user_id", email.user_id);
           }
+
+          // Increment daily counter
+          await supabase.from('subscriptions').update({ daily_emails_sent: (ul?.sent || 0) + 1 }).eq('user_id', email.user_id);
+          if (ul) ul.sent += 1;
 
           processed++;
           console.log(`Sent scheduled email ${email.id} to ${email.to_email}`);
