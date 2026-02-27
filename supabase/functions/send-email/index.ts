@@ -218,7 +218,7 @@ serve(async (req) => {
       padding: 20px;
     }
     p {
-      margin: 0 0 16px 0;
+      margin: 0 0 10px 0;
     }
     img {
       max-width: 100%;
