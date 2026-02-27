@@ -1736,44 +1736,6 @@ For logos, use HTML:
                   </div>
                   {generatedEmail && (
                     <div className="space-y-2">
-                      {/* Daily email limit badge */}
-                      <div className="flex items-center justify-between p-2 rounded-lg bg-muted/50 border">
-                        <div className="flex items-center gap-2 text-sm">
-                          <Mail className="w-4 h-4 text-muted-foreground" />
-                          <span className="text-muted-foreground">Today:</span>
-                          <span className={cn("font-semibold", dailyEmailsSent >= dailyEmailLimit ? "text-destructive" : "text-foreground")}>
-                            {dailyEmailsSent} / {dailyEmailLimit}
-                          </span>
-                        </div>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-7 text-xs">
-                              <Settings2 className="w-3 h-3 mr-1" />
-                              Limit
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-48 p-3" align="end" side="top">
-                            <div className="space-y-2">
-                              <Label className="text-xs">Daily send limit</Label>
-                              <Input
-                                type="number"
-                                min={1}
-                                value={dailyEmailLimit}
-                                onChange={(e) => setDailyEmailLimit(Math.max(1, parseInt(e.target.value) || 1))}
-                                className="h-8"
-                              />
-                              <Button
-                                size="sm"
-                                className="w-full h-7 text-xs"
-                                onClick={() => saveDailyLimit(dailyEmailLimit)}
-                                disabled={isSavingLimit}
-                              >
-                                {isSavingLimit ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save"}
-                              </Button>
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-                      </div>
                       <div className="flex gap-2">
                         <Button 
                           className="flex-1"
