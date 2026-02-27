@@ -377,13 +377,14 @@ ${formattedBody}
       }
 
       // Increment daily email counter
-      await supabase.rpc('increment_daily_emails_sent', { _user_id: user.id }).catch(() => {
-        // Fallback: direct update
-        supabase
+      const { error: rpcError } = await supabase.rpc('increment_daily_emails_sent', { _user_id: user.id });
+      if (rpcError) {
+        console.error('RPC increment failed, using fallback:', rpcError.message);
+        await supabase
           .from('subscriptions')
-          .update({ daily_emails_sent: (subscription?.daily_emails_sent || 0) + 1 })
+          .update({ daily_emails_sent: (subscription?.daily_emails_sent || 0) + 1 } as any)
           .eq('user_id', user.id);
-      });
+      }
 
       // Update lead's last_contacted_at if leadId is provided
       if (leadId) {
