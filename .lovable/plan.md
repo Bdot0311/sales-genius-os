@@ -1,56 +1,51 @@
 
 
-# Consolidate Sequences & Message Blocks into Outreach Studio
+# Plan: User-Configurable Daily Email Sending Limit
 
 ## Overview
-
-Move Sequences and Message Blocks from standalone pages into the Outreach Studio as two new tabs. This creates a single unified workspace for all outreach activities: composing emails, managing sequences, building message blocks, viewing sent emails, drafts, and performance.
+Instead of tier-based limits, let users set their own daily email sending cap in their Outreach settings. This gives users full control over their sending volume for deliverability management.
 
 ## Changes
 
-### 1. Update `src/pages/Outreach.tsx` -- Add two new tabs
+### 1. Database: Add `daily_email_limit` and tracking columns to `subscriptions`
+- `daily_email_limit` (integer, default 10) -- user-configured cap
+- `daily_emails_sent` (integer, default 0) -- today's counter
+- `daily_emails_reset_at` (timestamptz, default now()) -- when counter resets
 
-Add "Sequences" and "Message Blocks" as tabs alongside the existing Compose, Sent, Drafts, and Performance tabs:
+### 2. Outreach UI: Add a daily limit setting
+In the Outreach page (likely in a settings area or near the compose section), add a simple input where users can set their daily email limit (e.g., 10, 50, 100, 500). Show current usage like "3 / 50 sent today".
 
-**New tab structure:**
-| Tab | Content |
-|---|---|
-| Compose | Existing email composer (unchanged) |
-| Sequences | Embed `SequencesList` component |
-| Message Blocks | Embed `MessageBlocksList` component |
-| Sent | Existing sent emails table (unchanged) |
-| Drafts | Existing drafts table (unchanged) |
-| Performance | Existing performance stats (unchanged) |
+### 3. Enforce limits in `send-email` and `process-scheduled-emails` edge functions
+- Before sending, fetch the user's `daily_email_limit`, `daily_emails_sent`, and `daily_emails_reset_at`
+- If `daily_emails_reset_at` is in the past (past midnight UTC), reset counter to 0
+- If `daily_emails_sent >= daily_email_limit`, reject with a clear error
+- On successful send, increment `daily_emails_sent`
 
-- Import `SequencesList` and `MessageBlocksList` from `@/components/sequences`
-- Import `ListOrdered` icon (already available from lucide-react)
-- Add two new `TabsTrigger` entries and their corresponding `TabsContent` sections
-
-### 2. Update `src/components/dashboard/DashboardLayout.tsx` -- Remove sidebar entries
-
-Remove the "Sequences" and "Message Blocks" items from the `navigation` array (lines 48-49). This declutters the sidebar since these features are now accessible within Outreach Studio.
-
-### 3. Remove standalone pages (optional cleanup)
-
-The following pages and routes become unnecessary:
-- Remove routes `/dashboard/sequences`, `/dashboard/message-blocks` from `src/App.tsx`
-- Keep `/dashboard/sequences/:id` route since the Sequence Builder/detail view still needs its own page
-- The page files `src/pages/Sequences.tsx` and `src/pages/MessageBlocks.tsx` can remain but are no longer routed to from the sidebar
-
-### 4. Keep Sequence Detail route
-
-The `/dashboard/sequences/:id` route for `SequenceDetail` (the builder view) stays as a standalone page since it's a full-screen editor experience that users navigate to from the sequences list.
+### 4. Frontend enforcement
+- Disable the Send button when daily limit is reached
+- Show a toast/badge with remaining sends for the day
+- Allow users to update their limit from the Outreach page
 
 ## Technical Details
 
-### Files Modified
+### Migration SQL
+```sql
+ALTER TABLE subscriptions
+ADD COLUMN daily_email_limit integer NOT NULL DEFAULT 10,
+ADD COLUMN daily_emails_sent integer NOT NULL DEFAULT 0,
+ADD COLUMN daily_emails_reset_at timestamptz DEFAULT now();
+```
 
-| File | Change |
-|---|---|
-| `src/pages/Outreach.tsx` | Add imports for `SequencesList`, `MessageBlocksList`, `ListOrdered`; add 2 new TabsTrigger + TabsContent sections |
-| `src/components/dashboard/DashboardLayout.tsx` | Remove "Sequences" and "Message Blocks" from the `navigation` array |
-| `src/App.tsx` | Remove `/dashboard/sequences` and `/dashboard/message-blocks` routes (keep `/dashboard/sequences/:id`) |
+### Edge Function Logic (send-email / process-scheduled-emails)
+```
+1. Fetch subscription: daily_email_limit, daily_emails_sent, daily_emails_reset_at
+2. If daily_emails_reset_at < start of today (UTC), reset daily_emails_sent = 0
+3. If daily_emails_sent >= daily_email_limit, return 429 "Daily limit reached"
+4. On success, increment daily_emails_sent += 1
+```
 
-### No database or backend changes needed
+### Outreach UI Addition
+- Small settings card or inline control showing: "Daily limit: [input] | Sent today: X / Y"
+- Users type any number they want (minimum 1)
+- Saves to `subscriptions.daily_email_limit` via a simple update query
 
-This is purely a UI reorganization -- the same components render the same data, just within a different tab container.
