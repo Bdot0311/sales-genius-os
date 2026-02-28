@@ -241,18 +241,6 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             </div>
           )}
 
-          {/* Collapse toggle - desktop only */}
-          <div className="hidden lg:flex flex-shrink-0 justify-center py-2 border-t border-border">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            >
-              {sidebarCollapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
-            </Button>
-          </div>
-
           {/* User section - fixed at bottom */}
           <div className={`flex-shrink-0 ${sidebarCollapsed ? "p-2" : "p-4"} border-t border-border bg-card`}>
             {sidebarCollapsed ? (
