@@ -576,7 +576,7 @@ serve(async (req) => {
       company: filters.company || undefined,
       company_size: normalizedCompanySize || undefined,
       seniority: normalizedSeniority || undefined,
-      keywords: nonJobKeywords.length > 0 ? nonJobKeywords : undefined,
+      keywords: nonJobKeywords.length > 0 ? nonJobKeywords.join(', ') : undefined,
       limit,
       ...(page > 1 ? { offset } : {}),
     };
