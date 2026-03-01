@@ -12,18 +12,18 @@ interface AILeadCommandProps {
 }
 
 const allExampleCommands = [
-  "Find 50 SaaS founders in fintech",
-  "CEOs at B2B startups with 50-200 employees",
+  "Founders in financial services in the United States",
   "VP of Sales at healthcare companies in California",
-  "Series A startup founders in AI/ML space",
   "CTOs at ecommerce companies in New York",
-  "Directors of Marketing at cybersecurity firms",
-  "Heads of Product at edtech startups in Europe",
-  "CFOs at logistics companies with 200+ employees",
-  "Growth leads at seed-stage climate tech startups",
-  "Engineering managers at cloud infrastructure companies",
-  "COOs at real estate tech firms in Texas",
-  "Demand gen managers at martech companies",
+  "Directors of Marketing at technology companies in London",
+  "C-suite executives at manufacturing companies in Germany",
+  "Engineering managers at software companies in San Francisco",
+  "Heads of Business Development in United Kingdom",
+  "CFOs at retail companies in Canada",
+  "VP of Product at media companies in Australia",
+  "Marketing directors at pharmaceutical companies in Boston",
+  "CEOs at consulting firms in Chicago",
+  "Directors of Engineering at telecommunications companies",
 ];
 
 // Show 4 random examples each time
