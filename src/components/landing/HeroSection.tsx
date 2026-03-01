@@ -309,7 +309,7 @@ export const HeroSection = () => {
             <p
               className={`hero-description text-base sm:text-lg text-muted-foreground max-w-xl mx-auto lg:mx-0 mb-8 leading-relaxed transition-all duration-700 delay-200 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
             >
-              Stop duct-taping Apollo, Instantly, HubSpot, spreadsheets, and disconnected AI tools. SalesOS turns your outbound stack into one coordinated performance engine.
+              Stop duct-taping multiple tools, spreadsheets, and disconnected platforms. SalesOS turns your outbound stack into one coordinated performance engine.
             </p>
 
             {/* CTAs */}
