@@ -14,7 +14,7 @@ import {
   FinalCTA,
   FooterSection,
   MidPageCTA,
-  StackComparisonSection,
+  SocialProofComparison,
 } from "@/components/landing";
 import { 
   SEOHead, 
@@ -130,8 +130,8 @@ const Index = () => {
             {/* 1b. Works with your stack */}
             <TrustedByBar />
             
-            {/* 1c. Stack comparison */}
-            <StackComparisonSection />
+            {/* 1c. Social proof comparison */}
+            <SocialProofComparison />
             
             
             {/* 3. How it works */}

@@ -16,4 +16,4 @@ export { LogoMarquee } from './LogoMarquee';
 export { SocialProof } from './SocialProof';
 export { CTASection } from './CTASection';
 export { MidPageCTA } from './MidPageCTA';
-export { StackComparisonSection } from './StackComparisonSection';
+export { SocialProofComparison } from './SocialProofComparison';
