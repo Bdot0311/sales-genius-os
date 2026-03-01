@@ -628,9 +628,9 @@ const ApiDocs = () => {
                   </p>
                 </div>
                 <div>
-                  <h3 className="font-semibold mb-1">Clay / Apollo / AI Lead Tools</h3>
+                  <h3 className="font-semibold mb-1">External Lead Tools</h3>
                   <p className="text-sm text-muted-foreground">
-                    Export leads from Clay or similar tools as JSON, then push them into SalesOS using the bulk import endpoint. Trigger enrichment and scoring via the <code className="bg-muted px-1.5 py-0.5 rounded text-xs">POST /leads/:id/enrich</code> and <code className="bg-muted px-1.5 py-0.5 rounded text-xs">POST /leads/:id/score</code> endpoints.
+                    Export leads from external tools as JSON, then push them into SalesOS using the bulk import endpoint. Trigger enrichment and scoring via the <code className="bg-muted px-1.5 py-0.5 rounded text-xs">POST /leads/:id/enrich</code> and <code className="bg-muted px-1.5 py-0.5 rounded text-xs">POST /leads/:id/score</code> endpoints.
                   </p>
                 </div>
               </CardContent>
