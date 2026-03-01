@@ -1,7 +1,6 @@
 <!doctype html>
 <html lang="en" prefix="og: https://ogp.me/ns#">
   <head>
-    <script>function initApollo(){var n=Math.random().toString(36).substring(7),o=document.createElement("script");o.src="https://assets.apollo.io/micro/website-tracker/tracker.iife.js?nocache="+n,o.async=!0,o.defer=!0,o.onload=function(){window.trackingFunctions.onLoad({appId:"68281a59fffc60001573dabb"})},document.head.appendChild(o)}initApollo();</script>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-92ZVN964CE"></script>
     <script>
@@ -85,6 +84,117 @@
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="https://storage.googleapis.com/gpt-engineer-file-uploads/ZFJK1zezovOpOdjy9TptFukIhhc2/uploads/1761024288225-image 2.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/pwa-192x192.png" />
+    
+    <!-- Static JSON-LD for crawlers that don't execute JS -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://salesos.alephwavex.io/#organization",
+          "name": "SalesOS",
+          "url": "https://salesos.alephwavex.io",
+          "logo": "https://ghgfjnepvxvxrncmskys.supabase.co/storage/v1/object/public/social-images/salesos-logo.png",
+          "description": "AI-powered sales automation and lead generation platform for B2B teams.",
+          "sameAs": []
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://salesos.alephwavex.io/#website",
+          "url": "https://salesos.alephwavex.io",
+          "name": "SalesOS",
+          "publisher": { "@id": "https://salesos.alephwavex.io/#organization" },
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://salesos.alephwavex.io/leads?q={search_term_string}",
+            "query-input": "required name=search_term_string"
+          }
+        },
+        {
+          "@type": "SoftwareApplication",
+          "name": "SalesOS",
+          "applicationCategory": "BusinessApplication",
+          "operatingSystem": "Web",
+          "offers": {
+            "@type": "AggregateOffer",
+            "lowPrice": "149",
+            "highPrice": "799",
+            "priceCurrency": "USD"
+          },
+          "description": "AI-powered lead discovery, personalized outreach, pipeline management, and sales coaching."
+        },
+        {
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "What's included in the free trial?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "You get 14 days to try any SalesOS plan with full access to the features included in that plan. This includes AI lead discovery, email generation, pipeline management, and integrations based on your chosen tier. A credit card is required to start. Cancel anytime before the trial ends and you won't be charged."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How do search credits work?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Search credits are used when you run AI lead discovery queries. Each search costs 1 credit and returns up to 100 matching leads. Viewing, enriching, and exporting those leads is free. Credits reset monthly based on your plan, and unused credits don't roll over."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Can I change plans later?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes, you can upgrade or downgrade your plan at any time from your account settings. Upgrades take effect immediately with prorated billing. Downgrades apply at the start of your next billing cycle."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How does AI email generation work?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Our AI analyzes each lead's profile, job title, company data, and recent activity to craft personalized outreach. You set the tone and the AI generates subject lines and body copy. You can edit before sending."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "What integrations are available?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "SalesOS connects natively with Google Workspace, Slack, Calendly, HubSpot, and Salesforce. We also support 5,000+ apps through Zapier."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Is my data secure?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "We use enterprise-grade encryption (AES-256 at rest, TLS 1.3 in transit), are SOC 2 Type II compliant, and fully GDPR-compliant. Your lead data is never shared or sold."
+              }
+            }
+          ]
+        }
+      ]
+    }
+    </script>
+
+    <!-- Apollo tracking - deferred to avoid render blocking -->
+    <script defer>
+      window.addEventListener('load', function() {
+        var n = Math.random().toString(36).substring(7);
+        var o = document.createElement("script");
+        o.src = "https://assets.apollo.io/micro/website-tracker/tracker.iife.js?nocache=" + n;
+        o.async = true;
+        o.defer = true;
+        o.onload = function() {
+          window.trackingFunctions.onLoad({ appId: "68281a59fffc60001573dabb" });
+        };
+        document.head.appendChild(o);
+      });
+    </script>
   </head>
 
   <body>
