@@ -1,51 +1,33 @@
 
 
-# Plan: User-Configurable Daily Email Sending Limit
+# Replace Stack Comparison with Social Proof Comparison
 
-## Overview
-Instead of tier-based limits, let users set their own daily email sending cap in their Outreach settings. This gives users full control over their sending volume for deliverability management.
+## What Changes
 
-## Changes
+Remove the current "Your Stack Wasn't Built to Win" comparison section and replace it with a conversion-focused "What Changes When You Switch" section. This new section uses aspirational transformation framing instead of negativity -- showing outcomes teams achieve with SalesOS.
 
-### 1. Database: Add `daily_email_limit` and tracking columns to `subscriptions`
-- `daily_email_limit` (integer, default 10) -- user-configured cap
-- `daily_emails_sent` (integer, default 0) -- today's counter
-- `daily_emails_reset_at` (timestamptz, default now()) -- when counter resets
+## Design
 
-### 2. Outreach UI: Add a daily limit setting
-In the Outreach page (likely in a settings area or near the compose section), add a simple input where users can set their daily email limit (e.g., 10, 50, 100, 500). Show current usage like "3 / 50 sent today".
+- **Heading:** "What Changes When You Switch"
+- **Subheading:** "Teams that consolidate onto SalesOS see measurable improvements across their entire sales operation."
+- **Layout:** Two-column grid with "Before" (neutral, muted) and "With SalesOS" (primary accent, elevated) cards
+- **Bottom:** Social proof line ("Join 500+ sales teams") with CTA button
+- **Animations:** IntersectionObserver scroll-reveal, consistent with existing sections
 
-### 3. Enforce limits in `send-email` and `process-scheduled-emails` edge functions
-- Before sending, fetch the user's `daily_email_limit`, `daily_emails_sent`, and `daily_emails_reset_at`
-- If `daily_emails_reset_at` is in the past (past midnight UTC), reset counter to 0
-- If `daily_emails_sent >= daily_email_limit`, reject with a clear error
-- On successful send, increment `daily_emails_sent`
+## Transformation rows
 
-### 4. Frontend enforcement
-- Disable the Send button when daily limit is reached
-- Show a toast/badge with remaining sends for the day
-- Allow users to update their limit from the Outreach page
+| Before (neutral tone) | With SalesOS (outcome) |
+|---|---|
+| Hours toggling between tools | 3x faster lead-to-outreach time |
+| Manual follow-up tracking | Automated sequences with real-time signals |
+| Generic batch emails | AI-personalized outreach, 2-4x higher reply rates |
+| Scattered pipeline data | Single dashboard with deal intelligence |
+| Guesswork on lead quality | AI scoring with 85%+ fit accuracy |
 
-## Technical Details
+## Technical Steps
 
-### Migration SQL
-```sql
-ALTER TABLE subscriptions
-ADD COLUMN daily_email_limit integer NOT NULL DEFAULT 10,
-ADD COLUMN daily_emails_sent integer NOT NULL DEFAULT 0,
-ADD COLUMN daily_emails_reset_at timestamptz DEFAULT now();
-```
-
-### Edge Function Logic (send-email / process-scheduled-emails)
-```
-1. Fetch subscription: daily_email_limit, daily_emails_sent, daily_emails_reset_at
-2. If daily_emails_reset_at < start of today (UTC), reset daily_emails_sent = 0
-3. If daily_emails_sent >= daily_email_limit, return 429 "Daily limit reached"
-4. On success, increment daily_emails_sent += 1
-```
-
-### Outreach UI Addition
-- Small settings card or inline control showing: "Daily limit: [input] | Sent today: X / Y"
-- Users type any number they want (minimum 1)
-- Saves to `subscriptions.daily_email_limit` via a simple update query
+1. **Create** `src/components/landing/SocialProofComparison.tsx` -- new component following existing patterns (container max-w-[1120px], IntersectionObserver, responsive grid)
+2. **Update** `src/components/landing/index.ts` -- swap `StackComparisonSection` export for `SocialProofComparison`
+3. **Update** `src/pages/Index.tsx` -- import and render `SocialProofComparison` in place of `StackComparisonSection`
+4. **Delete** `src/components/landing/StackComparisonSection.tsx`
 
