@@ -107,7 +107,7 @@ export const CTASection = () => {
                   className="h-14 px-10 text-base font-semibold bg-foreground text-background hover:bg-foreground/90 rounded-xl magnetic-btn group shadow-glow"
                   onClick={() => navigate('/pricing')}
                 >
-                  Start free trial
+                  Start for free
                   <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Button>
                 <Button
@@ -123,7 +123,7 @@ export const CTASection = () => {
               {/* Trust indicators */}
               <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
                 {[
-                  { icon: Zap, text: "14-day free trial" },
+                  { icon: Zap, text: "Free forever plan" },
                   { icon: Shield, text: "No credit card required" },
                   { icon: Clock, text: "Setup in 2 minutes" },
                 ].map((item, i) => (

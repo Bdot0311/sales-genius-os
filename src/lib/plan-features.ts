@@ -2,13 +2,79 @@
 // All features remain visible - plans control capacity, depth, and throughput
 
 export const PLAN_FEATURES = {
-  growth: {
-    name: 'Growth',
-    price: 149,
+  free: {
+    name: 'Free',
+    price: 0,
     
     // Search Credits
-    monthlySearchCredits: 350,
-    dailySearchLimit: 25,
+    monthlySearchCredits: 0,
+    dailySearchLimit: 0,
+    exportTier: 'none' as const,
+    
+    // Lead Intelligence Engine
+    maxResultsPerSearch: 0,
+    enrichmentLevel: 'none',
+    advancedFilters: false,
+    apiAccessLeads: false,
+    
+    // AI Outreach Studio
+    activeSequences: 0,
+    personalizationLevel: 'none',
+    aiFirstLines: false,
+    multiChannelLogic: false,
+    
+    // Email Sequences
+    stepsPerSequence: 0,
+    sequenceType: 'none' as const,
+    replyAnalysis: false,
+    handoffAlerts: 'none' as const,
+    relevanceFilter: false,
+    messageBlocks: 0,
+    engagementStates: 'none' as const,
+    sequenceABTesting: 0,
+    sequenceAnalytics: 'none' as const,
+    
+    // Meeting Automator
+    calendarConnections: 0,
+    smartRouting: false,
+    priorityBooking: false,
+    
+    // Smart Deal Pipeline
+    automatedStageProgression: false,
+    revenueForecasting: false,
+    customPipelines: false,
+    advancedAutomationTriggers: false,
+    
+    // AI Sales Coach
+    coachingLevel: 'view-only',
+    realTimeAnalysis: 'none',
+    liveCoaching: false,
+    customPlaybooks: false,
+    
+    // Automation Builder
+    automationRules: 0,
+    advancedWorkflows: false,
+    conditionalLogicDepth: 0,
+    
+    // Analytics Dashboard
+    analyticsLevel: 'summary',
+    funnelAnalytics: false,
+    repPerformance: false,
+    customReports: false,
+    dataExports: false,
+    apiAccessAnalytics: false,
+    
+    // AI Recommendations
+    recommendationLevel: 'none',
+  },
+
+  growth: {
+    name: 'Growth',
+    price: 49,
+    
+    // Search Credits
+    monthlySearchCredits: 150,
+    dailySearchLimit: 15,
     exportTier: 'standard' as const,
     
     // Lead Intelligence Engine
@@ -23,9 +89,9 @@ export const PLAN_FEATURES = {
     aiFirstLines: false,
     multiChannelLogic: false,
     
-    // Email Sequences (NEW)
+    // Email Sequences
     stepsPerSequence: 3,
-    sequenceType: 'basic' as const, // time-delay only
+    sequenceType: 'basic' as const,
     replyAnalysis: false,
     handoffAlerts: 'none' as const,
     relevanceFilter: false,
@@ -70,15 +136,15 @@ export const PLAN_FEATURES = {
   
   pro: {
     name: 'Pro',
-    price: 299,
+    price: 149,
     
     // Search Credits
-    monthlySearchCredits: 700,
-    dailySearchLimit: 100,
+    monthlySearchCredits: 500,
+    dailySearchLimit: 50,
     exportTier: 'advanced' as const,
     
     // Lead Intelligence Engine
-    maxResultsPerSearch: 100,
+    maxResultsPerSearch: 50,
     enrichmentLevel: 'advanced',
     advancedFilters: true,
     apiAccessLeads: false,
@@ -89,9 +155,9 @@ export const PLAN_FEATURES = {
     aiFirstLines: true,
     multiChannelLogic: false,
     
-    // Email Sequences (NEW)
+    // Email Sequences
     stepsPerSequence: 7,
-    sequenceType: 'behavioral' as const, // state-based branching
+    sequenceType: 'behavioral' as const,
     replyAnalysis: true,
     handoffAlerts: 'email' as const,
     relevanceFilter: 'basic' as const,
@@ -136,15 +202,15 @@ export const PLAN_FEATURES = {
   
   elite: {
     name: 'Elite',
-    price: 799,
+    price: 399,
     
     // Search Credits
-    monthlySearchCredits: 2000,
-    dailySearchLimit: 500,
+    monthlySearchCredits: 1500,
+    dailySearchLimit: 150,
     exportTier: 'unlimited' as const,
     
     // Lead Intelligence Engine
-    maxResultsPerSearch: 500,
+    maxResultsPerSearch: 100,
     enrichmentLevel: 'premium',
     advancedFilters: true,
     apiAccessLeads: true,
@@ -155,15 +221,15 @@ export const PLAN_FEATURES = {
     aiFirstLines: true,
     multiChannelLogic: true,
     
-    // Email Sequences (NEW)
+    // Email Sequences
     stepsPerSequence: -1, // unlimited
-    sequenceType: 'custom' as const, // custom triggers + webhooks
+    sequenceType: 'custom' as const,
     replyAnalysis: true,
-    replyAnalysisCustomSignals: true, // Elite exclusive
-    handoffAlerts: 'webhook' as const, // includes Slack
+    replyAnalysisCustomSignals: true,
+    handoffAlerts: 'webhook' as const,
     relevanceFilter: 'advanced' as const,
     messageBlocks: -1, // unlimited
-    messageBlocksTeamSharing: true, // Elite exclusive
+    messageBlocksTeamSharing: true,
     engagementStates: 'custom' as const,
     sequenceABTesting: -1, // unlimited
     sequenceAnalytics: 'premium' as const,
@@ -208,6 +274,21 @@ export type PlanFeatures = typeof PLAN_FEATURES[PlanType];
 
 // Feature upgrade messages - educational, not aggressive
 export const UPGRADE_MESSAGES = {
+  leadSearch: {
+    title: 'Lead Discovery',
+    description: 'Unlock AI-powered lead search to find qualified prospects that match your ideal customer profile.',
+    availableOn: 'growth',
+  },
+  enrichment: {
+    title: 'Lead Enrichment',
+    description: 'Enrich your leads with verified contact data, company info, and buying signals.',
+    availableOn: 'growth',
+  },
+  pipelineAccess: {
+    title: 'Full Pipeline Access',
+    description: 'Manage your deals with a visual pipeline, drag-and-drop stages, and deal tracking.',
+    availableOn: 'growth',
+  },
   advancedFilters: {
     title: 'Advanced Discovery Filters',
     description: 'Target leads with intent signals, seniority levels, and buying indicators for higher conversion rates.',
@@ -288,7 +369,6 @@ export const UPGRADE_MESSAGES = {
     description: 'Increase your capacity for leads, sequences, and automations.',
     availableOn: 'pro',
   },
-  // NEW: Email Sequence Features
   stateBasedSequences: {
     title: 'State-Based Sequences',
     description: 'Create different follow-up paths based on prospect behavior (opens, clicks, silence).',
@@ -339,10 +419,11 @@ export const UPGRADE_MESSAGES = {
 export type UpgradeFeature = keyof typeof UPGRADE_MESSAGES;
 
 export const getPlanFeatures = (plan: PlanType): PlanFeatures => {
-  return PLAN_FEATURES[plan] || PLAN_FEATURES.growth;
+  return PLAN_FEATURES[plan] || PLAN_FEATURES.free;
 };
 
 export const getNextPlan = (currentPlan: PlanType): PlanType | null => {
+  if (currentPlan === 'free') return 'growth';
   if (currentPlan === 'growth') return 'pro';
   if (currentPlan === 'pro') return 'elite';
   return null;

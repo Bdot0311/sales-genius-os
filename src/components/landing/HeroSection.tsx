@@ -319,10 +319,10 @@ export const HeroSection = () => {
               <Button
                 size="lg"
                 className="h-14 px-8 text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg group shadow-[0_0_24px_hsl(261_75%_65%/0.25)] hover:shadow-[0_0_32px_hsl(261_75%_65%/0.35)] hover:-translate-y-0.5 transition-all duration-200"
-                onClick={() => navigate("/pricing")}
-                aria-label="Build Your Outbound System"
+                onClick={() => navigate("/auth")}
+                aria-label="Start for free"
               >
-                Build Your Outbound System
+                Start for free
                 <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1.5 transition-transform duration-200" />
               </Button>
               <button
@@ -348,7 +348,7 @@ export const HeroSection = () => {
                 </span>
                 <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
                   <Clock className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-                  14-day free trial
+                  Free forever plan
                 </span>
                 <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
                   <Zap className="w-3.5 h-3.5 text-primary flex-shrink-0" />

@@ -40,9 +40,9 @@ export const MidPageCTA = () => {
             size="lg"
             className="w-full sm:w-auto h-12 sm:h-14 px-6 sm:px-8 text-sm sm:text-base font-semibold bg-foreground text-background hover:bg-foreground/90 rounded-lg group btn-glow-hover"
             onClick={() => navigate('/auth')}
-            aria-label="Start 14-day free trial"
+            aria-label="Start for free"
           >
-            <span>Start free trial</span>
+            <span>Start for free</span>
             <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
           </Button>
         </div>

@@ -9,7 +9,7 @@ export const usePlanFeatures = () => {
   const [gateModalOpen, setGateModalOpen] = useState(false);
   const [gatedFeature, setGatedFeature] = useState<UpgradeFeature | null>(null);
   
-  const currentPlan: PlanType = subscription?.plan || 'growth';
+  const currentPlan: PlanType = subscription?.plan || 'free';
   // Admins get elite-level features
   const features = isAdmin ? PLAN_FEATURES.elite : PLAN_FEATURES[currentPlan];
 
@@ -18,7 +18,7 @@ export const usePlanFeatures = () => {
     if (isAdmin) return true;
     
     const requiredPlan = UPGRADE_MESSAGES[feature].availableOn as PlanType;
-    const planOrder: PlanType[] = ['growth', 'pro', 'elite'];
+    const planOrder: PlanType[] = ['free', 'growth', 'pro', 'elite'];
     const currentIndex = planOrder.indexOf(currentPlan);
     const requiredIndex = planOrder.indexOf(requiredPlan);
     return currentIndex >= requiredIndex;

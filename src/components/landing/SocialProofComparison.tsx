@@ -139,7 +139,7 @@ export const SocialProofComparison = () => {
               onClick={() => navigate("/auth")}
               className="group"
             >
-              Start free trial
+              Start for free
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
             </Button>
           </div>

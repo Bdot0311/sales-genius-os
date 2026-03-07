@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface LeadsUsage {
   leadsCount: number;
   leadsLimit: number;
-  plan: 'growth' | 'pro' | 'elite';
+  plan: 'free' | 'growth' | 'pro' | 'elite';
   percentageUsed: number;
 }
 
