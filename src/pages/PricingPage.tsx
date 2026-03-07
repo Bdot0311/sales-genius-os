@@ -55,8 +55,8 @@ const PricingPage = () => {
   return (
     <>
       <SEOHead 
-        title="Pricing Plans & Free Trial - SalesOS Sales Automation"
-        description="Choose the right SalesOS plan for your team. Start with a 14-day free trial. Plans from $149/month for Growth to $799/month for Elite with unlimited leads."
+        title="Pricing Plans - Free Plan & Paid Plans | SalesOS"
+        description="Start free, upgrade when ready. SalesOS plans from $49/month for Growth to $399/month for Elite with 1,500 search credits. No credit card required for free plan."
         keywords="SalesOS pricing, sales software pricing, CRM pricing, lead generation pricing, sales automation cost"
         ogImage="https://storage.googleapis.com/gpt-engineer-file-uploads/ZFJK1zezovOpOdjy9TptFukIhhc2/social-images/social-1768238149761-SalesOS full logo.png"
       />
@@ -70,16 +70,16 @@ const PricingPage = () => {
         <Navbar />
         <main>
           {/* Hero Section */}
-          <section className="pt-24 pb-8 container mx-auto px-6 text-center">
+           <section className="pt-24 pb-8 container mx-auto px-6 text-center">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              Simple, Transparent Pricing
+              Start Free. Scale When Ready.
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-6">
-              Choose the plan that fits your sales workflow. All plans include a 14-day free trial 
-              with full access to AI-powered lead discovery, email automation, and pipeline management.
+              Explore the full platform with a free account. When you're ready to find leads, 
+              choose the plan that fits your workflow — all with a 14-day free trial.
             </p>
             <p className="text-sm text-muted-foreground">
-              No hidden fees • Cancel anytime • 30-day money-back guarantee
+              No credit card for free plan • Cancel anytime • 30-day money-back guarantee
             </p>
           </section>
 

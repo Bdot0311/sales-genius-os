@@ -59,7 +59,7 @@ export const FinalCTA = () => {
                 </h2>
                 
                 <p className="text-lg text-muted-foreground mb-8 max-w-md mx-auto leading-relaxed">
-                  Start your free trial. Your first lead in under 2 minutes.
+                  Create your free account. Your first lead in under 2 minutes.
                 </p>
 
                 {/* Single CTA */}
@@ -68,7 +68,7 @@ export const FinalCTA = () => {
                   className="h-14 px-8 text-base font-semibold bg-foreground text-background hover:bg-foreground/90 rounded-lg group btn-glow-hover inline-flex items-center justify-center"
                   onClick={() => navigate('/auth')}
                 >
-                  <span>Start free trial</span>
+                  <span>Start for free</span>
                   <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" aria-hidden="true" />
                 </Button>
 

@@ -5,6 +5,7 @@ import { STRIPE_PRICE_IDS } from "@/lib/stripe-config";
 import { useSearchCredits } from "@/hooks/use-search-credits";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import {
   Accordion,
   AccordionContent,
@@ -14,17 +15,33 @@ import {
 
 const plans = [
   {
+    key: 'free' as const,
+    name: "Free",
+    price: "$0",
+    period: "/forever",
+    description: "Explore the platform, no credit card needed",
+    features: [
+      "View-only dashboard access",
+      "Sample data exploration",
+      "Pipeline overview",
+      "Analytics summary",
+      "Community support",
+    ],
+    cta: "Get started free",
+    ctaRoute: "/auth",
+  },
+  {
     key: 'growth' as const,
     name: "Growth",
-    price: "$149",
+    price: "$49",
     period: "/month",
     description: "For solo founders and early outbound",
     features: [
-      "350 search credits / month",
-      "Lead Intelligence Engine",
-      "In-app enrichment & scoring",
+      "150 search credits / month",
+      "25 results per search",
+      "Standard enrichment (Location)",
+      "3 active sequences",
       "AI Outreach Studio",
-      "Smart Deal Pipeline",
       "Email support",
     ],
     paymentLink: "https://buy.stripe.com/9B6dR9ep1a2b0gi1ca1B60u",
@@ -32,15 +49,15 @@ const plans = [
   {
     key: 'pro' as const,
     name: "Pro",
-    price: "$299",
+    price: "$149",
     period: "/month",
     description: "For teams booking meetings consistently",
     features: [
-      "700 search credits / month",
-      "Everything in Growth",
-      "Advanced automation builder",
+      "500 search credits / month",
+      "50 results per search",
+      "Advanced enrichment (+Title/Seniority)",
+      "15 active sequences",
       "AI Sales Coach",
-      "Performance analytics",
       "Priority support",
     ],
     highlighted: true,
@@ -49,15 +66,15 @@ const plans = [
   {
     key: 'elite' as const,
     name: "Elite",
-    price: "$799",
+    price: "$399",
     period: "/month",
     description: "For high-volume outbound operations",
     features: [
-      "2,000 search credits / month",
-      "Everything in Pro",
-      "Unlimited workflows",
-      "API access",
-      "White-label customization",
+      "1,500 search credits / month",
+      "100 results per search",
+      "Premium enrichment (all filters)",
+      "Unlimited sequences",
+      "API access & white-label",
       "Dedicated success manager",
     ],
     paymentLink: "https://buy.stripe.com/8x2bJ15Svfmvd341ca1B60q",
@@ -66,16 +83,14 @@ const plans = [
 
 const addons = [
   {
-    credits: 500,
-    price: "$199",
-    priceId: STRIPE_PRICE_IDS.addon500,
-    paymentLink: "https://buy.stripe.com/5kQbJ1ep1cajgfg8EC1B60s",
+    credits: 200,
+    price: "$79",
+    priceId: STRIPE_PRICE_IDS.addon200,
   },
   {
-    credits: 1500,
-    price: "$499",
-    priceId: STRIPE_PRICE_IDS.addon1500,
-    paymentLink: "https://buy.stripe.com/3cIeVdep13DN5AC6wu1B60t",
+    credits: 500,
+    price: "$179",
+    priceId: STRIPE_PRICE_IDS.addon500,
   },
 ];
 
@@ -84,65 +99,68 @@ const comparisonCategories = [
   {
     name: "Search Credits",
     features: [
-      { name: "Monthly search credits", growth: "350", pro: "700", elite: "2,000" },
-      { name: "Daily search limit", growth: "25", pro: "100", elite: "500" },
-      { name: "Results per search", growth: "25", pro: "100", elite: "500" },
+      { name: "Monthly search credits", free: "0", growth: "150", pro: "500", elite: "1,500" },
+      { name: "Daily search limit", free: "0", growth: "15", pro: "50", elite: "150" },
+      { name: "Results per search", free: "—", growth: "25", pro: "50", elite: "100" },
     ]
   },
   {
     name: "Lead Intelligence",
     features: [
-      { name: "Lead enrichment & scoring", growth: true, pro: true, elite: true },
-      { name: "Advanced filters", growth: false, pro: true, elite: true },
-      { name: "API access", growth: false, pro: false, elite: true },
+      { name: "Lead search", free: false, growth: true, pro: true, elite: true },
+      { name: "Person enrichment", free: false, growth: "Standard", pro: "Advanced", elite: "Premium" },
+      { name: "Company enrichment", free: false, growth: false, pro: true, elite: true },
+      { name: "Advanced filters", free: false, growth: false, pro: true, elite: true },
+      { name: "API access", free: false, growth: false, pro: false, elite: true },
     ]
   },
   {
     name: "Outreach & Sequences",
     features: [
-      { name: "Active sequences", growth: "3", pro: "15", elite: "Unlimited" },
-      { name: "Steps per sequence", growth: "3", pro: "7", elite: "Unlimited" },
-      { name: "AI personalization", growth: "Basic", pro: "Advanced", elite: "Premium" },
-      { name: "Message blocks", growth: "5", pro: "25", elite: "Unlimited" },
-      { name: "A/B testing variants", growth: false, pro: "2", elite: "Unlimited" },
-      { name: "Reply analysis", growth: false, pro: true, elite: true },
-      { name: "Handoff alerts", growth: false, pro: "Email", elite: "Webhook + Slack" },
-      { name: "Multi-channel logic", growth: false, pro: false, elite: true },
+      { name: "Active sequences", free: "0", growth: "3", pro: "15", elite: "Unlimited" },
+      { name: "Steps per sequence", free: "0", growth: "3", pro: "7", elite: "Unlimited" },
+      { name: "AI personalization", free: false, growth: "Basic", pro: "Advanced", elite: "Premium" },
+      { name: "Message blocks", free: "0", growth: "5", pro: "25", elite: "Unlimited" },
+      { name: "A/B testing variants", free: false, growth: false, pro: "2", elite: "Unlimited" },
+      { name: "Reply analysis", free: false, growth: false, pro: true, elite: true },
+      { name: "Handoff alerts", free: false, growth: false, pro: "Email", elite: "Webhook + Slack" },
+      { name: "Multi-channel logic", free: false, growth: false, pro: false, elite: true },
     ]
   },
   {
     name: "Pipeline & Analytics",
     features: [
-      { name: "Visual pipeline", growth: true, pro: true, elite: true },
-      { name: "Automated stage progression", growth: false, pro: true, elite: true },
-      { name: "Revenue forecasting", growth: false, pro: true, elite: true },
-      { name: "Custom pipelines", growth: false, pro: false, elite: true },
-      { name: "Custom reports & exports", growth: false, pro: false, elite: true },
+      { name: "Visual pipeline", free: "View only", growth: true, pro: true, elite: true },
+      { name: "Automated stage progression", free: false, growth: false, pro: true, elite: true },
+      { name: "Revenue forecasting", free: false, growth: false, pro: true, elite: true },
+      { name: "Custom pipelines", free: false, growth: false, pro: false, elite: true },
+      { name: "Custom reports & exports", free: false, growth: false, pro: false, elite: true },
     ]
   },
   {
     name: "AI Sales Coach",
     features: [
-      { name: "Coaching level", growth: "Basic", pro: "Advanced", elite: "Premium" },
-      { name: "Real-time analysis", growth: "Limited", pro: "Full", elite: "Full" },
-      { name: "Live coaching", growth: false, pro: false, elite: true },
-      { name: "Custom playbooks", growth: false, pro: false, elite: true },
+      { name: "Coaching level", free: "View only", growth: "Basic", pro: "Advanced", elite: "Premium" },
+      { name: "Real-time analysis", free: false, growth: "Limited", pro: "Full", elite: "Full" },
+      { name: "Live coaching", free: false, growth: false, pro: false, elite: true },
+      { name: "Custom playbooks", free: false, growth: false, pro: false, elite: true },
     ]
   },
   {
     name: "Automations",
     features: [
-      { name: "Automation rules", growth: "5", pro: "25", elite: "Unlimited" },
-      { name: "Advanced workflows", growth: false, pro: true, elite: true },
-      { name: "White-label customization", growth: false, pro: false, elite: true },
+      { name: "Automation rules", free: "0", growth: "5", pro: "25", elite: "Unlimited" },
+      { name: "Advanced workflows", free: false, growth: false, pro: true, elite: true },
+      { name: "White-label customization", free: false, growth: false, pro: false, elite: true },
     ]
   },
   {
     name: "Support",
     features: [
-      { name: "Email support", growth: true, pro: true, elite: true },
-      { name: "Priority support", growth: false, pro: true, elite: true },
-      { name: "Dedicated success manager", growth: false, pro: false, elite: true },
+      { name: "Community support", free: true, growth: true, pro: true, elite: true },
+      { name: "Email support", free: false, growth: true, pro: true, elite: true },
+      { name: "Priority support", free: false, growth: false, pro: true, elite: true },
+      { name: "Dedicated success manager", free: false, growth: false, pro: false, elite: true },
     ]
   },
 ];
@@ -165,8 +183,8 @@ const creditFAQs = [
     answer: "Credits are non-refundable and expire at the end of each billing cycle. We recommend starting with a plan that matches your expected usage and adjusting as you learn your needs. Our team can help you estimate the right plan based on your sales volume."
   },
   {
-    question: "What's included in the 14-day free trial?",
-    answer: "All plans include a 14-day free trial with full access to features and a starter credit allocation. A credit card is required to begin your trial. You can cancel anytime during the trial period without being charged."
+    question: "What's included in the free plan?",
+    answer: "The free plan gives you full access to explore the SalesOS interface, including the dashboard, pipeline view, and analytics summary. Lead search and enrichment require a paid plan. No credit card is needed to sign up."
   },
   {
     question: "Can I change plans later?",
@@ -192,6 +210,7 @@ export const Pricing = () => {
   const [removingAddon, setRemovingAddon] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -210,8 +229,12 @@ export const Pricing = () => {
     return () => observer.disconnect();
   }, []);
 
-  const handleCheckout = (paymentLink: string) => {
-    window.open(paymentLink, '_blank');
+  const handleCheckout = (plan: typeof plans[number]) => {
+    if (plan.key === 'free') {
+      navigate(plan.ctaRoute || '/auth');
+    } else if (plan.paymentLink) {
+      window.open(plan.paymentLink, '_blank');
+    }
   };
 
   const handleAddAddon = async (addonPriceId: string) => {
@@ -251,14 +274,16 @@ export const Pricing = () => {
       
       <div className="container relative z-10 mx-auto px-4 sm:px-6">
         {/* Plan Cards */}
-        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto mb-16 md:mb-20 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '100ms' } as React.CSSProperties}>
+        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 max-w-7xl mx-auto mb-16 md:mb-20 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '100ms' } as React.CSSProperties}>
           {plans.map((plan, index) => (
             <div 
               key={plan.key}
-              className={`group relative p-8 rounded-2xl border transition-all duration-300 card-hover-lift ${
+              className={`group relative p-6 sm:p-8 rounded-2xl border transition-all duration-300 card-hover-lift ${
                 plan.highlighted 
                   ? 'bg-primary text-primary-foreground border-primary scale-[1.02] shadow-xl shadow-primary/20' 
-                  : 'bg-card border-border/30 hover:border-primary/50'
+                  : plan.key === 'free'
+                    ? 'bg-muted/30 border-border/20 hover:border-primary/30'
+                    : 'bg-card border-border/30 hover:border-primary/50'
               }`}
               style={{ '--reveal-delay': `${(index + 1) * 80}ms` } as React.CSSProperties}
             >
@@ -303,20 +328,22 @@ export const Pricing = () => {
 
               <Button 
                 className={`relative z-10 w-full h-12 font-semibold rounded-xl ${
-                  plan.highlighted 
-                    ? 'bg-foreground text-background hover:bg-foreground/90' 
-                    : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                  plan.key === 'free'
+                    ? 'bg-muted text-foreground hover:bg-muted/80 border border-border'
+                    : plan.highlighted 
+                      ? 'bg-foreground text-background hover:bg-foreground/90' 
+                      : 'bg-primary text-primary-foreground hover:bg-primary/90'
                 }`}
-                onClick={() => handleCheckout(plan.paymentLink)}
+                onClick={() => handleCheckout(plan)}
               >
-                Start 14-day free trial
+                {plan.key === 'free' ? 'Get started free' : 'Start 14-day free trial'}
               </Button>
             </div>
           ))}
         </div>
 
         {/* Feature Comparison Table */}
-        <div className={`max-w-6xl mx-auto mb-16 md:mb-20 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '200ms' } as React.CSSProperties}>
+        <div className={`max-w-7xl mx-auto mb-16 md:mb-20 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '200ms' } as React.CSSProperties}>
           <div className="text-center mb-8 md:mb-10">
             <h2 className="text-xl sm:text-2xl font-semibold mb-2">Compare plans</h2>
             <p className="text-sm sm:text-base text-muted-foreground">See what's included in each plan</p>
@@ -328,22 +355,26 @@ export const Pricing = () => {
           </div>
           
           <div className="overflow-x-auto -mx-6 px-6 pb-4 scrollbar-hide">
-            <table className="w-full border-collapse min-w-[640px]">
+            <table className="w-full border-collapse min-w-[780px]">
               {/* Header */}
               <thead>
                 <tr className="border-b border-border/30">
                   <th className="text-left py-3 sm:py-4 px-3 sm:px-4 font-medium text-muted-foreground text-sm min-w-[140px] sm:min-w-[180px]">Features</th>
-                  <th className="text-center py-3 sm:py-4 px-2 sm:px-4 min-w-[100px] sm:min-w-[120px]">
+                  <th className="text-center py-3 sm:py-4 px-2 sm:px-3 min-w-[80px] sm:min-w-[100px]">
+                    <div className="font-semibold text-sm sm:text-base">Free</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">$0</div>
+                  </th>
+                  <th className="text-center py-3 sm:py-4 px-2 sm:px-3 min-w-[80px] sm:min-w-[100px]">
                     <div className="font-semibold text-sm sm:text-base">Growth</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">$49/mo</div>
+                  </th>
+                  <th className="text-center py-3 sm:py-4 px-2 sm:px-3 bg-primary/5 rounded-t-lg min-w-[80px] sm:min-w-[100px]">
+                    <div className="font-semibold text-primary text-sm sm:text-base">Pro</div>
                     <div className="text-xs sm:text-sm text-muted-foreground">$149/mo</div>
                   </th>
-                  <th className="text-center py-3 sm:py-4 px-2 sm:px-4 bg-primary/5 rounded-t-lg min-w-[100px] sm:min-w-[120px]">
-                    <div className="font-semibold text-primary text-sm sm:text-base">Pro</div>
-                    <div className="text-xs sm:text-sm text-muted-foreground">$299/mo</div>
-                  </th>
-                  <th className="text-center py-3 sm:py-4 px-2 sm:px-4 min-w-[100px] sm:min-w-[120px]">
+                  <th className="text-center py-3 sm:py-4 px-2 sm:px-3 min-w-[80px] sm:min-w-[100px]">
                     <div className="font-semibold text-sm sm:text-base">Elite</div>
-                    <div className="text-xs sm:text-sm text-muted-foreground">$799/mo</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">$399/mo</div>
                   </th>
                 </tr>
               </thead>
@@ -352,7 +383,7 @@ export const Pricing = () => {
                   <>
                     {/* Category Header */}
                     <tr key={`cat-${catIndex}`} className="border-b border-border/20">
-                      <td colSpan={4} className="py-3 sm:py-4 px-3 sm:px-4">
+                      <td colSpan={5} className="py-3 sm:py-4 px-3 sm:px-4">
                         <div className="flex items-center gap-2 font-semibold text-foreground text-sm sm:text-base">
                           <Coins className="w-4 h-4 text-primary flex-shrink-0" />
                           {category.name}
@@ -366,9 +397,10 @@ export const Pricing = () => {
                         className="border-b border-border/10 hover:bg-muted/30 transition-colors"
                       >
                         <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-xs sm:text-sm text-muted-foreground">{feature.name}</td>
-                        <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center">{renderFeatureValue(feature.growth)}</td>
-                        <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center bg-primary/5">{renderFeatureValue(feature.pro)}</td>
-                        <td className="py-2.5 sm:py-3 px-2 sm:px-4 text-center">{renderFeatureValue(feature.elite)}</td>
+                        <td className="py-2.5 sm:py-3 px-2 sm:px-3 text-center">{renderFeatureValue(feature.free)}</td>
+                        <td className="py-2.5 sm:py-3 px-2 sm:px-3 text-center">{renderFeatureValue(feature.growth)}</td>
+                        <td className="py-2.5 sm:py-3 px-2 sm:px-3 text-center bg-primary/5">{renderFeatureValue(feature.pro)}</td>
+                        <td className="py-2.5 sm:py-3 px-2 sm:px-3 text-center">{renderFeatureValue(feature.elite)}</td>
                       </tr>
                     ))}
                   </>
@@ -383,7 +415,7 @@ export const Pricing = () => {
           <div className="text-center mb-6 sm:mb-8">
             <h3 className="text-lg sm:text-xl font-semibold mb-2">Need more credits?</h3>
             <p className="text-muted-foreground text-sm">
-              Add extra search credits to your plan anytime.
+              Add extra search credits to any paid plan anytime.
             </p>
           </div>
 

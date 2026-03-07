@@ -16,6 +16,7 @@ export const FeatureGateModal = ({ open, onOpenChange, feature, currentPlan }: F
   const message = UPGRADE_MESSAGES[feature];
   const targetPlan = message.availableOn as PlanType;
   const targetPlanInfo = PLAN_FEATURES[targetPlan];
+  const isFreeUser = currentPlan === 'free';
 
   const handleViewPlans = () => {
     onOpenChange(false);
@@ -38,15 +39,36 @@ export const FeatureGateModal = ({ open, onOpenChange, feature, currentPlan }: F
         <div className="bg-muted/50 rounded-lg p-4 mt-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
             <Zap className="w-4 h-4" />
-            <span>Available with {targetPlanInfo.name}</span>
+            <span>
+              {isFreeUser 
+                ? `Start your 14-day free trial of ${targetPlanInfo.name}`
+                : `Available with ${targetPlanInfo.name}`
+              }
+            </span>
           </div>
           
           <div className="space-y-2">
+            {targetPlan === 'growth' && (
+              <>
+                <div className="flex items-center gap-2 text-sm">
+                  <TrendingUp className="w-4 h-4 text-primary" />
+                  <span>150 search credits per month</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <TrendingUp className="w-4 h-4 text-primary" />
+                  <span>Lead search & standard enrichment</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <TrendingUp className="w-4 h-4 text-primary" />
+                  <span>3 active sequences & AI outreach</span>
+                </div>
+              </>
+            )}
             {targetPlan === 'pro' && (
               <>
                 <div className="flex items-center gap-2 text-sm">
                   <TrendingUp className="w-4 h-4 text-primary" />
-                  <span>5x more lead discovery capacity</span>
+                  <span>500 credits & 50 results per search</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <TrendingUp className="w-4 h-4 text-primary" />
@@ -82,7 +104,7 @@ export const FeatureGateModal = ({ open, onOpenChange, feature, currentPlan }: F
             Maybe Later
           </Button>
           <Button onClick={handleViewPlans} className="flex-1 gap-2">
-            View Plans
+            {isFreeUser ? 'Start Free Trial' : 'View Plans'}
             <ArrowRight className="w-4 h-4" />
           </Button>
         </div>

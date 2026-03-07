@@ -85,7 +85,7 @@ export function SequenceBuilder() {
   const maxSteps = features.stepsPerSequence;
   const isUnlimited = maxSteps === -1 || isAdmin;
   const canAddMoreSteps = isUnlimited || steps.length < maxSteps;
-  const sequenceType = features.sequenceType;
+  const sequenceType = features.sequenceType === 'none' ? 'basic' : features.sequenceType;
 
   const triggerConditions = [
     { value: 'on_enroll', label: 'When enrolled', tier: 'basic' },
