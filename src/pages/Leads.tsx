@@ -91,8 +91,8 @@ const Leads = () => {
               <h2 className="text-2xl font-bold mb-2">Lead Generation is a Paid Feature</h2>
               <p className="text-muted-foreground max-w-md mb-6">
                 {subscriptionStatus?.isTrialUser 
-                  ? "AI Lead Generation is not included in your free trial. Upgrade to a paid plan to unlock unlimited access to our B2B lead database."
-                  : "Subscribe to a paid plan to unlock AI-powered lead generation and access millions of B2B contacts."
+                  ? "AI Lead Generation is not included in your free trial. Upgrade to a paid plan starting at $49/month to unlock access to our B2B lead database."
+                  : "Subscribe to a paid plan starting at $49/month to unlock AI-powered lead generation and access millions of B2B contacts."
                 }
               </p>
               <Button onClick={() => navigate('/pricing')} size="lg" className="gap-2">

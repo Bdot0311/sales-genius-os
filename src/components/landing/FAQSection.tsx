@@ -11,12 +11,12 @@ import { ArrowRight } from "lucide-react";
 
 const faqs = [
   {
-    question: "What's included in the free trial?",
-    answer: "You get 14 days to try any SalesOS plan with full access to the features included in that plan. This includes AI lead discovery, email generation, pipeline management, and integrations based on your chosen tier. A credit card is required to start. Cancel anytime before the trial ends and you won't be charged."
+    question: "Is there a free plan?",
+    answer: "Yes. SalesOS offers a free forever plan with view-only access to dashboards, sample data, and the pipeline overview. No credit card required. When you're ready to search for leads, upgrade to a paid plan — all with a 14-day free trial."
   },
   {
     question: "How do search credits work?",
-    answer: "Search credits are used when you run AI lead discovery queries. Each search costs 1 credit and returns up to 100 matching leads. Viewing, enriching, and exporting those leads is free. Credits reset monthly based on your plan, and unused credits don't roll over."
+    answer: "Search credits are used when you run AI lead discovery queries. Each search returns results based on your plan: 25 (Growth), 50 (Pro), or 100 (Elite). Credits reset monthly and unused credits don't roll over. You can also purchase add-on credit packs."
   },
   {
     question: "Can I change plans later?",

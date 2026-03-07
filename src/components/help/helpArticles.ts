@@ -320,9 +320,10 @@ You can upgrade or downgrade your SalesOS subscription at any time.
 
 | Plan | Price | Credits | Features |
 |------|-------|---------|----------|
-| Starter | $29/mo | 100 | Basic features |
-| Growth | $79/mo | 500 | AI email, automations |
-| Pro | $149/mo | 2000 | Advanced analytics, API |
+| Free | $0/forever | 0 | View-only dashboard access |
+| Growth | $49/mo | 150 | 25 results/search, standard enrichment |
+| Pro | $149/mo | 500 | 50 results/search, advanced enrichment |
+| Elite | $399/mo | 1,500 | 100 results/search, premium enrichment, API |
 
 ### Upgrade Benefits
 
@@ -382,10 +383,10 @@ Collaborate with your team by adding members to your SalesOS workspace.
 
 ### Team Limits by Plan
 
-- **Starter**: 1 user
+- **Free**: 1 user
 - **Growth**: 5 users
 - **Pro**: 15 users
-- **Enterprise**: Unlimited
+- **Elite**: Unlimited
     `,
     readTime: 3,
     tags: ['team', 'users', 'collaboration'],
@@ -430,11 +431,10 @@ Options when credits are depleted:
 2. Purchase additional credit packs
 3. Upgrade to a higher plan
 
-### Credit Packs
+### Credit Add-ons
 
-- 100 credits: $19
-- 500 credits: $79
-- 1000 credits: $129
+- +200 credits: $79/mo
+- +500 credits: $179/mo
 
 Purchase from **Settings → Credits & Usage → Buy More**
     `,
@@ -1719,10 +1719,9 @@ Build reliable integrations that respect rate limits.
 
 | Plan | Requests/Min | Requests/Day |
 |------|--------------|--------------|
-| Starter | 30 | 500 |
-| Growth | 60 | 1,000 |
-| Pro | 120 | 5,000 |
-| Enterprise | Custom | Custom |
+| Growth | 30 | 500 |
+| Pro | 60 | 1,000 |
+| Elite | 120 | 5,000 |
 
 ### Rate Limit Headers
 

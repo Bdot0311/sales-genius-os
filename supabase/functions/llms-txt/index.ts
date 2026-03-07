@@ -47,16 +47,17 @@ SalesOS is a comprehensive sales automation platform designed for SaaS companies
 
 ## Pricing
 
-SalesOS offers three pricing tiers:
-- **Growth**: $149/month - For small teams getting started with sales automation
-- **Professional**: $349/month - For growing teams needing advanced features
-- **Elite**: $799/month - For large teams requiring unlimited access and priority support
+SalesOS offers four pricing tiers:
+- **Free**: $0/forever - Explore the platform with view-only dashboard access. No credit card required.
+- **Growth**: $49/month - 150 search credits, 25 results per search, standard enrichment, 3 active sequences.
+- **Pro**: $149/month - 500 search credits, 50 results per search, advanced enrichment, company enrichment, 15 active sequences.
+- **Elite**: $399/month - 1,500 search credits, 100 results per search, premium enrichment, unlimited sequences, API access.
 
-All plans include a 14-day free trial with no credit card required.
+All paid plans include a 14-day free trial. No credit card required for the free plan.
 
 ## Getting Started
 
-1. Sign up for a free trial at https://salesos.alephwavex.io
+1. Sign up for free at https://salesos.alephwavex.io
 2. Describe your ideal customer in plain English
 3. Get ranked matches with enriched profiles
 4. Export to outreach or push into your workflow

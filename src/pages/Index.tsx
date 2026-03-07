@@ -32,8 +32,8 @@ import { useSpotlightEffect } from "@/hooks/use-spotlight-effect";
 // AEO: Define clear, structured content for AI answer engines
 const gettingStartedSteps = [
   {
-    name: "Sign up for a free trial",
-    text: "Create your SalesOS account in under 2 minutes. No credit card required. Get instant access to lead discovery, outreach, and pipeline tools."
+    name: "Sign up for free",
+    text: "Create your SalesOS account in under 2 minutes. No credit card required. Explore dashboards, pipeline, and sample data instantly."
   },
   {
     name: "Describe your ideal customer",
@@ -94,7 +94,7 @@ const Index = () => {
     <>
       <SEOHead 
         title="SalesOS - Find, Engage & Close More Deals | AI Sales Platform"
-        description="AI-powered lead discovery, personalized outreach, pipeline management, and sales coaching—all in one platform. Your first lead in under 2 minutes. 14-day free trial."
+        description="AI-powered lead discovery, personalized outreach, pipeline management, and sales coaching—all in one platform. Start free, upgrade when ready. No credit card required."
         keywords="AI sales platform, lead discovery, sales automation, personalized outreach, pipeline management, B2B sales, AI email generation, sales coaching, CRM"
         ogImage="https://ghgfjnepvxvxrncmskys.supabase.co/storage/v1/object/public/social-images/salesos-logo.png"
       />

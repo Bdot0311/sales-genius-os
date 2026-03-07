@@ -570,7 +570,7 @@ const Settings = () => {
                         className="w-full"
                         onClick={() => handleCheckout(plan.paymentLink)}
                       >
-                        {subscription && subscription.plan !== plan.value ? 'Change Plan' : 'Start Free Trial'}
+                        {subscription && subscription.plan !== plan.value ? 'Change Plan' : 'Start 14-Day Trial'}
                       </Button>
                     )}
                   </Card>
