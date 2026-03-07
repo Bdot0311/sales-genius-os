@@ -3,26 +3,26 @@ import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
-const transformations = [
+const stats = [
   {
-    before: "Hours toggling between tools",
-    after: "3x faster lead-to-outreach time",
+    metric: "3x",
+    label: "Faster lead-to-outreach",
+    description: "Stop toggling between tools. One workflow from discovery to first touch.",
   },
   {
-    before: "Manual follow-up tracking",
-    after: "Automated sequences with real-time signals",
+    metric: "2–4x",
+    label: "Higher reply rates",
+    description: "AI-personalized emails built from enriched profiles, not generic templates.",
   },
   {
-    before: "Generic batch emails",
-    after: "AI-personalized outreach, 2–4x higher reply rates",
+    metric: "85%+",
+    label: "Lead fit accuracy",
+    description: "Every lead scored against your ICP. No more guesswork on who to prioritize.",
   },
   {
-    before: "Scattered pipeline data",
-    after: "Single dashboard with deal intelligence",
-  },
-  {
-    before: "Guesswork on lead quality",
-    after: "AI scoring with 85%+ fit accuracy",
+    metric: "1",
+    label: "Dashboard for everything",
+    description: "Pipeline, outreach, signals, and forecasting — consolidated into one view.",
   },
 ];
 
@@ -54,13 +54,13 @@ export const SocialProofComparison = () => {
       className="relative py-20 md:py-28 overflow-hidden"
       aria-labelledby="social-proof-comparison-heading"
     >
-      {/* Subtle background glow */}
+      {/* Background glow */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[600px]"
           style={{
             background:
-              "radial-gradient(ellipse at center, hsl(261 75% 50% / 0.05) 0%, transparent 60%)",
+              "radial-gradient(ellipse at center, hsl(261 75% 50% / 0.06) 0%, transparent 60%)",
           }}
           aria-hidden="true"
         />
@@ -87,41 +87,40 @@ export const SocialProofComparison = () => {
             </p>
           </div>
 
-          {/* Column headers */}
-          <div className="hidden md:grid md:grid-cols-2 gap-6 mb-4 px-2">
-            <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
-              Before
-            </span>
-            <span className="text-xs font-semibold uppercase tracking-widest text-primary/80">
-              With SalesOS
-            </span>
-          </div>
-
-          {/* Transformation rows */}
-          <div className="space-y-3">
-            {transformations.map((row, index) => (
+          {/* Stat cards grid */}
+          <div className="grid sm:grid-cols-2 gap-4 md:gap-5">
+            {stats.map((stat, index) => (
               <div
                 key={index}
-                className={`grid md:grid-cols-2 gap-3 md:gap-6 scroll-reveal ${isVisible ? "visible" : ""}`}
+                className={`group relative rounded-2xl border border-border/30 bg-card/40 p-6 sm:p-8 overflow-hidden card-hover-lift scroll-reveal ${isVisible ? "visible" : ""}`}
                 style={
-                  { "--reveal-delay": `${index * 80}ms` } as React.CSSProperties
+                  { "--reveal-delay": `${index * 100}ms` } as React.CSSProperties
                 }
               >
-                {/* Before */}
-                <div className="rounded-xl border border-border/30 bg-card/30 px-5 py-4 text-sm text-muted-foreground/70 flex items-center">
-                  <span className="md:hidden text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/40 mr-3 shrink-0">
-                    Before
-                  </span>
-                  {row.before}
+                {/* Spotlight hover */}
+                <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none spotlight-card" />
+
+                <div className="relative z-10">
+                  {/* Big metric */}
+                  <div className="mb-3">
+                    <span className="text-4xl sm:text-5xl font-extrabold tracking-tight bg-gradient-to-br from-primary to-primary/60 bg-clip-text text-transparent">
+                      {stat.metric}
+                    </span>
+                  </div>
+
+                  {/* Label */}
+                  <h3 className="text-base font-semibold mb-2 group-hover:text-primary transition-colors duration-200">
+                    {stat.label}
+                  </h3>
+
+                  {/* Description */}
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {stat.description}
+                  </p>
                 </div>
 
-                {/* After */}
-                <div className="rounded-xl border border-primary/15 bg-primary/[0.04] px-5 py-4 text-sm text-foreground font-medium flex items-center">
-                  <span className="md:hidden text-[10px] font-semibold uppercase tracking-widest text-primary/60 mr-3 shrink-0">
-                    After
-                  </span>
-                  {row.after}
-                </div>
+                {/* Subtle accent border on hover */}
+                <div className="absolute inset-0 rounded-2xl border border-primary/0 group-hover:border-primary/20 transition-colors duration-300 pointer-events-none" />
               </div>
             ))}
           </div>
@@ -132,7 +131,7 @@ export const SocialProofComparison = () => {
             style={{ "--reveal-delay": "500ms" } as React.CSSProperties}
           >
             <p className="text-sm text-muted-foreground mb-4">
-              Join 500+ sales teams already using SalesOS
+              Join 500+ sales teams already on SalesOS
             </p>
             <Button
               variant="hero"
