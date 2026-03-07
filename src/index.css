@@ -787,6 +787,138 @@ All colors MUST be HSL. Using 8px spacing scale.
   );
 }
 
+/* ===== ROTATING GRADIENT BORDER ===== */
+@keyframes rotate-gradient {
+  0% { --gradient-angle: 0deg; }
+  100% { --gradient-angle: 360deg; }
+}
+
+@property --gradient-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.animated-border {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+}
+
+.animated-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--gradient-angle),
+    hsl(261 75% 65% / 0.6),
+    hsl(280 75% 60% / 0.3),
+    hsl(320 60% 55% / 0.4),
+    hsl(261 75% 65% / 0.1),
+    hsl(261 75% 65% / 0.6)
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  animation: rotate-gradient 4s linear infinite;
+}
+
+/* Pulsing glow ring behind elements */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 
+      0 0 20px hsl(261 75% 65% / 0.15),
+      0 0 60px hsl(261 75% 65% / 0.05);
+  }
+  50% {
+    box-shadow: 
+      0 0 30px hsl(261 75% 65% / 0.25),
+      0 0 80px hsl(261 75% 65% / 0.1);
+  }
+}
+
+.pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+/* Gradient text shimmer - slow moving highlight */
+@keyframes text-shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.text-shimmer {
+  background: linear-gradient(
+    90deg,
+    hsl(261 75% 65%) 0%,
+    hsl(280 80% 70%) 25%,
+    hsl(320 75% 65%) 50%,
+    hsl(280 80% 70%) 75%,
+    hsl(261 75% 65%) 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: text-shimmer 4s linear infinite;
+}
+
+/* Animated connecting line */
+@keyframes draw-line {
+  0% { width: 0; }
+  100% { width: 100%; }
+}
+
+.draw-line {
+  animation: draw-line 1s ease-out forwards;
+}
+
+/* Strikethrough animation */
+@keyframes strike {
+  0% { width: 0; }
+  100% { width: 100%; }
+}
+
+.animate-strike {
+  position: relative;
+}
+
+.animate-strike::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  height: 1.5px;
+  background: hsl(0 84% 60% / 0.5);
+  animation: strike 0.6s ease-out forwards;
+}
+
+/* Icon float on hover */
+.icon-float-hover {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.group:hover .icon-float-hover {
+  transform: translateY(-3px) scale(1.1);
+}
+
+/* Gradient number effect */
+.gradient-number {
+  background: linear-gradient(
+    135deg,
+    hsl(261 75% 70%) 0%,
+    hsl(280 80% 65%) 50%,
+    hsl(320 75% 60%) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 12px hsl(261 75% 65% / 0.3));
+}
+
 /* Noise texture overlay */
 .noise-texture {
   position: absolute;

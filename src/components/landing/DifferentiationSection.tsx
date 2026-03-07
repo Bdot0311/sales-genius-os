@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { X, Check } from "lucide-react";
+import { X, Check, Sparkles } from "lucide-react";
 
 const notList = [
   "A database you have to babysit",
@@ -60,6 +60,10 @@ export const DifferentiationSection = () => {
         <div className="max-w-[1120px] mx-auto">
           {/* Header */}
           <div className={`text-center mb-12 scroll-reveal ${isVisible ? 'visible' : ''}`}>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-xs font-medium text-primary mb-5">
+              <Sparkles className="w-3 h-3" />
+              Built Different
+            </div>
             <h2 id="differentiation-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
               Not another bloated CRM
             </h2>
@@ -87,7 +91,11 @@ export const DifferentiationSection = () => {
                       <div className="flex-shrink-0 w-5 h-5 rounded-full bg-destructive/10 flex items-center justify-center mt-0.5">
                         <X className="w-3 h-3 text-destructive" aria-hidden="true" />
                       </div>
-                      <span className="text-muted-foreground">{item}</span>
+                      <span className={`text-muted-foreground relative ${isVisible ? 'animate-strike' : ''}`}
+                        style={{ animationDelay: `${index * 150 + 400}ms`, animationFillMode: 'both' }}
+                      >
+                        {item}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -110,11 +118,15 @@ export const DifferentiationSection = () => {
                 </h3>
                 <ul className="space-y-4">
                   {isList.map((item, index) => (
-                    <li key={index} className="flex items-start gap-3">
+                    <li 
+                      key={index} 
+                      className={`flex items-start gap-3 transition-all duration-500 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-3'}`}
+                      style={{ transitionDelay: `${index * 100 + 300}ms` }}
+                    >
                       <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center mt-0.5">
                         <Check className="w-3 h-3 text-primary" aria-hidden="true" />
                       </div>
-                      <span className="text-foreground">{item}</span>
+                      <span className="text-foreground font-medium">{item}</span>
                     </li>
                   ))}
                 </ul>
