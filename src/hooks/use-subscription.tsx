@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { PLAN_FEATURES, type PlanType } from '@/lib/plan-features';
 import { useAdmin } from './use-admin';
 
-export type SubscriptionPlan = 'growth' | 'pro' | 'elite';
+export type SubscriptionPlan = 'free' | 'growth' | 'pro' | 'elite';
 
 export interface UserSubscription {
   plan: SubscriptionPlan;
@@ -49,8 +49,8 @@ export const useSubscription = () => {
         accountStatus: 'active',
         stripeCustomerId: null as string | null,
         stripeSubscriptionId: null as string | null,
-        searchCreditsBase: 350,
-        searchCreditsRemaining: 350,
+        searchCreditsBase: 0,
+        searchCreditsRemaining: 0,
         currentPeriodStart: undefined as string | undefined,
         currentPeriodEnd: undefined as string | undefined,
         creditsResetAt: undefined as string | undefined,
@@ -94,29 +94,29 @@ export const useSubscription = () => {
           ...extendedDetails,
         });
       } else {
-        // Default to growth plan
+        // Default to free plan
         setSubscription({
-          plan: 'growth',
+          plan: 'free',
           hasAutomations: false,
           hasAiCoach: false,
           hasAnalytics: false,
           hasApiAccess: false,
-          leadsLimit: 500,
-          features: PLAN_FEATURES.growth,
+          leadsLimit: 0,
+          features: PLAN_FEATURES.free,
           ...extendedDetails,
         });
       }
     } catch (error) {
       console.error('Error loading subscription:', error);
-      // Default to growth plan on error
+      // Default to free plan on error
       setSubscription({
-        plan: 'growth',
+        plan: 'free',
         hasAutomations: false,
         hasAiCoach: false,
         hasAnalytics: false,
         hasApiAccess: false,
-        leadsLimit: 500,
-        features: PLAN_FEATURES.growth,
+        leadsLimit: 0,
+        features: PLAN_FEATURES.free,
         status: 'active',
         accountStatus: 'active',
         stripeCustomerId: null,
