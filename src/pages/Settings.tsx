@@ -121,7 +121,7 @@ const Settings = () => {
     {
       name: 'Growth',
       value: 'growth',
-      price: '$149',
+      price: '$49',
       description: 'For solo founders and early outbound',
       features: [
         '350 search credits / month',
