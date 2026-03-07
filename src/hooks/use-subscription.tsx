@@ -121,8 +121,8 @@ export const useSubscription = () => {
         accountStatus: 'active',
         stripeCustomerId: null,
         stripeSubscriptionId: null,
-        searchCreditsBase: 350,
-        searchCreditsRemaining: 350,
+        searchCreditsBase: 0,
+        searchCreditsRemaining: 0,
       });
     } finally {
       setLoading(false);

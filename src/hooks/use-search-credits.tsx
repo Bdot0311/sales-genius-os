@@ -39,7 +39,7 @@ export const useSearchCredits = () => {
       if (error) throw error;
 
       if (data) {
-        const plan = (data.plan || 'growth') as PlanType;
+        const plan = (data.plan || 'free') as PlanType;
         const planConfig = PLAN_CONFIG[plan];
         
         setCredits({
