@@ -316,15 +316,17 @@ export const HeroSection = () => {
             <div
               className={`flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-3 transition-all duration-700 delay-300 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
             >
-              <Button
-                size="lg"
-                className="h-14 px-8 text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg group shadow-[0_0_24px_hsl(261_75%_65%/0.25)] hover:shadow-[0_0_32px_hsl(261_75%_65%/0.35)] hover:-translate-y-0.5 transition-all duration-200"
-                onClick={() => navigate("/auth")}
-                aria-label="Start for free"
-              >
-                Start for free
-                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1.5 transition-transform duration-200" />
-              </Button>
+              <div className="animated-border inline-block rounded-xl">
+                <Button
+                  size="lg"
+                  className="h-14 px-8 text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 rounded-[calc(1rem-1px)] group shadow-[0_0_30px_hsl(261_75%_65%/0.3)] hover:shadow-[0_0_50px_hsl(261_75%_65%/0.45)] hover:-translate-y-0.5 transition-all duration-200"
+                  onClick={() => navigate("/auth")}
+                  aria-label="Start for free"
+                >
+                  Start for free
+                  <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1.5 transition-transform duration-200" />
+                </Button>
+              </div>
               <button
                 className="h-14 px-6 text-base text-muted-foreground hover:text-foreground transition-colors duration-200 relative group inline-flex items-center justify-center gap-2"
                 onClick={() => document.getElementById("demo")?.scrollIntoView({ behavior: "smooth" })}

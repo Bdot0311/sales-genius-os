@@ -1,28 +1,63 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+
+// Animated counter
+const AnimatedMetric = ({ value, isVisible }: { value: string; isVisible: boolean }) => {
+  const [displayed, setDisplayed] = useState("0");
+  const hasAnimated = useRef(false);
+
+  useEffect(() => {
+    if (!isVisible || hasAnimated.current) return;
+    hasAnimated.current = true;
+
+    // Extract numeric part
+    const numMatch = value.match(/(\d+)/);
+    if (!numMatch) { setDisplayed(value); return; }
+    
+    const target = parseInt(numMatch[1]);
+    const prefix = value.slice(0, value.indexOf(numMatch[1]));
+    const suffix = value.slice(value.indexOf(numMatch[1]) + numMatch[1].length);
+    
+    const duration = 1200;
+    const start = performance.now();
+    const step = (now: number) => {
+      const p = Math.min((now - start) / duration, 1);
+      const ease = 1 - Math.pow(1 - p, 3);
+      setDisplayed(`${prefix}${Math.floor(ease * target)}${suffix}`);
+      if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, [isVisible, value]);
+
+  return <span>{displayed}</span>;
+};
 
 const stats = [
   {
     metric: "3x",
     label: "Faster lead-to-outreach",
     description: "Stop toggling between tools. One workflow from discovery to first touch.",
+    icon: "🚀",
   },
   {
     metric: "2–4x",
     label: "Higher reply rates",
     description: "AI-personalized emails built from enriched profiles, not generic templates.",
+    icon: "📈",
   },
   {
     metric: "85%+",
     label: "Lead fit accuracy",
     description: "Every lead scored against your ICP. No more guesswork on who to prioritize.",
+    icon: "🎯",
   },
   {
     metric: "1",
     label: "Dashboard for everything",
     description: "Pipeline, outreach, signals, and forecasting — consolidated into one view.",
+    icon: "⚡",
   },
 ];
 
@@ -75,6 +110,10 @@ export const SocialProofComparison = () => {
           <div
             className={`text-center mb-14 scroll-reveal ${isVisible ? "visible" : ""}`}
           >
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-xs font-medium text-primary mb-5">
+              <TrendingUp className="w-3 h-3" />
+              Proven Results
+            </div>
             <h2
               id="social-proof-comparison-heading"
               className="text-3xl sm:text-4xl font-bold tracking-tight mb-4"
@@ -101,10 +140,13 @@ export const SocialProofComparison = () => {
                 <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none spotlight-card" />
 
                 <div className="relative z-10">
-                  {/* Big metric */}
+                  {/* Emoji accent */}
+                  <div className="text-2xl mb-3">{stat.icon}</div>
+                  
+                  {/* Big metric with gradient */}
                   <div className="mb-3">
-                    <span className="text-4xl sm:text-5xl font-extrabold tracking-tight bg-gradient-to-br from-primary to-primary/60 bg-clip-text text-transparent">
-                      {stat.metric}
+                    <span className="text-4xl sm:text-5xl font-extrabold tracking-tight gradient-number">
+                      <AnimatedMetric value={stat.metric} isVisible={isVisible} />
                     </span>
                   </div>
 

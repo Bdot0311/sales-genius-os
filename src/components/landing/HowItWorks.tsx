@@ -68,6 +68,9 @@ export const HowItWorks = () => {
         <div className="max-w-[1120px] mx-auto">
           {/* Header */}
           <div className={`text-center mb-16 scroll-reveal ${isVisible ? 'visible' : ''}`}>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-xs font-medium text-primary mb-5">
+              3 Steps. That's it.
+            </div>
             <h2 id="how-it-works-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
               How it works
             </h2>
@@ -77,27 +80,32 @@ export const HowItWorks = () => {
           </div>
 
           {/* Steps - horizontal on desktop, stacked on mobile */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-6 mb-10">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-0 mb-10 relative">
+            {/* Connecting line (desktop) */}
+            <div className="hidden md:block absolute top-[68px] left-[16.67%] right-[16.67%] h-px overflow-hidden">
+              <div 
+                className={`h-full bg-gradient-to-r from-primary/40 via-primary/20 to-primary/40 transition-all duration-1000 ease-out ${isVisible ? 'w-full' : 'w-0'}`}
+                style={{ transitionDelay: '400ms' }}
+              />
+            </div>
+
             {steps.map((step, index) => (
               <div 
                 key={index}
                 className={`relative scroll-reveal ${isVisible ? 'visible' : ''}`}
-                style={{ '--reveal-delay': `${index * 90}ms` } as React.CSSProperties}
+                style={{ '--reveal-delay': `${index * 120}ms` } as React.CSSProperties}
               >
-                {/* Connector line - hidden on mobile and last item */}
-                {index < steps.length - 1 && (
-                  <div className="hidden md:block absolute top-12 left-[calc(50%+48px)] w-[calc(100%-96px)] h-px bg-border/40">
-                    <ArrowRight className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/30" />
-                  </div>
-                )}
-
-                <div className="text-center">
-                  {/* Step number */}
+                <div className="text-center md:px-6">
+                  {/* Step number with glow */}
                   <div className="text-xs font-mono text-primary/70 mb-4 tracking-wider">{step.number}</div>
                   
-                  {/* Icon */}
-                  <div className="w-14 h-14 mx-auto mb-5 rounded-2xl bg-primary/10 flex items-center justify-center">
-                    <step.icon className="w-6 h-6 text-primary" aria-hidden="true" />
+                  {/* Icon with gradient bg */}
+                  <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center relative group">
+                    <step.icon className="w-7 h-7 text-primary" aria-hidden="true" />
+                    {/* Subtle ring */}
+                    <div className={`absolute inset-0 rounded-2xl border border-primary/20 transition-all duration-500 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`} 
+                      style={{ transitionDelay: `${index * 120 + 200}ms` }}
+                    />
                   </div>
                   
                   {/* Content */}
