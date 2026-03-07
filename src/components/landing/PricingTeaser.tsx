@@ -128,7 +128,6 @@ export const PricingTeaser = () => {
             <p className="text-lg text-foreground mb-6">
               Free plan available. Paid plans start at $49/month with a 14-day free trial.
             </p>
-            </p>
             <Button
               variant="outline"
               size="lg"
