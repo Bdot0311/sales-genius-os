@@ -344,9 +344,10 @@ async function fetchCachedResults(railwayBaseUrl: string): Promise<{ searches: a
 
 // Plan credit configuration - must match stripe-config.ts
 const PLAN_CREDITS = {
-  growth: { monthlyCredits: 350, dailyLimit: 25 },
-  pro: { monthlyCredits: 700, dailyLimit: 100 },
-  elite: { monthlyCredits: 2000, dailyLimit: 500 },
+  free: { monthlyCredits: 0, dailyLimit: 0, maxResultsPerSearch: 0 },
+  growth: { monthlyCredits: 150, dailyLimit: 15, maxResultsPerSearch: 25 },
+  pro: { monthlyCredits: 500, dailyLimit: 50, maxResultsPerSearch: 50 },
+  elite: { monthlyCredits: 1500, dailyLimit: 150, maxResultsPerSearch: 100 },
 };
 
 serve(async (req) => {
@@ -412,6 +413,20 @@ serve(async (req) => {
             leads: [] 
           }),
           { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // CRITICAL: Block free-tier users from lead search entirely
+      if (subscription.plan === 'free') {
+        console.log('Free tier user blocked from lead search:', { userId: user.id });
+        return new Response(
+          JSON.stringify({ 
+            error: 'Lead search requires a paid plan. Upgrade to Growth ($49/mo) to unlock AI-powered lead discovery.',
+            error_code: 'free_tier_blocked',
+            upgrade_plan: 'growth',
+            leads: [] 
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
@@ -559,8 +574,25 @@ serve(async (req) => {
     }
 
     // Build request body with pagination
+    // Enforce plan-based maxResultsPerSearch limit
     const page = filters.page || 1;
-    const limit = Math.min(filters.limit || 10, 100);
+    
+    // Get plan config for results-per-search enforcement (admins get elite limits)
+    const userPlanConfig = isAdmin ? PLAN_CREDITS.elite : PLAN_CREDITS[(filters as any)._plan as keyof typeof PLAN_CREDITS] || PLAN_CREDITS.growth;
+    
+    // Look up actual plan from subscription if not admin
+    let maxResults = 100; // default for admin
+    if (!isAdmin) {
+      const { data: subForLimits } = await supabase
+        .from('subscriptions')
+        .select('plan')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      const planKey = (subForLimits?.plan || 'growth') as keyof typeof PLAN_CREDITS;
+      maxResults = PLAN_CREDITS[planKey]?.maxResultsPerSearch || 25;
+    }
+    
+    const limit = Math.min(filters.limit || 10, maxResults);
     const offset = (page - 1) * limit;
 
     // Normalize all values through PDL-compatible maps

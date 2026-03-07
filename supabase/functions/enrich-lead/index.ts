@@ -78,6 +78,47 @@ serve(async (req) => {
 
     console.log('Enriching lead for user:', user.id);
 
+    // Check if user is admin (bypass plan checks)
+    const { data: adminRole } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
+    const isAdmin = adminRole?.role === 'admin';
+
+    // CRITICAL: Block free-tier users from enrichment
+    if (!isAdmin) {
+      const { data: subscription } = await supabase
+        .from('subscriptions')
+        .select('plan, status, search_credits_remaining')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (!subscription || subscription.plan === 'free') {
+        console.log('Free tier user blocked from enrichment:', { userId: user.id });
+        return new Response(
+          JSON.stringify({ 
+            error: 'Lead enrichment requires a paid plan. Upgrade to Growth ($49/mo) to unlock enrichment.',
+            error_code: 'free_tier_blocked',
+            upgrade_plan: 'growth',
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Check credits before enrichment
+      if ((subscription.search_credits_remaining || 0) <= 0) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'No search credits remaining. Add more credits to enrich leads.',
+            error_code: 'credits_exhausted',
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     // Get lead details
     const { data: lead, error: leadError } = await supabase
       .from('leads')

@@ -12,16 +12,16 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
-// Product IDs for plans and addons
+// Product IDs for plans and addons (updated for Lusha-aligned pricing)
 const PLAN_PRODUCTS = {
-  'prod_TOropirqoOz7Ed': { plan: 'growth', credits: 200, dailyLimit: 25 },
-  'prod_TOrozUbuuN18RP': { plan: 'pro', credits: 700, dailyLimit: 100 },
-  'prod_TOrod7SaIV2D7s': { plan: 'elite', credits: 2000, dailyLimit: 500 },
+  'prod_U6gflsh1Zzoh3V': { plan: 'growth', credits: 150, dailyLimit: 15 },
+  'prod_U6gfTND3QdfgcC': { plan: 'pro', credits: 500, dailyLimit: 50 },
+  'prod_U6gfOj1Xgfd1vy': { plan: 'elite', credits: 1500, dailyLimit: 150 },
 };
 
 const ADDON_PRODUCTS = {
-  'prod_TiLYPvYYIpq6I9': { credits: 500, priceId: 'price_1SkurgFTerosS6hiDIBX0NhA' },
-  'prod_TiLYxYZjV6ru4w': { credits: 1500, priceId: 'price_1SkurlFTerosS6hirju1trQ4' },
+  'prod_U6gfGxg3alpeLY': { credits: 200, priceId: 'price_1T8THkFTerosS6hinP7QhH4f' },
+  'prod_U6gfxI0gDG2bSk': { credits: 500, priceId: 'price_1T8THlFTerosS6hiAGh5Xdh0' },
 };
 
 serve(async (req) => {
@@ -102,7 +102,7 @@ serve(async (req) => {
     if (customers.data.length === 0) {
       logStep('No Stripe customer found');
       
-      // Check if user has an existing subscription in database (only if authenticated)
+      // Check if user has an existing subscription in database
       if (userId) {
         const { data: existingSub } = await supabaseClient
           .from('subscriptions')
@@ -114,30 +114,30 @@ serve(async (req) => {
           // User has a manual/local subscription without Stripe, preserve it
           logStep('Preserving existing local subscription', { plan: existingSub.plan });
           return new Response(JSON.stringify({ 
-            subscribed: true,
+            subscribed: existingSub.plan !== 'free',
             plan: existingSub.plan,
             status: existingSub.status,
-            search_credits_base: existingSub.search_credits_base || 200,
+            search_credits_base: existingSub.search_credits_base || 0,
             search_credits_addon: existingSub.search_credits_addon || 0,
-            search_credits_remaining: existingSub.search_credits_remaining || 200,
+            search_credits_remaining: existingSub.search_credits_remaining || 0,
           }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 200,
           });
         }
 
-        // No existing subscription or it's tied to Stripe, create default
-        logStep('Creating default growth subscription');
+        // No existing subscription, create default FREE plan (zero cost, zero credits)
+        logStep('Creating default free subscription');
         const { error: upsertError } = await supabaseClient
           .from('subscriptions')
           .upsert({
             user_id: userId,
-            plan: 'growth',
+            plan: 'free',
             status: 'active',
-            leads_limit: 1000,
-            search_credits_base: 200,
+            leads_limit: 0,
+            search_credits_base: 0,
             search_credits_addon: 0,
-            search_credits_remaining: 200,
+            search_credits_remaining: 0,
           }, { onConflict: 'user_id' });
 
         if (upsertError) {
@@ -147,11 +147,11 @@ serve(async (req) => {
 
       return new Response(JSON.stringify({ 
         subscribed: false,
-        plan: 'growth',
+        plan: 'free',
         status: 'active',
-        search_credits_base: 200,
+        search_credits_base: 0,
         search_credits_addon: 0,
-        search_credits_remaining: 200,
+        search_credits_remaining: 0,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
@@ -169,10 +169,10 @@ serve(async (req) => {
     });
 
     const hasActiveSub = subscriptions.data.length > 0;
-    let plan: 'growth' | 'pro' | 'elite' = 'growth';
+    let plan: 'free' | 'growth' | 'pro' | 'elite' = 'free';
     let subscriptionEnd: string | null = null;
     let stripeSubscriptionId: string | null = null;
-    let baseCredits = 200;
+    let baseCredits = 0;
     let addonCredits = 0;
     let addonPriceId: string | null = null;
 
@@ -210,7 +210,7 @@ serve(async (req) => {
 
       // Sync to database (only if authenticated)
       if (userId) {
-        const leadsLimit = plan === 'growth' ? 1000 : plan === 'pro' ? 10000 : 999999;
+        const leadsLimit = plan === 'free' ? 0 : plan === 'growth' ? 1000 : plan === 'pro' ? 10000 : 999999;
         
         // Get current subscription to preserve remaining credits if same billing cycle
         const { data: currentSub } = await supabaseClient
@@ -252,25 +252,25 @@ serve(async (req) => {
         logStep('Successfully synced subscription to database', { plan, baseCredits, addonCredits });
       }
     } else {
-      logStep('No active subscription found, setting to growth plan');
+      logStep('No active subscription found, setting to free plan');
       
-      // Update to default growth plan (only if authenticated)
+      // Update to default free plan (only if authenticated)
       if (userId) {
         const { error: updateError } = await supabaseClient
           .from('subscriptions')
           .upsert({
             user_id: userId,
-            plan: 'growth',
+            plan: 'free',
             status: 'active',
-            leads_limit: 1000,
+            leads_limit: 0,
             stripe_customer_id: customerId,
-            search_credits_base: 200,
+            search_credits_base: 0,
             search_credits_addon: 0,
-            search_credits_remaining: 200,
+            search_credits_remaining: 0,
           }, { onConflict: 'user_id' });
 
         if (updateError) {
-          logStep('Error updating to growth plan', { error: updateError });
+          logStep('Error updating to free plan', { error: updateError });
         }
       }
     }
