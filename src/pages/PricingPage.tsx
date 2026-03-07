@@ -8,16 +8,16 @@ import { Check, Shield, Zap, Users, Headphones } from "lucide-react";
 const PricingPage = () => {
   const pricingFAQs = [
     {
-      question: "What's included in the free trial?",
-      answer: "All plans include a 14-day free trial with full access to the features in your chosen plan. A credit card is required to start."
+      question: "Is there a free plan?",
+      answer: "Yes. The Free plan gives you view-only access to explore the platform — dashboards, sample data, and pipeline overview. No credit card required. When you're ready, upgrade to a paid plan with a 14-day free trial."
     },
     {
       question: "Can I change plans later?",
-      answer: "Yes, you can upgrade or downgrade your plan at any time. Changes take effect on your next billing cycle."
+      answer: "Yes, you can upgrade or downgrade your plan at any time. Upgrades take effect immediately with prorated billing. Downgrades apply at the start of your next billing cycle."
     },
     {
       question: "How do search credits work?",
-      answer: "Search credits are used when discovering new leads. Previewing results, enrichment, and exports are free."
+      answer: "Search credits are used when discovering new leads. Each search returns results based on your plan tier: 25 (Growth), 50 (Pro), or 100 (Elite). Credits reset monthly. You can also purchase add-on packs: +200 credits ($79) or +500 credits ($179)."
     },
     {
       question: "Is there a money-back guarantee?",

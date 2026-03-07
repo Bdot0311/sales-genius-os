@@ -121,14 +121,14 @@ const Settings = () => {
     {
       name: 'Growth',
       value: 'growth',
-      price: '$149',
+      price: '$49',
       description: 'For solo founders and early outbound',
       features: [
-        '350 search credits / month',
-        'Lead Intelligence Engine',
-        'In-app enrichment & lead scoring',
+        '150 search credits / month',
+        '25 results per search',
+        'Standard enrichment (Location)',
+        '3 active sequences',
         'AI Outreach Studio',
-        'Smart Deal Pipeline',
         'Email support'
       ],
       paymentLink: 'https://buy.stripe.com/9B6dR9ep1a2b0gi1ca1B60u'
@@ -136,30 +136,30 @@ const Settings = () => {
     {
       name: 'Pro',
       value: 'pro',
-      price: '$299',
+      price: '$149',
       description: 'For teams booking meetings consistently',
       features: [
-        '700 search credits / month',
-        'Everything in Growth, plus:',
-        'Advanced automation builder',
-        'AI Sales Coach',
-        'Performance analytics',
+        '500 search credits / month',
+        '50 results per search',
+        'Advanced enrichment (+Title/Seniority)',
+        '15 active sequences',
+        'Company enrichment',
         'Priority support'
       ],
       highlighted: true,
-      paymentLink: 'https://buy.stripe.com/9B65kD4Or8Y76EGaMK1B60p'
+      paymentLink: 'https://buy.stripe.com/9B55kD4Or8Y76EGaMK1B60p'
     },
     {
       name: 'Elite',
       value: 'elite',
-      price: '$799',
+      price: '$399',
       description: 'For high-volume outbound operations',
       features: [
-        '2,000 search credits / month',
-        'Everything in Pro, plus:',
-        'Unlimited automation workflows',
+        '1,500 search credits / month',
+        '100 results per search',
+        'Premium enrichment (all filters)',
+        'Unlimited sequences',
         'API access',
-        'White-label customization',
         'Dedicated success manager'
       ],
       paymentLink: 'https://buy.stripe.com/8x2bJ15Svfmvd341ca1B60q'
@@ -570,7 +570,7 @@ const Settings = () => {
                         className="w-full"
                         onClick={() => handleCheckout(plan.paymentLink)}
                       >
-                        {subscription && subscription.plan !== plan.value ? 'Change Plan' : 'Start Free Trial'}
+                        {subscription && subscription.plan !== plan.value ? 'Change Plan' : 'Start 14-Day Trial'}
                       </Button>
                     )}
                   </Card>

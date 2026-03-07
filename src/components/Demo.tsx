@@ -51,7 +51,7 @@ const SLIDE_CAPTIONS = [
   "The AI Outreach Studio leverages artificial intelligence to generate personalized emails designed to convert. The AI analyzes each lead's profile and recent company news to craft messages that resonate.",
   "The analytics dashboard provides real-time insights into key metrics. Sales teams can monitor leads, meetings, revenue, and conversion rates all in one place for more informed decision-making.",
   "The AI sales coach offers intelligent recommendations to help close more deals faster. This virtual mentor provides actionable insights based on historical data, market trends, and best practices.",
-  "Ready to transform your sales process? Start your free trial today and experience the future of AI-powered sales. Join thousands of teams already closing more deals with SalesOS.",
+  "Ready to transform your sales process? Start for free and experience the future of AI-powered sales. Join thousands of teams already closing more deals with SalesOS.",
 ];
 
 const demoSteps = [
@@ -681,14 +681,14 @@ const EndScreenMockup = ({ isActive }: { isActive: boolean }) => {
           href="/pricing"
           className="inline-flex items-center gap-2 bg-gradient-to-r from-primary to-accent text-primary-foreground font-semibold px-8 py-3 rounded-xl hover:opacity-90 transition-opacity shadow-lg shadow-primary/25"
         >
-          Start Free Trial
+          Start for free
           <ArrowRight className="w-4 h-4" />
         </a>
       </div>
 
       {/* Trust indicator */}
       <div className={`text-xs text-muted-foreground transition-all duration-500 ${showElements >= 4 ? 'opacity-100' : 'opacity-0'}`}>
-        No credit card required • 14-day free trial • Cancel anytime
+        No credit card required • Free forever plan • Cancel anytime
       </div>
     </div>
   );

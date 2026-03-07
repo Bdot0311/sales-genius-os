@@ -107,9 +107,9 @@ const Confirmation = () => {
       emailSentRef.current = true;
       
       const planPricesStr: Record<string, string> = {
-        growth: "$149",
-        pro: "$299",
-        elite: "$799"
+        growth: "$49",
+        pro: "$149",
+        elite: "$399"
       };
 
       supabase.functions.invoke('send-subscription-confirmation', {
@@ -117,7 +117,7 @@ const Confirmation = () => {
           email,
           name: email.split('@')[0],
           plan: (verifiedPlan || plan).charAt(0).toUpperCase() + (verifiedPlan || plan).slice(1),
-          amount: planPricesStr[verifiedPlan || plan] || "$149"
+          amount: planPricesStr[verifiedPlan || plan] || "$49"
         }
       }).catch(err => console.error('Subscription email error:', err));
     }
@@ -127,27 +127,27 @@ const Confirmation = () => {
 
   const planFeatures = {
     growth: [
-      "350 search credits / month",
-      "Lead Intelligence Engine",
-      "In-app enrichment & lead scoring",
+      "150 search credits / month",
+      "25 results per search",
+      "Standard enrichment (Location)",
+      "3 active sequences",
       "AI Outreach Studio",
-      "Smart Deal Pipeline",
       "Email support"
     ],
     pro: [
-      "700 search credits / month",
-      "Everything in Growth, plus:",
-      "Advanced automation builder",
-      "AI Sales Coach",
-      "Performance analytics",
+      "500 search credits / month",
+      "50 results per search",
+      "Advanced enrichment (+Title/Seniority)",
+      "15 active sequences",
+      "Company enrichment",
       "Priority support"
     ],
     elite: [
-      "2,000 search credits / month",
-      "Everything in Pro, plus:",
-      "Unlimited automation workflows",
+      "1,500 search credits / month",
+      "100 results per search",
+      "Premium enrichment (all filters)",
+      "Unlimited sequences",
       "API access",
-      "White-label customization",
       "Dedicated success manager"
     ]
   };
