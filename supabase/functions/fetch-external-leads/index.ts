@@ -313,28 +313,52 @@ function calculateScores(lead: any): LeadScores {
   };
 }
 
-// Generate score explanation
+// Generate score explanation with specifics
 function generateScoreExplanation(lead: any, scores: LeadScores): string {
   const parts: string[] = [];
   
-  if (scores.icp_score >= 80) {
+  if (scores.icp_score >= 85) {
+    parts.push('Excellent ICP match');
+  } else if (scores.icp_score >= 70) {
     parts.push('Strong ICP match');
-  } else if (scores.icp_score >= 60) {
+  } else if (scores.icp_score >= 55) {
     parts.push('Good ICP fit');
+  } else if (scores.icp_score >= 40) {
+    parts.push('Moderate ICP fit');
+  } else {
+    parts.push('Low ICP match');
   }
 
   const jobTitle = (lead.job_title || '').toLowerCase();
-  if (jobTitle.includes('ceo') || jobTitle.includes('founder')) {
-    parts.push('C-level executive');
-  } else if (jobTitle.includes('vp') || jobTitle.includes('director')) {
-    parts.push('Senior leadership');
+  if (jobTitle.includes('ceo') || jobTitle.includes('founder') || jobTitle.includes('owner') || jobTitle.includes('president')) {
+    parts.push('Top executive / decision maker');
+  } else if (jobTitle.includes('cto') || jobTitle.includes('cfo') || jobTitle.includes('coo') || jobTitle.includes('cmo') || jobTitle.includes('cro')) {
+    parts.push('C-suite leader');
+  } else if (jobTitle.includes('vp') || jobTitle.includes('vice president')) {
+    parts.push('VP-level authority');
+  } else if (jobTitle.includes('director')) {
+    parts.push('Director-level influence');
+  } else if (jobTitle.includes('head of') || jobTitle.includes('head,')) {
+    parts.push('Department head');
+  } else if (jobTitle.includes('manager')) {
+    parts.push('Management level');
+  }
+
+  if (scores.intent_score >= 60) {
+    parts.push('High buying intent signals');
   }
 
   if (lead.industry) {
-    parts.push(`${lead.industry} industry`);
+    parts.push(`${lead.industry}`);
   }
 
-  return parts.length > 0 ? parts.join(' - ') : 'Lead discovered from search';
+  if (scores.enrichment_score >= 75) {
+    parts.push('Rich data profile');
+  } else if (scores.enrichment_score < 40) {
+    parts.push('Limited data available');
+  }
+
+  return parts.length > 0 ? parts.join(' · ') : 'Lead discovered from search';
 }
 
 // Generate buying signals
