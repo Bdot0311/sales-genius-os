@@ -31,8 +31,8 @@ SalesOS is a comprehensive sales automation platform designed for SaaS companies
 ## Key Features
 
 - **AI Lead Scoring**: Prioritize who's most likely to convert with machine learning that analyzes engagement and fit signals
-- **Smart Outreach**: Write emails that feel human without the time—AI generates personalized messages based on each prospect's profile
-- **Auto Scheduling**: Book meetings without back-and-forth—smart scheduling finds optimal times automatically
+- **Smart Outreach**: Write emails that feel human without the time. AI generates personalized messages based on each prospect's profile
+- **Auto Scheduling**: Book meetings without back-and-forth. Smart scheduling finds optimal times automatically
 - **Pipeline Analytics**: See bottlenecks and forecast revenue with visual funnel tracking
 - **Sales Coaching**: Real-time AI coaching for objections and closes during calls
 - **Workflow Builder**: Automate follow-ups and handoffs without code using drag-and-drop
