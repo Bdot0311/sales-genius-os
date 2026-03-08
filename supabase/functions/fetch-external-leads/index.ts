@@ -365,23 +365,52 @@ function generateScoreExplanation(lead: any, scores: LeadScores): string {
 function generateBuyingSignals(lead: any): string[] {
   const signals: string[] = [];
   const jobTitle = (lead.job_title || '').toLowerCase();
+  const industry = (lead.industry || '').toLowerCase();
+  const companySize = (lead.company_size || '').toString();
 
-  if (jobTitle.includes('ceo') || jobTitle.includes('founder') || jobTitle.includes('owner') ||
-      jobTitle.includes('vp') || jobTitle.includes('director') || jobTitle.includes('head')) {
+  // Decision maker signals
+  if (jobTitle.includes('ceo') || jobTitle.includes('founder') || jobTitle.includes('owner') || jobTitle.includes('president')) {
+    signals.push('Key Decision Maker');
+  } else if (jobTitle.includes('vp') || jobTitle.includes('director') || jobTitle.includes('head')) {
     signals.push('Decision Maker');
   }
 
+  // Budget authority
+  if (jobTitle.includes('cfo') || jobTitle.includes('finance') || jobTitle.includes('procurement')) {
+    signals.push('Budget Authority');
+  }
+
+  // Tech buyer
   if (jobTitle.includes('tech') || jobTitle.includes('it') || jobTitle.includes('engineer') ||
-      jobTitle.includes('developer') || jobTitle.includes('cto')) {
+      jobTitle.includes('developer') || jobTitle.includes('cto') || jobTitle.includes('devops')) {
     signals.push('Tech Buyer');
   }
 
-  if (jobTitle.includes('sales') || jobTitle.includes('revenue') || jobTitle.includes('growth')) {
+  // Revenue / growth
+  if (jobTitle.includes('sales') || jobTitle.includes('revenue') || jobTitle.includes('growth') || jobTitle.includes('business development')) {
     signals.push('Revenue Focus');
   }
 
-  if (jobTitle.includes('marketing') || jobTitle.includes('cmo') || jobTitle.includes('brand')) {
+  // Marketing
+  if (jobTitle.includes('marketing') || jobTitle.includes('cmo') || jobTitle.includes('brand') || jobTitle.includes('demand')) {
     signals.push('Marketing Leader');
+  }
+
+  // Company size signals
+  if (companySize.includes('201') || companySize.includes('500') || companySize.includes('1001')) {
+    signals.push('Mid-Market');
+  } else if (companySize.includes('5001') || companySize.includes('10001')) {
+    signals.push('Enterprise');
+  }
+
+  // Industry signals
+  if (industry.includes('software') || industry.includes('technology')) {
+    signals.push('Tech Industry');
+  }
+
+  // Email availability
+  if (lead.business_email || lead.email) {
+    signals.push('Email Available');
   }
 
   return signals.length > 0 ? signals : ['Prospect'];
