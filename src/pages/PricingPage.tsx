@@ -4,6 +4,12 @@ import { Footer } from "@/components/Footer";
 import { SEOHead, BreadcrumbSchema, FAQSchema } from "@/components/seo";
 import { Link } from "react-router-dom";
 import { Check, Shield, Zap, Users, Headphones } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 const PricingPage = () => {
   const pricingFAQs = [
