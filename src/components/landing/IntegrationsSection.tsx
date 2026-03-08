@@ -48,7 +48,7 @@ const SalesforceLogo = () => (
   </svg>
 );
 
-// Integration data — honest about status
+// Integration data
 const integrations = [
   { 
     name: "Google Workspace", 
