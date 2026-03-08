@@ -277,7 +277,7 @@ export const HeroSection = () => {
         style={{ background: "radial-gradient(ellipse at center, hsl(261 75% 55% / 0.06) 0%, transparent 60%)" }}
         aria-hidden="true"
       />
-      {/* Slow gradient sweep — subconscious movement */}
+      {/* Slow gradient sweep */}
       <div
         className="absolute inset-0 pointer-events-none animate-hero-sweep"
         aria-hidden="true"
