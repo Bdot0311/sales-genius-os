@@ -46,7 +46,7 @@ const SLIDE_TIMESTAMPS = [
 const SLIDE_CAPTIONS = [
   "The sales industry is undergoing a significant transformation, thanks to the integration of artificial intelligence. These innovations are streamlining processes and providing sales teams with powerful tools to improve their performance.",
   "AI lead discovery is changing the game. Gone are the days of complex filters. Now, sales professionals can simply type what they're looking for using natural language, and the AI does the rest.",
-  "Once leads are identified, smart enrichment takes over. This feature automatically enhances each lead with crucial data—company size, contact details, and social profiles—providing a 360-degree view of prospects.",
+  "Once leads are identified, smart enrichment takes over. This feature automatically enhances each lead with crucial data: company size, contact details, and social profiles, providing a 360-degree view of prospects.",
   "Pipeline management has been reimagined for maximum visibility and control. The drag-and-drop interface allows sales teams to easily move deals across different stages, making it easier to identify bottlenecks and prioritize opportunities.",
   "The AI Outreach Studio leverages artificial intelligence to generate personalized emails designed to convert. The AI analyzes each lead's profile and recent company news to craft messages that resonate.",
   "The analytics dashboard provides real-time insights into key metrics. Sales teams can monitor leads, meetings, revenue, and conversion rates all in one place for more informed decision-making.",

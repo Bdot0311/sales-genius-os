@@ -137,7 +137,7 @@ export const Features = () => {
             <span className="text-gradient-animated">sell smarter</span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Six powerful modules working together to automate your entire sales workflow—from discovery to close.
+            Six powerful modules working together to automate your entire sales workflow, from discovery to close.
           </p>
         </div>
 

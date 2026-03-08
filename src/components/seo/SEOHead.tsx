@@ -40,7 +40,7 @@ const DEFAULT_OG_IMAGE = 'https://storage.googleapis.com/gpt-engineer-file-uploa
 
 export const SEOHead = ({
   title = "SalesOS - Find, Engage & Close More Deals | AI Sales Platform",
-  description = "Describe your ideal customer in plain English. Get ranked matches with enriched profiles—your first lead in under 2 minutes. 14-day free trial, no credit card.",
+  description = "Describe your ideal customer in plain English. Get ranked matches with enriched profiles. Your first lead in under 2 minutes. 14-day free trial, no credit card.",
   canonicalUrl,
   ogImage = DEFAULT_OG_IMAGE,
   ogType = "website",

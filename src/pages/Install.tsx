@@ -116,7 +116,7 @@ const Install = () => {
             Get SalesOS on Your Device
           </h1>
           <p className="text-muted-foreground text-lg max-w-md mx-auto">
-            Install SalesOS for instant access to your sales tools — right from your home screen.
+            Install SalesOS for instant access to your sales tools, right from your home screen.
           </p>
         </div>
 

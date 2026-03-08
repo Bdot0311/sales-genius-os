@@ -561,7 +561,7 @@ const ApiDocs = () => {
                 <div>
                   <h3 className="font-semibold mb-2">Data Scoping</h3>
                   <p className="text-sm text-muted-foreground">
-                    All requests are scoped to the API key owner's account. You can only access your own data — no cross-user access is possible.
+                    All requests are scoped to the API key owner's account. You can only access your own data. No cross-user access is possible.
                   </p>
                 </div>
               </CardContent>

@@ -98,7 +98,7 @@ const Index = () => {
     <>
       <SEOHead 
         title="SalesOS - Find, Engage & Close More Deals | AI Sales Platform"
-        description="AI-powered lead discovery, personalized outreach, pipeline management, and sales coaching—all in one platform. Start free, upgrade when ready. No credit card required."
+        description="AI-powered lead discovery, personalized outreach, pipeline management, and sales coaching, all in one platform. Start free, upgrade when ready. No credit card required."
         keywords="AI sales platform, lead discovery, sales automation, personalized outreach, pipeline management, B2B sales, AI email generation, sales coaching, CRM"
         ogImage="https://ghgfjnepvxvxrncmskys.supabase.co/storage/v1/object/public/social-images/salesos-logo.png"
       />
