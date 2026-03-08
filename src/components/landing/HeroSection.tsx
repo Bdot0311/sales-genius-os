@@ -286,7 +286,7 @@ export const HeroSection = () => {
 
       <div className="container relative z-10 mx-auto px-4 sm:px-6">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center max-w-[1120px] mx-auto">
-          {/* Left — Copy */}
+          {/* Left: Copy */}
           <div className="text-center lg:text-left">
 
             {/* Headline */}
