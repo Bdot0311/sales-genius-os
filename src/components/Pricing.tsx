@@ -167,32 +167,36 @@ const comparisonCategories = [
 
 const creditFAQs = [
   {
-    question: "How do search credits work?",
-    answer: "1 credit = 1 contact revealed. When you run a search, browsing and filtering results is free. Credits are only used when you reveal a contact's details (email, phone, company data). Phone number reveals cost 10 credits. Credits reset at the start of each billing cycle."
+    question: "How do credits work?",
+    answer: "One credit type covers all use cases across the platform, browser extension, and API. Credits are consumed when you reveal contact data: 1 credit per email, 5 credits per phone number, and 1 credit per company profile (API only). Searching, filtering, and browsing results is always free."
   },
   {
-    question: "How do credits reset?",
-    answer: "Your search credits reset monthly, aligned with your billing cycle. Unused credits do not roll over. If you need more credits mid-cycle, you can purchase add-on packs (+200 for $79/mo or +500 for $179/mo) that are added immediately to your balance."
+    question: "Are you charging for searches?",
+    answer: "No. Searches throughout the platform are completely free. Credits are only consumed when you reveal contact details like emails or phone numbers."
   },
   {
-    question: "What happens when I run out of credits?",
-    answer: "You can still access all your saved leads, enrichment data, and pipeline features. You just won't be able to reveal new contacts until your credits reset or you purchase an add-on pack."
+    question: "Will I be charged twice for the same contact?",
+    answer: "No. Each contact's data point is only charged once. If you've already revealed a contact's email or phone number, future requests won't incur additional charges for those same data points."
+  },
+  {
+    question: "What happens to unused credits?",
+    answer: "Monthly plans: credits roll over up to 2x your monthly limit. Annual plans: you get all credits upfront, and unused credits reset at the end of the cycle."
+  },
+  {
+    question: "Can I purchase more credits?",
+    answer: "Yes. Add credits anytime through your account settings. Choose from add-on packs: +200 credits for $79/mo or +500 credits for $179/mo. You can also upgrade plans for more features and higher limits."
   },
   {
     question: "Is there a free plan?",
-    answer: "Yes. The free plan gives you full access to explore the SalesOS interface, including the dashboard, pipeline view, and analytics summary. Revealing contacts requires a paid plan. No credit card is needed to sign up."
+    answer: "Yes. The free plan lets you explore the full SalesOS interface, including dashboards, pipeline view, and analytics. Revealing contact data requires a paid plan. No credit card needed to sign up."
   },
   {
-    question: "Can I change plans later?",
-    answer: "Yes, you can upgrade or downgrade your plan at any time. When upgrading, the new credit allocation takes effect immediately. When downgrading, the change applies at the start of your next billing cycle."
+    question: "Can I upgrade, downgrade, or cancel anytime?",
+    answer: "Yes. Upgrades happen instantly with your new credit allocation. Downgrades and cancellations apply at the end of your billing cycle. Your credits remain valid through your current term."
   },
   {
     question: "Is there a money-back guarantee?",
     answer: "Yes, we offer a 30-day money-back guarantee on all paid plans. If you're not satisfied, contact support for a full refund."
-  },
-  {
-    question: "Do you offer enterprise pricing?",
-    answer: "Yes, our Elite plan includes custom pricing options for larger teams. Contact our sales team for volume discounts and custom terms."
   },
 ];
 
