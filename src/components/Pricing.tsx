@@ -467,14 +467,14 @@ export const Pricing = () => {
           </div>
         </div>
 
-        {/* Credit FAQs */}
+        {/* Pricing & Credits FAQ */}
         <div className={`max-w-3xl mx-auto scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '400ms' } as React.CSSProperties}>
           <div className="text-center mb-6 sm:mb-8">
             <div className="inline-flex items-center gap-2 text-muted-foreground mb-2">
               <HelpCircle className="w-5 h-5" />
               <span className="text-sm font-medium">FAQs</span>
             </div>
-            <h3 className="text-xl sm:text-2xl font-semibold">How credits work</h3>
+            <h3 className="text-xl sm:text-2xl font-semibold">Pricing & credits</h3>
           </div>
 
           <Accordion type="single" collapsible className="w-full space-y-2 sm:space-y-3">
