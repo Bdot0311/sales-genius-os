@@ -157,7 +157,7 @@ export const IntegrationsSection = () => {
                 <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none spotlight-card" />
                 
                 <div className="relative z-10">
-                  <div className={`flex justify-center mb-3 transition-transform duration-200 group-hover:scale-110 ${integration.status === 'coming' ? 'opacity-50 grayscale' : ''}`}>
+                  <div className="flex justify-center mb-3 transition-transform duration-200 group-hover:scale-110">
                     <integration.Logo />
                   </div>
                   <div className="font-medium text-sm mb-0.5">{integration.name}</div>
