@@ -7,30 +7,14 @@ import { Check, Shield, Zap, Users, Headphones } from "lucide-react";
 
 const PricingPage = () => {
   const pricingFAQs = [
-    {
-      question: "How do search credits work?",
-      answer: "1 credit = 1 contact revealed. Browsing and filtering search results is free. Credits are only used when you reveal a contact's details. Phone number reveals cost 10 credits. Credits reset monthly."
-    },
-    {
-      question: "How do credits reset?",
-      answer: "Credits reset monthly, aligned with your billing cycle. Unused credits do not roll over. Add-on packs are available anytime."
-    },
-    {
-      question: "Is there a free plan?",
-      answer: "Yes. Explore the full SalesOS interface for free. Revealing contacts requires a paid plan. No credit card needed."
-    },
-    {
-      question: "Can I change plans later?",
-      answer: "Yes. Upgrades take effect immediately. Downgrades apply at the start of your next billing cycle."
-    },
-    {
-      question: "Is there a money-back guarantee?",
-      answer: "Yes, 30-day money-back guarantee on all paid plans."
-    },
-    {
-      question: "Do you offer enterprise pricing?",
-      answer: "Yes, our Elite plan includes custom pricing for larger teams. Contact sales for volume discounts."
-    }
+    { question: "How do credits work?", answer: "One credit type covers all use cases. 1 credit per email reveal, 5 credits per phone number, 1 credit per company profile (API). Searching and browsing is always free." },
+    { question: "Are you charging for searches?", answer: "No. Searches are free. Credits are only consumed when you reveal contact details." },
+    { question: "Will I be charged twice for the same contact?", answer: "No. Data points are only charged once per contact." },
+    { question: "What happens to unused credits?", answer: "Monthly plans roll over up to 2x your limit. Annual plans reset at the end of the cycle." },
+    { question: "Can I purchase more credits?", answer: "Yes. Add-on packs available anytime: +200 for $79/mo or +500 for $179/mo." },
+    { question: "Is there a free plan?", answer: "Yes. Explore the full interface for free. Revealing contacts requires a paid plan." },
+    { question: "Can I upgrade, downgrade, or cancel anytime?", answer: "Yes. Upgrades are instant. Downgrades apply at end of billing cycle." },
+    { question: "Is there a money-back guarantee?", answer: "Yes, 30-day money-back guarantee on all paid plans." },
   ];
 
   const valueProps = [
