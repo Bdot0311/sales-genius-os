@@ -339,7 +339,7 @@ export const HeroSection = () => {
               </button>
             </div>
 
-            {/* Trust proof — honest, no inflated claims */}
+            {/* Trust proof */}
             <div
               className={`flex flex-col gap-1.5 text-center lg:text-left transition-all duration-700 delay-[350ms] ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
             >
