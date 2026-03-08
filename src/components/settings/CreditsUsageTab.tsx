@@ -259,7 +259,7 @@ export const CreditsUsageTab = () => {
                 <Coins className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <p className="font-medium">{planConfig.monthlySearchCredits}</p>
+                <p className="font-medium">{planConfig.monthlyCredits}</p>
                 <p className="text-xs text-muted-foreground">Monthly Credits</p>
               </div>
             </div>
