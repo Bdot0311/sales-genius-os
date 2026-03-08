@@ -554,8 +554,8 @@ const ApiDocs = () => {
                     Rate limits are configured per API key. Check response headers:
                   </p>
                   <ul className="text-sm space-y-1 mt-2">
-                    <li><code className="text-xs bg-muted px-2 py-0.5 rounded">X-RateLimit-Remaining</code> — Requests remaining in window</li>
-                    <li><code className="text-xs bg-muted px-2 py-0.5 rounded">X-RateLimit-Reset</code> — ISO timestamp when the limit resets</li>
+                    <li><code className="text-xs bg-muted px-2 py-0.5 rounded">X-RateLimit-Remaining</code>: Requests remaining in window</li>
+                    <li><code className="text-xs bg-muted px-2 py-0.5 rounded">X-RateLimit-Reset</code>: ISO timestamp when the limit resets</li>
                   </ul>
                 </div>
                 <div>
