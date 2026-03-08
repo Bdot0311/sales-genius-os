@@ -126,7 +126,7 @@ export const PricingTeaser = () => {
           {/* Pricing logic */}
           <div className={`text-center scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '300ms' } as React.CSSProperties}>
             <p className="text-lg text-foreground mb-6">
-              Free plan available. Paid plans start at $49/month with a 14-day free trial.
+              Start free — no credit card required. Upgrade when you're ready.
             </p>
             <Button
               variant="outline"
