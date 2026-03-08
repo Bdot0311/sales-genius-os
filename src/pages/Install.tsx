@@ -84,7 +84,7 @@ const Install = () => {
     {
       icon: Smartphone,
       title: "App-Like Experience",
-      description: "Full-screen, no browser bars — just like a native app",
+      description: "Full-screen, no browser bars, just like a native app",
     },
     {
       icon: Monitor,
