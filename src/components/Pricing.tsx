@@ -190,6 +190,10 @@ const creditFAQs = [
     question: "Is there a money-back guarantee?",
     answer: "Yes, we offer a 30-day money-back guarantee on all paid plans. If you're not satisfied, contact support for a full refund."
   },
+  {
+    question: "Do you offer enterprise pricing?",
+    answer: "Yes, our Elite plan includes custom pricing options for larger teams. Contact our sales team for volume discounts and custom terms."
+  },
 ];
 
 // Helper to render feature value in comparison table
