@@ -35,11 +35,11 @@ SalesOS is a comprehensive sales automation platform designed for SaaS companies
 
 SalesOS offers four pricing tiers:
 - **Free**: $0/month - Explore the platform with view-only access, no credit card needed
-- **Growth**: $49/month - 150 credits/month for solo founders and early outbound
-- **Professional**: $149/month - 500 credits/month for growing teams
-- **Elite**: $399/month - 1,500 credits/month for high-volume outbound operations
+- **Starter**: $39/month - Up to 500 verified prospects/month for solo founders
+- **Growth**: $89/month - Up to 1,500 verified prospects/month for growing teams (Most Popular)
+- **Pro**: $179/month - Up to 4,000 verified prospects/month for high-volume operations
 
-Credits are consumed per contact reveal: 1 credit per email, 5 credits per phone number. Searches are always free.
+Searches are always free. You only pay when you contact verified prospects.
 
 ## Getting Started
 
