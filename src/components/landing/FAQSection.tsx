@@ -11,16 +11,16 @@ import { ArrowRight } from "lucide-react";
 
 const faqs = [
   {
-    question: "Is there a free plan?",
-    answer: "Yes. SalesOS offers a free forever plan with view-only access to dashboards, sample data, and the pipeline overview. No credit card required. When you're ready to search for leads, upgrade to a paid plan, all with a 14-day free trial."
+    question: "What is SalesOS?",
+    answer: "SalesOS is an AI-powered lead discovery and outbound sales platform. Describe your ideal customer in plain English, get ranked matches with enriched profiles, and export them to your workflow. No complex filters or boolean queries needed."
   },
   {
-    question: "How do search credits work?",
-    answer: "Search credits are used when you run AI lead discovery queries. Each search returns results based on your plan: 25 (Growth), 50 (Pro), or 100 (Elite). Credits reset monthly and unused credits don't roll over. You can also purchase add-on credit packs."
+    question: "Who is SalesOS for?",
+    answer: "SalesOS is built for B2B sales teams, SDRs, founders, and growth marketers who need to find and reach qualified prospects faster. Whether you're a solo founder or a 50-person sales org, there's a plan that fits."
   },
   {
-    question: "Can I change plans later?",
-    answer: "Yes, you can upgrade or downgrade your plan at any time from your account settings. Upgrades take effect immediately with prorated billing. Downgrades apply at the start of your next billing cycle, and you'll keep access to premium features until then."
+    question: "How does AI lead discovery work?",
+    answer: "You describe your ideal customer profile in natural language, like 'VP of Marketing at SaaS companies with 50-200 employees in the US.' Our AI parses your query, searches across millions of records, and returns ranked matches with verified contact data."
   },
   {
     question: "How does AI email generation work?",
