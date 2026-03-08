@@ -41,7 +41,7 @@ const gettingStartedSteps = [
   },
   {
     name: "Describe your ideal customer",
-    text: "Tell SalesOS who you're looking for in plain English—job titles, industries, company size, location. No complex filters needed."
+    text: "Tell SalesOS who you're looking for in plain English: job titles, industries, company size, location. No complex filters needed."
   },
   {
     name: "Get ranked matches with enriched profiles",
