@@ -450,7 +450,7 @@ export const Pricing = () => {
               <HelpCircle className="w-5 h-5" />
               <span className="text-sm font-medium">FAQs</span>
             </div>
-            <h3 className="text-xl sm:text-2xl font-semibold">Pricing & credits</h3>
+            <h3 className="text-xl sm:text-2xl font-semibold">Pricing & plans</h3>
           </div>
 
           <Accordion type="single" collapsible className="w-full space-y-2 sm:space-y-3">
