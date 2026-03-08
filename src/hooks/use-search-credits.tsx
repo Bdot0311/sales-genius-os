@@ -43,10 +43,10 @@ export const useSearchCredits = () => {
         const planConfig = PLAN_CONFIG[plan];
         
         setCredits({
-          baseCredits: data.search_credits_base || planConfig.monthlySearchCredits,
+          baseCredits: data.search_credits_base || planConfig.monthlyCredits,
           addonCredits: data.search_credits_addon || 0,
-          totalCredits: (data.search_credits_base || planConfig.monthlySearchCredits) + (data.search_credits_addon || 0),
-          remainingCredits: data.search_credits_remaining || planConfig.monthlySearchCredits,
+          totalCredits: (data.search_credits_base || planConfig.monthlyCredits) + (data.search_credits_addon || 0),
+          remainingCredits: data.search_credits_remaining || planConfig.monthlyCredits,
           dailySearchesUsed: data.daily_searches_used || 0,
           dailySearchLimit: planConfig.dailySearchLimit,
           plan,
