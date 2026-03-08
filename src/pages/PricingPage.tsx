@@ -7,12 +7,11 @@ import { Check, Shield, Zap, Users, Headphones } from "lucide-react";
 
 const PricingPage = () => {
   const pricingFAQs = [
-    { question: "How do credits work?", answer: "One credit type covers all use cases. 1 credit per email reveal, 5 credits per phone number, 1 credit per company profile (API). Searching and browsing is always free." },
-    { question: "Are you charging for searches?", answer: "No. Searches are free. Credits are only consumed when you reveal contact details." },
-    { question: "Will I be charged twice for the same contact?", answer: "No. Data points are only charged once per contact." },
-    { question: "What happens to unused credits?", answer: "Monthly plans roll over up to 2x your limit. Annual plans reset at the end of the cycle." },
-    { question: "Can I purchase more credits?", answer: "Yes. Add-on packs available anytime: +200 for $79/mo or +500 for $179/mo." },
-    { question: "Is there a free plan?", answer: "Yes. Explore the full interface for free. Revealing contacts requires a paid plan." },
+    { question: "What are verified prospects?", answer: "Verified prospects are contacts with confirmed, up-to-date data including verified email addresses, job titles, and company information." },
+    { question: "Are you charging for searches?", answer: "No. Searches are free. Your plan limit only applies when you access verified prospect data." },
+    { question: "What happens when I reach my monthly limit?", answer: "You can still access saved prospects and pipeline features. To contact new prospects, wait for your reset or purchase an add-on." },
+    { question: "Can I purchase more verified prospects?", answer: "Yes. Add-on packs: +500 for $49/mo or +1,500 for $119/mo." },
+    { question: "Is there a free plan?", answer: "Yes. Explore the full interface for free. Contacting verified prospects requires a paid plan." },
     { question: "Can I upgrade, downgrade, or cancel anytime?", answer: "Yes. Upgrades are instant. Downgrades apply at end of billing cycle." },
     { question: "Is there a money-back guarantee?", answer: "Yes, 30-day money-back guarantee on all paid plans." },
   ];

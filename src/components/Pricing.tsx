@@ -412,7 +412,7 @@ export const Pricing = () => {
                   
                   <div className="relative z-10">
                     <div className="text-2xl font-bold mb-1">+{addon.credits.toLocaleString()}</div>
-                    <div className="text-sm text-muted-foreground mb-3">credits per month</div>
+                    <div className="text-sm text-muted-foreground mb-3">verified prospects per month</div>
                     <div className="text-lg font-semibold text-primary mb-4">{addon.price}/mo</div>
                     
                     {isCurrentAddon ? (
