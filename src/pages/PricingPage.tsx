@@ -9,27 +9,27 @@ const PricingPage = () => {
   const pricingFAQs = [
     {
       question: "How do search credits work?",
-      answer: "1 credit = 1 search. Each search returns a batch of matched leads based on your plan: 25 (Growth), 50 (Pro), or 100 (Elite). Viewing, enriching, and exporting those results costs nothing extra."
+      answer: "1 credit = 1 contact revealed. Browsing and filtering search results is free. Credits are only used when you reveal a contact's details. Phone number reveals cost 10 credits. Credits reset monthly."
     },
     {
       question: "How do credits reset?",
-      answer: "Your search credits reset on a monthly basis, aligned with your billing cycle. Unused credits do not roll over. Purchase add-on packs anytime for immediate credits."
+      answer: "Credits reset monthly, aligned with your billing cycle. Unused credits do not roll over. Add-on packs are available anytime."
     },
     {
       question: "Is there a free plan?",
-      answer: "Yes. The free plan gives you full access to explore the SalesOS interface. Lead search and enrichment require a paid plan. No credit card needed."
+      answer: "Yes. Explore the full SalesOS interface for free. Revealing contacts requires a paid plan. No credit card needed."
     },
     {
       question: "Can I change plans later?",
-      answer: "Yes, you can upgrade or downgrade at any time. Upgrades take effect immediately. Downgrades apply at the start of your next billing cycle."
+      answer: "Yes. Upgrades take effect immediately. Downgrades apply at the start of your next billing cycle."
     },
     {
       question: "Is there a money-back guarantee?",
-      answer: "Yes, we offer a 30-day money-back guarantee on all paid plans. Contact support for a full refund."
+      answer: "Yes, 30-day money-back guarantee on all paid plans."
     },
     {
       question: "Do you offer enterprise pricing?",
-      answer: "Yes, our Elite plan includes custom pricing options for larger teams. Contact our sales team for volume discounts and custom terms."
+      answer: "Yes, our Elite plan includes custom pricing for larger teams. Contact sales for volume discounts."
     }
   ];
 

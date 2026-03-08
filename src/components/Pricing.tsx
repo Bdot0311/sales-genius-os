@@ -168,19 +168,19 @@ const comparisonCategories = [
 const creditFAQs = [
   {
     question: "How do search credits work?",
-    answer: "1 credit = 1 search. Each search returns a batch of matched leads based on your plan: 25 (Growth), 50 (Pro), or 100 (Elite). Viewing, enriching, and exporting those results costs nothing extra."
+    answer: "1 credit = 1 contact revealed. When you run a search, browsing and filtering results is free. Credits are only used when you reveal a contact's details (email, phone, company data). Phone number reveals cost 10 credits. Credits reset at the start of each billing cycle."
   },
   {
     question: "How do credits reset?",
-    answer: "Your search credits reset on a monthly basis, aligned with your billing cycle. Unused credits do not roll over to the next month. If you need more credits mid-cycle, you can purchase add-on packs that are added immediately to your balance."
+    answer: "Your search credits reset monthly, aligned with your billing cycle. Unused credits do not roll over. If you need more credits mid-cycle, you can purchase add-on packs (+200 for $79/mo or +500 for $179/mo) that are added immediately to your balance."
   },
   {
     question: "What happens when I run out of credits?",
-    answer: "When you exhaust your monthly credits, you can still access all your saved leads, enrichment data, and pipeline features. To continue discovering new leads, you can either wait for your monthly reset or purchase a credit add-on pack."
+    answer: "You can still access all your saved leads, enrichment data, and pipeline features. You just won't be able to reveal new contacts until your credits reset or you purchase an add-on pack."
   },
   {
     question: "Is there a free plan?",
-    answer: "Yes. The free plan gives you full access to explore the SalesOS interface, including the dashboard, pipeline view, and analytics summary. Lead search and enrichment require a paid plan. No credit card is needed to sign up."
+    answer: "Yes. The free plan gives you full access to explore the SalesOS interface, including the dashboard, pipeline view, and analytics summary. Revealing contacts requires a paid plan. No credit card is needed to sign up."
   },
   {
     question: "Can I change plans later?",
