@@ -419,8 +419,8 @@ function generateBuyingSignals(lead: any): string[] {
 // Map Railway response to ScoredLead format
 // Railway now pre-transforms leads, so we just add scores if missing
 function mapRailwayLead(lead: any): ScoredLead {
-  // Use provided scores or calculate them
-  const scores = lead.scores || calculateScores(lead);
+  // Always recalculate scores for consistency and per-lead variation
+  const scores = calculateScores(lead);
   
   return {
     job_title: lead.job_title || '',
