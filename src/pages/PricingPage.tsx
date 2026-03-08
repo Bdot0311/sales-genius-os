@@ -17,7 +17,7 @@ const PricingPage = () => {
     },
     {
       question: "How do search credits work?",
-      answer: "Search credits are used when discovering new leads. Each search returns results based on your plan tier: 25 (Growth), 50 (Pro), or 100 (Elite). Credits reset monthly. You can also purchase add-on packs: +200 credits ($79) or +500 credits ($179)."
+      answer: "1 credit = 1 search. Each search returns a batch of matched leads based on your plan: 25 (Growth), 50 (Pro), or 100 (Elite). Viewing, enriching, and exporting those results costs nothing extra. Credits reset at the start of each billing cycle. Need more? Add a credit pack anytime: +200 credits for $79/mo or +500 credits for $179/mo."
     },
     {
       question: "Is there a money-back guarantee?",
