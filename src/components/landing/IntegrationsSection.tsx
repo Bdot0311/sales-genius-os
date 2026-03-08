@@ -48,37 +48,43 @@ const SalesforceLogo = () => (
   </svg>
 );
 
-// Integration data with logo components
+// Integration data — honest about status
 const integrations = [
   { 
     name: "Google Workspace", 
-    description: "Gmail, Calendar, Drive",
-    Logo: GoogleLogo 
+    description: "Gmail & Calendar",
+    Logo: GoogleLogo,
+    status: "live" as const,
   },
   { 
     name: "Calendly", 
     description: "Meeting scheduling",
-    Logo: CalendlyLogo 
+    Logo: CalendlyLogo,
+    status: "coming" as const,
   },
   { 
     name: "Slack", 
     description: "Deal notifications",
-    Logo: SlackLogo 
+    Logo: SlackLogo,
+    status: "coming" as const,
   },
   { 
     name: "Zapier", 
     description: "5000+ apps",
-    Logo: ZapierLogo 
+    Logo: ZapierLogo,
+    status: "coming" as const,
   },
   { 
     name: "HubSpot", 
     description: "CRM sync",
-    Logo: HubSpotLogo 
+    Logo: HubSpotLogo,
+    status: "coming" as const,
   },
   { 
     name: "Salesforce", 
     description: "Enterprise CRM",
-    Logo: SalesforceLogo 
+    Logo: SalesforceLogo,
+    status: "coming" as const,
   },
 ];
 
@@ -133,7 +139,7 @@ export const IntegrationsSection = () => {
               Works with your stack
             </h2>
             <p className="text-lg text-muted-foreground max-w-md mx-auto leading-relaxed">
-              Connect to the tools you already use. No disruption to your workflow.
+              Connect to the tools you already use — with more integrations shipping regularly.
             </p>
           </div>
 
@@ -151,11 +157,15 @@ export const IntegrationsSection = () => {
                 <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none spotlight-card" />
                 
                 <div className="relative z-10">
-                  <div className="flex justify-center mb-3 transition-transform duration-200 group-hover:scale-110">
+                  <div className={`flex justify-center mb-3 transition-transform duration-200 group-hover:scale-110 ${integration.status === 'coming' ? 'opacity-50 grayscale' : ''}`}>
                     <integration.Logo />
                   </div>
                   <div className="font-medium text-sm mb-0.5">{integration.name}</div>
-                  <div className="text-xs text-muted-foreground">{integration.description}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {integration.status === 'live' ? integration.description : (
+                      <span className="text-primary/70">Coming soon</span>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}

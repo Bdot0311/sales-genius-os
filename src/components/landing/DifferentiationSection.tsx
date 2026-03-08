@@ -9,10 +9,10 @@ const notList = [
 ];
 
 const isList = [
-  "A single system purpose-built for closers",
+  "A single system purpose-built for outbound sales",
   "Find leads, run outreach, manage deals—all in one place",
   "Set up in minutes, not months",
-  "Built by salespeople, for salespeople",
+  "Built for speed, clarity, and closing",
 ];
 
 export const DifferentiationSection = () => {

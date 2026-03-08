@@ -88,7 +88,7 @@ export const FinalCTA = () => {
                   </h2>
                   
                   <p className="text-lg sm:text-xl text-muted-foreground mb-10 max-w-lg mx-auto leading-relaxed">
-                    Join 500+ sales teams already using SalesOS. Your first lead in under 2 minutes.
+                    SalesOS is free to explore. Create your account, see the platform in action, and upgrade when you're ready.
                   </p>
 
                   {/* CTA with glow */}
