@@ -339,14 +339,14 @@ export const HeroSection = () => {
               </button>
             </div>
 
-            {/* Trust proof + next step near CTA */}
+            {/* Trust proof — honest, no inflated claims */}
             <div
               className={`flex flex-col gap-1.5 text-center lg:text-left transition-all duration-700 delay-[350ms] ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
             >
               <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-4 gap-y-1.5 text-sm text-muted-foreground/70">
                 <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
                   <svg className="w-3.5 h-3.5 text-primary flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                  SOC 2-compliant infrastructure
+                  Encrypted & secure
                 </span>
                 <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
                   <Clock className="w-3.5 h-3.5 text-primary flex-shrink-0" />
@@ -358,7 +358,7 @@ export const HeroSection = () => {
                 </span>
               </div>
               <p className="text-xs text-muted-foreground/50">
-                Built for founders, SDRs, and high-performance sales teams.
+                Built for founders, SDRs, and growing sales teams.
               </p>
             </div>
           </div>

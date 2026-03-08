@@ -28,11 +28,11 @@ const faqs = [
   },
   {
     question: "What integrations are available?",
-    answer: "SalesOS connects natively with Google Workspace (Gmail, Calendar, Drive), Slack, Calendly, HubSpot, and Salesforce. We also support 5,000+ apps through Zapier. New integrations are added regularly based on customer requests—you can submit requests from your dashboard."
+    answer: "SalesOS currently integrates with Google Workspace (Gmail, Calendar). We're actively building integrations with Slack, HubSpot, Salesforce, Calendly, and Zapier. You can submit integration requests from your dashboard and we'll prioritize based on demand."
   },
   {
     question: "Is my data secure?",
-    answer: "Absolutely. We use enterprise-grade encryption (AES-256 at rest, TLS 1.3 in transit), are SOC 2 Type II compliant, and are fully GDPR-compliant. Your lead data is never shared or sold. We perform regular security audits and maintain 99.9% uptime SLA on all paid plans."
+    answer: "Yes. We use industry-standard encryption (AES-256 at rest, TLS in transit) and follow security best practices. Your lead data is never shared or sold. All data is stored in secure, managed infrastructure with regular backups."
   }
 ];
 

@@ -1,41 +1,27 @@
 import { useEffect, useRef, useState } from "react";
-import { Star } from "lucide-react";
+import { Quote, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
-const testimonials = [
+const earlyAccessPerks = [
   {
-    quote: "The AI scoring is shockingly accurate. We've doubled our response rates since switching.",
-    name: "David Park",
-    role: "Director of Sales",
-    company: "CloudBase",
-    metric: "2x reply rates",
+    title: "Shape the product",
+    description: "Your feedback directly influences what we build next. Early users get a direct line to the product team.",
   },
   {
-    quote: "Pipeline visibility improved overnight. I finally know where every deal stands without chasing my team.",
-    name: "Emma Wilson",
-    role: "VP of Revenue",
-    company: "Nextera",
-    metric: "100% visibility",
+    title: "Lock in founding pricing",
+    description: "Early adopters get access to exclusive pricing that won't be available once we launch publicly.",
   },
   {
-    quote: "I was skeptical about another sales tool, but the results spoke for themselves. We closed 3 deals in the first week.",
-    name: "James Rodriguez",
-    role: "Sales Manager",
-    company: "Growthly",
-    metric: "3 deals in week 1",
+    title: "Priority support",
+    description: "Get white-glove onboarding and priority support as one of our first users. We succeed when you succeed.",
   },
 ];
-
-const StarRating = () => (
-  <div className="flex gap-0.5 mb-4">
-    {[...Array(5)].map((_, i) => (
-      <Star key={i} className="w-4 h-4 fill-primary text-primary" />
-    ))}
-  </div>
-);
 
 export const TestimonialsSection = () => {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -58,7 +44,7 @@ export const TestimonialsSection = () => {
     <section 
       ref={sectionRef}
       className="relative py-24 md:py-32 overflow-hidden"
-      aria-labelledby="testimonials-heading"
+      aria-labelledby="early-access-heading"
     >
       {/* Unified background */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -79,20 +65,20 @@ export const TestimonialsSection = () => {
           {/* Header */}
           <div className={`text-center mb-16 scroll-reveal ${isVisible ? 'visible' : ''}`}>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-xs font-medium text-primary mb-5">
-              <Star className="w-3 h-3 fill-primary" />
-              Trusted by sales teams
+              <Quote className="w-3 h-3" />
+              Early Access
             </div>
-            <h2 id="testimonials-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
-              What early customers are saying
+            <h2 id="early-access-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
+              Be one of the first
             </h2>
             <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-              Feedback from our first 100 customers.
+              SalesOS is new — and that's your advantage. Early users get more influence, better pricing, and hands-on support.
             </p>
           </div>
 
-          {/* Testimonials grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
-            {testimonials.map((testimonial, index) => (
+          {/* Perks grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 mb-12">
+            {earlyAccessPerks.map((perk, index) => (
               <article
                 key={index}
                 className={`group relative p-6 rounded-xl border border-border/30 bg-card/40 card-hover-lift scroll-reveal ${
@@ -104,31 +90,33 @@ export const TestimonialsSection = () => {
                 <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none spotlight-card" />
                 
                 <div className="relative z-10">
-                  <StarRating />
-                  
-                  {/* Metric badge */}
-                  <div className="inline-flex items-center px-2.5 py-1 rounded-md bg-primary/10 text-primary text-xs font-semibold mb-4">
-                    {testimonial.metric}
+                  {/* Number badge */}
+                  <div className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary text-sm font-bold mb-4">
+                    {index + 1}
                   </div>
                   
-                  <blockquote className="text-muted-foreground leading-relaxed mb-6">
-                    "{testimonial.quote}"
-                  </blockquote>
-                  
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/30 to-accent/20 flex items-center justify-center text-sm font-semibold text-primary ring-2 ring-primary/10">
-                      {testimonial.name.split(' ').map(n => n[0]).join('')}
-                    </div>
-                    <div>
-                      <div className="font-medium text-sm">{testimonial.name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {testimonial.role}, {testimonial.company}
-                      </div>
-                    </div>
-                  </div>
+                  <h3 className="font-semibold text-[15px] mb-2 group-hover:text-primary transition-colors duration-200">
+                    {perk.title}
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {perk.description}
+                  </p>
                 </div>
               </article>
             ))}
+          </div>
+
+          {/* CTA */}
+          <div className={`text-center scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '300ms' } as React.CSSProperties}>
+            <Button
+              variant="hero"
+              size="lg"
+              onClick={() => navigate("/auth")}
+              className="group"
+            >
+              Join early access
+              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+            </Button>
           </div>
         </div>
       </div>

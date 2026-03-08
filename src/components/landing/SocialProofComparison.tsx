@@ -3,6 +3,33 @@ import { ArrowRight, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
+const stats = [
+  {
+    metric: "5+",
+    label: "Tools replaced",
+    description: "Stop toggling between lead databases, email tools, CRMs, and spreadsheets. One platform handles the full workflow.",
+    icon: "🚀",
+  },
+  {
+    metric: "AI",
+    label: "Personalized outreach",
+    description: "Every email is crafted from enriched lead profiles — not generic templates. Personalization at scale, without the effort.",
+    icon: "📈",
+  },
+  {
+    metric: "ICP",
+    label: "Fit scoring built in",
+    description: "Every lead scored against your ideal customer profile. Know exactly who deserves your attention first.",
+    icon: "🎯",
+  },
+  {
+    metric: "1",
+    label: "Dashboard for everything",
+    description: "Pipeline, outreach, analytics, and lead management — consolidated into one clean workspace.",
+    icon: "⚡",
+  },
+];
+
 // Animated counter
 const AnimatedMetric = ({ value, isVisible }: { value: string; isVisible: boolean }) => {
   const [displayed, setDisplayed] = useState("0");
@@ -12,7 +39,6 @@ const AnimatedMetric = ({ value, isVisible }: { value: string; isVisible: boolea
     if (!isVisible || hasAnimated.current) return;
     hasAnimated.current = true;
 
-    // Extract numeric part
     const numMatch = value.match(/(\d+)/);
     if (!numMatch) { setDisplayed(value); return; }
     
@@ -33,33 +59,6 @@ const AnimatedMetric = ({ value, isVisible }: { value: string; isVisible: boolea
 
   return <span>{displayed}</span>;
 };
-
-const stats = [
-  {
-    metric: "3x",
-    label: "Faster lead-to-outreach",
-    description: "Stop toggling between tools. One workflow from discovery to first touch.",
-    icon: "🚀",
-  },
-  {
-    metric: "2–4x",
-    label: "Higher reply rates",
-    description: "AI-personalized emails built from enriched profiles, not generic templates.",
-    icon: "📈",
-  },
-  {
-    metric: "85%+",
-    label: "Lead fit accuracy",
-    description: "Every lead scored against your ICP. No more guesswork on who to prioritize.",
-    icon: "🎯",
-  },
-  {
-    metric: "1",
-    label: "Dashboard for everything",
-    description: "Pipeline, outreach, signals, and forecasting — consolidated into one view.",
-    icon: "⚡",
-  },
-];
 
 export const SocialProofComparison = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -112,7 +111,7 @@ export const SocialProofComparison = () => {
           >
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-xs font-medium text-primary mb-5">
               <TrendingUp className="w-3 h-3" />
-              Proven Results
+              Why SalesOS
             </div>
             <h2
               id="social-proof-comparison-heading"
@@ -121,8 +120,7 @@ export const SocialProofComparison = () => {
               What Changes When You Switch
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              Teams that consolidate onto SalesOS see measurable improvements
-              across their entire sales operation.
+              SalesOS consolidates your entire outbound workflow into one system — so you can focus on selling, not managing tools.
             </p>
           </div>
 
@@ -173,7 +171,7 @@ export const SocialProofComparison = () => {
             style={{ "--reveal-delay": "500ms" } as React.CSSProperties}
           >
             <p className="text-sm text-muted-foreground mb-4">
-              Join 500+ sales teams already on SalesOS
+              Free to start. No credit card required.
             </p>
             <Button
               variant="hero"
