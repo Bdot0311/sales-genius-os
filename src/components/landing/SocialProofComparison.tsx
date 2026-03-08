@@ -13,7 +13,7 @@ const stats = [
   {
     metric: "AI",
     label: "Personalized outreach",
-    description: "Every email is crafted from enriched lead profiles — not generic templates. Personalization at scale, without the effort.",
+    description: "Every email is crafted from enriched lead profiles, not generic templates. Personalization at scale, without the effort.",
     icon: "📈",
   },
   {
