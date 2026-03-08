@@ -218,7 +218,7 @@ RULES:
 
       userPrompt = `Generate a personalized trigger/context opener for this lead:
 
-IMPORTANT: This is generation attempt #${Date.now() % 1000}. You MUST produce a completely unique trigger line — different structure, different angle, different power word from any previous attempt.
+IMPORTANT: This is generation attempt #${Date.now() % 1000}. You MUST produce a completely unique trigger line with a different structure, different angle, different power word from any previous attempt.
 
 Lead Information:
 - Name: ${sanitizedContactName}

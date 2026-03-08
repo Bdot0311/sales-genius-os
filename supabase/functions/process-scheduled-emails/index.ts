@@ -80,7 +80,7 @@ serve(async (req) => {
         const ul = userLimits[email.user_id];
         if (ul && ul.sent >= ul.limit) {
           console.log(`Daily limit reached for user ${email.user_id} (${ul.sent}/${ul.limit}), skipping email ${email.id}`);
-          continue; // Skip, don't fail — will retry next cron run
+          continue; // Skip, don't fail. Will retry next cron run
         }
         // Get user's integration for sending
         const { data: integration } = await supabase
