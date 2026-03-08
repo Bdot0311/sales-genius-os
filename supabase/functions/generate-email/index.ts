@@ -187,7 +187,7 @@ RULES for subject lines:
 - Create curiosity without being clickbait
 - Reference something about their company/role when possible
 - Never use spam trigger words
-- CRITICAL: Every generation must produce a COMPLETELY DIFFERENT subject line. Never reuse the same structure, phrasing, or angle twice. Vary your approach drastically each time — try different hooks: questions, statements, name drops, industry references, role-specific angles, company-specific angles, metric-based, outcome-based, pain-based, curiosity-based, etc.`;
+- CRITICAL: Every generation must produce a COMPLETELY DIFFERENT subject line. Never reuse the same structure, phrasing, or angle twice. Vary your approach drastically each time. Try different hooks: questions, statements, name drops, industry references, role-specific angles, company-specific angles, metric-based, outcome-based, pain-based, curiosity-based, etc.`;
       
       userPrompt = `Generate a single compelling email subject line for the following lead. The subject should be ${tone} in tone.
 
