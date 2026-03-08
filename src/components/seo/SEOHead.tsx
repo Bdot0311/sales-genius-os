@@ -197,13 +197,7 @@ export const SEOHead = ({
       ))}
       
       {/* DNS Prefetch for external resources */}
-      <link rel="dns-prefetch" href="//fonts.googleapis.com" />
-      <link rel="dns-prefetch" href="//fonts.gstatic.com" />
       <link rel="dns-prefetch" href="//storage.googleapis.com" />
-      
-      {/* Preconnect for faster loading */}
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
     </>
   );
 };
