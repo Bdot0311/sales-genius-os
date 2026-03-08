@@ -330,8 +330,8 @@ export const Pricing = () => {
             <p className="text-xs text-muted-foreground">← Scroll to compare →</p>
           </div>
           
-          <div className="overflow-x-auto -mx-6 px-6 pb-4 scrollbar-hide">
-            <table className="w-full border-collapse min-w-[780px]">
+           <div className="overflow-x-auto -mx-6 px-6 pb-4 scrollbar-hide">
+            <table className="w-full border-collapse min-w-[680px]">
               {/* Header */}
               <thead>
                 <tr className="border-b border-border/30">
@@ -341,16 +341,16 @@ export const Pricing = () => {
                     <div className="text-xs sm:text-sm text-muted-foreground">$0</div>
                   </th>
                   <th className="text-center py-3 sm:py-4 px-2 sm:px-3 min-w-[80px] sm:min-w-[100px]">
-                    <div className="font-semibold text-sm sm:text-base">Growth</div>
-                    <div className="text-xs sm:text-sm text-muted-foreground">$49/mo</div>
+                    <div className="font-semibold text-sm sm:text-base">Starter</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">$39/mo</div>
                   </th>
                   <th className="text-center py-3 sm:py-4 px-2 sm:px-3 bg-primary/5 rounded-t-lg min-w-[80px] sm:min-w-[100px]">
-                    <div className="font-semibold text-primary text-sm sm:text-base">Pro</div>
-                    <div className="text-xs sm:text-sm text-muted-foreground">$149/mo</div>
+                    <div className="font-semibold text-primary text-sm sm:text-base">Growth</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">$89/mo</div>
                   </th>
                   <th className="text-center py-3 sm:py-4 px-2 sm:px-3 min-w-[80px] sm:min-w-[100px]">
-                    <div className="font-semibold text-sm sm:text-base">Elite</div>
-                    <div className="text-xs sm:text-sm text-muted-foreground">$399/mo</div>
+                    <div className="font-semibold text-sm sm:text-base">Pro</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">$179/mo</div>
                   </th>
                 </tr>
               </thead>
