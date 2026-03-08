@@ -67,9 +67,9 @@ const DashboardMockup = () => {
   ];
 
   const sequenceSteps = [
-    { label: "Day 0 — Intro email", status: "sent" },
-    { label: "Day 2 — Follow-up", status: "queued" },
-    { label: "Day 5 — Breakup email", status: "pending" },
+    { label: "Day 0: Intro email", status: "sent" },
+    { label: "Day 2: Follow-up", status: "queued" },
+    { label: "Day 5: Breakup email", status: "pending" },
   ];
 
   const pipelineStages = [
