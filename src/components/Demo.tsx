@@ -657,7 +657,7 @@ const EndScreenMockup = ({ isActive }: { isActive: boolean }) => {
           Ready to Transform Your Sales?
         </h3>
         <p className="text-sm sm:text-base text-muted-foreground max-w-md mx-auto">
-          Join thousands of sales teams already closing more deals with SalesOS
+          Start closing more deals with SalesOS today
         </p>
       </div>
 
