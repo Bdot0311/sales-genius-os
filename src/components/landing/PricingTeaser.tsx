@@ -100,20 +100,20 @@ export const PricingTeaser = () => {
 
             {/* Who it's NOT for */}
             <div 
-              className={`relative p-6 md:p-8 rounded-xl border border-border/30 bg-muted/20 scroll-reveal ${
+              className={`relative p-6 md:p-8 rounded-xl border border-destructive/20 bg-destructive/[0.03] scroll-reveal ${
                 isVisible ? 'visible' : ''
               }`}
               style={{ '--reveal-delay': '200ms' } as React.CSSProperties}
             >
               <div className="relative z-10">
-                <h3 className="font-semibold text-lg mb-5 text-muted-foreground">
+                <h3 className="font-semibold text-lg mb-5 text-destructive/80">
                   Who it's NOT for
                 </h3>
                 <ul className="space-y-3">
                   {notForYou.map((item, index) => (
                     <li key={index} className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-5 h-5 rounded-full bg-muted flex items-center justify-center mt-0.5">
-                        <X className="w-3 h-3 text-muted-foreground" aria-hidden="true" />
+                      <div className="flex-shrink-0 w-5 h-5 rounded-full bg-destructive/10 flex items-center justify-center mt-0.5">
+                        <X className="w-3 h-3 text-destructive" aria-hidden="true" />
                       </div>
                       <span className="text-muted-foreground">{item}</span>
                     </li>
