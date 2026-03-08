@@ -25,7 +25,7 @@ const stats = [
   {
     metric: "1",
     label: "Dashboard for everything",
-    description: "Pipeline, outreach, analytics, and lead management — consolidated into one clean workspace.",
+    description: "Pipeline, outreach, analytics, and lead management, consolidated into one clean workspace.",
     icon: "⚡",
   },
 ];
