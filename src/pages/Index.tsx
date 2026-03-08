@@ -149,8 +149,7 @@ const Index = () => {
             {/* 7. Integrations */}
             <IntegrationsSection />
             
-            {/* 8. Trust & Credibility */}
-            <TestimonialsSection />
+            
             
             
             {/* 10. Pricing & Fit */}
