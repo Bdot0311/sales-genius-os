@@ -71,7 +71,7 @@ Examples: "Worth a quick look?", "Open to exploring this?", "Mind if I share how
 
 Hi Matt,
 
-Saw that you're backed by Accel Ventures — congrats on the recent close.
+Saw that you're backed by Accel Ventures, congrats on the recent close.
 
 Spot and Ignite are customers of ours, and they mentioned board prep used to take days before switching. Any chance you can relate?
 
