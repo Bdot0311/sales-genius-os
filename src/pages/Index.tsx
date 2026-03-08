@@ -1,21 +1,8 @@
+import { lazy, Suspense } from "react";
 import { Navbar } from "@/components/Navbar";
-import { Demo } from "@/components/Demo";
-import { 
-  HeroSection,
-  TrustedByBar,
-  ProblemSection,
-  HowItWorks,
-  ModulesSection,
-  DifferentiationSection,
-  TestimonialsSection,
-  IntegrationsSection,
-  PricingTeaser,
-  FAQSection,
-  FinalCTA,
-  FooterSection,
-  MidPageCTA,
-  SocialProofComparison,
-} from "@/components/landing";
+import { HeroSection } from "@/components/landing/HeroSection";
+import { TrustedByBar } from "@/components/landing/TrustedByBar";
+import { SocialProofComparison } from "@/components/landing/SocialProofComparison";
 import { 
   SEOHead, 
   OrganizationSchema, 
@@ -28,6 +15,23 @@ import {
 } from "@/components/seo";
 import { useSpotlightEffect } from "@/hooks/use-spotlight-effect";
 
+// Lazy load below-the-fold sections to reduce initial bundle size
+const HowItWorks = lazy(() => import("@/components/landing/HowItWorks").then(m => ({ default: m.HowItWorks })));
+const ModulesSection = lazy(() => import("@/components/landing/ModulesSection").then(m => ({ default: m.ModulesSection })));
+const DifferentiationSection = lazy(() => import("@/components/landing/DifferentiationSection").then(m => ({ default: m.DifferentiationSection })));
+const Demo = lazy(() => import("@/components/Demo").then(m => ({ default: m.Demo })));
+const IntegrationsSection = lazy(() => import("@/components/landing/IntegrationsSection").then(m => ({ default: m.IntegrationsSection })));
+const PricingTeaser = lazy(() => import("@/components/landing/PricingTeaser").then(m => ({ default: m.PricingTeaser })));
+const FAQSection = lazy(() => import("@/components/landing/FAQSection").then(m => ({ default: m.FAQSection })));
+const FinalCTA = lazy(() => import("@/components/landing/FinalCTA").then(m => ({ default: m.FinalCTA })));
+const FooterSection = lazy(() => import("@/components/landing/FooterSection").then(m => ({ default: m.FooterSection })));
+
+// Minimal fallback for lazy sections
+const SectionLoader = () => (
+  <div className="py-16 flex items-center justify-center">
+    <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+  </div>
+);
 
 // AEO: Define clear, structured content for AI answer engines
 const gettingStartedSteps = [
@@ -124,47 +128,29 @@ const Index = () => {
         <Navbar />
         <main itemScope itemType="https://schema.org/WebPage">
           <article>
-            {/* 1. Hero (Above the Fold) */}
+            {/* Above the fold - eagerly loaded */}
             <HeroSection />
-            
-            {/* 1b. Works with your stack */}
             <TrustedByBar />
-            
-            {/* 1c. Social proof comparison */}
             <SocialProofComparison />
             
-            
-            {/* 3. How it works */}
-            <HowItWorks />
-            
-            {/* 4. Feature → Outcome Mapping */}
-            <ModulesSection />
-            
-            {/* 5. Differentiation - "Not another bloated CRM" */}
-            <DifferentiationSection />
-            
-            {/* 6. Demo */}
-            <Demo />
-            
-            {/* 7. Integrations */}
-            <IntegrationsSection />
-            
-            
-            
-            
-            {/* 10. Pricing & Fit */}
-            <PricingTeaser />
-            
-            {/* 11. FAQ */}
-            <FAQSection />
-            
-            {/* 12. Final CTA */}
-            <FinalCTA />
+            {/* Below the fold - lazy loaded */}
+            <Suspense fallback={<SectionLoader />}>
+              <HowItWorks />
+              <ModulesSection />
+              <DifferentiationSection />
+              <Demo />
+              <IntegrationsSection />
+              <PricingTeaser />
+              <FAQSection />
+              <FinalCTA />
+            </Suspense>
           </article>
         </main>
         
         {/* Footer */}
-        <FooterSection />
+        <Suspense fallback={<SectionLoader />}>
+          <FooterSection />
+        </Suspense>
       </div>
     </>
   );
