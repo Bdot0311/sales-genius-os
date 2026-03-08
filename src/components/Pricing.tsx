@@ -31,51 +31,52 @@ const plans = [
     ctaRoute: "/auth",
   },
   {
-    key: 'growth' as const,
-    name: "Growth",
-    price: "$49",
+    key: 'starter' as const,
+    name: "Starter",
+    price: "$39",
     period: "/month",
     description: "For solo founders and early outbound",
     features: [
-      "150 credits / month",
-      "1 credit per email reveal",
-      "5 credits per phone reveal",
-      "Standard enrichment (Location)",
-      "3 active sequences",
-      "Email support",
+      "Up to 500 verified prospects / month",
+      "Prospect search",
+      "Verified email data",
+      "Email export",
+      "AI email generator",
+      "Campaign templates",
+      "Standard support",
     ],
     paymentLink: "https://buy.stripe.com/9B6dR9ep1a2b0gi1ca1B60u",
   },
   {
-    key: 'pro' as const,
-    name: "Pro",
-    price: "$149",
+    key: 'growth' as const,
+    name: "Growth",
+    price: "$89",
     period: "/month",
     description: "For teams booking meetings consistently",
     features: [
-      "500 credits / month",
-      "1 credit per email reveal",
-      "5 credits per phone reveal",
-      "Advanced enrichment (+Title/Seniority)",
-      "15 active sequences",
+      "Up to 1,500 verified prospects / month",
+      "Advanced prospect filters",
+      "Bulk prospect export",
+      "AI personalized outreach",
+      "Campaign automation tools",
       "Priority support",
     ],
     highlighted: true,
     paymentLink: "https://buy.stripe.com/9B65kD4Or8Y76EGaMK1B60p",
   },
   {
-    key: 'elite' as const,
-    name: "Elite",
-    price: "$399",
+    key: 'pro' as const,
+    name: "Pro",
+    price: "$179",
     period: "/month",
     description: "For high-volume outbound operations",
     features: [
-      "1,500 credits / month",
-      "1 credit per email reveal",
-      "5 credits per phone reveal",
-      "Premium enrichment (all filters)",
-      "Unlimited sequences",
-      "API access & white-label",
+      "Up to 4,000 verified prospects / month",
+      "Advanced automation features",
+      "CRM integrations",
+      "Team collaboration access",
+      "High-priority data processing",
+      "Premium support",
     ],
     paymentLink: "https://buy.stripe.com/8x2bJ15Svfmvd341ca1B60q",
   },
@@ -83,13 +84,13 @@ const plans = [
 
 const addons = [
   {
-    credits: 200,
-    price: "$79",
+    credits: 500,
+    price: "$49",
     priceId: STRIPE_PRICE_IDS.addon200,
   },
   {
-    credits: 500,
-    price: "$179",
+    credits: 1500,
+    price: "$119",
     priceId: STRIPE_PRICE_IDS.addon500,
   },
 ];
@@ -97,105 +98,69 @@ const addons = [
 // Feature comparison table data
 const comparisonCategories = [
   {
-    name: "Credits & Reveals",
+    name: "Verified Prospects",
     features: [
-      { name: "Monthly credits", free: "0", growth: "150", pro: "500", elite: "1,500" },
-      { name: "Email reveal cost", free: "—", growth: "1 credit", pro: "1 credit", elite: "1 credit" },
-      { name: "Phone reveal cost", free: "—", growth: "5 credits", pro: "5 credits", elite: "5 credits" },
-      { name: "Company data (API)", free: "—", growth: "—", pro: "—", elite: "1 credit" },
-      { name: "Searches", free: "—", growth: "Free", pro: "Free", elite: "Free" },
-      { name: "Credit rollover", free: "—", growth: "Up to 2x", pro: "Up to 2x", elite: "Up to 2x" },
+      { name: "Monthly verified prospects", free: "0", starter: "500", growth: "1,500", pro: "4,000" },
+      { name: "Prospect search", free: "—", starter: true, growth: true, pro: true },
+      { name: "Verified email data", free: "—", starter: true, growth: true, pro: true },
+      { name: "Advanced prospect filters", free: false, starter: false, growth: true, pro: true },
+      { name: "Bulk prospect export", free: false, starter: false, growth: true, pro: true },
     ]
   },
   {
-    name: "Lead Intelligence",
+    name: "Outreach & Campaigns",
     features: [
-      { name: "Lead search", free: false, growth: true, pro: true, elite: true },
-      { name: "Person enrichment", free: false, growth: "Standard", pro: "Advanced", elite: "Premium" },
-      { name: "Company enrichment", free: false, growth: false, pro: true, elite: true },
-      { name: "Advanced filters", free: false, growth: false, pro: true, elite: true },
-      { name: "API access", free: false, growth: false, pro: false, elite: true },
-    ]
-  },
-  {
-    name: "Outreach & Sequences",
-    features: [
-      { name: "Active sequences", free: "0", growth: "3", pro: "15", elite: "Unlimited" },
-      { name: "Steps per sequence", free: "0", growth: "3", pro: "7", elite: "Unlimited" },
-      { name: "AI personalization", free: false, growth: "Basic", pro: "Advanced", elite: "Premium" },
-      { name: "Message blocks", free: "0", growth: "5", pro: "25", elite: "Unlimited" },
-      { name: "A/B testing variants", free: false, growth: false, pro: "2", elite: "Unlimited" },
-      { name: "Reply analysis", free: false, growth: false, pro: true, elite: true },
-      { name: "Handoff alerts", free: false, growth: false, pro: "Email", elite: "Webhook + Slack" },
-      { name: "Multi-channel logic", free: false, growth: false, pro: false, elite: true },
+      { name: "AI email generator", free: false, starter: true, growth: true, pro: true },
+      { name: "Campaign templates", free: false, starter: true, growth: true, pro: true },
+      { name: "AI personalized outreach", free: false, starter: false, growth: true, pro: true },
+      { name: "Campaign automation tools", free: false, starter: false, growth: true, pro: true },
+      { name: "Advanced automation features", free: false, starter: false, growth: false, pro: true },
     ]
   },
   {
     name: "Pipeline & Analytics",
     features: [
-      { name: "Visual pipeline", free: "View only", growth: true, pro: true, elite: true },
-      { name: "Automated stage progression", free: false, growth: false, pro: true, elite: true },
-      { name: "Revenue forecasting", free: false, growth: false, pro: true, elite: true },
-      { name: "Custom pipelines", free: false, growth: false, pro: false, elite: true },
-      { name: "Custom reports & exports", free: false, growth: false, pro: false, elite: true },
-    ]
-  },
-  {
-    name: "AI Sales Coach",
-    features: [
-      { name: "Coaching level", free: "View only", growth: "Basic", pro: "Advanced", elite: "Premium" },
-      { name: "Real-time analysis", free: false, growth: "Limited", pro: "Full", elite: "Full" },
-      { name: "Live coaching", free: false, growth: false, pro: false, elite: true },
-      { name: "Custom playbooks", free: false, growth: false, pro: false, elite: true },
-    ]
-  },
-  {
-    name: "Automations",
-    features: [
-      { name: "Automation rules", free: "0", growth: "5", pro: "25", elite: "Unlimited" },
-      { name: "Advanced workflows", free: false, growth: false, pro: true, elite: true },
-      { name: "White-label customization", free: false, growth: false, pro: false, elite: true },
+      { name: "Visual pipeline", free: "View only", starter: true, growth: true, pro: true },
+      { name: "CRM integrations", free: false, starter: false, growth: false, pro: true },
+      { name: "Team collaboration access", free: false, starter: false, growth: false, pro: true },
+      { name: "High-priority data processing", free: false, starter: false, growth: false, pro: true },
     ]
   },
   {
     name: "Support",
     features: [
-      { name: "Community support", free: true, growth: true, pro: true, elite: true },
-      { name: "Email support", free: false, growth: true, pro: true, elite: true },
-      { name: "Priority support", free: false, growth: false, pro: true, elite: true },
-      { name: "Dedicated success manager", free: false, growth: false, pro: false, elite: true },
+      { name: "Community support", free: true, starter: true, growth: true, pro: true },
+      { name: "Standard support", free: false, starter: true, growth: true, pro: true },
+      { name: "Priority support", free: false, starter: false, growth: true, pro: true },
+      { name: "Premium support", free: false, starter: false, growth: false, pro: true },
     ]
   },
 ];
 
 const creditFAQs = [
   {
-    question: "How do credits work?",
-    answer: "One credit type covers all use cases across the platform, browser extension, and API. Credits are consumed when you reveal contact data: 1 credit per email, 5 credits per phone number, and 1 credit per company profile (API only). Searching, filtering, and browsing results is always free."
+    question: "What are verified prospects?",
+    answer: "Verified prospects are contacts with confirmed, up-to-date data including verified email addresses, job titles, and company information. Each prospect you contact counts toward your monthly limit."
   },
   {
     question: "Are you charging for searches?",
-    answer: "No. Searches throughout the platform are completely free. Credits are only consumed when you reveal contact details like emails or phone numbers."
+    answer: "No. Searches throughout the platform are completely free. Your plan limit only applies when you access verified prospect data."
   },
   {
-    question: "Will I be charged twice for the same contact?",
-    answer: "No. Each contact's data point is only charged once. If you've already revealed a contact's email or phone number, future requests won't incur additional charges for those same data points."
+    question: "What happens when I reach my monthly limit?",
+    answer: "You can still access all your saved prospects, pipeline, and campaign features. To contact new verified prospects, you can wait for your monthly reset or purchase an add-on pack."
   },
   {
-    question: "What happens to unused credits?",
-    answer: "Monthly plans: credits roll over up to 2x your monthly limit. Annual plans: you get all credits upfront, and unused credits reset at the end of the cycle."
-  },
-  {
-    question: "Can I purchase more credits?",
-    answer: "Yes. Add credits anytime through your account settings. Choose from add-on packs: +200 credits for $79/mo or +500 credits for $179/mo. You can also upgrade plans for more features and higher limits."
+    question: "Can I purchase more verified prospects?",
+    answer: "Yes. Add extra verified prospects anytime through your account settings. Choose from add-on packs: +500 prospects for $49/mo or +1,500 prospects for $119/mo."
   },
   {
     question: "Is there a free plan?",
-    answer: "Yes. The free plan lets you explore the full SalesOS interface, including dashboards, pipeline view, and analytics. Revealing contact data requires a paid plan. No credit card needed to sign up."
+    answer: "Yes. The free plan lets you explore the full SalesOS interface, including dashboards, pipeline view, and analytics. Contacting verified prospects requires a paid plan. No credit card needed to sign up."
   },
   {
     question: "Can I upgrade, downgrade, or cancel anytime?",
-    answer: "Yes. Upgrades happen instantly with your new credit allocation. Downgrades and cancellations apply at the end of your billing cycle. Your credits remain valid through your current term."
+    answer: "Yes. Upgrades happen instantly with your new allocation. Downgrades and cancellations apply at the end of your billing cycle."
   },
   {
     question: "Is there a money-back guarantee?",
