@@ -4,12 +4,6 @@ import { Footer } from "@/components/Footer";
 import { SEOHead, BreadcrumbSchema, FAQSchema } from "@/components/seo";
 import { Link } from "react-router-dom";
 import { Check, Shield, Zap, Users, Headphones } from "lucide-react";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 
 const PricingPage = () => {
   const pricingFAQs = [
@@ -138,30 +132,8 @@ const PricingPage = () => {
             </div>
           </section>
 
-          {/* Pricing FAQ */}
-          <section className="py-16 container mx-auto px-6">
-            <h2 className="text-2xl md:text-3xl font-bold text-center mb-8">
-              Pricing FAQ
-            </h2>
-            <div className="max-w-[720px] mx-auto">
-              <Accordion type="single" collapsible className="space-y-2">
-                {pricingFAQs.map((faq, index) => (
-                  <AccordionItem
-                    key={index}
-                    value={`item-${index}`}
-                    className="border border-border/30 rounded-xl px-6 bg-card/40 data-[state=open]:bg-card/60 data-[state=open]:border-primary/20 transition-all duration-200"
-                  >
-                    <AccordionTrigger className="text-left py-4 hover:no-underline hover:text-primary transition-colors duration-200">
-                      <span className="font-medium text-[15px]">{faq.question}</span>
-                    </AccordionTrigger>
-                    <AccordionContent className="pb-4 text-muted-foreground text-sm leading-relaxed">
-                      {faq.answer}
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            </div>
-          </section>
+
+
 
 
           <section className="py-12 border-t border-border">

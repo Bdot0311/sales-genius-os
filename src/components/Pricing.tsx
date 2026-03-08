@@ -167,8 +167,8 @@ const comparisonCategories = [
 
 const creditFAQs = [
   {
-    question: "What are search credits?",
-    answer: "Search credits are used when you discover new leads through our Lead Intelligence Engine. Each search query that returns results uses credits based on the number of leads found. Previewing results, viewing lead details, enrichment, and exports are all free and don't consume credits."
+    question: "How do search credits work?",
+    answer: "1 credit = 1 search. Each search returns a batch of matched leads based on your plan: 25 (Growth), 50 (Pro), or 100 (Elite). Viewing, enriching, and exporting those results costs nothing extra."
   },
   {
     question: "How do credits reset?",
@@ -179,16 +179,16 @@ const creditFAQs = [
     answer: "When you exhaust your monthly credits, you can still access all your saved leads, enrichment data, and pipeline features. To continue discovering new leads, you can either wait for your monthly reset or purchase a credit add-on pack."
   },
   {
-    question: "Can I get a refund on unused credits?",
-    answer: "Credits are non-refundable and expire at the end of each billing cycle. We recommend starting with a plan that matches your expected usage and adjusting as you learn your needs. Our team can help you estimate the right plan based on your sales volume."
-  },
-  {
-    question: "What's included in the free plan?",
-    answer: "The free plan gives you full access to explore the SalesOS interface, including the dashboard, pipeline view, and analytics summary. Lead search and enrichment require a paid plan. No credit card is needed to sign up."
+    question: "Is there a free plan?",
+    answer: "Yes. The free plan gives you full access to explore the SalesOS interface, including the dashboard, pipeline view, and analytics summary. Lead search and enrichment require a paid plan. No credit card is needed to sign up."
   },
   {
     question: "Can I change plans later?",
-    answer: "Yes, you can upgrade or downgrade your plan at any time. When upgrading, the new credit allocation takes effect immediately. When downgrading, the change applies at the start of your next billing cycle to ensure you keep your current benefits."
+    answer: "Yes, you can upgrade or downgrade your plan at any time. When upgrading, the new credit allocation takes effect immediately. When downgrading, the change applies at the start of your next billing cycle."
+  },
+  {
+    question: "Is there a money-back guarantee?",
+    answer: "Yes, we offer a 30-day money-back guarantee on all paid plans. If you're not satisfied, contact support for a full refund."
   },
 ];
 
