@@ -389,9 +389,9 @@ export const Pricing = () => {
         {/* Add-ons Section */}
         <div className={`max-w-2xl mx-auto mb-16 md:mb-20 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '300ms' } as React.CSSProperties}>
           <div className="text-center mb-6 sm:mb-8">
-            <h3 className="text-lg sm:text-xl font-semibold mb-2">Need more credits?</h3>
+            <h3 className="text-lg sm:text-xl font-semibold mb-2">Need more verified prospects?</h3>
             <p className="text-muted-foreground text-sm">
-              Add extra search credits to any paid plan anytime.
+              Add extra verified prospects to any paid plan anytime.
             </p>
           </div>
 
