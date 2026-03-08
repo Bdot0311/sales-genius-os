@@ -139,7 +139,7 @@ export const IntegrationsSection = () => {
               Works with your stack
             </h2>
             <p className="text-lg text-muted-foreground max-w-md mx-auto leading-relaxed">
-              Connect to the tools you already use — with more integrations shipping regularly.
+              Connect to the tools you already use, with more integrations shipping regularly.
             </p>
           </div>
 

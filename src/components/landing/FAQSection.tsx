@@ -12,7 +12,7 @@ import { ArrowRight } from "lucide-react";
 const faqs = [
   {
     question: "Is there a free plan?",
-    answer: "Yes. SalesOS offers a free forever plan with view-only access to dashboards, sample data, and the pipeline overview. No credit card required. When you're ready to search for leads, upgrade to a paid plan — all with a 14-day free trial."
+    answer: "Yes. SalesOS offers a free forever plan with view-only access to dashboards, sample data, and the pipeline overview. No credit card required. When you're ready to search for leads, upgrade to a paid plan, all with a 14-day free trial."
   },
   {
     question: "How do search credits work?",

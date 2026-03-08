@@ -363,7 +363,7 @@ export const HeroSection = () => {
             </div>
           </div>
 
-          {/* Right — Dashboard mockup */}
+          {/* Right: Dashboard mockup */}
           <div
             className={`w-full max-w-[560px] lg:max-w-none mx-auto transition-all duration-700 delay-300 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
           >

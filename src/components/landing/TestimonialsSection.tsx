@@ -72,7 +72,7 @@ export const TestimonialsSection = () => {
               Be one of the first
             </h2>
             <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-              SalesOS is new — and that's your advantage. Early users get more influence, better pricing, and hands-on support.
+              SalesOS is new, and that's your advantage. Early users get more influence, better pricing, and hands-on support.
             </p>
           </div>
 

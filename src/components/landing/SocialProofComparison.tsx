@@ -120,7 +120,7 @@ export const SocialProofComparison = () => {
               What Changes When You Switch
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              SalesOS consolidates your entire outbound workflow into one system — so you can focus on selling, not managing tools.
+              SalesOS consolidates your entire outbound workflow into one system so you can focus on selling, not managing tools.
             </p>
           </div>
 
