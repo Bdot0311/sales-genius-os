@@ -1,13 +1,19 @@
 <!doctype html>
 <html lang="en" prefix="og: https://ogp.me/ns#">
   <head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-92ZVN964CE"></script>
+    <!-- Google tag (gtag.js) - deferred to avoid render blocking -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
       gtag('config', 'G-92ZVN964CE');
+      // Load gtag after page load
+      window.addEventListener('load', function() {
+        var s = document.createElement('script');
+        s.src = 'https://www.googletagmanager.com/gtag/js?id=G-92ZVN964CE';
+        s.async = true;
+        document.head.appendChild(s);
+      });
     </script>
     
     <meta charset="UTF-8" />
@@ -70,16 +76,10 @@
     
     <!-- Verification -->
     <meta name="google-site-verification" content="eKoMLZR8fPmFLx7hsLBEuVSla6QSzAy9S6JK__ijJq8" />
-    <!-- <meta name="msvalidate.01" content="YOUR_BING_CODE" /> -->
     
-    <!-- DNS Prefetch & Preconnect for external origins -->
+    <!-- DNS Prefetch for GTM only (fonts not used) -->
     <link rel="dns-prefetch" href="//www.googletagmanager.com" />
-    <link rel="dns-prefetch" href="//fonts.googleapis.com" />
-    <link rel="dns-prefetch" href="//fonts.gstatic.com" />
-    <link rel="dns-prefetch" href="//storage.googleapis.com" />
     <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="https://storage.googleapis.com/gpt-engineer-file-uploads/ZFJK1zezovOpOdjy9TptFukIhhc2/uploads/1761024288225-image 2.png" />
@@ -95,9 +95,7 @@
           "@id": "https://salesos.alephwavex.io/#organization",
           "name": "SalesOS",
           "url": "https://salesos.alephwavex.io",
-          "logo": "https://ghgfjnepvxvxrncmskys.supabase.co/storage/v1/object/public/social-images/salesos-logo.png",
-          "description": "AI-powered sales automation and lead generation platform for B2B teams.",
-          "sameAs": []
+          "description": "AI-powered sales automation and lead generation platform for B2B teams."
         },
         {
           "@type": "WebSite",
@@ -118,8 +116,8 @@
           "operatingSystem": "Web",
           "offers": {
             "@type": "AggregateOffer",
-            "lowPrice": "149",
-            "highPrice": "799",
+            "lowPrice": "0",
+            "highPrice": "399",
             "priceCurrency": "USD"
           },
           "description": "AI-powered lead discovery, personalized outreach, pipeline management, and sales coaching."
@@ -129,10 +127,10 @@
           "mainEntity": [
             {
               "@type": "Question",
-              "name": "What's included in the free trial?",
+              "name": "Is there a free plan?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "You get 14 days to try any SalesOS plan with full access to the features included in that plan. This includes AI lead discovery, email generation, pipeline management, and integrations based on your chosen tier. A credit card is required to start. Cancel anytime before the trial ends and you won't be charged."
+                "text": "Yes. SalesOS offers a free forever plan with view-only access to dashboards, sample data, and the pipeline overview. No credit card required. When you're ready to search for leads, upgrade to a paid plan — all with a 14-day free trial."
               }
             },
             {
@@ -140,7 +138,7 @@
               "name": "How do search credits work?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "Search credits are used when you run AI lead discovery queries. Each search costs 1 credit and returns up to 100 matching leads. Viewing, enriching, and exporting those leads is free. Credits reset monthly based on your plan, and unused credits don't roll over."
+                "text": "Search credits are used when you run AI lead discovery queries. Each search returns results based on your plan: 25 (Growth), 50 (Pro), or 100 (Elite). Credits reset monthly and unused credits don't roll over. You can also purchase add-on credit packs."
               }
             },
             {
@@ -164,7 +162,7 @@
               "name": "What integrations are available?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "SalesOS connects natively with Google Workspace, Slack, Calendly, HubSpot, and Salesforce. We also support 5,000+ apps through Zapier."
+                "text": "SalesOS currently integrates with Google Workspace (Gmail, Calendar). We're actively building integrations with Slack, HubSpot, Salesforce, Calendly, and Zapier."
               }
             },
             {
@@ -172,7 +170,7 @@
               "name": "Is my data secure?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "We use enterprise-grade encryption (AES-256 at rest, TLS 1.3 in transit), are SOC 2 Type II compliant, and fully GDPR-compliant. Your lead data is never shared or sold."
+                "text": "Yes. We use industry-standard encryption (AES-256 at rest, TLS in transit) and follow security best practices. Your lead data is never shared or sold."
               }
             }
           ]
