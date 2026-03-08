@@ -16,7 +16,7 @@ serve(async (req) => {
 # https://salesos.alephwavex.io
 # Last Updated: ${today}
 
-> SalesOS is an AI-powered lead discovery platform that helps B2B sales teams find and convert high-quality leads. Describe your ideal customer in plain English, get ranked matches with enriched profiles—your first lead in under 2 minutes.
+> SalesOS is an AI-powered lead discovery platform that helps B2B sales teams find and convert high-quality leads. Describe your ideal customer in plain English, get ranked matches with enriched profiles. Your first lead in under 2 minutes.
 
 ## About SalesOS
 
