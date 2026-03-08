@@ -33,12 +33,13 @@ SalesOS is a comprehensive sales automation platform designed for SaaS companies
 
 ## Pricing
 
-SalesOS offers three pricing tiers:
-- **Growth**: $149/month - For small teams getting started with sales automation
-- **Professional**: $349/month - For growing teams needing advanced features
-- **Elite**: $799/month - For large teams requiring unlimited access and priority support
+SalesOS offers four pricing tiers:
+- **Free**: $0/month - Explore the platform with view-only access, no credit card needed
+- **Growth**: $49/month - 150 credits/month for solo founders and early outbound
+- **Professional**: $149/month - 500 credits/month for growing teams
+- **Elite**: $399/month - 1,500 credits/month for high-volume outbound operations
 
-All plans include a 14-day free trial with no credit card required.
+Credits are consumed per contact reveal: 1 credit per email, 5 credits per phone number. Searches are always free.
 
 ## Getting Started
 
