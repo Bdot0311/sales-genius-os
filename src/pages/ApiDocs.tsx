@@ -457,7 +457,7 @@ const ApiDocs = () => {
       group.endpoints.forEach((ep) => {
         lines.push("");
         lines.push(`${ep.method} ${ep.path}`);
-        lines.push(`  ${ep.name} — ${ep.description}`);
+        lines.push(`  ${ep.name}: ${ep.description}`);
         if (ep.params?.length) {
           lines.push("  Query Parameters:");
           ep.params.forEach((p) => lines.push(`    ${p.name} (${p.type}): ${p.description}`));
