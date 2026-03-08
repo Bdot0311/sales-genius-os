@@ -67,9 +67,9 @@ const DashboardMockup = () => {
   ];
 
   const sequenceSteps = [
-    { label: "Day 0 — Intro email", status: "sent" },
-    { label: "Day 2 — Follow-up", status: "queued" },
-    { label: "Day 5 — Breakup email", status: "pending" },
+    { label: "Day 0: Intro email", status: "sent" },
+    { label: "Day 2: Follow-up", status: "queued" },
+    { label: "Day 5: Breakup email", status: "pending" },
   ];
 
   const pipelineStages = [
@@ -277,7 +277,7 @@ export const HeroSection = () => {
         style={{ background: "radial-gradient(ellipse at center, hsl(261 75% 55% / 0.06) 0%, transparent 60%)" }}
         aria-hidden="true"
       />
-      {/* Slow gradient sweep — subconscious movement */}
+      {/* Slow gradient sweep */}
       <div
         className="absolute inset-0 pointer-events-none animate-hero-sweep"
         aria-hidden="true"
@@ -286,7 +286,7 @@ export const HeroSection = () => {
 
       <div className="container relative z-10 mx-auto px-4 sm:px-6">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center max-w-[1120px] mx-auto">
-          {/* Left — Copy */}
+          {/* Left: Copy */}
           <div className="text-center lg:text-left">
 
             {/* Headline */}
@@ -339,7 +339,7 @@ export const HeroSection = () => {
               </button>
             </div>
 
-            {/* Trust proof — honest, no inflated claims */}
+            {/* Trust proof */}
             <div
               className={`flex flex-col gap-1.5 text-center lg:text-left transition-all duration-700 delay-[350ms] ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
             >
@@ -363,7 +363,7 @@ export const HeroSection = () => {
             </div>
           </div>
 
-          {/* Right — Dashboard mockup */}
+          {/* Right: Dashboard mockup */}
           <div
             className={`w-full max-w-[560px] lg:max-w-none mx-auto transition-all duration-700 delay-300 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
           >

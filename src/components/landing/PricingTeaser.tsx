@@ -66,7 +66,7 @@ export const PricingTeaser = () => {
               Simple pricing. No surprises.
             </h2>
             <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-              SalesOS works best for teams that sell directly to businesses. If you're running outbound, managing a pipeline, or trying to close deals faster—this is for you.
+              SalesOS works best for teams that sell directly to businesses. If you're running outbound, managing a pipeline, or trying to close deals faster, this is for you.
             </p>
           </div>
 
@@ -126,7 +126,7 @@ export const PricingTeaser = () => {
           {/* Pricing logic */}
           <div className={`text-center scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '300ms' } as React.CSSProperties}>
             <p className="text-lg text-foreground mb-6">
-              Start free — no credit card required. Upgrade when you're ready.
+              Start free, no credit card required. Upgrade when you're ready.
             </p>
             <Button
               variant="outline"

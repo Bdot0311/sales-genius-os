@@ -37,7 +37,7 @@ serve(async (req) => {
     const { data: emailData, error: emailError } = await resend.emails.send({
       from: "SalesOS <support@bdotindustries.com>",
       to: [email],
-      subject: "Welcome to SalesOS — Your Quick Start Guide 🚀",
+      subject: "Welcome to SalesOS - Your Quick Start Guide 🚀",
       html: `
         <!DOCTYPE html>
         <html lang="en">

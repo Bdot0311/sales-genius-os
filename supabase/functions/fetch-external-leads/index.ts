@@ -752,7 +752,7 @@ serve(async (req) => {
     const normalizedSeniority = normalizeSeniority(filters.seniority || '');
     const normalizedCompanySize = normalizeCompanySize(filters.company_size || '');
 
-    // Build raw body — we'll strip empty values before sending
+    // Build raw body, we'll strip empty values before sending
     const rawBody: Record<string, any> = {
       job_title: jobTitle || undefined,
       location: filters.country || undefined,

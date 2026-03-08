@@ -83,7 +83,7 @@ serve(async (req) => {
         const { error: emailError } = await resend.emails.send({
           from: "SalesOS <support@bdotindustries.com>",
           to: [email],
-          subject: "Welcome to SalesOS — Your Account Credentials",
+          subject: "Welcome to SalesOS - Your Account Credentials",
           html: `
             <!DOCTYPE html>
             <html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">

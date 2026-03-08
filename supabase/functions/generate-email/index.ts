@@ -56,7 +56,7 @@ Examples:
 **SENTENCE 2 - PAIN POINT + EMPATHY QUESTION:**
 State their likely pain point based on their role/company stage, then ask a relatable question.
 Make them feel understood. This builds trust and gets them nodding.
-Example: "They mentioned before using us, board prep took days — gathering data from 12 different tools. Any chance you can relate?"
+Example: "They mentioned before using us, board prep took days, gathering data from 12 different tools. Any chance you can relate?"
 
 **SENTENCE 3 - VALUE + SOCIAL PROOF (Credibility Stack):**
 Briefly explain what you do with SPECIFIC social proof: company names, metrics, results.
@@ -71,7 +71,7 @@ Examples: "Worth a quick look?", "Open to exploring this?", "Mind if I share how
 
 Hi Matt,
 
-Saw that you're backed by Accel Ventures — congrats on the recent close.
+Saw that you're backed by Accel Ventures, congrats on the recent close.
 
 Spot and Ignite are customers of ours, and they mentioned board prep used to take days before switching. Any chance you can relate?
 
@@ -89,7 +89,7 @@ Best,
 - NEVER mention this is a "cold email" or that you're "prospecting"
 - Focus on THEIR pain, not your product features
 - The goal is to spark curiosity and book a meeting, NOT to sell
-- End with a signature that just says "Best," or "Thanks," — nothing more
+- End with a signature that just says "Best," or "Thanks," and nothing more
 - **NEVER fabricate facts, company names, metrics, or claims.** Do NOT invent customer names, revenue figures, funding rounds, or results you cannot verify. If specific social proof is not provided by the user, use generic but HONEST phrasing like "teams like yours" or "companies in [industry]" instead of making up names and numbers.
 - **NEVER make false advertising claims.** Do not promise specific ROI, percentages, or outcomes unless the user explicitly provides them. Saying "we helped [fake company] cut costs by 70%" when that is not true is unacceptable.
 - If trigger/context info is vague or unavailable, use a genuine, general opener rather than inventing a fake trigger event (e.g., don't invent a funding round or product launch that didn't happen).
@@ -187,7 +187,7 @@ RULES for subject lines:
 - Create curiosity without being clickbait
 - Reference something about their company/role when possible
 - Never use spam trigger words
-- CRITICAL: Every generation must produce a COMPLETELY DIFFERENT subject line. Never reuse the same structure, phrasing, or angle twice. Vary your approach drastically each time — try different hooks: questions, statements, name drops, industry references, role-specific angles, company-specific angles, metric-based, outcome-based, pain-based, curiosity-based, etc.`;
+- CRITICAL: Every generation must produce a COMPLETELY DIFFERENT subject line. Never reuse the same structure, phrasing, or angle twice. Vary your approach drastically each time. Try different hooks: questions, statements, name drops, industry references, role-specific angles, company-specific angles, metric-based, outcome-based, pain-based, curiosity-based, etc.`;
       
       userPrompt = `Generate a single compelling email subject line for the following lead. The subject should be ${tone} in tone.
 
@@ -218,7 +218,7 @@ RULES:
 
       userPrompt = `Generate a personalized trigger/context opener for this lead:
 
-IMPORTANT: This is generation attempt #${Date.now() % 1000}. You MUST produce a completely unique trigger line — different structure, different angle, different power word from any previous attempt.
+IMPORTANT: This is generation attempt #${Date.now() % 1000}. You MUST produce a completely unique trigger line with a different structure, different angle, different power word from any previous attempt.
 
 Lead Information:
 - Name: ${sanitizedContactName}

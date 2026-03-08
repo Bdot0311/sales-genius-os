@@ -9,7 +9,7 @@ const PricingPage = () => {
   const pricingFAQs = [
     {
       question: "Is there a free plan?",
-      answer: "Yes. The Free plan gives you view-only access to explore the platform — dashboards, sample data, and pipeline overview. No credit card required. When you're ready, upgrade to a paid plan with a 14-day free trial."
+      answer: "Yes. The Free plan gives you view-only access to explore the platform: dashboards, sample data, and pipeline overview. No credit card required. When you're ready, upgrade to a paid plan with a 14-day free trial."
     },
     {
       question: "Can I change plans later?",
@@ -76,7 +76,7 @@ const PricingPage = () => {
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-6">
               Explore the full platform with a free account. When you're ready to find leads, 
-              choose the plan that fits your workflow — all with a 14-day free trial.
+              choose the plan that fits your workflow, all with a 14-day free trial.
             </p>
             <p className="text-sm text-muted-foreground">
               No credit card for free plan • Cancel anytime • 30-day money-back guarantee

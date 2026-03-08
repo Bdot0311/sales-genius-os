@@ -84,7 +84,7 @@ const Install = () => {
     {
       icon: Smartphone,
       title: "App-Like Experience",
-      description: "Full-screen, no browser bars — just like a native app",
+      description: "Full-screen, no browser bars, just like a native app",
     },
     {
       icon: Monitor,
@@ -116,7 +116,7 @@ const Install = () => {
             Get SalesOS on Your Device
           </h1>
           <p className="text-muted-foreground text-lg max-w-md mx-auto">
-            Install SalesOS for instant access to your sales tools — right from your home screen.
+            Install SalesOS for instant access to your sales tools, right from your home screen.
           </p>
         </div>
 

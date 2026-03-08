@@ -457,7 +457,7 @@ const ApiDocs = () => {
       group.endpoints.forEach((ep) => {
         lines.push("");
         lines.push(`${ep.method} ${ep.path}`);
-        lines.push(`  ${ep.name} — ${ep.description}`);
+        lines.push(`  ${ep.name}: ${ep.description}`);
         if (ep.params?.length) {
           lines.push("  Query Parameters:");
           ep.params.forEach((p) => lines.push(`    ${p.name} (${p.type}): ${p.description}`));
@@ -554,14 +554,14 @@ const ApiDocs = () => {
                     Rate limits are configured per API key. Check response headers:
                   </p>
                   <ul className="text-sm space-y-1 mt-2">
-                    <li><code className="text-xs bg-muted px-2 py-0.5 rounded">X-RateLimit-Remaining</code> — Requests remaining in window</li>
-                    <li><code className="text-xs bg-muted px-2 py-0.5 rounded">X-RateLimit-Reset</code> — ISO timestamp when the limit resets</li>
+                    <li><code className="text-xs bg-muted px-2 py-0.5 rounded">X-RateLimit-Remaining</code>: Requests remaining in window</li>
+                    <li><code className="text-xs bg-muted px-2 py-0.5 rounded">X-RateLimit-Reset</code>: ISO timestamp when the limit resets</li>
                   </ul>
                 </div>
                 <div>
                   <h3 className="font-semibold mb-2">Data Scoping</h3>
                   <p className="text-sm text-muted-foreground">
-                    All requests are scoped to the API key owner's account. You can only access your own data — no cross-user access is possible.
+                    All requests are scoped to the API key owner's account. You can only access your own data. No cross-user access is possible.
                   </p>
                 </div>
               </CardContent>

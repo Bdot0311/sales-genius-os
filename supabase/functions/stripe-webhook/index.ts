@@ -225,7 +225,7 @@ serve(async (req) => {
         const { error: emailError } = await resend.emails.send({
           from: "SalesOS <support@bdotindustries.com>",
           to: [customerEmail],
-          subject: `Welcome to SalesOS ${planName} — Your Login Credentials 🔐`,
+          subject: `Welcome to SalesOS ${planName} - Your Login Credentials 🔐`,
           html: `
             <!DOCTYPE html>
             <html lang="en">
