@@ -97,11 +97,14 @@ const addons = [
 // Feature comparison table data
 const comparisonCategories = [
   {
-    name: "Search Credits",
+    name: "Credits & Reveals",
     features: [
-      { name: "Monthly search credits", free: "0", growth: "150", pro: "500", elite: "1,500" },
-      { name: "Daily search limit", free: "0", growth: "15", pro: "50", elite: "150" },
-      { name: "Results per search", free: "—", growth: "25", pro: "50", elite: "100" },
+      { name: "Monthly credits", free: "0", growth: "150", pro: "500", elite: "1,500" },
+      { name: "Email reveal cost", free: "—", growth: "1 credit", pro: "1 credit", elite: "1 credit" },
+      { name: "Phone reveal cost", free: "—", growth: "5 credits", pro: "5 credits", elite: "5 credits" },
+      { name: "Company data (API)", free: "—", growth: "—", pro: "—", elite: "1 credit" },
+      { name: "Searches", free: "—", growth: "Free", pro: "Free", elite: "Free" },
+      { name: "Credit rollover", free: "—", growth: "Up to 2x", pro: "Up to 2x", elite: "Up to 2x" },
     ]
   },
   {

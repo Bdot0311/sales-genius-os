@@ -20,38 +20,48 @@ export const STRIPE_PRODUCT_IDS = {
 export type PlanType = 'free' | 'growth' | 'pro' | 'elite';
 export type AddonType = 'addon200' | 'addon500';
 
-// Plan configuration with search credits and limits (Lusha API-aligned)
+// Plan configuration with Lusha-aligned credit consumption model
+// Credits consumed per reveal: 1 credit = email, 5 credits = phone, 1 credit = company (API)
+// Searches are always free
 export const PLAN_CONFIG = {
   free: {
     name: 'Free',
     price: 0,
-    monthlySearchCredits: 0,
+    monthlyCredits: 0,
     dailySearchLimit: 0,
-    maxResultsPerSearch: 0,
+    emailRevealCost: 1,
+    phoneRevealCost: 5,
+    companyRevealCost: 1,
     exportTier: 'none' as const,
   },
   growth: {
     name: 'Growth',
     price: 49,
-    monthlySearchCredits: 150,
-    dailySearchLimit: 15,
-    maxResultsPerSearch: 25,
+    monthlyCredits: 150,
+    dailySearchLimit: 50,
+    emailRevealCost: 1,
+    phoneRevealCost: 5,
+    companyRevealCost: 1,
     exportTier: 'standard' as const,
   },
   pro: {
     name: 'Pro',
     price: 149,
-    monthlySearchCredits: 500,
-    dailySearchLimit: 50,
-    maxResultsPerSearch: 50,
+    monthlyCredits: 500,
+    dailySearchLimit: 200,
+    emailRevealCost: 1,
+    phoneRevealCost: 5,
+    companyRevealCost: 1,
     exportTier: 'advanced' as const,
   },
   elite: {
     name: 'Elite',
     price: 399,
-    monthlySearchCredits: 1500,
-    dailySearchLimit: 150,
-    maxResultsPerSearch: 100,
+    monthlyCredits: 1500,
+    dailySearchLimit: 1000,
+    emailRevealCost: 1,
+    phoneRevealCost: 5,
+    companyRevealCost: 1,
     exportTier: 'unlimited' as const,
   },
 } as const;
