@@ -162,47 +162,146 @@ function extractJobTitleFromKeywords(keywords: string[]): { jobTitle: string | n
   };
 }
 
-// Calculate scores if not provided by Railway API
-function calculateScores(lead: any): LeadScores {
-  let icpScore = 50;
-  let intentScore = 50;
-  let enrichmentScore = 50;
+// Simple hash for deterministic but varied per-lead offsets
+function hashString(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
 
-  // ICP scoring based on job title seniority
+// Calculate scores with per-lead variation using multiple signals
+function calculateScores(lead: any): LeadScores {
+  // Create a unique seed from lead-specific data for deterministic variation
+  const seedStr = `${lead.contact_name || ''}|${lead.company_name || ''}|${lead.company_domain || ''}|${lead.job_title || ''}`;
+  const seed = hashString(seedStr);
+  // Small deterministic offset (-5 to +5) unique per lead
+  const variation = (seed % 11) - 5;
+
+  let icpScore = 40;
+  let intentScore = 35;
+  let enrichmentScore = 30;
+
+  // === ICP SCORING (job title depth) ===
   const jobTitle = (lead.job_title || '').toLowerCase();
-  if (jobTitle.includes('ceo') || jobTitle.includes('founder') || jobTitle.includes('owner')) {
+  const jobTitleWords = jobTitle.split(/[\s,/]+/).filter(Boolean);
+  
+  // Seniority-based scoring with more granularity
+  if (jobTitle.includes('ceo') || jobTitle.includes('chief executive')) {
+    icpScore += 38;
+  } else if (jobTitle.includes('founder') || jobTitle.includes('co-founder')) {
     icpScore += 35;
-  } else if (jobTitle.includes('cto') || jobTitle.includes('cfo') || jobTitle.includes('coo') || jobTitle.includes('cmo')) {
+  } else if (jobTitle.includes('owner') || jobTitle.includes('president')) {
+    icpScore += 32;
+  } else if (jobTitle.includes('cto') || jobTitle.includes('chief technology')) {
     icpScore += 30;
+  } else if (jobTitle.includes('cfo') || jobTitle.includes('chief financial')) {
+    icpScore += 28;
+  } else if (jobTitle.includes('coo') || jobTitle.includes('cmo') || jobTitle.includes('cro') || jobTitle.includes('cio')) {
+    icpScore += 26;
   } else if (jobTitle.includes('vp') || jobTitle.includes('vice president')) {
-    icpScore += 25;
+    icpScore += 22;
   } else if (jobTitle.includes('director')) {
-    icpScore += 20;
-  } else if (jobTitle.includes('head of') || jobTitle.includes('manager')) {
-    icpScore += 15;
+    icpScore += 18;
+  } else if (jobTitle.includes('head of') || jobTitle.includes('head,')) {
+    icpScore += 16;
+  } else if (jobTitle.includes('senior') && (jobTitle.includes('manager') || jobTitle.includes('lead'))) {
+    icpScore += 14;
+  } else if (jobTitle.includes('manager')) {
+    icpScore += 10;
+  } else if (jobTitle.includes('lead') || jobTitle.includes('principal')) {
+    icpScore += 8;
+  } else if (jobTitle.includes('senior')) {
+    icpScore += 6;
+  } else if (jobTitle.includes('specialist') || jobTitle.includes('analyst') || jobTitle.includes('coordinator')) {
+    icpScore += 2;
   }
 
-  // Company size scoring
-  const companySize = lead.company_size || '';
-  if (companySize.includes('201') || companySize.includes('500') || companySize.includes('1000')) {
+  // Bonus for revenue/growth/sales-related titles (high buying intent)
+  if (jobTitle.includes('revenue') || jobTitle.includes('growth') || jobTitle.includes('sales') || jobTitle.includes('business development')) {
+    intentScore += 15;
+  }
+  if (jobTitle.includes('marketing') || jobTitle.includes('demand gen') || jobTitle.includes('partnerships')) {
+    intentScore += 10;
+  }
+  if (jobTitle.includes('operations') || jobTitle.includes('strategy')) {
+    intentScore += 7;
+  }
+
+  // Title word count bonus (more specific titles = better data)
+  if (jobTitleWords.length >= 4) {
+    enrichmentScore += 3;
+  }
+
+  // === COMPANY SIZE SCORING ===
+  const companySize = (lead.company_size || lead.employee_count || '').toString();
+  if (companySize.includes('10001') || companySize.includes('5001')) {
+    icpScore += 6;
+    intentScore += 12;
+  } else if (companySize.includes('1001') || companySize.includes('501')) {
     icpScore += 10;
+    intentScore += 14;
+  } else if (companySize.includes('201') || companySize.includes('500')) {
+    icpScore += 12;
     intentScore += 10;
   } else if (companySize.includes('51') || companySize.includes('200')) {
     icpScore += 8;
     intentScore += 8;
+  } else if (companySize.includes('11') || companySize.includes('50')) {
+    icpScore += 4;
+    intentScore += 4;
+  } else if (companySize.includes('1-10') || companySize.includes('micro')) {
+    icpScore += 2;
+    intentScore += 2;
   }
 
-  // Enrichment scoring based on data completeness
-  if (lead.business_email || lead.email) enrichmentScore += 15;
-  if (lead.linkedin_url || lead.linkedin) enrichmentScore += 10;
+  // === INDUSTRY SCORING ===
+  const industry = (lead.industry || '').toLowerCase();
+  // High-value industries for SaaS
+  if (industry.includes('software') || industry.includes('technology') || industry.includes('information technology')) {
+    intentScore += 8;
+  } else if (industry.includes('financial') || industry.includes('banking') || industry.includes('insurance')) {
+    intentScore += 7;
+  } else if (industry.includes('consulting') || industry.includes('marketing')) {
+    intentScore += 6;
+  } else if (industry.includes('health') || industry.includes('education')) {
+    intentScore += 4;
+  } else if (industry.includes('retail') || industry.includes('manufacturing')) {
+    intentScore += 3;
+  } else if (industry) {
+    intentScore += 2; // Any known industry is better than none
+  }
+
+  // === ENRICHMENT / DATA COMPLETENESS SCORING ===
+  const email = lead.business_email || lead.email || '';
+  if (email) {
+    enrichmentScore += 18;
+    // Corporate email vs generic
+    if (!email.includes('gmail.') && !email.includes('yahoo.') && !email.includes('hotmail.') && !email.includes('outlook.')) {
+      enrichmentScore += 5;
+    }
+  }
+  if (lead.linkedin_url || lead.linkedin) enrichmentScore += 12;
   if (lead.company_domain || lead.domain) enrichmentScore += 10;
   if (lead.industry) enrichmentScore += 5;
   if (lead.country || lead.location) enrichmentScore += 5;
+  if (lead.company_name) enrichmentScore += 3;
+  if (lead.contact_name) enrichmentScore += 2;
+  if (lead.seniority) enrichmentScore += 3;
+  if (lead.department) enrichmentScore += 2;
 
-  // Cap scores at 100
-  icpScore = Math.min(100, icpScore);
-  intentScore = Math.min(100, intentScore);
-  enrichmentScore = Math.min(100, enrichmentScore);
+  // === APPLY PER-LEAD VARIATION ===
+  icpScore += variation;
+  intentScore += (seed % 7) - 3; // different variation axis
+  enrichmentScore += ((seed >> 3) % 5) - 2; // yet another axis
+
+  // Cap scores at 0-100
+  icpScore = Math.max(5, Math.min(100, icpScore));
+  intentScore = Math.max(5, Math.min(100, intentScore));
+  enrichmentScore = Math.max(5, Math.min(100, enrichmentScore));
 
   const overallScore = Math.round((icpScore * 0.4) + (intentScore * 0.3) + (enrichmentScore * 0.3));
 
@@ -210,7 +309,7 @@ function calculateScores(lead: any): LeadScores {
     icp_score: icpScore,
     intent_score: intentScore,
     enrichment_score: enrichmentScore,
-    overall_score: overallScore,
+    overall_score: Math.max(5, Math.min(100, overallScore)),
   };
 }
 
