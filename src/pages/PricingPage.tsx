@@ -8,20 +8,24 @@ import { Check, Shield, Zap, Users, Headphones } from "lucide-react";
 const PricingPage = () => {
   const pricingFAQs = [
     {
+      question: "How do search credits work?",
+      answer: "1 credit = 1 search. Each search returns a batch of matched leads based on your plan: 25 (Growth), 50 (Pro), or 100 (Elite). Viewing, enriching, and exporting those results costs nothing extra."
+    },
+    {
+      question: "How do credits reset?",
+      answer: "Your search credits reset on a monthly basis, aligned with your billing cycle. Unused credits do not roll over. Purchase add-on packs anytime for immediate credits."
+    },
+    {
       question: "Is there a free plan?",
-      answer: "Yes. The Free plan gives you view-only access to explore the platform: dashboards, sample data, and pipeline overview. No credit card required. When you're ready, upgrade to a paid plan with a 14-day free trial."
+      answer: "Yes. The free plan gives you full access to explore the SalesOS interface. Lead search and enrichment require a paid plan. No credit card needed."
     },
     {
       question: "Can I change plans later?",
-      answer: "Yes, you can upgrade or downgrade your plan at any time. Upgrades take effect immediately with prorated billing. Downgrades apply at the start of your next billing cycle."
-    },
-    {
-      question: "How do search credits work?",
-      answer: "1 credit = 1 search. Each search returns a batch of matched leads based on your plan: 25 (Growth), 50 (Pro), or 100 (Elite). Viewing, enriching, and exporting those results costs nothing extra. Credits reset at the start of each billing cycle. Need more? Add a credit pack anytime: +200 credits for $79/mo or +500 credits for $179/mo."
+      answer: "Yes, you can upgrade or downgrade at any time. Upgrades take effect immediately. Downgrades apply at the start of your next billing cycle."
     },
     {
       question: "Is there a money-back guarantee?",
-      answer: "Yes, we offer a 30-day money-back guarantee on all paid plans. If you're not satisfied, contact support for a full refund."
+      answer: "Yes, we offer a 30-day money-back guarantee on all paid plans. Contact support for a full refund."
     },
     {
       question: "Do you offer enterprise pricing?",

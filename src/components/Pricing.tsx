@@ -190,6 +190,10 @@ const creditFAQs = [
     question: "Is there a money-back guarantee?",
     answer: "Yes, we offer a 30-day money-back guarantee on all paid plans. If you're not satisfied, contact support for a full refund."
   },
+  {
+    question: "Do you offer enterprise pricing?",
+    answer: "Yes, our Elite plan includes custom pricing options for larger teams. Contact our sales team for volume discounts and custom terms."
+  },
 ];
 
 // Helper to render feature value in comparison table
@@ -467,14 +471,14 @@ export const Pricing = () => {
           </div>
         </div>
 
-        {/* Credit FAQs */}
+        {/* Pricing & Credits FAQ */}
         <div className={`max-w-3xl mx-auto scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '400ms' } as React.CSSProperties}>
           <div className="text-center mb-6 sm:mb-8">
             <div className="inline-flex items-center gap-2 text-muted-foreground mb-2">
               <HelpCircle className="w-5 h-5" />
               <span className="text-sm font-medium">FAQs</span>
             </div>
-            <h3 className="text-xl sm:text-2xl font-semibold">How credits work</h3>
+            <h3 className="text-xl sm:text-2xl font-semibold">Pricing & credits</h3>
           </div>
 
           <Accordion type="single" collapsible className="w-full space-y-2 sm:space-y-3">
