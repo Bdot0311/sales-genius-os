@@ -56,7 +56,7 @@ Examples:
 **SENTENCE 2 - PAIN POINT + EMPATHY QUESTION:**
 State their likely pain point based on their role/company stage, then ask a relatable question.
 Make them feel understood. This builds trust and gets them nodding.
-Example: "They mentioned before using us, board prep took days — gathering data from 12 different tools. Any chance you can relate?"
+Example: "They mentioned before using us, board prep took days, gathering data from 12 different tools. Any chance you can relate?"
 
 **SENTENCE 3 - VALUE + SOCIAL PROOF (Credibility Stack):**
 Briefly explain what you do with SPECIFIC social proof: company names, metrics, results.
