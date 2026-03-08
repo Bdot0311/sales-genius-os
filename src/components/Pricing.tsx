@@ -37,11 +37,11 @@ const plans = [
     period: "/month",
     description: "For solo founders and early outbound",
     features: [
-      "150 search credits / month",
-      "25 results per search",
+      "150 credits / month",
+      "1 credit per email reveal",
+      "5 credits per phone reveal",
       "Standard enrichment (Location)",
       "3 active sequences",
-      "AI Outreach Studio",
       "Email support",
     ],
     paymentLink: "https://buy.stripe.com/9B6dR9ep1a2b0gi1ca1B60u",
@@ -53,11 +53,11 @@ const plans = [
     period: "/month",
     description: "For teams booking meetings consistently",
     features: [
-      "500 search credits / month",
-      "50 results per search",
+      "500 credits / month",
+      "1 credit per email reveal",
+      "5 credits per phone reveal",
       "Advanced enrichment (+Title/Seniority)",
       "15 active sequences",
-      "AI Sales Coach",
       "Priority support",
     ],
     highlighted: true,
@@ -70,12 +70,12 @@ const plans = [
     period: "/month",
     description: "For high-volume outbound operations",
     features: [
-      "1,500 search credits / month",
-      "100 results per search",
+      "1,500 credits / month",
+      "1 credit per email reveal",
+      "5 credits per phone reveal",
       "Premium enrichment (all filters)",
       "Unlimited sequences",
       "API access & white-label",
-      "Dedicated success manager",
     ],
     paymentLink: "https://buy.stripe.com/8x2bJ15Svfmvd341ca1B60q",
   },
@@ -97,11 +97,14 @@ const addons = [
 // Feature comparison table data
 const comparisonCategories = [
   {
-    name: "Search Credits",
+    name: "Credits & Reveals",
     features: [
-      { name: "Monthly search credits", free: "0", growth: "150", pro: "500", elite: "1,500" },
-      { name: "Daily search limit", free: "0", growth: "15", pro: "50", elite: "150" },
-      { name: "Results per search", free: "—", growth: "25", pro: "50", elite: "100" },
+      { name: "Monthly credits", free: "0", growth: "150", pro: "500", elite: "1,500" },
+      { name: "Email reveal cost", free: "—", growth: "1 credit", pro: "1 credit", elite: "1 credit" },
+      { name: "Phone reveal cost", free: "—", growth: "5 credits", pro: "5 credits", elite: "5 credits" },
+      { name: "Company data (API)", free: "—", growth: "—", pro: "—", elite: "1 credit" },
+      { name: "Searches", free: "—", growth: "Free", pro: "Free", elite: "Free" },
+      { name: "Credit rollover", free: "—", growth: "Up to 2x", pro: "Up to 2x", elite: "Up to 2x" },
     ]
   },
   {

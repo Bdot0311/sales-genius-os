@@ -6,7 +6,7 @@ export const PLAN_FEATURES = {
     name: 'Free',
     price: 0,
     
-    // Search Credits
+    // Credits
     monthlySearchCredits: 0,
     dailySearchLimit: 0,
     exportTier: 'none' as const,
