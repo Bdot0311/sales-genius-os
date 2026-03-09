@@ -11,7 +11,7 @@ const corsHeaders = {
 const SALESOS_PRODUCT_IDS = [
   'prod_TOropirqoOz7Ed', // growth
   'prod_TOrozUbuuN18RP', // pro
-  'prod_TOrod7SaIV2D7s', // pro (legacy elite)
+  'prod_TOrod7SaIV2D7s', // pro (legacy)
 ];
 
 const SALESOS_PRICE_IDS = [
