@@ -83,7 +83,7 @@ const AdminUsers = () => {
     return userRoles.some(r => r.user_id === userId && r.role === 'admin');
   };
 
-  const updateSubscription = async (userId: string, plan: 'growth' | 'pro' | 'elite') => {
+  const updateSubscription = async (userId: string, plan: 'free' | 'starter' | 'growth' | 'pro' | 'elite') => {
     try {
       const { error } = await supabase.rpc('admin_update_subscription', {
         _user_id: userId,
