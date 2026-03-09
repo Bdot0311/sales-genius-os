@@ -424,13 +424,8 @@ export const Pricing = () => {
                         : 'bg-primary text-primary-foreground hover:bg-primary/90'
                   }`}
                   onClick={() => handleCheckout(plan)}
-                  disabled={checkoutLoading === plan.key}
                 >
-                  {checkoutLoading === plan.key ? (
-                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing...</>
-                  ) : (
-                    plan.key === 'free' ? 'Get started free' : 'Start 14-day free trial'
-                  )}
+                  {plan.key === 'free' ? 'Get started free' : 'Start 14-day free trial'}
                 </Button>
               </div>
             );
