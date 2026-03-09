@@ -181,7 +181,7 @@ export function SequencesList() {
       {!canCreateMore && (
         <UpgradePrompt
           feature="More Active Sequences"
-          requiredPlan={currentPlan === 'growth' ? 'pro' : 'elite'}
+          requiredPlan="pro"
         />
       )}
 

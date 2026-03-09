@@ -616,7 +616,7 @@ const Settings = () => {
             )}
           </TabsContent>
 
-          {subscription?.plan === 'elite' && (
+          {subscription?.plan === 'pro' && (
             <>
               <TabsContent value="white-label">
                 <WhiteLabelTab />

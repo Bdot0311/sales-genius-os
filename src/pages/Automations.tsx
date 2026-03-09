@@ -239,7 +239,7 @@ const Automations = () => {
               limit={workflowLimit}
               label="workflows"
               showUpgrade
-              upgradePlan={currentPlan === 'growth' ? 'pro' : 'elite'}
+              upgradePlan="pro"
             />
             <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'visual' | 'list')}>
               <TabsList>

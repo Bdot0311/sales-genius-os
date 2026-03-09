@@ -64,7 +64,7 @@ export const MessageBlockEditor = ({
     }
   );
 
-  const isElite = currentPlan === 'elite';
+  const isPro = currentPlan === 'pro';
 
   const handleSave = async () => {
     if (!formData.name.trim() || !formData.content.trim()) {

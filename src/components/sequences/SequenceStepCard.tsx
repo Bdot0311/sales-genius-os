@@ -116,7 +116,7 @@ export function SequenceStepCard({
                   )}
                   {isCustomTrigger && sequenceType !== 'custom' && (
                     <Badge variant="outline" className="text-xs text-purple-500 border-purple-500/50">
-                      Elite feature
+                      Pro feature
                     </Badge>
                   )}
                 </div>

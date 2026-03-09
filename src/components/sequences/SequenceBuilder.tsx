@@ -271,7 +271,7 @@ export function SequenceBuilder() {
       {!canAddMoreSteps && (
         <UpgradePrompt
           feature="More Sequence Steps"
-          requiredPlan={currentPlan === 'growth' ? 'pro' : 'elite'}
+          requiredPlan="pro"
         />
       )}
 
