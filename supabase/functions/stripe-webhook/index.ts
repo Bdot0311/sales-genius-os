@@ -27,7 +27,7 @@ const PRICE_TO_PLAN: Record<string, { plan: 'starter' | 'growth' | 'pro', credit
   'price_1SmM2hFTerosS6hiiDXBDIxl': { plan: 'growth', credits: 1200, dailyLimit: 150, leadsLimit: 1200, isYearly: false },
   'price_1SS44wFTerosS6hiCkKQnnoD': { plan: 'growth', credits: 1200, dailyLimit: 150, leadsLimit: 1200, isYearly: false },
   'price_1SS456FTerosS6hisBSDPwo4': { plan: 'pro', credits: 3000, dailyLimit: 400, leadsLimit: 3000, isYearly: false },
-  'price_1SS45HFTerosS6hiQtxsNVL4': { plan: 'elite', credits: 999999, dailyLimit: 500, leadsLimit: 999999, isYearly: false },
+  'price_1SS45HFTerosS6hiQtxsNVL4': { plan: 'pro', credits: 3000, dailyLimit: 400, leadsLimit: 3000, isYearly: false },
 };
 
 // Product ID to plan mapping (fallback)
