@@ -58,7 +58,12 @@ const AdminUsers = () => {
     try {
       const { data, error } = await supabase.rpc('admin_get_all_subscriptions');
       if (error) throw error;
-      setSubscriptions(data || []);
+      // Map any legacy 'elite' plan values to 'pro'
+      const mapped = (data || []).map((s: any) => ({
+        ...s,
+        plan: s.plan === 'elite' ? 'pro' : s.plan,
+      }));
+      setSubscriptions(mapped);
     } catch (error) {
       console.error('Error loading subscriptions:', error);
       toast.error('Failed to load subscriptions');
