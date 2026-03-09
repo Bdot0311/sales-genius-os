@@ -405,6 +405,11 @@ export const CreditsUsageTab = () => {
           )}
         </CardContent>
       </Card>
+
+      <QuickBuyCreditsDialog 
+        open={topupDialogOpen} 
+        onOpenChange={setTopupDialogOpen} 
+      />
     </div>
   );
 };
