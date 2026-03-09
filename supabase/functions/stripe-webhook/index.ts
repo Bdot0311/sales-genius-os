@@ -31,7 +31,7 @@ const PRICE_TO_PLAN: Record<string, { plan: 'starter' | 'growth' | 'pro', credit
 };
 
 // Product ID to plan mapping (fallback)
-const PRODUCT_TO_PLAN: Record<string, 'starter' | 'growth' | 'pro' | 'elite'> = {
+const PRODUCT_TO_PLAN: Record<string, 'starter' | 'growth' | 'pro'> = {
   // New product IDs
   'prod_U78FZoAWovU1rX': 'starter',
   'prod_U78FC92stOkRxS': 'starter',
