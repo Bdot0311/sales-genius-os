@@ -319,6 +319,8 @@ const AdminUsers = () => {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="free">Free</SelectItem>
+                            <SelectItem value="starter">Starter</SelectItem>
                             <SelectItem value="growth">Growth</SelectItem>
                             <SelectItem value="pro">Pro</SelectItem>
                             <SelectItem value="elite">Elite</SelectItem>
