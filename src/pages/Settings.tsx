@@ -242,7 +242,7 @@ const Settings = () => {
                   <TrendingUp className="h-4 w-4" />
                   Usage
                 </TabsTrigger>
-                {subscription?.plan === 'elite' && (
+                {subscription?.plan === 'pro' && (
                   <>
                     <TabsTrigger value="white-label" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
                       <Palette className="h-4 w-4" />
