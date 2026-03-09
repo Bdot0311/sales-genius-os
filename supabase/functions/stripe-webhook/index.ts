@@ -460,7 +460,7 @@ serve(async (req) => {
     }
   }
 
-  // Handle invoice paid (credits reset on billing cycle)
+  // Handle invoice paid (credits reset/add on billing cycle)
   if (event.type === "invoice.paid") {
     const invoice = event.data.object as Stripe.Invoice;
     const customerId = invoice.customer as string;
@@ -485,11 +485,36 @@ serve(async (req) => {
           if (profile) {
             const planDetails = PRICE_TO_PLAN[priceId] || PRICE_TO_PLAN['price_1SmM2hFTerosS6hiiDXBDIxl'];
             
-            // Reset credits on new billing cycle
+            // Get current subscription to check existing credits
+            const { data: currentSub } = await supabaseAdmin
+              .from('subscriptions')
+              .select('search_credits_remaining')
+              .eq('user_id', profile.id)
+              .single();
+            
+            // Yearly billing logic:
+            // - Starter yearly (monthlyGrant: true): gets monthly grant of 400, resets each month
+            // - Growth/Pro yearly (monthlyGrant: false): gets full pool upfront, rolls over on renewal
+            // Monthly billing: always resets to base credits
+            
+            let newCredits = planDetails.credits;
+            
+            if (planDetails.isYearly && planDetails.monthlyGrant === false) {
+              // Growth/Pro yearly: rollover - ADD credits to existing balance
+              // On first invoice (new sub), this sets the initial pool
+              // On renewal invoices, this adds to existing balance (rollover)
+              const existingCredits = currentSub?.search_credits_remaining || 0;
+              newCredits = existingCredits + planDetails.credits;
+              logStep("Yearly rollover: adding credits", { existing: existingCredits, adding: planDetails.credits, total: newCredits });
+            } else {
+              // Monthly plans OR Starter yearly (monthlyGrant: true): reset to base
+              logStep("Monthly/Starter yearly: resetting credits", { newCredits });
+            }
+            
             const { error: updateError } = await supabaseAdmin
               .from('subscriptions')
               .update({
-                search_credits_remaining: planDetails.credits,
+                search_credits_remaining: newCredits,
                 daily_searches_used: 0,
                 credits_reset_at: new Date(subscription.current_period_end * 1000).toISOString(),
                 current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
