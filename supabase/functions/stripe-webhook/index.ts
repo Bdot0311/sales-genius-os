@@ -8,18 +8,43 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Price ID to plan mapping
-const PRICE_TO_PLAN: Record<string, { plan: 'growth' | 'pro' | 'elite', credits: number, dailyLimit: number, leadsLimit: number }> = {
-  'price_1SmM2hFTerosS6hiiDXBDIxl': { plan: 'growth', credits: 350, dailyLimit: 25, leadsLimit: 1000 },
-  'price_1SS456FTerosS6hisBSDPwo4': { plan: 'pro', credits: 700, dailyLimit: 100, leadsLimit: 10000 },
-  'price_1SS45HFTerosS6hiQtxsNVL4': { plan: 'elite', credits: 2000, dailyLimit: 500, leadsLimit: 999999 },
+// Price ID to plan mapping - includes both monthly and yearly price IDs
+const PRICE_TO_PLAN: Record<string, { plan: 'starter' | 'growth' | 'pro' | 'elite', credits: number, dailyLimit: number, leadsLimit: number }> = {
+  // Starter Monthly
+  'price_1T8tywFTerosS6hi0fHQuybr': { plan: 'starter', credits: 400, dailyLimit: 50, leadsLimit: 400 },
+  // Starter Yearly
+  'price_1T8tyxFTerosS6hiSakB51fA': { plan: 'starter', credits: 400, dailyLimit: 50, leadsLimit: 400 },
+  // Growth Monthly
+  'price_1T8tyyFTerosS6hiTsTXkWDa': { plan: 'growth', credits: 1200, dailyLimit: 150, leadsLimit: 1200 },
+  // Growth Yearly
+  'price_1T8tyzFTerosS6hiUyzpHnCK': { plan: 'growth', credits: 1200, dailyLimit: 150, leadsLimit: 1200 },
+  // Pro Monthly
+  'price_1T8tz0FTerosS6hiKJluR3kk': { plan: 'pro', credits: 3000, dailyLimit: 400, leadsLimit: 3000 },
+  // Pro Yearly
+  'price_1T8tz0FTerosS6hiIHNG82Bh': { plan: 'pro', credits: 3000, dailyLimit: 400, leadsLimit: 3000 },
+  // Legacy prices
+  'price_1SmM2hFTerosS6hiiDXBDIxl': { plan: 'growth', credits: 1200, dailyLimit: 150, leadsLimit: 1200 },
+  'price_1SS44wFTerosS6hiCkKQnnoD': { plan: 'growth', credits: 1200, dailyLimit: 150, leadsLimit: 1200 },
+  'price_1SS456FTerosS6hisBSDPwo4': { plan: 'pro', credits: 3000, dailyLimit: 400, leadsLimit: 3000 },
+  'price_1SS45HFTerosS6hiQtxsNVL4': { plan: 'elite', credits: 999999, dailyLimit: 500, leadsLimit: 999999 },
 };
 
 // Product ID to plan mapping (fallback)
-const PRODUCT_TO_PLAN: Record<string, 'growth' | 'pro' | 'elite'> = {
+const PRODUCT_TO_PLAN: Record<string, 'starter' | 'growth' | 'pro' | 'elite'> = {
+  // New product IDs
+  'prod_U78FZoAWovU1rX': 'starter',
+  'prod_U78FC92stOkRxS': 'starter',
+  'prod_U78Ff02VQAzrLC': 'growth',
+  'prod_U78Fk0l7swAukt': 'growth',
+  'prod_U78Fs2HpZzcZJc': 'pro',
+  'prod_U78Fuo9Mg04kz9': 'pro',
+  // Legacy product IDs
   'prod_TjpiXbauY0T3RF': 'growth',
   'prod_TOrozUbuuN18RP': 'pro',
   'prod_TOrod7SaIV2D7s': 'elite',
+  'prod_U6gflsh1Zzoh3V': 'starter',
+  'prod_U6gfTND3QdfgcC': 'growth',
+  'prod_U6gfOj1Xgfd1vy': 'pro',
 };
 
 const generateTempPassword = () => {
