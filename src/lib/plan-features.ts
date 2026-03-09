@@ -489,7 +489,8 @@ export const getPlanFeatures = (plan: PlanType): PlanFeatures => {
 };
 
 export const getNextPlan = (currentPlan: PlanType): PlanType | null => {
-  if (currentPlan === 'free') return 'growth';
+  if (currentPlan === 'free') return 'starter';
+  if (currentPlan === 'starter') return 'growth';
   if (currentPlan === 'growth') return 'pro';
   if (currentPlan === 'pro') return 'elite';
   return null;

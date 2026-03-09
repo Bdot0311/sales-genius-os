@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { PLAN_FEATURES, type PlanType } from '@/lib/plan-features';
 import { useAdmin } from './use-admin';
 
-export type SubscriptionPlan = 'free' | 'growth' | 'pro' | 'elite';
+export type SubscriptionPlan = 'free' | 'starter' | 'growth' | 'pro' | 'elite';
 
 export interface UserSubscription {
   plan: SubscriptionPlan;

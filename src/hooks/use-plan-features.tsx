@@ -18,7 +18,7 @@ export const usePlanFeatures = () => {
     if (isAdmin) return true;
     
     const requiredPlan = UPGRADE_MESSAGES[feature].availableOn as PlanType;
-    const planOrder: PlanType[] = ['free', 'growth', 'pro', 'elite'];
+    const planOrder: PlanType[] = ['free', 'starter', 'growth', 'pro', 'elite'];
     const currentIndex = planOrder.indexOf(currentPlan);
     const requiredIndex = planOrder.indexOf(requiredPlan);
     return currentIndex >= requiredIndex;
