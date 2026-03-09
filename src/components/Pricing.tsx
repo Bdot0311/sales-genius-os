@@ -92,7 +92,9 @@ const paidPlans: PaidPlan[] = [
     yearlyPrice: 71,
     yearlyTotal: 852,
     description: "For teams booking meetings consistently",
-    mainValue: "Contact up to 1,200 verified prospects per month",
+    mainValue: "Contact up to 1,200 verified prospects",
+    monthlyProspects: 1200,
+    yearlyProspects: 14400,
     dailyLimit: "150 prospects per day",
     features: [
       "Advanced prospect filters",
