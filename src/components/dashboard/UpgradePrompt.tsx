@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 
 interface UpgradePromptProps {
   feature: string;
-  requiredPlan: 'pro' | 'elite';
+  requiredPlan: 'growth' | 'pro';
 }
 
 export const UpgradePrompt = ({ feature, requiredPlan }: UpgradePromptProps) => {
@@ -21,7 +21,7 @@ export const UpgradePrompt = ({ feature, requiredPlan }: UpgradePromptProps) => 
         <div className="space-y-2">
           <h3 className="text-2xl font-bold">Unlock {feature}</h3>
           <p className="text-muted-foreground">
-            Upgrade to {requiredPlan === 'pro' ? 'Pro' : 'Elite'} plan to access {feature.toLowerCase()} and supercharge your sales workflow.
+            Upgrade to {requiredPlan === 'pro' ? 'Pro' : 'Growth'} plan to access {feature.toLowerCase()} and supercharge your sales workflow.
           </p>
         </div>
 

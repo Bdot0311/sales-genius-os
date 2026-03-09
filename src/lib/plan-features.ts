@@ -210,72 +210,6 @@ export const PLAN_FEATURES = {
     exportTier: 'unlimited' as const,
     
     // Lead Intelligence Engine
-    maxResultsPerSearch: 50,
-    enrichmentLevel: 'advanced',
-    advancedFilters: true,
-    apiAccessLeads: false,
-    
-    // AI Outreach Studio
-    activeSequences: 15,
-    personalizationLevel: 'advanced',
-    aiFirstLines: true,
-    multiChannelLogic: false,
-    
-    // Email Sequences
-    stepsPerSequence: 7,
-    sequenceType: 'behavioral' as const,
-    replyAnalysis: true,
-    handoffAlerts: 'email' as const,
-    relevanceFilter: 'basic' as const,
-    messageBlocks: 25,
-    engagementStates: 'full' as const,
-    sequenceABTesting: 2,
-    sequenceAnalytics: 'advanced' as const,
-    
-    // Meeting Automator
-    calendarConnections: 5,
-    smartRouting: true,
-    priorityBooking: false,
-    
-    // Smart Deal Pipeline
-    automatedStageProgression: true,
-    revenueForecasting: true,
-    customPipelines: false,
-    advancedAutomationTriggers: false,
-    
-    // AI Sales Coach
-    coachingLevel: 'advanced',
-    realTimeAnalysis: 'full',
-    liveCoaching: false,
-    customPlaybooks: false,
-    
-    // Automation Builder
-    automationRules: 25,
-    advancedWorkflows: true,
-    conditionalLogicDepth: 3,
-    
-    // Analytics Dashboard
-    analyticsLevel: 'advanced',
-    funnelAnalytics: true,
-    repPerformance: true,
-    customReports: false,
-    dataExports: false,
-    apiAccessAnalytics: false,
-    
-    // AI Recommendations
-    recommendationLevel: 'contextual',
-  },
-  
-  elite: {
-    name: 'Elite',
-    price: 399,
-    
-    // Search Credits
-    monthlySearchCredits: 1500,
-    dailySearchLimit: 150,
-    exportTier: 'unlimited' as const,
-    
-    // Lead Intelligence Engine
     maxResultsPerSearch: 100,
     enrichmentLevel: 'premium',
     advancedFilters: true,
@@ -363,7 +297,7 @@ export const UPGRADE_MESSAGES = {
   apiAccessLeads: {
     title: 'Lead Intelligence API',
     description: 'Integrate lead discovery directly into your existing tools and workflows.',
-    availableOn: 'elite',
+    availableOn: 'pro',
   },
   aiFirstLines: {
     title: 'AI-Written First Lines',
@@ -373,7 +307,7 @@ export const UPGRADE_MESSAGES = {
   multiChannelLogic: {
     title: 'Multi-Channel Sequences',
     description: 'Orchestrate outreach across email, LinkedIn, and calls in a single workflow.',
-    availableOn: 'elite',
+    availableOn: 'pro',
   },
   smartRouting: {
     title: 'Smart Meeting Routing',
@@ -383,7 +317,7 @@ export const UPGRADE_MESSAGES = {
   priorityBooking: {
     title: 'Priority Booking Rules',
     description: 'Give high-value prospects priority access to your calendar.',
-    availableOn: 'elite',
+    availableOn: 'pro',
   },
   automatedStageProgression: {
     title: 'Automated Pipeline Updates',
@@ -398,17 +332,17 @@ export const UPGRADE_MESSAGES = {
   customPipelines: {
     title: 'Custom Pipelines',
     description: 'Create unlimited custom pipelines tailored to your sales process.',
-    availableOn: 'elite',
+    availableOn: 'pro',
   },
   liveCoaching: {
     title: 'Live Sales Coaching',
     description: 'Get real-time guidance during calls and meetings.',
-    availableOn: 'elite',
+    availableOn: 'pro',
   },
   customPlaybooks: {
     title: 'Custom Sales Playbooks',
     description: 'Build and deploy playbooks tailored to your team and market.',
-    availableOn: 'elite',
+    availableOn: 'pro',
   },
   advancedWorkflows: {
     title: 'Advanced Workflows',
@@ -423,12 +357,12 @@ export const UPGRADE_MESSAGES = {
   customReports: {
     title: 'Custom Reports',
     description: 'Build reports tailored to your business metrics and KPIs.',
-    availableOn: 'elite',
+    availableOn: 'pro',
   },
   dataExports: {
     title: 'Data Exports',
     description: 'Export your data for external analysis and reporting.',
-    availableOn: 'elite',
+    availableOn: 'pro',
   },
   higherLimits: {
     title: 'Higher Limits',
@@ -458,22 +392,22 @@ export const UPGRADE_MESSAGES = {
   webhookHandoffs: {
     title: 'Webhook Handoffs',
     description: 'Route handoff alerts to Slack, your CRM, or any tool via webhooks.',
-    availableOn: 'elite',
+    availableOn: 'pro',
   },
   customReplySignals: {
     title: 'Custom Reply Signals',
     description: 'Train AI to detect your unique buying signals and objection patterns.',
-    availableOn: 'elite',
+    availableOn: 'pro',
   },
   advancedRelevanceFilter: {
     title: 'Advanced Relevance Rules',
     description: 'Gate sequence enrollment with lead scores, custom fields, and buying intent signals.',
-    availableOn: 'elite',
+    availableOn: 'pro',
   },
   messageBlocksTeamSharing: {
     title: 'Team Message Blocks',
     description: 'Share approved content blocks across your entire team for consistent messaging.',
-    availableOn: 'elite',
+    availableOn: 'pro',
   },
   sequenceABTesting: {
     title: 'Sequence A/B Testing',
@@ -492,7 +426,6 @@ export const getNextPlan = (currentPlan: PlanType): PlanType | null => {
   if (currentPlan === 'free') return 'starter';
   if (currentPlan === 'starter') return 'growth';
   if (currentPlan === 'growth') return 'pro';
-  if (currentPlan === 'pro') return 'elite';
   return null;
 };
 

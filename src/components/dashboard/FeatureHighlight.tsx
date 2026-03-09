@@ -9,7 +9,12 @@ interface FeatureHighlightProps {
 }
 
 export const FeatureHighlight = ({ availableOn, onUpgrade, inline = false }: FeatureHighlightProps) => {
-  const planName = availableOn === 'pro' ? 'Pro' : 'Elite';
+  const planNames: Record<string, string> = {
+    starter: 'Starter',
+    growth: 'Growth',
+    pro: 'Pro',
+  };
+  const planName = planNames[availableOn] || 'Pro';
   
   if (inline) {
     return (

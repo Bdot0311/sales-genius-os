@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { PLAN_FEATURES, type PlanType } from '@/lib/plan-features';
 import { useAdmin } from './use-admin';
 
-export type SubscriptionPlan = 'free' | 'starter' | 'growth' | 'pro' | 'elite';
+export type SubscriptionPlan = 'free' | 'starter' | 'growth' | 'pro';
 
 export interface UserSubscription {
   plan: SubscriptionPlan;
@@ -80,11 +80,14 @@ export const useSubscription = () => {
       
       if (data && data.length > 0) {
         const planData = data[0];
-        const plan = planData.plan as SubscriptionPlan;
-        const features = PLAN_FEATURES[plan];
+        // Map any legacy 'elite' values to 'pro'
+        let plan = planData.plan as string;
+        if (plan === 'elite') plan = 'pro';
+        const safePlan = plan as SubscriptionPlan;
+        const features = PLAN_FEATURES[safePlan as PlanType] || PLAN_FEATURES.free;
         
         setSubscription({
-          plan,
+          plan: safePlan,
           hasAutomations: planData.has_automations,
           hasAiCoach: planData.has_ai_coach,
           hasAnalytics: planData.has_analytics,
