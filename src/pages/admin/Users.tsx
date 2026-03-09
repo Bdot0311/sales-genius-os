@@ -466,7 +466,7 @@ const AdminUsers = () => {
               <Label htmlFor="plan">Plan</Label>
               <Select
                 value={newUser.plan}
-                onValueChange={(value) => setNewUser({ ...newUser, plan: value as 'growth' | 'pro' | 'elite' })}
+                onValueChange={(value) => setNewUser({ ...newUser, plan: value as 'growth' | 'pro' })}
               >
                 <SelectTrigger>
                   <SelectValue />
