@@ -9,20 +9,20 @@ const corsHeaders = {
 };
 
 // Price ID to plan mapping
-// Starter yearly = monthly grants (400/mo), Growth/Pro yearly = annual pool upfront with rollover
-const PRICE_TO_PLAN: Record<string, { plan: 'starter' | 'growth' | 'pro' | 'elite', credits: number, dailyLimit: number, leadsLimit: number, isYearly: boolean, monthlyGrant?: boolean }> = {
-  // Starter Monthly
+// Monthly = credits reset each cycle, Yearly = full annual pool granted upfront
+const PRICE_TO_PLAN: Record<string, { plan: 'starter' | 'growth' | 'pro' | 'elite', credits: number, dailyLimit: number, leadsLimit: number, isYearly: boolean }> = {
+  // Starter Monthly - 400 credits/month
   'price_1T8tywFTerosS6hi0fHQuybr': { plan: 'starter', credits: 400, dailyLimit: 50, leadsLimit: 400, isYearly: false },
-  // Starter Yearly - monthly grant of 400 (billed annually, credits granted monthly)
-  'price_1T8tyxFTerosS6hiSakB51fA': { plan: 'starter', credits: 400, dailyLimit: 50, leadsLimit: 400, isYearly: true, monthlyGrant: true },
-  // Growth Monthly
+  // Starter Yearly - 4,800 credits upfront (400 x 12)
+  'price_1T8tyxFTerosS6hiSakB51fA': { plan: 'starter', credits: 4800, dailyLimit: 50, leadsLimit: 400, isYearly: true },
+  // Growth Monthly - 1,200 credits/month
   'price_1T8tyyFTerosS6hiTsTXkWDa': { plan: 'growth', credits: 1200, dailyLimit: 150, leadsLimit: 1200, isYearly: false },
-  // Growth Yearly - 14,400 annual pool upfront with rollover
-  'price_1T8tyzFTerosS6hiUyzpHnCK': { plan: 'growth', credits: 14400, dailyLimit: 150, leadsLimit: 1200, isYearly: true, monthlyGrant: false },
-  // Pro Monthly
+  // Growth Yearly - 14,400 credits upfront
+  'price_1T8tyzFTerosS6hiUyzpHnCK': { plan: 'growth', credits: 14400, dailyLimit: 150, leadsLimit: 1200, isYearly: true },
+  // Pro Monthly - 3,000 credits/month
   'price_1T8tz0FTerosS6hiKJluR3kk': { plan: 'pro', credits: 3000, dailyLimit: 400, leadsLimit: 3000, isYearly: false },
-  // Pro Yearly - 36,000 annual pool upfront with rollover
-  'price_1T8tz0FTerosS6hiIHNG82Bh': { plan: 'pro', credits: 36000, dailyLimit: 400, leadsLimit: 3000, isYearly: true, monthlyGrant: false },
+  // Pro Yearly - 36,000 credits upfront
+  'price_1T8tz0FTerosS6hiIHNG82Bh': { plan: 'pro', credits: 36000, dailyLimit: 400, leadsLimit: 3000, isYearly: true },
   // Legacy prices (all monthly)
   'price_1SmM2hFTerosS6hiiDXBDIxl': { plan: 'growth', credits: 1200, dailyLimit: 150, leadsLimit: 1200, isYearly: false },
   'price_1SS44wFTerosS6hiCkKQnnoD': { plan: 'growth', credits: 1200, dailyLimit: 150, leadsLimit: 1200, isYearly: false },
