@@ -259,8 +259,8 @@ export const CreditsUsageTab = () => {
                 <Coins className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <p className="font-medium">{planConfig.monthlyCredits}</p>
-                <p className="text-xs text-muted-foreground">Monthly Credits</p>
+                <p className="font-medium">{planConfig.monthlyProspects}</p>
+                <p className="text-xs text-muted-foreground">Monthly Prospects</p>
               </div>
             </div>
             <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
@@ -268,7 +268,7 @@ export const CreditsUsageTab = () => {
                 <Clock className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <p className="font-medium">{planConfig.dailySearchLimit}</p>
+                <p className="font-medium">{planConfig.dailyLimit}</p>
                 <p className="text-xs text-muted-foreground">Daily Limit</p>
               </div>
             </div>

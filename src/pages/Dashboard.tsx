@@ -3,6 +3,7 @@ import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { AddLeadDialog } from "@/components/dashboard/AddLeadDialog";
 import { OnboardingChecklist } from "@/components/dashboard/OnboardingChecklist";
 import { DashboardTour } from "@/components/dashboard/DashboardTour";
+import { ProspectUsageMeter } from "@/components/dashboard/ProspectUsageMeter";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, Users, DollarSign, Calendar, Plus } from "lucide-react";
@@ -150,6 +151,9 @@ const Dashboard = () => {
           </div>
           <AddLeadDialog onLeadAdded={loadStats} />
         </div>
+
+        {/* Prospect Usage Meter */}
+        <ProspectUsageMeter />
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
