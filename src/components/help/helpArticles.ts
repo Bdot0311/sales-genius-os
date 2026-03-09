@@ -1732,8 +1732,7 @@ Build reliable integrations that respect rate limits.
 | Plan | Requests/Min | Requests/Day |
 |------|--------------|--------------|
 | Growth | 30 | 500 |
-| Pro | 60 | 1,000 |
-| Elite | 120 | 5,000 |
+| Pro | 120 | 5,000 |
 
 ### Rate Limit Headers
 

@@ -112,7 +112,7 @@ const AdminAnalytics = () => {
   const revenueData = generateRevenueData();
 
   // Calculate real revenue breakdown
-  const planPrices = { growth: 49, pro: 199, elite: 499 };
+  const planPrices = { free: 0, starter: 39, growth: 89, pro: 179 };
   const revenueBreakdown = planDistribution.map(plan => ({
     ...plan,
     revenue: plan.value * (planPrices[plan.name.toLowerCase() as keyof typeof planPrices] || 0),
