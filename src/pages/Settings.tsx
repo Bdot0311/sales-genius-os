@@ -265,8 +265,8 @@ const Settings = () => {
                 </TabsList>
               </div>
 
-              {/* Second row of tabs (Elite only) */}
-              {subscription?.plan === 'elite' && (
+              {/* Second row of tabs (Pro only) */}
+              {subscription?.plan === 'pro' && (
                 <div className="flex justify-center">
                   <TabsList className="h-auto inline-flex flex-wrap justify-center gap-2 bg-transparent p-0">
                   <TabsTrigger value="api-versions" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
