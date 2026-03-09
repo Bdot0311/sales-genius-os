@@ -485,31 +485,15 @@ serve(async (req) => {
           if (profile) {
             const planDetails = PRICE_TO_PLAN[priceId] || PRICE_TO_PLAN['price_1SmM2hFTerosS6hiiDXBDIxl'];
             
-            // Get current subscription to check existing credits
-            const { data: currentSub } = await supabaseAdmin
-              .from('subscriptions')
-              .select('search_credits_remaining')
-              .eq('user_id', profile.id)
-              .single();
-            
-            // Yearly billing logic:
-            // - Starter yearly (monthlyGrant: true): gets monthly grant of 400, resets each month
-            // - Growth/Pro yearly (monthlyGrant: false): gets full pool upfront, rolls over on renewal
-            // Monthly billing: always resets to base credits
-            
-            let newCredits = planDetails.credits;
-            
-            if (planDetails.isYearly && planDetails.monthlyGrant === false) {
-              // Growth/Pro yearly: rollover - ADD credits to existing balance
-              // On first invoice (new sub), this sets the initial pool
-              // On renewal invoices, this adds to existing balance (rollover)
-              const existingCredits = currentSub?.search_credits_remaining || 0;
-              newCredits = existingCredits + planDetails.credits;
-              logStep("Yearly rollover: adding credits", { existing: existingCredits, adding: planDetails.credits, total: newCredits });
-            } else {
-              // Monthly plans OR Starter yearly (monthlyGrant: true): reset to base
-              logStep("Monthly/Starter yearly: resetting credits", { newCredits });
-            }
+            // Credits logic:
+            // - Monthly plans: reset to monthly allocation each billing cycle
+            // - Yearly plans: full annual pool granted upfront, reset to full pool on renewal
+            const newCredits = planDetails.credits;
+            logStep("Setting credits on billing cycle", { 
+              isYearly: planDetails.isYearly, 
+              credits: newCredits,
+              plan: planDetails.plan 
+            });
             
             const { error: updateError } = await supabaseAdmin
               .from('subscriptions')
