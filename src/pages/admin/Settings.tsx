@@ -48,7 +48,7 @@ const AdminSettings = () => {
     description: "",
     is_enabled: false,
     rollout_percentage: 100,
-    target_plans: ["growth", "pro", "elite"] as string[]
+    target_plans: ["starter", "growth", "pro"] as string[]
   });
 
   useEffect(() => {
