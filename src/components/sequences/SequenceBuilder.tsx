@@ -308,7 +308,7 @@ export function SequenceBuilder() {
                 isLast={index === steps.length - 1}
                 onEdit={() => handleEditStep(step)}
                 onDelete={() => handleDeleteStep(step.id)}
-                sequenceType={sequenceType}
+                sequenceType={sequenceType as 'basic' | 'behavioral' | 'custom'}
               />
             ))}
           </div>
