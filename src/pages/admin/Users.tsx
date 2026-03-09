@@ -43,7 +43,7 @@ const AdminUsers = () => {
     email: '', 
     password: '', 
     full_name: '', 
-    plan: 'elite' as 'free' | 'growth' | 'pro' | 'elite',
+    plan: 'elite' as 'free' | 'starter' | 'growth' | 'pro' | 'elite',
     is_admin: true 
   });
   const [trialDays, setTrialDays] = useState(30);
