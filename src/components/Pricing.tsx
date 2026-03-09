@@ -131,18 +131,6 @@ const paidPlans: PaidPlan[] = [
   },
 ];
 
-const addons = [
-  {
-    prospects: 500,
-    price: "$49",
-    priceId: STRIPE_PRICE_IDS.addon200,
-  },
-  {
-    prospects: 1500,
-    price: "$119",
-    priceId: STRIPE_PRICE_IDS.addon500,
-  },
-];
 
 // Feature comparison table data
 const comparisonCategories = [
