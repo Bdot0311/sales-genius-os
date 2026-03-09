@@ -36,8 +36,10 @@ const plans = [
     price: "$39",
     period: "/month",
     description: "For solo founders and early outbound",
+    mainValue: "Contact up to 400 verified prospects per month",
+    secondaryValue: "4,800 prospects per year",
+    dailyLimit: "50 prospects per day",
     features: [
-      "Up to 500 verified prospects / month",
       "Prospect search",
       "Verified email data",
       "Email export",
@@ -53,8 +55,10 @@ const plans = [
     price: "$89",
     period: "/month",
     description: "For teams booking meetings consistently",
+    mainValue: "Contact up to 1,200 verified prospects per month",
+    secondaryValue: "14,400 prospects per year",
+    dailyLimit: "150 prospects per day",
     features: [
-      "Up to 1,500 verified prospects / month",
       "Advanced prospect filters",
       "Bulk prospect export",
       "AI personalized outreach",
@@ -70,8 +74,10 @@ const plans = [
     price: "$179",
     period: "/month",
     description: "For high-volume outbound operations",
+    mainValue: "Contact up to 3,000 verified prospects per month",
+    secondaryValue: "36,000 prospects per year",
+    dailyLimit: "400 prospects per day",
     features: [
-      "Up to 4,000 verified prospects / month",
       "Advanced automation features",
       "CRM integrations",
       "Team collaboration access",
@@ -84,12 +90,12 @@ const plans = [
 
 const addons = [
   {
-    credits: 500,
+    prospects: 500,
     price: "$49",
     priceId: STRIPE_PRICE_IDS.addon200,
   },
   {
-    credits: 1500,
+    prospects: 1500,
     price: "$119",
     priceId: STRIPE_PRICE_IDS.addon500,
   },
@@ -100,7 +106,8 @@ const comparisonCategories = [
   {
     name: "Verified Prospects",
     features: [
-      { name: "Monthly verified prospects", free: "0", starter: "500", growth: "1,500", pro: "4,000" },
+      { name: "Monthly verified prospects", free: "0", starter: "400", growth: "1,200", pro: "3,000" },
+      { name: "Daily prospect limit", free: "0", starter: "50", growth: "150", pro: "400" },
       { name: "Prospect search", free: "—", starter: true, growth: true, pro: true },
       { name: "Verified email data", free: "—", starter: true, growth: true, pro: true },
       { name: "Advanced prospect filters", free: false, starter: false, growth: true, pro: true },
@@ -140,7 +147,7 @@ const comparisonCategories = [
 const creditFAQs = [
   {
     question: "What are verified prospects?",
-    answer: "Verified prospects are contacts with confirmed, up-to-date data including verified email addresses, job titles, and company information. Each prospect you contact counts toward your monthly limit."
+    answer: "Verified prospects are contacts with confirmed, up-to-date data including verified email addresses, job titles, and company information. Each prospect you contact counts toward your monthly and daily limits."
   },
   {
     question: "Are you charging for searches?",
@@ -148,7 +155,11 @@ const creditFAQs = [
   },
   {
     question: "What happens when I reach my monthly limit?",
-    answer: "You can still access all your saved prospects, pipeline, and campaign features. To contact new verified prospects, you can wait for your monthly reset or purchase an add-on pack."
+    answer: "You'll see a message: \"You've reached your monthly prospect limit. Upgrade your plan or purchase additional prospect packs.\" You can still access all your saved prospects, pipeline, and campaign features."
+  },
+  {
+    question: "What about daily limits?",
+    answer: "Each plan has a daily limit to ensure fair usage: Starter (50/day), Growth (150/day), Pro (400/day). If exceeded, you'll see: \"You've reached today's prospect limit. Please try again tomorrow.\""
   },
   {
     question: "Can I purchase more verified prospects?",
@@ -287,6 +298,23 @@ export const Pricing = () => {
                 </p>
               </div>
 
+              {/* Value propositions for paid plans */}
+              {'mainValue' in plan && plan.mainValue && (
+                <div className={`relative z-10 mb-4 p-3 rounded-lg ${
+                  plan.highlighted ? 'bg-primary-foreground/10' : 'bg-primary/5'
+                }`}>
+                  <p className={`text-sm font-medium ${plan.highlighted ? 'text-primary-foreground' : 'text-foreground'}`}>
+                    {plan.mainValue}
+                  </p>
+                  <p className={`text-xs mt-1 ${plan.highlighted ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                    {plan.secondaryValue}
+                  </p>
+                  <p className={`text-xs mt-1 ${plan.highlighted ? 'text-primary-foreground/60' : 'text-muted-foreground/80'}`}>
+                    {plan.dailyLimit}
+                  </p>
+                </div>
+              )}
+
               <ul className="relative z-10 space-y-3 mb-8">
                 {plan.features.map((feature, i) => (
                   <li key={i} className="flex items-start gap-3">
@@ -402,7 +430,7 @@ export const Pricing = () => {
               
               return (
                 <div 
-                  key={addon.credits}
+                  key={addon.prospects}
                   className={`group relative p-6 rounded-xl border text-center transition-all card-hover-lift ${
                     isCurrentAddon ? 'border-primary bg-primary/5' : 'border-border/30 bg-card/40 hover:border-primary/50'
                   }`}
@@ -411,7 +439,7 @@ export const Pricing = () => {
                   <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none spotlight-card" />
                   
                   <div className="relative z-10">
-                    <div className="text-2xl font-bold mb-1">+{addon.credits.toLocaleString()}</div>
+                    <div className="text-2xl font-bold mb-1">+{addon.prospects.toLocaleString()}</div>
                     <div className="text-sm text-muted-foreground mb-3">verified prospects per month</div>
                     <div className="text-lg font-semibold text-primary mb-4">{addon.price}/mo</div>
                     
