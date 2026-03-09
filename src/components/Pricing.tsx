@@ -400,7 +400,9 @@ export const Pricing = () => {
                     plan.highlighted ? 'bg-primary-foreground/10' : 'bg-primary/5'
                   }`}>
                     <p className={`text-sm font-medium ${plan.highlighted ? 'text-primary-foreground' : 'text-foreground'}`}>
-                      {plan.mainValue}
+                      {billingInterval === 'yearly'
+                        ? `Contact up to ${plan.yearlyProspects.toLocaleString()} verified prospects per year`
+                        : `Contact up to ${plan.monthlyProspects.toLocaleString()} verified prospects per month`}
                     </p>
                     <p className={`text-xs mt-1 ${plan.highlighted ? 'text-primary-foreground/60' : 'text-muted-foreground/80'}`}>
                       {plan.dailyLimit}
