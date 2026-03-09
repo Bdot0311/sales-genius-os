@@ -237,7 +237,6 @@ export const Pricing = () => {
   const [removingAddon, setRemovingAddon] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [billingInterval, setBillingInterval] = useState<BillingInterval>('monthly');
-  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const sectionRef = useRef<HTMLElement>(null);
   const navigate = useNavigate();
 
@@ -264,24 +263,7 @@ export const Pricing = () => {
       return;
     }
 
-    const priceId = billingInterval === 'yearly' ? plan.yearlyPriceId : plan.monthlyPriceId;
-
-    setCheckoutLoading(plan.key);
-    try {
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { priceId },
-      });
-
-      if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, '_blank');
-      }
-    } catch (err) {
-      console.error('Checkout error:', err);
-      toast.error('Payment processing failed. Please try again.');
-    } finally {
-      setCheckoutLoading(null);
-    }
+    navigate(`/checkout?plan=${plan.key}&interval=${billingInterval}`);
   };
 
   const handleAddAddon = async (addonPriceId: string) => {
@@ -442,13 +424,8 @@ export const Pricing = () => {
                         : 'bg-primary text-primary-foreground hover:bg-primary/90'
                   }`}
                   onClick={() => handleCheckout(plan)}
-                  disabled={checkoutLoading === plan.key}
                 >
-                  {checkoutLoading === plan.key ? (
-                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing...</>
-                  ) : (
-                    plan.key === 'free' ? 'Get started free' : 'Start 14-day free trial'
-                  )}
+                  {plan.key === 'free' ? 'Get started free' : 'Start 14-day free trial'}
                 </Button>
               </div>
             );

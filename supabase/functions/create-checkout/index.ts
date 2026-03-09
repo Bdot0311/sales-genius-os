@@ -63,7 +63,6 @@ serve(async (req) => {
           }
         }
       } catch (e) {
-        // Auth failed — continue as guest checkout
         console.log('[CREATE-CHECKOUT] Auth optional, continuing as guest');
       }
     }
@@ -78,8 +77,8 @@ serve(async (req) => {
         },
       ],
       mode: 'subscription',
-      success_url: `${origin}/confirmation?plan=${planName}${userEmail ? `&email=${encodeURIComponent(userEmail)}` : ''}`,
-      cancel_url: `${origin}/pricing?canceled=true`,
+      ui_mode: 'embedded',
+      return_url: `${origin}/confirmation?plan=${planName}&session_id={CHECKOUT_SESSION_ID}`,
       subscription_data: {
         trial_period_days: 14,
       },
@@ -91,12 +90,11 @@ serve(async (req) => {
     } else if (userEmail) {
       sessionParams.customer_email = userEmail;
     }
-    // If neither, Stripe Checkout will collect email from the new user
 
     const session = await stripe.checkout.sessions.create(sessionParams);
 
     return new Response(
-      JSON.stringify({ url: session.url }),
+      JSON.stringify({ clientSecret: session.client_secret }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
   } catch (error) {
