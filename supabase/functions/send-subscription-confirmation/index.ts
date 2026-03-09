@@ -38,25 +38,27 @@ serve(async (req) => {
     const logoUrl = "https://ghgfjnepvxvxrncmskys.supabase.co/storage/v1/object/public/email-assets/salesos-logo.webp";
 
     const planFeatures: Record<string, string[]> = {
-      growth: [
-        "500 search credits per month",
+      starter: [
+        "400 prospect credits per month",
         "Basic lead enrichment",
+        "AI email generator",
+        "Email support"
+      ],
+      growth: [
+        "1,200 prospect credits per month",
+        "Standard lead enrichment",
         "Pipeline management",
+        "Credits roll over monthly",
         "Email support"
       ],
       pro: [
-        "2,000 search credits per month",
-        "Advanced lead enrichment",
+        "3,000 prospect credits per month",
+        "Premium lead enrichment",
         "AI Sales Coach",
         "Workflow automations",
+        "API access & integrations",
+        "Team collaboration",
         "Priority support"
-      ],
-      elite: [
-        "Unlimited search credits",
-        "Full data enrichment suite",
-        "Custom integrations",
-        "Dedicated account manager",
-        "24/7 premium support"
       ]
     };
 
