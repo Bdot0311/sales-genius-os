@@ -262,23 +262,6 @@ export const Pricing = () => {
     navigate(`/checkout?plan=${plan.key}&interval=${billingInterval}`);
   };
 
-  const handleAddAddon = async (addonPriceId: string) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      toast.error('Please sign in and subscribe to a plan first');
-      return;
-    }
-
-    setAddingAddon(addonPriceId);
-    await addAddon(addonPriceId);
-    setAddingAddon(null);
-  };
-
-  const handleRemoveAddon = async () => {
-    setRemovingAddon(true);
-    await removeAddon();
-    setRemovingAddon(false);
-  };
 
   const allPlans: Plan[] = [freePlan, ...paidPlans];
 
