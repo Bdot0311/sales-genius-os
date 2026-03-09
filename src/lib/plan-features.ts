@@ -202,12 +202,12 @@ export const PLAN_FEATURES = {
   
   pro: {
     name: 'Pro',
-    price: 149,
+    price: 179,
     
     // Search Credits
-    monthlySearchCredits: 500,
-    dailySearchLimit: 50,
-    exportTier: 'advanced' as const,
+    monthlySearchCredits: 3000,
+    dailySearchLimit: 400,
+    exportTier: 'unlimited' as const,
     
     // Lead Intelligence Engine
     maxResultsPerSearch: 50,

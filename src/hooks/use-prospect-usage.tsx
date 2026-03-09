@@ -59,14 +59,16 @@ export const useProspectUsage = () => {
       const actualTotal = Math.max(planConfig.monthlyProspects, subData?.search_credits_remaining || 0, remaining);
       const usedFromTotal = Math.max(0, actualTotal - remaining);
 
+      const dailyLimit = planConfig.dailyLimit;
+
       const canRevealProspect = 
         plan !== 'free' && 
-        monthlyUsed < monthlyLimit && 
+        remaining > 0 && 
         dailyUsed < dailyLimit;
 
       setUsage({
-        monthlyUsed: Math.max(0, monthlyUsed),
-        monthlyLimit,
+        monthlyUsed: usedFromTotal,
+        monthlyLimit: actualTotal,
         dailyUsed,
         dailyLimit,
         plan,

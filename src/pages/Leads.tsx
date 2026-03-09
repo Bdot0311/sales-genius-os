@@ -116,7 +116,7 @@ const Leads = () => {
                   toast({
                     title: "Search limit reached",
                     description: credits?.remainingCredits === 0 
-                      ? "You've used all your monthly search credits. Add more credits to continue."
+                      ? "You've used all your search credits. Purchase a credit pack or upgrade your plan to continue."
                       : "You've reached your daily search limit. Try again tomorrow.",
                     variant: "destructive",
                   });

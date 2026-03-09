@@ -92,9 +92,9 @@ export const ProspectUsageMeter = () => {
           <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
             <AlertTriangle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-destructive">Monthly limit reached</p>
+              <p className="text-sm font-medium text-destructive">Prospect limit reached</p>
               <p className="text-xs text-muted-foreground">
-                Upgrade your plan or purchase additional prospect packs.
+                Purchase a credit pack or upgrade your plan to continue.
               </p>
               <Button 
                 size="sm" 

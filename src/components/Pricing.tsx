@@ -178,23 +178,23 @@ const comparisonCategories = [
 const creditFAQs = [
   {
     question: "What are verified prospects?",
-    answer: "Verified prospects are contacts with confirmed, up-to-date data including verified email addresses, job titles, and company information. Each prospect you contact counts toward your monthly and daily limits."
+    answer: "Verified prospects are contacts with confirmed, up-to-date data including verified email addresses, job titles, and company information. Each prospect you contact counts toward your plan limits."
   },
   {
     question: "Are you charging for searches?",
     answer: "No. Searches throughout the platform are completely free. Your plan limit only applies when you access verified prospect data."
   },
   {
-    question: "What happens when I reach my monthly limit?",
-    answer: "You'll see a message: \"You've reached your monthly prospect limit. Upgrade your plan or purchase additional prospect packs.\" You can still access all your saved prospects, pipeline, and campaign features."
+    question: "What happens when I reach my limit?",
+    answer: "You'll see a message letting you know you've reached your prospect limit. You can still access all your saved prospects, pipeline, and campaign features. Purchase a one-time credit pack or upgrade your plan to continue."
   },
   {
     question: "What about daily limits?",
-    answer: "Each plan has a daily limit to ensure fair usage: Starter (50/day), Growth (150/day), Pro (400/day). If exceeded, you'll see: \"You've reached today's prospect limit. Please try again tomorrow.\""
+    answer: "Each plan has a daily limit to ensure fair usage: Starter (50/day), Growth (150/day), Pro (400/day). If exceeded, you'll see a message asking you to try again tomorrow."
   },
   {
     question: "Can I purchase more verified prospects?",
-    answer: "Yes. Add extra verified prospects anytime through your account settings. Choose from add-on packs: +500 prospects for $49/mo or +1,500 prospects for $119/mo."
+    answer: "Yes. Purchase one-time credit packs anytime from your account settings or the pricing page. Choose from packs of 200, 400, or 600 prospects. No recurring commitment, just pay once."
   },
   {
     question: "Is there a free plan?",
@@ -202,7 +202,11 @@ const creditFAQs = [
   },
   {
     question: "Do you offer yearly billing?",
-    answer: "Yes! Save ~20% with annual billing. Starter: $31/mo ($372/yr), Growth: $71/mo ($852/yr), Pro: $143/mo ($1,716/yr). Use the toggle on the pricing cards to switch between monthly and yearly billing."
+    answer: "Yes! Save ~20% with annual billing. With yearly plans, your full annual credit pool is granted upfront: Starter gets 4,800, Growth gets 14,400, and Pro gets 36,000 prospects. Monthly plans reset each billing cycle, with Growth and Pro credits rolling over."
+  },
+  {
+    question: "Do unused credits roll over?",
+    answer: "On monthly plans, Starter credits reset each cycle while Growth and Pro credits roll over to the next month. On yearly plans, you receive your full annual pool upfront to use throughout the year."
   },
   {
     question: "Can I upgrade, downgrade, or cancel anytime?",

@@ -246,12 +246,7 @@ export const CreditsUsageTab = () => {
                   <span>Base Credits</span>
                   <span>{credits.baseCredits}</span>
                 </div>
-                {credits.addonCredits > 0 && (
-                  <div className="flex justify-between text-primary">
-                    <span>Addon Credits</span>
-                    <span>+{credits.addonCredits}</span>
-                  </div>
-                )}
+              </div>
               </div>
             </div>
           </CardContent>
