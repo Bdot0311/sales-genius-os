@@ -12,11 +12,19 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
-// Product IDs for plans and addons (updated for Lusha-aligned pricing)
-const PLAN_PRODUCTS = {
-  'prod_U6gflsh1Zzoh3V': { plan: 'growth', credits: 150, dailyLimit: 15 },
-  'prod_U6gfTND3QdfgcC': { plan: 'pro', credits: 500, dailyLimit: 50 },
-  'prod_U6gfOj1Xgfd1vy': { plan: 'elite', credits: 1500, dailyLimit: 150 },
+// Product IDs for plans and addons (aligned with current pricing tiers)
+const PLAN_PRODUCTS: Record<string, { plan: string, credits: number, dailyLimit: number }> = {
+  // New product IDs (monthly + yearly)
+  'prod_U78FZoAWovU1rX': { plan: 'starter', credits: 400, dailyLimit: 50 },
+  'prod_U78FC92stOkRxS': { plan: 'starter', credits: 400, dailyLimit: 50 },
+  'prod_U78Ff02VQAzrLC': { plan: 'growth', credits: 1200, dailyLimit: 150 },
+  'prod_U78Fk0l7swAukt': { plan: 'growth', credits: 1200, dailyLimit: 150 },
+  'prod_U78Fs2HpZzcZJc': { plan: 'pro', credits: 3000, dailyLimit: 400 },
+  'prod_U78Fuo9Mg04kz9': { plan: 'pro', credits: 3000, dailyLimit: 400 },
+  // Legacy product IDs
+  'prod_U6gflsh1Zzoh3V': { plan: 'starter', credits: 400, dailyLimit: 50 },
+  'prod_U6gfTND3QdfgcC': { plan: 'growth', credits: 1200, dailyLimit: 150 },
+  'prod_U6gfOj1Xgfd1vy': { plan: 'pro', credits: 3000, dailyLimit: 400 },
 };
 
 const ADDON_PRODUCTS = {
