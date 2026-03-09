@@ -9,24 +9,25 @@ const corsHeaders = {
 };
 
 // Price ID to plan mapping - includes both monthly and yearly price IDs
-const PRICE_TO_PLAN: Record<string, { plan: 'starter' | 'growth' | 'pro' | 'elite', credits: number, dailyLimit: number, leadsLimit: number }> = {
+// For yearly plans, credits are the full annual pool (monthly * 12)
+const PRICE_TO_PLAN: Record<string, { plan: 'starter' | 'growth' | 'pro' | 'elite', credits: number, dailyLimit: number, leadsLimit: number, isYearly: boolean }> = {
   // Starter Monthly
-  'price_1T8tywFTerosS6hi0fHQuybr': { plan: 'starter', credits: 400, dailyLimit: 50, leadsLimit: 400 },
-  // Starter Yearly
-  'price_1T8tyxFTerosS6hiSakB51fA': { plan: 'starter', credits: 400, dailyLimit: 50, leadsLimit: 400 },
+  'price_1T8tywFTerosS6hi0fHQuybr': { plan: 'starter', credits: 400, dailyLimit: 50, leadsLimit: 400, isYearly: false },
+  // Starter Yearly (4,800 annual pool upfront)
+  'price_1T8tyxFTerosS6hiSakB51fA': { plan: 'starter', credits: 4800, dailyLimit: 50, leadsLimit: 400, isYearly: true },
   // Growth Monthly
-  'price_1T8tyyFTerosS6hiTsTXkWDa': { plan: 'growth', credits: 1200, dailyLimit: 150, leadsLimit: 1200 },
-  // Growth Yearly
-  'price_1T8tyzFTerosS6hiUyzpHnCK': { plan: 'growth', credits: 1200, dailyLimit: 150, leadsLimit: 1200 },
+  'price_1T8tyyFTerosS6hiTsTXkWDa': { plan: 'growth', credits: 1200, dailyLimit: 150, leadsLimit: 1200, isYearly: false },
+  // Growth Yearly (14,400 annual pool upfront)
+  'price_1T8tyzFTerosS6hiUyzpHnCK': { plan: 'growth', credits: 14400, dailyLimit: 150, leadsLimit: 1200, isYearly: true },
   // Pro Monthly
-  'price_1T8tz0FTerosS6hiKJluR3kk': { plan: 'pro', credits: 3000, dailyLimit: 400, leadsLimit: 3000 },
-  // Pro Yearly
-  'price_1T8tz0FTerosS6hiIHNG82Bh': { plan: 'pro', credits: 3000, dailyLimit: 400, leadsLimit: 3000 },
-  // Legacy prices
-  'price_1SmM2hFTerosS6hiiDXBDIxl': { plan: 'growth', credits: 1200, dailyLimit: 150, leadsLimit: 1200 },
-  'price_1SS44wFTerosS6hiCkKQnnoD': { plan: 'growth', credits: 1200, dailyLimit: 150, leadsLimit: 1200 },
-  'price_1SS456FTerosS6hisBSDPwo4': { plan: 'pro', credits: 3000, dailyLimit: 400, leadsLimit: 3000 },
-  'price_1SS45HFTerosS6hiQtxsNVL4': { plan: 'elite', credits: 999999, dailyLimit: 500, leadsLimit: 999999 },
+  'price_1T8tz0FTerosS6hiKJluR3kk': { plan: 'pro', credits: 3000, dailyLimit: 400, leadsLimit: 3000, isYearly: false },
+  // Pro Yearly (36,000 annual pool upfront)
+  'price_1T8tz0FTerosS6hiIHNG82Bh': { plan: 'pro', credits: 36000, dailyLimit: 400, leadsLimit: 3000, isYearly: true },
+  // Legacy prices (all monthly)
+  'price_1SmM2hFTerosS6hiiDXBDIxl': { plan: 'growth', credits: 1200, dailyLimit: 150, leadsLimit: 1200, isYearly: false },
+  'price_1SS44wFTerosS6hiCkKQnnoD': { plan: 'growth', credits: 1200, dailyLimit: 150, leadsLimit: 1200, isYearly: false },
+  'price_1SS456FTerosS6hisBSDPwo4': { plan: 'pro', credits: 3000, dailyLimit: 400, leadsLimit: 3000, isYearly: false },
+  'price_1SS45HFTerosS6hiQtxsNVL4': { plan: 'elite', credits: 999999, dailyLimit: 500, leadsLimit: 999999, isYearly: false },
 };
 
 // Product ID to plan mapping (fallback)

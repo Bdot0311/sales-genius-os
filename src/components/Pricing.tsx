@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Check, X, Loader2, HelpCircle, Coins } from "lucide-react";
+import { Check, X, HelpCircle, Coins, Zap } from "lucide-react";
 import { STRIPE_PRICE_IDS } from "@/lib/stripe-config";
 import { useSearchCredits } from "@/hooks/use-search-credits";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +12,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { QuickBuyCreditsDialog } from "@/components/dashboard/QuickBuyCreditsDialog";
 
 type BillingInterval = 'monthly' | 'yearly';
 
@@ -130,18 +131,6 @@ const paidPlans: PaidPlan[] = [
   },
 ];
 
-const addons = [
-  {
-    prospects: 500,
-    price: "$49",
-    priceId: STRIPE_PRICE_IDS.addon200,
-  },
-  {
-    prospects: 1500,
-    price: "$119",
-    priceId: STRIPE_PRICE_IDS.addon500,
-  },
-];
 
 // Feature comparison table data
 const comparisonCategories = [
@@ -240,9 +229,8 @@ const renderFeatureValue = (value: boolean | string) => {
 const isPaidPlan = (plan: Plan): plan is PaidPlan => plan.key !== 'free';
 
 export const Pricing = () => {
-  const { credits, addAddon, removeAddon } = useSearchCredits();
-  const [addingAddon, setAddingAddon] = useState<string | null>(null);
-  const [removingAddon, setRemovingAddon] = useState(false);
+  const { credits } = useSearchCredits();
+  const [topupDialogOpen, setTopupDialogOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [billingInterval, setBillingInterval] = useState<BillingInterval>('monthly');
   const sectionRef = useRef<HTMLElement>(null);
@@ -274,23 +262,6 @@ export const Pricing = () => {
     navigate(`/checkout?plan=${plan.key}&interval=${billingInterval}`);
   };
 
-  const handleAddAddon = async (addonPriceId: string) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      toast.error('Please sign in and subscribe to a plan first');
-      return;
-    }
-
-    setAddingAddon(addonPriceId);
-    await addAddon(addonPriceId);
-    setAddingAddon(null);
-  };
-
-  const handleRemoveAddon = async () => {
-    setRemovingAddon(true);
-    await removeAddon();
-    setRemovingAddon(false);
-  };
 
   const allPlans: Plan[] = [freePlan, ...paidPlans];
 
@@ -514,58 +485,28 @@ export const Pricing = () => {
         <div className={`max-w-2xl mx-auto mb-16 md:mb-20 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '300ms' } as React.CSSProperties}>
           <div className="text-center mb-6 sm:mb-8">
             <h3 className="text-lg sm:text-xl font-semibold mb-2">Need more verified prospects?</h3>
-            <p className="text-muted-foreground text-sm">
-              Add extra verified prospects to any paid plan anytime.
+            <p className="text-muted-foreground text-sm mb-6">
+              Purchase one-time credit packs — no commitments, no plan changes.
             </p>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-            {addons.map((addon) => {
-              const isCurrentAddon = credits?.addonPriceId === addon.priceId;
-              const isLoading = addingAddon === addon.priceId;
-              
-              return (
-                <div 
-                  key={addon.prospects}
-                  className={`group relative p-6 rounded-xl border text-center transition-all card-hover-lift ${
-                    isCurrentAddon ? 'border-primary bg-primary/5' : 'border-border/30 bg-card/40 hover:border-primary/50'
-                  }`}
-                >
-                  {/* Spotlight effect */}
-                  <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none spotlight-card" />
-                  
-                  <div className="relative z-10">
-                    <div className="text-2xl font-bold mb-1">+{addon.prospects.toLocaleString()}</div>
-                    <div className="text-sm text-muted-foreground mb-3">verified prospects per month</div>
-                    <div className="text-lg font-semibold text-primary mb-4">{addon.price}/mo</div>
-                    
-                    {isCurrentAddon ? (
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        className="w-full"
-                        onClick={handleRemoveAddon}
-                        disabled={removingAddon}
-                      >
-                        {removingAddon ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Removing...</> : 'Remove'}
-                      </Button>
-                    ) : (
-                      <Button 
-                        variant="outline"
-                        size="sm"
-                        className="w-full"
-                        onClick={() => handleAddAddon(addon.priceId)}
-                        disabled={isLoading || addingAddon !== null}
-                      >
-                        {isLoading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Adding...</> : 'Add to plan'}
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+            <div className="group relative inline-block">
+              <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none spotlight-card" />
+              <Button 
+                onClick={() => setTopupDialogOpen(true)}
+                className="relative z-10 gap-2"
+                size="lg"
+              >
+                <Zap className="w-4 h-4" />
+                Buy credits
+              </Button>
+            </div>
           </div>
         </div>
+
+        <QuickBuyCreditsDialog 
+          open={topupDialogOpen} 
+          onOpenChange={setTopupDialogOpen} 
+        />
 
         {/* Pricing & Credits FAQ */}
         <div className={`max-w-3xl mx-auto scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '400ms' } as React.CSSProperties}>

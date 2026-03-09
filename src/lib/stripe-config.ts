@@ -102,3 +102,35 @@ export const ADDON_CONFIG = {
     price: 119,
   },
 } as const;
+
+// One-time credit top-up packs (Lusha-style)
+export const TOPUP_PACKS = [
+  {
+    priceId: 'price_1T8vsKFTerosS6hitP0ffw6v',
+    prospects: 200,
+    price: '37.50',
+    perTenCredits: '1.88',
+    popular: false,
+  },
+  {
+    priceId: 'price_1T8vsLFTerosS6hiVcWr4NqZ',
+    prospects: 400,
+    price: '67.50',
+    perTenCredits: '1.69',
+    popular: true,
+  },
+  {
+    priceId: 'price_1T8vsNFTerosS6hiB6LZcLUT',
+    prospects: 600,
+    price: '90.00',
+    perTenCredits: '1.50',
+    popular: false,
+  },
+] as const;
+
+// Yearly price IDs for annual pool detection
+export const YEARLY_PRICE_IDS = [
+  STRIPE_PRICE_IDS.starter_yearly,
+  STRIPE_PRICE_IDS.growth_yearly,
+  STRIPE_PRICE_IDS.pro_yearly,
+] as const;

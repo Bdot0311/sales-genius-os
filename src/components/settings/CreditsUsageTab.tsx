@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -8,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useSearchCredits } from "@/hooks/use-search-credits";
 import { PLAN_CONFIG, type PlanType } from "@/lib/stripe-config";
+import { QuickBuyCreditsDialog } from "@/components/dashboard/QuickBuyCreditsDialog";
 import { 
   Coins, 
   TrendingUp, 
@@ -17,7 +19,8 @@ import {
   ArrowUpCircle,
   RefreshCw,
   Zap,
-  History
+  History,
+  ShoppingCart
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 
@@ -31,9 +34,23 @@ interface Transaction {
 }
 
 export const CreditsUsageTab = () => {
-  const { credits, loading, fetchCredits } = useSearchCredits();
+  const { credits, loading, fetchCredits, verifyTopUp } = useSearchCredits();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loadingTransactions, setLoadingTransactions] = useState(true);
+  const [topupDialogOpen, setTopupDialogOpen] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Handle topup verification from URL
+  useEffect(() => {
+    const topupSession = searchParams.get('topup_session');
+    if (topupSession) {
+      verifyTopUp(topupSession).then(() => {
+        // Clear the session param from URL
+        searchParams.delete('topup_session');
+        setSearchParams(searchParams, { replace: true });
+      });
+    }
+  }, [searchParams, setSearchParams, verifyTopUp]);
 
   // Fetch transactions
   const fetchTransactions = async () => {
@@ -285,6 +302,27 @@ export const CreditsUsageTab = () => {
         </CardContent>
       </Card>
 
+      {/* Buy Credits CTA */}
+      <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
+        <CardContent className="py-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-center sm:text-left">
+              <h3 className="font-semibold text-lg flex items-center gap-2 justify-center sm:justify-start">
+                <ShoppingCart className="h-5 w-5 text-primary" />
+                Need more credits?
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Purchase one-time credit packs — no commitments, no plan changes.
+              </p>
+            </div>
+            <Button onClick={() => setTopupDialogOpen(true)} className="gap-2">
+              <Zap className="w-4 h-4" />
+              Buy credits
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Transaction History */}
       <Card>
         <CardHeader>
@@ -367,6 +405,11 @@ export const CreditsUsageTab = () => {
           )}
         </CardContent>
       </Card>
+
+      <QuickBuyCreditsDialog 
+        open={topupDialogOpen} 
+        onOpenChange={setTopupDialogOpen} 
+      />
     </div>
   );
 };

@@ -1936,6 +1936,33 @@ export type Database = {
         }
         Relationships: []
       }
+      topup_payments: {
+        Row: {
+          amount_paid: number
+          created_at: string
+          id: string
+          prospects_added: number
+          stripe_session_id: string
+          user_id: string
+        }
+        Insert: {
+          amount_paid: number
+          created_at?: string
+          id?: string
+          prospects_added: number
+          stripe_session_id: string
+          user_id: string
+        }
+        Update: {
+          amount_paid?: number
+          created_at?: string
+          id?: string
+          prospects_added?: number
+          stripe_session_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_email_templates: {
         Row: {
           created_at: string

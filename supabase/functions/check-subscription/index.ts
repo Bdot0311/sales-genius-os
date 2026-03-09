@@ -12,16 +12,17 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
-// Product IDs for plans and addons (aligned with current pricing tiers)
-const PLAN_PRODUCTS: Record<string, { plan: string, credits: number, dailyLimit: number }> = {
-  // New product IDs (monthly + yearly)
-  'prod_U78FZoAWovU1rX': { plan: 'starter', credits: 400, dailyLimit: 50 },
-  'prod_U78FC92stOkRxS': { plan: 'starter', credits: 400, dailyLimit: 50 },
-  'prod_U78Ff02VQAzrLC': { plan: 'growth', credits: 1200, dailyLimit: 150 },
-  'prod_U78Fk0l7swAukt': { plan: 'growth', credits: 1200, dailyLimit: 150 },
-  'prod_U78Fs2HpZzcZJc': { plan: 'pro', credits: 3000, dailyLimit: 400 },
-  'prod_U78Fuo9Mg04kz9': { plan: 'pro', credits: 3000, dailyLimit: 400 },
-  // Legacy product IDs
+// Product IDs for plans - yearly products get 12x credits
+const PLAN_PRODUCTS: Record<string, { plan: string, credits: number, dailyLimit: number, isYearly?: boolean }> = {
+  // New product IDs - monthly
+  'prod_U78FZoAWovU1rX': { plan: 'starter', credits: 400, dailyLimit: 50, isYearly: false },
+  'prod_U78Ff02VQAzrLC': { plan: 'growth', credits: 1200, dailyLimit: 150, isYearly: false },
+  'prod_U78Fs2HpZzcZJc': { plan: 'pro', credits: 3000, dailyLimit: 400, isYearly: false },
+  // New product IDs - yearly (annual pool upfront)
+  'prod_U78FC92stOkRxS': { plan: 'starter', credits: 4800, dailyLimit: 50, isYearly: true },
+  'prod_U78Fk0l7swAukt': { plan: 'growth', credits: 14400, dailyLimit: 150, isYearly: true },
+  'prod_U78Fuo9Mg04kz9': { plan: 'pro', credits: 36000, dailyLimit: 400, isYearly: true },
+  // Legacy product IDs (monthly)
   'prod_U6gflsh1Zzoh3V': { plan: 'starter', credits: 400, dailyLimit: 50 },
   'prod_U6gfTND3QdfgcC': { plan: 'growth', credits: 1200, dailyLimit: 150 },
   'prod_U6gfOj1Xgfd1vy': { plan: 'pro', credits: 3000, dailyLimit: 400 },

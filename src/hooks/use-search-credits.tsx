@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { PLAN_CONFIG, ADDON_CONFIG, type PlanType, type AddonType } from '@/lib/stripe-config';
+import { PLAN_CONFIG, type PlanType } from '@/lib/stripe-config';
 import { useAdmin } from './use-admin';
 
 interface SearchCredits {
@@ -65,7 +65,7 @@ export const useSearchCredits = () => {
     fetchCredits();
   }, [fetchCredits]);
 
-  const addAddon = useCallback(async (addonPriceId: string) => {
+  const purchaseTopUp = useCallback(async (priceId: string) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -73,46 +73,46 @@ export const useSearchCredits = () => {
         return { success: false };
       }
 
-      const { data, error } = await supabase.functions.invoke('add-subscription-addon', {
-        body: { addonPriceId },
-        headers: { Authorization: `Bearer ${session.access_token}` },
+      const { data, error } = await supabase.functions.invoke('purchase-credit-topup', {
+        body: { priceId },
       });
 
       if (error) throw error;
-      if (data.error) throw new Error(data.error);
+      if (data?.error) throw new Error(data.error);
 
-      toast.success(data.message || 'Addon added successfully');
-      await fetchCredits();
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
+
       return { success: true };
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to add addon';
+      const message = error instanceof Error ? error.message : 'Failed to start checkout';
       toast.error(message);
       return { success: false, error: message };
     }
-  }, [fetchCredits]);
+  }, []);
 
-  const removeAddon = useCallback(async () => {
+  const verifyTopUp = useCallback(async (sessionId: string) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error('Please sign in first');
-        return { success: false };
-      }
+      if (!session) return { success: false };
 
-      const { data, error } = await supabase.functions.invoke('remove-subscription-addon', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
+      const { data, error } = await supabase.functions.invoke('verify-topup-payment', {
+        body: { sessionId },
       });
 
       if (error) throw error;
-      if (data.error) throw new Error(data.error);
+      if (data?.error) throw new Error(data.error);
 
-      toast.success('Addon removed successfully');
+      if (data?.success && !data?.already_processed) {
+        toast.success(`${data.prospects_added} prospect credits added!`);
+      }
+
       await fetchCredits();
-      return { success: true };
+      return { success: true, ...data };
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to remove addon';
-      toast.error(message);
-      return { success: false, error: message };
+      console.error('Error verifying topup:', error);
+      return { success: false };
     }
   }, [fetchCredits]);
 
@@ -176,8 +176,8 @@ export const useSearchCredits = () => {
     credits,
     loading,
     fetchCredits,
-    addAddon,
-    removeAddon,
+    purchaseTopUp,
+    verifyTopUp,
     useCredit,
     // Admins always have unlimited credits
     hasCredits: isAdmin ? true : (credits ? credits.remainingCredits > 0 : false),
