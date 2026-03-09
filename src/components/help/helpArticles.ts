@@ -318,23 +318,25 @@ You can upgrade or downgrade your SalesOS subscription at any time.
 
 ### Plan Options
 
-| Plan | Price | Credits | Features |
-|------|-------|---------|----------|
+| Plan | Price | Verified Prospects | Features |
+|------|-------|-------------------|----------|
 | Free | $0/forever | 0 | View-only dashboard access |
-| Growth | $49/mo | 150 | 25 results/search, standard enrichment |
-| Pro | $149/mo | 500 | 50 results/search, advanced enrichment |
-| Elite | $399/mo | 1,500 | 100 results/search, premium enrichment, API |
+| Starter | $39/mo | 400/month | 50/day limit, AI email generator |
+| Growth | $89/mo | 1,200/month | 150/day limit, advanced filters, 5 sequences |
+| Pro | $179/mo | 3,000/month | 400/day limit, unlimited sequences, API access |
+
+Save ~20% with annual billing: Starter $31/mo, Growth $71/mo, Pro $143/mo.
 
 ### Upgrade Benefits
 
 - Immediate access to new features
 - Pro-rated billing for the current period
-- Higher credit limits applied instantly
+- Higher prospect limits applied instantly
 
 ### Downgrade Notes
 
 - Takes effect at next billing cycle
-- Unused credits don't carry over
+- Unused prospects don't carry over
 - Some features may become unavailable
 
 ### Enterprise Plans
