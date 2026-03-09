@@ -247,7 +247,6 @@ export const CreditsUsageTab = () => {
                   <span>{credits.baseCredits}</span>
                 </div>
               </div>
-              </div>
             </div>
           </CardContent>
         </Card>
