@@ -57,7 +57,7 @@ export const PLAN_CONFIG = {
     yearlyPrice: 31,
     yearlyTotal: 372,
     monthlyProspects: 400,
-    yearlyProspects: 4800,
+    yearlyProspects: 400, // Starter yearly = monthly grant (400/mo), not upfront pool
     dailyLimit: 50,
     emailRevealCost: 1,
     phoneRevealCost: 10,

@@ -12,16 +12,20 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
-// Product IDs for plans - yearly products get 12x credits
-const PLAN_PRODUCTS: Record<string, { plan: string, credits: number, dailyLimit: number, isYearly?: boolean }> = {
+// Product IDs for plans
+// Starter yearly = monthly grants (400/mo), Growth/Pro yearly = annual pool upfront with rollover
+const PLAN_PRODUCTS: Record<string, { plan: string, credits: number, dailyLimit: number, isYearly?: boolean, monthlyGrant?: boolean }> = {
   // New product IDs - monthly
   'prod_U78FZoAWovU1rX': { plan: 'starter', credits: 400, dailyLimit: 50, isYearly: false },
   'prod_U78Ff02VQAzrLC': { plan: 'growth', credits: 1200, dailyLimit: 150, isYearly: false },
   'prod_U78Fs2HpZzcZJc': { plan: 'pro', credits: 3000, dailyLimit: 400, isYearly: false },
-  // New product IDs - yearly (annual pool upfront)
-  'prod_U78FC92stOkRxS': { plan: 'starter', credits: 4800, dailyLimit: 50, isYearly: true },
-  'prod_U78Fk0l7swAukt': { plan: 'growth', credits: 14400, dailyLimit: 150, isYearly: true },
-  'prod_U78Fuo9Mg04kz9': { plan: 'pro', credits: 36000, dailyLimit: 400, isYearly: true },
+  // New product IDs - yearly
+  // Starter yearly: monthly grant of 400 (same as monthly, billed annually)
+  'prod_U78FC92stOkRxS': { plan: 'starter', credits: 400, dailyLimit: 50, isYearly: true, monthlyGrant: true },
+  // Growth yearly: 14,400 annual pool upfront with rollover
+  'prod_U78Fk0l7swAukt': { plan: 'growth', credits: 14400, dailyLimit: 150, isYearly: true, monthlyGrant: false },
+  // Pro yearly: 36,000 annual pool upfront with rollover
+  'prod_U78Fuo9Mg04kz9': { plan: 'pro', credits: 36000, dailyLimit: 400, isYearly: true, monthlyGrant: false },
   // Legacy product IDs (monthly)
   'prod_U6gflsh1Zzoh3V': { plan: 'starter', credits: 400, dailyLimit: 50 },
   'prod_U6gfTND3QdfgcC': { plan: 'growth', credits: 1200, dailyLimit: 150 },
