@@ -68,7 +68,9 @@ const paidPlans: PaidPlan[] = [
     yearlyPrice: 31,
     yearlyTotal: 372,
     description: "For solo founders and early outbound",
-    mainValue: "Contact up to 400 verified prospects per month",
+    mainValue: "Contact up to 400 verified prospects",
+    monthlyProspects: 400,
+    yearlyProspects: 4800,
     dailyLimit: "50 prospects per day",
     features: [
       "Prospect search",
