@@ -185,7 +185,7 @@ export const MessageBlockEditor = ({
             </p>
           </div>
 
-          {isElite && (
+          {isPro && (
             <div className="flex items-center justify-between rounded-lg border p-4">
               <div className="space-y-0.5">
                 <Label htmlFor="shared">Share with team</Label>
