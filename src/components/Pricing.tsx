@@ -266,14 +266,6 @@ export const Pricing = () => {
 
     const priceId = billingInterval === 'yearly' ? plan.yearlyPriceId : plan.monthlyPriceId;
 
-    // Check if user is authenticated
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      toast.error('Please sign in first to start your trial');
-      navigate('/auth');
-      return;
-    }
-
     setCheckoutLoading(plan.key);
     try {
       const { data, error } = await supabase.functions.invoke('create-checkout', {
