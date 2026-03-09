@@ -21,7 +21,7 @@ interface QuickBuyCreditsDialogProps {
 }
 
 export const QuickBuyCreditsDialog = ({ open, onOpenChange }: QuickBuyCreditsDialogProps) => {
-  const [selectedPack, setSelectedPack] = useState(TOPUP_PACKS[1].priceId); // default to middle
+  const [selectedPack, setSelectedPack] = useState<string>(TOPUP_PACKS[1].priceId); // default to middle
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
