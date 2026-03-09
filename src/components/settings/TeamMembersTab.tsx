@@ -158,7 +158,7 @@ export const TeamMembersTab = () => {
                 Team Members
               </CardTitle>
               <CardDescription>
-                Manage up to 10 team accounts (Elite plan feature)
+                Manage up to 10 team accounts (Pro plan feature)
               </CardDescription>
             </div>
             <Button
