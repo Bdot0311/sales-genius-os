@@ -83,7 +83,7 @@ const AdminUsers = () => {
     return userRoles.some(r => r.user_id === userId && r.role === 'admin');
   };
 
-  const updateSubscription = async (userId: string, plan: 'growth' | 'pro' | 'elite') => {
+  const updateSubscription = async (userId: string, plan: 'free' | 'starter' | 'growth' | 'pro' | 'elite') => {
     try {
       const { error } = await supabase.rpc('admin_update_subscription', {
         _user_id: userId,
@@ -313,12 +313,14 @@ const AdminUsers = () => {
                       <TableCell>
                         <Select
                           value={sub.plan}
-                          onValueChange={(value) => updateSubscription(sub.user_id, value as 'growth' | 'pro' | 'elite')}
+                          onValueChange={(value) => updateSubscription(sub.user_id, value as 'free' | 'starter' | 'growth' | 'pro' | 'elite')}
                         >
                           <SelectTrigger className="w-32">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="free">Free</SelectItem>
+                            <SelectItem value="starter">Starter</SelectItem>
                             <SelectItem value="growth">Growth</SelectItem>
                             <SelectItem value="pro">Pro</SelectItem>
                             <SelectItem value="elite">Elite</SelectItem>

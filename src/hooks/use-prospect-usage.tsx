@@ -53,10 +53,18 @@ export const useProspectUsage = () => {
 
       // Use actual remaining credits from DB (works for both monthly and yearly)
       const remaining = subData?.search_credits_remaining || 0;
-      const monthlyLimit = remaining + (planConfig.monthlyProspects - remaining > 0 ? planConfig.monthlyProspects - remaining : 0);
-      const monthlyUsed = Math.max(0, (subData?.search_credits_remaining !== undefined ? (planConfig.monthlyProspects > remaining ? planConfig.monthlyProspects - remaining : 0) : 0));
-      // For yearly plans the base credits can exceed monthlyProspects, so use actual base from DB
-      const actualTotal = Math.max(planConfig.monthlyProspects, subData?.search_credits_remaining || 0, remaining);
+      
+      // Fetch search_credits_base from DB to get the actual pool size
+      // (handles yearly upfront pools and rollover balances)
+      const { data: baseData } = await supabase
+        .from('subscriptions')
+        .select('search_credits_base')
+        .eq('user_id', user.id)
+        .single();
+      
+      const baseCredits = baseData?.search_credits_base || planConfig.monthlyProspects;
+      // Total pool is whichever is larger: base allocation or current remaining (rollover can exceed base)
+      const actualTotal = Math.max(baseCredits, remaining);
       const usedFromTotal = Math.max(0, actualTotal - remaining);
 
       const dailyLimit = planConfig.dailyLimit;

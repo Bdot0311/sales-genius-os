@@ -124,12 +124,11 @@ const Settings = () => {
       price: '$39',
       description: 'For solo founders and early outbound',
       features: [
-        '400 verified prospects / month',
+        '400 prospects / month (resets each cycle)',
         '50 prospects per day',
-        'Prospect search',
-        'Verified email data',
+        'Prospect search & verified emails',
         'AI email generator',
-        'Email support'
+        'Standard support'
       ],
       paymentLink: 'https://buy.stripe.com/9B6dR9ep1a2b0gi1ca1B60u'
     },
@@ -139,11 +138,11 @@ const Settings = () => {
       price: '$89',
       description: 'For teams booking meetings consistently',
       features: [
-        '1,200 verified prospects / month',
+        '1,200 prospects / month (credits roll over)',
         '150 prospects per day',
         'Advanced prospect filters',
         'Bulk prospect export',
-        '5 active sequences',
+        'AI personalized outreach',
         'Priority support'
       ],
       highlighted: true,
@@ -155,12 +154,11 @@ const Settings = () => {
       price: '$179',
       description: 'For high-volume outbound operations',
       features: [
-        '3,000 verified prospects / month',
+        '3,000 prospects / month (credits roll over)',
         '400 prospects per day',
-        'Unlimited sequences',
-        'API access',
-        'Dedicated success manager',
-        'White-label options'
+        'Advanced automation features',
+        'CRM integrations',
+        'Premium support'
       ],
       paymentLink: 'https://buy.stripe.com/8x2bJ15Svfmvd341ca1B60q'
     }

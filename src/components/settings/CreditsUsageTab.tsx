@@ -271,7 +271,7 @@ export const CreditsUsageTab = () => {
               </div>
               <div>
                 <p className="font-medium">{planConfig.monthlyProspects}</p>
-                <p className="text-xs text-muted-foreground">Monthly Prospects</p>
+                <p className="text-xs text-muted-foreground">Prospect Credits</p>
               </div>
             </div>
             <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
