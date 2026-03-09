@@ -10,7 +10,7 @@ const corsHeaders = {
 
 // Price ID to plan mapping
 // Monthly = credits reset each cycle, Yearly = full annual pool granted upfront
-const PRICE_TO_PLAN: Record<string, { plan: 'starter' | 'growth' | 'pro' | 'elite', credits: number, dailyLimit: number, leadsLimit: number, isYearly: boolean }> = {
+const PRICE_TO_PLAN: Record<string, { plan: 'starter' | 'growth' | 'pro', credits: number, dailyLimit: number, leadsLimit: number, isYearly: boolean }> = {
   // Starter Monthly - 400 credits/month
   'price_1T8tywFTerosS6hi0fHQuybr': { plan: 'starter', credits: 400, dailyLimit: 50, leadsLimit: 400, isYearly: false },
   // Starter Yearly - 4,800 credits upfront (400 x 12)
