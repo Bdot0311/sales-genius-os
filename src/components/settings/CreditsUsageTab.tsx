@@ -222,7 +222,7 @@ export const CreditsUsageTab = () => {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-3xl font-bold capitalize">{credits.plan}</span>
-                <Badge variant="secondary">${planConfig.price}/mo</Badge>
+                <Badge variant="secondary">${planConfig.monthlyPrice}/mo</Badge>
               </div>
               <div className="space-y-1 text-sm text-muted-foreground">
                 <div className="flex justify-between">
