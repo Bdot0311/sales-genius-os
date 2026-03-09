@@ -313,7 +313,7 @@ const AdminUsers = () => {
                       <TableCell>
                         <Select
                           value={sub.plan}
-                          onValueChange={(value) => updateSubscription(sub.user_id, value as 'growth' | 'pro' | 'elite')}
+                          onValueChange={(value) => updateSubscription(sub.user_id, value as 'free' | 'starter' | 'growth' | 'pro' | 'elite')}
                         >
                           <SelectTrigger className="w-32">
                             <SelectValue />
