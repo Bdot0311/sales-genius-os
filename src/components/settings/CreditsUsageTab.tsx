@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -8,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useSearchCredits } from "@/hooks/use-search-credits";
 import { PLAN_CONFIG, type PlanType } from "@/lib/stripe-config";
+import { QuickBuyCreditsDialog } from "@/components/dashboard/QuickBuyCreditsDialog";
 import { 
   Coins, 
   TrendingUp, 
@@ -17,7 +19,8 @@ import {
   ArrowUpCircle,
   RefreshCw,
   Zap,
-  History
+  History,
+  ShoppingCart
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 
