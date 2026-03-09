@@ -61,7 +61,7 @@ export const ProspectUsageMeter = () => {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Users className={`w-4 h-4 ${isMonthlyAtLimit ? 'text-destructive' : 'text-primary'}`} />
-              <span className="text-sm font-medium">Monthly Prospects</span>
+              <span className="text-sm font-medium">Prospect Credits</span>
             </div>
             <span className={`text-sm font-semibold ${isMonthlyAtLimit ? 'text-destructive' : isMonthlyNearLimit ? 'text-amber-500' : ''}`}>
               {monthlyUsed.toLocaleString()} / {monthlyLimit.toLocaleString()}
