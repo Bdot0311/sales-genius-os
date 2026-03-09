@@ -81,9 +81,9 @@ const Confirmation = () => {
     // Track purchase conversion when subscription is verified
     if (subscriptionVerified && !emailSentRef.current) {
       const planPrices: Record<string, number> = {
-        growth: 149,
-        pro: 299,
-        elite: 799
+        starter: 39,
+        growth: 89,
+        pro: 179
       };
 
       // Track purchase conversion in Google Analytics
