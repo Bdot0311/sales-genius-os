@@ -177,7 +177,7 @@ serve(async (req) => {
     });
 
     const hasActiveSub = subscriptions.data.length > 0;
-    let plan: 'free' | 'growth' | 'pro' | 'elite' = 'free';
+    let plan: 'free' | 'starter' | 'growth' | 'pro' | 'elite' = 'free';
     let subscriptionEnd: string | null = null;
     let stripeSubscriptionId: string | null = null;
     let baseCredits = 0;
