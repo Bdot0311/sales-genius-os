@@ -33,7 +33,7 @@ interface FeatureFlag {
   target_plans: string[] | null;
 }
 
-const PLAN_OPTIONS = ["growth", "pro", "elite"];
+const PLAN_OPTIONS = ["starter", "growth", "pro"];
 
 const AdminSettings = () => {
   const { toast } = useToast();
@@ -48,7 +48,7 @@ const AdminSettings = () => {
     description: "",
     is_enabled: false,
     rollout_percentage: 100,
-    target_plans: ["growth", "pro", "elite"] as string[]
+    target_plans: ["starter", "growth", "pro"] as string[]
   });
 
   useEffect(() => {
@@ -190,7 +190,7 @@ const AdminSettings = () => {
         description: "",
         is_enabled: false,
         rollout_percentage: 100,
-        target_plans: ["growth", "pro", "elite"]
+        target_plans: ["starter", "growth", "pro"]
       });
       toast({ title: "Feature flag created" });
     } catch (error) {

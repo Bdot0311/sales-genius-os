@@ -236,7 +236,7 @@ export const WhiteLabelTab = () => {
         <Palette className="h-4 w-4" />
         <AlertTitle>White Label Settings</AlertTitle>
         <AlertDescription>
-          Customize branding, colors, and domain settings to make this platform your own (Elite plan feature)
+          Customize branding, colors, and domain settings to make this platform your own (Pro plan feature)
         </AlertDescription>
       </Alert>
 

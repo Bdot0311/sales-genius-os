@@ -497,9 +497,9 @@ async function fetchCachedResults(railwayBaseUrl: string): Promise<{ searches: a
 // Plan credit configuration - must match stripe-config.ts
 const PLAN_CREDITS = {
   free: { monthlyCredits: 0, dailyLimit: 0, maxResultsPerSearch: 0 },
-  growth: { monthlyCredits: 150, dailyLimit: 15, maxResultsPerSearch: 25 },
-  pro: { monthlyCredits: 500, dailyLimit: 50, maxResultsPerSearch: 50 },
-  elite: { monthlyCredits: 1500, dailyLimit: 150, maxResultsPerSearch: 100 },
+  starter: { monthlyCredits: 400, dailyLimit: 50, maxResultsPerSearch: 25 },
+  growth: { monthlyCredits: 1200, dailyLimit: 150, maxResultsPerSearch: 50 },
+  pro: { monthlyCredits: 3000, dailyLimit: 400, maxResultsPerSearch: 100 },
 };
 
 serve(async (req) => {
@@ -729,8 +729,8 @@ serve(async (req) => {
     // Enforce plan-based maxResultsPerSearch limit
     const page = filters.page || 1;
     
-    // Get plan config for results-per-search enforcement (admins get elite limits)
-    const userPlanConfig = isAdmin ? PLAN_CREDITS.elite : PLAN_CREDITS[(filters as any)._plan as keyof typeof PLAN_CREDITS] || PLAN_CREDITS.growth;
+    // Get plan config for results-per-search enforcement (admins get pro limits)
+    const userPlanConfig = isAdmin ? PLAN_CREDITS.pro : PLAN_CREDITS[(filters as any)._plan as keyof typeof PLAN_CREDITS] || PLAN_CREDITS.growth;
     
     // Look up actual plan from subscription if not admin
     let maxResults = 100; // default for admin

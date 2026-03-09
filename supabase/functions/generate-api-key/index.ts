@@ -36,17 +36,17 @@ serve(async (req) => {
     if (!user) throw new Error("User not authenticated");
     logStep("User authenticated", { userId: user.id });
 
-    // Check if user has Elite plan
+    // Check if user has Pro plan
     const { data: subscription } = await supabaseClient
       .from("subscriptions")
       .select("plan")
       .eq("user_id", user.id)
       .single();
 
-    if (!subscription || subscription.plan !== "elite") {
-      throw new Error("API key generation is only available for Elite plan users");
+    if (!subscription || (subscription.plan !== "pro" && subscription.plan !== "elite")) {
+      throw new Error("API key generation is only available for Pro plan users");
     }
-    logStep("Elite plan verified");
+    logStep("Pro plan verified");
 
     const { name } = await req.json();
     if (!name) throw new Error("API key name is required");
@@ -92,9 +92,9 @@ serve(async (req) => {
     logStep("ERROR", { message: errorMessage });
     // Return generic error messages to avoid leaking internal details
     const isAuthError = errorMessage.includes('auth') || errorMessage.includes('Authentication');
-    const isPlanError = errorMessage.includes('Elite plan');
+    const isPlanError = errorMessage.includes('Pro plan');
     return new Response(
-      JSON.stringify({ error: isAuthError ? 'Authentication required' : isPlanError ? 'Elite plan required' : 'Operation failed' }),
+      JSON.stringify({ error: isAuthError ? 'Authentication required' : isPlanError ? 'Pro plan required' : 'Operation failed' }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: isAuthError ? 401 : isPlanError ? 403 : 500,

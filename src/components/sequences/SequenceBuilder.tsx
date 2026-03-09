@@ -351,7 +351,7 @@ export function SequenceBuilder() {
                       {trigger.label}
                       {trigger.tier !== 'basic' && (
                         <Badge variant="outline" className="ml-2 text-xs">
-                          {trigger.tier === 'behavioral' ? 'Pro' : 'Elite'}
+                          {trigger.tier === 'behavioral' ? 'Growth' : 'Pro'}
                         </Badge>
                       )}
                     </SelectItem>

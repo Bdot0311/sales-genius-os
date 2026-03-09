@@ -161,37 +161,37 @@ export const SoftwareApplicationSchema = () => {
     "releaseNotes": "Latest release includes enhanced AI lead scoring, improved email generation, and new CRM integrations.",
     "offers": {
       "@type": "AggregateOffer",
-      "lowPrice": "149",
-      "highPrice": "799",
+      "lowPrice": "39",
+      "highPrice": "179",
       "priceCurrency": "USD",
       "offerCount": "3",
       "offers": [
         {
           "@type": "Offer",
-          "name": "Growth Plan",
-          "price": "149",
+          "name": "Starter Plan",
+          "price": "39",
           "priceCurrency": "USD",
           "priceValidUntil": "2027-12-31",
           "availability": "https://schema.org/InStock",
-          "description": "For solo founders - 350 search credits, AI email generation, lead intelligence engine"
+          "description": "For solo founders - 400 prospect credits, AI email generation, verified emails"
+        },
+        {
+          "@type": "Offer",
+          "name": "Growth Plan",
+          "price": "89",
+          "priceCurrency": "USD",
+          "priceValidUntil": "2027-12-31",
+          "availability": "https://schema.org/InStock",
+          "description": "For growing teams - 1,200 prospect credits, advanced filters, bulk export, campaign automation"
         },
         {
           "@type": "Offer",
           "name": "Pro Plan",
-          "price": "299",
+          "price": "179",
           "priceCurrency": "USD",
           "priceValidUntil": "2027-12-31",
           "availability": "https://schema.org/InStock",
-          "description": "For growing teams - 700 search credits, AI Sales Coach, advanced analytics, automations"
-        },
-        {
-          "@type": "Offer",
-          "name": "Elite Plan",
-          "price": "799",
-          "priceCurrency": "USD",
-          "priceValidUntil": "2027-12-31",
-          "availability": "https://schema.org/InStock",
-          "description": "High-volume outbound - 2000 search credits, API access, white-label, dedicated success manager"
+          "description": "High-volume outbound - 3,000 prospect credits, API access, CRM integrations, team collaboration"
         }
       ]
     },
@@ -649,9 +649,18 @@ export const ServiceSchema = () => {
           "@type": "Offer",
           "itemOffered": {
             "@type": "Service",
+            "name": "Starter Plan"
+          },
+          "price": "39",
+          "priceCurrency": "USD"
+        },
+        {
+          "@type": "Offer",
+          "itemOffered": {
+            "@type": "Service",
             "name": "Growth Plan"
           },
-          "price": "149",
+          "price": "89",
           "priceCurrency": "USD"
         },
         {
@@ -660,16 +669,7 @@ export const ServiceSchema = () => {
             "@type": "Service",
             "name": "Pro Plan"
           },
-          "price": "299",
-          "priceCurrency": "USD"
-        },
-        {
-          "@type": "Offer",
-          "itemOffered": {
-            "@type": "Service",
-            "name": "Elite Plan"
-          },
-          "price": "799",
+          "price": "179",
           "priceCurrency": "USD"
         }
       ]

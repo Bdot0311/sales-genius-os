@@ -544,7 +544,7 @@ const ApiDocs = () => {
                 <div>
                   <h3 className="font-semibold mb-2">Authentication</h3>
                   <p className="text-sm text-muted-foreground mb-2">
-                    Include your API key in the <code className="bg-muted px-1.5 py-0.5 rounded text-xs">X-API-Key</code> header. Generate API keys from the <strong>Settings → API Keys</strong> page (Elite plan).
+                    Include your API key in the <code className="bg-muted px-1.5 py-0.5 rounded text-xs">X-API-Key</code> header. Generate API keys from the <strong>Settings → API Keys</strong> page (Pro plan).
                   </p>
                   <code className="bg-muted px-3 py-1 rounded text-sm block">X-API-Key: sk_your_api_key_here</code>
                 </div>
