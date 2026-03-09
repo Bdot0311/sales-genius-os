@@ -43,7 +43,7 @@ export const PlanLimitBadge = ({
         </TooltipTrigger>
         <TooltipContent>
           {isAtLimit ? (
-            <p>Limit reached. Higher limits available on {upgradePlan === 'pro' ? 'Pro' : 'Elite'}.</p>
+            <p>Limit reached. Higher limits available on Pro.</p>
           ) : isNearLimit ? (
             <p>Approaching limit. Consider upgrading for more capacity.</p>
           ) : isUnlimited ? (

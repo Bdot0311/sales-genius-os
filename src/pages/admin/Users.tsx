@@ -17,7 +17,7 @@ interface UserSubscription {
   user_id: string;
   email: string;
   full_name: string;
-  plan: 'free' | 'starter' | 'growth' | 'pro' | 'elite';
+  plan: 'free' | 'starter' | 'growth' | 'pro';
   status: string;
   account_status: string;
   leads_limit: number;
@@ -43,7 +43,7 @@ const AdminUsers = () => {
     email: '', 
     password: '', 
     full_name: '', 
-    plan: 'elite' as 'free' | 'starter' | 'growth' | 'pro' | 'elite',
+    plan: 'pro' as 'free' | 'starter' | 'growth' | 'pro',
     is_admin: true 
   });
   const [trialDays, setTrialDays] = useState(30);
@@ -58,7 +58,12 @@ const AdminUsers = () => {
     try {
       const { data, error } = await supabase.rpc('admin_get_all_subscriptions');
       if (error) throw error;
-      setSubscriptions(data || []);
+      // Map any legacy 'elite' plan values to 'pro'
+      const mapped = (data || []).map((s: any) => ({
+        ...s,
+        plan: s.plan === 'elite' ? 'pro' : s.plan,
+      }));
+      setSubscriptions(mapped);
     } catch (error) {
       console.error('Error loading subscriptions:', error);
       toast.error('Failed to load subscriptions');
@@ -83,7 +88,7 @@ const AdminUsers = () => {
     return userRoles.some(r => r.user_id === userId && r.role === 'admin');
   };
 
-  const updateSubscription = async (userId: string, plan: 'free' | 'starter' | 'growth' | 'pro' | 'elite') => {
+  const updateSubscription = async (userId: string, plan: 'free' | 'starter' | 'growth' | 'pro') => {
     try {
       const { error } = await supabase.rpc('admin_update_subscription', {
         _user_id: userId,
@@ -106,7 +111,7 @@ const AdminUsers = () => {
       if (error) throw error;
       toast.success(newUser.is_admin ? 'Admin team member created successfully' : 'User created successfully');
       setCreateUserOpen(false);
-      setNewUser({ email: '', password: '', full_name: '', plan: 'elite', is_admin: true });
+      setNewUser({ email: '', password: '', full_name: '', plan: 'pro', is_admin: true });
       loadSubscriptions();
       loadUserRoles();
     } catch (error) {
@@ -313,7 +318,7 @@ const AdminUsers = () => {
                       <TableCell>
                         <Select
                           value={sub.plan}
-                          onValueChange={(value) => updateSubscription(sub.user_id, value as 'free' | 'starter' | 'growth' | 'pro' | 'elite')}
+                          onValueChange={(value) => updateSubscription(sub.user_id, value as 'free' | 'starter' | 'growth' | 'pro')}
                         >
                           <SelectTrigger className="w-32">
                             <SelectValue />
@@ -323,7 +328,6 @@ const AdminUsers = () => {
                             <SelectItem value="starter">Starter</SelectItem>
                             <SelectItem value="growth">Growth</SelectItem>
                             <SelectItem value="pro">Pro</SelectItem>
-                            <SelectItem value="elite">Elite</SelectItem>
                           </SelectContent>
                         </Select>
                       </TableCell>
@@ -462,7 +466,7 @@ const AdminUsers = () => {
               <Label htmlFor="plan">Plan</Label>
               <Select
                 value={newUser.plan}
-                onValueChange={(value) => setNewUser({ ...newUser, plan: value as 'growth' | 'pro' | 'elite' })}
+                onValueChange={(value) => setNewUser({ ...newUser, plan: value as 'growth' | 'pro' })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -470,7 +474,6 @@ const AdminUsers = () => {
                 <SelectContent>
                   <SelectItem value="growth">Growth</SelectItem>
                   <SelectItem value="pro">Pro</SelectItem>
-                  <SelectItem value="elite">Elite</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -27,7 +27,7 @@ const PricingPage = () => {
     {
       icon: Users,
       title: "Unlimited Team Members",
-      description: "All Pro and Elite plans include unlimited team seats at no extra cost."
+      description: "Pro plan includes unlimited team seats at no extra cost."
     },
     {
       icon: Shield,

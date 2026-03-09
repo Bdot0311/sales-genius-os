@@ -65,7 +65,7 @@ serve(async (req) => {
 
     // Profile and subscription will be created by triggers
     // Update the subscription plan if needed
-    const leadsLimit = plan === 'growth' ? 1000 : plan === 'pro' ? 10000 : 999999;
+    const leadsLimit = plan === 'growth' ? 1000 : plan === 'pro' ? 10000 : 400;
     await supabaseClient
       .from('subscriptions')
       .update({ 

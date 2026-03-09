@@ -85,7 +85,7 @@ export function SequenceBuilder() {
   const maxSteps = features.stepsPerSequence;
   const isUnlimited = maxSteps === -1 || isAdmin;
   const canAddMoreSteps = isUnlimited || steps.length < maxSteps;
-  const sequenceType = features.sequenceType === 'none' ? 'basic' : features.sequenceType;
+  const sequenceType: string = features.sequenceType === 'none' ? 'basic' : features.sequenceType;
 
   const triggerConditions = [
     { value: 'on_enroll', label: 'When enrolled', tier: 'basic' },
@@ -271,7 +271,7 @@ export function SequenceBuilder() {
       {!canAddMoreSteps && (
         <UpgradePrompt
           feature="More Sequence Steps"
-          requiredPlan={currentPlan === 'growth' ? 'pro' : 'elite'}
+          requiredPlan="pro"
         />
       )}
 
@@ -308,7 +308,7 @@ export function SequenceBuilder() {
                 isLast={index === steps.length - 1}
                 onEdit={() => handleEditStep(step)}
                 onDelete={() => handleDeleteStep(step.id)}
-                sequenceType={sequenceType}
+                sequenceType={sequenceType as 'basic' | 'behavioral' | 'custom'}
               />
             ))}
           </div>

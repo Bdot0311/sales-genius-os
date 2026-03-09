@@ -20,7 +20,7 @@ const planMap: Record<string, string> = {
   // Legacy prices
   'price_1SS44wFTerosS6hiCkKQnnoD': 'growth',
   'price_1SS456FTerosS6hisBSDPwo4': 'pro',
-  'price_1SS45HFTerosS6hiQtxsNVL4': 'elite',
+  'price_1SS45HFTerosS6hiQtxsNVL4': 'pro',
 };
 
 serve(async (req) => {

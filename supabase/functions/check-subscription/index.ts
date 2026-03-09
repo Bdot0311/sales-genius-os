@@ -92,7 +92,7 @@ serve(async (req) => {
 
       return new Response(JSON.stringify({ 
         subscribed: true,
-        plan: adminSub?.plan || 'elite',
+        plan: adminSub?.plan || 'pro',
         status: 'active',
         is_admin: true,
         search_credits_base: adminSub?.search_credits_base || 2000,
@@ -179,7 +179,7 @@ serve(async (req) => {
     });
 
     const hasActiveSub = subscriptions.data.length > 0;
-    let plan: 'free' | 'starter' | 'growth' | 'pro' | 'elite' = 'free';
+    let plan: 'free' | 'starter' | 'growth' | 'pro' = 'free';
     let subscriptionEnd: string | null = null;
     let stripeSubscriptionId: string | null = null;
     let baseCredits = 0;
@@ -204,7 +204,7 @@ serve(async (req) => {
         // Check if it's a base plan
         if (PLAN_PRODUCTS[productId as keyof typeof PLAN_PRODUCTS]) {
           const planInfo = PLAN_PRODUCTS[productId as keyof typeof PLAN_PRODUCTS];
-          plan = planInfo.plan as 'starter' | 'growth' | 'pro' | 'elite';
+          plan = planInfo.plan as 'starter' | 'growth' | 'pro';
           baseCredits = planInfo.credits;
           logStep('Detected base plan', { plan, baseCredits });
         }
@@ -220,7 +220,7 @@ serve(async (req) => {
 
       // Sync to database (only if authenticated)
       if (userId) {
-        const leadsLimit = plan === 'free' ? 0 : plan === 'starter' ? 400 : plan === 'growth' ? 1200 : plan === 'pro' ? 3000 : 999999;
+        const leadsLimit = plan === 'free' ? 0 : plan === 'starter' ? 400 : plan === 'growth' ? 1200 : 3000;
         
         // Get current subscription to preserve remaining credits if same billing cycle
         const { data: currentSub } = await supabaseClient

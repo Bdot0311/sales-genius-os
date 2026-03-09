@@ -10,7 +10,7 @@ const corsHeaders = {
 
 // Price ID to plan mapping
 // Monthly = credits reset each cycle, Yearly = full annual pool granted upfront
-const PRICE_TO_PLAN: Record<string, { plan: 'starter' | 'growth' | 'pro' | 'elite', credits: number, dailyLimit: number, leadsLimit: number, isYearly: boolean }> = {
+const PRICE_TO_PLAN: Record<string, { plan: 'starter' | 'growth' | 'pro', credits: number, dailyLimit: number, leadsLimit: number, isYearly: boolean }> = {
   // Starter Monthly - 400 credits/month
   'price_1T8tywFTerosS6hi0fHQuybr': { plan: 'starter', credits: 400, dailyLimit: 50, leadsLimit: 400, isYearly: false },
   // Starter Yearly - 4,800 credits upfront (400 x 12)
@@ -27,11 +27,11 @@ const PRICE_TO_PLAN: Record<string, { plan: 'starter' | 'growth' | 'pro' | 'elit
   'price_1SmM2hFTerosS6hiiDXBDIxl': { plan: 'growth', credits: 1200, dailyLimit: 150, leadsLimit: 1200, isYearly: false },
   'price_1SS44wFTerosS6hiCkKQnnoD': { plan: 'growth', credits: 1200, dailyLimit: 150, leadsLimit: 1200, isYearly: false },
   'price_1SS456FTerosS6hisBSDPwo4': { plan: 'pro', credits: 3000, dailyLimit: 400, leadsLimit: 3000, isYearly: false },
-  'price_1SS45HFTerosS6hiQtxsNVL4': { plan: 'elite', credits: 999999, dailyLimit: 500, leadsLimit: 999999, isYearly: false },
+  'price_1SS45HFTerosS6hiQtxsNVL4': { plan: 'pro', credits: 3000, dailyLimit: 400, leadsLimit: 3000, isYearly: false },
 };
 
 // Product ID to plan mapping (fallback)
-const PRODUCT_TO_PLAN: Record<string, 'starter' | 'growth' | 'pro' | 'elite'> = {
+const PRODUCT_TO_PLAN: Record<string, 'starter' | 'growth' | 'pro'> = {
   // New product IDs
   'prod_U78FZoAWovU1rX': 'starter',
   'prod_U78FC92stOkRxS': 'starter',
@@ -42,7 +42,7 @@ const PRODUCT_TO_PLAN: Record<string, 'starter' | 'growth' | 'pro' | 'elite'> = 
   // Legacy product IDs
   'prod_TjpiXbauY0T3RF': 'growth',
   'prod_TOrozUbuuN18RP': 'pro',
-  'prod_TOrod7SaIV2D7s': 'elite',
+  'prod_TOrod7SaIV2D7s': 'pro',
   'prod_U6gflsh1Zzoh3V': 'starter',
   'prod_U6gfTND3QdfgcC': 'growth',
   'prod_U6gfOj1Xgfd1vy': 'pro',

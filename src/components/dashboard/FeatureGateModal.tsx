@@ -88,23 +88,7 @@ export const FeatureGateModal = ({ open, onOpenChange, feature, currentPlan }: F
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <TrendingUp className="w-4 h-4 text-primary" />
-                  <span>Advanced automation & CRM integrations</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <TrendingUp className="w-4 h-4 text-primary" />
-                  <span>Revenue forecasting & analytics</span>
-                </div>
-              </>
-            )}
-            {targetPlan === 'elite' && (
-              <>
-                <div className="flex items-center gap-2 text-sm">
-                  <TrendingUp className="w-4 h-4 text-primary" />
-                  <span>Unlimited sequences & automations</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <TrendingUp className="w-4 h-4 text-primary" />
-                  <span>API access & custom integrations</span>
+                  <span>Unlimited sequences, API access & integrations</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <TrendingUp className="w-4 h-4 text-primary" />

@@ -70,9 +70,10 @@ const AdminAnalytics = () => {
         }, {});
 
         setPlanDistribution([
+          { name: 'Free', value: planCounts['free'] || 0, color: 'hsl(var(--chart-4))' },
+          { name: 'Starter', value: planCounts['starter'] || 0, color: 'hsl(var(--chart-5))' },
           { name: 'Growth', value: planCounts['growth'] || 0, color: 'hsl(var(--chart-1))' },
           { name: 'Pro', value: planCounts['pro'] || 0, color: 'hsl(var(--chart-2))' },
-          { name: 'Elite', value: planCounts['elite'] || 0, color: 'hsl(var(--chart-3))' },
         ]);
       }
     } catch (error) {
@@ -111,7 +112,7 @@ const AdminAnalytics = () => {
   const revenueData = generateRevenueData();
 
   // Calculate real revenue breakdown
-  const planPrices = { growth: 49, pro: 199, elite: 499 };
+  const planPrices = { free: 0, starter: 39, growth: 89, pro: 179 };
   const revenueBreakdown = planDistribution.map(plan => ({
     ...plan,
     revenue: plan.value * (planPrices[plan.name.toLowerCase() as keyof typeof planPrices] || 0),

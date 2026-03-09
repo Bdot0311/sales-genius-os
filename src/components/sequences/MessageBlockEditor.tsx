@@ -64,7 +64,7 @@ export const MessageBlockEditor = ({
     }
   );
 
-  const isElite = currentPlan === 'elite';
+  const isPro = currentPlan === 'pro';
 
   const handleSave = async () => {
     if (!formData.name.trim() || !formData.content.trim()) {
@@ -89,7 +89,7 @@ export const MessageBlockEditor = ({
             name: formData.name,
             category: formData.category,
             content: formData.content,
-            is_shared: isElite ? formData.is_shared : false,
+            is_shared: isPro ? formData.is_shared : false,
             updated_at: new Date().toISOString(),
           })
           .eq('id', block.id);
@@ -105,7 +105,7 @@ export const MessageBlockEditor = ({
             name: formData.name,
             category: formData.category,
             content: formData.content,
-            is_shared: isElite ? formData.is_shared : false,
+            is_shared: isPro ? formData.is_shared : false,
           });
 
         if (error) throw error;
@@ -185,7 +185,7 @@ export const MessageBlockEditor = ({
             </p>
           </div>
 
-          {isElite && (
+          {isPro && (
             <div className="flex items-center justify-between rounded-lg border p-4">
               <div className="space-y-0.5">
                 <Label htmlFor="shared">Share with team</Label>

@@ -11,13 +11,13 @@ const corsHeaders = {
 const SALESOS_PRODUCT_IDS = [
   'prod_TOropirqoOz7Ed', // growth
   'prod_TOrozUbuuN18RP', // pro
-  'prod_TOrod7SaIV2D7s', // elite
+  'prod_TOrod7SaIV2D7s', // pro (legacy elite)
 ];
 
 const SALESOS_PRICE_IDS = [
   'price_1SS44wFTerosS6hiCkKQnnoD', // growth
   'price_1SS456FTerosS6hisBSDPwo4', // pro
-  'price_1SS45HFTerosS6hiQtxsNVL4', // elite
+  'price_1SS45HFTerosS6hiQtxsNVL4', // pro (legacy elite)
 ];
 
 const logStep = (step: string, details?: any) => {
