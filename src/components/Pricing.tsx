@@ -229,9 +229,8 @@ const renderFeatureValue = (value: boolean | string) => {
 const isPaidPlan = (plan: Plan): plan is PaidPlan => plan.key !== 'free';
 
 export const Pricing = () => {
-  const { credits, addAddon, removeAddon } = useSearchCredits();
-  const [addingAddon, setAddingAddon] = useState<string | null>(null);
-  const [removingAddon, setRemovingAddon] = useState(false);
+  const { credits } = useSearchCredits();
+  const [topupDialogOpen, setTopupDialogOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [billingInterval, setBillingInterval] = useState<BillingInterval>('monthly');
   const sectionRef = useRef<HTMLElement>(null);
