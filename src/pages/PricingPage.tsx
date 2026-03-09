@@ -9,6 +9,7 @@ const PricingPage = () => {
   const pricingFAQs = [
     { question: "What are verified prospects?", answer: "Verified prospects are contacts with confirmed, up-to-date data including verified email addresses, job titles, and company information." },
     { question: "Are you charging for searches?", answer: "No. Searches are free. Your plan limit only applies when you access verified prospect data." },
+    { question: "Do you offer yearly billing?", answer: "Yes! Save ~20% with annual billing. Starter: $31/mo ($372/yr), Growth: $71/mo ($852/yr), Pro: $143/mo ($1,716/yr)." },
     { question: "What happens when I reach my monthly limit?", answer: "You can still access saved prospects and pipeline features. To contact new prospects, wait for your reset or purchase an add-on." },
     { question: "Can I purchase more verified prospects?", answer: "Yes. Add-on packs: +500 for $49/mo or +1,500 for $119/mo." },
     { question: "Is there a free plan?", answer: "Yes. Explore the full interface for free. Contacting verified prospects requires a paid plan." },
