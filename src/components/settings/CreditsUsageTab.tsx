@@ -302,6 +302,27 @@ export const CreditsUsageTab = () => {
         </CardContent>
       </Card>
 
+      {/* Buy Credits CTA */}
+      <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
+        <CardContent className="py-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-center sm:text-left">
+              <h3 className="font-semibold text-lg flex items-center gap-2 justify-center sm:justify-start">
+                <ShoppingCart className="h-5 w-5 text-primary" />
+                Need more credits?
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Purchase one-time credit packs — no commitments, no plan changes.
+              </p>
+            </div>
+            <Button onClick={() => setTopupDialogOpen(true)} className="gap-2">
+              <Zap className="w-4 h-4" />
+              Buy credits
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Transaction History */}
       <Card>
         <CardHeader>
