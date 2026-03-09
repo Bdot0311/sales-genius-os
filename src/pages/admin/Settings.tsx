@@ -33,7 +33,7 @@ interface FeatureFlag {
   target_plans: string[] | null;
 }
 
-const PLAN_OPTIONS = ["growth", "pro", "elite"];
+const PLAN_OPTIONS = ["starter", "growth", "pro"];
 
 const AdminSettings = () => {
   const { toast } = useToast();
