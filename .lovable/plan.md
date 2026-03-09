@@ -1,33 +1,43 @@
 
 
-# Replace Stack Comparison with Social Proof Comparison
+## Plan: Embed Stripe Checkout Inside SalesOS
 
-## What Changes
+Instead of redirecting users to Stripe's hosted checkout page in a new tab, we'll use **Stripe Embedded Checkout** to render the payment form directly within SalesOS on a dedicated `/checkout` page.
 
-Remove the current "Your Stack Wasn't Built to Win" comparison section and replace it with a conversion-focused "What Changes When You Switch" section. This new section uses aspirational transformation framing instead of negativity -- showing outcomes teams achieve with SalesOS.
+### How It Works
 
-## Design
+1. User clicks "Start 14-day free trial" on a plan card
+2. User is routed to `/checkout?plan=growth&interval=monthly` (stays on SalesOS)
+3. That page renders Stripe's Embedded Checkout form inline using `@stripe/react-stripe-js`
+4. On completion, user is redirected to the existing `/confirmation` page
 
-- **Heading:** "What Changes When You Switch"
-- **Subheading:** "Teams that consolidate onto SalesOS see measurable improvements across their entire sales operation."
-- **Layout:** Two-column grid with "Before" (neutral, muted) and "With SalesOS" (primary accent, elevated) cards
-- **Bottom:** Social proof line ("Join 500+ sales teams") with CTA button
-- **Animations:** IntersectionObserver scroll-reveal, consistent with existing sections
+### Changes
 
-## Transformation rows
+**1. Install `@stripe/stripe-js` and `@stripe/react-stripe-js`**
+- These packages provide `loadStripe`, `EmbeddedCheckoutProvider`, and `EmbeddedCheckout` components.
 
-| Before (neutral tone) | With SalesOS (outcome) |
-|---|---|
-| Hours toggling between tools | 3x faster lead-to-outreach time |
-| Manual follow-up tracking | Automated sequences with real-time signals |
-| Generic batch emails | AI-personalized outreach, 2-4x higher reply rates |
-| Scattered pipeline data | Single dashboard with deal intelligence |
-| Guesswork on lead quality | AI scoring with 85%+ fit accuracy |
+**2. Update `create-checkout` edge function**
+- Add `ui_mode: 'embedded'` to the Stripe session creation
+- Return `clientSecret` instead of `url` (Stripe returns `client_secret` for embedded mode)
+- Add a `return_url` parameter instead of `success_url` (required for embedded mode)
 
-## Technical Steps
+**3. Create `/checkout` page (`src/pages/Checkout.tsx`)**
+- Reads `plan` and `interval` from URL search params
+- Calls `create-checkout` to get a `clientSecret`
+- Renders `EmbeddedCheckoutProvider` + `EmbeddedCheckout` from `@stripe/react-stripe-js`
+- Shows SalesOS branding/header around the embedded form
+- On completion, Stripe auto-redirects to `/confirmation`
 
-1. **Create** `src/components/landing/SocialProofComparison.tsx` -- new component following existing patterns (container max-w-[1120px], IntersectionObserver, responsive grid)
-2. **Update** `src/components/landing/index.ts` -- swap `StackComparisonSection` export for `SocialProofComparison`
-3. **Update** `src/pages/Index.tsx` -- import and render `SocialProofComparison` in place of `StackComparisonSection`
-4. **Delete** `src/components/landing/StackComparisonSection.tsx`
+**4. Update `src/components/Pricing.tsx`**
+- Change `handleCheckout` to navigate to `/checkout?plan=growth&interval=monthly` instead of opening a new tab
+- Remove the `window.open(data.url, '_blank')` logic
+
+**5. Update `src/App.tsx`**
+- Add route: `/checkout` → lazy-loaded `Checkout` page
+
+### Technical Notes
+- Stripe Embedded Checkout handles all PCI compliance, card collection, and trial setup
+- The embedded form is fully Stripe-managed but renders inside our page — users never leave SalesOS
+- `loadStripe` is initialized with the publishable key (already available via env)
+- The `clientSecret` is fetched server-side and passed to `EmbeddedCheckoutProvider`
 
