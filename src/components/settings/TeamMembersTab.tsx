@@ -218,7 +218,7 @@ export const TeamMembersTab = () => {
           )}
           {members.length >= 10 && (
             <p className="text-sm text-amber-600 mt-4">
-              You've reached the maximum of 10 team members for the Elite plan.
+              You've reached the maximum of 10 team members for the Pro plan.
             </p>
           )}
         </CardContent>

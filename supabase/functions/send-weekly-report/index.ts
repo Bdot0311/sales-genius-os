@@ -161,7 +161,7 @@ serve(async (req) => {
 
                     <div class="footer">
                       <p>This is your weekly automated report from SalesOS</p>
-                      <p>You're receiving this because you're an Elite plan subscriber</p>
+                      <p>You're receiving this because you're a Pro plan subscriber</p>
                     </div>
                   </div>
                 </div>

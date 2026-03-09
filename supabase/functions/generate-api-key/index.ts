@@ -92,9 +92,9 @@ serve(async (req) => {
     logStep("ERROR", { message: errorMessage });
     // Return generic error messages to avoid leaking internal details
     const isAuthError = errorMessage.includes('auth') || errorMessage.includes('Authentication');
-    const isPlanError = errorMessage.includes('Elite plan');
+    const isPlanError = errorMessage.includes('Pro plan');
     return new Response(
-      JSON.stringify({ error: isAuthError ? 'Authentication required' : isPlanError ? 'Elite plan required' : 'Operation failed' }),
+      JSON.stringify({ error: isAuthError ? 'Authentication required' : isPlanError ? 'Pro plan required' : 'Operation failed' }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: isAuthError ? 401 : isPlanError ? 403 : 500,

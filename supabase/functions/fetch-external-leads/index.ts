@@ -729,8 +729,8 @@ serve(async (req) => {
     // Enforce plan-based maxResultsPerSearch limit
     const page = filters.page || 1;
     
-    // Get plan config for results-per-search enforcement (admins get elite limits)
-    const userPlanConfig = isAdmin ? PLAN_CREDITS.elite : PLAN_CREDITS[(filters as any)._plan as keyof typeof PLAN_CREDITS] || PLAN_CREDITS.growth;
+    // Get plan config for results-per-search enforcement (admins get pro limits)
+    const userPlanConfig = isAdmin ? PLAN_CREDITS.pro : PLAN_CREDITS[(filters as any)._plan as keyof typeof PLAN_CREDITS] || PLAN_CREDITS.growth;
     
     // Look up actual plan from subscription if not admin
     let maxResults = 100; // default for admin

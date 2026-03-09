@@ -649,9 +649,18 @@ export const ServiceSchema = () => {
           "@type": "Offer",
           "itemOffered": {
             "@type": "Service",
+            "name": "Starter Plan"
+          },
+          "price": "39",
+          "priceCurrency": "USD"
+        },
+        {
+          "@type": "Offer",
+          "itemOffered": {
+            "@type": "Service",
             "name": "Growth Plan"
           },
-          "price": "149",
+          "price": "89",
           "priceCurrency": "USD"
         },
         {
@@ -660,16 +669,7 @@ export const ServiceSchema = () => {
             "@type": "Service",
             "name": "Pro Plan"
           },
-          "price": "299",
-          "priceCurrency": "USD"
-        },
-        {
-          "@type": "Offer",
-          "itemOffered": {
-            "@type": "Service",
-            "name": "Elite Plan"
-          },
-          "price": "799",
+          "price": "179",
           "priceCurrency": "USD"
         }
       ]
