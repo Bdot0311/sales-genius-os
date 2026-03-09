@@ -107,9 +107,9 @@ const Confirmation = () => {
       emailSentRef.current = true;
       
       const planPricesStr: Record<string, string> = {
-        growth: "$49",
-        pro: "$149",
-        elite: "$399"
+        starter: "$39",
+        growth: "$89",
+        pro: "$179"
       };
 
       supabase.functions.invoke('send-subscription-confirmation', {
