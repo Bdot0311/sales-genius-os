@@ -111,7 +111,7 @@ const AdminUsers = () => {
       if (error) throw error;
       toast.success(newUser.is_admin ? 'Admin team member created successfully' : 'User created successfully');
       setCreateUserOpen(false);
-      setNewUser({ email: '', password: '', full_name: '', plan: 'elite', is_admin: true });
+      setNewUser({ email: '', password: '', full_name: '', plan: 'pro', is_admin: true });
       loadSubscriptions();
       loadUserRoles();
     } catch (error) {
