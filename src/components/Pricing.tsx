@@ -23,6 +23,8 @@ interface PaidPlan {
   yearlyTotal: number;
   description: string;
   mainValue: string;
+  monthlyProspects: number;
+  yearlyProspects: number;
   dailyLimit: string;
   features: string[];
   highlighted?: boolean;
