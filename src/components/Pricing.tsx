@@ -23,6 +23,8 @@ interface PaidPlan {
   yearlyTotal: number;
   description: string;
   mainValue: string;
+  monthlyProspects: number;
+  yearlyProspects: number;
   dailyLimit: string;
   features: string[];
   highlighted?: boolean;
@@ -68,7 +70,9 @@ const paidPlans: PaidPlan[] = [
     yearlyPrice: 31,
     yearlyTotal: 372,
     description: "For solo founders and early outbound",
-    mainValue: "Contact up to 400 verified prospects per month",
+    mainValue: "Contact up to 400 verified prospects",
+    monthlyProspects: 400,
+    yearlyProspects: 4800,
     dailyLimit: "50 prospects per day",
     features: [
       "Prospect search",
@@ -88,7 +92,9 @@ const paidPlans: PaidPlan[] = [
     yearlyPrice: 71,
     yearlyTotal: 852,
     description: "For teams booking meetings consistently",
-    mainValue: "Contact up to 1,200 verified prospects per month",
+    mainValue: "Contact up to 1,200 verified prospects",
+    monthlyProspects: 1200,
+    yearlyProspects: 14400,
     dailyLimit: "150 prospects per day",
     features: [
       "Advanced prospect filters",
@@ -108,7 +114,9 @@ const paidPlans: PaidPlan[] = [
     yearlyPrice: 143,
     yearlyTotal: 1716,
     description: "For high-volume outbound operations",
-    mainValue: "Contact up to 3,000 verified prospects per month",
+    mainValue: "Contact up to 3,000 verified prospects",
+    monthlyProspects: 3000,
+    yearlyProspects: 36000,
     dailyLimit: "400 prospects per day",
     features: [
       "Advanced automation features",
@@ -392,7 +400,9 @@ export const Pricing = () => {
                     plan.highlighted ? 'bg-primary-foreground/10' : 'bg-primary/5'
                   }`}>
                     <p className={`text-sm font-medium ${plan.highlighted ? 'text-primary-foreground' : 'text-foreground'}`}>
-                      {plan.mainValue}
+                      {billingInterval === 'yearly'
+                        ? `Contact up to ${plan.yearlyProspects.toLocaleString()} verified prospects per year`
+                        : `Contact up to ${plan.monthlyProspects.toLocaleString()} verified prospects per month`}
                     </p>
                     <p className={`text-xs mt-1 ${plan.highlighted ? 'text-primary-foreground/60' : 'text-muted-foreground/80'}`}>
                       {plan.dailyLimit}
