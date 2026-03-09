@@ -32,6 +32,7 @@ const Security = lazy(() => import("./pages/Security"));
 const Confirmation = lazy(() => import("./pages/Confirmation"));
 const HelpCenter = lazy(() => import("./pages/HelpCenter"));
 const Install = lazy(() => import("./pages/Install"));
+const Checkout = lazy(() => import("./pages/Checkout"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();

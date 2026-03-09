@@ -264,24 +264,7 @@ export const Pricing = () => {
       return;
     }
 
-    const priceId = billingInterval === 'yearly' ? plan.yearlyPriceId : plan.monthlyPriceId;
-
-    setCheckoutLoading(plan.key);
-    try {
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { priceId },
-      });
-
-      if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, '_blank');
-      }
-    } catch (err) {
-      console.error('Checkout error:', err);
-      toast.error('Payment processing failed. Please try again.');
-    } finally {
-      setCheckoutLoading(null);
-    }
+    navigate(`/checkout?plan=${plan.key}&interval=${billingInterval}`);
   };
 
   const handleAddAddon = async (addonPriceId: string) => {
