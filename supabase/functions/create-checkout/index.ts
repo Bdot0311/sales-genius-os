@@ -7,6 +7,22 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Map price IDs to plan names for success URL
+const planMap: Record<string, string> = {
+  // Monthly prices
+  'price_1T8tywFTerosS6hi0fHQuybr': 'starter',
+  'price_1T8tyyFTerosS6hiTsTXkWDa': 'growth',
+  'price_1T8tz0FTerosS6hiKJluR3kk': 'pro',
+  // Yearly prices
+  'price_1T8tyxFTerosS6hiSakB51fA': 'starter',
+  'price_1T8tyzFTerosS6hiUyzpHnCK': 'growth',
+  'price_1T8tz0FTerosS6hiIHNG82Bh': 'pro',
+  // Legacy prices
+  'price_1SS44wFTerosS6hiCkKQnnoD': 'growth',
+  'price_1SS456FTerosS6hisBSDPwo4': 'pro',
+  'price_1SS45HFTerosS6hiQtxsNVL4': 'elite',
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -33,13 +49,6 @@ serve(async (req) => {
       throw new Error('Price ID is required');
     }
 
-    // Map price IDs to plan names
-    const planMap: Record<string, string> = {
-      'price_1SS44wFTerosS6hiCkKQnnoD': 'growth',
-      'price_1SS456FTerosS6hisBSDPwo4': 'pro',
-      'price_1SS45HFTerosS6hiQtxsNVL4': 'elite'
-    };
-    
     const planName = planMap[priceId] || 'growth';
 
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', { 
@@ -73,9 +82,7 @@ serve(async (req) => {
     );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    // Log detailed error server-side only
     console.error('[CREATE-CHECKOUT] Error:', errorMessage);
-    // Return generic error to client
     return new Response(
       JSON.stringify({ error: "Payment processing failed. Please try again." }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
