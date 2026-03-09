@@ -119,48 +119,48 @@ const Settings = () => {
 
   const plans = [
     {
-      name: 'Growth',
-      value: 'growth',
-      price: '$49',
+      name: 'Starter',
+      value: 'starter',
+      price: '$39',
       description: 'For solo founders and early outbound',
       features: [
-        '150 search credits / month',
-        '25 results per search',
-        'Standard enrichment (Location)',
-        '3 active sequences',
-        'AI Outreach Studio',
+        '400 verified prospects / month',
+        '50 prospects per day',
+        'Prospect search',
+        'Verified email data',
+        'AI email generator',
         'Email support'
       ],
       paymentLink: 'https://buy.stripe.com/9B6dR9ep1a2b0gi1ca1B60u'
     },
     {
-      name: 'Pro',
-      value: 'pro',
-      price: '$149',
+      name: 'Growth',
+      value: 'growth',
+      price: '$89',
       description: 'For teams booking meetings consistently',
       features: [
-        '500 search credits / month',
-        '50 results per search',
-        'Advanced enrichment (+Title/Seniority)',
-        '15 active sequences',
-        'Company enrichment',
+        '1,200 verified prospects / month',
+        '150 prospects per day',
+        'Advanced prospect filters',
+        'Bulk prospect export',
+        '5 active sequences',
         'Priority support'
       ],
       highlighted: true,
       paymentLink: 'https://buy.stripe.com/9B55kD4Or8Y76EGaMK1B60p'
     },
     {
-      name: 'Elite',
-      value: 'elite',
-      price: '$399',
+      name: 'Pro',
+      value: 'pro',
+      price: '$179',
       description: 'For high-volume outbound operations',
       features: [
-        '1,500 search credits / month',
-        '100 results per search',
-        'Premium enrichment (all filters)',
+        '3,000 verified prospects / month',
+        '400 prospects per day',
         'Unlimited sequences',
         'API access',
-        'Dedicated success manager'
+        'Dedicated success manager',
+        'White-label options'
       ],
       paymentLink: 'https://buy.stripe.com/8x2bJ15Svfmvd341ca1B60q'
     }

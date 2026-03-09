@@ -396,52 +396,52 @@ Collaborate with your team by adding members to your SalesOS workspace.
   },
   {
     id: 'ac-3',
-    slug: 'understanding-credit-usage',
-    title: 'Understanding Credit Usage',
+    slug: 'understanding-prospect-usage',
+    title: 'Understanding Prospect Usage',
     category: 'account',
-    description: 'Learn how search credits work and track usage',
+    description: 'Learn how verified prospect limits work and track usage',
     content: `
-## Understanding Credit Usage
+## Understanding Prospect Usage
 
-Credits are used for AI-powered features like lead search and email generation.
+Your plan includes a monthly limit of verified prospects you can contact.
 
-### What Uses Credits?
+### What Counts Against Your Limit?
 
-| Action | Credit Cost |
-|--------|-------------|
-| AI Lead Search | 1 credit per search |
-| AI Email Generation | 1 credit per email |
-| Lead Enrichment | 2 credits per lead |
+| Action | Cost |
+|--------|------|
+| Accessing verified prospect data | 1 prospect |
+| Searching (without accessing data) | Free |
+| AI Email Generation | Free |
 | AI Coach Conversation | Free |
 
 ### Checking Your Balance
 
-- View remaining credits in the top bar
+- View remaining prospects in the top bar
 - Detailed usage in **Settings → Credits & Usage**
 - Historical usage graphs available
 
-### Credit Reset
+### Prospect Reset
 
-- Credits reset monthly on your billing date
-- Unused credits don't roll over
-- Add-on credits purchased separately do roll over
+- Prospects reset monthly on your billing date
+- Unused prospects don't roll over
+- Add-on prospects purchased separately do roll over
 
 ### Running Low?
 
-Options when credits are depleted:
+Options when prospects are depleted:
 1. Wait for monthly reset
-2. Purchase additional credit packs
+2. Purchase additional prospect packs
 3. Upgrade to a higher plan
 
-### Credit Add-ons
+### Prospect Add-ons
 
-- +200 credits: $79/mo
-- +500 credits: $179/mo
+- +500 prospects: $49/mo
+- +1,500 prospects: $119/mo
 
 Purchase from **Settings → Credits & Usage → Buy More**
     `,
     readTime: 4,
-    tags: ['credits', 'usage', 'billing'],
+    tags: ['prospects', 'usage', 'billing'],
     relatedArticles: ['ac-1', 'ft-1'],
     popular: true
   },
