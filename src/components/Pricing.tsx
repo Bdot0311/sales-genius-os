@@ -237,7 +237,6 @@ export const Pricing = () => {
   const [removingAddon, setRemovingAddon] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [billingInterval, setBillingInterval] = useState<BillingInterval>('monthly');
-  const [billingInterval, setBillingInterval] = useState<BillingInterval>('monthly');
   const sectionRef = useRef<HTMLElement>(null);
   const navigate = useNavigate();
 
