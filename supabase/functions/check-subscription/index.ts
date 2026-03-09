@@ -202,7 +202,7 @@ serve(async (req) => {
         // Check if it's a base plan
         if (PLAN_PRODUCTS[productId as keyof typeof PLAN_PRODUCTS]) {
           const planInfo = PLAN_PRODUCTS[productId as keyof typeof PLAN_PRODUCTS];
-          plan = planInfo.plan as 'growth' | 'pro' | 'elite';
+          plan = planInfo.plan as 'starter' | 'growth' | 'pro' | 'elite';
           baseCredits = planInfo.credits;
           logStep('Detected base plan', { plan, baseCredits });
         }
