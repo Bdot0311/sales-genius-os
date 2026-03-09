@@ -114,7 +114,9 @@ const paidPlans: PaidPlan[] = [
     yearlyPrice: 143,
     yearlyTotal: 1716,
     description: "For high-volume outbound operations",
-    mainValue: "Contact up to 3,000 verified prospects per month",
+    mainValue: "Contact up to 3,000 verified prospects",
+    monthlyProspects: 3000,
+    yearlyProspects: 36000,
     dailyLimit: "400 prospects per day",
     features: [
       "Advanced automation features",
