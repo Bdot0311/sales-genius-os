@@ -485,15 +485,29 @@ serve(async (req) => {
           if (profile) {
             const planDetails = PRICE_TO_PLAN[priceId] || PRICE_TO_PLAN['price_1SmM2hFTerosS6hiiDXBDIxl'];
             
+            // Get current credits for rollover calculation
+            const { data: currentSub } = await supabaseAdmin
+              .from('subscriptions')
+              .select('search_credits_remaining')
+              .eq('user_id', profile.id)
+              .single();
+            
             // Credits logic:
-            // - Monthly plans: reset to monthly allocation each billing cycle
             // - Yearly plans: full annual pool granted upfront, reset to full pool on renewal
-            const newCredits = planDetails.credits;
-            logStep("Setting credits on billing cycle", { 
-              isYearly: planDetails.isYearly, 
-              credits: newCredits,
-              plan: planDetails.plan 
-            });
+            // - Monthly Starter: reset to 400 each month (no rollover)
+            // - Monthly Growth/Pro: rollover - ADD new credits to existing balance
+            let newCredits = planDetails.credits;
+            
+            if (!planDetails.isYearly && (planDetails.plan === 'growth' || planDetails.plan === 'pro')) {
+              // Monthly Growth/Pro: rollover - add credits to existing balance
+              const existingCredits = currentSub?.search_credits_remaining || 0;
+              newCredits = existingCredits + planDetails.credits;
+              logStep("Monthly rollover: adding credits", { existing: existingCredits, adding: planDetails.credits, total: newCredits });
+            } else {
+              // Yearly (all plans): full pool upfront / reset on renewal
+              // Monthly Starter: reset to base
+              logStep("Setting credits", { isYearly: planDetails.isYearly, plan: planDetails.plan, credits: newCredits });
+            }
             
             const { error: updateError } = await supabaseAdmin
               .from('subscriptions')
