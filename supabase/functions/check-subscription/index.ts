@@ -92,7 +92,7 @@ serve(async (req) => {
 
       return new Response(JSON.stringify({ 
         subscribed: true,
-        plan: adminSub?.plan || 'elite',
+        plan: adminSub?.plan || 'pro',
         status: 'active',
         is_admin: true,
         search_credits_base: adminSub?.search_credits_base || 2000,
