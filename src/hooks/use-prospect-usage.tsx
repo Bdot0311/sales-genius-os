@@ -102,7 +102,7 @@ export const useProspectUsage = () => {
     if (usage.monthlyUsed >= usage.monthlyLimit) {
       return { 
         allowed: false, 
-        reason: "You've reached your monthly prospect limit. Upgrade your plan or purchase additional prospect packs." 
+        reason: "You've reached your prospect limit. Purchase a credit pack or upgrade your plan." 
       };
     }
 
