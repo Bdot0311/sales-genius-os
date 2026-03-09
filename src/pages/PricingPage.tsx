@@ -44,7 +44,7 @@ const PricingPage = () => {
     <>
       <SEOHead 
         title="Pricing Plans - Free Plan & Paid Plans | SalesOS"
-        description="Start free, upgrade when ready. SalesOS plans from $49/month for Growth to $399/month for Elite with 1,500 search credits. No credit card required for free plan."
+        description="Start free, upgrade when ready. SalesOS plans from $39/month for Starter to $179/month for Pro with 3,000 verified prospects. No credit card required for free plan."
         keywords="SalesOS pricing, sales software pricing, CRM pricing, lead generation pricing, sales automation cost"
         ogImage="https://storage.googleapis.com/gpt-engineer-file-uploads/ZFJK1zezovOpOdjy9TptFukIhhc2/social-images/social-1768238149761-SalesOS full logo.png"
       />

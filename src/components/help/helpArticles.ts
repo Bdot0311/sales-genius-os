@@ -318,23 +318,25 @@ You can upgrade or downgrade your SalesOS subscription at any time.
 
 ### Plan Options
 
-| Plan | Price | Credits | Features |
-|------|-------|---------|----------|
+| Plan | Price | Verified Prospects | Features |
+|------|-------|-------------------|----------|
 | Free | $0/forever | 0 | View-only dashboard access |
-| Growth | $49/mo | 150 | 25 results/search, standard enrichment |
-| Pro | $149/mo | 500 | 50 results/search, advanced enrichment |
-| Elite | $399/mo | 1,500 | 100 results/search, premium enrichment, API |
+| Starter | $39/mo | 400/month | 50/day limit, AI email generator |
+| Growth | $89/mo | 1,200/month | 150/day limit, advanced filters, 5 sequences |
+| Pro | $179/mo | 3,000/month | 400/day limit, unlimited sequences, API access |
+
+Save ~20% with annual billing: Starter $31/mo, Growth $71/mo, Pro $143/mo.
 
 ### Upgrade Benefits
 
 - Immediate access to new features
 - Pro-rated billing for the current period
-- Higher credit limits applied instantly
+- Higher prospect limits applied instantly
 
 ### Downgrade Notes
 
 - Takes effect at next billing cycle
-- Unused credits don't carry over
+- Unused prospects don't carry over
 - Some features may become unavailable
 
 ### Enterprise Plans
@@ -384,9 +386,9 @@ Collaborate with your team by adding members to your SalesOS workspace.
 ### Team Limits by Plan
 
 - **Free**: 1 user
+- **Starter**: 1 user
 - **Growth**: 5 users
-- **Pro**: 15 users
-- **Elite**: Unlimited
+- **Pro**: Unlimited
     `,
     readTime: 3,
     tags: ['team', 'users', 'collaboration'],
@@ -394,52 +396,52 @@ Collaborate with your team by adding members to your SalesOS workspace.
   },
   {
     id: 'ac-3',
-    slug: 'understanding-credit-usage',
-    title: 'Understanding Credit Usage',
+    slug: 'understanding-prospect-usage',
+    title: 'Understanding Prospect Usage',
     category: 'account',
-    description: 'Learn how search credits work and track usage',
+    description: 'Learn how verified prospect limits work and track usage',
     content: `
-## Understanding Credit Usage
+## Understanding Prospect Usage
 
-Credits are used for AI-powered features like lead search and email generation.
+Your plan includes a monthly limit of verified prospects you can contact.
 
-### What Uses Credits?
+### What Counts Against Your Limit?
 
-| Action | Credit Cost |
-|--------|-------------|
-| AI Lead Search | 1 credit per search |
-| AI Email Generation | 1 credit per email |
-| Lead Enrichment | 2 credits per lead |
+| Action | Cost |
+|--------|------|
+| Accessing verified prospect data | 1 prospect |
+| Searching (without accessing data) | Free |
+| AI Email Generation | Free |
 | AI Coach Conversation | Free |
 
 ### Checking Your Balance
 
-- View remaining credits in the top bar
+- View remaining prospects in the top bar
 - Detailed usage in **Settings → Credits & Usage**
 - Historical usage graphs available
 
-### Credit Reset
+### Prospect Reset
 
-- Credits reset monthly on your billing date
-- Unused credits don't roll over
-- Add-on credits purchased separately do roll over
+- Prospects reset monthly on your billing date
+- Unused prospects don't roll over
+- Add-on prospects purchased separately do roll over
 
 ### Running Low?
 
-Options when credits are depleted:
+Options when prospects are depleted:
 1. Wait for monthly reset
-2. Purchase additional credit packs
+2. Purchase additional prospect packs
 3. Upgrade to a higher plan
 
-### Credit Add-ons
+### Prospect Add-ons
 
-- +200 credits: $79/mo
-- +500 credits: $179/mo
+- +500 prospects: $49/mo
+- +1,500 prospects: $119/mo
 
 Purchase from **Settings → Credits & Usage → Buy More**
     `,
     readTime: 4,
-    tags: ['credits', 'usage', 'billing'],
+    tags: ['prospects', 'usage', 'billing'],
     relatedArticles: ['ac-1', 'ft-1'],
     popular: true
   },
