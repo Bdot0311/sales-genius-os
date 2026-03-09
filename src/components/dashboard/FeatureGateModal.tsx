@@ -48,19 +48,35 @@ export const FeatureGateModal = ({ open, onOpenChange, feature, currentPlan }: F
           </div>
           
           <div className="space-y-2">
+            {targetPlan === 'starter' && (
+              <>
+                <div className="flex items-center gap-2 text-sm">
+                  <TrendingUp className="w-4 h-4 text-primary" />
+                  <span>400 verified prospects per month</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <TrendingUp className="w-4 h-4 text-primary" />
+                  <span>Prospect search & verified emails</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <TrendingUp className="w-4 h-4 text-primary" />
+                  <span>AI email generator & templates</span>
+                </div>
+              </>
+            )}
             {targetPlan === 'growth' && (
               <>
                 <div className="flex items-center gap-2 text-sm">
                   <TrendingUp className="w-4 h-4 text-primary" />
-                  <span>150 search credits per month</span>
+                  <span>1,200 verified prospects per month</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <TrendingUp className="w-4 h-4 text-primary" />
-                  <span>Lead search & standard enrichment</span>
+                  <span>Advanced filters & bulk export</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <TrendingUp className="w-4 h-4 text-primary" />
-                  <span>3 active sequences & AI outreach</span>
+                  <span>AI personalized outreach & automation</span>
                 </div>
               </>
             )}
@@ -68,11 +84,11 @@ export const FeatureGateModal = ({ open, onOpenChange, feature, currentPlan }: F
               <>
                 <div className="flex items-center gap-2 text-sm">
                   <TrendingUp className="w-4 h-4 text-primary" />
-                  <span>500 credits & 50 results per search</span>
+                  <span>3,000 verified prospects per month</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <TrendingUp className="w-4 h-4 text-primary" />
-                  <span>Advanced filters & AI features</span>
+                  <span>Advanced automation & CRM integrations</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <TrendingUp className="w-4 h-4 text-primary" />
@@ -92,7 +108,7 @@ export const FeatureGateModal = ({ open, onOpenChange, feature, currentPlan }: F
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <TrendingUp className="w-4 h-4 text-primary" />
-                  <span>Live coaching & custom playbooks</span>
+                  <span>Team collaboration & premium support</span>
                 </div>
               </>
             )}

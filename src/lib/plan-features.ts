@@ -68,6 +68,72 @@ export const PLAN_FEATURES = {
     recommendationLevel: 'none',
   },
 
+  starter: {
+    name: 'Starter',
+    price: 39,
+    
+    // Credits
+    monthlySearchCredits: 400,
+    dailySearchLimit: 50,
+    exportTier: 'standard' as const,
+    
+    // Lead Intelligence Engine
+    maxResultsPerSearch: 10,
+    enrichmentLevel: 'basic',
+    advancedFilters: false,
+    apiAccessLeads: false,
+    
+    // AI Outreach Studio
+    activeSequences: 1,
+    personalizationLevel: 'basic',
+    aiFirstLines: false,
+    multiChannelLogic: false,
+    
+    // Email Sequences
+    stepsPerSequence: 2,
+    sequenceType: 'basic' as const,
+    replyAnalysis: false,
+    handoffAlerts: 'none' as const,
+    relevanceFilter: false,
+    messageBlocks: 3,
+    engagementStates: 'basic' as const,
+    sequenceABTesting: 0,
+    sequenceAnalytics: 'basic' as const,
+    
+    // Meeting Automator
+    calendarConnections: 1,
+    smartRouting: false,
+    priorityBooking: false,
+    
+    // Smart Deal Pipeline
+    automatedStageProgression: false,
+    revenueForecasting: false,
+    customPipelines: false,
+    advancedAutomationTriggers: false,
+    
+    // AI Sales Coach
+    coachingLevel: 'basic',
+    realTimeAnalysis: 'limited',
+    liveCoaching: false,
+    customPlaybooks: false,
+    
+    // Automation Builder
+    automationRules: 2,
+    advancedWorkflows: false,
+    conditionalLogicDepth: 0,
+    
+    // Analytics Dashboard
+    analyticsLevel: 'basic',
+    funnelAnalytics: false,
+    repPerformance: false,
+    customReports: false,
+    dataExports: false,
+    apiAccessAnalytics: false,
+    
+    // AI Recommendations
+    recommendationLevel: 'basic',
+  },
+
   growth: {
     name: 'Growth',
     price: 49,
@@ -423,7 +489,8 @@ export const getPlanFeatures = (plan: PlanType): PlanFeatures => {
 };
 
 export const getNextPlan = (currentPlan: PlanType): PlanType | null => {
-  if (currentPlan === 'free') return 'growth';
+  if (currentPlan === 'free') return 'starter';
+  if (currentPlan === 'starter') return 'growth';
   if (currentPlan === 'growth') return 'pro';
   if (currentPlan === 'pro') return 'elite';
   return null;

@@ -81,9 +81,9 @@ const Confirmation = () => {
     // Track purchase conversion when subscription is verified
     if (subscriptionVerified && !emailSentRef.current) {
       const planPrices: Record<string, number> = {
-        growth: 149,
-        pro: 299,
-        elite: 799
+        starter: 39,
+        growth: 89,
+        pro: 179
       };
 
       // Track purchase conversion in Google Analytics
@@ -107,9 +107,9 @@ const Confirmation = () => {
       emailSentRef.current = true;
       
       const planPricesStr: Record<string, string> = {
-        growth: "$49",
-        pro: "$149",
-        elite: "$399"
+        starter: "$39",
+        growth: "$89",
+        pro: "$179"
       };
 
       supabase.functions.invoke('send-subscription-confirmation', {
@@ -126,29 +126,29 @@ const Confirmation = () => {
   const displayPlan = verifiedPlan || plan;
 
   const planFeatures = {
-    growth: [
-      "150 search credits / month",
-      "25 results per search",
-      "Standard enrichment (Location)",
-      "3 active sequences",
-      "AI Outreach Studio",
-      "Email support"
+    starter: [
+      "400 verified prospects / month",
+      "50 prospects per day",
+      "Prospect search & verified emails",
+      "AI email generator",
+      "Campaign templates",
+      "Standard support"
     ],
-    pro: [
-      "500 search credits / month",
-      "50 results per search",
-      "Advanced enrichment (+Title/Seniority)",
-      "15 active sequences",
-      "Company enrichment",
+    growth: [
+      "1,200 verified prospects / month",
+      "150 prospects per day",
+      "Advanced prospect filters",
+      "Bulk prospect export",
+      "AI personalized outreach",
       "Priority support"
     ],
-    elite: [
-      "1,500 search credits / month",
-      "100 results per search",
-      "Premium enrichment (all filters)",
-      "Unlimited sequences",
-      "API access",
-      "Dedicated success manager"
+    pro: [
+      "3,000 verified prospects / month",
+      "400 prospects per day",
+      "Advanced automation features",
+      "CRM integrations",
+      "Team collaboration access",
+      "Premium support"
     ]
   };
 

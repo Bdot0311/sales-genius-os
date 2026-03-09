@@ -54,14 +54,23 @@ const Analytics = () => {
         ];
         setDealsByStage(stageData);
 
-        const timeData = [
-          { month: "Jan", leads: Math.floor(leads.length * 0.1) },
-          { month: "Feb", leads: Math.floor(leads.length * 0.15) },
-          { month: "Mar", leads: Math.floor(leads.length * 0.2) },
-          { month: "Apr", leads: Math.floor(leads.length * 0.25) },
-          { month: "May", leads: Math.floor(leads.length * 0.3) },
-          { month: "Jun", leads: leads.length },
-        ];
+        // Build real leads-over-time from actual created_at dates
+        const monthCounts: Record<string, number> = {};
+        leads.forEach(lead => {
+          const d = new Date(lead.created_at);
+          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          monthCounts[key] = (monthCounts[key] || 0) + 1;
+        });
+
+        // Get last 6 months
+        const now = new Date();
+        const timeData = [];
+        for (let i = 5; i >= 0; i--) {
+          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          const monthName = d.toLocaleString('default', { month: 'short' });
+          timeData.push({ month: monthName, leads: monthCounts[key] || 0 });
+        }
         setLeadsOverTime(timeData);
       }
     } finally {
@@ -71,6 +80,26 @@ const Analytics = () => {
 
   useEffect(() => {
     loadAnalytics();
+
+    // Real-time subscriptions for live data
+    const leadsChannel = supabase
+      .channel('analytics-leads')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => {
+        loadAnalytics();
+      })
+      .subscribe();
+
+    const dealsChannel = supabase
+      .channel('analytics-deals')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'deals' }, () => {
+        loadAnalytics();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(leadsChannel);
+      supabase.removeChannel(dealsChannel);
+    };
   }, []);
 
   if (planLoading || loading) {

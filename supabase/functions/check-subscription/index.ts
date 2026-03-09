@@ -12,11 +12,19 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
-// Product IDs for plans and addons (updated for Lusha-aligned pricing)
-const PLAN_PRODUCTS = {
-  'prod_U6gflsh1Zzoh3V': { plan: 'growth', credits: 150, dailyLimit: 15 },
-  'prod_U6gfTND3QdfgcC': { plan: 'pro', credits: 500, dailyLimit: 50 },
-  'prod_U6gfOj1Xgfd1vy': { plan: 'elite', credits: 1500, dailyLimit: 150 },
+// Product IDs for plans and addons (aligned with current pricing tiers)
+const PLAN_PRODUCTS: Record<string, { plan: string, credits: number, dailyLimit: number }> = {
+  // New product IDs (monthly + yearly)
+  'prod_U78FZoAWovU1rX': { plan: 'starter', credits: 400, dailyLimit: 50 },
+  'prod_U78FC92stOkRxS': { plan: 'starter', credits: 400, dailyLimit: 50 },
+  'prod_U78Ff02VQAzrLC': { plan: 'growth', credits: 1200, dailyLimit: 150 },
+  'prod_U78Fk0l7swAukt': { plan: 'growth', credits: 1200, dailyLimit: 150 },
+  'prod_U78Fs2HpZzcZJc': { plan: 'pro', credits: 3000, dailyLimit: 400 },
+  'prod_U78Fuo9Mg04kz9': { plan: 'pro', credits: 3000, dailyLimit: 400 },
+  // Legacy product IDs
+  'prod_U6gflsh1Zzoh3V': { plan: 'starter', credits: 400, dailyLimit: 50 },
+  'prod_U6gfTND3QdfgcC': { plan: 'growth', credits: 1200, dailyLimit: 150 },
+  'prod_U6gfOj1Xgfd1vy': { plan: 'pro', credits: 3000, dailyLimit: 400 },
 };
 
 const ADDON_PRODUCTS = {
@@ -169,7 +177,7 @@ serve(async (req) => {
     });
 
     const hasActiveSub = subscriptions.data.length > 0;
-    let plan: 'free' | 'growth' | 'pro' | 'elite' = 'free';
+    let plan: 'free' | 'starter' | 'growth' | 'pro' | 'elite' = 'free';
     let subscriptionEnd: string | null = null;
     let stripeSubscriptionId: string | null = null;
     let baseCredits = 0;
@@ -194,7 +202,7 @@ serve(async (req) => {
         // Check if it's a base plan
         if (PLAN_PRODUCTS[productId as keyof typeof PLAN_PRODUCTS]) {
           const planInfo = PLAN_PRODUCTS[productId as keyof typeof PLAN_PRODUCTS];
-          plan = planInfo.plan as 'growth' | 'pro' | 'elite';
+          plan = planInfo.plan as 'starter' | 'growth' | 'pro' | 'elite';
           baseCredits = planInfo.credits;
           logStep('Detected base plan', { plan, baseCredits });
         }
@@ -210,7 +218,7 @@ serve(async (req) => {
 
       // Sync to database (only if authenticated)
       if (userId) {
-        const leadsLimit = plan === 'free' ? 0 : plan === 'growth' ? 1000 : plan === 'pro' ? 10000 : 999999;
+        const leadsLimit = plan === 'free' ? 0 : plan === 'starter' ? 400 : plan === 'growth' ? 1200 : plan === 'pro' ? 3000 : 999999;
         
         // Get current subscription to preserve remaining credits if same billing cycle
         const { data: currentSub } = await supabaseClient
