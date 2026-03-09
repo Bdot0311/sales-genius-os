@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 // Map price IDs to plan names for success URL
@@ -29,20 +29,6 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-    );
-
-    const authHeader = req.headers.get('Authorization')!;
-    const token = authHeader.replace('Bearer ', '');
-    const { data } = await supabaseClient.auth.getUser(token);
-    const user = data.user;
-    
-    if (!user?.email) {
-      throw new Error('User not authenticated or email not available');
-    }
-
     const { priceId } = await req.json();
     
     if (!priceId) {
@@ -55,16 +41,36 @@ serve(async (req) => {
       apiVersion: '2025-08-27.basil' 
     });
 
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    let customerId;
-    
-    if (customers.data.length > 0) {
-      customerId = customers.data[0].id;
+    // Try to get authenticated user (optional)
+    let userEmail: string | undefined;
+    let customerId: string | undefined;
+
+    const authHeader = req.headers.get('Authorization');
+    if (authHeader && authHeader !== 'Bearer ') {
+      try {
+        const supabaseClient = createClient(
+          Deno.env.get('SUPABASE_URL') ?? '',
+          Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+        );
+        const token = authHeader.replace('Bearer ', '');
+        const { data } = await supabaseClient.auth.getUser(token);
+        if (data.user?.email) {
+          userEmail = data.user.email;
+          // Check for existing Stripe customer
+          const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
+          if (customers.data.length > 0) {
+            customerId = customers.data[0].id;
+          }
+        }
+      } catch (e) {
+        // Auth failed — continue as guest checkout
+        console.log('[CREATE-CHECKOUT] Auth optional, continuing as guest');
+      }
     }
 
-    const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      customer_email: customerId ? undefined : user.email,
+    const origin = req.headers.get('origin') || 'https://sales-genius-os.lovable.app';
+
+    const sessionParams: any = {
       line_items: [
         {
           price: priceId,
@@ -72,9 +78,22 @@ serve(async (req) => {
         },
       ],
       mode: 'subscription',
-      success_url: `${req.headers.get('origin')}/confirmation?plan=${planName}&email=${encodeURIComponent(user.email)}`,
-      cancel_url: `${req.headers.get('origin')}/pricing?canceled=true`,
-    });
+      success_url: `${origin}/confirmation?plan=${planName}${userEmail ? `&email=${encodeURIComponent(userEmail)}` : ''}`,
+      cancel_url: `${origin}/pricing?canceled=true`,
+      subscription_data: {
+        trial_period_days: 14,
+      },
+    };
+
+    // If we have an existing customer, attach them; otherwise let Stripe collect email
+    if (customerId) {
+      sessionParams.customer = customerId;
+    } else if (userEmail) {
+      sessionParams.customer_email = userEmail;
+    }
+    // If neither, Stripe Checkout will collect email from the new user
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
 
     return new Response(
       JSON.stringify({ url: session.url }),

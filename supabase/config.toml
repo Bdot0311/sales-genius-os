@@ -102,3 +102,6 @@ verify_jwt = false
 
 [functions.track-email-open]
 verify_jwt = false
+
+[functions.create-checkout]
+verify_jwt = false
