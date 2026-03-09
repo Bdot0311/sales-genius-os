@@ -34,9 +34,23 @@ interface Transaction {
 }
 
 export const CreditsUsageTab = () => {
-  const { credits, loading, fetchCredits } = useSearchCredits();
+  const { credits, loading, fetchCredits, verifyTopUp } = useSearchCredits();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loadingTransactions, setLoadingTransactions] = useState(true);
+  const [topupDialogOpen, setTopupDialogOpen] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Handle topup verification from URL
+  useEffect(() => {
+    const topupSession = searchParams.get('topup_session');
+    if (topupSession) {
+      verifyTopUp(topupSession).then(() => {
+        // Clear the session param from URL
+        searchParams.delete('topup_session');
+        setSearchParams(searchParams, { replace: true });
+      });
+    }
+  }, [searchParams, setSearchParams, verifyTopUp]);
 
   // Fetch transactions
   const fetchTransactions = async () => {
