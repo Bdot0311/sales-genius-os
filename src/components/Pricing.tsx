@@ -6,7 +6,6 @@ import { useSearchCredits } from "@/hooks/use-search-credits";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
 import {
   Accordion,
   AccordionContent,
