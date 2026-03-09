@@ -80,6 +80,26 @@ const Analytics = () => {
 
   useEffect(() => {
     loadAnalytics();
+
+    // Real-time subscriptions for live data
+    const leadsChannel = supabase
+      .channel('analytics-leads')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => {
+        loadAnalytics();
+      })
+      .subscribe();
+
+    const dealsChannel = supabase
+      .channel('analytics-deals')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'deals' }, () => {
+        loadAnalytics();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(leadsChannel);
+      supabase.removeChannel(dealsChannel);
+    };
   }, []);
 
   if (planLoading || loading) {
