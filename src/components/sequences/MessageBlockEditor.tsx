@@ -105,7 +105,7 @@ export const MessageBlockEditor = ({
             name: formData.name,
             category: formData.category,
             content: formData.content,
-            is_shared: isElite ? formData.is_shared : false,
+            is_shared: isPro ? formData.is_shared : false,
           });
 
         if (error) throw error;
