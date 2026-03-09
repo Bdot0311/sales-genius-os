@@ -169,12 +169,12 @@ export const CreditsUsageTab = () => {
     <div className="space-y-6">
       {/* Credits Overview Cards */}
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* Monthly Credits Card */}
+        {/* Credits Card */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Coins className="h-4 w-4 text-primary" />
-              Monthly Search Credits
+              Search Credits
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -246,12 +246,6 @@ export const CreditsUsageTab = () => {
                   <span>Base Credits</span>
                   <span>{credits.baseCredits}</span>
                 </div>
-                {credits.addonCredits > 0 && (
-                  <div className="flex justify-between text-primary">
-                    <span>Addon Credits</span>
-                    <span>+{credits.addonCredits}</span>
-                  </div>
-                )}
               </div>
             </div>
           </CardContent>

@@ -16,7 +16,7 @@ const faqs = [
   },
   {
     question: "How do search credits work?",
-    answer: "Search credits are used when discovering new leads. Each search query costs 1 credit. Previewing results, enrichment, exports, and all automation features are completely free and don't consume credits."
+    answer: "Search credits are used when discovering new leads. Each search query costs 1 credit. Previewing results, enrichment, exports, and all automation features are completely free. On monthly plans, Starter credits reset each cycle while Growth and Pro credits roll over. Yearly plans grant your full annual pool upfront."
   },
   {
     question: "Can I change plans later?",

@@ -51,18 +51,24 @@ export const useProspectUsage = () => {
         }
       }
 
-      const monthlyUsed = (planConfig.monthlyProspects - (subData?.search_credits_remaining || 0));
-      const monthlyLimit = planConfig.monthlyProspects;
+      // Use actual remaining credits from DB (works for both monthly and yearly)
+      const remaining = subData?.search_credits_remaining || 0;
+      const monthlyLimit = remaining + (planConfig.monthlyProspects - remaining > 0 ? planConfig.monthlyProspects - remaining : 0);
+      const monthlyUsed = Math.max(0, (subData?.search_credits_remaining !== undefined ? (planConfig.monthlyProspects > remaining ? planConfig.monthlyProspects - remaining : 0) : 0));
+      // For yearly plans the base credits can exceed monthlyProspects, so use actual base from DB
+      const actualTotal = Math.max(planConfig.monthlyProspects, subData?.search_credits_remaining || 0, remaining);
+      const usedFromTotal = Math.max(0, actualTotal - remaining);
+
       const dailyLimit = planConfig.dailyLimit;
 
       const canRevealProspect = 
         plan !== 'free' && 
-        monthlyUsed < monthlyLimit && 
+        remaining > 0 && 
         dailyUsed < dailyLimit;
 
       setUsage({
-        monthlyUsed: Math.max(0, monthlyUsed),
-        monthlyLimit,
+        monthlyUsed: usedFromTotal,
+        monthlyLimit: actualTotal,
         dailyUsed,
         dailyLimit,
         plan,
@@ -96,7 +102,7 @@ export const useProspectUsage = () => {
     if (usage.monthlyUsed >= usage.monthlyLimit) {
       return { 
         allowed: false, 
-        reason: "You've reached your monthly prospect limit. Upgrade your plan or purchase additional prospect packs." 
+        reason: "You've reached your prospect limit. Purchase a credit pack or upgrade your plan." 
       };
     }
 

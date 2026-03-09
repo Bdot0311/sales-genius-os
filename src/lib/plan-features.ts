@@ -136,12 +136,12 @@ export const PLAN_FEATURES = {
 
   growth: {
     name: 'Growth',
-    price: 49,
+    price: 89,
     
     // Search Credits
-    monthlySearchCredits: 150,
-    dailySearchLimit: 15,
-    exportTier: 'standard' as const,
+    monthlySearchCredits: 1200,
+    dailySearchLimit: 150,
+    exportTier: 'advanced' as const,
     
     // Lead Intelligence Engine
     maxResultsPerSearch: 25,
@@ -202,12 +202,12 @@ export const PLAN_FEATURES = {
   
   pro: {
     name: 'Pro',
-    price: 149,
+    price: 179,
     
     // Search Credits
-    monthlySearchCredits: 500,
-    dailySearchLimit: 50,
-    exportTier: 'advanced' as const,
+    monthlySearchCredits: 3000,
+    dailySearchLimit: 400,
+    exportTier: 'unlimited' as const,
     
     // Lead Intelligence Engine
     maxResultsPerSearch: 50,

@@ -320,12 +320,15 @@ You can upgrade or downgrade your SalesOS subscription at any time.
 
 | Plan | Price | Verified Prospects | Features |
 |------|-------|-------------------|----------|
-| Free | $0/forever | 0 | View-only dashboard access |
-| Starter | $39/mo | 400/month | 50/day limit, AI email generator |
-| Growth | $89/mo | 1,200/month | 150/day limit, advanced filters, 5 sequences |
-| Pro | $179/mo | 3,000/month | 400/day limit, unlimited sequences, API access |
+| Free | \\$0/forever | 0 | View-only dashboard access |
+| Starter | \\$39/mo | 400/month (reset each cycle) | 50/day limit, AI email generator |
+| Growth | \\$89/mo | 1,200/month (credits roll over) | 150/day limit, advanced filters |
+| Pro | \\$179/mo | 3,000/month (credits roll over) | 400/day limit, unlimited sequences |
 
-Save ~20% with annual billing: Starter $31/mo, Growth $71/mo, Pro $143/mo.
+Save ~20% with annual billing. Yearly plans grant your full annual credit pool upfront:
+- Starter: 4,800 prospects (\\$31/mo, \\$372/yr)
+- Growth: 14,400 prospects (\\$71/mo, \\$852/yr)
+- Pro: 36,000 prospects (\\$143/mo, \\$1,716/yr)
 
 ### Upgrade Benefits
 
@@ -336,7 +339,6 @@ Save ~20% with annual billing: Starter $31/mo, Growth $71/mo, Pro $143/mo.
 ### Downgrade Notes
 
 - Takes effect at next billing cycle
-- Unused prospects don't carry over
 - Some features may become unavailable
 
 ### Enterprise Plans
@@ -420,25 +422,33 @@ Your plan includes a monthly limit of verified prospects you can contact.
 - Detailed usage in **Settings → Credits & Usage**
 - Historical usage graphs available
 
-### Prospect Reset
+### Credit Allocation
 
-- Prospects reset monthly on your billing date
-- Unused prospects don't roll over
-- Add-on prospects purchased separately do roll over
+**Monthly plans:**
+- Starter: 400 prospects per month (resets each cycle)
+- Growth: 1,200 prospects per month (unused credits roll over)
+- Pro: 3,000 prospects per month (unused credits roll over)
+
+**Yearly plans (full pool granted upfront):**
+- Starter: 4,800 prospects for the year
+- Growth: 14,400 prospects for the year
+- Pro: 36,000 prospects for the year
 
 ### Running Low?
 
 Options when prospects are depleted:
-1. Wait for monthly reset
-2. Purchase additional prospect packs
+1. Wait for your next billing cycle reset
+2. Purchase a one-time credit pack (200, 400, or 600 prospects)
 3. Upgrade to a higher plan
 
-### Prospect Add-ons
+### One-Time Credit Packs
 
-- +500 prospects: $49/mo
-- +1,500 prospects: $119/mo
+Buy extra prospects anytime with no recurring commitment:
+- 200 prospects: \\$37.50
+- 400 prospects: \\$67.50
+- 600 prospects: \\$90.00
 
-Purchase from **Settings → Credits & Usage → Buy More**
+Purchase from **Settings → Credits & Usage → Buy Credits**
     `,
     readTime: 4,
     tags: ['prospects', 'usage', 'billing'],
