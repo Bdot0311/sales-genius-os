@@ -155,12 +155,12 @@ serve(async (req) => {
     }
 
     // ===========================================
-    // Check Elite users for additional patterns
+    // Check Pro users for additional patterns
     // ===========================================
     const { data: users } = await supabaseClient
       .from("subscriptions")
       .select("user_id, profiles!inner(email, full_name)")
-      .eq("plan", "elite")
+      .eq("plan", "pro")
       .eq("status", "active");
 
     for (const user of users || []) {

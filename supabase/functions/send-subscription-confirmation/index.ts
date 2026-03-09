@@ -62,7 +62,7 @@ serve(async (req) => {
       ]
     };
 
-    const features = planFeatures[planName.toLowerCase()] || planFeatures.growth;
+    const features = planFeatures[planName.toLowerCase()] || planFeatures.starter;
 
     const { data: emailData, error: emailError } = await resend.emails.send({
       from: "SalesOS <support@bdotindustries.com>",

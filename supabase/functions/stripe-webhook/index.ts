@@ -42,7 +42,7 @@ const PRODUCT_TO_PLAN: Record<string, 'starter' | 'growth' | 'pro'> = {
   // Legacy product IDs
   'prod_TjpiXbauY0T3RF': 'growth',
   'prod_TOrozUbuuN18RP': 'pro',
-  'prod_TOrod7SaIV2D7s': 'elite',
+  'prod_TOrod7SaIV2D7s': 'pro',
   'prod_U6gflsh1Zzoh3V': 'starter',
   'prod_U6gfTND3QdfgcC': 'growth',
   'prod_U6gfOj1Xgfd1vy': 'pro',

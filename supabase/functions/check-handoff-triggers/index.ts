@@ -146,10 +146,10 @@ serve(async (req) => {
         console.error('Error pausing enrollment:', updateError);
       }
 
-      // For Elite plan, could trigger webhook here
-      if (plan === 'elite') {
-        // TODO: Implement webhook/Slack notification for Elite users
-        console.log('Elite user - would send webhook notification');
+      // For Pro plan, could trigger webhook here
+      if (plan === 'pro') {
+        // TODO: Implement webhook/Slack notification for Pro users
+        console.log('Pro user - would send webhook notification');
       }
 
       // For Pro+, send email notification
