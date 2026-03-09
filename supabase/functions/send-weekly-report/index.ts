@@ -28,24 +28,24 @@ serve(async (req) => {
 
     const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
-    // Get all Elite users
-    const { data: eliteUsers, error: usersError } = await supabaseClient
+    // Get all Pro users
+    const { data: proUsers, error: usersError } = await supabaseClient
       .from("subscriptions")
       .select(`
         user_id,
         profiles!inner(email, full_name)
       `)
-      .eq("plan", "elite")
+      .in("plan", ["pro", "elite"])
       .eq("status", "active");
 
     if (usersError) throw usersError;
 
-    logStep("Found Elite users", { count: eliteUsers?.length });
+    logStep("Found Pro users", { count: proUsers?.length });
 
     const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
     const reports = await Promise.all(
-      (eliteUsers || []).map(async (user: any) => {
+      (proUsers || []).map(async (user: any) => {
         try {
           // Get API usage stats
           const { data: apiKeys } = await supabaseClient
