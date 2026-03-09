@@ -17,7 +17,7 @@ interface UserSubscription {
   user_id: string;
   email: string;
   full_name: string;
-  plan: 'free' | 'growth' | 'pro' | 'elite';
+  plan: 'free' | 'starter' | 'growth' | 'pro' | 'elite';
   status: string;
   account_status: string;
   leads_limit: number;
