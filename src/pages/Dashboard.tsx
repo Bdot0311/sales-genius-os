@@ -152,6 +152,9 @@ const Dashboard = () => {
           <AddLeadDialog onLeadAdded={loadStats} />
         </div>
 
+        {/* Prospect Usage Meter */}
+        <ProspectUsageMeter />
+
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {statCards.map((stat) => (
