@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Check, X, Loader2, HelpCircle, Coins } from "lucide-react";
+import { Check, X, HelpCircle, Coins, Zap } from "lucide-react";
 import { STRIPE_PRICE_IDS } from "@/lib/stripe-config";
 import { useSearchCredits } from "@/hooks/use-search-credits";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +12,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { QuickBuyCreditsDialog } from "@/components/dashboard/QuickBuyCreditsDialog";
 
 type BillingInterval = 'monthly' | 'yearly';
 
