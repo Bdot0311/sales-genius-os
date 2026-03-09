@@ -51,9 +51,13 @@ export const useProspectUsage = () => {
         }
       }
 
-      const monthlyUsed = (planConfig.monthlyProspects - (subData?.search_credits_remaining || 0));
-      const monthlyLimit = planConfig.monthlyProspects;
-      const dailyLimit = planConfig.dailyLimit;
+      // Use actual remaining credits from DB (works for both monthly and yearly)
+      const remaining = subData?.search_credits_remaining || 0;
+      const monthlyLimit = remaining + (planConfig.monthlyProspects - remaining > 0 ? planConfig.monthlyProspects - remaining : 0);
+      const monthlyUsed = Math.max(0, (subData?.search_credits_remaining !== undefined ? (planConfig.monthlyProspects > remaining ? planConfig.monthlyProspects - remaining : 0) : 0));
+      // For yearly plans the base credits can exceed monthlyProspects, so use actual base from DB
+      const actualTotal = Math.max(planConfig.monthlyProspects, subData?.search_credits_remaining || 0, remaining);
+      const usedFromTotal = Math.max(0, actualTotal - remaining);
 
       const canRevealProspect = 
         plan !== 'free' && 
