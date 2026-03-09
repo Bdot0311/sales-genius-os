@@ -1,6 +1,14 @@
 // Stripe Price ID Configuration
 export const STRIPE_PRICE_IDS = {
-  // Base subscription plans
+  // Base subscription plans - Monthly
+  starter_monthly: 'price_1T8tywFTerosS6hi0fHQuybr',
+  growth_monthly: 'price_1T8tyyFTerosS6hiTsTXkWDa',
+  pro_monthly: 'price_1T8tz0FTerosS6hiKJluR3kk',
+  // Base subscription plans - Yearly
+  starter_yearly: 'price_1T8tyxFTerosS6hiSakB51fA',
+  growth_yearly: 'price_1T8tyzFTerosS6hiUyzpHnCK',
+  pro_yearly: 'price_1T8tz0FTerosS6hiIHNG82Bh',
+  // Legacy price IDs (kept for backwards compatibility)
   starter: 'price_1T8THgFTerosS6hiyasgavsP',
   growth: 'price_1T8THhFTerosS6hicTGH2TUP',
   pro: 'price_1T8THiFTerosS6hi9Vf6Ydsh',
@@ -10,6 +18,13 @@ export const STRIPE_PRICE_IDS = {
 } as const;
 
 export const STRIPE_PRODUCT_IDS = {
+  starter_monthly: 'prod_U78FZoAWovU1rX',
+  starter_yearly: 'prod_U78FC92stOkRxS',
+  growth_monthly: 'prod_U78Ff02VQAzrLC',
+  growth_yearly: 'prod_U78Fk0l7swAukt',
+  pro_monthly: 'prod_U78Fs2HpZzcZJc',
+  pro_yearly: 'prod_U78Fuo9Mg04kz9',
+  // Legacy
   starter: 'prod_U6gflsh1Zzoh3V',
   growth: 'prod_U6gfTND3QdfgcC',
   pro: 'prod_U6gfOj1Xgfd1vy',
@@ -18,13 +33,16 @@ export const STRIPE_PRODUCT_IDS = {
 } as const;
 
 export type PlanType = 'free' | 'starter' | 'growth' | 'pro';
+export type BillingInterval = 'monthly' | 'yearly';
 export type AddonType = 'addon200' | 'addon500';
 
 // Plan configuration with verified prospect limits
 export const PLAN_CONFIG = {
   free: {
     name: 'Free',
-    price: 0,
+    monthlyPrice: 0,
+    yearlyPrice: 0,
+    yearlyTotal: 0,
     monthlyProspects: 0,
     yearlyProspects: 0,
     dailyLimit: 0,
@@ -35,7 +53,9 @@ export const PLAN_CONFIG = {
   },
   starter: {
     name: 'Starter',
-    price: 39,
+    monthlyPrice: 39,
+    yearlyPrice: 31,
+    yearlyTotal: 372,
     monthlyProspects: 400,
     yearlyProspects: 4800,
     dailyLimit: 50,
@@ -46,7 +66,9 @@ export const PLAN_CONFIG = {
   },
   growth: {
     name: 'Growth',
-    price: 89,
+    monthlyPrice: 89,
+    yearlyPrice: 71,
+    yearlyTotal: 852,
     monthlyProspects: 1200,
     yearlyProspects: 14400,
     dailyLimit: 150,
@@ -57,7 +79,9 @@ export const PLAN_CONFIG = {
   },
   pro: {
     name: 'Pro',
-    price: 179,
+    monthlyPrice: 179,
+    yearlyPrice: 143,
+    yearlyTotal: 1716,
     monthlyProspects: 3000,
     yearlyProspects: 36000,
     dailyLimit: 400,

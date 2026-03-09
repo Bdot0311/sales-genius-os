@@ -13,31 +13,62 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
-const plans = [
+type BillingInterval = 'monthly' | 'yearly';
+
+interface PaidPlan {
+  key: 'starter' | 'growth' | 'pro';
+  name: string;
+  monthlyPrice: number;
+  yearlyPrice: number;
+  yearlyTotal: number;
+  description: string;
+  mainValue: string;
+  dailyLimit: string;
+  features: string[];
+  highlighted?: boolean;
+  monthlyPriceId: string;
+  yearlyPriceId: string;
+}
+
+interface FreePlan {
+  key: 'free';
+  name: string;
+  price: string;
+  period: string;
+  description: string;
+  features: string[];
+  cta: string;
+  ctaRoute: string;
+}
+
+type Plan = FreePlan | PaidPlan;
+
+const freePlan: FreePlan = {
+  key: 'free',
+  name: "Free",
+  price: "$0",
+  period: "/forever",
+  description: "Explore the platform, no credit card needed",
+  features: [
+    "View-only dashboard access",
+    "Sample data exploration",
+    "Pipeline overview",
+    "Analytics summary",
+    "Community support",
+  ],
+  cta: "Get started free",
+  ctaRoute: "/auth",
+};
+
+const paidPlans: PaidPlan[] = [
   {
-    key: 'free' as const,
-    name: "Free",
-    price: "$0",
-    period: "/forever",
-    description: "Explore the platform, no credit card needed",
-    features: [
-      "View-only dashboard access",
-      "Sample data exploration",
-      "Pipeline overview",
-      "Analytics summary",
-      "Community support",
-    ],
-    cta: "Get started free",
-    ctaRoute: "/auth",
-  },
-  {
-    key: 'starter' as const,
+    key: 'starter',
     name: "Starter",
-    price: "$39",
-    period: "/month",
+    monthlyPrice: 39,
+    yearlyPrice: 31,
+    yearlyTotal: 372,
     description: "For solo founders and early outbound",
     mainValue: "Contact up to 400 verified prospects per month",
-    secondaryValue: "4,800 prospects per year",
     dailyLimit: "50 prospects per day",
     features: [
       "Prospect search",
@@ -47,16 +78,17 @@ const plans = [
       "Campaign templates",
       "Standard support",
     ],
-    paymentLink: "https://buy.stripe.com/9B6dR9ep1a2b0gi1ca1B60u",
+    monthlyPriceId: STRIPE_PRICE_IDS.starter_monthly,
+    yearlyPriceId: STRIPE_PRICE_IDS.starter_yearly,
   },
   {
-    key: 'growth' as const,
+    key: 'growth',
     name: "Growth",
-    price: "$89",
-    period: "/month",
+    monthlyPrice: 89,
+    yearlyPrice: 71,
+    yearlyTotal: 852,
     description: "For teams booking meetings consistently",
     mainValue: "Contact up to 1,200 verified prospects per month",
-    secondaryValue: "14,400 prospects per year",
     dailyLimit: "150 prospects per day",
     features: [
       "Advanced prospect filters",
@@ -66,16 +98,17 @@ const plans = [
       "Priority support",
     ],
     highlighted: true,
-    paymentLink: "https://buy.stripe.com/9B65kD4Or8Y76EGaMK1B60p",
+    monthlyPriceId: STRIPE_PRICE_IDS.growth_monthly,
+    yearlyPriceId: STRIPE_PRICE_IDS.growth_yearly,
   },
   {
-    key: 'pro' as const,
+    key: 'pro',
     name: "Pro",
-    price: "$179",
-    period: "/month",
+    monthlyPrice: 179,
+    yearlyPrice: 143,
+    yearlyTotal: 1716,
     description: "For high-volume outbound operations",
     mainValue: "Contact up to 3,000 verified prospects per month",
-    secondaryValue: "36,000 prospects per year",
     dailyLimit: "400 prospects per day",
     features: [
       "Advanced automation features",
@@ -84,7 +117,8 @@ const plans = [
       "High-priority data processing",
       "Premium support",
     ],
-    paymentLink: "https://buy.stripe.com/8x2bJ15Svfmvd341ca1B60q",
+    monthlyPriceId: STRIPE_PRICE_IDS.pro_monthly,
+    yearlyPriceId: STRIPE_PRICE_IDS.pro_yearly,
   },
 ];
 
@@ -170,6 +204,10 @@ const creditFAQs = [
     answer: "Yes. The free plan lets you explore the full SalesOS interface, including dashboards, pipeline view, and analytics. Contacting verified prospects requires a paid plan. No credit card needed to sign up."
   },
   {
+    question: "Do you offer yearly billing?",
+    answer: "Yes! Save ~20% with annual billing. Starter: $31/mo ($372/yr), Growth: $71/mo ($852/yr), Pro: $143/mo ($1,716/yr). Use the toggle on the pricing cards to switch between monthly and yearly billing."
+  },
+  {
     question: "Can I upgrade, downgrade, or cancel anytime?",
     answer: "Yes. Upgrades happen instantly with your new allocation. Downgrades and cancellations apply at the end of your billing cycle."
   },
@@ -191,11 +229,15 @@ const renderFeatureValue = (value: boolean | string) => {
   return <span className="text-sm font-medium">{value}</span>;
 };
 
+const isPaidPlan = (plan: Plan): plan is PaidPlan => plan.key !== 'free';
+
 export const Pricing = () => {
   const { credits, addAddon, removeAddon } = useSearchCredits();
   const [addingAddon, setAddingAddon] = useState<string | null>(null);
   const [removingAddon, setRemovingAddon] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [billingInterval, setBillingInterval] = useState<BillingInterval>('monthly');
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const sectionRef = useRef<HTMLElement>(null);
   const navigate = useNavigate();
 
@@ -216,11 +258,37 @@ export const Pricing = () => {
     return () => observer.disconnect();
   }, []);
 
-  const handleCheckout = (plan: typeof plans[number]) => {
-    if (plan.key === 'free') {
+  const handleCheckout = async (plan: Plan) => {
+    if (!isPaidPlan(plan)) {
       navigate(plan.ctaRoute || '/auth');
-    } else if (plan.paymentLink) {
-      window.open(plan.paymentLink, '_blank');
+      return;
+    }
+
+    const priceId = billingInterval === 'yearly' ? plan.yearlyPriceId : plan.monthlyPriceId;
+
+    // Check if user is authenticated
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      toast.error('Please sign in first to start your trial');
+      navigate('/auth');
+      return;
+    }
+
+    setCheckoutLoading(plan.key);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { priceId },
+      });
+
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
+    } catch (err) {
+      console.error('Checkout error:', err);
+      toast.error('Payment processing failed. Please try again.');
+    } finally {
+      setCheckoutLoading(null);
     }
   };
 
@@ -242,6 +310,8 @@ export const Pricing = () => {
     setRemovingAddon(false);
   };
 
+  const allPlans: Plan[] = [freePlan, ...paidPlans];
+
   return (
     <section 
       ref={sectionRef}
@@ -260,90 +330,137 @@ export const Pricing = () => {
       </div>
       
       <div className="container relative z-10 mx-auto px-4 sm:px-6">
+        {/* Billing Toggle */}
+        <div className={`flex justify-center mb-8 md:mb-10 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '50ms' } as React.CSSProperties}>
+          <div className="inline-flex items-center gap-1 p-1 rounded-full bg-muted/60 border border-border/30">
+            <button
+              onClick={() => setBillingInterval('monthly')}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                billingInterval === 'monthly'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setBillingInterval('yearly')}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${
+                billingInterval === 'yearly'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Yearly
+              <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">
+                Save 20%
+              </span>
+            </button>
+          </div>
+        </div>
+
         {/* Plan Cards */}
         <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 max-w-7xl mx-auto mb-16 md:mb-20 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '100ms' } as React.CSSProperties}>
-          {plans.map((plan, index) => (
-            <div 
-              key={plan.key}
-              className={`group relative p-6 sm:p-8 rounded-2xl border transition-all duration-300 card-hover-lift ${
-                plan.highlighted 
-                  ? 'bg-primary text-primary-foreground border-primary scale-[1.02] shadow-xl shadow-primary/20' 
-                  : plan.key === 'free'
-                    ? 'bg-muted/30 border-border/20 hover:border-primary/30'
-                    : 'bg-card border-border/30 hover:border-primary/50'
-              }`}
-              style={{ '--reveal-delay': `${(index + 1) * 80}ms` } as React.CSSProperties}
-            >
-              {/* Spotlight effect for non-highlighted cards */}
-              {!plan.highlighted && (
-                <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none spotlight-card" />
-              )}
-              
-              {plan.highlighted && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-foreground text-background text-xs font-medium">
-                  Most popular
-                </div>
-              )}
-              
-              <div className="relative z-10 mb-6">
-                <h3 className="text-xl font-semibold mb-2">{plan.name}</h3>
-                <div className="flex items-baseline gap-1 mb-2">
-                  <span className="text-4xl font-bold">{plan.price}</span>
-                  <span className={plan.highlighted ? 'text-primary-foreground/70' : 'text-muted-foreground'}>
-                    {plan.period}
-                  </span>
-                </div>
-                <p className={`text-sm ${plan.highlighted ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
-                  {plan.description}
-                </p>
-              </div>
+          {allPlans.map((plan, index) => {
+            const paid = isPaidPlan(plan);
+            const displayPrice = paid
+              ? billingInterval === 'yearly' ? `$${plan.yearlyPrice}` : `$${plan.monthlyPrice}`
+              : plan.price;
+            const period = paid ? '/mo' : plan.period;
+            const billingNote = paid && billingInterval === 'yearly'
+              ? `$${plan.yearlyTotal.toLocaleString()} billed annually`
+              : null;
 
-              {/* Value propositions for paid plans */}
-              {'mainValue' in plan && plan.mainValue && (
-                <div className={`relative z-10 mb-4 p-3 rounded-lg ${
-                  plan.highlighted ? 'bg-primary-foreground/10' : 'bg-primary/5'
-                }`}>
-                  <p className={`text-sm font-medium ${plan.highlighted ? 'text-primary-foreground' : 'text-foreground'}`}>
-                    {plan.mainValue}
-                  </p>
-                  <p className={`text-xs mt-1 ${plan.highlighted ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                    {plan.secondaryValue}
-                  </p>
-                  <p className={`text-xs mt-1 ${plan.highlighted ? 'text-primary-foreground/60' : 'text-muted-foreground/80'}`}>
-                    {plan.dailyLimit}
-                  </p>
-                </div>
-              )}
-
-              <ul className="relative z-10 space-y-3 mb-8">
-                {plan.features.map((feature, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <Check className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
-                      plan.highlighted ? 'text-primary-foreground' : 'text-primary'
-                    }`} />
-                    <span className={`text-sm ${
-                      plan.highlighted ? 'text-primary-foreground/90' : 'text-muted-foreground'
-                    }`}>
-                      {feature}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-
-              <Button 
-                className={`relative z-10 w-full h-12 font-semibold rounded-xl ${
-                  plan.key === 'free'
-                    ? 'bg-muted text-foreground hover:bg-muted/80 border border-border'
-                    : plan.highlighted 
-                      ? 'bg-foreground text-background hover:bg-foreground/90' 
-                      : 'bg-primary text-primary-foreground hover:bg-primary/90'
+            return (
+              <div 
+                key={plan.key}
+                className={`group relative p-6 sm:p-8 rounded-2xl border transition-all duration-300 card-hover-lift ${
+                  paid && plan.highlighted 
+                    ? 'bg-primary text-primary-foreground border-primary scale-[1.02] shadow-xl shadow-primary/20' 
+                    : plan.key === 'free'
+                      ? 'bg-muted/30 border-border/20 hover:border-primary/30'
+                      : 'bg-card border-border/30 hover:border-primary/50'
                 }`}
-                onClick={() => handleCheckout(plan)}
+                style={{ '--reveal-delay': `${(index + 1) * 80}ms` } as React.CSSProperties}
               >
-                {plan.key === 'free' ? 'Get started free' : 'Start 14-day free trial'}
-              </Button>
-            </div>
-          ))}
+                {/* Spotlight effect for non-highlighted cards */}
+                {!(paid && plan.highlighted) && (
+                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none spotlight-card" />
+                )}
+                
+                {paid && plan.highlighted && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-foreground text-background text-xs font-medium">
+                    Most popular
+                  </div>
+                )}
+                
+                <div className="relative z-10 mb-6">
+                  <h3 className="text-xl font-semibold mb-2">{plan.name}</h3>
+                  <div className="flex items-baseline gap-1 mb-1">
+                    <span className="text-4xl font-bold">{displayPrice}</span>
+                    <span className={paid && plan.highlighted ? 'text-primary-foreground/70' : 'text-muted-foreground'}>
+                      {period}
+                    </span>
+                  </div>
+                  {billingNote && (
+                    <p className={`text-xs mb-1 ${paid && plan.highlighted ? 'text-primary-foreground/60' : 'text-muted-foreground/70'}`}>
+                      {billingNote}
+                    </p>
+                  )}
+                  <p className={`text-sm ${paid && plan.highlighted ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
+                    {plan.description}
+                  </p>
+                </div>
+
+                {/* Value propositions for paid plans */}
+                {paid && (
+                  <div className={`relative z-10 mb-4 p-3 rounded-lg ${
+                    plan.highlighted ? 'bg-primary-foreground/10' : 'bg-primary/5'
+                  }`}>
+                    <p className={`text-sm font-medium ${plan.highlighted ? 'text-primary-foreground' : 'text-foreground'}`}>
+                      {plan.mainValue}
+                    </p>
+                    <p className={`text-xs mt-1 ${plan.highlighted ? 'text-primary-foreground/60' : 'text-muted-foreground/80'}`}>
+                      {plan.dailyLimit}
+                    </p>
+                  </div>
+                )}
+
+                <ul className="relative z-10 space-y-3 mb-8">
+                  {plan.features.map((feature, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <Check className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
+                        paid && plan.highlighted ? 'text-primary-foreground' : 'text-primary'
+                      }`} />
+                      <span className={`text-sm ${
+                        paid && plan.highlighted ? 'text-primary-foreground/90' : 'text-muted-foreground'
+                      }`}>
+                        {feature}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Button 
+                  className={`relative z-10 w-full h-12 font-semibold rounded-xl ${
+                    plan.key === 'free'
+                      ? 'bg-muted text-foreground hover:bg-muted/80 border border-border'
+                      : paid && plan.highlighted 
+                        ? 'bg-foreground text-background hover:bg-foreground/90' 
+                        : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                  }`}
+                  onClick={() => handleCheckout(plan)}
+                  disabled={checkoutLoading === plan.key}
+                >
+                  {checkoutLoading === plan.key ? (
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing...</>
+                  ) : (
+                    plan.key === 'free' ? 'Get started free' : 'Start 14-day free trial'
+                  )}
+                </Button>
+              </div>
+            );
+          })}
         </div>
 
         {/* Feature Comparison Table */}
