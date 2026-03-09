@@ -386,9 +386,9 @@ Collaborate with your team by adding members to your SalesOS workspace.
 ### Team Limits by Plan
 
 - **Free**: 1 user
+- **Starter**: 1 user
 - **Growth**: 5 users
-- **Pro**: 15 users
-- **Elite**: Unlimited
+- **Pro**: Unlimited
     `,
     readTime: 3,
     tags: ['team', 'users', 'collaboration'],
