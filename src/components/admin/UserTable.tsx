@@ -114,9 +114,15 @@ export const UserTable = ({
                   <TableCell>
                     {getAccountBadge(sub.user_id, sub.account_status, sub.trial_end_date, admin)}
                   </TableCell>
-                  <TableCell className="text-sm tabular-nums">{sub.leads_limit.toLocaleString()}</TableCell>
+                  <TableCell className="text-sm tabular-nums">
+                    {(admin || sub.account_status === 'admin' || sub.leads_limit >= 99999)
+                      ? <span className="text-xs text-primary font-medium">Unlimited</span>
+                      : sub.leads_limit.toLocaleString()}
+                  </TableCell>
                   <TableCell className="text-sm text-muted-foreground tabular-nums">
-                    {new Date(sub.current_period_end).toLocaleDateString()}
+                    {!sub.stripe_customer_id && (admin || sub.account_status === 'admin')
+                      ? <span className="text-xs text-muted-foreground">No billing</span>
+                      : new Date(sub.current_period_end).toLocaleDateString()}
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-0.5 justify-end opacity-60 group-hover:opacity-100 transition-opacity">
