@@ -63,6 +63,9 @@ const AdminUsers = () => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'subscriptions' }, () => {
         loadSubscriptions();
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_roles' }, () => {
+        loadUserRoles();
+      })
       .subscribe();
 
     return () => {
