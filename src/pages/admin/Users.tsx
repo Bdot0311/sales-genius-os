@@ -52,6 +52,22 @@ const AdminUsers = () => {
   useEffect(() => {
     loadSubscriptions();
     loadUserRoles();
+
+    // Real-time: auto-refresh when new users sign up or subscriptions change
+    const profilesChannel = supabase
+      .channel('admin-profiles-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        loadSubscriptions();
+        loadUserRoles();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'subscriptions' }, () => {
+        loadSubscriptions();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(profilesChannel);
+    };
   }, []);
 
   const loadSubscriptions = async () => {
