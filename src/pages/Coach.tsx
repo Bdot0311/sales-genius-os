@@ -94,7 +94,7 @@ const Coach = () => {
     }
   };
 
-  const loadConversations = async () => {
+  const loadConversations = async (autoLoadLatest = false) => {
     try {
       const { data, error } = await supabase
         .from("coaching_conversations")
@@ -104,6 +104,11 @@ const Coach = () => {
 
       if (error) throw error;
       setConversations(data || []);
+      
+      // Auto-load most recent conversation on initial page load
+      if (autoLoadLatest && data && data.length > 0 && !currentConversationId) {
+        await loadConversationMessages(data[0].id);
+      }
     } catch (error) {
       console.error("Error loading conversations:", error);
     }
