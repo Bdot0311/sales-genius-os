@@ -305,6 +305,96 @@ serve(async (req) => {
       throw updateError;
     }
 
+    // Re-score the lead after enrichment with updated data
+    if (enrichedFields.length > 0) {
+      try {
+        const { data: updatedLead } = await supabase
+          .from('leads')
+          .select('*')
+          .eq('id', leadId)
+          .eq('user_id', user.id)
+          .single();
+
+        if (updatedLead) {
+          // Deterministic scoring matching fetch-external-leads logic
+          const seedStr = `${updatedLead.contact_name || ''}|${updatedLead.company_name || ''}|${updatedLead.job_title || ''}`;
+          let hash = 0;
+          for (let i = 0; i < seedStr.length; i++) {
+            hash = ((hash << 5) - hash) + seedStr.charCodeAt(i);
+            hash |= 0;
+          }
+          const seed = Math.abs(hash);
+          const variation = (seed % 11) - 5;
+
+          let icpScore = 40;
+          let intentScore = 35;
+          let enrichmentScore = 30;
+
+          const jt = (updatedLead.job_title || '').toLowerCase();
+          if (jt.includes('ceo') || jt.includes('chief executive')) icpScore += 38;
+          else if (jt.includes('founder') || jt.includes('co-founder')) icpScore += 35;
+          else if (jt.includes('owner') || jt.includes('president')) icpScore += 32;
+          else if (jt.includes('cto') || jt.includes('chief technology')) icpScore += 30;
+          else if (jt.includes('cfo') || jt.includes('chief financial')) icpScore += 28;
+          else if (jt.includes('coo') || jt.includes('cmo') || jt.includes('cro') || jt.includes('cio')) icpScore += 26;
+          else if (jt.includes('vp') || jt.includes('vice president')) icpScore += 22;
+          else if (jt.includes('director')) icpScore += 18;
+          else if (jt.includes('head of') || jt.includes('head,')) icpScore += 16;
+          else if (jt.includes('senior') && (jt.includes('manager') || jt.includes('lead'))) icpScore += 14;
+          else if (jt.includes('manager')) icpScore += 10;
+          else if (jt.includes('lead') || jt.includes('principal')) icpScore += 8;
+          else if (jt.includes('senior')) icpScore += 6;
+          else if (jt.includes('specialist') || jt.includes('analyst')) icpScore += 2;
+
+          if (jt.includes('revenue') || jt.includes('growth') || jt.includes('sales') || jt.includes('business development')) intentScore += 15;
+          if (jt.includes('marketing') || jt.includes('demand gen')) intentScore += 10;
+          if (jt.includes('operations') || jt.includes('strategy')) intentScore += 7;
+
+          const cs = (updatedLead.company_size || updatedLead.employee_count || '').toString();
+          if (cs.includes('10001') || cs.includes('5001')) { icpScore += 6; intentScore += 12; }
+          else if (cs.includes('1001') || cs.includes('501')) { icpScore += 10; intentScore += 14; }
+          else if (cs.includes('201') || cs.includes('500')) { icpScore += 12; intentScore += 10; }
+          else if (cs.includes('51') || cs.includes('200')) { icpScore += 8; intentScore += 8; }
+          else if (cs.includes('11') || cs.includes('50')) { icpScore += 4; intentScore += 4; }
+
+          const ind = (updatedLead.industry || '').toLowerCase();
+          if (ind.includes('software') || ind.includes('technology')) intentScore += 8;
+          else if (ind.includes('financial') || ind.includes('banking')) intentScore += 7;
+          else if (ind.includes('consulting') || ind.includes('marketing')) intentScore += 6;
+          else if (ind.includes('health') || ind.includes('education')) intentScore += 4;
+          else if (ind) intentScore += 2;
+
+          if (updatedLead.contact_email) {
+            enrichmentScore += 18;
+            if (!updatedLead.contact_email.includes('gmail.') && !updatedLead.contact_email.includes('yahoo.')) enrichmentScore += 5;
+          }
+          if (updatedLead.linkedin_url) enrichmentScore += 12;
+          if (updatedLead.company_website) enrichmentScore += 10;
+          if (updatedLead.industry) enrichmentScore += 5;
+          if (updatedLead.company_name) enrichmentScore += 3;
+          if (updatedLead.contact_name) enrichmentScore += 2;
+          if (updatedLead.seniority) enrichmentScore += 3;
+          if (updatedLead.department) enrichmentScore += 2;
+
+          icpScore = Math.max(5, Math.min(100, icpScore + variation));
+          intentScore = Math.max(5, Math.min(100, intentScore + (seed % 7) - 3));
+          enrichmentScore = Math.max(5, Math.min(100, enrichmentScore + ((seed >> 3) % 5) - 2));
+
+          const overallScore = Math.max(5, Math.min(100, Math.round((icpScore * 0.4) + (intentScore * 0.3) + (enrichmentScore * 0.3))));
+
+          await supabase
+            .from('leads')
+            .update({ icp_score: overallScore })
+            .eq('id', leadId)
+            .eq('user_id', user.id);
+
+          console.log('Lead re-scored after enrichment:', leadId, 'score:', overallScore);
+        }
+      } catch (scoreErr) {
+        console.error('Error re-scoring lead after enrichment:', scoreErr);
+      }
+    }
+
     console.log('Lead enriched successfully:', leadId, 'fields:', enrichedFields);
 
     // Log enrichment history
