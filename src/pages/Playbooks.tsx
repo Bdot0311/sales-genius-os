@@ -19,7 +19,8 @@ import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
 interface PlaybookStep {
   title: string;
   description: string;
-  keyQuestions: string[];
+  keyActions: string[];
+  examples: string[];
   tips: string;
 }
 
@@ -41,183 +42,326 @@ interface Message {
 
 const PLAYBOOKS: Playbook[] = [
   {
-    id: 'meddic',
-    name: 'MEDDIC',
-    tagline: 'Enterprise qualification framework',
-    description: 'The gold standard for enterprise B2B sales. MEDDIC forces rigorous qualification so you invest time only in winnable deals.',
-    bestFor: 'Enterprise deals with long sales cycles and multiple stakeholders',
-    icon: '🎯',
+    id: 'trigger-based',
+    name: 'Trigger-Based Outbound',
+    tagline: 'Strike when buying signals appear',
+    description: 'The highest-converting outbound strategy in 2025-2026. Instead of blasting cold lists, you monitor real-time signals (funding rounds, job postings, tech adoption, leadership changes) and reach out with relevant context. 3-5× higher reply rates than generic cold email.',
+    bestFor: 'Any outbound team that wants higher reply rates with less volume',
+    icon: '⚡',
+    color: 'border-l-amber-500',
+    steps: [
+      {
+        title: 'Define Your Trigger Events',
+        description: 'Identify 3-5 buying signals that indicate a company is likely in-market for your solution.',
+        keyActions: [
+          'Map your top 10 closed-won deals — what happened at those companies before they bought?',
+          'Common triggers: funding rounds, new exec hires, job postings (hiring for roles you replace/support), tech stack changes, expansion announcements',
+          'Set up monitoring via LinkedIn Sales Navigator, Google Alerts, or Crunchbase feeds',
+        ],
+        examples: [
+          '"Company just raised Series B" → they\'re scaling and need tooling',
+          '"Posted 5+ SDR roles this month" → outbound is a priority, they need infrastructure',
+          '"New VP Sales hired" → new leaders bring new tools within 90 days',
+        ],
+        tips: 'The best trigger events are ones your prospect would agree make your outreach timely. If they\'d think "how did they know?" — you\'ve found a great trigger.',
+      },
+      {
+        title: 'Research in 3 Minutes or Less',
+        description: 'For each triggered account, do fast but focused research. You\'re not writing a book — you need one relevant insight.',
+        keyActions: [
+          'Check their LinkedIn for recent posts or comments (30 sec)',
+          'Scan their company page for news, blog posts, or press releases (60 sec)',
+          'Look at their tech stack on BuiltWith or similar (30 sec)',
+          'Find a mutual connection or shared experience (30 sec)',
+        ],
+        examples: [
+          '"Saw you posted about struggling with lead quality last week"',
+          '"Noticed you\'re hiring 8 SDRs — scaling outbound is tough without the right data"',
+        ],
+        tips: 'The 3-minute rule prevents over-researching. You need enough for one personalized sentence, not a dossier.',
+      },
+      {
+        title: 'Write the Trigger Email',
+        description: 'Structure: Trigger observation → Problem it implies → Your relevance → Low-friction CTA.',
+        keyActions: [
+          'Open with the trigger (1 sentence): "Saw you just raised your Series B — congrats."',
+          'Connect to a problem (1 sentence): "Most teams at your stage struggle to scale outbound without burning through reps."',
+          'State relevance, not features (1 sentence): "We help [similar company] generate 3× more qualified meetings with half the manual prospecting."',
+          'CTA (1 sentence): "Worth a 15-min look, or bad timing?"',
+        ],
+        examples: [
+          'Subject: re: your SDR hiring push\n\nNoticed you posted 6 SDR openings this month. Scaling outbound without good data is like hiring drivers without giving them a map.\n\nWe help teams like [similar co] cut prospect research time by 70% so new reps ramp in weeks, not months.\n\nWorth a quick chat, or bad timing?',
+        ],
+        tips: 'Under 75 words. The trigger is your permission to reach out — it replaces the need for a clever opener.',
+      },
+      {
+        title: 'Follow-Up Sequence (3-5 touches)',
+        description: 'If no reply, follow up with new value — never "just checking in."',
+        keyActions: [
+          'Follow-up 1 (Day 3): Share a relevant case study or data point',
+          'Follow-up 2 (Day 7): Different angle — address a different pain point',
+          'Follow-up 3 (Day 14): Social proof or a question',
+          'Breakup (Day 21): "Closing the loop" with a soft exit',
+        ],
+        examples: [
+          'Day 3: "Quick data point — [similar company] cut their cost-per-meeting by 40% after switching. Thought you\'d find it relevant given the scale-up."',
+          'Day 21: "I\'ll assume the timing isn\'t right. If outbound data becomes a priority, I\'m easy to find. Good luck with the hiring push."',
+        ],
+        tips: 'Each follow-up should stand alone — assume they never saw the previous email. New value, new angle, every time.',
+      },
+    ],
+  },
+  {
+    id: 'multi-channel',
+    name: 'Multi-Channel Sequencing',
+    tagline: 'Email + LinkedIn + phone in one cadence',
+    description: 'Buyers don\'t live in one channel. The most effective outbound in 2025-2026 combines email, LinkedIn, and phone in a coordinated sequence. Multi-channel sequences see 2-3× higher response rates than email-only.',
+    bestFor: 'Teams targeting mid-market and enterprise where deals justify the effort',
+    icon: '🔗',
     color: 'border-l-blue-500',
     steps: [
       {
-        title: 'Metrics',
-        description: 'Quantify the economic impact of solving the customer\'s problem.',
-        keyQuestions: ['What\'s the cost of this problem today?', 'What ROI are you targeting?', 'How do you measure success internally?'],
-        tips: 'Always get the prospect to state the metrics in their own words — it creates stronger buy-in than you quoting numbers at them.',
+        title: 'Day 1: LinkedIn Connection + Research',
+        description: 'Start by connecting on LinkedIn with a personalized note. This warms them up before your email.',
+        keyActions: [
+          'Send a connection request with a short note (under 300 characters)',
+          'Don\'t pitch in the connection request — reference shared context',
+          'While waiting for acceptance, do your 3-minute research',
+        ],
+        examples: [
+          'Connection note: "Hi Sarah — saw your post on scaling SDR teams. Going through the same challenge with our clients. Would love to connect."',
+        ],
+        tips: 'LinkedIn acceptance rates are 30-40% with personalized notes vs 15% without. This is about building familiarity, not pitching.',
       },
       {
-        title: 'Economic Buyer',
-        description: 'Identify the person who controls the budget and can say yes.',
-        keyQuestions: ['Who ultimately signs off on this budget?', 'Have they approved similar investments before?', 'Can we include them in the next meeting?'],
-        tips: 'If you can\'t identify or access the economic buyer, your deal is at serious risk. Coach your champion on how to get you access.',
+        title: 'Day 2: Cold Email #1',
+        description: 'Send your primary cold email. Reference the LinkedIn touchpoint if they connected.',
+        keyActions: [
+          'If they connected: "Thanks for connecting on LinkedIn — wanted to share something relevant."',
+          'If not yet connected: Send the cold email standalone with trigger-based personalization',
+          'Keep under 100 words, one clear CTA',
+        ],
+        examples: [
+          'Subject: scaling outbound @ [Company]\n\nHi Sarah,\n\nNoticed you\'re building out the SDR org. The hardest part isn\'t hiring — it\'s giving reps enough quality data to actually hit quota.\n\nWe help teams like [similar co] generate verified prospect lists in seconds instead of hours.\n\nOpen to a 15-min demo this week?\n\nBest, [Name]',
+        ],
+        tips: 'The email should feel like a natural continuation of the LinkedIn touch, not a separate blast.',
       },
       {
-        title: 'Decision Criteria',
-        description: 'Understand the formal and informal criteria they\'ll use to evaluate solutions.',
-        keyQuestions: ['What are your must-have vs. nice-to-have requirements?', 'Are there technical requirements or compliance needs?', 'How are you weighting different criteria?'],
-        tips: 'Try to influence the decision criteria early. If your strengths aren\'t on their list, you need to add them.',
+        title: 'Day 4: LinkedIn Engage + Email #2',
+        description: 'Engage with their content on LinkedIn, then send email follow-up #1.',
+        keyActions: [
+          'Like or comment on one of their recent posts (genuine, not generic)',
+          'Send a follow-up email with a new angle or value-add',
+          'Don\'t say "following up" — lead with new value',
+        ],
+        examples: [
+          'LinkedIn comment: "Great point about ramp time. We\'ve seen the same pattern — the bottleneck is usually data access, not training."',
+          'Email: "Quick thought — [similar company]\'s new reps hit quota 40% faster after they stopped wasting time on manual research. Wrote up a 2-min case study if you\'re curious."',
+        ],
+        tips: 'The LinkedIn engagement makes your name familiar. When they see your email, it\'s not from a stranger anymore.',
       },
       {
-        title: 'Decision Process',
-        description: 'Map out how they\'ll actually make the buying decision.',
-        keyQuestions: ['Walk me through your evaluation process.', 'Who else needs to be involved?', 'What\'s your timeline for a decision?'],
-        tips: 'Get the process in writing if possible. Ask: "If everything checks out, what happens between now and going live?"',
-      },
-      {
-        title: 'Identify Pain',
-        description: 'Uncover the real, urgent problem driving this initiative.',
-        keyQuestions: ['What happens if you don\'t solve this?', 'Why now — what\'s changed?', 'How is this impacting your team day-to-day?'],
-        tips: 'Surface emotional pain, not just logical pain. "That must be frustrating" lands harder than "That costs $X."',
-      },
-      {
-        title: 'Champion',
-        description: 'Develop an internal advocate who sells for you when you\'re not in the room.',
-        keyQuestions: ['What does solving this mean for you personally?', 'Would you be willing to champion this internally?', 'What objections will you face from the committee?'],
-        tips: 'Your champion needs to sell this internally. Arm them with a one-page business case they can forward.',
+        title: 'Day 7-14: Phone + Final Touches',
+        description: 'If they\'ve opened emails but not replied, add a phone call. Close with a breakup email.',
+        keyActions: [
+          'Day 7: Call attempt (leave a voicemail referencing your email)',
+          'Day 10: Send a LinkedIn DM with a different resource or question',
+          'Day 14: Breakup email — give them an easy out',
+        ],
+        examples: [
+          'Voicemail: "Hey Sarah, [Name] here. Sent you a note about scaling outbound — wanted to put a voice to the name. If it\'s relevant, I\'m at [number]. If not, no worries at all."',
+          'Breakup: "I\'ll take the hint 😄 If outbound data becomes a priority later, I\'m easy to find. Wishing you luck with the hiring push."',
+        ],
+        tips: 'The breakup email often gets the highest reply rate in a sequence. People respond to scarcity and respect.',
       },
     ],
   },
   {
-    id: 'spin',
-    name: 'SPIN Selling',
-    tagline: 'Consultative questioning methodology',
-    description: 'Developed by Neil Rackham after studying 35,000+ sales calls. SPIN uses a strategic question sequence to guide prospects to self-discover their need for your solution.',
-    bestFor: 'Complex B2B sales where the buyer doesn\'t fully understand their problem yet',
-    icon: '🔄',
+    id: 'account-based',
+    name: 'Account-Based Outbound (ABO)',
+    tagline: 'Surround the account, not just the contact',
+    description: 'For high-value target accounts, reaching one person isn\'t enough. ABO targets 3-5 stakeholders per account with coordinated, role-specific messaging. Used by top-performing enterprise teams to break into dream accounts.',
+    bestFor: 'Enterprise and strategic accounts where deal sizes justify deep investment',
+    icon: '🏢',
     color: 'border-l-purple-500',
     steps: [
       {
-        title: 'Situation Questions',
-        description: 'Gather facts about the prospect\'s current setup. Keep these minimal.',
-        keyQuestions: ['What tools do you currently use for X?', 'How is your team structured?', 'Walk me through your current process.'],
-        tips: 'Research before the call so you don\'t waste time on questions Google could answer. Max 2-3 situation questions.',
+        title: 'Build Your Account Map',
+        description: 'For each target account, identify 3-5 stakeholders across the buying committee.',
+        keyActions: [
+          'Map the org chart: Champion (daily user), Decision Maker (budget), Influencer (technical), Blocker (procurement/legal)',
+          'Find each person on LinkedIn — note their priorities, posts, and pain points',
+          'Identify the "path of least resistance" — who\'s most likely to engage first?',
+        ],
+        examples: [
+          'Target: DataFlow Inc.\n- Champion: Sarah Chen (VP RevOps) — posted about lead quality\n- Decision Maker: Mike Torres (CRO) — focused on pipeline coverage\n- Influencer: Raj Patel (Sales Ops Manager) — evaluates tools\n- Blocker: Legal team — will need security review',
+        ],
+        tips: 'Start with the Champion or Influencer, not the Decision Maker. Build internal momentum before going to the top.',
       },
       {
-        title: 'Problem Questions',
-        description: 'Help the prospect articulate difficulties with their current situation.',
-        keyQuestions: ['What\'s the biggest challenge with your current approach?', 'Where do things break down?', 'Are you satisfied with [specific outcome]?'],
-        tips: 'Don\'t rush to solve. Let them sit with the problem. Silence after a problem question is powerful.',
+        title: 'Create Role-Specific Messaging',
+        description: 'Each stakeholder cares about different things. Tailor your message to their world.',
+        keyActions: [
+          'Champion: Focus on daily pain and workflow improvement',
+          'Decision Maker: Focus on revenue impact and strategic alignment',
+          'Influencer: Focus on technical fit and ease of implementation',
+          'Write 2-3 email variants per role',
+        ],
+        examples: [
+          'To Champion (VP RevOps): "Your SDR team is spending 3 hours/day on manual research. What if that was 20 minutes?"',
+          'To Decision Maker (CRO): "Companies like [peer] increased pipeline by 35% after fixing their prospecting data layer."',
+          'To Influencer (Sales Ops): "We integrate with Salesforce and Outreach in under a day. No custom dev needed."',
+        ],
+        tips: 'Never send the same email to multiple people at the same company. They will compare notes.',
       },
       {
-        title: 'Implication Questions',
-        description: 'Expand the perceived severity of the problem. This is where deals are won.',
-        keyQuestions: ['What happens to the team when that problem occurs?', 'How does that impact your ability to hit targets?', 'If this continues for another year, what\'s the cost?'],
-        tips: 'This is the hardest but most valuable stage. Implication questions create urgency without you having to push.',
+        title: 'Execute the Surround Campaign',
+        description: 'Stagger outreach across stakeholders over 2-3 weeks. Create the impression of market presence.',
+        keyActions: [
+          'Week 1: Reach out to Champion and Influencer',
+          'Week 2: If engagement, reach out to Decision Maker (reference the Champion conversation)',
+          'Week 3: If no engagement, try a different entry point',
+          'Coordinate timing so messages land on different days',
+        ],
+        examples: [
+          'To CRO (after Champion engaged): "Sarah on your RevOps team mentioned you\'re evaluating prospecting tools. Given your pipeline goals this quarter, thought it\'d be worth connecting directly."',
+        ],
+        tips: 'The magic of ABO is when the Decision Maker hears your name from multiple internal sources before you even reach out to them.',
       },
       {
-        title: 'Need-Payoff Questions',
-        description: 'Get the prospect to articulate the value of solving the problem.',
-        keyQuestions: ['How would it help if you could [solve problem]?', 'What would it mean for your team to have [capability]?', 'If we could cut that time in half, what would you do with it?'],
-        tips: 'Let the prospect sell themselves. Their words are more convincing than yours.',
-      },
-    ],
-  },
-  {
-    id: 'challenger',
-    name: 'Challenger Sale',
-    tagline: 'Teach, tailor, take control',
-    description: 'Based on research showing that top sales performers don\'t just build relationships — they challenge buyers\' thinking. Teach them something new, tailor to their world, then take control of the sale.',
-    bestFor: 'Selling disruptive or complex solutions to sophisticated buyers',
-    icon: '⚡',
-    color: 'border-l-orange-500',
-    steps: [
-      {
-        title: 'Warmer (Reframe)',
-        description: 'Start with an insight that challenges the prospect\'s assumptions about their business.',
-        keyQuestions: ['Most companies in your space think X is the problem — but we\'ve found it\'s actually Y.', 'Here\'s a trend that\'s going to change how your industry works.'],
-        tips: 'Your insight must be genuinely surprising. If they nod and say "yeah, we know," you haven\'t challenged them.',
-      },
-      {
-        title: 'Teach (Reframe)',
-        description: 'Introduce a new framework for understanding their problem. Make them see it differently.',
-        keyQuestions: ['We\'ve studied 200+ companies like yours and found 3 patterns…', 'The real cost isn\'t what you think — here\'s why.'],
-        tips: 'Use data and stories, not features. You\'re teaching them about their problem, not your product.',
-      },
-      {
-        title: 'Tailor',
-        description: 'Connect your insight specifically to their world — their industry, role, and pain.',
-        keyQuestions: ['Given your [specific situation], this means…', 'For a [their role] at a [their company type], the impact is…'],
-        tips: 'Personalization is not using their name — it\'s making the insight feel like it was discovered for them.',
-      },
-      {
-        title: 'Take Control',
-        description: 'Assertively guide the deal forward. Propose next steps. Handle pushback with confidence.',
-        keyQuestions: ['Based on what we discussed, here\'s what I recommend as a next step.', 'I\'d suggest we move quickly because [reason tied to their timeline].'],
-        tips: 'Taking control is not being aggressive — it\'s being confident and direct about what should happen next.',
+        title: 'Orchestrate the Meeting',
+        description: 'Once you have engagement, bring stakeholders together for a unified conversation.',
+        keyActions: [
+          'Suggest a joint meeting with the Champion and Decision Maker',
+          'Prepare a custom deck that addresses each stakeholder\'s specific concerns',
+          'Have the Champion help set the agenda — they\'re selling internally for you',
+        ],
+        examples: [
+          '"Sarah mentioned she\'d like to explore this further, and given the pipeline targets you shared at your all-hands, I thought it\'d make sense for us all to connect. Would Thursday work?"',
+        ],
+        tips: 'Your Champion is your internal sales rep. Arm them with the business case — a one-pager they can forward to their boss.',
       },
     ],
   },
   {
-    id: 'bant',
-    name: 'BANT',
-    tagline: 'Classic qualification checklist',
-    description: 'The original IBM qualification framework. Simple and effective for quickly determining if a prospect is worth pursuing. Best used early in the sales process.',
-    bestFor: 'High-volume sales, SDR qualification, and initial discovery calls',
-    icon: '✅',
-    color: 'border-l-green-500',
+    id: 'value-first',
+    name: 'Value-First Outbound',
+    tagline: 'Give before you ask',
+    description: 'Instead of asking for time on the first touch, lead with something genuinely useful — a relevant insight, benchmark data, a custom analysis, or a resource. This builds reciprocity and positions you as a trusted advisor, not a pushy seller. Especially effective for skeptical or senior buyers.',
+    bestFor: 'Selling to senior leaders, saturated markets, or prospects who are "allergic" to cold outreach',
+    icon: '🎁',
+    color: 'border-l-emerald-500',
     steps: [
       {
-        title: 'Budget',
-        description: 'Determine if they have the financial resources to buy.',
-        keyQuestions: ['Do you have budget allocated for this initiative?', 'What range are you expecting for a solution like this?', 'Is this a new budget item or reallocating existing spend?'],
-        tips: 'Don\'t ask "What\'s your budget?" directly on a first call. Instead, share your typical range and gauge reaction.',
+        title: 'Create Your Value Assets',
+        description: 'Build a library of assets you can share — not product collateral, but genuinely useful content.',
+        keyActions: [
+          'Industry benchmark reports (even a simple one-pager with 3-5 stats)',
+          'Custom analysis: "I looked at your [website/LinkedIn/job postings] and noticed X"',
+          'Curated roundup: "3 things top [their role] are doing differently in 2026"',
+          'Template or framework they can use immediately',
+        ],
+        examples: [
+          '"We analyzed 500 SaaS companies\' outbound metrics — here\'s where your industry segment lands."',
+          '"I noticed your SDR team is using [tool X] — here\'s a workflow template that teams using it get 2× more from."',
+        ],
+        tips: 'The best value assets take you 30 minutes to create but save the prospect hours. Think: "Would I find this useful if I were them?"',
       },
       {
-        title: 'Authority',
-        description: 'Identify who has decision-making power.',
-        keyQuestions: ['Who else would be involved in this decision?', 'Have you evaluated solutions like this before — how did that process work?', 'What would your recommendation process look like?'],
-        tips: 'Everyone says "I\'m the decision maker." Test it by asking about the last similar purchase they approved.',
+        title: 'The Value-First Email',
+        description: 'Lead with the value. The CTA is to consume the resource, not to take a meeting.',
+        keyActions: [
+          'Open with relevance: why you\'re sending this to them specifically',
+          'Deliver the value: attach/link the asset',
+          'Soft CTA: "Thought you\'d find this useful — happy to walk through the implications for [their company] if you\'re curious."',
+          'No pitch, no demo request on the first touch',
+        ],
+        examples: [
+          'Subject: benchmark data for [their industry] outbound\n\nHi James,\n\nWe just published our 2026 outbound benchmark report. Given HealthBridge\'s hiring push, thought one data point would jump out: companies scaling SDR teams see 40% ramp time improvement when they invest in data quality first.\n\nAttached the full report — pages 3-4 are most relevant to healthtech.\n\nHappy to walk through how your numbers compare if useful.\n\nBest, [Name]',
+        ],
+        tips: 'The value-first approach works because it flips the dynamic. You\'re not asking — you\'re giving. The meeting comes naturally as a next step.',
       },
       {
-        title: 'Need',
-        description: 'Confirm there\'s a real, acknowledged problem to solve.',
-        keyQuestions: ['What\'s driving this evaluation right now?', 'What happens if you don\'t solve this?', 'How is this impacting your team today?'],
-        tips: 'No need = no deal. If they\'re "just looking," qualify whether there\'s a triggering event or it\'s a dead-end.',
+        title: 'Follow Up with More Value',
+        description: 'Each follow-up adds a new insight or resource — never "did you see my last email?"',
+        keyActions: [
+          'Follow-up 1: Different asset or angle on the same theme',
+          'Follow-up 2: Personalized observation about their specific situation',
+          'Follow-up 3: Social proof — what a similar company did',
+        ],
+        examples: [
+          'Follow-up 1: "One more thing — I looked at your current outbound approach and noticed [specific observation]. Here\'s what [similar company] changed that made a big difference."',
+          'Follow-up 2: "Quick question — are your SDRs spending more time researching or actually selling? That ratio is usually the first thing to fix."',
+        ],
+        tips: 'After 2-3 value touches, you\'ve earned the right to ask for a meeting. The conversion feels natural, not forced.',
       },
       {
-        title: 'Timeline',
-        description: 'Understand their urgency and buying timeline.',
-        keyQuestions: ['When are you looking to have a solution in place?', 'Is there a deadline or event driving this timeline?', 'What needs to happen before you can move forward?'],
-        tips: 'If there\'s no timeline, there\'s no urgency. Help create one by tying to their business calendar.',
+        title: 'Convert to Conversation',
+        description: 'After providing value, transition to a meeting request. By now, you\'re a known quantity.',
+        keyActions: [
+          'Reference the value you\'ve shared: "Based on the benchmarks I sent and what I see at [their company]..."',
+          'Make the meeting about THEM, not your demo: "I have some specific ideas for [their company] — worth 15 minutes?"',
+          'Offer a choice: meeting or async (send a Loom video)',
+        ],
+        examples: [
+          '"I\'ve shared a few things over the past couple weeks and had a few ideas specific to HealthBridge. Would it make sense to jump on a 15-min call, or would you prefer I send a quick video walkthrough?"',
+        ],
+        tips: 'By this point, you\'re not cold anymore. You\'re a helpful person they recognize. The meeting conversion rate is 3-5× higher than a cold ask.',
       },
     ],
   },
   {
-    id: 'gap-selling',
-    name: 'Gap Selling',
-    tagline: 'Current state → future state',
-    description: 'Focus on the gap between where the prospect is now and where they want to be. The bigger the gap, the more urgent the purchase. Developed by Keenan.',
-    bestFor: 'Solution selling where prospects need help quantifying their problem',
-    icon: '📊',
-    color: 'border-l-cyan-500',
+    id: 'referral-loop',
+    name: 'The Referral & Warm Intro Engine',
+    tagline: 'Turn every conversation into 2-3 more',
+    description: 'The most underused outbound strategy. Every meeting, every closed deal, and every lost deal is an opportunity for warm introductions. Referred prospects convert 4-5× higher than cold outreach and close 30% faster.',
+    bestFor: 'Any team that wants to compound their pipeline over time with highest-quality leads',
+    icon: '🔄',
+    color: 'border-l-rose-500',
     steps: [
       {
-        title: 'Current State',
-        description: 'Deeply understand their current environment, processes, and challenges.',
-        keyQuestions: ['Walk me through your current workflow end to end.', 'What tools and processes do you rely on today?', 'Where do things break down most often?'],
-        tips: 'Spend 60-70% of the call here. Most reps rush past this, but deep current-state understanding is what separates top performers.',
+        title: 'Ask at the Right Moments',
+        description: 'There are 5 natural moments to ask for referrals — most reps use zero of them.',
+        keyActions: [
+          'After a great demo: "Who else on your team would find this relevant?"',
+          'After a closed-won deal: "You clearly get it — who else in your network faces this same challenge?"',
+          'After a closed-lost deal: "I appreciate your time. Is there anyone you know who might be a better fit?"',
+          'After providing value (even without a sale): Ask after sharing a useful resource',
+          'During QBRs with existing customers: "Who should we be talking to?"',
+        ],
+        examples: [
+          '"You mentioned your friend at [Company] has the same problem. Would you be open to a quick intro? I\'ll make it easy — here\'s a blurb you can forward."',
+        ],
+        tips: 'Make it easy. Write the intro email FOR them. "Here\'s a 2-sentence blurb you can forward — I\'ll take it from there."',
       },
       {
-        title: 'Future State',
-        description: 'Paint a vivid picture of what success looks like for them.',
-        keyQuestions: ['In a perfect world, what does this look like in 12 months?', 'What capabilities would change the game for your team?', 'What KPIs would improve if this was solved?'],
-        tips: 'Get them excited about the future state before ever mentioning your product. Their vision, not yours.',
+        title: 'The Warm Intro Email Template',
+        description: 'When you get a referral, the outreach email writes itself. Leverage the social proof.',
+        keyActions: [
+          'Lead with the referral: "[Referrer name] suggested I reach out"',
+          'One sentence on why: "They mentioned you\'re dealing with [problem]"',
+          'One sentence on relevance: "We helped [referrer\'s company] with [result]"',
+          'Low-friction CTA: "Worth a quick chat?"',
+        ],
+        examples: [
+          'Subject: [Referrer name] suggested we connect\n\nHi Rachel,\n\nMarcus Johnson at CloudSync mentioned you\'re scaling outbound and running into data quality issues — same challenge he had 6 months ago.\n\nWe helped his team cut prospect research from 3 hours/day to 20 minutes. Thought it might be relevant for LogiCore.\n\nWorth 15 minutes this week?\n\nBest, [Name]',
+        ],
+        tips: 'Referral emails get 40-50% reply rates. The referrer\'s name does all the heavy lifting — keep the rest minimal.',
       },
       {
-        title: 'The Gap',
-        description: 'Quantify the distance between current and future state. This IS the sale.',
-        keyQuestions: ['So the gap between where you are and where you want to be is [X] — does that feel right?', 'What\'s the cost of staying in the current state for another quarter?'],
-        tips: 'The bigger and more painful the gap, the more urgency. If the gap is small, the deal isn\'t real.',
+        title: 'Build a Systematic Referral Process',
+        description: 'Don\'t leave referrals to chance. Build it into your workflow.',
+        keyActions: [
+          'Add "ask for referral" as a step in your post-demo and post-close workflows',
+          'Track referral sources in your CRM — who generates the most intros?',
+          'Create a referral incentive for customers (doesn\'t have to be monetary — early access, co-marketing)',
+          'Set a goal: 2-3 referral asks per week minimum',
+        ],
+        examples: [
+          'CRM field: "Referred by: [name]" — track conversion rates by referral source',
+          'Quarterly email to happy customers: "Who else should we be helping?"',
+        ],
+        tips: 'The best sales orgs get 30-40% of their pipeline from referrals. It compounds — every new customer becomes a source of future intros.',
       },
     ],
   },
@@ -266,19 +410,22 @@ const Playbooks = () => {
     setMessages(updatedMessages);
     setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
-    const systemPrompt = `You are an expert sales coach helping the user practice the "${selectedPlaybook.name}" framework.
+    const systemPrompt = `You are an expert outbound sales coach helping the user practice the "${selectedPlaybook.name}" playbook.
 
 Current step: "${step.title}" — ${step.description}
 
-Key questions for this step: ${step.keyQuestions.join(', ')}
+Key actions for this step: ${step.keyActions.join(' | ')}
 
-The user is practicing what they would say to a prospect during this step. 
+Example approaches: ${step.examples.join(' | ')}
+
+The user is practicing what they would write or say to a prospect during this step of the outbound playbook.
 Give brief, actionable coaching feedback (2-4 sentences):
-- Was their approach effective for this step?
-- What could they improve?
-- Give a specific alternative phrasing if relevant.
+- Does their approach follow this playbook's methodology?
+- Is it specific enough, or too generic?
+- Give a concrete alternative phrasing or improvement if relevant.
+- Reference current outbound best practices (brevity, personalization, trigger events, single CTA).
 
-Be encouraging but honest. Use the framework's methodology.`;
+Be encouraging but direct. Experienced outbound coaches don't sugarcoat.`;
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -355,10 +502,10 @@ Be encouraging but honest. Use the framework's methodology.`;
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
                 <BookOpen className="w-7 h-7 text-primary" />
-                Sales Playbooks
+                Outbound Playbooks
               </h1>
               <p className="text-muted-foreground text-sm">
-                Master proven sales methodologies with interactive guides and AI practice sessions
+                Proven outbound strategies with step-by-step execution guides and AI practice sessions
               </p>
             </div>
           </div>
@@ -370,20 +517,23 @@ Be encouraging but honest. Use the framework's methodology.`;
                 className={`cursor-pointer hover:border-primary/50 transition-all hover:shadow-md border-l-4 ${pb.color}`}
                 onClick={() => { setSelectedPlaybook(pb); setActiveStep(0); setPracticeMode(false); setMessages([]); }}
               >
-                <CardHeader>
+                <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <span className="text-2xl">{pb.icon}</span>
                     <Badge variant="outline" className="text-xs">{pb.steps.length} steps</Badge>
                   </div>
-                  <CardTitle className="text-lg">{pb.name}</CardTitle>
+                  <CardTitle className="text-base mt-2">{pb.name}</CardTitle>
                   <CardDescription>{pb.tagline}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground mb-3">{pb.description}</p>
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{pb.description}</p>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Target className="w-3 h-3" />
-                    <span>Best for: {pb.bestFor}</span>
+                    <span>{pb.bestFor}</span>
                   </div>
+                  <Button variant="outline" size="sm" className="mt-4 w-full gap-2">
+                    <ChevronRight className="w-4 h-4" /> Open Playbook
+                  </Button>
                 </CardContent>
               </Card>
             ))}
@@ -393,19 +543,20 @@ Be encouraging but honest. Use the framework's methodology.`;
     );
   }
 
+  // Playbook detail view
   const currentStep = selectedPlaybook.steps[activeStep];
 
-  // Playbook detail + practice view
   return (
     <DashboardLayout>
       <FeatureGateModal open={gateModalOpen} onOpenChange={setGateModalOpen} feature={gatedFeature || 'customPlaybooks'} currentPlan={currentPlan} />
+
       <div className="space-y-6">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => { setSelectedPlaybook(null); setPracticeMode(false); }}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
+            <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
               <span className="text-2xl">{selectedPlaybook.icon}</span>
               {selectedPlaybook.name}
             </h1>
@@ -413,141 +564,151 @@ Be encouraging but honest. Use the framework's methodology.`;
           </div>
         </div>
 
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-sm">{selectedPlaybook.description}</p>
+            <div className="flex items-center gap-2 mt-3 text-sm text-muted-foreground">
+              <Target className="w-4 h-4" />
+              <span><strong>Best for:</strong> {selectedPlaybook.bestFor}</span>
+            </div>
+          </CardContent>
+        </Card>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Step navigation */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Framework Steps</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {selectedPlaybook.steps.map((step, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => { setActiveStep(idx); if (practiceMode) { setMessages([]); } }}
-                  className={`w-full flex items-center gap-3 px-4 py-3 text-left border-b last:border-b-0 transition-colors ${
-                    activeStep === idx ? 'bg-primary/10 text-primary' : 'hover:bg-accent/50'
-                  }`}
-                >
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-                    activeStep === idx ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+          <div className="space-y-2">
+            {selectedPlaybook.steps.map((step, idx) => (
+              <Card
+                key={idx}
+                className={`cursor-pointer transition-all ${idx === activeStep ? 'border-primary bg-primary/5' : 'hover:border-primary/30'}`}
+                onClick={() => { setActiveStep(idx); setPracticeMode(false); setMessages([]); }}
+              >
+                <CardContent className="p-4 flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
+                    idx === activeStep ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
                   }`}>
                     {idx + 1}
                   </div>
-                  <span className="text-sm font-medium">{step.title}</span>
-                  <ChevronRight className="w-4 h-4 ml-auto text-muted-foreground" />
-                </button>
-              ))}
-            </CardContent>
-          </Card>
+                  <div>
+                    <p className={`text-sm font-medium ${idx === activeStep ? 'text-primary' : ''}`}>{step.title}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
-          {/* Step content / practice */}
+          {/* Step detail */}
           <div className="lg:col-span-2 space-y-4">
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <div>
-                    <Badge variant="outline" className="mb-2">Step {activeStep + 1} of {selectedPlaybook.steps.length}</Badge>
-                    <CardTitle>{currentStep.title}</CardTitle>
-                    <CardDescription className="mt-1">{currentStep.description}</CardDescription>
-                  </div>
+                  <CardTitle className="text-lg">Step {activeStep + 1}: {currentStep.title}</CardTitle>
+                  <Badge variant="outline">Step {activeStep + 1} of {selectedPlaybook.steps.length}</Badge>
+                </div>
+                <CardDescription>{currentStep.description}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <h4 className="font-semibold text-sm flex items-center gap-2 mb-3">
+                    <CheckCircle className="w-4 h-4 text-primary" />
+                    Key Actions
+                  </h4>
+                  <ul className="space-y-2">
+                    {currentStep.keyActions.map((action, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm">
+                        <span className="text-primary mt-1">•</span>
+                        <span>{action}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold text-sm flex items-center gap-2 mb-3">
+                    <MessageSquare className="w-4 h-4 text-primary" />
+                    Examples
+                  </h4>
+                  {currentStep.examples.map((example, i) => (
+                    <div key={i} className="bg-muted/50 rounded-lg p-3 text-sm whitespace-pre-line mb-2">
+                      {example}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+                  <h4 className="font-semibold text-sm flex items-center gap-2 mb-2">
+                    <Lightbulb className="w-4 h-4 text-primary" />
+                    Pro Tip
+                  </h4>
+                  <p className="text-sm text-muted-foreground">{currentStep.tips}</p>
+                </div>
+
+                <div className="flex gap-2 pt-2">
                   <Button
-                    onClick={() => { if (practiceMode) { setPracticeMode(false); setMessages([]); } else startPractice(); }}
-                    variant={practiceMode ? "outline" : "default"}
-                    size="sm"
-                    className="gap-1"
+                    variant="outline"
+                    disabled={activeStep === 0}
+                    onClick={() => { setActiveStep(prev => prev - 1); setPracticeMode(false); setMessages([]); }}
                   >
-                    {practiceMode ? (
-                      <><BookOpen className="w-4 h-4" /> View Guide</>
-                    ) : (
-                      <><Play className="w-4 h-4" /> Practice This</>
-                    )}
+                    Previous
+                  </Button>
+                  {activeStep < selectedPlaybook.steps.length - 1 ? (
+                    <Button onClick={() => { setActiveStep(prev => prev + 1); setPracticeMode(false); setMessages([]); }}>
+                      Next Step <ChevronRight className="w-4 h-4 ml-1" />
+                    </Button>
+                  ) : (
+                    <Button variant="secondary" onClick={() => { setSelectedPlaybook(null); }}>
+                      Back to Playbooks
+                    </Button>
+                  )}
+                  <Button variant="secondary" className="ml-auto gap-2" onClick={startPractice}>
+                    <Brain className="w-4 h-4" /> Practice This Step
                   </Button>
                 </div>
-              </CardHeader>
-              <CardContent>
-                {!practiceMode ? (
-                  <div className="space-y-6">
-                    <div>
-                      <h4 className="text-sm font-semibold flex items-center gap-2 mb-3">
-                        <MessageSquare className="w-4 h-4 text-primary" />
-                        Key Questions to Ask
-                      </h4>
-                      <ul className="space-y-2">
-                        {currentStep.keyQuestions.map((q, i) => (
-                          <li key={i} className="flex items-start gap-2 text-sm">
-                            <CheckCircle className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                            <span>"{q}"</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+              </CardContent>
+            </Card>
 
-                    <div className="p-4 bg-accent/50 rounded-lg">
-                      <h4 className="text-sm font-semibold flex items-center gap-2 mb-2">
-                        <Lightbulb className="w-4 h-4 text-primary" />
-                        Pro Tip
-                      </h4>
-                      <p className="text-sm text-muted-foreground">{currentStep.tips}</p>
-                    </div>
-
-                    <div className="flex justify-between pt-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={activeStep === 0}
-                        onClick={() => setActiveStep(prev => prev - 1)}
-                      >
-                        Previous Step
-                      </Button>
-                      <Button
-                        size="sm"
-                        disabled={activeStep === selectedPlaybook.steps.length - 1}
-                        onClick={() => setActiveStep(prev => prev + 1)}
-                      >
-                        Next Step <ChevronRight className="w-4 h-4 ml-1" />
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="p-3 bg-muted rounded-lg text-sm">
-                      <p className="font-medium mb-1">Practice: {currentStep.title}</p>
-                      <p className="text-muted-foreground text-xs">
-                        Type what you'd say to a prospect during this step. The AI coach will give you feedback.
-                      </p>
-                    </div>
-
-                    {messages.length > 0 && (
-                      <ScrollArea className="h-[300px] pr-4">
-                        <div className="space-y-4">
-                          {messages.map((msg, idx) => (
-                            <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                              <div className={`max-w-[80%] p-3 rounded-lg ${
-                                msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
-                              }`}>
-                                {msg.role === 'assistant' ? (
-                                  <div className="prose prose-sm dark:prose-invert max-w-none">
-                                    {msg.content ? (
-                                      <ReactMarkdown>{msg.content}</ReactMarkdown>
-                                    ) : loading ? (
-                                      <span className="flex items-center gap-2 text-sm">
-                                        <Loader2 className="w-4 h-4 animate-spin" /> Analyzing...
-                                      </span>
-                                    ) : null}
-                                  </div>
-                                ) : (
-                                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                                )}
-                              </div>
+            {/* Practice mode */}
+            {practiceMode && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Brain className="w-5 h-5 text-primary" />
+                    Practice: {currentStep.title}
+                  </CardTitle>
+                  <CardDescription>
+                    Write what you'd say or send to a prospect for this step. The AI coach will give you feedback.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-[250px] pr-4 mb-4">
+                    <div className="space-y-3">
+                      {messages.map((msg, i) => (
+                        <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
+                          {msg.role === 'assistant' && (
+                            <div className="w-7 h-7 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+                              <Brain className="w-3.5 h-3.5 text-primary" />
                             </div>
-                          ))}
-                          <div ref={messagesEndRef} />
+                          )}
+                          <div className={`rounded-lg px-3 py-2 max-w-[85%] ${
+                            msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                          }`}>
+                            {msg.role === 'assistant' ? (
+                              <div className="prose prose-sm dark:prose-invert max-w-none">
+                                <ReactMarkdown>{msg.content || '...'}</ReactMarkdown>
+                              </div>
+                            ) : (
+                              <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                            )}
+                          </div>
                         </div>
-                      </ScrollArea>
-                    )}
+                      ))}
+                      <div ref={messagesEndRef} />
+                    </div>
+                  </ScrollArea>
 
+                  <div className="flex gap-2">
                     <Textarea
-                      placeholder={`Practice your ${currentStep.title.toLowerCase()} approach...`}
+                      placeholder={`Write your ${currentStep.title.toLowerCase()} draft here...`}
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       onKeyDown={(e) => {
@@ -556,16 +717,16 @@ Be encouraging but honest. Use the framework's methodology.`;
                           sendPracticeMessage();
                         }
                       }}
-                      className="min-h-[70px]"
+                      className="resize-none"
+                      disabled={loading}
                     />
-                    <Button onClick={sendPracticeMessage} disabled={loading || !input.trim()} className="w-full gap-2">
+                    <Button onClick={sendPracticeMessage} disabled={loading || !input.trim()} size="icon" className="h-10 w-10 shrink-0">
                       {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                      Get AI Feedback
                     </Button>
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>
