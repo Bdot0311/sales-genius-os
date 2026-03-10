@@ -137,7 +137,7 @@ serve(async (req) => {
     }
 
     // Pro tier: Advanced checks
-    if (plan === 'pro' || plan === 'elite') {
+    if (plan === 'pro') {
       // Check ICP score if available
       if (lead.icp_score !== null && lead.icp_score !== undefined) {
         if (lead.icp_score >= 70) {
