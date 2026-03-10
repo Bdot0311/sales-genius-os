@@ -640,7 +640,7 @@ Be encouraging but direct. Experienced outbound coaches don't sugarcoat.`;
                     <Lightbulb className="w-4 h-4 text-primary" />
                     Pro Tip
                   </h4>
-                  <p className="text-sm text-muted-foreground">{currentStep.tips}</p>
+                  <p className="text-sm text-foreground">{currentStep.tips}</p>
                 </div>
 
                 <div className="flex gap-2 pt-2">
