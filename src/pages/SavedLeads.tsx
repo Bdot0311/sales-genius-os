@@ -465,6 +465,7 @@ const SavedLeads = () => {
                       <th className="p-3 text-left text-sm font-medium">Contact</th>
                       <th className="p-3 text-left text-sm font-medium">Company</th>
                       <th className="p-3 text-left text-sm font-medium">Industry</th>
+                      <th className="p-3 text-left text-sm font-medium">Status</th>
                       <th className="p-3 text-left text-sm font-medium">ICP Score</th>
                       <th className="p-3 text-left text-sm font-medium">Source</th>
                       <th className="p-3 text-left text-sm font-medium">Added</th>
