@@ -738,7 +738,7 @@ export const Demo = () => {
   const sectionRef = useRef<HTMLElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   
   // Local podcast audio file
   const PODCAST_AUDIO_URL = "/audio/demo-podcast.mp3";
