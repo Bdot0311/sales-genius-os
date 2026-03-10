@@ -13,6 +13,8 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Leads = lazy(() => import("./pages/Leads"));
 const SavedLeads = lazy(() => import("./pages/SavedLeads"));
 const Coach = lazy(() => import("./pages/Coach"));
+const LiveCoaching = lazy(() => import("./pages/LiveCoaching"));
+const Playbooks = lazy(() => import("./pages/Playbooks"));
 const Pipeline = lazy(() => import("./pages/Pipeline"));
 const Outreach = lazy(() => import("./pages/Outreach"));
 const Calendar = lazy(() => import("./pages/Calendar"));
