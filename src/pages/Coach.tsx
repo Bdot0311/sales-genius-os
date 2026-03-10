@@ -5,7 +5,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Mic, Send, TrendingUp, Target, Lightbulb, Loader2, Sparkles, BookOpen, Radio, MessageSquare, Plus, Trash2, History } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import ReactMarkdown from "react-markdown";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
@@ -93,7 +94,7 @@ const Coach = () => {
     }
   };
 
-  const loadConversations = async () => {
+  const loadConversations = async (autoLoadLatest = false) => {
     try {
       const { data, error } = await supabase
         .from("coaching_conversations")
@@ -103,6 +104,11 @@ const Coach = () => {
 
       if (error) throw error;
       setConversations(data || []);
+      
+      // Auto-load most recent conversation on initial page load
+      if (autoLoadLatest && data && data.length > 0 && !currentConversationId) {
+        await loadConversationMessages(data[0].id);
+      }
     } catch (error) {
       console.error("Error loading conversations:", error);
     }
@@ -192,7 +198,7 @@ const Coach = () => {
 
   useEffect(() => {
     loadStats();
-    loadConversations();
+    loadConversations(true); // auto-load latest conversation
   }, []);
 
   if (planLoading) {
@@ -579,14 +585,20 @@ const Coach = () => {
                             <span className="text-sm font-medium">Coach</span>
                           </div>
                         )}
-                        <p className="text-sm whitespace-pre-wrap">
-                          {msg.content || (loading && msg.role === 'assistant' ? (
-                            <span className="flex items-center gap-2">
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                              Thinking...
-                            </span>
-                          ) : '')}
-                        </p>
+                        {msg.role === 'assistant' ? (
+                          <div className="prose prose-sm dark:prose-invert max-w-none">
+                            {msg.content ? (
+                              <ReactMarkdown>{msg.content}</ReactMarkdown>
+                            ) : loading ? (
+                              <span className="flex items-center gap-2">
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Thinking...
+                              </span>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                        )}
                       </div>
                     </div>
                   ))}
