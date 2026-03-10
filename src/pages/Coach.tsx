@@ -53,6 +53,7 @@ const Coach = () => {
     upcomingMeetings: 0,
   });
   const { toast } = useToast();
+  const navigate = useNavigate();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
