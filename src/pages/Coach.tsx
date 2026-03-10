@@ -585,14 +585,20 @@ const Coach = () => {
                             <span className="text-sm font-medium">Coach</span>
                           </div>
                         )}
-                        <p className="text-sm whitespace-pre-wrap">
-                          {msg.content || (loading && msg.role === 'assistant' ? (
-                            <span className="flex items-center gap-2">
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                              Thinking...
-                            </span>
-                          ) : '')}
-                        </p>
+                        {msg.role === 'assistant' ? (
+                          <div className="prose prose-sm dark:prose-invert max-w-none">
+                            {msg.content ? (
+                              <ReactMarkdown>{msg.content}</ReactMarkdown>
+                            ) : loading ? (
+                              <span className="flex items-center gap-2">
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Thinking...
+                              </span>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                        )}
                       </div>
                     </div>
                   ))}
