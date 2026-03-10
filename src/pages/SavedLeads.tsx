@@ -36,7 +36,26 @@ interface Lead {
   job_title?: string;
   company_website?: string;
   enrichment_status?: string;
+  enriched_at?: string;
 }
+
+const getEnrichmentBadge = (lead: Lead) => {
+  const isEnriched = lead.enrichment_status === 'enriched' || lead.enrichment_status === 'success' || !!lead.enriched_at;
+  if (isEnriched) {
+    return (
+      <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs gap-1">
+        <CheckCircle className="w-3 h-3" />
+        Enriched
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="outline" className="text-xs gap-1 text-muted-foreground border-muted-foreground/30">
+      <AlertCircle className="w-3 h-3" />
+      Not Enriched
+    </Badge>
+  );
+};
 
 const SavedLeads = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
