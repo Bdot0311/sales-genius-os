@@ -352,6 +352,7 @@ const Coach = () => {
       triggerGate('liveCoaching');
       return;
     }
+    navigate('/dashboard/coach/live');
   };
 
   const handleCustomPlaybooks = () => {
@@ -359,6 +360,7 @@ const Coach = () => {
       triggerGate('customPlaybooks');
       return;
     }
+    navigate('/dashboard/coach/playbooks');
   };
 
   return (
