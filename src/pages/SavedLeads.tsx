@@ -501,6 +501,9 @@ const SavedLeads = () => {
                           {lead.industry && <Badge variant="outline">{lead.industry}</Badge>}
                         </td>
                         <td className="p-3">
+                          {getEnrichmentBadge(lead)}
+                        </td>
+                        <td className="p-3">
                           {getScoreBadge(lead.icp_score)}
                         </td>
                         <td className="p-3">
