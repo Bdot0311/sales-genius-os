@@ -198,7 +198,7 @@ const Coach = () => {
 
   useEffect(() => {
     loadStats();
-    loadConversations();
+    loadConversations(true); // auto-load latest conversation
   }, []);
 
   if (planLoading) {
