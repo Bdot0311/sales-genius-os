@@ -102,7 +102,7 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
 
       const leads = lines.slice(1).filter(line => line.trim()).map(line => {
         const row = parseCSVLine(line);
-        const lead: any = { user_id: session.user.id };
+        const lead: any = { user_id: session.user.id, lead_status: 'active' };
         
         const getVal = (idx: number) => idx >= 0 && idx < row.length ? row[idx]?.trim().replace(/^["']|["']$/g, '') : "";
 
@@ -117,21 +117,36 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
           lead.contact_name = getVal(nameCol);
         }
 
-        if (emailCol >= 0) lead.contact_email = getVal(emailCol);
-        if (phoneCol >= 0) lead.contact_phone = getVal(phoneCol);
-        if (industryCol >= 0) lead.industry = getVal(industryCol);
-        if (sizeCol >= 0) lead.company_size = getVal(sizeCol);
-        if (sourceCol >= 0 && !source) lead.source = getVal(sourceCol);
-        if (titleCol >= 0) lead.job_title = getVal(titleCol);
+        if (emailCol >= 0) lead.contact_email = getVal(emailCol) || null;
+        if (phoneCol >= 0) lead.contact_phone = getVal(phoneCol) || null;
+        if (industryCol >= 0) lead.industry = getVal(industryCol) || null;
+        if (sizeCol >= 0) lead.company_size = getVal(sizeCol) || null;
+        if (sourceCol >= 0 && !source) lead.source = getVal(sourceCol) || null;
+        if (titleCol >= 0) lead.job_title = getVal(titleCol) || null;
 
         if (!lead.company_name) lead.company_name = "Unknown Company";
         if (!lead.contact_name) lead.contact_name = "Unknown Contact";
         if (source) lead.source = source;
         return lead;
-      });
+      }).filter(lead => lead.company_name && lead.contact_name);
 
-      const { data, error } = await supabase.from("leads").insert(leads).select();
-      if (error) throw error;
+      if (leads.length === 0) {
+        throw new Error("No valid leads found in CSV. Ensure your file has Company Name and Contact Name columns.");
+      }
+
+      // Insert in batches of 50 to avoid timeouts
+      let allInserted: any[] = [];
+      const batchSize = 50;
+      for (let i = 0; i < leads.length; i += batchSize) {
+        const batch = leads.slice(i, i + batchSize);
+        const { data, error } = await supabase.from("leads").insert(batch).select();
+        if (error) {
+          console.error('Batch insert error:', error, 'Batch index:', i);
+          throw new Error(`Import failed at row ${i + 1}: ${error.message}`);
+        }
+        if (data) allInserted = [...allInserted, ...data];
+      }
+      const data = allInserted;
 
       // Log import history
       await supabase.from("import_history").insert({

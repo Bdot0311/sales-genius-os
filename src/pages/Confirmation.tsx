@@ -17,7 +17,7 @@ const Confirmation = () => {
 
   // Real-time subscription verification with polling
   useEffect(() => {
-    let pollInterval: NodeJS.Timeout;
+    let pollInterval: ReturnType<typeof setInterval>;
     let pollCount = 0;
     const maxPolls = 30; // Poll for up to 60 seconds (30 polls * 2 seconds)
 
