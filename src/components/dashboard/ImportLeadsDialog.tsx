@@ -130,8 +130,23 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
         return lead;
       }).filter(lead => lead.company_name && lead.contact_name);
 
-      const { data, error } = await supabase.from("leads").insert(leads).select();
-      if (error) throw error;
+      if (leads.length === 0) {
+        throw new Error("No valid leads found in CSV. Ensure your file has Company Name and Contact Name columns.");
+      }
+
+      // Insert in batches of 50 to avoid timeouts
+      let allInserted: any[] = [];
+      const batchSize = 50;
+      for (let i = 0; i < leads.length; i += batchSize) {
+        const batch = leads.slice(i, i + batchSize);
+        const { data, error } = await supabase.from("leads").insert(batch).select();
+        if (error) {
+          console.error('Batch insert error:', error, 'Batch index:', i);
+          throw new Error(`Import failed at row ${i + 1}: ${error.message}`);
+        }
+        if (data) allInserted = [...allInserted, ...data];
+      }
+      const data = allInserted;
 
       // Log import history
       await supabase.from("import_history").insert({
