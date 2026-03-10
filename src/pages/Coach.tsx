@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Mic, Send, TrendingUp, Target, Lightbulb, Loader2, Sparkles, BookOpen, Radio, MessageSquare, Plus, Trash2, History } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,6 +53,7 @@ const Coach = () => {
     upcomingMeetings: 0,
   });
   const { toast } = useToast();
+  const navigate = useNavigate();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -350,6 +352,7 @@ const Coach = () => {
       triggerGate('liveCoaching');
       return;
     }
+    navigate('/dashboard/coach/live');
   };
 
   const handleCustomPlaybooks = () => {
@@ -357,6 +360,7 @@ const Coach = () => {
       triggerGate('customPlaybooks');
       return;
     }
+    navigate('/dashboard/coach/playbooks');
   };
 
   return (
