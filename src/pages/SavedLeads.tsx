@@ -550,10 +550,7 @@ const SavedLeads = () => {
                           <div className="flex items-center gap-3 flex-wrap">
                             <h3 className="font-semibold text-lg">{lead.contact_name}</h3>
                             {getScoreBadge(lead.icp_score)}
-                            <Badge variant="default" className="text-xs">
-                              <CheckCircle className="w-3 h-3 mr-1" />
-                              Enriched
-                            </Badge>
+                            {getEnrichmentBadge(lead)}
                           </div>
                           <p className="text-sm text-muted-foreground">{lead.company_name}</p>
                           {lead.job_title && (
