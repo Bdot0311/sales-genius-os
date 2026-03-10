@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { LeadAssignmentDialog } from "@/components/dashboard/LeadAssignmentDialog";
 import { LeadDetailSheet } from "@/components/dashboard/LeadDetailSheet";
-import { Search, Download, ArrowUpDown, Trash2, UserPlus, LayoutGrid, Table as TableIcon, ArrowLeft, CheckCircle, Sparkles } from "lucide-react";
+import { Search, Download, ArrowUpDown, Trash2, UserPlus, LayoutGrid, Table as TableIcon, ArrowLeft, CheckCircle, Sparkles, AlertCircle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -36,7 +36,26 @@ interface Lead {
   job_title?: string;
   company_website?: string;
   enrichment_status?: string;
+  enriched_at?: string;
 }
+
+const getEnrichmentBadge = (lead: Lead) => {
+  const isEnriched = lead.enrichment_status === 'enriched' || lead.enrichment_status === 'success' || !!lead.enriched_at;
+  if (isEnriched) {
+    return (
+      <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs gap-1">
+        <CheckCircle className="w-3 h-3" />
+        Enriched
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="outline" className="text-xs gap-1 text-muted-foreground border-muted-foreground/30">
+      <AlertCircle className="w-3 h-3" />
+      Not Enriched
+    </Badge>
+  );
+};
 
 const SavedLeads = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -446,6 +465,7 @@ const SavedLeads = () => {
                       <th className="p-3 text-left text-sm font-medium">Contact</th>
                       <th className="p-3 text-left text-sm font-medium">Company</th>
                       <th className="p-3 text-left text-sm font-medium">Industry</th>
+                      <th className="p-3 text-left text-sm font-medium">Status</th>
                       <th className="p-3 text-left text-sm font-medium">ICP Score</th>
                       <th className="p-3 text-left text-sm font-medium">Source</th>
                       <th className="p-3 text-left text-sm font-medium">Added</th>
@@ -479,6 +499,9 @@ const SavedLeads = () => {
                         </td>
                         <td className="p-3">
                           {lead.industry && <Badge variant="outline">{lead.industry}</Badge>}
+                        </td>
+                        <td className="p-3">
+                          {getEnrichmentBadge(lead)}
                         </td>
                         <td className="p-3">
                           {getScoreBadge(lead.icp_score)}
@@ -527,10 +550,7 @@ const SavedLeads = () => {
                           <div className="flex items-center gap-3 flex-wrap">
                             <h3 className="font-semibold text-lg">{lead.contact_name}</h3>
                             {getScoreBadge(lead.icp_score)}
-                            <Badge variant="default" className="text-xs">
-                              <CheckCircle className="w-3 h-3 mr-1" />
-                              Enriched
-                            </Badge>
+                            {getEnrichmentBadge(lead)}
                           </div>
                           <p className="text-sm text-muted-foreground">{lead.company_name}</p>
                           {lead.job_title && (
