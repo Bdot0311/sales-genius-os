@@ -86,6 +86,8 @@ const App = () => (
               <Route path="/dashboard/leads" element={<Leads />} />
               <Route path="/dashboard/leads/saved" element={<SavedLeads />} />
               <Route path="/dashboard/coach" element={<Coach />} />
+              <Route path="/dashboard/coach/live" element={<LiveCoaching />} />
+              <Route path="/dashboard/coach/playbooks" element={<Playbooks />} />
               <Route path="/dashboard/pipeline" element={<Pipeline />} />
               <Route path="/dashboard/outreach" element={<Outreach />} />
               <Route path="/dashboard/calendar" element={<Calendar />} />
