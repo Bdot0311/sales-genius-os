@@ -1,8 +1,8 @@
 # SalesOS - Find Leads That Actually Convert
 # https://salesos.alephwavex.io
-# Last Updated: 2026-01-31
+# Last Updated: 2026-03-14
 
-> SalesOS is an AI-powered lead discovery platform that helps B2B sales teams find and convert high-quality leads. Describe your ideal customer in plain English, get ranked matches with enriched profiles—your first lead in under 2 minutes.
+> SalesOS is an AI-powered lead discovery platform that helps B2B sales teams find and convert high-quality leads. Describe your ideal customer in plain English, get ranked matches with enriched profiles. Your first lead in under 2 minutes.
 
 ## About SalesOS
 
@@ -17,33 +17,34 @@ SalesOS is a comprehensive sales automation platform designed for SaaS companies
 ## Key Features
 
 - **AI Lead Scoring**: Prioritize who's most likely to convert with machine learning that analyzes engagement and fit signals
-- **Smart Outreach**: Write emails that feel human without the time—AI generates personalized messages based on each prospect's profile
-- **Auto Scheduling**: Book meetings without back-and-forth—smart scheduling finds optimal times automatically
+- **Smart Outreach**: AI generates personalized messages based on each prospect's profile, job title, and company data
+- **Auto Scheduling**: Book meetings without back-and-forth. Smart scheduling finds optimal times automatically
 - **Pipeline Analytics**: See bottlenecks and forecast revenue with visual funnel tracking
 - **Sales Coaching**: Real-time AI coaching for objections and closes during calls
 - **Workflow Builder**: Automate follow-ups and handoffs without code using drag-and-drop
+- **Email Sequences**: Multi-step automated outreach with engagement tracking and smart send-time optimization
 
 ## Results
 
 - 3× faster prospecting
 - 85% ICP match accuracy
 - First lead in under 2 minutes
-- Higher reply rates with personalized outreach
+- 2-4× higher reply rates with personalized outreach
 - Better-fit leads with AI scoring
 
 ## Pricing
 
 SalesOS offers four pricing tiers:
-- **Free**: $0/month - Explore the platform with view-only access, no credit card needed
-- **Starter**: $39/month - Up to 500 verified prospects/month for solo founders
-- **Growth**: $89/month - Up to 1,500 verified prospects/month for growing teams (Most Popular)
-- **Pro**: $179/month - Up to 4,000 verified prospects/month for high-volume operations
+- **Free**: $0/forever - Explore the platform with view-only dashboard access. No credit card required.
+- **Starter**: $39/month - 400 verified prospects/month, 50/day limit, prospect search, verified email data, AI email generator.
+- **Growth**: $89/month - 1,200 verified prospects/month, 150/day limit, advanced filters, bulk export, 5 active sequences. (Most Popular)
+- **Pro**: $179/month - 3,000 verified prospects/month, 400/day limit, unlimited sequences, API access, priority support.
 
-Searches are always free. You only pay when you contact verified prospects.
+All paid plans include a 14-day free trial. Save ~20% with annual billing. No credit card required for the free plan.
 
 ## Getting Started
 
-1. Sign up for a free trial at https://salesos.alephwavex.io
+1. Sign up for free at https://salesos.alephwavex.io
 2. Describe your ideal customer in plain English
 3. Get ranked matches with enriched profiles
 4. Export to outreach or push into your workflow
@@ -71,11 +72,20 @@ SalesOS connects with:
 
 ## FAQ
 
-**What's included in the free trial?**
-Full access to all features for 14 days. No credit card required. AI lead discovery, email generation, pipeline management, and all integrations.
+**Is there a free plan?**
+Yes. SalesOS offers a free forever plan with view-only access to dashboards, sample data, and the pipeline overview. No credit card required. When you're ready to search for leads, upgrade to a paid plan — all with a 14-day free trial.
 
 **How do credits work?**
-Credits are consumed when you reveal contact data: 1 credit per email reveal, 5 credits per phone number. Searching, filtering, and browsing is always free. Each contact is only charged once.
+Credits are consumed when you reveal contact data: 1 credit per email reveal, 5 credits per phone number. Searching, filtering, and browsing is always free. Each contact is only charged once. Credits reset monthly.
+
+**Can I change plans later?**
+Yes, you can upgrade or downgrade your plan at any time from your account settings. Upgrades take effect immediately with prorated billing. Downgrades apply at the start of your next billing cycle.
+
+**How does AI email generation work?**
+Our AI analyzes each lead's profile, job title, company data, and recent activity to craft personalized outreach. You set the tone and the AI generates subject lines and body copy. You can edit before sending.
+
+**What integrations are available?**
+SalesOS integrates with Google Workspace (Gmail, Calendar), Slack, HubSpot, Salesforce, Calendly, and 5000+ apps via Zapier.
 
 **Is my data secure?**
 Yes. Enterprise-grade encryption (AES-256 at rest, TLS 1.3 in transit), SOC 2 Type II compliant, fully GDPR-compliant.
