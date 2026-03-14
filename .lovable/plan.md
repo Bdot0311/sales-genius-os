@@ -1,33 +1,49 @@
 
 
-# Replace Stack Comparison with Social Proof Comparison
+# AEO Optimization Plan: Make SalesOS Crawlable by AI
 
-## What Changes
+## The Problem
 
-Remove the current "Your Stack Wasn't Built to Win" comparison section and replace it with a conversion-focused "What Changes When You Switch" section. This new section uses aspirational transformation framing instead of negativity -- showing outcomes teams achieve with SalesOS.
+AI crawlers (ChatGPT, Claude, Perplexity) report "JS SPA with no crawlable content" because `index.html` body is just:
+```html
+<div id="root"></div>
+<script type="module" src="/src/main.tsx"></script>
+```
 
-## Design
+Your meta tags and JSON-LD in `<head>` are solid, but the **body has zero text content** for non-JS crawlers. The `llms.txt` endpoint exists but crawlers hitting the main URL see nothing.
 
-- **Heading:** "What Changes When You Switch"
-- **Subheading:** "Teams that consolidate onto SalesOS see measurable improvements across their entire sales operation."
-- **Layout:** Two-column grid with "Before" (neutral, muted) and "With SalesOS" (primary accent, elevated) cards
-- **Bottom:** Social proof line ("Join 500+ sales teams") with CTA button
-- **Animations:** IntersectionObserver scroll-reveal, consistent with existing sections
+## The Solution
 
-## Transformation rows
+Inject a comprehensive **static HTML content block** into `index.html` inside a `<noscript>` + hidden `<div>` that contains all your key landing page content in semantic, crawlable HTML. This is the standard approach for SPAs without SSR.
 
-| Before (neutral tone) | With SalesOS (outcome) |
-|---|---|
-| Hours toggling between tools | 3x faster lead-to-outreach time |
-| Manual follow-up tracking | Automated sequences with real-time signals |
-| Generic batch emails | AI-personalized outreach, 2-4x higher reply rates |
-| Scattered pipeline data | Single dashboard with deal intelligence |
-| Guesswork on lead quality | AI scoring with 85%+ fit accuracy |
+### What gets added to `index.html` body (before `<div id="root">`):
 
-## Technical Steps
+1. **Hidden semantic content block** (`display:none` div with `id="static-content"`) containing:
+   - H1 headline and value proposition
+   - "How It Works" steps as an ordered list
+   - Key features as a definition list
+   - Pricing tiers as a structured table
+   - FAQ as plain HTML (mirrors the JSON-LD)
+   - Integration list
+   - Results/stats
+   - Links to all public pages
 
-1. **Create** `src/components/landing/SocialProofComparison.tsx` -- new component following existing patterns (container max-w-[1120px], IntersectionObserver, responsive grid)
-2. **Update** `src/components/landing/index.ts` -- swap `StackComparisonSection` export for `SocialProofComparison`
-3. **Update** `src/pages/Index.tsx` -- import and render `SocialProofComparison` in place of `StackComparisonSection`
-4. **Delete** `src/components/landing/StackComparisonSection.tsx`
+2. **`<noscript>` fallback** with a readable version of the same content for crawlers that skip hidden elements
+
+3. **Update `llms.txt` static file** to match the dynamic edge function content (sync pricing to $39-$179 range, update date)
+
+### Technical Details
+
+- The hidden div uses `display:none` which Google explicitly allows for structured content backing JSON-LD
+- AI crawlers like GPTBot and ClaudeBot parse all HTML regardless of visibility
+- Content mirrors what's already in JSON-LD and React components -- no duplicate content risk
+- React app mounts normally over `<div id="root">` -- zero impact on user experience
+- No new dependencies, no SSR, no build changes
+
+### Files Modified
+
+| File | Change |
+|------|--------|
+| `index.html` | Add static crawlable content block + noscript fallback in body |
+| `public/llms.txt` | Sync with edge function content (dates, pricing) |
 
