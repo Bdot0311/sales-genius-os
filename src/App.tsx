@@ -35,6 +35,11 @@ const Confirmation = lazy(() => import("./pages/Confirmation"));
 const HelpCenter = lazy(() => import("./pages/HelpCenter"));
 const Install = lazy(() => import("./pages/Install"));
 const Checkout = lazy(() => import("./pages/Checkout"));
+const MessageBlocks = lazy(() => import("./pages/MessageBlocks"));
+const ICP = lazy(() => import("./pages/ICP"));
+const Inbox = lazy(() => import("./pages/Inbox"));
+const Deliverability = lazy(() => import("./pages/Deliverability"));
+const Sequences = lazy(() => import("./pages/Sequences"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
