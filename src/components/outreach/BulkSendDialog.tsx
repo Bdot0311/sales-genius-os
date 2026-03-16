@@ -433,6 +433,14 @@ export const BulkSendDialog = ({
             </div>
           )}
 
+          {/* Email Quality Check */}
+          {sendMode === "same" && sameSubject && sameBody && (
+            <EmailQualityChecker subject={sameSubject} body={sameBody} />
+          )}
+          {sendMode === "generate" && selectedLeadIds.size > 0 && (
+            <p className="text-xs text-muted-foreground text-center">Quality is checked per-email by AI during generation.</p>
+          )}
+
           {/* Send button */}
           <Button
             className="w-full"
