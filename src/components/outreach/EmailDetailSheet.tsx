@@ -4,6 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
 import { Mail, Building2, User, Clock, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { EmailQualityChecker } from "./EmailQualityChecker";
 import DOMPurify from "dompurify";
 interface SentEmail {
   id: string;
