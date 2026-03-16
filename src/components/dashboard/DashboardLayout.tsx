@@ -27,6 +27,10 @@ import {
   Search,
   Zap,
   HelpCircle,
+  Inbox,
+  Target,
+  ShieldCheck,
+  FileText,
 } from "lucide-react";
 import { User } from "@supabase/supabase-js";
 import { useSubscription } from "@/hooks/use-subscription";
