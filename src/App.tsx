@@ -99,6 +99,11 @@ const App = () => (
               <Route path="/dashboard/analytics" element={<Analytics />} />
               <Route path="/dashboard/automations" element={<Automations />} />
               <Route path="/dashboard/sequences/:id" element={<SequenceDetail />} />
+              <Route path="/dashboard/sequences" element={<Sequences />} />
+              <Route path="/dashboard/message-blocks" element={<MessageBlocks />} />
+              <Route path="/dashboard/icp" element={<ICP />} />
+              <Route path="/dashboard/inbox" element={<Inbox />} />
+              <Route path="/dashboard/deliverability" element={<Deliverability />} />
               <Route path="/integrations" element={<DashboardIntegrations />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/admin/*" element={<Admin />} />
