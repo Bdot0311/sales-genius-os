@@ -727,6 +727,8 @@ export type Database = {
       }
       email_sequences: {
         Row: {
+          ab_test_enabled: boolean | null
+          ab_test_split: number | null
           created_at: string
           description: string | null
           id: string
@@ -738,6 +740,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          ab_test_enabled?: boolean | null
+          ab_test_split?: number | null
           created_at?: string
           description?: string | null
           id?: string
@@ -749,6 +753,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          ab_test_enabled?: boolean | null
+          ab_test_split?: number | null
           created_at?: string
           description?: string | null
           id?: string
@@ -1706,6 +1712,7 @@ export type Database = {
       sequence_steps: {
         Row: {
           body_template: string
+          branch_config: Json | null
           created_at: string
           delay_days: number
           delay_hours: number
@@ -1720,6 +1727,7 @@ export type Database = {
         }
         Insert: {
           body_template: string
+          branch_config?: Json | null
           created_at?: string
           delay_days?: number
           delay_hours?: number
@@ -1734,6 +1742,7 @@ export type Database = {
         }
         Update: {
           body_template?: string
+          branch_config?: Json | null
           created_at?: string
           delay_days?: number
           delay_hours?: number
