@@ -27,6 +27,7 @@ export interface SequenceStep {
   step_type: string;
   trigger_condition: string;
   is_active: boolean;
+  branch_config?: any;
   created_at: string;
   updated_at: string;
 }
