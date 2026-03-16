@@ -877,6 +877,63 @@ export type Database = {
         }
         Relationships: []
       }
+      icp_profiles: {
+        Row: {
+          buying_signals: Json | null
+          company_size_max: number | null
+          company_size_min: number | null
+          created_at: string
+          disqualifiers: string | null
+          geographies: Json | null
+          id: string
+          industries: Json | null
+          name: string
+          notes: string | null
+          pain_points: Json | null
+          revenue_range: string | null
+          target_titles: Json | null
+          tech_stack: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          buying_signals?: Json | null
+          company_size_max?: number | null
+          company_size_min?: number | null
+          created_at?: string
+          disqualifiers?: string | null
+          geographies?: Json | null
+          id?: string
+          industries?: Json | null
+          name: string
+          notes?: string | null
+          pain_points?: Json | null
+          revenue_range?: string | null
+          target_titles?: Json | null
+          tech_stack?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          buying_signals?: Json | null
+          company_size_max?: number | null
+          company_size_min?: number | null
+          created_at?: string
+          disqualifiers?: string | null
+          geographies?: Json | null
+          id?: string
+          industries?: Json | null
+          name?: string
+          notes?: string | null
+          pain_points?: Json | null
+          revenue_range?: string | null
+          target_titles?: Json | null
+          tech_stack?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       import_history: {
         Row: {
           failed_count: number
@@ -1227,6 +1284,36 @@ export type Database = {
         }
         Relationships: []
       }
+      mailbox_warmup: {
+        Row: {
+          created_at: string
+          current_week: number | null
+          email: string
+          id: string
+          start_date: string | null
+          user_id: string
+          warmup_active: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          current_week?: number | null
+          email: string
+          id?: string
+          start_date?: string | null
+          user_id: string
+          warmup_active?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          current_week?: number | null
+          email?: string
+          id?: string
+          start_date?: string | null
+          user_id?: string
+          warmup_active?: boolean | null
+        }
+        Relationships: []
+      }
       message_blocks: {
         Row: {
           category: string
@@ -1426,6 +1513,56 @@ export type Database = {
             columns: ["sent_email_id"]
             isOneToOne: false
             referencedRelation: "sent_emails"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reply_threads: {
+        Row: {
+          classification: string | null
+          created_at: string
+          id: string
+          lead_id: string | null
+          original_email_body: string | null
+          read: boolean | null
+          replied_at: string | null
+          reply_body: string | null
+          sender_email: string
+          subject: string
+          user_id: string
+        }
+        Insert: {
+          classification?: string | null
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          original_email_body?: string | null
+          read?: boolean | null
+          replied_at?: string | null
+          reply_body?: string | null
+          sender_email: string
+          subject: string
+          user_id: string
+        }
+        Update: {
+          classification?: string | null
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          original_email_body?: string | null
+          read?: boolean | null
+          replied_at?: string | null
+          reply_body?: string | null
+          sender_email?: string
+          subject?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reply_threads_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
             referencedColumns: ["id"]
           },
         ]
