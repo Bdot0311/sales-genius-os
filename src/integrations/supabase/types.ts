@@ -727,6 +727,8 @@ export type Database = {
       }
       email_sequences: {
         Row: {
+          ab_test_enabled: boolean | null
+          ab_test_split: number | null
           created_at: string
           description: string | null
           id: string
@@ -738,6 +740,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          ab_test_enabled?: boolean | null
+          ab_test_split?: number | null
           created_at?: string
           description?: string | null
           id?: string
@@ -749,6 +753,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          ab_test_enabled?: boolean | null
+          ab_test_split?: number | null
           created_at?: string
           description?: string | null
           id?: string
@@ -868,6 +874,63 @@ export type Database = {
           rollout_percentage?: number | null
           target_plans?: string[] | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      icp_profiles: {
+        Row: {
+          buying_signals: Json | null
+          company_size_max: number | null
+          company_size_min: number | null
+          created_at: string
+          disqualifiers: string | null
+          geographies: Json | null
+          id: string
+          industries: Json | null
+          name: string
+          notes: string | null
+          pain_points: Json | null
+          revenue_range: string | null
+          target_titles: Json | null
+          tech_stack: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          buying_signals?: Json | null
+          company_size_max?: number | null
+          company_size_min?: number | null
+          created_at?: string
+          disqualifiers?: string | null
+          geographies?: Json | null
+          id?: string
+          industries?: Json | null
+          name: string
+          notes?: string | null
+          pain_points?: Json | null
+          revenue_range?: string | null
+          target_titles?: Json | null
+          tech_stack?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          buying_signals?: Json | null
+          company_size_max?: number | null
+          company_size_min?: number | null
+          created_at?: string
+          disqualifiers?: string | null
+          geographies?: Json | null
+          id?: string
+          industries?: Json | null
+          name?: string
+          notes?: string | null
+          pain_points?: Json | null
+          revenue_range?: string | null
+          target_titles?: Json | null
+          tech_stack?: Json | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -1221,6 +1284,36 @@ export type Database = {
         }
         Relationships: []
       }
+      mailbox_warmup: {
+        Row: {
+          created_at: string
+          current_week: number | null
+          email: string
+          id: string
+          start_date: string | null
+          user_id: string
+          warmup_active: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          current_week?: number | null
+          email: string
+          id?: string
+          start_date?: string | null
+          user_id: string
+          warmup_active?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          current_week?: number | null
+          email?: string
+          id?: string
+          start_date?: string | null
+          user_id?: string
+          warmup_active?: boolean | null
+        }
+        Relationships: []
+      }
       message_blocks: {
         Row: {
           category: string
@@ -1420,6 +1513,56 @@ export type Database = {
             columns: ["sent_email_id"]
             isOneToOne: false
             referencedRelation: "sent_emails"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reply_threads: {
+        Row: {
+          classification: string | null
+          created_at: string
+          id: string
+          lead_id: string | null
+          original_email_body: string | null
+          read: boolean | null
+          replied_at: string | null
+          reply_body: string | null
+          sender_email: string
+          subject: string
+          user_id: string
+        }
+        Insert: {
+          classification?: string | null
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          original_email_body?: string | null
+          read?: boolean | null
+          replied_at?: string | null
+          reply_body?: string | null
+          sender_email: string
+          subject: string
+          user_id: string
+        }
+        Update: {
+          classification?: string | null
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          original_email_body?: string | null
+          read?: boolean | null
+          replied_at?: string | null
+          reply_body?: string | null
+          sender_email?: string
+          subject?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reply_threads_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
             referencedColumns: ["id"]
           },
         ]
@@ -1706,6 +1849,7 @@ export type Database = {
       sequence_steps: {
         Row: {
           body_template: string
+          branch_config: Json | null
           created_at: string
           delay_days: number
           delay_hours: number
@@ -1720,6 +1864,7 @@ export type Database = {
         }
         Insert: {
           body_template: string
+          branch_config?: Json | null
           created_at?: string
           delay_days?: number
           delay_hours?: number
@@ -1734,6 +1879,7 @@ export type Database = {
         }
         Update: {
           body_template?: string
+          branch_config?: Json | null
           created_at?: string
           delay_days?: number
           delay_hours?: number

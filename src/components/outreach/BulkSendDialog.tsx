@@ -11,6 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Send, Sparkles, Users, Search, Settings2, Mail } from "lucide-react";
+import { EmailQualityChecker } from "./EmailQualityChecker";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
@@ -431,6 +432,14 @@ export const BulkSendDialog = ({
                 {progress.failed > 0 && <span className="text-destructive">✗ {progress.failed} failed</span>}
               </div>
             </div>
+          )}
+
+          {/* Email Quality Check */}
+          {sendMode === "same" && sameSubject && sameBody && (
+            <EmailQualityChecker subject={sameSubject} body={sameBody} />
+          )}
+          {sendMode === "generate" && selectedLeadIds.size > 0 && (
+            <p className="text-xs text-muted-foreground text-center">Quality is checked per-email by AI during generation.</p>
           )}
 
           {/* Send button */}

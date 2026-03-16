@@ -10,6 +10,8 @@ export interface Sequence {
   status: string;
   total_enrollments: number | null;
   total_completed: number | null;
+  ab_test_enabled?: boolean;
+  ab_test_split?: number;
   created_at: string;
   updated_at: string;
 }

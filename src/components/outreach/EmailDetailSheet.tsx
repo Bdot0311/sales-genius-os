@@ -4,6 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
 import { Mail, Building2, User, Clock, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { EmailQualityChecker } from "./EmailQualityChecker";
 import DOMPurify from "dompurify";
 interface SentEmail {
   id: string;
@@ -105,6 +106,12 @@ export const EmailDetailSheet = ({ email, open, onOpenChange }: EmailDetailSheet
               )}
             </div>
           </div>
+
+          {/* Email Quality Check */}
+          <EmailQualityChecker
+            subject={email.subject}
+            body={email.body_text || email.body_html?.replace(/<[^>]*>/g, '') || ''}
+          />
 
           {/* Gmail link */}
           {email.gmail_message_id && (
