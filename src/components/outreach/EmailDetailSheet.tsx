@@ -106,6 +106,12 @@ export const EmailDetailSheet = ({ email, open, onOpenChange }: EmailDetailSheet
             </div>
           </div>
 
+          {/* Email Quality Check */}
+          <EmailQualityChecker
+            subject={email.subject}
+            body={email.body_text || email.body_html?.replace(/<[^>]*>/g, '') || ''}
+          />
+
           {/* Gmail link */}
           {email.gmail_message_id && (
             <Button
