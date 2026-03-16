@@ -308,6 +308,9 @@ export function SequenceBuilder() {
                 isLast={index === steps.length - 1}
                 onEdit={() => handleEditStep(step)}
                 onDelete={() => handleDeleteStep(step.id)}
+                onBranchChange={(stepId, branchConfig) => {
+                  updateStep.mutate({ id: stepId, branch_config: branchConfig } as any);
+                }}
                 sequenceType={sequenceType as 'basic' | 'behavioral' | 'custom'}
               />
             ))}
