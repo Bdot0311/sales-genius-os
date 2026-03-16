@@ -45,14 +45,18 @@ interface DashboardLayoutProps {
 }
 
 const navigation = [
+  { name: "Inbox", icon: Inbox, href: "/dashboard/inbox" },
   { name: "Overview", icon: LayoutDashboard, href: "/dashboard" },
   { name: "Leads", icon: Users, href: "/dashboard/leads" },
+  { name: "ICP", icon: Target, href: "/dashboard/icp" },
   { name: "Pipeline", icon: TrendingUp, href: "/dashboard/pipeline" },
   { name: "Outreach", icon: Mail, href: "/dashboard/outreach" },
   { name: "Calendar", icon: Calendar, href: "/dashboard/calendar" },
   { name: "Analytics", icon: BarChart3, href: "/dashboard/analytics" },
+  { name: "Deliverability", icon: ShieldCheck, href: "/dashboard/deliverability" },
   { name: "Coach", icon: Mic, href: "/dashboard/coach" },
   { name: "Automations", icon: Workflow, href: "/dashboard/automations" },
+  { name: "Message Blocks", icon: FileText, href: "/dashboard/message-blocks" },
   { name: "Integrations", icon: Puzzle, href: "/integrations" },
   { name: "Settings", icon: Settings, href: "/settings" },
 ];
