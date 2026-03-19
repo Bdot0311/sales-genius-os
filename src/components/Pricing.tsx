@@ -146,13 +146,35 @@ const comparisonCategories = [
     ]
   },
   {
+    name: "ICP & Lead Intelligence",
+    features: [
+      { name: "ICP Builder", free: false, starter: "3 profiles", growth: "10 profiles", pro: "Unlimited" },
+      { name: "ICP match scoring", free: false, starter: true, growth: true, pro: true },
+      { name: "ICP lookalike discovery", free: false, starter: false, growth: true, pro: true },
+    ]
+  },
+  {
     name: "Outreach & Campaigns",
     features: [
       { name: "AI email generator", free: false, starter: true, growth: true, pro: true },
+      { name: "Email quality checker", free: false, starter: true, growth: true, pro: true },
       { name: "Campaign templates", free: false, starter: true, growth: true, pro: true },
+      { name: "Sequence templates", free: false, starter: true, growth: true, pro: true },
       { name: "AI personalized outreach", free: false, starter: false, growth: true, pro: true },
-      { name: "Campaign automation tools", free: false, starter: false, growth: true, pro: true },
+      { name: "Sequence branching", free: false, starter: false, growth: false, pro: true },
+      { name: "Sequence A/B testing", free: false, starter: false, growth: false, pro: true },
       { name: "Advanced automation features", free: false, starter: false, growth: false, pro: true },
+    ]
+  },
+  {
+    name: "Reply Inbox & Deliverability",
+    features: [
+      { name: "Unified reply inbox", free: false, starter: false, growth: true, pro: true },
+      { name: "AI draft responses", free: false, starter: false, growth: true, pro: true },
+      { name: "Auto reply classification", free: false, starter: false, growth: true, pro: true },
+      { name: "Deliverability dashboard", free: false, starter: false, growth: true, pro: true },
+      { name: "Mailbox warmup tracker", free: false, starter: false, growth: true, pro: true },
+      { name: "DNS health checker", free: false, starter: false, growth: true, pro: true },
     ]
   },
   {
