@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { usePlanFeatures } from "@/hooks/use-plan-features";
+import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { ShieldCheck, Mail, Plus, Trash2, AlertCircle } from "lucide-react";
+import { ShieldCheck, Mail, Plus, Trash2, AlertCircle, Lock } from "lucide-react";
 import { toast } from "sonner";
 
 interface Mailbox {
@@ -28,6 +30,8 @@ const WARMUP_LIMITS = [10, 25, 50, 100];
 
 const Deliverability = () => {
   const queryClient = useQueryClient();
+  const { hasFeature, gateModalOpen, setGateModalOpen, gatedFeature, currentPlan, triggerGate } = usePlanFeatures();
+  const deliverabilityGated = !hasFeature('deliverabilityDashboard');
   const [domainInput, setDomainInput] = useState("");
   const [showDNSCheck, setShowDNSCheck] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -106,6 +110,17 @@ const Deliverability = () => {
           <p className="text-muted-foreground">Monitor mailbox health, warmup progress, and DNS configuration</p>
         </div>
 
+        {deliverabilityGated ? (
+          <Card className="border-dashed">
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <Lock className="w-12 h-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Deliverability Dashboard</h3>
+              <p className="text-muted-foreground text-center mb-4">Monitor mailbox health, warmup progress, DNS configuration, and sending rules. Available on Growth and above.</p>
+              <Button onClick={() => triggerGate('deliverabilityDashboard')}>Upgrade to Unlock</Button>
+            </CardContent>
+          </Card>
+        ) : (
+        <>
         {/* Section 1: Connected Mailboxes */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -278,6 +293,8 @@ const Deliverability = () => {
             </CardContent>
           </Card>
         </div>
+        </>
+        )}
       </div>
 
       {/* Add Mailbox Dialog */}
@@ -301,6 +318,15 @@ const Deliverability = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {gatedFeature && (
+        <FeatureGateModal
+          open={gateModalOpen}
+          onOpenChange={setGateModalOpen}
+          feature={gatedFeature}
+          currentPlan={currentPlan}
+        />
+      )}
     </DashboardLayout>
   );
 };

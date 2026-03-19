@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { useICPProfiles, ICPProfile } from "@/hooks/use-icp-profiles";
+import { usePlanFeatures } from "@/hooks/use-plan-features";
+import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Slider } from "@/components/ui/slider";
-import { Target, Plus, Trash2, X, Save } from "lucide-react";
+import { Target, Plus, Trash2, X, Save, Lock } from "lucide-react";
 import { toast } from "sonner";
 
 const INDUSTRY_OPTIONS = ["SaaS", "E-commerce", "Healthcare", "Legal", "Finance", "Real Estate", "Agency", "Manufacturing", "Other"];
@@ -86,11 +88,34 @@ function getCompletionScore(p: Partial<ICPProfile>): number {
 
 const ICP = () => {
   const { profiles, isLoading, createProfile, updateProfile, deleteProfile } = useICPProfiles();
+  const { hasFeature, gateModalOpen, setGateModalOpen, gatedFeature, currentPlan, gatedAction, checkLimit, features } = usePlanFeatures();
   const [editing, setEditing] = useState<Partial<ICPProfile> | null>(null);
   const [isNew, setIsNew] = useState(false);
 
-  const openNew = () => { setEditing({ ...emptyProfile }); setIsNew(true); };
-  const openEdit = (p: ICPProfile) => { setEditing({ ...p }); setIsNew(false); };
+  const icpGated = !hasFeature('icpBuilder');
+
+  const openNew = () => {
+    if (icpGated) {
+      gatedAction('icpBuilder', () => {});
+      return;
+    }
+    // Check ICP profile limit
+    const limit = features.icpProfiles as number;
+    if (limit !== -1 && profiles.length >= limit) {
+      gatedAction('higherLimits', () => {});
+      return;
+    }
+    setEditing({ ...emptyProfile }); 
+    setIsNew(true); 
+  };
+  const openEdit = (p: ICPProfile) => { 
+    if (icpGated) {
+      gatedAction('icpBuilder', () => {});
+      return;
+    }
+    setEditing({ ...p }); 
+    setIsNew(false); 
+  };
 
   const handleSave = async () => {
     if (!editing?.name?.trim()) { toast.error("Profile name is required"); return; }
@@ -277,6 +302,15 @@ const ICP = () => {
           )}
         </SheetContent>
       </Sheet>
+
+      {gatedFeature && (
+        <FeatureGateModal
+          open={gateModalOpen}
+          onOpenChange={setGateModalOpen}
+          feature={gatedFeature}
+          currentPlan={currentPlan}
+        />
+      )}
     </DashboardLayout>
   );
 };

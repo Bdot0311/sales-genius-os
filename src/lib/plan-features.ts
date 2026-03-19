@@ -17,15 +17,23 @@ export const PLAN_FEATURES = {
     advancedFilters: false,
     apiAccessLeads: false,
     
+    // ICP Builder
+    icpProfiles: 0,
+    icpMatchScoring: false,
+    icpLookalike: false,
+    
     // AI Outreach Studio
     activeSequences: 0,
     personalizationLevel: 'none',
     aiFirstLines: false,
     multiChannelLogic: false,
+    emailQualityChecker: false,
     
     // Email Sequences
     stepsPerSequence: 0,
     sequenceType: 'none' as const,
+    sequenceBranching: false,
+    sequenceTemplates: false,
     replyAnalysis: false,
     handoffAlerts: 'none' as const,
     relevanceFilter: false,
@@ -33,6 +41,11 @@ export const PLAN_FEATURES = {
     engagementStates: 'none' as const,
     sequenceABTesting: 0,
     sequenceAnalytics: 'none' as const,
+    
+    // Reply Inbox
+    unifiedInbox: false,
+    inboxAIDrafts: false,
+    inboxAutoClassification: false,
     
     // Meeting Automator
     calendarConnections: 0,
@@ -55,6 +68,11 @@ export const PLAN_FEATURES = {
     automationRules: 0,
     advancedWorkflows: false,
     conditionalLogicDepth: 0,
+    
+    // Deliverability
+    deliverabilityDashboard: false,
+    mailboxWarmup: false,
+    dnsHealthChecker: false,
     
     // Analytics Dashboard
     analyticsLevel: 'summary',
@@ -83,15 +101,23 @@ export const PLAN_FEATURES = {
     advancedFilters: false,
     apiAccessLeads: false,
     
+    // ICP Builder
+    icpProfiles: 3,
+    icpMatchScoring: true,
+    icpLookalike: false,
+    
     // AI Outreach Studio
     activeSequences: 1,
     personalizationLevel: 'basic',
     aiFirstLines: false,
     multiChannelLogic: false,
+    emailQualityChecker: true,
     
     // Email Sequences
     stepsPerSequence: 2,
     sequenceType: 'basic' as const,
+    sequenceBranching: false,
+    sequenceTemplates: true,
     replyAnalysis: false,
     handoffAlerts: 'none' as const,
     relevanceFilter: false,
@@ -99,6 +125,11 @@ export const PLAN_FEATURES = {
     engagementStates: 'basic' as const,
     sequenceABTesting: 0,
     sequenceAnalytics: 'basic' as const,
+    
+    // Reply Inbox
+    unifiedInbox: false,
+    inboxAIDrafts: false,
+    inboxAutoClassification: false,
     
     // Meeting Automator
     calendarConnections: 1,
@@ -121,6 +152,11 @@ export const PLAN_FEATURES = {
     automationRules: 2,
     advancedWorkflows: false,
     conditionalLogicDepth: 0,
+    
+    // Deliverability
+    deliverabilityDashboard: false,
+    mailboxWarmup: false,
+    dnsHealthChecker: false,
     
     // Analytics Dashboard
     analyticsLevel: 'basic',
@@ -149,15 +185,23 @@ export const PLAN_FEATURES = {
     advancedFilters: false,
     apiAccessLeads: false,
     
+    // ICP Builder
+    icpProfiles: 10,
+    icpMatchScoring: true,
+    icpLookalike: true,
+    
     // AI Outreach Studio
     activeSequences: 3,
     personalizationLevel: 'basic',
     aiFirstLines: false,
     multiChannelLogic: false,
+    emailQualityChecker: true,
     
     // Email Sequences
     stepsPerSequence: 3,
     sequenceType: 'basic' as const,
+    sequenceBranching: false,
+    sequenceTemplates: true,
     replyAnalysis: false,
     handoffAlerts: 'none' as const,
     relevanceFilter: false,
@@ -165,6 +209,11 @@ export const PLAN_FEATURES = {
     engagementStates: 'basic' as const,
     sequenceABTesting: 0,
     sequenceAnalytics: 'basic' as const,
+    
+    // Reply Inbox
+    unifiedInbox: true,
+    inboxAIDrafts: true,
+    inboxAutoClassification: true,
     
     // Meeting Automator
     calendarConnections: 1,
@@ -187,6 +236,11 @@ export const PLAN_FEATURES = {
     automationRules: 5,
     advancedWorkflows: false,
     conditionalLogicDepth: 1,
+    
+    // Deliverability
+    deliverabilityDashboard: true,
+    mailboxWarmup: true,
+    dnsHealthChecker: true,
     
     // Analytics Dashboard
     analyticsLevel: 'core',
@@ -215,15 +269,23 @@ export const PLAN_FEATURES = {
     advancedFilters: true,
     apiAccessLeads: true,
     
+    // ICP Builder
+    icpProfiles: -1, // unlimited
+    icpMatchScoring: true,
+    icpLookalike: true,
+    
     // AI Outreach Studio
     activeSequences: -1, // unlimited
     personalizationLevel: 'premium',
     aiFirstLines: true,
     multiChannelLogic: true,
+    emailQualityChecker: true,
     
     // Email Sequences
     stepsPerSequence: -1, // unlimited
     sequenceType: 'custom' as const,
+    sequenceBranching: true,
+    sequenceTemplates: true,
     replyAnalysis: true,
     replyAnalysisCustomSignals: true,
     handoffAlerts: 'webhook' as const,
@@ -233,6 +295,11 @@ export const PLAN_FEATURES = {
     engagementStates: 'custom' as const,
     sequenceABTesting: -1, // unlimited
     sequenceAnalytics: 'premium' as const,
+    
+    // Reply Inbox
+    unifiedInbox: true,
+    inboxAIDrafts: true,
+    inboxAutoClassification: true,
     
     // Meeting Automator
     calendarConnections: -1, // unlimited
@@ -255,6 +322,11 @@ export const PLAN_FEATURES = {
     automationRules: -1, // unlimited
     advancedWorkflows: true,
     conditionalLogicDepth: -1, // unlimited
+    
+    // Deliverability
+    deliverabilityDashboard: true,
+    mailboxWarmup: true,
+    dnsHealthChecker: true,
     
     // Analytics Dashboard
     analyticsLevel: 'premium',
@@ -413,6 +485,41 @@ export const UPGRADE_MESSAGES = {
     title: 'Sequence A/B Testing',
     description: 'Test different subject lines and CTAs to optimize your outreach performance.',
     availableOn: 'pro',
+  },
+  icpBuilder: {
+    title: 'ICP Builder',
+    description: 'Create Ideal Customer Profiles with match scoring to prioritize leads that fit your target market.',
+    availableOn: 'starter',
+  },
+  icpLookalike: {
+    title: 'ICP Lookalike Discovery',
+    description: 'Find more prospects similar to your closed-won deals using ICP data.',
+    availableOn: 'growth',
+  },
+  emailQualityChecker: {
+    title: 'Email Quality Checker',
+    description: 'Pre-send quality analysis with spam scoring, readability, CTA detection, and personalization depth.',
+    availableOn: 'starter',
+  },
+  unifiedInbox: {
+    title: 'Unified Reply Inbox',
+    description: 'All prospect replies in one inbox with auto-classification and AI-drafted responses.',
+    availableOn: 'growth',
+  },
+  deliverabilityDashboard: {
+    title: 'Deliverability Dashboard',
+    description: 'Monitor mailbox health, warmup progress, and DNS configuration to maximize inbox placement.',
+    availableOn: 'growth',
+  },
+  sequenceBranching: {
+    title: 'Sequence Branching',
+    description: 'Split sequences into conditional paths based on opens and replies for smarter follow-ups.',
+    availableOn: 'pro',
+  },
+  sequenceTemplates: {
+    title: 'Sequence Templates',
+    description: 'Launch sequences faster with pre-built templates like Signal Strike, Executive Thread, and The Challenger.',
+    availableOn: 'starter',
   },
 } as const;
 

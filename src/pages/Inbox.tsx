@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { usePlanFeatures } from "@/hooks/use-plan-features";
+import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Inbox as InboxIcon, Send, Archive, Mail } from "lucide-react";
+import { Inbox as InboxIcon, Send, Archive, Mail, Lock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { classifyReply, Classification, CLASSIFICATION_CONFIG } from "@/lib/reply-classifier";
 import { toast } from "sonner";
@@ -54,6 +56,8 @@ function generateDraftReply(classification: string): string {
 
 const Inbox = () => {
   const queryClient = useQueryClient();
+  const { hasFeature, gateModalOpen, setGateModalOpen, gatedFeature, currentPlan, triggerGate } = usePlanFeatures();
+  const inboxGated = !hasFeature('unifiedInbox');
   const [activeTab, setActiveTab] = useState("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draftReply, setDraftReply] = useState("");
@@ -115,7 +119,18 @@ const Inbox = () => {
           <p className="text-muted-foreground">Unified reply inbox for all your outreach</p>
         </div>
 
-        {isLoading ? (
+        {inboxGated ? (
+          <Card className="border-dashed">
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <Lock className="w-12 h-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Unified Reply Inbox</h3>
+              <p className="text-muted-foreground text-center mb-4">Auto-classify replies, draft AI responses, and manage all prospect communication in one place. Available on Growth and above.</p>
+              <Button onClick={() => triggerGate('unifiedInbox')}>
+                Upgrade to Unlock
+              </Button>
+            </CardContent>
+          </Card>
+        ) : isLoading ? (
           <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-20" />)}</div>
         ) : (threads || []).length === 0 ? (
           <Card className="border-dashed">
@@ -241,6 +256,15 @@ const Inbox = () => {
           </div>
         )}
       </div>
+
+      {gatedFeature && (
+        <FeatureGateModal
+          open={gateModalOpen}
+          onOpenChange={setGateModalOpen}
+          feature={gatedFeature}
+          currentPlan={currentPlan}
+        />
+      )}
     </DashboardLayout>
   );
 };

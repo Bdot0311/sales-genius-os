@@ -76,11 +76,11 @@ const paidPlans: PaidPlan[] = [
     yearlyProspects: 4800,
     dailyLimit: "50 prospects per day",
     features: [
-      "Prospect search",
-      "Verified email data",
-      "Email export",
+      "Prospect search & verified emails",
+      "ICP Builder (3 profiles)",
+      "Email quality checker",
       "AI email generator",
-      "Campaign templates",
+      "Sequence templates",
       "Standard support",
     ],
     monthlyPriceId: STRIPE_PRICE_IDS.starter_monthly,
@@ -98,10 +98,11 @@ const paidPlans: PaidPlan[] = [
     yearlyProspects: 14400,
     dailyLimit: "150 prospects per day",
     features: [
-      "Advanced prospect filters",
-      "Bulk prospect export",
+      "Everything in Starter, plus:",
+      "Unified reply inbox with AI drafts",
+      "Deliverability dashboard & warmup",
+      "ICP lookalike discovery",
       "AI personalized outreach",
-      "Campaign automation tools",
       "Priority support",
     ],
     highlighted: true,
@@ -120,10 +121,11 @@ const paidPlans: PaidPlan[] = [
     yearlyProspects: 36000,
     dailyLimit: "400 prospects per day",
     features: [
-      "Advanced automation features",
+      "Everything in Growth, plus:",
+      "Sequence branching & A/B testing",
+      "Unlimited ICP profiles",
       "CRM integrations",
-      "Team collaboration access",
-      "High-priority data processing",
+      "Team collaboration",
       "Premium support",
     ],
     monthlyPriceId: STRIPE_PRICE_IDS.pro_monthly,
@@ -146,13 +148,35 @@ const comparisonCategories = [
     ]
   },
   {
+    name: "ICP & Lead Intelligence",
+    features: [
+      { name: "ICP Builder", free: false, starter: "3 profiles", growth: "10 profiles", pro: "Unlimited" },
+      { name: "ICP match scoring", free: false, starter: true, growth: true, pro: true },
+      { name: "ICP lookalike discovery", free: false, starter: false, growth: true, pro: true },
+    ]
+  },
+  {
     name: "Outreach & Campaigns",
     features: [
       { name: "AI email generator", free: false, starter: true, growth: true, pro: true },
+      { name: "Email quality checker", free: false, starter: true, growth: true, pro: true },
       { name: "Campaign templates", free: false, starter: true, growth: true, pro: true },
+      { name: "Sequence templates", free: false, starter: true, growth: true, pro: true },
       { name: "AI personalized outreach", free: false, starter: false, growth: true, pro: true },
-      { name: "Campaign automation tools", free: false, starter: false, growth: true, pro: true },
+      { name: "Sequence branching", free: false, starter: false, growth: false, pro: true },
+      { name: "Sequence A/B testing", free: false, starter: false, growth: false, pro: true },
       { name: "Advanced automation features", free: false, starter: false, growth: false, pro: true },
+    ]
+  },
+  {
+    name: "Reply Inbox & Deliverability",
+    features: [
+      { name: "Unified reply inbox", free: false, starter: false, growth: true, pro: true },
+      { name: "AI draft responses", free: false, starter: false, growth: true, pro: true },
+      { name: "Auto reply classification", free: false, starter: false, growth: true, pro: true },
+      { name: "Deliverability dashboard", free: false, starter: false, growth: true, pro: true },
+      { name: "Mailbox warmup tracker", free: false, starter: false, growth: true, pro: true },
+      { name: "DNS health checker", free: false, starter: false, growth: true, pro: true },
     ]
   },
   {
