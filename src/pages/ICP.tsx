@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { useICPProfiles, ICPProfile } from "@/hooks/use-icp-profiles";
+import { usePlanFeatures } from "@/hooks/use-plan-features";
+import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Slider } from "@/components/ui/slider";
-import { Target, Plus, Trash2, X, Save } from "lucide-react";
+import { Target, Plus, Trash2, X, Save, Lock } from "lucide-react";
 import { toast } from "sonner";
 
 const INDUSTRY_OPTIONS = ["SaaS", "E-commerce", "Healthcare", "Legal", "Finance", "Real Estate", "Agency", "Manufacturing", "Other"];
