@@ -116,7 +116,7 @@ const Deliverability = () => {
               <Lock className="w-12 h-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">Deliverability Dashboard</h3>
               <p className="text-muted-foreground text-center mb-4">Monitor mailbox health, warmup progress, DNS configuration, and sending rules. Available on Growth and above.</p>
-              <Button onClick={() => setGateModalOpen(true)}>Upgrade to Unlock</Button>
+              <Button onClick={() => triggerGate('deliverabilityDashboard')}>Upgrade to Unlock</Button>
             </CardContent>
           </Card>
         ) : (
