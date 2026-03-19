@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Brain, Mail, Calendar, TrendingUp, Mic, Workflow, ArrowRight } from "lucide-react";
+import { Brain, Mail, Calendar, TrendingUp, Mic, Workflow, ArrowRight, Target, Inbox, ShieldCheck } from "lucide-react";
 
 const modules = [
   {
@@ -11,18 +11,26 @@ const modules = [
     accentColor: "group-hover:shadow-[0_0_30px_hsl(261_75%_65%/0.15)]",
   },
   {
+    icon: Target,
+    title: "ICP Builder",
+    outcome: "Define your perfect customer",
+    description: "Build Ideal Customer Profiles with industries, titles, tech stack, and buying signals. Every lead gets an ICP match score.",
+    gradient: "from-[hsl(45_90%_55%/0.2)] to-[hsl(45_90%_55%/0.05)]",
+    accentColor: "group-hover:shadow-[0_0_30px_hsl(45_90%_55%/0.15)]",
+  },
+  {
     icon: Mail,
     title: "Smart Outreach",
-    outcome: "Send personalized emails in seconds",
-    description: "AI writes based on each lead's profile, company, and role. No more copy-paste templates.",
+    outcome: "Send quality-checked emails in seconds",
+    description: "AI writes personalized emails with built-in spam scoring, readability checks, and CTA optimization before every send.",
     gradient: "from-[hsl(280_75%_60%/0.2)] to-[hsl(280_75%_60%/0.05)]",
     accentColor: "group-hover:shadow-[0_0_30px_hsl(280_75%_60%/0.15)]",
   },
   {
-    icon: Calendar,
-    title: "Auto Scheduling",
-    outcome: "Skip the email chains",
-    description: "Prospects book directly into your calendar. No more back-and-forth coordination.",
+    icon: Inbox,
+    title: "Unified Reply Inbox",
+    outcome: "Never miss a hot lead",
+    description: "All replies in one place, auto-classified by intent. AI drafts responses for interested leads, meeting requests, and follow-ups.",
     gradient: "from-[hsl(200_75%_55%/0.2)] to-[hsl(200_75%_55%/0.05)]",
     accentColor: "group-hover:shadow-[0_0_30px_hsl(200_75%_55%/0.15)]",
   },
@@ -35,20 +43,28 @@ const modules = [
     accentColor: "group-hover:shadow-[0_0_30px_hsl(150_60%_50%/0.15)]",
   },
   {
+    icon: Workflow,
+    title: "Sequence Branching",
+    outcome: "Automate conditional follow-ups",
+    description: "Branch sequences based on opens and replies. A/B test subject lines and use pre-built templates to launch faster.",
+    gradient: "from-[hsl(35_90%_55%/0.2)] to-[hsl(35_90%_55%/0.05)]",
+    accentColor: "group-hover:shadow-[0_0_30px_hsl(35_90%_55%/0.15)]",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Deliverability Suite",
+    outcome: "Land in the inbox, not spam",
+    description: "Mailbox warmup tracking, DNS health checks, and smart sending rules keep your sender reputation pristine.",
+    gradient: "from-[hsl(170_60%_45%/0.2)] to-[hsl(170_60%_45%/0.05)]",
+    accentColor: "group-hover:shadow-[0_0_30px_hsl(170_60%_45%/0.15)]",
+  },
+  {
     icon: Mic,
     title: "Sales Coach",
     outcome: "Get instant suggestions",
     description: "Real-time coaching during tough conversations. Handle objections with confidence.",
     gradient: "from-[hsl(320_75%_60%/0.2)] to-[hsl(320_75%_60%/0.05)]",
     accentColor: "group-hover:shadow-[0_0_30px_hsl(320_75%_60%/0.15)]",
-  },
-  {
-    icon: Workflow,
-    title: "Workflow Automation",
-    outcome: "Never miss a follow-up",
-    description: "Sequences run on autopilot. Leads get nurtured even when you're not working.",
-    gradient: "from-[hsl(35_90%_55%/0.2)] to-[hsl(35_90%_55%/0.05)]",
-    accentColor: "group-hover:shadow-[0_0_30px_hsl(35_90%_55%/0.15)]",
   },
 ];
 
