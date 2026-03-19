@@ -12,19 +12,31 @@ import { ArrowRight } from "lucide-react";
 const faqs = [
   {
     question: "What is SalesOS?",
-    answer: "SalesOS is an AI-powered lead discovery and outbound sales platform. Describe your ideal customer in plain English, get ranked matches with enriched profiles, and export them to your workflow. No complex filters or boolean queries needed."
+    answer: "SalesOS is an AI-powered lead discovery and outbound sales platform. Describe your ideal customer in plain English, get ranked matches with enriched profiles, and run personalized outreach, all from one system. It includes ICP profiling, email quality checks, a unified reply inbox, deliverability monitoring, and smart sequence branching."
   },
   {
     question: "Who is SalesOS for?",
     answer: "SalesOS is built for B2B sales teams, SDRs, founders, and growth marketers who need to find and reach qualified prospects faster. Whether you're a solo founder or a 50-person sales org, there's a plan that fits."
   },
   {
-    question: "How does AI lead discovery work?",
-    answer: "You describe your ideal customer profile in natural language, like 'VP of Marketing at SaaS companies with 50-200 employees in the US.' Our AI parses your query, searches across millions of records, and returns ranked matches with verified contact data."
+    question: "What is the ICP Builder?",
+    answer: "The ICP Builder lets you define your Ideal Customer Profile with industries, company size, job titles, tech stack, and buying signals. Every lead gets an automatic ICP match score (0-100) so you instantly know which prospects are the best fit."
   },
   {
-    question: "How does AI email generation work?",
-    answer: "Our AI analyzes each lead's profile, job title, company data, and recent activity to craft personalized outreach. You set the tone (professional, casual, direct) and the AI generates subject lines and body copy. You can edit before sending, and the system learns from your edits over time."
+    question: "How does the Email Quality Checker work?",
+    answer: "Before any email send, SalesOS runs five automated checks: spam word detection, length analysis, readability scoring, CTA clarity, and personalization depth. You get a clear quality score with actionable suggestions. It never blocks sending, just helps you improve."
+  },
+  {
+    question: "What is the Unified Reply Inbox?",
+    answer: "All prospect replies land in one inbox, automatically classified by intent: interested, meeting request, question, not now, out of office, or not interested. AI drafts context-aware responses you can edit and send in one click."
+  },
+  {
+    question: "How does sequence branching work?",
+    answer: "Each sequence step can branch into two paths based on engagement: one path for prospects who opened but didn't reply, and another for those who never opened. You can also A/B test subject lines and use pre-built templates to launch sequences faster."
+  },
+  {
+    question: "What is the Deliverability Dashboard?",
+    answer: "It monitors your sending reputation with mailbox health scores, warmup progress tracking, DNS checks (SPF, DKIM, DMARC), and smart sending rules. This helps ensure your emails land in the inbox, not the spam folder."
   },
   {
     question: "What integrations are available?",

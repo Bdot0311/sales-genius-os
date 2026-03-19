@@ -21,23 +21,23 @@ const PricingPage = () => {
   const valueProps = [
     {
       icon: Zap,
-      title: "Instant Lead Discovery",
-      description: "Find qualified prospects in seconds using natural language queries. No complex filters required."
+      title: "ICP-Driven Discovery",
+      description: "Build Ideal Customer Profiles and get ranked leads with automatic match scores. Find lookalikes from closed deals."
     },
     {
       icon: Users,
-      title: "Unlimited Team Members",
-      description: "Pro plan includes unlimited team seats at no extra cost."
+      title: "Unified Reply Inbox",
+      description: "All replies auto-classified by intent with AI-drafted responses. Never miss a hot lead again."
     },
     {
       icon: Shield,
-      title: "Enterprise Security",
-      description: "SOC 2 compliant with AES-256 encryption, SSO, and comprehensive audit logs."
+      title: "Deliverability Suite",
+      description: "Mailbox warmup, DNS health checks, and smart sending rules protect your sender reputation."
     },
     {
       icon: Headphones,
-      title: "Priority Support",
-      description: "Get help when you need it with dedicated support channels and faster response times."
+      title: "Pre-Send Quality Checks",
+      description: "Every email scanned for spam triggers, readability, and personalization before it leaves your outbox."
     }
   ];
 
@@ -102,12 +102,14 @@ const PricingPage = () => {
             </h2>
             <div className="max-w-3xl mx-auto">
               <ul className="grid sm:grid-cols-2 gap-4">
-                {[
-                  "AI-powered lead scoring",
-                  "AI Sales Coach",
+              {[
+                  "ICP Builder with lead match scoring",
+                  "Email Quality Pre-Send Checker",
+                  "Unified Reply Inbox with AI drafts",
+                  "Sequence branching and A/B testing",
+                  "Deliverability dashboard and warmup",
                   "Visual pipeline management",
-                  "AI Outreach Studio",
-                  "Smart Deal Pipeline",
+                  "AI Sales Coach",
                   "Real-time analytics dashboard",
                   "Secure data encryption",
                   "Email support"

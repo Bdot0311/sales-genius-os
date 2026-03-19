@@ -5,20 +5,20 @@ const steps = [
   {
     number: "01",
     icon: MessageSquare,
-    title: "Describe who you want to sell to",
-    description: "Tell us your ideal customer in plain English. Job titles, industries, company size, location. That's it.",
+    title: "Build your ICP and find leads",
+    description: "Define your Ideal Customer Profile or describe your target in plain English. AI scores and ranks every match.",
   },
   {
     number: "02",
     icon: BarChart3,
-    title: "Get a ranked list with verified data",
-    description: "AI scores each lead by fit. Every profile includes verified email, LinkedIn, company data, and tech stack.",
+    title: "Launch quality-checked outreach",
+    description: "AI writes personalized emails, checks for spam triggers, and branches sequences based on engagement signals.",
   },
   {
     number: "03",
     icon: Send,
-    title: "Push them into outreach or your CRM",
-    description: "One-click export to CSV. Or send directly to your sequences, HubSpot, Salesforce, or custom automations.",
+    title: "Close deals from one inbox",
+    description: "Replies auto-classified by intent. AI drafts responses. Deliverability monitoring keeps you out of spam.",
   },
 ];
 
