@@ -125,7 +125,7 @@ const Inbox = () => {
               <Lock className="w-12 h-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">Unified Reply Inbox</h3>
               <p className="text-muted-foreground text-center mb-4">Auto-classify replies, draft AI responses, and manage all prospect communication in one place. Available on Growth and above.</p>
-              <Button onClick={() => { if (!hasFeature('unifiedInbox')) { const { gatedAction } = usePlanFeatures(); } setGateModalOpen(true); }}>
+              <Button onClick={() => setGateModalOpen(true)}>
                 Upgrade to Unlock
               </Button>
             </CardContent>
