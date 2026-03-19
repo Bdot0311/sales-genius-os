@@ -40,20 +40,20 @@ const gettingStartedSteps = [
     text: "Create your SalesOS account in under 2 minutes. No credit card required. Explore dashboards, pipeline, and sample data instantly."
   },
   {
-    name: "Describe your ideal customer",
-    text: "Tell SalesOS who you're looking for in plain English: job titles, industries, company size, location. No complex filters needed."
+    name: "Build your Ideal Customer Profile",
+    text: "Use the ICP Builder to define industries, company size, job titles, tech stack, and buying signals. Every lead gets an automatic match score."
   },
   {
     name: "Get ranked matches with enriched profiles",
-    text: "AI scores each lead by fit. Every profile comes with verified emails, LinkedIn, company data, and tech stack."
+    text: "AI scores each lead by ICP fit. Every profile comes with verified emails, LinkedIn, company data, and tech stack."
   },
   {
-    name: "Engage with personalized outreach",
-    text: "Generate AI-crafted emails that feel human. Automate follow-ups and track opens, clicks, and replies in real-time."
+    name: "Engage with quality-checked outreach",
+    text: "AI writes personalized emails with built-in spam scoring, readability checks, and CTA analysis. Branch sequences based on opens and replies."
   },
   {
-    name: "Close more deals",
-    text: "Manage your pipeline visually, get real-time coaching on objections, and forecast revenue with confidence."
+    name: "Close deals from your unified inbox",
+    text: "Replies auto-classified by intent. AI drafts responses. Deliverability monitoring keeps your sender reputation healthy."
   }
 ];
 
