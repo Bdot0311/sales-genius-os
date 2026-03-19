@@ -21,23 +21,23 @@ const PricingPage = () => {
   const valueProps = [
     {
       icon: Zap,
-      title: "Instant Lead Discovery",
-      description: "Find qualified prospects in seconds using natural language queries. No complex filters required."
+      title: "ICP-Driven Discovery",
+      description: "Build Ideal Customer Profiles and get ranked leads with automatic match scores. Find lookalikes from closed deals."
     },
     {
       icon: Users,
-      title: "Unlimited Team Members",
-      description: "Pro plan includes unlimited team seats at no extra cost."
+      title: "Unified Reply Inbox",
+      description: "All replies auto-classified by intent with AI-drafted responses. Never miss a hot lead again."
     },
     {
       icon: Shield,
-      title: "Enterprise Security",
-      description: "SOC 2 compliant with AES-256 encryption, SSO, and comprehensive audit logs."
+      title: "Deliverability Suite",
+      description: "Mailbox warmup, DNS health checks, and smart sending rules protect your sender reputation."
     },
     {
       icon: Headphones,
-      title: "Priority Support",
-      description: "Get help when you need it with dedicated support channels and faster response times."
+      title: "Pre-Send Quality Checks",
+      description: "Every email scanned for spam triggers, readability, and personalization before it leaves your outbox."
     }
   ];
 

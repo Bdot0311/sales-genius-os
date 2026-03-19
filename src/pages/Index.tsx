@@ -59,34 +59,44 @@ const gettingStartedSteps = [
 
 const keyFeatures = [
   {
-    name: "AI Lead Scoring",
-    description: "Machine learning analyzes engagement, company fit, and behavioral signals to predict conversion likelihood with over 85% accuracy.",
+    name: "ICP Builder with Lead Scoring",
+    description: "Define your Ideal Customer Profile with industries, titles, tech stack, and buying signals. Every lead gets a 0-100 match score for instant prioritization.",
     position: 1
   },
   {
-    name: "Intelligent Email Generation",
-    description: "AI crafts personalized emails for each lead based on their profile, company data, and your specified tone and goals.",
+    name: "Email Quality Pre-Send Checker",
+    description: "Five automated checks before every send: spam word detection, length analysis, readability scoring, CTA clarity, and personalization depth.",
     position: 2
   },
   {
-    name: "Visual Pipeline Management",
-    description: "Drag-and-drop interface to manage deals through custom stages with real-time analytics and forecasting.",
+    name: "Unified Reply Inbox",
+    description: "All prospect replies in one inbox, auto-classified by intent (interested, meeting, question, not now, OOO). AI drafts context-aware responses.",
     position: 3
+  },
+  {
+    name: "Sequence Branching and A/B Testing",
+    description: "Branch sequences based on opens and replies. A/B test subject lines and launch faster with pre-built templates like Signal Strike and Executive Thread.",
+    position: 4
+  },
+  {
+    name: "Deliverability Dashboard",
+    description: "Monitor mailbox health scores, warmup progress, DNS checks (SPF, DKIM, DMARC), and smart sending rules to keep emails out of spam.",
+    position: 5
+  },
+  {
+    name: "Visual Pipeline Management",
+    description: "Drag-and-drop interface to manage deals through custom stages with real-time analytics, forecasting, and ICP lookalike discovery.",
+    position: 6
   },
   {
     name: "Real-Time AI Coaching",
     description: "Get instant suggestions and insights to improve your sales approach and close rates.",
-    position: 4
-  },
-  {
-    name: "Workflow Automation",
-    description: "Automate repetitive tasks like follow-ups, lead assignments, and status updates with visual workflow builder.",
-    position: 5
+    position: 7
   },
   {
     name: "CRM Integrations",
     description: "Seamlessly connect with HubSpot, Salesforce, Pipedrive, and 5000+ apps via Zapier.",
-    position: 6
+    position: 8
   }
 ];
 

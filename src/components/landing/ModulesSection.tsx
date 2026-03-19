@@ -127,7 +127,7 @@ export const ModulesSection = () => {
           </div>
 
           {/* Modules grid */}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {modules.map((module, index) => (
               <article 
                 key={index}

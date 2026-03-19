@@ -10,9 +10,9 @@ const notList = [
 
 const isList = [
   "A single system purpose-built for outbound sales",
-  "Find leads, run outreach, manage deals, all in one place",
+  "ICP scoring, email quality checks, and reply classification built in",
+  "Sequence branching and deliverability monitoring included",
   "Set up in minutes, not months",
-  "Built for speed, clarity, and closing",
 ];
 
 export const DifferentiationSection = () => {
