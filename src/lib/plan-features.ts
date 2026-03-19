@@ -101,15 +101,23 @@ export const PLAN_FEATURES = {
     advancedFilters: false,
     apiAccessLeads: false,
     
+    // ICP Builder
+    icpProfiles: 3,
+    icpMatchScoring: true,
+    icpLookalike: false,
+    
     // AI Outreach Studio
     activeSequences: 1,
     personalizationLevel: 'basic',
     aiFirstLines: false,
     multiChannelLogic: false,
+    emailQualityChecker: true,
     
     // Email Sequences
     stepsPerSequence: 2,
     sequenceType: 'basic' as const,
+    sequenceBranching: false,
+    sequenceTemplates: true,
     replyAnalysis: false,
     handoffAlerts: 'none' as const,
     relevanceFilter: false,
@@ -117,6 +125,11 @@ export const PLAN_FEATURES = {
     engagementStates: 'basic' as const,
     sequenceABTesting: 0,
     sequenceAnalytics: 'basic' as const,
+    
+    // Reply Inbox
+    unifiedInbox: false,
+    inboxAIDrafts: false,
+    inboxAutoClassification: false,
     
     // Meeting Automator
     calendarConnections: 1,
@@ -139,6 +152,11 @@ export const PLAN_FEATURES = {
     automationRules: 2,
     advancedWorkflows: false,
     conditionalLogicDepth: 0,
+    
+    // Deliverability
+    deliverabilityDashboard: false,
+    mailboxWarmup: false,
+    dnsHealthChecker: false,
     
     // Analytics Dashboard
     analyticsLevel: 'basic',
