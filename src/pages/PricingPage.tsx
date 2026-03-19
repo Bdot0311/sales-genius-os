@@ -102,12 +102,14 @@ const PricingPage = () => {
             </h2>
             <div className="max-w-3xl mx-auto">
               <ul className="grid sm:grid-cols-2 gap-4">
-                {[
-                  "AI-powered lead scoring",
-                  "AI Sales Coach",
+              {[
+                  "ICP Builder with lead match scoring",
+                  "Email Quality Pre-Send Checker",
+                  "Unified Reply Inbox with AI drafts",
+                  "Sequence branching and A/B testing",
+                  "Deliverability dashboard and warmup",
                   "Visual pipeline management",
-                  "AI Outreach Studio",
-                  "Smart Deal Pipeline",
+                  "AI Sales Coach",
                   "Real-time analytics dashboard",
                   "Secure data encryption",
                   "Email support"
