@@ -30,7 +30,7 @@ const WARMUP_LIMITS = [10, 25, 50, 100];
 
 const Deliverability = () => {
   const queryClient = useQueryClient();
-  const { hasFeature, gateModalOpen, setGateModalOpen, gatedFeature, currentPlan } = usePlanFeatures();
+  const { hasFeature, gateModalOpen, setGateModalOpen, gatedFeature, currentPlan, triggerGate } = usePlanFeatures();
   const deliverabilityGated = !hasFeature('deliverabilityDashboard');
   const [domainInput, setDomainInput] = useState("");
   const [showDNSCheck, setShowDNSCheck] = useState(false);
