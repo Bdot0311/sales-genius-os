@@ -119,7 +119,18 @@ const Inbox = () => {
           <p className="text-muted-foreground">Unified reply inbox for all your outreach</p>
         </div>
 
-        {isLoading ? (
+        {inboxGated ? (
+          <Card className="border-dashed">
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <Lock className="w-12 h-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Unified Reply Inbox</h3>
+              <p className="text-muted-foreground text-center mb-4">Auto-classify replies, draft AI responses, and manage all prospect communication in one place. Available on Growth and above.</p>
+              <Button onClick={() => { if (!hasFeature('unifiedInbox')) { const { gatedAction } = usePlanFeatures(); } setGateModalOpen(true); }}>
+                Upgrade to Unlock
+              </Button>
+            </CardContent>
+          </Card>
+        ) : isLoading ? (
           <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-20" />)}</div>
         ) : (threads || []).length === 0 ? (
           <Card className="border-dashed">
