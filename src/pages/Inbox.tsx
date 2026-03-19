@@ -255,7 +255,6 @@ const Inbox = () => {
             </div>
           </div>
         )}
-        )}
       </div>
 
       {gatedFeature && (
