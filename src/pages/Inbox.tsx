@@ -255,7 +255,17 @@ const Inbox = () => {
             </div>
           </div>
         )}
+        )}
       </div>
+
+      {gatedFeature && (
+        <FeatureGateModal
+          open={gateModalOpen}
+          onOpenChange={setGateModalOpen}
+          feature={gatedFeature}
+          currentPlan={currentPlan}
+        />
+      )}
     </DashboardLayout>
   );
 };

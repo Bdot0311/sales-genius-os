@@ -302,6 +302,15 @@ const ICP = () => {
           )}
         </SheetContent>
       </Sheet>
+
+      {gatedFeature && (
+        <FeatureGateModal
+          open={gateModalOpen}
+          onOpenChange={setGateModalOpen}
+          feature={gatedFeature}
+          currentPlan={currentPlan}
+        />
+      )}
     </DashboardLayout>
   );
 };

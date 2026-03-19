@@ -486,6 +486,41 @@ export const UPGRADE_MESSAGES = {
     description: 'Test different subject lines and CTAs to optimize your outreach performance.',
     availableOn: 'pro',
   },
+  icpBuilder: {
+    title: 'ICP Builder',
+    description: 'Create Ideal Customer Profiles with match scoring to prioritize leads that fit your target market.',
+    availableOn: 'starter',
+  },
+  icpLookalike: {
+    title: 'ICP Lookalike Discovery',
+    description: 'Find more prospects similar to your closed-won deals using ICP data.',
+    availableOn: 'growth',
+  },
+  emailQualityChecker: {
+    title: 'Email Quality Checker',
+    description: 'Pre-send quality analysis with spam scoring, readability, CTA detection, and personalization depth.',
+    availableOn: 'starter',
+  },
+  unifiedInbox: {
+    title: 'Unified Reply Inbox',
+    description: 'All prospect replies in one inbox with auto-classification and AI-drafted responses.',
+    availableOn: 'growth',
+  },
+  deliverabilityDashboard: {
+    title: 'Deliverability Dashboard',
+    description: 'Monitor mailbox health, warmup progress, and DNS configuration to maximize inbox placement.',
+    availableOn: 'growth',
+  },
+  sequenceBranching: {
+    title: 'Sequence Branching',
+    description: 'Split sequences into conditional paths based on opens and replies for smarter follow-ups.',
+    availableOn: 'pro',
+  },
+  sequenceTemplates: {
+    title: 'Sequence Templates',
+    description: 'Launch sequences faster with pre-built templates like Signal Strike, Executive Thread, and The Challenger.',
+    availableOn: 'starter',
+  },
 } as const;
 
 export type UpgradeFeature = keyof typeof UPGRADE_MESSAGES;

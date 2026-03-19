@@ -293,6 +293,8 @@ const Deliverability = () => {
             </CardContent>
           </Card>
         </div>
+        </>
+        )}
       </div>
 
       {/* Add Mailbox Dialog */}
@@ -316,6 +318,15 @@ const Deliverability = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {gatedFeature && (
+        <FeatureGateModal
+          open={gateModalOpen}
+          onOpenChange={setGateModalOpen}
+          feature={gatedFeature}
+          currentPlan={currentPlan}
+        />
+      )}
     </DashboardLayout>
   );
 };
