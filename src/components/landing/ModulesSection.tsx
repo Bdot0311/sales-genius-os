@@ -116,7 +116,7 @@ export const ModulesSection = () => {
           <div className={`text-center mb-16 scroll-reveal ${isVisible ? 'visible' : ''}`}>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-xs font-medium text-primary mb-5">
               <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-              6 Modules. One System.
+              8 Modules. One System.
             </div>
             <h2 id="modules-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-4 max-w-2xl mx-auto">
               Everything you need to close more deals
