@@ -56,6 +56,8 @@ function generateDraftReply(classification: string): string {
 
 const Inbox = () => {
   const queryClient = useQueryClient();
+  const { hasFeature, gateModalOpen, setGateModalOpen, gatedFeature, currentPlan } = usePlanFeatures();
+  const inboxGated = !hasFeature('unifiedInbox');
   const [activeTab, setActiveTab] = useState("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draftReply, setDraftReply] = useState("");
