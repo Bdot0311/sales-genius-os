@@ -188,12 +188,16 @@ const SavedLeads = () => {
 
   const handleBulkDelete = async () => {
     try {
-      const { error } = await supabase
-        .from("leads")
-        .delete()
-        .in("id", Array.from(selectedLeads));
-
-      if (error) throw error;
+      const ids = Array.from(selectedLeads);
+      const batchSize = 50;
+      for (let i = 0; i < ids.length; i += batchSize) {
+        const batch = ids.slice(i, i + batchSize);
+        const { error } = await supabase
+          .from("leads")
+          .delete()
+          .in("id", batch);
+        if (error) throw error;
+      }
 
       toast({
         title: "Leads deleted",
