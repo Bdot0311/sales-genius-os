@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { Globe, CheckCircle, Loader2 } from "lucide-react";
+import { ICPScoreBreakdown } from "./ICPScoreBreakdown";
 
 interface Lead {
   id: string;
