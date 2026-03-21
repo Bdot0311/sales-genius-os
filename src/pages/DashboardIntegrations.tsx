@@ -319,6 +319,12 @@ const DashboardIntegrations = () => {
 
       if (error) throw error;
 
+      // Mark onboarding step complete
+      supabase.from("onboarding_progress")
+        .update({ set_up_integration: true })
+        .eq("user_id", user.id)
+        .then(() => {});
+
       // Reload integrations first to get fresh data
       await loadIntegrations();
       
