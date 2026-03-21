@@ -45,8 +45,8 @@ interface DashboardLayoutProps {
 }
 
 const navigation = [
-  { name: "Inbox", icon: Inbox, href: "/dashboard/inbox" },
   { name: "Overview", icon: LayoutDashboard, href: "/dashboard" },
+  { name: "Inbox", icon: Inbox, href: "/dashboard/inbox" },
   { name: "Leads", icon: Users, href: "/dashboard/leads" },
   { name: "ICP", icon: Target, href: "/dashboard/icp" },
   { name: "Pipeline", icon: TrendingUp, href: "/dashboard/pipeline" },
