@@ -208,9 +208,7 @@ export const LeadDetailSheet = ({
             <div className="flex items-center gap-2">
               {getEnrichmentStatusBadge(lead.enrichment_status)}
               {lead.icp_score !== null && (
-                <Badge variant={getScoreColor(lead.icp_score)}>
-                  Score: {lead.icp_score}
-                </Badge>
+                <ICPScoreBreakdown lead={lead} score={lead.icp_score} />
               )}
             </div>
           </div>

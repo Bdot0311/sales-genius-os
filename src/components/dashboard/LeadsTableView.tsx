@@ -107,10 +107,8 @@ export const LeadsTableView = ({
                   )}
                 </TableCell>
                 <TableCell>{lead.industry || "—"}</TableCell>
-                <TableCell>
-                  <Badge variant={getScoreColor(lead.icp_score)}>
-                    {lead.icp_score || 0}
-                  </Badge>
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  <ICPScoreBreakdown lead={lead} score={lead.icp_score} />
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline">{lead.source || "Unknown"}</Badge>
