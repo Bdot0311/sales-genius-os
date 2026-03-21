@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Building2, Mail, Phone, Globe, Linkedin, Briefcase, Users, DollarSign, Code, Calendar, Sparkles, Pencil, Save, X } from "lucide-react";
+import { ICPScoreBreakdown } from "./ICPScoreBreakdown";
 import { format } from "date-fns";
 import { useState } from "react";
 
@@ -207,9 +208,7 @@ export const LeadDetailSheet = ({
             <div className="flex items-center gap-2">
               {getEnrichmentStatusBadge(lead.enrichment_status)}
               {lead.icp_score !== null && (
-                <Badge variant={getScoreColor(lead.icp_score)}>
-                  Score: {lead.icp_score}
-                </Badge>
+                <ICPScoreBreakdown lead={lead} score={lead.icp_score} />
               )}
             </div>
           </div>

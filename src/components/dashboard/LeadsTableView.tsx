@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { Globe, CheckCircle, Loader2 } from "lucide-react";
+import { ICPScoreBreakdown } from "./ICPScoreBreakdown";
 
 interface Lead {
   id: string;
@@ -106,10 +107,8 @@ export const LeadsTableView = ({
                   )}
                 </TableCell>
                 <TableCell>{lead.industry || "—"}</TableCell>
-                <TableCell>
-                  <Badge variant={getScoreColor(lead.icp_score)}>
-                    {lead.icp_score || 0}
-                  </Badge>
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  <ICPScoreBreakdown lead={lead} score={lead.icp_score} />
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline">{lead.source || "Unknown"}</Badge>
