@@ -112,6 +112,12 @@ export const AddLeadDialog = ({ onLeadAdded }: AddLeadDialogProps) => {
 
       if (error) throw error;
 
+      // Mark onboarding step complete
+      supabase.from("onboarding_progress")
+        .update({ added_first_lead: true })
+        .eq("user_id", user.id)
+        .then(() => {});
+
       // Auto-enrich the lead (don't wait for it to complete)
       if (newLead) {
         supabase.functions.invoke('enrich-lead', {

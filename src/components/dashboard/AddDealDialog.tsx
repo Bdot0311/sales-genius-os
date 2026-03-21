@@ -89,6 +89,12 @@ export const AddDealDialog = ({ open, onOpenChange, onDealAdded, stage = "new" }
 
       if (error) throw error;
 
+      // Mark onboarding step complete
+      supabase.from("onboarding_progress")
+        .update({ created_first_deal: true })
+        .eq("user_id", user.id)
+        .then(() => {});
+
       toast({
         title: "Deal created!",
         description: "The deal has been added to your pipeline.",

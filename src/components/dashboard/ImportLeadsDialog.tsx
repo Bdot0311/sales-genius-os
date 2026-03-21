@@ -148,6 +148,12 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
       }
       const data = allInserted;
 
+      // Mark onboarding step complete
+      supabase.from("onboarding_progress")
+        .update({ added_first_lead: true })
+        .eq("user_id", session.user.id)
+        .then(() => {});
+
       // Log import history
       await supabase.from("import_history").insert({
         user_id: session.user.id,
