@@ -206,6 +206,15 @@ const DashboardIntegrations = () => {
           : "Successfully connected Gmail and Google Calendar",
       });
 
+      // Mark onboarding step complete
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser) {
+        supabase.from("onboarding_progress")
+          .update({ set_up_integration: true })
+          .eq("user_id", authUser.id)
+          .then(() => {});
+      }
+
       // Clean up URL and reload integrations
       window.history.replaceState({}, '', '/integrations');
       loadIntegrations();
