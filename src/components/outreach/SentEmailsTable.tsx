@@ -38,22 +38,8 @@ interface SentEmail {
 type SortField = "recipient" | "subject" | "status" | "sent_at";
 type SortDir = "asc" | "desc";
 
-const DELETED_KEY = "salesos_deleted_email_ids";
 
-const getDeletedIds = (): Set<string> => {
-  try {
-    const raw = localStorage.getItem(DELETED_KEY);
-    return new Set(raw ? JSON.parse(raw) : []);
-  } catch {
-    return new Set();
-  }
-};
-
-const persistDeletedIds = (ids: Set<string>) => {
-  localStorage.setItem(DELETED_KEY, JSON.stringify(Array.from(ids)));
-};
-
-export const SentEmailsTable = () => {
+export const SentEmailsTable = ({ onDeleted }: { onDeleted?: () => void }) => {
   const { toast } = useToast();
   const [emails, setEmails] = useState<SentEmail[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,8 +86,7 @@ export const SentEmailsTable = () => {
         .limit(200);
 
       if (error) throw error;
-      const deleted = getDeletedIds();
-      setEmails((data || []).filter((e) => !deleted.has(e.id)));
+      setEmails(data || []);
     } catch (error) {
       console.error("Error loading sent emails:", error);
     } finally {
@@ -182,10 +167,12 @@ export const SentEmailsTable = () => {
     setIsDeleting(true);
 
     try {
-      // Persist deletion in localStorage so it survives page refreshes
-      const deleted = getDeletedIds();
-      idsToDelete.forEach((id) => deleted.add(id));
-      persistDeletedIds(deleted);
+      const { error } = await supabase
+        .from("sent_emails")
+        .delete()
+        .in("id", idsToDelete);
+
+      if (error) throw error;
 
       setEmails((prev) => prev.filter((e) => !idsToDelete.includes(e.id)));
       setSelectedIds((prev) => {
@@ -198,6 +185,7 @@ export const SentEmailsTable = () => {
         title: idsToDelete.length === 1 ? "Email deleted" : `${idsToDelete.length} emails deleted`,
         description: "Removed from your sent history.",
       });
+      onDeleted?.();
     } catch (err: any) {
       toast({ title: "Delete failed", description: err.message, variant: "destructive" });
     } finally {

@@ -1841,7 +1841,7 @@ For logos, use HTML:
           <TabsContent value="sent" className="mt-6">
             <Card className="p-6">
               <h2 className="text-xl font-semibold mb-4">Sent Emails</h2>
-              <SentEmailsTable />
+              <SentEmailsTable onDeleted={loadCounts} />
             </Card>
           </TabsContent>
 
