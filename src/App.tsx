@@ -40,6 +40,7 @@ const ICP = lazy(() => import("./pages/ICP"));
 const Inbox = lazy(() => import("./pages/Inbox"));
 const Deliverability = lazy(() => import("./pages/Deliverability"));
 const Sequences = lazy(() => import("./pages/Sequences"));
+const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
