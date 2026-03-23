@@ -38,6 +38,21 @@ interface SentEmail {
 type SortField = "recipient" | "subject" | "status" | "sent_at";
 type SortDir = "asc" | "desc";
 
+const DELETED_KEY = "salesos_deleted_email_ids";
+
+const getDeletedIds = (): Set<string> => {
+  try {
+    const raw = localStorage.getItem(DELETED_KEY);
+    return new Set(raw ? JSON.parse(raw) : []);
+  } catch {
+    return new Set();
+  }
+};
+
+const persistDeletedIds = (ids: Set<string>) => {
+  localStorage.setItem(DELETED_KEY, JSON.stringify(Array.from(ids)));
+};
+
 export const SentEmailsTable = () => {
   const { toast } = useToast();
   const [emails, setEmails] = useState<SentEmail[]>([]);
@@ -85,7 +100,8 @@ export const SentEmailsTable = () => {
         .limit(200);
 
       if (error) throw error;
-      setEmails(data || []);
+      const deleted = getDeletedIds();
+      setEmails((data || []).filter((e) => !deleted.has(e.id)));
     } catch (error) {
       console.error("Error loading sent emails:", error);
     } finally {
@@ -166,12 +182,10 @@ export const SentEmailsTable = () => {
     setIsDeleting(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke("delete-sent-emails", {
-        body: { ids: idsToDelete },
-      });
-
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      // Persist deletion in localStorage so it survives page refreshes
+      const deleted = getDeletedIds();
+      idsToDelete.forEach((id) => deleted.add(id));
+      persistDeletedIds(deleted);
 
       setEmails((prev) => prev.filter((e) => !idsToDelete.includes(e.id)));
       setSelectedIds((prev) => {
