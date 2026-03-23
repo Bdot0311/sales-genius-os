@@ -15,7 +15,6 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Verify the requesting user first using their JWT
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "No authorization header" }), {
@@ -24,9 +23,10 @@ serve(async (req) => {
       });
     }
 
-    const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
+    // Verify user via JWT — same pattern as send-email function
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: userError } = await userClient.auth.getUser(token);
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
 
     if (userError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -44,14 +44,12 @@ serve(async (req) => {
       });
     }
 
-    // Use service role client to bypass RLS — but only delete rows owned by this user
-    const adminClient = createClient(supabaseUrl, serviceRoleKey);
-
-    const { error } = await adminClient
+    // Service role bypasses RLS — but we still enforce user ownership
+    const { error } = await supabase
       .from("sent_emails")
       .delete()
       .in("id", ids)
-      .eq("user_id", user.id); // still enforce ownership
+      .eq("user_id", user.id);
 
     if (error) throw error;
 

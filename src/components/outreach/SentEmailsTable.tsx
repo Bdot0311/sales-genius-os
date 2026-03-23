@@ -166,13 +166,12 @@ export const SentEmailsTable = () => {
     setIsDeleting(true);
 
     try {
-      const { error } = await supabase
-        .from("sent_emails")
-        .delete()
-        .in("id", idsToDelete)
-        .eq("user_id", (await supabase.auth.getUser()).data.user?.id ?? "");
+      const { data, error } = await supabase.functions.invoke("delete-sent-emails", {
+        body: { ids: idsToDelete },
+      });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       setEmails((prev) => prev.filter((e) => !idsToDelete.includes(e.id)));
       setSelectedIds((prev) => {
