@@ -30,7 +30,6 @@ import {
   Inbox,
   Target,
   ShieldCheck,
-  FileText,
 } from "lucide-react";
 import { User } from "@supabase/supabase-js";
 import { useSubscription } from "@/hooks/use-subscription";
@@ -56,7 +55,6 @@ const navigation = [
   { name: "Deliverability", icon: ShieldCheck, href: "/dashboard/deliverability" },
   { name: "Coach", icon: Mic, href: "/dashboard/coach" },
   { name: "Automations", icon: Workflow, href: "/dashboard/automations" },
-  { name: "Message Blocks", icon: FileText, href: "/dashboard/message-blocks" },
   { name: "Integrations", icon: Puzzle, href: "/integrations" },
   { name: "Settings", icon: Settings, href: "/settings" },
 ];
