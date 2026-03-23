@@ -415,12 +415,23 @@ const Outreach = () => {
 
     setIsSavingSignature(true);
     try {
+      // Use upsert so it works even if the profile row doesn't exist yet
       const { error } = await supabase
         .from("profiles")
-        .update({ email_signature: signature })
-        .eq("id", user.id);
+        .upsert({ id: user.id, email_signature: signature }, { onConflict: "id" });
 
       if (error) throw error;
+
+      // Verify it was actually persisted
+      const { data: check } = await supabase
+        .from("profiles")
+        .select("email_signature")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (signature && !check?.email_signature) {
+        throw new Error("Signature did not save — check Supabase RLS policies on the profiles table.");
+      }
 
       toast({
         title: "Signature saved",
@@ -1298,6 +1309,7 @@ For logos, use HTML:
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <div className="overflow-x-auto scrollbar-hide">
           <TabsList>
             <TabsTrigger value="compose" className="flex items-center gap-2">
               <Sparkles className="w-4 h-4" />
@@ -1330,6 +1342,7 @@ For logos, use HTML:
               Performance
             </TabsTrigger>
           </TabsList>
+          </div>
 
           <TabsContent value="compose" className="mt-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
