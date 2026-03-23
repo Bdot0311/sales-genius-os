@@ -135,16 +135,20 @@ export const useProspectUsage = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return false;
 
-      // Update both monthly and daily counters
-      const { error } = await supabase
-        .from('subscriptions')
-        .update({
-          search_credits_remaining: (usage?.monthlyLimit || 0) - (usage?.monthlyUsed || 0) - count,
-          daily_searches_used: (usage?.dailyUsed || 0) + count,
-        })
-        .eq('user_id', user.id);
+      // Use server-side RPC for atomic credit deduction
+      const { data, error } = await supabase.rpc('deduct_search_credits', {
+        _amount: count,
+        _description: 'Prospect reveal',
+      });
 
       if (error) throw error;
+
+      const result = data as { success: boolean; error?: string };
+      
+      if (!result.success) {
+        toast.error(result.error || 'Failed to update usage');
+        return false;
+      }
 
       // Refresh usage
       await loadUsage();

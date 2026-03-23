@@ -136,33 +136,25 @@ export const useSearchCredits = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return { success: false };
 
-      const newRemaining = credits.remainingCredits - amount;
-      const newDailyUsed = credits.dailySearchesUsed + 1;
-
-      // Update credits in database
-      const { error: updateError } = await supabase
-        .from('subscriptions')
-        .update({
-          search_credits_remaining: newRemaining,
-          daily_searches_used: newDailyUsed,
-        })
-        .eq('user_id', session.user.id);
-
-      if (updateError) throw updateError;
-
-      // Log transaction
-      await supabase.from('search_transactions').insert({
-        user_id: session.user.id,
-        type: 'usage',
-        amount: -amount,
-        balance_after: newRemaining,
-        description: description || 'Search query',
+      // Use server-side RPC for atomic credit deduction
+      const { data, error } = await supabase.rpc('deduct_search_credits', {
+        _amount: amount,
+        _description: description || 'Search query',
       });
+
+      if (error) throw error;
+
+      const result = data as { success: boolean; error?: string; remaining?: number; daily_used?: number };
+      
+      if (!result.success) {
+        toast.error(result.error || 'Failed to use credit');
+        return { success: false };
+      }
 
       setCredits(prev => prev ? {
         ...prev,
-        remainingCredits: newRemaining,
-        dailySearchesUsed: newDailyUsed,
+        remainingCredits: result.remaining ?? prev.remainingCredits - amount,
+        dailySearchesUsed: result.daily_used ?? prev.dailySearchesUsed + 1,
       } : null);
 
       return { success: true };
