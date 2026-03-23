@@ -40,6 +40,7 @@ const ICP = lazy(() => import("./pages/ICP"));
 const Inbox = lazy(() => import("./pages/Inbox"));
 const Deliverability = lazy(() => import("./pages/Deliverability"));
 const Sequences = lazy(() => import("./pages/Sequences"));
+const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -107,6 +108,7 @@ const App = () => (
               <Route path="/integrations" element={<DashboardIntegrations />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/admin/*" element={<Admin />} />
+              <Route path="/unsubscribe" element={<Unsubscribe />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
