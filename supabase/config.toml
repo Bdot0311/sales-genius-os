@@ -1,6 +1,8 @@
 project_id = "ghgfjnepvxvxrncmskys"
 
 [functions]
+  [functions.delete-sent-emails]
+    verify_jwt = true
   [functions.analyze-reply]
     verify_jwt = true
   [functions.auth-email-hook]
