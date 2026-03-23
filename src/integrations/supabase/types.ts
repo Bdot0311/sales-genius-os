@@ -2519,6 +2519,10 @@ export type Database = {
       }
       check_expiring_api_keys: { Args: never; Returns: undefined }
       cleanup_expired_cache: { Args: never; Returns: undefined }
+      deduct_search_credits: {
+        Args: { _amount: number; _description?: string }
+        Returns: Json
+      }
       get_expiring_trials: {
         Args: { _days_until_expiry: number }
         Returns: {
