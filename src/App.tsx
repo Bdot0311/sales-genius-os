@@ -35,7 +35,6 @@ const Confirmation = lazy(() => import("./pages/Confirmation"));
 const HelpCenter = lazy(() => import("./pages/HelpCenter"));
 const Install = lazy(() => import("./pages/Install"));
 const Checkout = lazy(() => import("./pages/Checkout"));
-const MessageBlocks = lazy(() => import("./pages/MessageBlocks"));
 const ICP = lazy(() => import("./pages/ICP"));
 const Inbox = lazy(() => import("./pages/Inbox"));
 const Deliverability = lazy(() => import("./pages/Deliverability"));
@@ -101,7 +100,6 @@ const App = () => (
               <Route path="/dashboard/automations" element={<Automations />} />
               <Route path="/dashboard/sequences/:id" element={<SequenceDetail />} />
               <Route path="/dashboard/sequences" element={<Sequences />} />
-              <Route path="/dashboard/message-blocks" element={<MessageBlocks />} />
               <Route path="/dashboard/icp" element={<ICP />} />
               <Route path="/dashboard/inbox" element={<Inbox />} />
               <Route path="/dashboard/deliverability" element={<Deliverability />} />
