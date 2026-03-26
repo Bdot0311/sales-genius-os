@@ -126,7 +126,7 @@ const DashboardIntegrations = () => {
     try {
       const { data, error } = await supabase
         .from('integrations')
-        .select('id, integration_id, is_active, config, updated_at, connected_email');
+        .select('id, integration_id, is_active, updated_at, connected_email');
       
       if (error) throw error;
       
@@ -140,23 +140,16 @@ const DashboardIntegrations = () => {
         .filter(i => i.integration_id === 'google' && i.is_active)
         .map(i => ({
           id: i.id,
-          email: i.connected_email || (i.config as any)?.googleEmail || 'Unknown account',
+          email: i.connected_email || 'Unknown account',
         }));
       setConnectedGoogleAccounts(googleAccounts);
-      
-      // Store full integration data for later use
-      const integrationsMap = new Map(
-        data?.map(i => [i.integration_id, i.config]) || []
-      );
-      (window as any).__integrationConfigs = integrationsMap;
 
-      // Build status map with last sync and error info
+      // Build status map with last sync info
       const statusMap = new Map<string, { lastSync: string | null; error: string | null }>();
       data?.forEach(integration => {
-        const config = integration.config as any;
         statusMap.set(integration.integration_id, {
           lastSync: integration.updated_at,
-          error: config?.lastError || null
+          error: null
         });
       });
       setIntegrationStatus(statusMap);
@@ -284,8 +277,7 @@ const DashboardIntegrations = () => {
       setSelectedIntegration(integration);
       
       // Load existing config if integration is already connected
-      const existingConfig = (window as any).__integrationConfigs?.get(integration.id);
-      setFormData(existingConfig || {});
+      setFormData({});
       return;
     }
 
