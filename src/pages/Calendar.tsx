@@ -39,111 +39,28 @@ const Calendar = () => {
 
   const checkGoogleCalendarConnection = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const { data, error } = await supabase.functions.invoke('fetch-google-calendar-events');
+      
+      if (error) {
+        console.error('Error fetching Google Calendar events:', error);
+        return;
+      }
 
-      const { data } = await supabase
-        .from('integrations')
-        .select('config, is_active')
-        .eq('user_id', user.id)
-        .eq('integration_id', 'google')
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (data?.config) {
+      if (data?.connected) {
         setHasGoogleCalendar(true);
-        loadGoogleCalendarEvents(data.config);
+        setGoogleEvents(data.events || []);
+      } else {
+        setHasGoogleCalendar(false);
+        if (data?.needsReconnect) {
+          toast({
+            title: "Google Calendar Disconnected",
+            description: "Please reconnect your Google account in Integrations.",
+            variant: "destructive",
+          });
+        }
       }
     } catch (error) {
       console.error('Error checking Google Calendar:', error);
-    }
-  };
-
-  const loadGoogleCalendarEvents = async (config: any) => {
-    try {
-      let accessToken = config.accessToken;
-
-      // Check if token is expired and refresh via server-side function
-      if (config.expiresAt && Date.now() >= config.expiresAt - 60000) { // 1 min buffer
-        const { data: refreshData, error: refreshError } = await supabase.functions.invoke('refresh-google-token');
-        
-        if (refreshError || !refreshData?.success) {
-          if (refreshData?.needsReconnect) {
-            setHasGoogleCalendar(false);
-            toast({
-              title: "Google Calendar Disconnected",
-              description: "Please reconnect your Google account in Integrations.",
-              variant: "destructive",
-            });
-            return;
-          }
-          throw new Error(refreshData?.error || refreshError?.message || 'Failed to refresh token');
-        }
-        
-        accessToken = refreshData.accessToken;
-      }
-
-      const now = new Date();
-      const timeMin = now.toISOString();
-      const timeMax = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
-
-      const response = await fetch(
-        `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime&maxResults=10`,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        
-        // If unauthorized, try refreshing token once
-        if (response.status === 401) {
-          const { data: refreshData } = await supabase.functions.invoke('refresh-google-token');
-          
-          if (refreshData?.needsReconnect) {
-            setHasGoogleCalendar(false);
-            toast({
-              title: "Google Calendar Disconnected", 
-              description: "Please reconnect your Google account in Integrations.",
-              variant: "destructive",
-            });
-            return;
-          }
-          
-          if (refreshData?.success) {
-            // Retry with new token
-            const retryResponse = await fetch(
-              `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime&maxResults=10`,
-              {
-                headers: {
-                  Authorization: `Bearer ${refreshData.accessToken}`,
-                },
-              }
-            );
-            
-            if (retryResponse.ok) {
-              const data = await retryResponse.json();
-              setGoogleEvents(data.items || []);
-              return;
-            }
-          }
-        }
-        
-        throw new Error(errorData.error?.message || 'Failed to fetch calendar');
-      }
-
-      const data = await response.json();
-      setGoogleEvents(data.items || []);
-    } catch (error: any) {
-      console.error('Google Calendar error:', error);
-      toast({
-        title: "Google Calendar Error",
-        description: error.message,
-        variant: "destructive",
-      });
     }
   };
 
