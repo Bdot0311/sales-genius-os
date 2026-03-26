@@ -144,13 +144,12 @@ const DashboardIntegrations = () => {
         }));
       setConnectedGoogleAccounts(googleAccounts);
 
-      // Build status map with last sync and error info
+      // Build status map with last sync info
       const statusMap = new Map<string, { lastSync: string | null; error: string | null }>();
       data?.forEach(integration => {
-        const config = integration.config as any;
         statusMap.set(integration.integration_id, {
           lastSync: integration.updated_at,
-          error: config?.lastError || null
+          error: null
         });
       });
       setIntegrationStatus(statusMap);
