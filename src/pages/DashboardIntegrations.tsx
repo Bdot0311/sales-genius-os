@@ -278,8 +278,7 @@ const DashboardIntegrations = () => {
       setSelectedIntegration(integration);
       
       // Load existing config if integration is already connected
-      const existingConfig = (window as any).__integrationConfigs?.get(integration.id);
-      setFormData(existingConfig || {});
+      setFormData({});
       return;
     }
 

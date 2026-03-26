@@ -192,14 +192,14 @@ const Outreach = () => {
   const loadConnectedAccounts = async () => {
     const { data } = await supabase
       .from('integrations')
-      .select('id, connected_email, config')
+      .select('id, connected_email')
       .eq('integration_id', 'google')
       .eq('is_active', true);
     
     if (data && data.length > 0) {
       const accounts = data.map(row => ({
         id: row.id,
-        email: row.connected_email || (row.config as any)?.googleEmail || 'Unknown account',
+        email: row.connected_email || 'Unknown account',
       }));
       setConnectedAccounts(accounts);
       // Auto-select first account if none selected
