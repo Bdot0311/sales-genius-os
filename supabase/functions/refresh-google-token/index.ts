@@ -17,22 +17,25 @@ serve(async (req) => {
       throw new Error("Missing authorization header");
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: authHeader } } }
-    );
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    const { data: { user } } = await supabase.auth.getUser();
+    // Verify user with anon key
+    const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user } } = await anonClient.auth.getUser();
     if (!user) throw new Error("Not authenticated");
 
-    // Get Google integration
-    const { data: integration } = await supabase
-      .from('integrations')
-      .select('config')
-      .eq('user_id', user.id)
-      .eq('integration_id', 'google')
-      .eq('is_active', true)
+    // Use service role to access integration config
+    const adminClient = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { data: integration } = await adminClient
+      .from("integrations")
+      .select("config")
+      .eq("user_id", user.id)
+      .eq("integration_id", "google")
+      .eq("is_active", true)
       .single();
 
     if (!integration?.config) {
@@ -43,15 +46,11 @@ serve(async (req) => {
     }
 
     const config = integration.config as any;
-    
+
     // Check if token is still valid
     if (config.expiresAt && Date.now() < config.expiresAt) {
       return new Response(
-        JSON.stringify({ 
-          success: true, 
-          accessToken: config.accessToken,
-          expiresAt: config.expiresAt 
-        }),
+        JSON.stringify({ success: true }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -64,7 +63,6 @@ serve(async (req) => {
       );
     }
 
-    // Get OAuth credentials from environment or config
     const clientId = Deno.env.get("GOOGLE_CLIENT_ID") || config.clientId;
     const clientSecret = Deno.env.get("GOOGLE_CLIENT_SECRET") || config.clientSecret;
 
@@ -75,67 +73,60 @@ serve(async (req) => {
       );
     }
 
-    // Refresh the token
-    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
         client_id: clientId,
         client_secret: clientSecret,
         refresh_token: config.refreshToken,
-        grant_type: 'refresh_token',
+        grant_type: "refresh_token",
       }),
     });
 
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.json();
-      console.error('Token refresh failed:', errorData);
-      
-      // If refresh token is invalid, user needs to reconnect
-      if (errorData.error === 'invalid_grant') {
-        // Mark integration as needing reconnection
-        await supabase
-          .from('integrations')
+      console.error("Token refresh failed:", errorData);
+
+      if (errorData.error === "invalid_grant") {
+        await adminClient
+          .from("integrations")
           .update({ is_active: false })
-          .eq('user_id', user.id)
-          .eq('integration_id', 'google');
-          
+          .eq("user_id", user.id)
+          .eq("integration_id", "google");
+
         return new Response(
-          JSON.stringify({ 
+          JSON.stringify({
             error: "Google authorization expired. Please reconnect your Google account.",
-            needsReconnect: true 
+            needsReconnect: true,
           }),
           { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      
-      throw new Error(errorData.error_description || 'Failed to refresh token');
+
+      throw new Error(errorData.error_description || "Failed to refresh token");
     }
 
     const tokens = await tokenResponse.json();
-    const newExpiresAt = Date.now() + (tokens.expires_in * 1000);
+    const newExpiresAt = Date.now() + tokens.expires_in * 1000;
 
-    // Update tokens in database
-    await supabase
-      .from('integrations')
+    // Update tokens in database (server-side only)
+    await adminClient
+      .from("integrations")
       .update({
         config: {
           ...config,
           accessToken: tokens.access_token,
           expiresAt: newExpiresAt,
-          // Keep existing refresh token if new one not provided
           refreshToken: tokens.refresh_token || config.refreshToken,
         },
       })
-      .eq('user_id', user.id)
-      .eq('integration_id', 'google');
+      .eq("user_id", user.id)
+      .eq("integration_id", "google");
 
+    // Return success WITHOUT tokens — tokens stay server-side
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        accessToken: tokens.access_token,
-        expiresAt: newExpiresAt
-      }),
+      JSON.stringify({ success: true }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: any) {
@@ -146,4 +137,3 @@ serve(async (req) => {
     );
   }
 });
-
