@@ -704,8 +704,11 @@ const Outreach = () => {
     setIsGenerating(true);
     try {
       const lead = leads.find((l) => l.id === selectedLead);
-      
-      // If no subject line, generate one first
+      // Use the goal from the selected template — default to introduction
+      const template = EMAIL_TEMPLATES.find(t => t.value === selectedTemplate);
+      const goal = template?.goal || "introduction";
+
+      // If no subject line, generate one tailored to the template goal
       let finalSubjectLine = subjectLine;
       if (!finalSubjectLine) {
         const { data: subjectData, error: subjectError } = await supabase.functions.invoke("generate-email", {
@@ -713,6 +716,7 @@ const Outreach = () => {
             lead,
             tone: emailTone,
             goal: "subject_only",
+            templateGoal: goal,
             triggerContext,
             openerWord: openerWord === "auto" ? "" : openerWord,
             businessDescription,
@@ -722,13 +726,13 @@ const Outreach = () => {
         finalSubjectLine = subjectData.email.replace(/^Subject:\s*/i, '').trim();
         setSubjectLine(finalSubjectLine);
       }
-      
-      // Now generate the email body
+
+      // Generate the email body using the actual template goal
       const { data, error } = await supabase.functions.invoke("generate-email", {
         body: {
           lead,
           tone: emailTone,
-          goal: "custom",
+          goal,
           subjectLine: finalSubjectLine,
           triggerContext,
           openerWord: openerWord === "auto" ? "" : openerWord,

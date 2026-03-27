@@ -128,6 +128,7 @@ serve(async (req) => {
     const lead = requestData.lead;
     const tone = typeof requestData.tone === 'string' ? requestData.tone.trim().toLowerCase() : '';
     const goal = typeof requestData.goal === 'string' ? requestData.goal.trim().toLowerCase() : '';
+    const templateGoal = typeof requestData.templateGoal === 'string' ? requestData.templateGoal.trim().toLowerCase() : goal;
     const subjectLine = typeof requestData.subjectLine === 'string' ? requestData.subjectLine.trim() : '';
     const triggerContext = typeof requestData.triggerContext === 'string' ? requestData.triggerContext.trim() : '';
     const openerWord = typeof requestData.openerWord === 'string' ? requestData.openerWord.trim().toLowerCase() : '';
@@ -198,6 +199,53 @@ serve(async (req) => {
       return lines.join('\n');
     };
 
+    // Template-specific instructions — each email type has a distinct approach and CTA
+    const getTemplateInstructions = (g: string) => {
+      switch (g) {
+        case 'meeting':
+          return {
+            focus: 'booking a quick call or meeting',
+            sentence1: 'Open with a trigger that shows you researched them — something specific about their role, company growth, or recent activity.',
+            sentence2: 'Call out a pain point that makes scheduling calls or decision-making hard at their company size/stage.',
+            sentence3: 'Explain what you do and how you have helped similar companies, then make it relevant to their situation.',
+            cta: 'Ask specifically for a short call — e.g. "Worth 15 minutes this week?", "Open to a quick call to explore?", "Mind if we grab 15 min?"',
+          };
+        case 'demo':
+          return {
+            focus: 'getting them to agree to a product demo',
+            sentence1: 'Reference something specific about how they currently handle the problem your product solves.',
+            sentence2: 'Surface the pain of doing it manually or with their current tools.',
+            sentence3: 'Tease what they will see in the demo — a specific outcome or insight, not just "the product".',
+            cta: 'Ask about a demo specifically — e.g. "Worth a 20-min demo?", "Mind if I show you how it works?", "Want to see it in action?"',
+          };
+        case 'follow-up':
+          return {
+            focus: 'following up on a previous email you sent them',
+            sentence1: 'Briefly acknowledge the previous email without being pushy — reference it naturally, add a fresh angle or new piece of value not in the first email.',
+            sentence2: 'Restate why their specific situation makes this relevant now — connect to something in their role or industry.',
+            sentence3: 'Keep social proof brief — they have heard it once already.',
+            cta: 'Very soft, low-pressure ask — e.g. "Still worth a look?", "Any thoughts?", "Happy to send more context if useful."',
+          };
+        case 'proposal':
+          return {
+            focus: 'presenting a tailored proposal or solution for their specific situation',
+            sentence1: 'Reference something specific about their company or role that your proposal is directly addressing.',
+            sentence2: 'Name the exact problem or gap your proposal solves for companies in their situation.',
+            sentence3: 'Describe the proposal outcome confidently — what changes for them if they say yes.',
+            cta: 'Offer next steps clearly — e.g. "Want me to send over the details?", "Worth a call to walk through it?", "Happy to send the full proposal."',
+          };
+        case 'introduction':
+        default:
+          return {
+            focus: 'a first-touch cold introduction that sparks curiosity',
+            sentence1: 'Open with a trigger that shows you researched this specific person — their role, company stage, or industry context.',
+            sentence2: 'Identify the pain point most common for someone in their role and ask a relatable question about it.',
+            sentence3: 'Briefly explain what you do and mention results with companies in their space.',
+            cta: 'Use a soft, permission-based ask — e.g. "Worth a quick look?", "Open to exploring this?", "Mind if I share how?"',
+          };
+      }
+    };
+
     let systemPrompt: string;
     let userPrompt: string;
 
@@ -213,9 +261,12 @@ RULES for subject lines:
 - Never use spam trigger words
 - CRITICAL: Every generation must produce a COMPLETELY DIFFERENT subject line. Never reuse the same structure, phrasing, or angle twice. Vary your approach drastically each time. Try different hooks: questions, statements, name drops, industry references, role-specific angles, company-specific angles, metric-based, outcome-based, pain-based, curiosity-based, etc.`;
       
-      userPrompt = `Generate a single compelling email subject line for the following lead. The subject should be ${tone} in tone.
+      const subjectTemplateInstr = getTemplateInstructions(templateGoal);
+      userPrompt = `Generate a single compelling email subject line for the following lead. The subject should be ${tone} in tone and appropriate for a ${subjectTemplateInstr.focus} email.
 
 IMPORTANT: This is generation attempt #${Date.now() % 1000}. You MUST produce a completely unique subject line that is different from any previous generation. Use a fresh angle, structure, and wording.
+
+Email type / focus: ${subjectTemplateInstr.focus}
 
 Lead Information:
 ${buildLeadContext(false)}
@@ -266,32 +317,49 @@ ${businessDescription ? `\nSender's Business Description (use this to make socia
 
 Return ONLY the social proof text, nothing else. No quotes, no explanations. Example format: "Spot and Ignite are customers of ours. We helped them cut board prep time by 50%."`;
     } else if (goal === 'custom' && subjectLine) {
-      // Generate email body based on custom subject line using cold email framework
+      // Generate email body based on custom subject line
+      const customTmpl = getTemplateInstructions(templateGoal || 'introduction');
+
       systemPrompt = `${COLD_EMAIL_FRAMEWORK}
 
-The email should be ${tone} in tone and must relate to the provided subject line.
+The email should be ${tone} in tone, match the subject line provided, and focus on: ${customTmpl.focus}.
+
+TEMPLATE-SPECIFIC RULES:
+- Sentence 1: ${customTmpl.sentence1}
+- Sentence 2: ${customTmpl.sentence2}
+- Sentence 3: ${customTmpl.sentence3}
+- Sentence 4 (CTA): ${customTmpl.cta}
 
 IMPORTANT: Generate ONLY the email body content. Do NOT include:
 - Subject line or "Subject:" prefix
 - Email headers
-- Any meta information
 
 Start directly with the greeting (e.g., "Hi ${sanitizedContactName},") and end with the signature.`;
 
-      userPrompt = `Write a cold email BODY ONLY that matches this subject line: "${subjectLine}"
+      userPrompt = `Write a ${customTmpl.focus} email BODY ONLY that matches this subject line: "${subjectLine}"
 
-Lead Information:
+Use ALL of the lead data below to personalize every sentence — job title, industry, company size, technologies, company description:
+
+LEAD INTELLIGENCE:
 ${buildLeadContext(true)}
 ${triggerContext ? `\nTrigger/Context (use this as your opener): ${triggerContext}` : ''}
 ${openerWord && VALID_OPENERS.includes(openerWord) ? `\nPreferred Opening Word: Start with "${openerWord.charAt(0).toUpperCase() + openerWord.slice(1)}"` : ''}
-${businessDescription ? `\nSender's Business Description (use this to accurately describe what the sender's company does AND derive social proof / customer references from it): ${businessDescription}` : ''}
+${businessDescription ? `\nSender's Business: ${businessDescription}` : ''}
 
-Write an email body following the 4-sentence cold email framework. Start with the greeting and end with a simple sign-off. Do NOT include the subject line.`;
+Write the 4-sentence email body. Start with "Hi ${sanitizedContactName}," and end with a simple sign-off. Do NOT include the subject line. Keep under 100 words.`;
     } else {
-      // Standard cold email generation using the framework
+      // Standard email generation — template-aware with specific instructions per goal
+      const tmpl = getTemplateInstructions(goal);
+
       systemPrompt = `${COLD_EMAIL_FRAMEWORK}
 
-The email should be ${tone} in tone and focused on ${goal}.
+The email should be ${tone} in tone. The specific email type is: ${tmpl.focus.toUpperCase()}.
+
+TEMPLATE-SPECIFIC RULES FOR THIS EMAIL TYPE:
+- Sentence 1: ${tmpl.sentence1}
+- Sentence 2: ${tmpl.sentence2}
+- Sentence 3: ${tmpl.sentence3}
+- Sentence 4 (CTA): ${tmpl.cta}
 
 IMPORTANT: Generate ONLY the email body content. Do NOT include:
 - Subject line or "Subject:" prefix
@@ -300,23 +368,23 @@ IMPORTANT: Generate ONLY the email body content. Do NOT include:
 
 Start directly with the greeting (e.g., "Hi ${sanitizedContactName},") and end with a simple sign-off.`;
 
-      userPrompt = `Write a cold email BODY ONLY (no subject line) for the following lead:
+      userPrompt = `Write a ${tmpl.focus} email BODY ONLY (no subject line) for the following lead. Use every piece of lead data below to personalize — the more specific to this person and company, the better.
 
-Lead Information:
+LEAD INTELLIGENCE (use ALL of this to personalize):
 ${buildLeadContext(true)}
-${triggerContext ? `\nTrigger/Context (use this as your opener): ${triggerContext}` : ''}
-${openerWord && VALID_OPENERS.includes(openerWord) ? `\nPreferred Opening Word: Start with "${openerWord.charAt(0).toUpperCase() + openerWord.slice(1)}"` : ''}
-${businessDescription ? `\nSender's Business Description (use this to accurately describe what the sender's company does AND derive social proof / customer references from it): ${businessDescription}` : ''}
+${triggerContext ? `\nTrigger/Context (use this as your Sentence 1 opener): ${triggerContext}` : ''}
+${openerWord && VALID_OPENERS.includes(openerWord) ? `\nPreferred Opening Word: Start Sentence 1 with "${openerWord.charAt(0).toUpperCase() + openerWord.slice(1)}"` : ''}
+${businessDescription ? `\nSender's Business: ${businessDescription}` : ''}
 
-Goal: ${goal}
+EMAIL TYPE: ${tmpl.focus}
 
-Write ONLY the email body following the 4-sentence cold email framework:
-1. Trigger/Hook (start with ${openerWord || 'one of: You, Saw, How, Spoke, Noticed, Referred, Remember'})
-2. Pain point + question about their current state — make it specific to their role, industry, and company stage
-3. Value proposition + social proof — reference their tech stack or industry where possible
-4. Permission-based CTA
+WRITE the 4-sentence email following this structure exactly:
+1. ${tmpl.sentence1}
+2. ${tmpl.sentence2}
+3. ${tmpl.sentence3}
+4. ${tmpl.cta}
 
-Start with the greeting and end with a simple sign-off like "Thanks," or "Best,". Do NOT include a subject line.`;
+Start with "Hi ${sanitizedContactName}," and end with "Best," or "Thanks,". Do NOT include a subject line. Do NOT exceed 100 words in the body.`;
     }
 
     // Use higher temperature for maximum variety on every generation
