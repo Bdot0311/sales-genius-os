@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 
 const painPoints = [
-  "You're juggling 5+ tools just to run sales",
-  "Half your leads are unqualified or outdated",
-  "Follow-ups slip through the cracks",
-  "You have no single source of truth for deals",
-  "Your CRM feels like data entry, not a weapon",
+  "You spend 40% of your time finding leads instead of closing deals",
+  "The tools that are supposed to help require complex boolean searches",
+  "Contact data is outdated — you're charged per contact whether it converts or not",
+  "Follow-ups slip through the cracks across disconnected platforms",
+  "Your CRM is a data-entry burden, not a sales weapon",
 ];
 
 export const ProblemSection = () => {
@@ -31,36 +31,38 @@ export const ProblemSection = () => {
   }, []);
 
   return (
-    <section 
+    <section
       ref={ref}
       className="relative py-16 md:py-24 overflow-hidden"
       aria-labelledby="problem-heading"
     >
       {/* Top hairline separator */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
-      
+
       <div className="container relative z-10 mx-auto px-6">
         <div className="max-w-[720px] mx-auto">
-          {/* Card with dark background */}
-          <div 
+          <div
             className={`relative p-8 md:p-10 rounded-2xl border border-border/30 bg-gradient-to-b from-muted/50 to-muted/20 scroll-reveal ${
               isVisible ? 'visible' : ''
             }`}
           >
             {/* Spotlight effect */}
             <div className="absolute inset-0 rounded-2xl opacity-0 hover:opacity-100 transition-opacity duration-200 pointer-events-none spotlight-card" />
-            
+
             <div className="relative z-10">
-              <h2 
-                id="problem-heading" 
-                className="text-2xl sm:text-3xl font-bold tracking-tight mb-8 text-center"
+              <h2
+                id="problem-heading"
+                className="text-2xl sm:text-3xl font-bold tracking-tight mb-3 text-center"
               >
                 Sound familiar?
               </h2>
-              
+              <p className="text-center text-muted-foreground text-sm sm:text-base mb-8 max-w-lg mx-auto leading-relaxed">
+                Most B2B sales teams spend nearly half their time finding leads instead of closing them. The tools that are supposed to help make it worse — not better.
+              </p>
+
               <ul className="space-y-4">
                 {painPoints.map((point, index) => (
-                  <li 
+                  <li
                     key={index}
                     className={`flex items-start gap-4 scroll-reveal ${isVisible ? 'visible' : ''}`}
                     style={{ '--reveal-delay': `${(index + 1) * 80}ms` } as React.CSSProperties}
@@ -78,7 +80,7 @@ export const ProblemSection = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Bottom hairline separator */}
       <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
     </section>

@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { MessageSquare, BarChart3, Send, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 const steps = [
   {
@@ -25,6 +27,7 @@ const steps = [
 export const HowItWorks = () => {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -116,11 +119,20 @@ export const HowItWorks = () => {
             ))}
           </div>
 
-          {/* No complexity line */}
+          {/* No complexity line + secondary CTA */}
           <div className={`text-center scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '350ms' } as React.CSSProperties}>
-            <p className="text-sm text-muted-foreground/70 font-medium">
+            <p className="text-sm text-muted-foreground/70 font-medium mb-6">
               No boolean queries. No complex filters. No data entry.
             </p>
+            <Button
+              variant="outline"
+              size="lg"
+              className="h-12 px-6 text-base font-medium rounded-lg btn-outline-hover group"
+              onClick={() => navigate('/auth')}
+            >
+              Try it now — describe your first ICP
+              <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-0.5 transition-transform duration-150" aria-hidden="true" />
+            </Button>
           </div>
         </div>
       </div>

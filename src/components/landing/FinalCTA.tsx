@@ -88,16 +88,16 @@ export const FinalCTA = () => {
                   </h2>
                   
                   <p className="text-lg sm:text-xl text-muted-foreground mb-10 max-w-lg mx-auto leading-relaxed">
-                    SalesOS is free to explore. Create your account, see the platform in action, and upgrade when you're ready.
+                    Explore the platform with real sample data. No credit card, no commitment. Upgrade when you're ready to go live.
                   </p>
 
                   {/* CTA with glow */}
-                  <Button 
+                  <Button
                     size="lg"
                     className="h-16 px-10 text-lg font-semibold bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl group shadow-[0_0_30px_hsl(261_75%_65%/0.3)] hover:shadow-[0_0_50px_hsl(261_75%_65%/0.45)] hover:-translate-y-1 transition-all duration-300"
                     onClick={() => navigate('/auth')}
                   >
-                    <span>Start for free</span>
+                    <span>Get your first lead free</span>
                     <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1.5 transition-transform duration-200" aria-hidden="true" />
                   </Button>
 

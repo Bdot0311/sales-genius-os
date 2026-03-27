@@ -2,17 +2,17 @@ import { useEffect, useRef, useState } from "react";
 import { X, Check, Sparkles } from "lucide-react";
 
 const notList = [
-  "A database you have to babysit",
-  "An 'everything tool' that does nothing well",
-  "A platform built for marketers",
-  "Software that requires consultants to set up",
+  "Apollo or ZoomInfo — databases you pay per contact whether it converts or not",
+  "LinkedIn Sales Navigator — boolean queries and manual list-building",
+  "A bloated CRM that requires consultants to configure",
+  "Five disconnected tools duct-taped together with Zapier",
 ];
 
 const isList = [
-  "A single system purpose-built for outbound sales",
-  "ICP scoring, email quality checks, and reply classification built in",
-  "Sequence branching and deliverability monitoring included",
-  "Set up in minutes, not months",
+  "Describe your ICP in plain English — no boolean queries, no filters",
+  "Every lead scored 0–100 for fit before you spend a second on them",
+  "AI-personalized outreach with quality checks built in, not bolted on",
+  "Set up in under 2 minutes — no implementation project required",
 ];
 
 export const DifferentiationSection = () => {
@@ -65,10 +65,10 @@ export const DifferentiationSection = () => {
               Built Different
             </div>
             <h2 id="differentiation-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
-              Not another bloated CRM
+              Why SalesOS instead of Apollo, ZoomInfo, or Sales Nav?
             </h2>
             <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-              SalesOS is built to help you close deals, not manage spreadsheets.
+              Those tools deliver data. SalesOS delivers leads you can close — scored, personalized outreach included.
             </p>
           </div>
 
@@ -83,7 +83,7 @@ export const DifferentiationSection = () => {
             >
               <div className="relative z-10">
                 <h3 className="font-semibold text-lg mb-6 text-destructive/80">
-                  What SalesOS is NOT
+                  Not this
                 </h3>
                 <ul className="space-y-4">
                   {notList.map((item, index) => (
@@ -114,7 +114,7 @@ export const DifferentiationSection = () => {
               
               <div className="relative z-10">
                 <h3 className="font-semibold text-lg mb-6 text-primary">
-                  What SalesOS IS
+                  SalesOS
                 </h3>
                 <ul className="space-y-4">
                   {isList.map((item, index) => (
