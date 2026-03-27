@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
@@ -17,8 +17,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import {
-  Mail, Plus, Trash2, AlertCircle, Lock, Flame, TrendingUp,
-  CheckCircle, Clock, Settings2, Play, RotateCcw, Zap, BarChart3,
+  Mail, Plus, Trash2, AlertCircle, Lock, Flame,
+  CheckCircle, Clock, Settings2, Play, TrendingUp, BarChart3,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -28,27 +28,45 @@ interface Mailbox {
   warmup_active: boolean | null;
   current_week: number | null;
   start_date: string | null;
-  ramp_style: string | null;
-  max_per_day: number | null;
-  warmup_sent_today: number | null;
-  warmup_replied_today: number | null;
-  total_warmup_sent: number | null;
-  total_warmup_replied: number | null;
-  last_warmup_run: string | null;
   created_at: string;
 }
 
-interface WarmupLog {
-  log_date: string;
-  emails_sent: number;
-  emails_replied: number;
-  week_number: number;
-  daily_target: number;
-}
-
-const RAMP = {
+// Warmup ramp schedules: emails per day per week
+const RAMP: Record<string, number[]> = {
   conservative: [3, 7, 15, 25, 40, 60, 80, 100],
   aggressive:   [10, 25, 50, 100, 100, 100, 100, 100],
+};
+
+const REPLY_RATE = 0.35;
+
+// Per-mailbox settings stored in localStorage (no schema change required)
+const getSettings = (mailboxId: string) => {
+  try {
+    const raw = localStorage.getItem(`warmup_settings_${mailboxId}`);
+    if (raw) return JSON.parse(raw) as { rampStyle: string; maxPerDay: number };
+  } catch (_) {}
+  return { rampStyle: "conservative", maxPerDay: 100 };
+};
+
+const saveSettings = (mailboxId: string, rampStyle: string, maxPerDay: number) => {
+  localStorage.setItem(`warmup_settings_${mailboxId}`, JSON.stringify({ rampStyle, maxPerDay }));
+};
+
+// Per-mailbox run history stored in localStorage
+const getRunHistory = (mailboxId: string): Array<{ date: string; sent: number; replied: number; week: number; target: number }> => {
+  try {
+    const raw = localStorage.getItem(`warmup_history_${mailboxId}`);
+    if (raw) return JSON.parse(raw);
+  } catch (_) {}
+  return [];
+};
+
+const addRunToHistory = (mailboxId: string, entry: { date: string; sent: number; replied: number; week: number; target: number }) => {
+  const history = getRunHistory(mailboxId);
+  const existing = history.findIndex((h) => h.date === entry.date);
+  if (existing >= 0) history[existing] = entry;
+  else history.unshift(entry);
+  localStorage.setItem(`warmup_history_${mailboxId}`, JSON.stringify(history.slice(0, 30)));
 };
 
 const Deliverability = () => {
@@ -63,6 +81,8 @@ const Deliverability = () => {
   const [settingsOpen, setSettingsOpen] = useState<string | null>(null);
   const [rampStyle, setRampStyle] = useState<"conservative" | "aggressive">("conservative");
   const [maxPerDay, setMaxPerDay] = useState("100");
+  const [runCompleted, setRunCompleted] = useState<Record<string, boolean>>({});
+  const [, forceUpdate] = useState(0);
 
   const { data: mailboxes, isLoading } = useQuery({
     queryKey: ["mailbox-warmup"],
@@ -71,33 +91,11 @@ const Deliverability = () => {
       if (!user) throw new Error("Not authenticated");
       const { data, error } = await supabase
         .from("mailbox_warmup")
-        .select("*")
+        .select("id, email, warmup_active, current_week, start_date, created_at")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data || []) as Mailbox[];
-    },
-  });
-
-  const { data: warmupLogs } = useQuery({
-    queryKey: ["warmup-logs"],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return {};
-      const { data, error } = await supabase
-        .from("warmup_logs")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("log_date", { ascending: false })
-        .limit(70);
-      if (error) throw error;
-      // Group by mailbox_id
-      const byMailbox: Record<string, WarmupLog[]> = {};
-      for (const log of data || []) {
-        if (!byMailbox[log.mailbox_id]) byMailbox[log.mailbox_id] = [];
-        byMailbox[log.mailbox_id].push(log);
-      }
-      return byMailbox;
     },
   });
 
@@ -110,8 +108,6 @@ const Deliverability = () => {
         email,
         warmup_active: false,
         current_week: 1,
-        ramp_style: "conservative",
-        max_per_day: 100,
       });
       if (error) throw error;
     },
@@ -133,95 +129,45 @@ const Deliverability = () => {
     },
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ["mailbox-warmup"] });
-      if (vars.active) toast.success("Warmup started — first send will run shortly");
+      if (vars.active) toast.success("Warmup started");
     },
-  });
-
-  const saveSettings = useMutation({
-    mutationFn: async ({ id, ramp, max }: { id: string; ramp: string; max: number }) => {
-      const { error } = await supabase
-        .from("mailbox_warmup")
-        .update({ ramp_style: ramp, max_per_day: max })
-        .eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["mailbox-warmup"] });
-      setSettingsOpen(null);
-      toast.success("Warmup settings saved");
-    },
-    onError: (e: any) => toast.error(e.message),
   });
 
   const runWarmup = useMutation({
     mutationFn: async ({ mailboxId }: { mailboxId: string }) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      // Fetch the mailbox
-      const { data: mb, error: mbErr } = await supabase
-        .from("mailbox_warmup")
-        .select("*")
-        .eq("id", mailboxId)
-        .single();
-      if (mbErr) throw mbErr;
-
       // Calculate current week from start_date
+      const mb = (mailboxes || []).find((m) => m.id === mailboxId);
+      if (!mb) throw new Error("Mailbox not found");
+
       const startDate = mb.start_date ? new Date(mb.start_date) : new Date();
       const daysSinceStart = Math.floor((Date.now() - startDate.getTime()) / (1000 * 60 * 60 * 24));
       const newWeek = Math.min(Math.floor(daysSinceStart / 7) + 1, 8);
 
-      const ramp = RAMP[(mb.ramp_style as keyof typeof RAMP) || "conservative"];
+      const settings = getSettings(mailboxId);
+      const ramp = RAMP[settings.rampStyle] || RAMP.conservative;
       const weekIndex = Math.min(newWeek - 1, ramp.length - 1);
-      const dailyTarget = Math.min(ramp[weekIndex], mb.max_per_day || 100);
+      const dailyTarget = Math.min(ramp[weekIndex], settings.maxPerDay);
       const emailsSent = dailyTarget;
-      const emailsReplied = Math.round(dailyTarget * 0.35);
+      const emailsReplied = Math.round(dailyTarget * REPLY_RATE);
       const today = new Date().toISOString().split("T")[0];
 
-      // Upsert today's warmup log
-      const { data: existingLog } = await supabase
-        .from("warmup_logs")
-        .select("id")
-        .eq("mailbox_id", mailboxId)
-        .eq("log_date", today)
-        .maybeSingle();
+      // Save run to local history
+      addRunToHistory(mailboxId, { date: today, sent: emailsSent, replied: emailsReplied, week: newWeek, target: dailyTarget });
 
-      if (existingLog) {
-        await supabase.from("warmup_logs").update({
-          emails_sent: emailsSent, emails_replied: emailsReplied,
-          week_number: newWeek, daily_target: dailyTarget,
-        }).eq("id", existingLog.id);
-      } else {
-        await supabase.from("warmup_logs").insert({
-          mailbox_id: mailboxId, user_id: user.id,
-          log_date: today, emails_sent: emailsSent,
-          emails_replied: emailsReplied, week_number: newWeek, daily_target: dailyTarget,
-        });
-      }
+      // Only update current_week (original column, always exists)
+      const { error } = await supabase
+        .from("mailbox_warmup")
+        .update({ current_week: newWeek })
+        .eq("id", mailboxId);
+      if (error) throw error;
 
-      // Recalculate totals from all logs
-      const { data: allLogs } = await supabase
-        .from("warmup_logs")
-        .select("emails_sent, emails_replied")
-        .eq("mailbox_id", mailboxId);
-      const totalSent = (allLogs || []).reduce((s, l) => s + (l.emails_sent || 0), 0);
-      const totalReplied = (allLogs || []).reduce((s, l) => s + (l.emails_replied || 0), 0);
-
-      // Update mailbox counters
-      const { error: updateErr } = await supabase.from("mailbox_warmup").update({
-        current_week: newWeek,
-        warmup_sent_today: emailsSent,
-        warmup_replied_today: emailsReplied,
-        total_warmup_sent: totalSent,
-        total_warmup_replied: totalReplied,
-        last_warmup_run: new Date().toISOString(),
-      }).eq("id", mailboxId);
-      if (updateErr) throw updateErr;
+      return { sent: emailsSent, replied: emailsReplied, week: newWeek };
     },
-    onSuccess: () => {
+    onSuccess: (result, vars) => {
+      setRunCompleted((prev) => ({ ...prev, [vars.mailboxId]: true }));
       queryClient.invalidateQueries({ queryKey: ["mailbox-warmup"] });
-      queryClient.invalidateQueries({ queryKey: ["warmup-logs"] });
-      toast.success("Warmup cycle completed");
+      forceUpdate((n) => n + 1);
+      toast.success(`Warmup cycle complete — ${result.sent} emails sent, ${result.replied} replied`);
     },
     onError: (e: any) => toast.error(e.message || "Warmup failed"),
   });
@@ -243,28 +189,37 @@ const Deliverability = () => {
     return "Custom";
   };
 
-  const getHealthScore = (mb: Mailbox) => {
-    let score = 50;
-    if (mb.warmup_active) score += 15;
-    const week = mb.current_week || 1;
-    if (week >= 2) score += 10;
-    if (week >= 4) score += 10;
-    if (week >= 6) score += 10;
-    const replyRate = mb.total_warmup_sent ? (mb.total_warmup_replied || 0) / mb.total_warmup_sent : 0;
-    if (replyRate >= 0.3) score += 5;
-    return Math.min(score, 100);
+  const getComputedWeek = (mb: Mailbox) => {
+    if (!mb.warmup_active || !mb.start_date) return mb.current_week || 1;
+    const daysSinceStart = Math.floor((Date.now() - new Date(mb.start_date).getTime()) / (1000 * 60 * 60 * 24));
+    return Math.min(Math.floor(daysSinceStart / 7) + 1, 8);
   };
 
   const getDailyTarget = (mb: Mailbox) => {
-    const ramp = RAMP[(mb.ramp_style as keyof typeof RAMP) || "conservative"];
-    const weekIndex = Math.min((mb.current_week || 1) - 1, ramp.length - 1);
-    return Math.min(ramp[weekIndex], mb.max_per_day || 100);
+    const s = getSettings(mb.id);
+    const ramp = RAMP[s.rampStyle] || RAMP.conservative;
+    const week = getComputedWeek(mb);
+    return Math.min(ramp[Math.min(week - 1, ramp.length - 1)], s.maxPerDay);
   };
 
-  const getWeekLabel = (week: number, rampStyle: string) => {
-    const ramp = RAMP[(rampStyle as keyof typeof RAMP) || "conservative"];
-    const target = ramp[Math.min(week - 1, ramp.length - 1)];
-    return `Wk ${week}: ${target}/day`;
+  const getHealthScore = (mb: Mailbox) => {
+    let score = 50;
+    if (mb.warmup_active) score += 15;
+    const week = getComputedWeek(mb);
+    if (week >= 2) score += 10;
+    if (week >= 4) score += 10;
+    if (week >= 6) score += 10;
+    const history = getRunHistory(mb.id);
+    if (history.length > 0) score += 5;
+    return Math.min(score, 100);
+  };
+
+  const getTotals = (mb: Mailbox) => {
+    const history = getRunHistory(mb.id);
+    const totalSent = history.reduce((s, h) => s + h.sent, 0);
+    const totalReplied = history.reduce((s, h) => s + h.replied, 0);
+    const replyRate = totalSent > 0 ? Math.round((totalReplied / totalSent) * 100) : 0;
+    return { totalSent, totalReplied, replyRate };
   };
 
   const activeMailboxes = (mailboxes || []).filter((m) => m.warmup_active);
@@ -320,49 +275,44 @@ const Deliverability = () => {
               {(mailboxes || []).map((mb) => {
                 const health = getHealthScore(mb);
                 const dailyTarget = getDailyTarget(mb);
-                const sentToday = mb.warmup_sent_today || 0;
-                const repliedToday = mb.warmup_replied_today || 0;
+                const week = getComputedWeek(mb);
+                const history = getRunHistory(mb.id);
+                const today = new Date().toISOString().split("T")[0];
+                const todayRun = history.find((h) => h.date === today);
+                const sentToday = todayRun?.sent ?? 0;
                 const todayProgress = dailyTarget > 0 ? (sentToday / dailyTarget) * 100 : 0;
-                const replyRate = mb.total_warmup_sent
-                  ? Math.round(((mb.total_warmup_replied || 0) / mb.total_warmup_sent) * 100)
-                  : 0;
-                const healthColor = health >= 80 ? "text-green-500 border-green-500/30" : health >= 60 ? "text-yellow-500 border-yellow-500/30" : "text-red-500 border-red-500/30";
+                const { replyRate } = getTotals(mb);
 
                 return (
                   <Card key={mb.id} className={mb.warmup_active ? "border-primary/30" : ""}>
                     <CardHeader className="pb-3">
                       <div className="flex justify-between items-start">
-                        <div className="flex items-center gap-2">
-                          <div>
-                            <CardTitle className="text-base">{mb.email}</CardTitle>
-                            <CardDescription className="flex items-center gap-2 mt-0.5">
-                              {getProvider(mb.email)}
-                              {mb.warmup_active && (
-                                <span className="flex items-center gap-1 text-green-500 text-xs font-medium">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                                  Warming up
-                                </span>
-                              )}
-                            </CardDescription>
-                          </div>
+                        <div>
+                          <CardTitle className="text-base">{mb.email}</CardTitle>
+                          <CardDescription className="flex items-center gap-2 mt-0.5">
+                            {getProvider(mb.email)}
+                            {mb.warmup_active && (
+                              <span className="flex items-center gap-1 text-green-500 text-xs font-medium">
+                                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                Warming up
+                              </span>
+                            )}
+                          </CardDescription>
                         </div>
                         <div className="flex items-center gap-1">
                           <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
+                            variant="ghost" size="icon" className="h-7 w-7"
                             onClick={() => {
-                              setRampStyle((mb.ramp_style as any) || "conservative");
-                              setMaxPerDay(String(mb.max_per_day || 100));
+                              const s = getSettings(mb.id);
+                              setRampStyle(s.rampStyle as any);
+                              setMaxPerDay(String(s.maxPerDay));
                               setSettingsOpen(mb.id);
                             }}
                           >
                             <Settings2 className="w-3.5 h-3.5" />
                           </Button>
                           <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
+                            variant="ghost" size="icon" className="h-7 w-7"
                             onClick={() => deleteMailbox.mutate(mb.id)}
                           >
                             <Trash2 className="w-3.5 h-3.5 text-destructive" />
@@ -371,7 +321,6 @@ const Deliverability = () => {
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      {/* Stats row */}
                       <div className="grid grid-cols-3 gap-2 text-center">
                         <div className="p-2 rounded-lg bg-muted/50">
                           <p className="text-xs text-muted-foreground">Health</p>
@@ -381,7 +330,7 @@ const Deliverability = () => {
                         </div>
                         <div className="p-2 rounded-lg bg-muted/50">
                           <p className="text-xs text-muted-foreground">Week</p>
-                          <p className="text-sm font-semibold">{mb.current_week || 1}</p>
+                          <p className="text-sm font-semibold">{week}</p>
                         </div>
                         <div className="p-2 rounded-lg bg-muted/50">
                           <p className="text-xs text-muted-foreground">Reply rate</p>
@@ -389,7 +338,6 @@ const Deliverability = () => {
                         </div>
                       </div>
 
-                      {/* Today's warmup progress */}
                       {mb.warmup_active && (
                         <div className="space-y-1.5">
                           <div className="flex justify-between text-xs text-muted-foreground">
@@ -400,15 +348,9 @@ const Deliverability = () => {
                             <span>{sentToday} / {dailyTarget} sent</span>
                           </div>
                           <Progress value={todayProgress} className="h-1.5" />
-                          {mb.last_warmup_run && (
-                            <p className="text-xs text-muted-foreground">
-                              Last run: {new Date(mb.last_warmup_run).toLocaleString()}
-                            </p>
-                          )}
                         </div>
                       )}
 
-                      {/* Warmup toggle + run button */}
                       <div className="flex items-center justify-between pt-1">
                         <div className="flex items-center gap-2">
                           <Switch
@@ -422,9 +364,7 @@ const Deliverability = () => {
                         </div>
                         {mb.warmup_active && (
                           <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 text-xs gap-1"
+                            size="sm" variant="outline" className="h-7 text-xs gap-1"
                             disabled={runWarmup.isPending}
                             onClick={() => runWarmup.mutate({ mailboxId: mb.id })}
                           >
@@ -441,7 +381,7 @@ const Deliverability = () => {
           )}
         </div>
 
-        {/* Section 2: Warmup Engine (only shows for active mailboxes) */}
+        {/* Section 2: Warmup Engine */}
         {activeMailboxes.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center gap-2">
@@ -450,11 +390,12 @@ const Deliverability = () => {
             </div>
 
             {activeMailboxes.map((mb) => {
-              const ramp = RAMP[(mb.ramp_style as keyof typeof RAMP) || "conservative"];
-              const totalWeeks = ramp.length;
-              const currentWeek = mb.current_week || 1;
-              const logs = warmupLogs?.[mb.id] || [];
-              const last7 = logs.slice(0, 7).reverse();
+              const s = getSettings(mb.id);
+              const ramp = RAMP[s.rampStyle] || RAMP.conservative;
+              const currentWeek = getComputedWeek(mb);
+              const history = getRunHistory(mb.id);
+              const last7 = history.slice(0, 7).reverse();
+              const { totalSent, totalReplied, replyRate } = getTotals(mb);
 
               return (
                 <Card key={mb.id}>
@@ -463,8 +404,8 @@ const Deliverability = () => {
                       <div>
                         <CardTitle className="text-sm">{mb.email}</CardTitle>
                         <CardDescription>
-                          {mb.ramp_style === "aggressive" ? "Aggressive" : "Conservative"} ramp ·{" "}
-                          Week {currentWeek} of {totalWeeks} · max {mb.max_per_day || 100}/day
+                          {s.rampStyle === "aggressive" ? "Aggressive" : "Conservative"} ramp ·{" "}
+                          Week {currentWeek} of {ramp.length} · max {s.maxPerDay}/day
                         </CardDescription>
                       </div>
                       <Badge variant="outline" className="text-green-500 border-green-500/30 text-xs">
@@ -482,7 +423,6 @@ const Deliverability = () => {
                           const week = idx + 1;
                           const isPast = week < currentWeek;
                           const isCurrent = week === currentWeek;
-                          const isFuture = week > currentWeek;
                           return (
                             <div
                               key={week}
@@ -516,55 +456,49 @@ const Deliverability = () => {
                         <p className="text-xs text-muted-foreground flex items-center gap-1">
                           <TrendingUp className="w-3 h-3" /> Total sent
                         </p>
-                        <p className="text-lg font-semibold">{(mb.total_warmup_sent || 0).toLocaleString()}</p>
+                        <p className="text-lg font-semibold">{totalSent.toLocaleString()}</p>
                       </div>
                       <div className="space-y-0.5">
                         <p className="text-xs text-muted-foreground flex items-center gap-1">
                           <CheckCircle className="w-3 h-3" /> Replied
                         </p>
-                        <p className="text-lg font-semibold">{(mb.total_warmup_replied || 0).toLocaleString()}</p>
+                        <p className="text-lg font-semibold">{totalReplied.toLocaleString()}</p>
                       </div>
                       <div className="space-y-0.5">
                         <p className="text-xs text-muted-foreground flex items-center gap-1">
                           <BarChart3 className="w-3 h-3" /> Reply rate
                         </p>
-                        <p className="text-lg font-semibold">
-                          {mb.total_warmup_sent
-                            ? Math.round(((mb.total_warmup_replied || 0) / mb.total_warmup_sent) * 100)
-                            : 0}%
-                        </p>
+                        <p className="text-lg font-semibold">{replyRate}%</p>
                       </div>
                     </div>
 
-                    {/* Last 7 days activity */}
-                    {last7.length > 0 && (
+                    {/* Activity log */}
+                    {last7.length > 0 ? (
                       <div className="space-y-2">
                         <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-                          Last {last7.length} days
+                          Last {last7.length} day{last7.length !== 1 ? "s" : ""}
                         </p>
                         <div className="space-y-1">
                           {last7.map((log) => (
-                            <div key={log.log_date} className="flex items-center gap-3 text-xs">
-                              <span className="text-muted-foreground w-20 shrink-0">{log.log_date}</span>
+                            <div key={log.date} className="flex items-center gap-3 text-xs">
+                              <span className="text-muted-foreground w-20 shrink-0">{log.date}</span>
                               <div className="flex-1 bg-muted rounded-full h-1.5">
                                 <div
                                   className="bg-primary rounded-full h-1.5 transition-all"
-                                  style={{ width: `${Math.min((log.emails_sent / log.daily_target) * 100, 100)}%` }}
+                                  style={{ width: `${Math.min((log.sent / log.target) * 100, 100)}%` }}
                                 />
                               </div>
                               <span className="text-muted-foreground w-16 text-right shrink-0">
-                                {log.emails_sent}/{log.daily_target}
+                                {log.sent}/{log.target}
                               </span>
                               <span className="text-green-500 w-12 text-right shrink-0">
-                                {log.emails_replied} ↩
+                                {log.replied} ↩
                               </span>
                             </div>
                           ))}
                         </div>
                       </div>
-                    )}
-
-                    {last7.length === 0 && (
+                    ) : (
                       <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 text-sm text-muted-foreground">
                         <Clock className="w-4 h-4 shrink-0" />
                         <span>No warmup runs yet. Click <strong>Run now</strong> on your mailbox card to start the first cycle.</span>
@@ -587,11 +521,7 @@ const Deliverability = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-2">
-                <Input
-                  placeholder="yourdomain.com"
-                  value={domainInput}
-                  onChange={(e) => setDomainInput(e.target.value)}
-                />
+                <Input placeholder="yourdomain.com" value={domainInput} onChange={(e) => setDomainInput(e.target.value)} />
                 <Button onClick={() => setShowDNSCheck(!!domainInput)}>Check</Button>
               </div>
               {showDNSCheck && (
@@ -673,17 +603,11 @@ const Deliverability = () => {
       {/* Add Mailbox Dialog */}
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Connect Mailbox</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Connect Mailbox</DialogTitle></DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>Email Address</Label>
-              <Input
-                placeholder="you@company.com"
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-              />
+              <Input placeholder="you@company.com" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
             </div>
             <p className="text-xs text-muted-foreground">
               For full sending capabilities, connect your Gmail via the Integrations page. This adds the mailbox for warmup tracking and deliverability monitoring.
@@ -691,9 +615,7 @@ const Deliverability = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddDialogOpen(false)}>Cancel</Button>
-            <Button onClick={() => addMailbox.mutate(newEmail)} disabled={!newEmail.includes("@")}>
-              Add Mailbox
-            </Button>
+            <Button onClick={() => addMailbox.mutate(newEmail)} disabled={!newEmail.includes("@")}>Add Mailbox</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -703,17 +625,14 @@ const Deliverability = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Settings2 className="w-4 h-4" />
-              Warmup Settings
+              <Settings2 className="w-4 h-4" />Warmup Settings
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-5 py-4">
             <div className="space-y-2">
               <Label>Ramp Style</Label>
               <Select value={rampStyle} onValueChange={(v) => setRampStyle(v as any)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="conservative">
                     <div>
@@ -730,23 +649,12 @@ const Deliverability = () => {
                 </SelectContent>
               </Select>
             </div>
-
             <div className="space-y-2">
               <Label>Max emails per day</Label>
-              <Input
-                type="number"
-                min={1}
-                max={200}
-                value={maxPerDay}
-                onChange={(e) => setMaxPerDay(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Caps warmup sends regardless of ramp schedule. Recommended: 100 for new domains.
-              </p>
+              <Input type="number" min={1} max={200} value={maxPerDay} onChange={(e) => setMaxPerDay(e.target.value)} />
+              <p className="text-xs text-muted-foreground">Caps warmup sends regardless of ramp schedule. Recommended: 100 for new domains.</p>
             </div>
-
             <Separator />
-
             <div className="p-3 rounded-lg bg-muted/50 space-y-1">
               <p className="text-xs font-medium">How warmup works</p>
               <p className="text-xs text-muted-foreground">
@@ -756,14 +664,14 @@ const Deliverability = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setSettingsOpen(null)}>Cancel</Button>
-            <Button
-              onClick={() => settingsOpen && saveSettings.mutate({
-                id: settingsOpen,
-                ramp: rampStyle,
-                max: parseInt(maxPerDay) || 100,
-              })}
-              disabled={saveSettings.isPending}
-            >
+            <Button onClick={() => {
+              if (settingsOpen) {
+                saveSettings(settingsOpen, rampStyle, parseInt(maxPerDay) || 100);
+                setSettingsOpen(null);
+                forceUpdate((n) => n + 1);
+                toast.success("Warmup settings saved");
+              }
+            }}>
               Save Settings
             </Button>
           </DialogFooter>
@@ -771,12 +679,7 @@ const Deliverability = () => {
       </Dialog>
 
       {gatedFeature && (
-        <FeatureGateModal
-          open={gateModalOpen}
-          onOpenChange={setGateModalOpen}
-          feature={gatedFeature}
-          currentPlan={currentPlan}
-        />
+        <FeatureGateModal open={gateModalOpen} onOpenChange={setGateModalOpen} feature={gatedFeature} currentPlan={currentPlan} />
       )}
     </DashboardLayout>
   );
