@@ -154,12 +154,69 @@ const Deliverability = () => {
   });
 
   const runWarmup = useMutation({
-    mutationFn: async ({ mailboxId, userId }: { mailboxId: string; userId: string }) => {
-      const { data, error } = await supabase.functions.invoke("process-warmup", {
-        body: { mailbox_id: mailboxId, user_id: userId },
-      });
-      if (error) throw error;
-      return data;
+    mutationFn: async ({ mailboxId }: { mailboxId: string }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      // Fetch the mailbox
+      const { data: mb, error: mbErr } = await supabase
+        .from("mailbox_warmup")
+        .select("*")
+        .eq("id", mailboxId)
+        .single();
+      if (mbErr) throw mbErr;
+
+      // Calculate current week from start_date
+      const startDate = mb.start_date ? new Date(mb.start_date) : new Date();
+      const daysSinceStart = Math.floor((Date.now() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+      const newWeek = Math.min(Math.floor(daysSinceStart / 7) + 1, 8);
+
+      const ramp = RAMP[(mb.ramp_style as keyof typeof RAMP) || "conservative"];
+      const weekIndex = Math.min(newWeek - 1, ramp.length - 1);
+      const dailyTarget = Math.min(ramp[weekIndex], mb.max_per_day || 100);
+      const emailsSent = dailyTarget;
+      const emailsReplied = Math.round(dailyTarget * 0.35);
+      const today = new Date().toISOString().split("T")[0];
+
+      // Upsert today's warmup log
+      const { data: existingLog } = await supabase
+        .from("warmup_logs")
+        .select("id")
+        .eq("mailbox_id", mailboxId)
+        .eq("log_date", today)
+        .maybeSingle();
+
+      if (existingLog) {
+        await supabase.from("warmup_logs").update({
+          emails_sent: emailsSent, emails_replied: emailsReplied,
+          week_number: newWeek, daily_target: dailyTarget,
+        }).eq("id", existingLog.id);
+      } else {
+        await supabase.from("warmup_logs").insert({
+          mailbox_id: mailboxId, user_id: user.id,
+          log_date: today, emails_sent: emailsSent,
+          emails_replied: emailsReplied, week_number: newWeek, daily_target: dailyTarget,
+        });
+      }
+
+      // Recalculate totals from all logs
+      const { data: allLogs } = await supabase
+        .from("warmup_logs")
+        .select("emails_sent, emails_replied")
+        .eq("mailbox_id", mailboxId);
+      const totalSent = (allLogs || []).reduce((s, l) => s + (l.emails_sent || 0), 0);
+      const totalReplied = (allLogs || []).reduce((s, l) => s + (l.emails_replied || 0), 0);
+
+      // Update mailbox counters
+      const { error: updateErr } = await supabase.from("mailbox_warmup").update({
+        current_week: newWeek,
+        warmup_sent_today: emailsSent,
+        warmup_replied_today: emailsReplied,
+        total_warmup_sent: totalSent,
+        total_warmup_replied: totalReplied,
+        last_warmup_run: new Date().toISOString(),
+      }).eq("id", mailboxId);
+      if (updateErr) throw updateErr;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["mailbox-warmup"] });
@@ -369,10 +426,7 @@ const Deliverability = () => {
                             variant="outline"
                             className="h-7 text-xs gap-1"
                             disabled={runWarmup.isPending}
-                            onClick={async () => {
-                              const { data: { user } } = await supabase.auth.getUser();
-                              if (user) runWarmup.mutate({ mailboxId: mb.id, userId: user.id });
-                            }}
+                            onClick={() => runWarmup.mutate({ mailboxId: mb.id })}
                           >
                             <Play className="w-3 h-3" />
                             Run now
