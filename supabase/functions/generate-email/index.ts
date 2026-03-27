@@ -167,12 +167,36 @@ serve(async (req) => {
     // Sanitize lead data
     const sanitizedContactName = sanitizeString(lead.contact_name || 'there', 100);
     const sanitizedCompanyName = sanitizeString(lead.company_name || 'your company', 100);
-    const sanitizedIndustry = lead.industry ? sanitizeString(lead.industry, 100) : 'Not specified';
-    const sanitizedCompanySize = lead.company_size ? sanitizeString(lead.company_size, 50) : 'Not specified';
-    const sanitizedJobTitle = lead.job_title ? sanitizeString(lead.job_title, 100) : 'Not specified';
-    const sanitizedDepartment = lead.department ? sanitizeString(lead.department, 100) : 'Not specified';
-    const sanitizedSeniority = lead.seniority ? sanitizeString(lead.seniority, 50) : 'Not specified';
-    const sanitizedTechnologies = lead.technologies ? lead.technologies.slice(0, 10).join(', ') : 'Not specified';
+    const sanitizedIndustry = lead.industry ? sanitizeString(lead.industry, 100) : null;
+    const sanitizedCompanySize = lead.company_size ? sanitizeString(lead.company_size, 50) : null;
+    const sanitizedJobTitle = lead.job_title ? sanitizeString(lead.job_title, 100) : null;
+    const sanitizedDepartment = lead.department ? sanitizeString(lead.department, 100) : null;
+    const sanitizedSeniority = lead.seniority ? sanitizeString(lead.seniority, 50) : null;
+    const sanitizedTechnologies = lead.technologies && lead.technologies.length > 0 ? lead.technologies.slice(0, 10).join(', ') : null;
+    const sanitizedCompanyDescription = lead.company_description ? sanitizeString(lead.company_description, 500) : null;
+    const sanitizedEmployeeCount = lead.employee_count ? sanitizeString(lead.employee_count, 50) : null;
+    const sanitizedAnnualRevenue = lead.annual_revenue ? sanitizeString(lead.annual_revenue, 50) : null;
+    const sanitizedNotes = lead.notes ? sanitizeString(lead.notes, 300) : null;
+
+    // Build lead context block — only include fields that have real data
+    const buildLeadContext = (includeEnrichment = true) => {
+      const lines = [
+        `- Name: ${sanitizedContactName}`,
+        `- Company: ${sanitizedCompanyName}`,
+      ];
+      if (sanitizedJobTitle) lines.push(`- Job Title: ${sanitizedJobTitle}`);
+      if (sanitizedDepartment) lines.push(`- Department: ${sanitizedDepartment}`);
+      if (sanitizedSeniority) lines.push(`- Seniority: ${sanitizedSeniority}`);
+      if (sanitizedIndustry) lines.push(`- Industry: ${sanitizedIndustry}`);
+      if (sanitizedCompanySize) lines.push(`- Company Size: ${sanitizedCompanySize}`);
+      if (sanitizedEmployeeCount) lines.push(`- Employee Count: ${sanitizedEmployeeCount}`);
+      if (sanitizedAnnualRevenue) lines.push(`- Annual Revenue: ${sanitizedAnnualRevenue}`);
+      if (sanitizedTechnologies) lines.push(`- Technologies Used: ${sanitizedTechnologies}`);
+      if (includeEnrichment && sanitizedCompanyDescription) lines.push(`- Company Description: ${sanitizedCompanyDescription}`);
+      if (includeEnrichment && sanitizedNotes) lines.push(`- Notes / Context: ${sanitizedNotes}`);
+      if (lead.icp_score) lines.push(`- ICP Match Score: ${lead.icp_score}/100`);
+      return lines.join('\n');
+    };
 
     let systemPrompt: string;
     let userPrompt: string;
@@ -194,11 +218,7 @@ RULES for subject lines:
 IMPORTANT: This is generation attempt #${Date.now() % 1000}. You MUST produce a completely unique subject line that is different from any previous generation. Use a fresh angle, structure, and wording.
 
 Lead Information:
-- Name: ${sanitizedContactName}
-- Company: ${sanitizedCompanyName}
-- Job Title: ${sanitizedJobTitle}
-- Industry: ${sanitizedIndustry}
-- Company Size: ${sanitizedCompanySize}
+${buildLeadContext(false)}
 ${triggerContext ? `- Trigger/Context: ${triggerContext}` : ''}
 ${businessDescription ? `\nSender's Business Description: ${businessDescription}` : ''}
 
@@ -221,12 +241,7 @@ RULES:
 IMPORTANT: This is generation attempt #${Date.now() % 1000}. You MUST produce a completely unique trigger line with a different structure, different angle, different power word from any previous attempt.
 
 Lead Information:
-- Name: ${sanitizedContactName}
-- Company: ${sanitizedCompanyName}
-- Job Title: ${sanitizedJobTitle}
-- Industry: ${sanitizedIndustry}
-- Company Size: ${sanitizedCompanySize}
-- Seniority: ${sanitizedSeniority}
+${buildLeadContext(true)}
 ${openerWord && VALID_OPENERS.includes(openerWord) ? `\nPreferred Opening Word: Start with "${openerWord.charAt(0).toUpperCase() + openerWord.slice(1)}"` : ''}
 ${businessDescription ? `\nSender's Business Description: ${businessDescription}` : ''}
 
@@ -246,11 +261,7 @@ RULES:
       userPrompt = `Generate social proof text relevant to this lead:
 
 Lead Information:
-- Name: ${sanitizedContactName}
-- Company: ${sanitizedCompanyName}
-- Job Title: ${sanitizedJobTitle}
-- Industry: ${sanitizedIndustry}
-- Company Size: ${sanitizedCompanySize}
+${buildLeadContext(false)}
 ${businessDescription ? `\nSender's Business Description (use this to make social proof relevant): ${businessDescription}` : ''}
 
 Return ONLY the social proof text, nothing else. No quotes, no explanations. Example format: "Spot and Ignite are customers of ours. We helped them cut board prep time by 50%."`;
@@ -270,15 +281,7 @@ Start directly with the greeting (e.g., "Hi ${sanitizedContactName},") and end w
       userPrompt = `Write a cold email BODY ONLY that matches this subject line: "${subjectLine}"
 
 Lead Information:
-- Name: ${sanitizedContactName}
-- Company: ${sanitizedCompanyName}
-- Job Title: ${sanitizedJobTitle}
-- Department: ${sanitizedDepartment}
-- Seniority: ${sanitizedSeniority}
-- Industry: ${sanitizedIndustry}
-- Company Size: ${sanitizedCompanySize}
-- Technologies Used: ${sanitizedTechnologies}
-- ICP Score: ${lead.icp_score || 0}/100
+${buildLeadContext(true)}
 ${triggerContext ? `\nTrigger/Context (use this as your opener): ${triggerContext}` : ''}
 ${openerWord && VALID_OPENERS.includes(openerWord) ? `\nPreferred Opening Word: Start with "${openerWord.charAt(0).toUpperCase() + openerWord.slice(1)}"` : ''}
 ${businessDescription ? `\nSender's Business Description (use this to accurately describe what the sender's company does AND derive social proof / customer references from it): ${businessDescription}` : ''}
@@ -298,17 +301,9 @@ IMPORTANT: Generate ONLY the email body content. Do NOT include:
 Start directly with the greeting (e.g., "Hi ${sanitizedContactName},") and end with a simple sign-off.`;
 
       userPrompt = `Write a cold email BODY ONLY (no subject line) for the following lead:
-    
+
 Lead Information:
-- Name: ${sanitizedContactName}
-- Company: ${sanitizedCompanyName}
-- Job Title: ${sanitizedJobTitle}
-- Department: ${sanitizedDepartment}
-- Seniority: ${sanitizedSeniority}
-- Industry: ${sanitizedIndustry}
-- Company Size: ${sanitizedCompanySize}
-- Technologies Used: ${sanitizedTechnologies}
-- ICP Score: ${lead.icp_score || 0}/100
+${buildLeadContext(true)}
 ${triggerContext ? `\nTrigger/Context (use this as your opener): ${triggerContext}` : ''}
 ${openerWord && VALID_OPENERS.includes(openerWord) ? `\nPreferred Opening Word: Start with "${openerWord.charAt(0).toUpperCase() + openerWord.slice(1)}"` : ''}
 ${businessDescription ? `\nSender's Business Description (use this to accurately describe what the sender's company does AND derive social proof / customer references from it): ${businessDescription}` : ''}
@@ -317,8 +312,8 @@ Goal: ${goal}
 
 Write ONLY the email body following the 4-sentence cold email framework:
 1. Trigger/Hook (start with ${openerWord || 'one of: You, Saw, How, Spoke, Noticed, Referred, Remember'})
-2. Pain point + question about their current state
-3. Value proposition + social proof
+2. Pain point + question about their current state — make it specific to their role, industry, and company stage
+3. Value proposition + social proof — reference their tech stack or industry where possible
 4. Permission-based CTA
 
 Start with the greeting and end with a simple sign-off like "Thanks," or "Best,". Do NOT include a subject line.`;

@@ -134,6 +134,10 @@ const Outreach = () => {
     leadEmail: string;
     companyName: string;
     subject: string;
+    jobTitle?: string;
+    industry?: string;
+    companyDescription?: string;
+    technologies?: string[];
   } | null>(null);
   
   // Multi-sender state
@@ -151,6 +155,9 @@ const Outreach = () => {
   const [dailyEmailsSent, setDailyEmailsSent] = useState(0);
   const [isSavingLimit, setIsSavingLimit] = useState(false);
 
+  // Follow-up reminders state
+  const [dueFollowUps, setDueFollowUps] = useState<Array<{ id: string; subject: string; lead_id: string | null; due_date: string }>>([]);
+
   useEffect(() => {
     loadLeads();
     loadSignature();
@@ -158,7 +165,26 @@ const Outreach = () => {
     loadCounts();
     loadConnectedAccounts();
     loadDailyEmailLimit();
+    loadDueFollowUps();
   }, []);
+
+  const loadDueFollowUps = async () => {
+    const now = new Date().toISOString();
+    const { data } = await supabase
+      .from("activities")
+      .select("id, subject, lead_id, due_date")
+      .eq("type", "follow_up")
+      .eq("completed", false)
+      .lte("due_date", now)
+      .order("due_date", { ascending: true })
+      .limit(5);
+    if (data) setDueFollowUps(data);
+  };
+
+  const dismissFollowUpReminder = async (id: string) => {
+    await supabase.from("activities").update({ completed: true }).eq("id", id);
+    setDueFollowUps(prev => prev.filter(f => f.id !== id));
+  };
 
   const loadDailyEmailLimit = async () => {
     const { data } = await supabase
@@ -886,6 +912,10 @@ const Outreach = () => {
         leadEmail: lead.contact_email,
         companyName: lead.company_name,
         subject: subjectLine,
+        jobTitle: lead.job_title,
+        industry: lead.industry,
+        companyDescription: lead.company_description,
+        technologies: lead.technologies,
       };
       
       toast({
@@ -1304,6 +1334,10 @@ For logos, use HTML:
             leadEmail={lastSentEmailInfo.leadEmail}
             companyName={lastSentEmailInfo.companyName}
             originalSubject={lastSentEmailInfo.subject}
+            jobTitle={lastSentEmailInfo.jobTitle}
+            industry={lastSentEmailInfo.industry}
+            companyDescription={lastSentEmailInfo.companyDescription}
+            technologies={lastSentEmailInfo.technologies}
             onSetupFollowUp={handleSetupFollowUp}
             onDismiss={handleDismissFollowUp}
           />
@@ -1346,6 +1380,48 @@ For logos, use HTML:
           </div>
 
           <TabsContent value="compose" className="mt-6">
+            {/* Follow-up due reminders */}
+            {dueFollowUps.length > 0 && (
+              <div className="mb-4 space-y-2">
+                {dueFollowUps.map(fu => {
+                  const lead = leads.find(l => l.id === fu.lead_id);
+                  return (
+                    <div key={fu.id} className="flex items-center justify-between gap-3 px-4 py-3 rounded-lg border border-amber-500/30 bg-amber-500/5 text-sm">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-amber-500 shrink-0">🔔</span>
+                        <span className="font-medium text-foreground truncate">
+                          Follow-up due{lead ? ` with ${lead.contact_name} (${lead.company_name})` : ""}: <span className="text-muted-foreground font-normal">{fu.subject}</span>
+                        </span>
+                      </div>
+                      <div className="flex gap-2 shrink-0">
+                        {lead && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs"
+                            onClick={() => {
+                              setSelectedLead(lead.id);
+                              setSelectedTemplate("follow_up");
+                              dismissFollowUpReminder(fu.id);
+                            }}
+                          >
+                            Compose
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 text-xs text-muted-foreground"
+                          onClick={() => dismissFollowUpReminder(fu.id)}
+                        >
+                          Done
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card className="p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -1422,6 +1498,44 @@ For logos, use HTML:
                         ))}
                       </SelectContent>
                     </Select>
+
+                    {/* Lead profile card — shows what the AI will personalize with */}
+                    {selectedLead && (() => {
+                      const lead = leads.find(l => l.id === selectedLead);
+                      if (!lead) return null;
+                      const tags = [
+                        lead.job_title,
+                        lead.industry,
+                        lead.seniority,
+                        lead.company_size || lead.employee_count,
+                      ].filter(Boolean);
+                      const techs = lead.technologies?.slice(0, 3) || [];
+                      return (
+                        <div className="mt-2 p-3 rounded-lg border border-border/40 bg-muted/20 space-y-1.5">
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">AI will personalize using</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {tags.map((tag, i) => (
+                              <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-primary/10 text-primary font-medium">{tag}</span>
+                            ))}
+                            {techs.map((tech, i) => (
+                              <span key={`t${i}`} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-secondary/60 text-foreground/70">{tech}</span>
+                            ))}
+                            {lead.icp_score > 0 && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-green-500/10 text-green-600 font-medium">ICP {lead.icp_score}/100</span>
+                            )}
+                          </div>
+                          {lead.company_description && (
+                            <p className="text-xs text-muted-foreground line-clamp-1">{lead.company_description}</p>
+                          )}
+                          {lead.notes && (
+                            <p className="text-xs text-amber-600/80 line-clamp-1">📝 {lead.notes}</p>
+                          )}
+                          {tags.length === 0 && techs.length === 0 && (
+                            <p className="text-xs text-amber-600">⚠️ Limited lead data — enrich this lead for better personalization</p>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   <div>
@@ -1641,6 +1755,11 @@ For logos, use HTML:
                     <p className="text-xs text-muted-foreground text-center">
                       Uses proven 4-sentence framework • Click shuffle for A/B testing
                     </p>
+                    {!businessDescription && selectedLead && (
+                      <p className="text-xs text-amber-600 text-center">
+                        ⚠️ Add your business description above for stronger personalization and social proof
+                      </p>
+                    )}
                     <div className="flex gap-2">
                       <Button
                         variant="outline"

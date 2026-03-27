@@ -12,6 +12,10 @@ interface FollowUpSuggestionProps {
   leadEmail: string;
   companyName: string;
   originalSubject: string;
+  jobTitle?: string;
+  industry?: string;
+  companyDescription?: string;
+  technologies?: string[];
   onSetupFollowUp: (suggestion: FollowUpData) => void;
   onDismiss: () => void;
 }
@@ -29,6 +33,10 @@ export const FollowUpSuggestion = ({
   leadEmail,
   companyName,
   originalSubject,
+  jobTitle,
+  industry,
+  companyDescription,
+  technologies,
   onSetupFollowUp,
   onDismiss,
 }: FollowUpSuggestionProps) => {
@@ -52,6 +60,10 @@ export const FollowUpSuggestion = ({
           companyName,
           originalSubject,
           leadEmail,
+          jobTitle,
+          industry,
+          companyDescription,
+          technologies,
         }
       });
 

@@ -16,25 +16,32 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const { leadName, companyName, originalSubject, leadEmail } = await req.json();
+    const { leadName, companyName, originalSubject, leadEmail, jobTitle, industry, companyDescription, technologies } = await req.json();
 
     if (!leadName || !companyName) {
       throw new Error("Missing required fields: leadName and companyName");
     }
 
+    const leadContext = [
+      `- Lead name: ${leadName}`,
+      `- Company: ${companyName}`,
+      `- Original email subject: ${originalSubject || "Introduction email"}`,
+      jobTitle ? `- Job Title: ${jobTitle}` : null,
+      industry ? `- Industry: ${industry}` : null,
+      companyDescription ? `- Company Description: ${companyDescription}` : null,
+      technologies && technologies.length > 0 ? `- Technologies: ${technologies.slice(0, 5).join(', ')}` : null,
+    ].filter(Boolean).join('\n');
+
     const prompt = `You are an expert B2B sales strategist. Generate a follow-up email suggestion for a sales rep who just sent an introductory cold email.
 
 CONTEXT:
-- Lead name: ${leadName}
-- Company: ${companyName}
-- Original email subject: ${originalSubject || "Introduction email"}
-- Lead email: ${leadEmail || "Not provided"}
+${leadContext}
 
 TASK: Create a strategic follow-up plan with:
 1. A compelling subject line that references the original email (don't use "Re:" prefix, be creative)
 2. A brief 3-4 sentence follow-up email body that:
    - References the previous email without being pushy
-   - Adds new value or insight
+   - Adds new value specific to the lead's role, industry, or company context
    - Ends with a soft, permission-based CTA
 3. Recommended number of days to wait before sending (typically 3-5 days)
 4. A brief trigger context description for the CRM
@@ -42,8 +49,9 @@ TASK: Create a strategic follow-up plan with:
 CRITICAL RULES:
 - Keep it SHORT (under 80 words for body)
 - Be conversational, NOT salesy
-- Add genuine value, don't just "check in"
-- Reference something specific if possible
+- Add genuine value specific to their industry/role — don't just "check in"
+- If company description or job title is provided, reference their actual context
+- NEVER fabricate facts or invent company data
 
 Respond in this EXACT JSON format:
 {
