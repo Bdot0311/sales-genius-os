@@ -125,8 +125,11 @@ export const PricingTeaser = () => {
 
           {/* Pricing logic */}
           <div className={`text-center scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '300ms' } as React.CSSProperties}>
-            <p className="text-lg text-foreground mb-6">
-              Start free, no credit card required. Upgrade when you're ready.
+            <p className="text-lg text-foreground mb-2">
+              Explore the platform with real sample data. No credit card, no commitment.
+            </p>
+            <p className="text-sm text-muted-foreground mb-6">
+              Upgrade to unlock your ICP builder, full lead scoring, and outreach sequences when you're ready.
             </p>
             <Button
               variant="outline"

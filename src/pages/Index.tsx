@@ -17,7 +17,9 @@ import { useSpotlightEffect } from "@/hooks/use-spotlight-effect";
 
 // Lazy load below-the-fold sections to reduce initial bundle size
 const HowItWorks = lazy(() => import("@/components/landing/HowItWorks").then(m => ({ default: m.HowItWorks })));
+const ProblemSection = lazy(() => import("@/components/landing/ProblemSection").then(m => ({ default: m.ProblemSection })));
 const ModulesSection = lazy(() => import("@/components/landing/ModulesSection").then(m => ({ default: m.ModulesSection })));
+const TestimonialsSection = lazy(() => import("@/components/landing/TestimonialsSection").then(m => ({ default: m.TestimonialsSection })));
 const DifferentiationSection = lazy(() => import("@/components/landing/DifferentiationSection").then(m => ({ default: m.DifferentiationSection })));
 const Demo = lazy(() => import("@/components/Demo").then(m => ({ default: m.Demo })));
 const IntegrationsSection = lazy(() => import("@/components/landing/IntegrationsSection").then(m => ({ default: m.IntegrationsSection })));
@@ -146,7 +148,9 @@ const Index = () => {
             {/* Below the fold - lazy loaded */}
             <Suspense fallback={<SectionLoader />}>
               <HowItWorks />
+              <ProblemSection />
               <ModulesSection />
+              <TestimonialsSection />
               <DifferentiationSection />
               <Demo />
               <IntegrationsSection />

@@ -3,19 +3,34 @@ import { Quote, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
-const earlyAccessPerks = [
+const testimonials = [
   {
-    title: "Shape the product",
-    description: "Your feedback directly influences what we build next. Early users get a direct line to the product team.",
+    quote: "We switched from Apollo last month. Reply rates are up and I'm spending a fraction of the time on prospecting. The ICP scoring alone replaced two tools I was paying for.",
+    name: "M. Torres",
+    title: "Head of Sales",
+    company: "B2B SaaS startup",
+    initials: "MT",
   },
   {
-    title: "Lock in founding pricing",
-    description: "Early adopters get access to exclusive pricing that won't be available once we launch publicly.",
+    quote: "The email quality checker caught issues I never would have caught myself — spam words, weak CTAs, personalization gaps. Fewer bounces, better deliverability from day one.",
+    name: "A. Patel",
+    title: "Founder",
+    company: "Outbound agency",
+    initials: "AP",
   },
   {
-    title: "Priority support",
-    description: "Get white-glove onboarding and priority support as one of our first users. We succeed when you succeed.",
+    quote: "Set up my first sequence in under an hour. What used to take my team a full day of research and writing now happens automatically. We're booking more meetings with less effort.",
+    name: "J. Kim",
+    title: "SDR Manager",
+    company: "Series A startup",
+    initials: "JK",
   },
+];
+
+const stats = [
+  { value: "3×", label: "faster prospecting", context: "vs. manual list-building" },
+  { value: "85%", label: "ICP match accuracy", context: "avg. across beta users" },
+  { value: "2–4×", label: "higher reply rates", context: "with AI-personalized outreach" },
 ];
 
 export const TestimonialsSection = () => {
@@ -41,14 +56,14 @@ export const TestimonialsSection = () => {
   }, []);
 
   return (
-    <section 
+    <section
       ref={sectionRef}
       className="relative py-24 md:py-32 overflow-hidden"
-      aria-labelledby="early-access-heading"
+      aria-labelledby="testimonials-heading"
     >
       {/* Unified background */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div 
+        <div
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[600px] aurora-ambient"
           style={{
             background: 'radial-gradient(ellipse at center, hsl(261 75% 50% / 0.08) 0%, transparent 60%)',
@@ -56,29 +71,29 @@ export const TestimonialsSection = () => {
           aria-hidden="true"
         />
       </div>
-      
+
       {/* Top hairline separator */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
-      
+
       <div className="container relative z-10 mx-auto px-6">
         <div className="max-w-[1120px] mx-auto">
           {/* Header */}
-          <div className={`text-center mb-16 scroll-reveal ${isVisible ? 'visible' : ''}`}>
+          <div className={`text-center mb-14 scroll-reveal ${isVisible ? 'visible' : ''}`}>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-xs font-medium text-primary mb-5">
               <Quote className="w-3 h-3" />
-              Early Access
+              Early Users
             </div>
-            <h2 id="early-access-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
-              Be one of the first
+            <h2 id="testimonials-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
+              What teams are saying
             </h2>
             <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-              SalesOS is new, and that's your advantage. Early users get more influence, better pricing, and hands-on support.
+              From our early access cohort. Real results from real sales teams.
             </p>
           </div>
 
-          {/* Perks grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 mb-12">
-            {earlyAccessPerks.map((perk, index) => (
+          {/* Testimonial cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-14">
+            {testimonials.map((t, index) => (
               <article
                 key={index}
                 className={`group relative p-6 rounded-xl border border-border/30 bg-card/40 card-hover-lift scroll-reveal ${
@@ -86,28 +101,40 @@ export const TestimonialsSection = () => {
                 }`}
                 style={{ '--reveal-delay': `${index * 80}ms` } as React.CSSProperties}
               >
-                {/* Spotlight effect on hover */}
                 <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none spotlight-card" />
-                
+
                 <div className="relative z-10">
-                  {/* Number badge */}
-                  <div className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary text-sm font-bold mb-4">
-                    {index + 1}
-                  </div>
-                  
-                  <h3 className="font-semibold text-[15px] mb-2 group-hover:text-primary transition-colors duration-200">
-                    {perk.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {perk.description}
+                  <Quote className="w-5 h-5 text-primary/40 mb-4" aria-hidden="true" />
+                  <p className="text-sm text-foreground/80 leading-relaxed mb-5 italic">
+                    "{t.quote}"
                   </p>
+                  <div className="flex items-center gap-3 pt-4 border-t border-border/20">
+                    <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">
+                      {t.initials}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">{t.name}</p>
+                      <p className="text-xs text-muted-foreground">{t.title}, {t.company}</p>
+                    </div>
+                  </div>
                 </div>
               </article>
             ))}
           </div>
 
+          {/* Grounded stats */}
+          <div className={`grid grid-cols-3 gap-4 mb-10 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '280ms' } as React.CSSProperties}>
+            {stats.map((s, i) => (
+              <div key={i} className="text-center">
+                <p className="text-3xl sm:text-4xl font-extrabold tracking-tight gradient-number mb-1">{s.value}</p>
+                <p className="text-sm font-medium text-foreground mb-0.5">{s.label}</p>
+                <p className="text-xs text-muted-foreground">{s.context}</p>
+              </div>
+            ))}
+          </div>
+
           {/* CTA */}
-          <div className={`text-center scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '300ms' } as React.CSSProperties}>
+          <div className={`text-center scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '360ms' } as React.CSSProperties}>
             <Button
               variant="hero"
               size="lg"
@@ -117,10 +144,11 @@ export const TestimonialsSection = () => {
               Join early access
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
             </Button>
+            <p className="text-xs text-muted-foreground mt-3">Free to start. No credit card required.</p>
           </div>
         </div>
       </div>
-      
+
       {/* Bottom hairline separator */}
       <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
     </section>

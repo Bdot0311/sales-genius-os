@@ -292,16 +292,16 @@ export const HeroSection = () => {
             {/* Headline */}
             <h1
               id="hero-heading"
-              className={`text-3xl sm:text-4xl md:text-5xl lg:text-[3.5rem] font-bold tracking-tight mb-5 leading-[1.12] transition-all duration-700 delay-100 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+              className={`text-3xl sm:text-4xl md:text-5xl lg:text-[3.5rem] font-bold tracking-tight mb-4 leading-[1.12] transition-all duration-700 delay-100 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
             >
-              Outbound Doesn't Scale on a Stack.{" "}
+              Find B2B leads that{" "}
               <span
                 className="relative inline-block text-[1.08em] bg-gradient-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent"
                 style={{
                   filter: "drop-shadow(0 0 20px hsl(261 75% 65% / 0.35))",
                 }}
               >
-                Build the System.
+                actually convert.
               </span>
             </h1>
 
@@ -309,7 +309,7 @@ export const HeroSection = () => {
             <p
               className={`hero-description text-base sm:text-lg text-muted-foreground max-w-xl mx-auto lg:mx-0 mb-8 leading-relaxed transition-all duration-700 delay-200 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
             >
-              Stop duct-taping multiple tools, spreadsheets, and disconnected platforms. SalesOS turns your outbound stack into one coordinated performance engine.
+              Describe your ideal customer in plain English. Get ranked, enriched matches in under 2 minutes — no complex filters or boolean queries required.
             </p>
 
             {/* CTAs */}
@@ -323,7 +323,7 @@ export const HeroSection = () => {
                   onClick={() => navigate("/auth")}
                   aria-label="Start for free"
                 >
-                  Start for free
+                  Get your first lead free
                   <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1.5 transition-transform duration-200" />
                 </Button>
               </div>
