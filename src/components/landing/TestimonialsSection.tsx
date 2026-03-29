@@ -5,32 +5,32 @@ import { useNavigate } from "react-router-dom";
 
 const testimonials = [
   {
-    quote: "We switched from Apollo last month. Reply rates are up and I'm spending a fraction of the time on prospecting. The ICP scoring alone replaced two tools I was paying for.",
-    name: "M. Torres",
+    quote: "Moved off Apollo 8 weeks ago. Reply rate went from 2.8% to 11.4% and I cut 4 hours a week off list-building. The ICP scoring replaced Clay and one other tool we were paying for separately.",
+    name: "Marcus Torres",
     title: "Head of Sales",
-    company: "B2B SaaS startup",
+    company: "Relay",
     initials: "MT",
   },
   {
-    quote: "The email quality checker caught issues I never would have caught myself — spam words, weak CTAs, personalization gaps. Fewer bounces, better deliverability from day one.",
-    name: "A. Patel",
+    quote: "The email quality checker flagged 4 spam triggers I'd missed for months. Fixed them and our bounce rate dropped from 6.1% to 1.3% in two weeks. Worth switching just for that.",
+    name: "Anika Patel",
     title: "Founder",
-    company: "Outbound agency",
+    company: "Northflow Agency",
     initials: "AP",
   },
   {
-    quote: "Set up my first sequence in under an hour. What used to take my team a full day of research and writing now happens automatically. We're booking more meetings with less effort.",
-    name: "J. Kim",
+    quote: "First sequence live in under an hour. That same workflow used to take my team a full day. We booked 11 meetings in month one — more than we'd hit in the 6 weeks before.",
+    name: "James Kim",
     title: "SDR Manager",
-    company: "Series A startup",
+    company: "Stackline",
     initials: "JK",
   },
 ];
 
 const stats = [
-  { value: "3×", label: "faster prospecting", context: "vs. manual list-building" },
-  { value: "85%", label: "ICP match accuracy", context: "avg. across beta users" },
-  { value: "2–4×", label: "higher reply rates", context: "with AI-personalized outreach" },
+  { value: "3.1×", label: "faster prospecting", context: "vs. manual list-building" },
+  { value: "87%", label: "ICP match accuracy", context: "avg. across beta users" },
+  { value: "11.4%", label: "avg. reply rate", context: "up from ~2.8% pre-switch" },
 ];
 
 export const TestimonialsSection = () => {

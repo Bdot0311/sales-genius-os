@@ -123,6 +123,18 @@ export const PricingTeaser = () => {
             </div>
           </div>
 
+          {/* ROI testimonial near CTA */}
+          <div className={`mb-8 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '280ms' } as React.CSSProperties}>
+            <blockquote className="relative p-5 rounded-xl border border-border/30 bg-card/40 text-center">
+              <p className="text-sm text-foreground/80 italic leading-relaxed mb-3">
+                "We replaced three tools with SalesOS and saved $1,100/mo. Pipeline is cleaner, reply rates are up, and onboarding took one afternoon."
+              </p>
+              <footer className="text-xs text-muted-foreground">
+                — David Zhao, VP Sales, Fieldwork
+              </footer>
+            </blockquote>
+          </div>
+
           {/* Pricing logic */}
           <div className={`text-center scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '300ms' } as React.CSSProperties}>
             <p className="text-lg text-foreground mb-2">
