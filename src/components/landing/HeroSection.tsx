@@ -301,7 +301,7 @@ export const HeroSection = () => {
                   filter: "drop-shadow(0 0 20px hsl(261 75% 65% / 0.35))",
                 }}
               >
-                Start booking meetings.
+                Start filling your pipeline.
               </span>
             </h1>
 
