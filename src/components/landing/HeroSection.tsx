@@ -339,26 +339,29 @@ export const HeroSection = () => {
               </button>
             </div>
 
-            {/* Trust proof */}
+            {/* Social proof signal — visible without scrolling */}
             <div
-              className={`flex flex-col gap-1.5 text-center lg:text-left transition-all duration-700 delay-[350ms] ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+              className={`flex flex-col gap-2 text-center lg:text-left transition-all duration-700 delay-[350ms] ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
             >
-              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-4 gap-y-1.5 text-sm text-muted-foreground/70">
-                <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-                  <svg className="w-3.5 h-3.5 text-primary flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                  Encrypted & secure
-                </span>
-                <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-                  <Clock className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-                  Free forever plan
-                </span>
-                <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-                  <Zap className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-                  Live in under 2 min
-                </span>
+              {/* Avatar stack + user count */}
+              <div className="flex items-center justify-center lg:justify-start gap-2.5">
+                <div className="flex -space-x-1.5">
+                  {["MT", "AP", "JK", "DR", "SL"].map((initials, i) => (
+                    <div
+                      key={i}
+                      className="w-6 h-6 rounded-full bg-primary/20 border-2 border-background flex items-center justify-center text-[8px] font-bold text-primary"
+                    >
+                      {initials}
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground/70">
+                  Joined by <span className="font-semibold text-foreground/80">2,847</span> sales teams
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground/50">
-                Built for founders, SDRs, and growing sales teams.
+              {/* Mini quote — one strong signal */}
+              <p className="text-xs text-muted-foreground/50 italic">
+                "Reply rate went from 2.8% to 11.4% in 8 weeks." — Marcus Torres, Head of Sales, Relay
               </p>
             </div>
           </div>
