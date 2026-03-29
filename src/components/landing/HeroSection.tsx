@@ -266,7 +266,7 @@ export const HeroSection = () => {
   return (
     <section
       ref={heroRef}
-      className="relative min-h-[85vh] lg:min-h-[calc(100vh-64px)] flex items-center justify-center overflow-hidden pt-24 sm:pt-28 lg:pt-24 pb-4 sm:pb-6 lg:pb-8"
+      className="relative min-h-[75vh] lg:min-h-[82vh] flex items-center justify-center overflow-hidden pt-24 sm:pt-28 lg:pt-24 pb-4 sm:pb-6 lg:pb-8"
       aria-labelledby="hero-heading"
     >
       {/* Background layers */}
@@ -294,14 +294,14 @@ export const HeroSection = () => {
               id="hero-heading"
               className={`text-3xl sm:text-4xl md:text-5xl lg:text-[3.5rem] font-bold tracking-tight mb-4 leading-[1.12] transition-all duration-700 delay-100 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
             >
-              Find B2B leads that{" "}
+              Stop building lists.{" "}
               <span
                 className="relative inline-block text-[1.08em] bg-gradient-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent"
                 style={{
                   filter: "drop-shadow(0 0 20px hsl(261 75% 65% / 0.35))",
                 }}
               >
-                actually convert.
+                Start booking meetings.
               </span>
             </h1>
 
@@ -309,7 +309,7 @@ export const HeroSection = () => {
             <p
               className={`hero-description text-base sm:text-lg text-muted-foreground max-w-xl mx-auto lg:mx-0 mb-8 leading-relaxed transition-all duration-700 delay-200 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
             >
-              Describe your ideal customer in plain English. Get ranked, enriched matches in under 2 minutes — no complex filters or boolean queries required.
+              Describe your ICP in plain English. SalesOS finds ranked leads, enriches their profile, and writes personalized cold emails — so your team spends time on calls, not spreadsheets.
             </p>
 
             {/* CTAs */}
