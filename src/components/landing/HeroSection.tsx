@@ -343,23 +343,15 @@ export const HeroSection = () => {
             <div
               className={`flex flex-col gap-2 text-center lg:text-left transition-all duration-700 delay-[350ms] ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
             >
-              {/* Avatar stack + user count */}
-              <div className="flex items-center justify-center lg:justify-start gap-2.5">
-                <div className="flex -space-x-1.5">
-                  {["MT", "AP", "JK", "DR", "SL"].map((initials, i) => (
-                    <div
-                      key={i}
-                      className="w-6 h-6 rounded-full bg-primary/20 border-2 border-background flex items-center justify-center text-[8px] font-bold text-primary"
-                    >
-                      {initials}
-                    </div>
-                  ))}
-                </div>
-                <p className="text-xs text-muted-foreground/70">
-                  Joined by <span className="font-semibold text-foreground/80">2,847</span> sales teams
-                </p>
+              {/* Early access badge */}
+              <div className="flex items-center justify-center lg:justify-start gap-2">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-medium text-primary">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                  Early Access
+                </span>
+                <span className="text-xs text-muted-foreground/50">· Real teams. Real results.</span>
               </div>
-              {/* Mini quote — one strong signal */}
+              {/* Mini quote from early cohort */}
               <p className="text-xs text-muted-foreground/50 italic">
                 "Reply rate went from 2.8% to 11.4% in 8 weeks." — Marcus Torres, Head of Sales, Relay
               </p>
