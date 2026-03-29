@@ -147,10 +147,10 @@ const Index = () => {
             
             {/* Below the fold - lazy loaded */}
             <Suspense fallback={<SectionLoader />}>
+              <TestimonialsSection />
               <HowItWorks />
               <ProblemSection />
               <ModulesSection />
-              <TestimonialsSection />
               <DifferentiationSection />
               <Demo />
               <IntegrationsSection />

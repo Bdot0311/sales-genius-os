@@ -91,6 +91,16 @@ export const FinalCTA = () => {
                     Explore the platform with real sample data. No credit card, no commitment. Upgrade when you're ready to go live.
                   </p>
 
+                  {/* Social proof — moment of highest doubt */}
+                  <blockquote className="mb-8 px-4">
+                    <p className="text-sm italic text-muted-foreground/60 leading-relaxed">
+                      "First sequence live in under an hour. We booked 11 meetings in month one — more than the 6 weeks before."
+                    </p>
+                    <footer className="text-xs text-muted-foreground/40 mt-2">
+                      — James Kim, SDR Manager, Stackline
+                    </footer>
+                  </blockquote>
+
                   {/* CTA with glow */}
                   <Button
                     size="lg"
