@@ -266,7 +266,7 @@ export const HeroSection = () => {
   return (
     <section
       ref={heroRef}
-      className="relative flex items-center justify-center overflow-hidden pt-24 sm:pt-28 lg:pt-28 pb-12 sm:pb-16 lg:pb-20"
+      className="relative flex items-center justify-center overflow-hidden pt-24 sm:pt-28 lg:pt-28 pb-4 sm:pb-6 lg:pb-6"
       aria-labelledby="hero-heading"
     >
       {/* Background layers */}
@@ -368,7 +368,7 @@ export const HeroSection = () => {
       </div>
 
       {/* Bottom fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent pointer-events-none" aria-hidden="true" />
+      <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-background to-transparent pointer-events-none" aria-hidden="true" />
     </section>
   );
 };
