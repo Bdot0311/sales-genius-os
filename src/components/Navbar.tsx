@@ -89,6 +89,7 @@ export const Navbar = () => {
                     width={32} 
                     height={32}
                     loading="eager"
+                    fetchPriority="high"
                   />
                   <span className="text-base sm:text-lg font-semibold whitespace-nowrap">
                     <span className="text-foreground">{whiteLabelSettings?.company_name || "Sales"}</span>
