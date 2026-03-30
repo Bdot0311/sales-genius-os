@@ -30,10 +30,25 @@ export const TrustedByBar = () => {
     >
       <div className="container mx-auto px-4 sm:px-6">
         <p
-          className={`text-center text-xs font-medium text-muted-foreground/40 uppercase tracking-widest mb-6 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"}`}
+          className={`text-center text-xs font-medium text-muted-foreground/40 uppercase tracking-widest mb-4 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"}`}
         >
           From our early access cohort
         </p>
+
+        {/* Company names from testimonials */}
+        <div
+          className={`flex items-center justify-center gap-3 mb-6 transition-all duration-700 delay-100 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"}`}
+        >
+          {["Relay", "Northflow Agency", "Stackline"].map((name, i) => (
+            <span
+              key={i}
+              className="inline-flex items-center px-3 py-1 rounded-full border border-border/20 bg-muted/10 text-xs font-medium text-muted-foreground/50"
+            >
+              {name}
+            </span>
+          ))}
+        </div>
+
         <div
           className={`grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-2xl mx-auto transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
         >
