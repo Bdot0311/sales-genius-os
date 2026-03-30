@@ -4,23 +4,23 @@ import { Clock, TrendingUp, Target, Gauge } from "lucide-react";
 const outcomes = [
   {
     icon: Clock,
-    title: "Spend less time prospecting",
-    description: "AI handles the search and scoring. You focus on conversations that matter.",
+    title: "Less time spent researching",
+    description: "Stop burning hours building lists manually and move faster from idea to outreach.",
   },
   {
     icon: TrendingUp,
-    title: "Higher reply rates",
-    description: "Personalized outreach based on enriched data means your emails actually get responses.",
+    title: "More relevant outbound",
+    description: "Use enriched lead context to send messages that feel more specific and less generic.",
   },
   {
     icon: Target,
-    title: "Better-fit leads",
-    description: "Every lead is scored against your ICP. No more wasted time on poor matches.",
+    title: "Clearer prioritization",
+    description: "See which leads are the best fit first so your team spends time where it matters most.",
   },
   {
     icon: Gauge,
-    title: "Faster pipeline velocity",
-    description: "From first touch to closed deal in fewer steps. Automation removes the friction.",
+    title: "A cleaner workflow",
+    description: "Find leads, launch outreach, and manage responses from one system instead of a scattered stack.",
   },
 ];
 

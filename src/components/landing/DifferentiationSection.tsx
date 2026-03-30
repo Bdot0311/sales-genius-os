@@ -4,17 +4,17 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
 const notList = [
-  "Apollo or ZoomInfo — databases you pay per contact whether it converts or not",
-  "LinkedIn Sales Navigator — boolean queries and manual list-building",
-  "A bloated CRM that requires consultants to configure",
-  "Five disconnected tools duct-taped together with Zapier",
+  "Just another contact database that leaves you doing the hard part yourself",
+  "A workflow built around filters, spreadsheets, and manual list-building",
+  "A bloated system that takes weeks to configure before anyone gets value",
+  "A pile of disconnected tools your team has to babysit every day",
 ];
 
 const isList = [
-  "Describe your ICP in plain English — no boolean queries, no filters",
-  "Every lead scored 0–100 for fit before you spend a second on them",
-  "AI-personalized outreach with quality checks built in, not bolted on",
-  "Set up in under 2 minutes — no implementation project required",
+  "A faster way to describe your target market and start prospecting",
+  "A lead workflow centered on fit, context, and speed instead of raw volume",
+  "A simpler path from search to outreach to reply management",
+  "A product designed for teams that want pipeline movement, not tool sprawl",
 ];
 
 export const DifferentiationSection = () => {

@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 
 const painPoints = [
-  "You spend 40% of your time finding leads instead of closing deals",
-  "The tools that are supposed to help require complex boolean searches",
-  "Contact data is outdated — you're charged per contact whether it converts or not",
-  "Follow-ups slip through the cracks across disconnected platforms",
-  "Your CRM is a data-entry burden, not a sales weapon",
+  "You are still building lead lists by hand instead of talking to prospects",
+  "Finding the right contacts means juggling databases, filters, and boolean search",
+  "You waste time on bad-fit accounts because there is no clear scoring or prioritization",
+  "Personalized outreach takes too long to produce consistently",
+  "Replies, follow-ups, and next steps get scattered across too many tools",
 ];
 
 export const ProblemSection = () => {

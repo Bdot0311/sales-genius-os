@@ -4,43 +4,43 @@ import { Brain, Mail, TrendingUp, Mic, Workflow, ArrowRight, Target, Inbox, Shie
 const coreModules = [
   {
     icon: Target,
-    title: "ICP Builder + Lead Scoring",
-    outcome: "Know exactly who to call first",
-    description: "Describe your ideal customer in plain English. Every lead gets a 0–100 match score so you spend time on prospects that are actually worth your time — not ones that look good on paper.",
+    title: "Plain-English ICP Search",
+    outcome: "Find the right prospects faster",
+    description: "Describe your target customer naturally instead of wrestling with filters and boolean logic. SalesOS turns that into a workable lead search flow.",
     gradient: "from-primary/20 to-primary/5",
     accentColor: "group-hover:shadow-[0_0_30px_hsl(261_75%_65%/0.15)]",
   },
   {
     icon: Mail,
-    title: "Smart Outreach",
-    outcome: "Send emails that feel personal",
-    description: "AI writes each email from the lead's enriched profile — their role, company, tech stack. Five automated checks run before every send: spam words, readability, CTA clarity, length, and personalization depth.",
+    title: "Personalized Outreach",
+    outcome: "Write smarter first touches",
+    description: "Use company and contact context to generate more tailored outbound messages, then review and refine before sending.",
     gradient: "from-[hsl(280_75%_60%/0.2)] to-[hsl(280_75%_60%/0.05)]",
     accentColor: "group-hover:shadow-[0_0_30px_hsl(280_75%_60%/0.15)]",
   },
   {
     icon: Inbox,
-    title: "Unified Reply Inbox",
-    outcome: "Never miss a hot lead",
-    description: "Every reply lands in one inbox, automatically sorted by intent: interested, meeting request, question, not now. AI drafts your response. You review and send.",
+    title: "Reply Management",
+    outcome: "Keep momentum after the first email",
+    description: "Track responses, manage follow-ups, and keep conversations organized so promising leads do not disappear into a messy inbox.",
     gradient: "from-[hsl(200_75%_55%/0.2)] to-[hsl(200_75%_55%/0.05)]",
     accentColor: "group-hover:shadow-[0_0_30px_hsl(200_75%_55%/0.15)]",
   },
   {
     icon: TrendingUp,
-    title: "Pipeline Analytics",
-    outcome: "See exactly what's closing",
-    description: "Drag-and-drop deal management with real-time forecasting. Spot where deals stall, track revenue by stage, and know which reps need attention — without building a spreadsheet.",
+    title: "Pipeline Visibility",
+    outcome: "See what is actually moving",
+    description: "Understand where deals are progressing, where outreach is stalling, and where your team should focus next.",
     gradient: "from-[hsl(150_60%_50%/0.2)] to-[hsl(150_60%_50%/0.05)]",
     accentColor: "group-hover:shadow-[0_0_30px_hsl(150_60%_50%/0.15)]",
   },
 ];
 
 const alsoIncluded = [
-  { icon: Workflow, label: "Sequence Branching & A/B Testing", description: "Set up a sequence once. SalesOS sends each follow-up at the right time, branches on opens and replies, and stops when someone responds." },
-  { icon: ShieldCheck, label: "Deliverability Suite", description: "Warmup tracking, DNS health checks (SPF, DKIM, DMARC), and smart sending rules keep you out of spam." },
-  { icon: Mic, label: "Sales Coach", description: "Real-time suggestions during live conversations so you handle objections with confidence." },
-  { icon: Brain, label: "Workflow Builder", description: "Automate follow-ups and handoffs without writing code." },
+  { icon: Workflow, label: "Sequences and follow-up logic", description: "Build repeatable outbound workflows without manually tracking every next step." },
+  { icon: ShieldCheck, label: "Deliverability support", description: "Monitor key sending health signals so your outreach has a better chance of landing in inboxes." },
+  { icon: Mic, label: "Sales coaching tools", description: "Support reps with guidance before and during real conversations." },
+  { icon: Brain, label: "Automation building blocks", description: "Reduce repetitive sales work with workflow automations that keep the process moving." },
 ];
 
 export const ModulesSection = () => {

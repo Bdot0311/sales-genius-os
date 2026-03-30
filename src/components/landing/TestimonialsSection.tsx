@@ -5,32 +5,32 @@ import { useNavigate } from "react-router-dom";
 
 const testimonials = [
   {
-    quote: "Moved off Apollo 8 weeks ago. Reply rate went from 2.8% to 11.4% and I cut 4 hours a week off list-building. The ICP scoring replaced Clay and one other tool we were paying for separately.",
-    name: "Marcus Torres",
-    title: "Head of Sales",
-    company: "Relay",
-    initials: "MT",
+    quote: "The big win was speed. We could describe the accounts we wanted, review matches quickly, and get outreach moving without the usual list-building drag.",
+    name: "Early user",
+    title: "Founder-led sales team",
+    company: "B2B SaaS",
+    initials: "EU",
   },
   {
-    quote: "The email quality checker flagged 4 spam triggers I'd missed for months. Fixed them and our bounce rate dropped from 6.1% to 1.3% in two weeks. Worth switching just for that.",
-    name: "Anika Patel",
-    title: "Founder",
-    company: "Northflow Agency",
-    initials: "AP",
+    quote: "SalesOS made the workflow feel simpler. Instead of bouncing between tools, we could keep prospecting and outreach in one place and move faster.",
+    name: "Early user",
+    title: "Outbound agency",
+    company: "Agency",
+    initials: "EU",
   },
   {
-    quote: "First sequence live in under an hour. That same workflow used to take my team a full day. We booked 11 meetings in month one — more than we'd hit in the 6 weeks before.",
-    name: "James Kim",
-    title: "SDR Manager",
-    company: "Stackline",
-    initials: "JK",
+    quote: "What stood out was how fast we could go from a rough ICP idea to a workable outreach list. That saved a lot of manual effort right away.",
+    name: "Early user",
+    title: "Revenue team",
+    company: "Growth-stage B2B",
+    initials: "EU",
   },
 ];
 
 const stats = [
-  { value: "3.1×", label: "faster prospecting", context: "vs. manual list-building" },
-  { value: "87%", label: "ICP match accuracy", context: "avg. across beta users" },
-  { value: "11.4%", label: "avg. reply rate", context: "up from ~2.8% pre-switch" },
+  { value: "Faster", label: "from ICP to outreach", context: "less time lost to setup and list-building" },
+  { value: "Clearer", label: "lead prioritization", context: "better visibility into who to contact first" },
+  { value: "Simpler", label: "sales workflow", context: "fewer tools and handoffs to manage" },
 ];
 
 export const TestimonialsSection = () => {

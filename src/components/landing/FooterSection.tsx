@@ -41,7 +41,7 @@ export const FooterSection = () => {
                 </span>
               </div>
               <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
-                AI-powered lead discovery and sales automation for B2B teams. Find, engage, and close more deals.
+                Plain-English lead discovery and outbound workflow software for B2B teams that want to move from prospecting to outreach faster.
               </p>
             </div>
 

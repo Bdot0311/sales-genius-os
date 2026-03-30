@@ -12,39 +12,35 @@ import { ArrowRight } from "lucide-react";
 const faqs = [
   {
     question: "What is SalesOS?",
-    answer: "SalesOS is an AI-powered lead discovery and outbound sales platform. Describe your ideal customer in plain English, get ranked matches with enriched profiles, and run personalized outreach, all from one system. It includes ICP profiling, email quality checks, a unified reply inbox, deliverability monitoring, and smart sequence branching."
+    answer: "SalesOS is a B2B prospecting and outreach platform built to help teams find qualified leads faster, enrich them with useful context, and start more personalized outbound from one workflow."
   },
   {
     question: "Who is SalesOS for?",
-    answer: "SalesOS is built for B2B sales teams, SDRs, founders, and growth marketers who need to find and reach qualified prospects faster. Whether you're a solo founder or a 50-person sales org, there's a plan that fits."
+    answer: "SalesOS is best for founder-led sales teams, outbound agencies, SDR teams, and B2B operators who need a faster path from ideal customer profile to live outreach."
   },
   {
-    question: "What is the ICP Builder?",
-    answer: "The ICP Builder lets you define your Ideal Customer Profile with industries, company size, job titles, tech stack, and buying signals. Every lead gets an automatic ICP match score (0-100) so you instantly know which prospects are the best fit."
+    question: "What makes SalesOS different from a lead database?",
+    answer: "The goal is not just to hand you raw contact data. SalesOS is designed to help you define who you want, identify better-fit prospects, and move directly into outreach and follow-up."
   },
   {
-    question: "How does the Email Quality Checker work?",
-    answer: "Before any email send, SalesOS runs five automated checks: spam word detection, length analysis, readability scoring, CTA clarity, and personalization depth. You get a clear quality score with actionable suggestions. It never blocks sending, just helps you improve."
+    question: "Do I need boolean search skills to use it?",
+    answer: "No. SalesOS is built around plain-English targeting so you can describe your ideal customer naturally instead of learning complicated database syntax."
   },
   {
-    question: "What is the Unified Reply Inbox?",
-    answer: "All prospect replies land in one inbox, automatically classified by intent: interested, meeting request, question, not now, out of office, or not interested. AI drafts context-aware responses you can edit and send in one click."
-  },
-  {
-    question: "How does sequence branching work?",
-    answer: "Each sequence step can branch into two paths based on engagement: one path for prospects who opened but didn't reply, and another for those who never opened. You can also A/B test subject lines and use pre-built templates to launch sequences faster."
-  },
-  {
-    question: "What is the Deliverability Dashboard?",
-    answer: "It monitors your sending reputation with mailbox health scores, warmup progress tracking, DNS checks (SPF, DKIM, DMARC), and smart sending rules. This helps ensure your emails land in the inbox, not the spam folder."
+    question: "Can I try it before paying?",
+    answer: "Yes. You can start free, explore the workflow, and see how the product fits your process before upgrading to higher-volume prospecting and outreach features."
   },
   {
     question: "What integrations are available?",
-    answer: "SalesOS currently integrates with Google Workspace (Gmail, Calendar). We're actively building integrations with Slack, HubSpot, Salesforce, Calendly, and Zapier. You can submit integration requests from your dashboard and we'll prioritize based on demand."
+    answer: "SalesOS currently supports Google Workspace and is expanding integration coverage for tools like Slack, HubSpot, Salesforce, Calendly, and Zapier."
+  },
+  {
+    question: "Is SalesOS a fit for every business?",
+    answer: "No. It is strongest for teams selling into businesses through outbound or sales-led motions. It is generally not the right fit for e-commerce, B2C, or companies that do not run outbound."
   },
   {
     question: "Is my data secure?",
-    answer: "Yes. We use industry-standard encryption (AES-256 at rest, TLS in transit) and follow security best practices. Your lead data is never shared or sold. All data is stored in secure, managed infrastructure with regular backups."
+    answer: "SalesOS uses standard security practices for protecting application and customer data, including encryption in transit and managed infrastructure controls."
   }
 ];
 

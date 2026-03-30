@@ -1,11 +1,11 @@
 import { TrendingUp, Clock, Mail } from "lucide-react";
 
-const companies = ["Relay", "Northflow Agency", "Stackline"];
+const companies = ["Founder-led teams", "Outbound agencies", "B2B sales teams"];
 
 const stats = [
-  { icon: TrendingUp, stat: "11.4%", label: "Avg. reply rate", sub: "up from ~2.8% pre-switch" },
-  { icon: Clock, stat: "< 1 hr", label: "To first sequence live", sub: "from signup to sending" },
-  { icon: Mail, stat: "6.1% → 1.3%", label: "Bounce rate drop", sub: "in the first two weeks" },
+  { icon: TrendingUp, stat: "Plain English", label: "ICP targeting", sub: "describe who you want without database gymnastics" },
+  { icon: Clock, stat: "Under 2 min", label: "To first lead workflow", sub: "from idea to matched prospects" },
+  { icon: Mail, stat: "One system", label: "For search + outreach", sub: "less tool-switching across the sales process" },
 ];
 
 export const TrustedByBar = () => {

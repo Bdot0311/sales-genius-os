@@ -7,20 +7,20 @@ const steps = [
   {
     number: "01",
     icon: MessageSquare,
-    title: "Build your ICP and find leads",
-    description: "Define your Ideal Customer Profile or describe your target in plain English. AI scores and ranks every match.",
+    title: "Describe your ideal customer",
+    description: "Tell SalesOS who you want to reach in plain English: title, industry, company size, geography, or buying signals.",
   },
   {
     number: "02",
     icon: BarChart3,
-    title: "Launch quality-checked outreach",
-    description: "AI writes personalized emails, checks for spam triggers, and branches sequences based on engagement signals.",
+    title: "Review ranked, enriched matches",
+    description: "See best-fit prospects first with company context, verified contact data, and scoring that helps you prioritize faster.",
   },
   {
     number: "03",
     icon: Send,
-    title: "Close deals from one inbox",
-    description: "Replies auto-classified by intent. AI drafts responses. Deliverability monitoring keeps you out of spam.",
+    title: "Launch personalized outreach",
+    description: "Generate tailored emails, manage replies, and move prospects into your workflow without juggling disconnected tools.",
   },
 ];
 
