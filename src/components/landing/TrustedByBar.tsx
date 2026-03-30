@@ -1,4 +1,3 @@
-import { useEffect, useRef, useState } from "react";
 import { TrendingUp, Clock, Mail } from "lucide-react";
 
 const companies = ["Relay", "Northflow Agency", "Stackline"];
@@ -10,24 +9,9 @@ const stats = [
 ];
 
 export const TrustedByBar = () => {
-  const [isVisible, setIsVisible] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) setIsVisible(true);
-      },
-      { threshold: 0.15 }
-    );
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, []);
-
   return (
     <section
-      ref={ref}
-      className="relative py-14 sm:py-16 border-b border-border/10 z-10"
+      className="relative py-12 sm:py-14 border-b border-border/10 z-10"
       aria-label="Early access results"
     >
       {/* Subtle background glow */}
@@ -39,9 +23,7 @@ export const TrustedByBar = () => {
 
       <div className="container mx-auto px-4 sm:px-6">
         {/* Header */}
-        <div
-          className={`text-center mb-8 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
-        >
+        <div className="text-center mb-8">
           <p className="text-xs font-semibold text-muted-foreground/40 uppercase tracking-widest mb-4">
             From our early access cohort
           </p>
@@ -59,9 +41,7 @@ export const TrustedByBar = () => {
         </div>
 
         {/* Stats */}
-        <div
-          className={`grid grid-cols-1 sm:grid-cols-3 gap-px bg-border/10 rounded-2xl overflow-hidden border border-border/10 max-w-3xl mx-auto transition-all duration-700 delay-100 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-        >
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-px bg-border/10 rounded-2xl overflow-hidden border border-border/10 max-w-3xl mx-auto">
           {stats.map((s, i) => (
             <div
               key={i}
