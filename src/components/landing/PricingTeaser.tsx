@@ -127,30 +127,49 @@ export const PricingTeaser = () => {
           <div className={`mb-8 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '280ms' } as React.CSSProperties}>
             <blockquote className="relative p-5 rounded-xl border border-border/30 bg-card/40 text-center">
               <p className="text-sm text-foreground/80 italic leading-relaxed mb-3">
-                "We replaced three tools with SalesOS and saved $1,100/mo. Pipeline is cleaner, reply rates are up, and onboarding took one afternoon."
+                "First sequence live in under an hour. We booked 11 meetings in month one — more than we'd hit in the 6 weeks before."
               </p>
               <footer className="text-xs text-muted-foreground">
-                — David Zhao, VP Sales, Fieldwork
+                — James Kim, SDR Manager, Stackline
               </footer>
             </blockquote>
           </div>
 
           {/* Pricing logic */}
           <div className={`text-center scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '300ms' } as React.CSSProperties}>
-            <p className="text-lg text-foreground mb-2">
-              Explore the platform with real sample data. No credit card, no commitment.
+            {/* Price anchor */}
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-xs font-medium text-primary mb-5">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+              Early access pricing — locked in for founding members
+            </div>
+            <p className="text-3xl font-bold text-foreground mb-1">
+              Free to start
+            </p>
+            <p className="text-sm text-muted-foreground mb-2">
+              Explore with real sample data. No credit card required.
             </p>
             <p className="text-sm text-muted-foreground mb-6">
-              Upgrade to unlock your ICP builder, full lead scoring, and outreach sequences when you're ready.
+              Paid plans from <span className="text-foreground font-semibold">$49/mo</span> — unlock your ICP builder, lead scoring, and outreach sequences.
             </p>
             <Button
-              variant="outline"
+              variant="hero"
               size="lg"
-              className="h-12 px-6 text-base font-medium rounded-lg btn-outline-hover"
-              onClick={() => navigate('/pricing')}
+              className="group mb-3"
+              onClick={() => navigate('/auth')}
             >
-              View pricing
+              Start free — no card needed
+              <span className="ml-2 group-hover:translate-x-0.5 transition-transform duration-150">→</span>
             </Button>
+            <div className="block">
+              <Button
+                variant="link"
+                size="sm"
+                className="text-muted-foreground hover:text-primary"
+                onClick={() => navigate('/pricing')}
+              >
+                View full pricing →
+              </Button>
+            </div>
           </div>
         </div>
       </div>

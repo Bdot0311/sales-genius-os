@@ -309,7 +309,7 @@ export const HeroSection = () => {
             <p
               className={`hero-description text-base sm:text-lg text-muted-foreground max-w-xl mx-auto lg:mx-0 mb-8 leading-relaxed transition-all duration-700 delay-200 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
             >
-              Describe your ICP in plain English. SalesOS finds ranked leads, enriches their profile, and writes personalized cold emails — so your team spends time on calls, not spreadsheets.
+              Describe your ICP. SalesOS finds scored leads, enriches every profile, and writes personalized cold emails — so your team closes deals, not spreadsheets.
             </p>
 
             {/* CTAs */}
@@ -323,13 +323,13 @@ export const HeroSection = () => {
                   onClick={() => navigate("/auth")}
                   aria-label="Start for free"
                 >
-                  Get your first lead free
+                  Get 10 free ICP-scored leads
                   <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1.5 transition-transform duration-200" />
                 </Button>
               </div>
               <button
                 className="h-14 px-6 text-base text-muted-foreground hover:text-foreground transition-colors duration-200 relative group inline-flex items-center justify-center gap-2"
-                onClick={() => document.getElementById("demo")?.scrollIntoView({ behavior: "smooth" })}
+                onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}
               >
                 <Play className="w-4 h-4 fill-current" />
                 <span className="relative">

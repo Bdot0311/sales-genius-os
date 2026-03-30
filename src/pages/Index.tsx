@@ -2,7 +2,6 @@ import { lazy, Suspense } from "react";
 import { Navbar } from "@/components/Navbar";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { TrustedByBar } from "@/components/landing/TrustedByBar";
-import { SocialProofComparison } from "@/components/landing/SocialProofComparison";
 import { 
   SEOHead, 
   OrganizationSchema, 
@@ -143,14 +142,13 @@ const Index = () => {
             {/* Above the fold - eagerly loaded */}
             <HeroSection />
             <TrustedByBar />
-            <SocialProofComparison />
-            
-            {/* Below the fold - lazy loaded */}
+
+            {/* Below the fold - lazy loaded — Pain → Agitate → Solution → Proof → Close */}
             <Suspense fallback={<SectionLoader />}>
-              <TestimonialsSection />
-              <HowItWorks />
               <ProblemSection />
+              <HowItWorks />
               <ModulesSection />
+              <TestimonialsSection />
               <DifferentiationSection />
               <Demo />
               <IntegrationsSection />

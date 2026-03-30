@@ -119,6 +119,11 @@ export const FinalCTA = () => {
                     <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
                     <span>Setup in 2 min</span>
                   </div>
+
+                  {/* Risk reversal */}
+                  <p className="mt-5 text-xs text-muted-foreground/40 max-w-sm mx-auto leading-relaxed">
+                    Not seeing results in 14 days? Email us and we'll personally help you set up your first sequence — or give you a full refund. No questions asked.
+                  </p>
                 </div>
               </div>
             </div>

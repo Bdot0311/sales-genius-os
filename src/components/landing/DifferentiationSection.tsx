@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { X, Check, Sparkles } from "lucide-react";
+import { X, Check, Sparkles, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 const notList = [
   "Apollo or ZoomInfo — databases you pay per contact whether it converts or not",
@@ -18,6 +20,7 @@ const isList = [
 export const DifferentiationSection = () => {
   const [isVisible, setIsVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -73,7 +76,7 @@ export const DifferentiationSection = () => {
           </div>
 
           {/* Two-column layout */}
-          <div className="grid md:grid-cols-2 gap-6 md:gap-8">
+          <div className="grid md:grid-cols-2 gap-6 md:gap-8 mb-10">
             {/* What we're NOT */}
             <div 
               className={`group relative p-6 md:p-8 rounded-xl border border-destructive/20 bg-destructive/[0.03] scroll-reveal ${
@@ -133,9 +136,25 @@ export const DifferentiationSection = () => {
               </div>
             </div>
           </div>
+          {/* CTA at moment of differentiation clarity */}
+          <div className={`text-center scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '350ms' } as React.CSSProperties}>
+            <p className="text-sm text-muted-foreground mb-4">
+              Switch in an afternoon. Your first 10 leads are free.
+            </p>
+            <Button
+              variant="hero"
+              size="lg"
+              onClick={() => navigate('/auth')}
+              className="group"
+            >
+              Get 10 free ICP-scored leads
+              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+            </Button>
+            <p className="text-xs text-muted-foreground/50 mt-3">No credit card · Setup in 2 min · Cancel anytime</p>
+          </div>
         </div>
       </div>
-      
+
       {/* Bottom hairline separator */}
       <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
     </section>

@@ -28,7 +28,7 @@ export const TrustedByBar = () => {
             From our early access cohort
           </p>
           {/* Company pills */}
-          <div className="flex items-center justify-center flex-wrap gap-2">
+          <div className="flex items-center justify-center flex-wrap gap-2 mb-3">
             {companies.map((name, i) => (
               <span
                 key={i}
@@ -38,6 +38,10 @@ export const TrustedByBar = () => {
               </span>
             ))}
           </div>
+          {/* Urgency signal */}
+          <p className="text-xs text-muted-foreground/35 italic">
+            Founding member spots are limited — early access pricing locked in forever.
+          </p>
         </div>
 
         {/* Stats */}
