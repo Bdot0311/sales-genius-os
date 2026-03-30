@@ -50,41 +50,35 @@ const SalesforceLogo = () => (
 
 // Integration data
 const integrations = [
-  { 
-    name: "Google Workspace", 
+  {
+    name: "Google Workspace",
     description: "Gmail & Calendar",
     Logo: GoogleLogo,
-    status: "live" as const,
   },
-  { 
-    name: "Calendly", 
+  {
+    name: "Calendly",
     description: "Meeting scheduling",
     Logo: CalendlyLogo,
-    status: "coming" as const,
   },
-  { 
-    name: "Slack", 
+  {
+    name: "Slack",
     description: "Deal notifications",
     Logo: SlackLogo,
-    status: "coming" as const,
   },
-  { 
-    name: "Zapier", 
+  {
+    name: "Zapier",
     description: "5000+ apps",
     Logo: ZapierLogo,
-    status: "coming" as const,
   },
-  { 
-    name: "HubSpot", 
+  {
+    name: "HubSpot",
     description: "CRM sync",
     Logo: HubSpotLogo,
-    status: "coming" as const,
   },
-  { 
-    name: "Salesforce", 
+  {
+    name: "Salesforce",
     description: "Enterprise CRM",
     Logo: SalesforceLogo,
-    status: "coming" as const,
   },
 ];
 
@@ -143,41 +137,26 @@ export const IntegrationsSection = () => {
             </p>
           </div>
 
-          {/* Live integration — prominent */}
-          {integrations.filter(i => i.status === 'live').map((integration, index) => (
-            <div
-              key={integration.name}
-              className={`group relative max-w-xs mx-auto p-6 rounded-xl border border-primary/20 bg-primary/[0.03] text-center card-hover-lift scroll-reveal mb-8 ${
-                isVisible ? 'visible' : ''
-              }`}
-              style={{ '--reveal-delay': `${index * 50}ms` } as React.CSSProperties}
-            >
-              <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none spotlight-card" />
-              <div className="relative z-10">
-                <div className="flex justify-center mb-3 transition-transform duration-200 group-hover:scale-110">
-                  <integration.Logo />
+          {/* All integrations grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+            {integrations.map((integration, index) => (
+              <div
+                key={integration.name}
+                className={`group relative p-4 rounded-xl border border-border/30 bg-card/40 text-center card-hover-lift scroll-reveal ${
+                  isVisible ? 'visible' : ''
+                }`}
+                style={{ '--reveal-delay': `${index * 50}ms` } as React.CSSProperties}
+              >
+                <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none spotlight-card" />
+                <div className="relative z-10">
+                  <div className="flex justify-center mb-3 transition-transform duration-200 group-hover:scale-110">
+                    <integration.Logo />
+                  </div>
+                  <div className="font-medium text-sm mb-0.5">{integration.name}</div>
+                  <div className="text-xs text-muted-foreground">{integration.description}</div>
                 </div>
-                <div className="font-semibold text-sm mb-1">{integration.name}</div>
-                <div className="text-xs text-muted-foreground mb-2">{integration.description}</div>
-                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-[10px] font-semibold uppercase tracking-wide">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                  Live
-                </span>
               </div>
-            </div>
-          ))}
-
-          {/* Coming soon — compact text list */}
-          <div className={`text-center mb-8 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '150ms' } as React.CSSProperties}>
-            <p className="text-xs font-semibold text-muted-foreground/40 uppercase tracking-widest mb-3">On the roadmap</p>
-            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-              {integrations.filter(i => i.status === 'coming').map((integration) => (
-                <span key={integration.name} className="text-sm text-muted-foreground/50 flex items-center gap-1.5">
-                  <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
-                  {integration.name}
-                </span>
-              ))}
-            </div>
+            ))}
           </div>
 
           {/* CTA buttons */}
