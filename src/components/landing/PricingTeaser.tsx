@@ -170,6 +170,9 @@ export const PricingTeaser = () => {
                 View full pricing →
               </Button>
             </div>
+            <p className="text-xs text-muted-foreground/40 mt-4">
+              30-day money-back guarantee on all paid plans. No questions asked.
+            </p>
           </div>
         </div>
       </div>

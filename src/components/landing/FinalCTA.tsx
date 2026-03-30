@@ -122,7 +122,7 @@ export const FinalCTA = () => {
 
                   {/* Risk reversal */}
                   <p className="mt-5 text-xs text-muted-foreground/40 max-w-sm mx-auto leading-relaxed">
-                    Not seeing results in 14 days? Email us and we'll personally help you set up your first sequence — or give you a full refund. No questions asked.
+                    30-day money-back guarantee on all paid plans. No questions asked.
                   </p>
                 </div>
               </div>
