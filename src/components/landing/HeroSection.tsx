@@ -100,7 +100,7 @@ const DashboardMockup = () => {
           </div>
           <div className="flex-1 flex justify-center">
           <div className="px-3 py-1 rounded-md bg-muted/40 text-[10px] text-muted-foreground font-mono flex items-center gap-1.5">
-            <img src={logoSmall} alt="SalesOS" className="w-4 h-4 rounded-sm" />
+            <img src={logoSmall} alt="SalesOS" className="w-4 h-4 rounded-sm" width={16} height={16} />
             <span>Dashboard</span>
           </div>
           </div>
