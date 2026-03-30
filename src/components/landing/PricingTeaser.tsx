@@ -149,7 +149,7 @@ export const PricingTeaser = () => {
               Explore with real sample data. No credit card required.
             </p>
             <p className="text-sm text-muted-foreground mb-6">
-              Paid plans from <span className="text-foreground font-semibold">$49/mo</span> — unlock your ICP builder, lead scoring, and outreach sequences.
+              Paid plans from <span className="text-foreground font-semibold">$39/mo</span> — unlock your ICP builder, lead scoring, and outreach sequences.
             </p>
             <Button
               variant="hero"
