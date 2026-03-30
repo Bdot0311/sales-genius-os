@@ -294,14 +294,14 @@ export const HeroSection = () => {
               id="hero-heading"
               className={`text-3xl sm:text-4xl md:text-5xl lg:text-[3.5rem] font-bold tracking-tight mb-4 leading-[1.12] transition-all duration-700 delay-100 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
             >
-              Stop building lists.{" "}
+              Find qualified B2B leads with{" "}
               <span
                 className="relative inline-block text-[1.08em] bg-gradient-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent"
                 style={{
                   filter: "drop-shadow(0 0 20px hsl(261 75% 65% / 0.35))",
                 }}
               >
-                Start filling your pipeline.
+                plain-English search.
               </span>
             </h1>
 
@@ -309,7 +309,7 @@ export const HeroSection = () => {
             <p
               className={`hero-description text-base sm:text-lg text-muted-foreground max-w-xl mx-auto lg:mx-0 mb-8 leading-relaxed transition-all duration-700 delay-200 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
             >
-              Describe your ICP. SalesOS finds scored leads, enriches every profile, and writes personalized cold emails — so your team closes deals, not spreadsheets.
+              Tell SalesOS who you want to reach. It finds best-fit prospects, enriches them with verified contact and company data, and helps you launch personalized outreach in minutes.
             </p>
 
             {/* CTAs */}
@@ -323,7 +323,7 @@ export const HeroSection = () => {
                   onClick={() => navigate("/auth")}
                   aria-label="Start for free"
                 >
-                  Get 10 free ICP-scored leads
+                  Get your first 10 leads free
                   <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1.5 transition-transform duration-200" />
                 </Button>
               </div>
@@ -333,7 +333,7 @@ export const HeroSection = () => {
               >
                 <Play className="w-4 h-4 fill-current" />
                 <span className="relative">
-                  Watch Demo
+                  See how it works
                   <span className="absolute left-0 -bottom-0.5 w-0 h-px bg-primary group-hover:w-full transition-all duration-300" />
                 </span>
               </button>
@@ -343,18 +343,17 @@ export const HeroSection = () => {
             <div
               className={`flex flex-col gap-2 text-center lg:text-left transition-all duration-700 delay-[350ms] ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
             >
-              {/* Early access badge */}
-              <div className="flex items-center justify-center lg:justify-start gap-2">
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 text-xs text-muted-foreground/60">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-medium text-primary">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                  Early Access
+                  <Clock className="w-3 h-3" />
+                  First qualified lead in under 2 minutes
                 </span>
-                <span className="text-xs text-muted-foreground/50">· Real teams. Real results.</span>
+                <span>No boolean gymnastics</span>
+                <span className="hidden sm:inline w-1 h-1 rounded-full bg-muted-foreground/30" />
+                <span>Verified contact data</span>
+                <span className="hidden sm:inline w-1 h-1 rounded-full bg-muted-foreground/30" />
+                <span>Personalized outreach</span>
               </div>
-              {/* Mini quote from early cohort */}
-              <p className="text-xs text-muted-foreground/50 italic">
-                "Reply rate went from 2.8% to 11.4% in 8 weeks." — Marcus Torres, Head of Sales, Relay
-              </p>
             </div>
           </div>
 

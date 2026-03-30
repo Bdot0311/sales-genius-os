@@ -83,21 +83,21 @@ export const FinalCTA = () => {
                 
                 <div className="relative z-10">
                   <h2 id="final-cta-heading" className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight mb-5">
-                    Ready to close{" "}
-                    <span className="text-shimmer">more deals</span>?
+                    Ready to find your next{" "}
+                    <span className="text-shimmer">best-fit lead</span>?
                   </h2>
                   
                   <p className="text-lg sm:text-xl text-muted-foreground mb-10 max-w-lg mx-auto leading-relaxed">
-                    Explore the platform with real sample data. No credit card, no commitment. Upgrade when you're ready to go live.
+                    Describe your ideal customer, see matched prospects, and start outreach fast. No credit card required to explore the workflow.
                   </p>
 
                   {/* Social proof — moment of highest doubt */}
                   <blockquote className="mb-8 px-4">
                     <p className="text-sm italic text-muted-foreground/60 leading-relaxed">
-                      "First sequence live in under an hour. We booked 11 meetings in month one — more than the 6 weeks before."
+                      "SalesOS cut out the list-building busywork. We could focus on messaging and meetings instead of research."
                     </p>
                     <footer className="text-xs text-muted-foreground/40 mt-2">
-                      — James Kim, SDR Manager, Stackline
+                      — Early SalesOS user
                     </footer>
                   </blockquote>
 
@@ -107,7 +107,7 @@ export const FinalCTA = () => {
                     className="h-16 px-10 text-lg font-semibold bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl group shadow-[0_0_30px_hsl(261_75%_65%/0.3)] hover:shadow-[0_0_50px_hsl(261_75%_65%/0.45)] hover:-translate-y-1 transition-all duration-300"
                     onClick={() => navigate('/auth')}
                   >
-                    <span>Get your first lead free</span>
+                    <span>Start free and find leads</span>
                     <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1.5 transition-transform duration-200" aria-hidden="true" />
                   </Button>
 
@@ -115,14 +115,14 @@ export const FinalCTA = () => {
                   <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-sm text-muted-foreground/60">
                     <span>No credit card required</span>
                     <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
-                    <span>Free forever plan</span>
+                    <span>Sample data included</span>
                     <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
                     <span>Setup in 2 min</span>
                   </div>
 
                   {/* Risk reversal */}
                   <p className="mt-5 text-xs text-muted-foreground/40 max-w-sm mx-auto leading-relaxed">
-                    30-day money-back guarantee on all paid plans. No questions asked.
+                    Start free, validate the workflow, and upgrade when you are ready for live prospecting.
                   </p>
                 </div>
               </div>

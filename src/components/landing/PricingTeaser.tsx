@@ -4,16 +4,16 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
 const forYou = [
-  "B2B sales teams (5-50 reps)",
+  "Founder-led B2B sales teams",
   "Outbound-heavy agencies",
-  "Sales-led SaaS founders",
-  "Anyone tired of duct-taped sales stacks",
+  "Small sales teams that need leads fast",
+  "Anyone tired of manual prospect research",
 ];
 
 const notForYou = [
   "E-commerce businesses",
   "B2C companies",
-  "Teams that don't do outbound",
+  "Teams that do not run outbound",
 ];
 
 export const PricingTeaser = () => {
@@ -63,10 +63,10 @@ export const PricingTeaser = () => {
           {/* Header */}
           <div className={`text-center mb-12 scroll-reveal ${isVisible ? 'visible' : ''}`}>
             <h2 id="pricing-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
-              Simple pricing. No surprises.
+              Built for outbound teams. Priced to start fast.
             </h2>
             <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-              SalesOS works best for teams that sell directly to businesses. If you're running outbound, managing a pipeline, or trying to close deals faster, this is for you.
+              Start free, test real workflows, and upgrade when you're ready to unlock more lead volume, enrichment, and outreach power.
             </p>
           </div>
 
@@ -127,10 +127,10 @@ export const PricingTeaser = () => {
           <div className={`mb-8 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '280ms' } as React.CSSProperties}>
             <blockquote className="relative p-5 rounded-xl border border-border/30 bg-card/40 text-center">
               <p className="text-sm text-foreground/80 italic leading-relaxed mb-3">
-                "First sequence live in under an hour. We booked 11 meetings in month one — more than we'd hit in the 6 weeks before."
+                "We went from manually hunting leads to launching targeted outreach the same day. That alone changed the pace of pipeline generation."
               </p>
               <footer className="text-xs text-muted-foreground">
-                — James Kim, SDR Manager, Stackline
+                — Early SalesOS user
               </footer>
             </blockquote>
           </div>
@@ -143,13 +143,13 @@ export const PricingTeaser = () => {
               Early access pricing — locked in for founding members
             </div>
             <p className="text-3xl font-bold text-foreground mb-1">
-              Free to start
+              Start free
             </p>
             <p className="text-sm text-muted-foreground mb-2">
-              Explore with real sample data. No credit card required.
+              Explore the product with sample data and see how the workflow feels before you commit.
             </p>
             <p className="text-sm text-muted-foreground mb-6">
-              Paid plans from <span className="text-foreground font-semibold">$39/mo</span> — unlock your ICP builder, lead scoring, and outreach sequences.
+              Paid plans from <span className="text-foreground font-semibold">$39/mo</span> — unlock prospecting, verified data, exports, and personalized outreach.
             </p>
             <Button
               variant="hero"
@@ -171,7 +171,7 @@ export const PricingTeaser = () => {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground/40 mt-4">
-              30-day money-back guarantee on all paid plans. No questions asked.
+              Upgrade when you are ready to run real prospecting and outreach at volume.
             </p>
           </div>
         </div>
