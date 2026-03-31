@@ -88,8 +88,8 @@ const easeOut3 = (t: number) => 1 - Math.pow(1 - t, 3);
 const norm = (v: number, lo: number, hi: number) =>
   Math.max(0, Math.min(1, (v - lo) / (hi - lo)));
 
-// ─── Scroll chapter: 250vh container, 100vh sticky inner ──────────────────────
-// Content enters (0→0.18), holds (0.18→0.80), exits (0.80→1.0)
+// ─── Scroll chapter: 180vh container, 100vh sticky inner ──────────────────────
+// Content enters (0→0.10), holds (0.10→0.82), exits (0.82→1.0)
 const ScrollChapter = ({
   children,
   glowPos = "50% 50%",
@@ -100,17 +100,18 @@ const ScrollChapter = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const progress = useScrollProgress(containerRef as { current: HTMLElement | null });
 
-  const enterT = easeOut3(norm(progress, 0, 0.18));
-  const exitT  = easeOut3(norm(progress, 0.80, 1.0));
-  const active = progress >= 0.14;
+  const enterT = easeOut3(norm(progress, 0, 0.10));
+  const exitT  = easeOut3(norm(progress, 0.82, 1.0));
+  // Fire active very early so animations start as soon as content appears
+  const active = progress >= 0.04;
 
-  const opacity    = active ? Math.max(0.02, 1 - exitT * 0.92) : enterT;
-  const translateY = active ? -exitT * 60                       : (1 - enterT) * 80;
-  const scale      = active ? 1 - exitT * 0.05                  : 0.91 + enterT * 0.09;
-  const blur       = active ? exitT * 10                        : (1 - enterT) * 14;
+  const opacity    = active ? Math.max(0.02, 1 - exitT * 0.94) : enterT;
+  const translateY = active ? -exitT * 55                       : (1 - enterT) * 70;
+  const scale      = active ? 1 - exitT * 0.05                  : 0.92 + enterT * 0.08;
+  const blur       = active ? exitT * 10                        : (1 - enterT) * 12;
 
   return (
-    <div ref={containerRef} style={{ height: "250vh" }}>
+    <div ref={containerRef} style={{ height: "180vh" }}>
       <div style={{ position: "sticky", top: 0, height: "100vh", overflow: "hidden" }}>
         {/* per-chapter ambient glow */}
         <div
@@ -187,7 +188,7 @@ const SplitWords = ({
       <span key={i} className="inline-block mr-[0.26em]"
         style={{
           animation: visible ? `word-rise 0.75s cubic-bezier(0.22,1,0.36,1) both` : "none",
-          animationDelay: `${baseDelay + i * 85}ms`,
+          animationDelay: `${baseDelay + i * 50}ms`,
           opacity: visible ? undefined : 0,
         }}
       >
@@ -244,7 +245,7 @@ const Typewriter = ({ text, active, speed = 16 }: { text: string; active: boolea
         else clearInterval(t);
       }, speed);
       return () => clearInterval(t);
-    }, 500);
+    }, 100);
     return () => clearTimeout(delay);
   }, [active, text, speed]);
   return (
@@ -280,11 +281,11 @@ const SearchChapter = ({ active }: { active: boolean }) => (
         <ChapterLabel num="01" label="Search" visible={active} />
         <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-[1.05] mb-6">
           <div><SplitWords text="Describe who" visible={active} /></div>
-          <div><SplitWords text="you want" visible={active} baseDelay={160} /></div>
-          <div><SplitWords text="to reach." visible={active} baseDelay={300} gradient /></div>
+          <div><SplitWords text="you want" visible={active} baseDelay={80} /></div>
+          <div><SplitWords text="to reach." visible={active} baseDelay={150} gradient /></div>
         </h2>
         <p className="text-base md:text-lg text-white/42 leading-relaxed max-w-sm"
-          style={{ animation: active ? "word-rise 0.7s cubic-bezier(0.22,1,0.36,1) 620ms both" : "none", opacity: active ? undefined : 0 }}>
+          style={{ animation: active ? "word-rise 0.7s cubic-bezier(0.22,1,0.36,1) 300ms both" : "none", opacity: active ? undefined : 0 }}>
           No Boolean filters. No field juggling. Just plain-English targeting that actually works.
         </p>
       </div>
@@ -324,20 +325,20 @@ const SearchChapter = ({ active }: { active: boolean }) => (
                   style={{
                     opacity: active ? 1 : 0,
                     transform: active ? "translateY(0) scale(1)" : "translateY(8px) scale(0.92)",
-                    transition: `opacity 0.4s ${1800 + i * 100}ms, transform 0.4s ${1800 + i * 100}ms`,
+                    transition: `opacity 0.4s ${400 + i * 80}ms, transform 0.4s ${400 + i * 80}ms`,
                   }}>
                   {tag}
                 </span>
               ))}
             </div>
-            <div style={{ opacity: active ? 1 : 0, transform: active ? "translateY(0)" : "translateY(8px)", transition: "all 0.5s 2500ms" }}>
+            <div style={{ opacity: active ? 1 : 0, transform: active ? "translateY(0)" : "translateY(8px)", transition: "all 0.5s 800ms" }}>
               <div className="flex items-center justify-between text-xs text-white/28 mb-2">
                 <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-primary animate-breathe" /> Scanning database</span>
                 <span className="text-primary font-semibold">847 matches</span>
               </div>
               <div className="h-1 rounded-full bg-white/5 overflow-hidden">
                 <div className="h-full rounded-full bg-gradient-to-r from-primary via-purple-400 to-primary/55"
-                  style={{ width: active ? "100%" : "0%", transition: "width 2s cubic-bezier(0.4,0,0.2,1) 2700ms" }}
+                  style={{ width: active ? "100%" : "0%", transition: "width 1.4s cubic-bezier(0.4,0,0.2,1) 950ms" }}
                 />
               </div>
             </div>
@@ -379,13 +380,13 @@ const LeadsChapter = ({ active }: { active: boolean }) => (
         <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-[1.05] mb-6">
           <div><SplitWords text="The right accounts" visible={active} /></div>
           <div>
-            <SplitWords text="surface" visible={active} baseDelay={200} />
+            <SplitWords text="surface" visible={active} baseDelay={100} />
             {" "}
-            <SplitWords text="first." visible={active} baseDelay={285} gradient />
+            <SplitWords text="first." visible={active} baseDelay={140} gradient />
           </div>
         </h2>
         <p className="text-base md:text-lg text-white/42 leading-relaxed max-w-sm"
-          style={{ animation: active ? "word-rise 0.7s cubic-bezier(0.22,1,0.36,1) 600ms both" : "none", opacity: active ? undefined : 0 }}>
+          style={{ animation: active ? "word-rise 0.7s cubic-bezier(0.22,1,0.36,1) 280ms both" : "none", opacity: active ? undefined : 0 }}>
           Not a massive list. A tighter one with context already built in — so you know who to call first.
         </p>
       </div>
@@ -418,10 +419,10 @@ const OutreachChapter = ({ active }: { active: boolean }) => {
           <ChapterLabel num="03" label="Outreach" visible={active} />
           <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-[1.05] mb-6">
             <div><SplitWords text="Context becomes" visible={active} /></div>
-            <div><SplitWords text="outreach." visible={active} baseDelay={220} gradient /></div>
+            <div><SplitWords text="outreach." visible={active} baseDelay={110} gradient /></div>
           </h2>
           <p className="text-base md:text-lg text-white/42 leading-relaxed max-w-sm"
-            style={{ animation: active ? "word-rise 0.7s cubic-bezier(0.22,1,0.36,1) 500ms both" : "none", opacity: active ? undefined : 0 }}>
+            style={{ animation: active ? "word-rise 0.7s cubic-bezier(0.22,1,0.36,1) 220ms both" : "none", opacity: active ? undefined : 0 }}>
             Faster first drafts. Built from real lead context. Less blank-page work.
           </p>
         </div>
@@ -475,10 +476,10 @@ const PipelineChapter = ({ active }: { active: boolean }) => {
           </div>
           <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-[1.05] mb-4">
             <div><SplitWords text="From prospecting" visible={active} /></div>
-            <div><SplitWords text="to pipeline." visible={active} baseDelay={240} gradient /></div>
+            <div><SplitWords text="to pipeline." visible={active} baseDelay={120} gradient /></div>
           </h2>
           <p className="text-base md:text-lg text-white/42 leading-relaxed max-w-lg mx-auto"
-            style={{ animation: active ? "word-rise 0.7s cubic-bezier(0.22,1,0.36,1) 580ms both" : "none", opacity: active ? undefined : 0 }}>
+            style={{ animation: active ? "word-rise 0.7s cubic-bezier(0.22,1,0.36,1) 260ms both" : "none", opacity: active ? undefined : 0 }}>
             Search, leads, outreach, pipeline — one workflow, one session.
           </p>
         </div>
@@ -494,7 +495,7 @@ const PipelineChapter = ({ active }: { active: boolean }) => {
             </div>
           ))}
         </div>
-        <div style={{ animation: active ? "word-rise 0.8s cubic-bezier(0.22,1,0.36,1) 440ms both" : "none", opacity: active ? undefined : 0 }}>
+        <div style={{ animation: active ? "word-rise 0.8s cubic-bezier(0.22,1,0.36,1) 200ms both" : "none", opacity: active ? undefined : 0 }}>
           <GlassCard active={active} className="p-5">
             <div className="grid grid-cols-4 gap-3 h-28 items-end">
               {bars.map((h, i) => (
