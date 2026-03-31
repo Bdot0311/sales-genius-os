@@ -1,196 +1,78 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect, useRef, useCallback } from "react";
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  Sparkles, 
-  Building2, 
-  Kanban, 
-  Mail, 
-  BarChart3, 
+import { useState, useEffect, useRef } from "react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+  Building2,
+  Kanban,
+  Mail,
+  BarChart3,
   MessageSquare,
-  Play,
-  Pause,
   Search,
   User,
   Phone,
   Linkedin,
   Globe,
   TrendingUp,
-  Volume2,
-  VolumeX,
-  Maximize,
-  Minimize,
-  AudioLines,
   Zap,
   Rocket,
   ArrowRight,
-  CheckCircle2
+  CheckCircle2,
+  Play,
+  Pause,
 } from "lucide-react";
-
-
-// Audio timestamps (in seconds) - synced to podcast script
-const SLIDE_TIMESTAMPS = [
-  0,      // Slide 0: Intro
-  22.31,  // Slide 1: AI Lead Discovery
-  63,     // Slide 2: Smart Enrichment (1:03)
-  96,     // Slide 3: Pipeline Management (1:36)
-  135,    // Slide 4: AI Outreach Studio (2:15)
-  173,    // Slide 5: Analytics Dashboard (2:53)
-  210,    // Slide 6: AI Sales Coach (3:30)
-  245,    // End screen (4:05)
-];
-
-// Captions matching the podcast script
-const SLIDE_CAPTIONS = [
-  "The sales industry is undergoing a significant transformation, thanks to the integration of artificial intelligence. These innovations are streamlining processes and providing sales teams with powerful tools to improve their performance.",
-  "AI lead discovery is changing the game. Gone are the days of complex filters. Now, sales professionals can simply type what they're looking for using natural language, and the AI does the rest.",
-  "Once leads are identified, smart enrichment takes over. This feature automatically enhances each lead with crucial data: company size, contact details, and social profiles, providing a 360-degree view of prospects.",
-  "Pipeline management has been reimagined for maximum visibility and control. The drag-and-drop interface allows sales teams to easily move deals across different stages, making it easier to identify bottlenecks and prioritize opportunities.",
-  "The AI Outreach Studio leverages artificial intelligence to generate personalized emails designed to convert. The AI analyzes each lead's profile and recent company news to craft messages that resonate.",
-  "The analytics dashboard provides real-time insights into key metrics. Sales teams can monitor leads, meetings, revenue, and conversion rates all in one place for more informed decision-making.",
-  "The AI sales coach offers intelligent recommendations to help close more deals faster. This virtual mentor provides actionable insights based on historical data, market trends, and best practices.",
-  "Ready to transform your sales process? Start for free and experience the future of AI-powered sales. Join thousands of teams already closing more deals with SalesOS.",
-];
 
 const demoSteps = [
   {
     id: 0,
-    title: "Plain-English Prospecting",
-    description: "A guided look at how SalesOS moves from target idea to outreach-ready lead list.",
-    icon: Zap,
-    audioStart: SLIDE_TIMESTAMPS[0],
-    caption: SLIDE_CAPTIONS[0],
+    title: "Search naturally",
+    description: "Describe your target customer in plain English instead of fighting filters and boolean logic.",
+    icon: Search,
   },
   {
     id: 1,
-    title: "AI Lead Discovery",
-    description: "Find your ideal customers with natural language. Just describe who you're looking for.",
-    icon: Sparkles,
-    audioStart: SLIDE_TIMESTAMPS[1],
-    caption: SLIDE_CAPTIONS[1],
+    title: "Enrich the lead",
+    description: "Pull in company and contact context that makes the lead easier to qualify and use.",
+    icon: Building2,
   },
   {
     id: 2,
-    title: "Smart Enrichment",
-    description: "Automatically enrich leads with company data, contact info, and social profiles.",
-    icon: Building2,
-    audioStart: SLIDE_TIMESTAMPS[2],
-    caption: SLIDE_CAPTIONS[2],
+    title: "Move through pipeline",
+    description: "Keep deals organized visually so it is obvious what is moving and what is stuck.",
+    icon: Kanban,
   },
   {
     id: 3,
-    title: "Pipeline Management",
-    description: "Visualize your deals across stages with drag-and-drop kanban boards.",
-    icon: Kanban,
-    audioStart: SLIDE_TIMESTAMPS[3],
-    caption: SLIDE_CAPTIONS[3],
+    title: "Draft outreach",
+    description: "Turn lead context into more relevant outbound messaging without starting from a blank page.",
+    icon: Mail,
   },
   {
     id: 4,
-    title: "AI Outreach Studio",
-    description: "Generate personalized emails that convert using AI-powered content.",
-    icon: Mail,
-    audioStart: SLIDE_TIMESTAMPS[4],
-    caption: SLIDE_CAPTIONS[4],
+    title: "Track performance",
+    description: "Review a simple set of metrics that show whether prospecting and outreach are actually working.",
+    icon: BarChart3,
   },
   {
     id: 5,
-    title: "Analytics Dashboard",
-    description: "Track performance with real-time metrics and actionable insights.",
-    icon: BarChart3,
-    audioStart: SLIDE_TIMESTAMPS[5],
-    caption: SLIDE_CAPTIONS[5],
+    title: "Get guidance",
+    description: "Use AI suggestions as workflow support, not as a replacement for judgment.",
+    icon: MessageSquare,
   },
   {
     id: 6,
-    title: "AI Sales Coach",
-    description: "Get intelligent recommendations to close more deals faster.",
-    icon: MessageSquare,
-    audioStart: SLIDE_TIMESTAMPS[6],
-    caption: SLIDE_CAPTIONS[6],
-  },
-  {
-    id: 7,
-    title: "Get Started Today",
-    description: "Transform your sales process with AI-powered intelligence.",
+    title: "Run it live",
+    description: "If the workflow fits your team, choose a plan and move from demo mode into real prospecting.",
     icon: Rocket,
-    audioStart: SLIDE_TIMESTAMPS[7],
-    caption: SLIDE_CAPTIONS[7],
   },
 ];
 
-// Intro Slide Mockup
-const IntroMockup = ({ isActive }: { isActive: boolean }) => {
-  const [showElements, setShowElements] = useState(0);
-
-  useEffect(() => {
-    if (!isActive) {
-      setShowElements(0);
-      return;
-    }
-
-    const intervals = [500, 1000, 1500, 2000];
-    const timers = intervals.map((delay, i) => 
-      setTimeout(() => setShowElements(i + 1), delay)
-    );
-
-    return () => timers.forEach(clearTimeout);
-  }, [isActive]);
-
-  const features = [
-    { icon: Sparkles, label: "AI Lead Discovery" },
-    { icon: Building2, label: "Smart Enrichment" },
-    { icon: Kanban, label: "Pipeline Management" },
-    { icon: Mail, label: "AI Outreach" },
-  ];
-
-  return (
-    <div className="flex flex-col items-center justify-center h-full space-y-4 sm:space-y-6 py-4">
-      <div className={`transition-all duration-700 ${showElements >= 1 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-        <img 
-          src="/salesos-logo-small.webp" 
-          alt="SalesOS" 
-          width="64"
-          height="64"
-          loading="lazy"
-          decoding="async"
-          className="h-12 sm:h-16 w-auto mx-auto mb-3 sm:mb-4"
-        />
-        <h3 className="text-lg sm:text-2xl font-bold text-center bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-          The Future of Sales
-        </h3>
-        <p className="text-xs sm:text-sm text-muted-foreground text-center mt-1 sm:mt-2 max-w-xs mx-auto">
-          AI-powered tools transforming how teams sell
-        </p>
-      </div>
-      
-      <div className={`grid grid-cols-2 gap-2 sm:gap-3 w-full max-w-xs transition-all duration-700 ${showElements >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-        {features.map((feature, i) => (
-          <div 
-            key={i}
-            className={`bg-background/40 backdrop-blur-sm rounded-lg p-2 sm:p-3 border border-border/40 flex items-center gap-2 transition-all duration-500 ${
-              showElements >= 3 + Math.floor(i / 2) ? 'opacity-100 scale-100' : 'opacity-50 scale-95'
-            }`}
-            style={{ transitionDelay: `${i * 100}ms` }}
-          >
-            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-primary/20 flex items-center justify-center flex-shrink-0">
-              <feature.icon className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
-            </div>
-            <span className="text-[10px] sm:text-xs font-medium truncate">{feature.label}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// Step 1: AI Lead Discovery Mockup
-const AILeadDiscoveryMockup = ({ isActive }: { isActive: boolean }) => {
+const SearchMockup = ({ isActive }: { isActive: boolean }) => {
   const [typedText, setTypedText] = useState("");
   const [showResults, setShowResults] = useState(false);
-  const fullText = "Find 50 SaaS founders in Europe with 10-50 employees";
+  const fullText = "Find heads of sales at NYC B2B SaaS companies with 10-100 employees hiring SDRs";
 
   useEffect(() => {
     if (!isActive) {
@@ -206,65 +88,56 @@ const AILeadDiscoveryMockup = ({ isActive }: { isActive: boolean }) => {
         index++;
       } else {
         clearInterval(typingInterval);
-        setTimeout(() => setShowResults(true), 500);
+        setTimeout(() => setShowResults(true), 350);
       }
-    }, 40);
+    }, 22);
 
     return () => clearInterval(typingInterval);
   }, [isActive]);
 
   return (
-    <div className="space-y-3 sm:space-y-4">
-      <div className="bg-background/50 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-4 border border-border/50">
-        <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-          <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
-            <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-primary-foreground" />
+    <div className="space-y-4">
+      <div className="bg-background/60 backdrop-blur-sm rounded-xl p-4 border border-border/50">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
+            <Sparkles className="w-4 h-4 text-primary-foreground" />
           </div>
-          <span className="text-xs sm:text-sm text-muted-foreground">AI Command</span>
+          <div>
+            <p className="text-sm font-medium">Plain-English query</p>
+            <p className="text-xs text-muted-foreground">Type who you want to reach</p>
+          </div>
         </div>
-        <div className="bg-muted/50 rounded-lg p-2 sm:p-3 min-h-[40px] sm:min-h-[48px] flex items-center">
-          <Search className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground mr-2 flex-shrink-0" />
-          <span className="text-foreground text-xs sm:text-sm break-words">{typedText}</span>
-          <span className={`w-0.5 h-4 sm:h-5 bg-primary ml-1 flex-shrink-0 ${isActive ? 'animate-pulse' : 'opacity-0'}`} />
+        <div className="bg-muted/40 rounded-lg p-3 min-h-[52px] flex items-center">
+          <Search className="w-4 h-4 text-muted-foreground mr-2 flex-shrink-0" />
+          <span className="text-sm text-foreground break-words">{typedText}</span>
+          <span className={`w-0.5 h-4 bg-primary ml-1 ${isActive ? 'animate-pulse' : 'opacity-0'}`} />
         </div>
       </div>
 
       <div className={`space-y-2 transition-all duration-500 ${showResults ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
         {[
-          { name: "Sarah Johnson", company: "TechFlow", role: "Founder & CEO" },
-          { name: "Marcus Chen", company: "DataSync", role: "Co-founder" },
+          { name: "Jordan Park", company: "Northline", role: "Head of Sales", fit: "High fit" },
+          { name: "Rina Shah", company: "SignalFox", role: "VP Revenue", fit: "Good fit" },
+          { name: "Alex Müller", company: "GraphiteIQ", role: "Director of Sales", fit: "Good fit" },
         ].map((lead, i) => (
-          <div 
-            key={i} 
-            className="bg-background/30 backdrop-blur-sm rounded-lg p-2 sm:p-3 border border-border/30 flex items-center gap-2 sm:gap-3 transition-all duration-300"
-            style={{ animationDelay: `${i * 100}ms` }}
-          >
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0">
-              <User className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+          <div key={i} className="bg-background/40 backdrop-blur-sm rounded-xl p-3 border border-border/30 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0">
+              <User className="w-5 h-5 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="font-medium text-xs sm:text-sm truncate">{lead.name}</div>
-              <div className="text-[10px] sm:text-xs text-muted-foreground truncate">{lead.role} at {lead.company}</div>
+              <div className="font-medium text-sm truncate">{lead.name}</div>
+              <div className="text-xs text-muted-foreground truncate">{lead.role} · {lead.company}</div>
             </div>
-            <div className="flex gap-1 flex-shrink-0">
-              <div className="w-5 h-5 sm:w-6 sm:h-6 rounded bg-primary/10 flex items-center justify-center">
-                <Linkedin className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-primary" />
-              </div>
-              <div className="w-5 h-5 sm:w-6 sm:h-6 rounded bg-primary/10 flex items-center justify-center">
-                <Mail className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-primary" />
-              </div>
+            <div className="px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
+              {lead.fit}
             </div>
           </div>
         ))}
-        <div className="text-center text-[10px] sm:text-xs text-muted-foreground pt-1 sm:pt-2">
-          Found 47 more matching leads...
-        </div>
       </div>
     </div>
   );
 };
 
-// Step 2: Smart Enrichment Mockup
 const EnrichmentMockup = ({ isActive }: { isActive: boolean }) => {
   const [enrichStage, setEnrichStage] = useState(0);
 
@@ -276,7 +149,6 @@ const EnrichmentMockup = ({ isActive }: { isActive: boolean }) => {
 
     const stages = [1, 2, 3, 4];
     let currentIndex = 0;
-
     const interval = setInterval(() => {
       if (currentIndex < stages.length) {
         setEnrichStage(stages[currentIndex]);
@@ -284,56 +156,48 @@ const EnrichmentMockup = ({ isActive }: { isActive: boolean }) => {
       } else {
         clearInterval(interval);
       }
-    }, 600);
+    }, 350);
 
     return () => clearInterval(interval);
   }, [isActive]);
 
   const enrichFields = [
-    { icon: Building2, label: "Company Size", value: "25 employees", stage: 1 },
-    { icon: Globe, label: "Website", value: "techflow.io", stage: 2 },
+    { icon: Building2, label: "Company Size", value: "45 employees", stage: 1 },
+    { icon: Globe, label: "Website", value: "northline.io", stage: 2 },
     { icon: Phone, label: "Phone", value: "+1 (555) 123-4567", stage: 3 },
-    { icon: Linkedin, label: "LinkedIn", value: "linkedin.com/in/sarah-j", stage: 4 },
+    { icon: Linkedin, label: "LinkedIn", value: "linkedin.com/in/jordan-park", stage: 4 },
   ];
 
   return (
-    <div className="bg-background/50 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-5 border border-border/50">
-      <div className="flex items-center gap-2 sm:gap-4 mb-3 sm:mb-4 pb-3 sm:pb-4 border-b border-border/30">
-        <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0">
-          <User className="w-5 h-5 sm:w-7 sm:h-7 text-primary" />
+    <div className="bg-background/60 backdrop-blur-sm rounded-xl p-5 border border-border/50">
+      <div className="flex items-center gap-4 mb-4 pb-4 border-b border-border/30">
+        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0">
+          <User className="w-7 h-7 text-primary" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="font-semibold text-sm sm:text-lg truncate">Sarah Johnson</div>
-          <div className="text-xs sm:text-sm text-muted-foreground truncate">Founder & CEO at TechFlow</div>
+          <div className="font-semibold text-lg truncate">Jordan Park</div>
+          <div className="text-sm text-muted-foreground truncate">Head of Sales at Northline</div>
         </div>
-        <div className="flex-shrink-0">
-          <div className={`px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-medium transition-all duration-300 ${
-            enrichStage >= 4 ? 'bg-green-500/20 text-green-400' : 'bg-primary/20 text-primary animate-pulse'
-          }`}>
-            {enrichStage >= 4 ? '✓ Enriched' : 'Enriching...'}
-          </div>
+        <div className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-300 ${
+          enrichStage >= 4 ? 'bg-green-500/20 text-green-400' : 'bg-primary/20 text-primary animate-pulse'
+        }`}>
+          {enrichStage >= 4 ? 'Ready' : 'Enriching'}
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:gap-3">
+      <div className="grid grid-cols-2 gap-3">
         {enrichFields.map((field, i) => (
-          <div 
+          <div
             key={i}
-            className={`p-2 sm:p-3 rounded-lg border transition-all duration-500 ${
-              enrichStage >= field.stage 
-                ? 'bg-primary/5 border-primary/30' 
-                : 'bg-muted/30 border-border/30'
+            className={`p-3 rounded-xl border transition-all duration-500 ${
+              enrichStage >= field.stage ? 'bg-primary/5 border-primary/30' : 'bg-muted/30 border-border/30'
             }`}
           >
-            <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
-              <field.icon className={`w-3 h-3 sm:w-4 sm:h-4 transition-colors flex-shrink-0 ${
-                enrichStage >= field.stage ? 'text-primary' : 'text-muted-foreground'
-              }`} />
-              <span className="text-[10px] sm:text-xs text-muted-foreground truncate">{field.label}</span>
+            <div className="flex items-center gap-2 mb-1">
+              <field.icon className={`w-4 h-4 ${enrichStage >= field.stage ? 'text-primary' : 'text-muted-foreground'}`} />
+              <span className="text-xs text-muted-foreground truncate">{field.label}</span>
             </div>
-            <div className={`text-xs sm:text-sm font-medium transition-all duration-300 truncate ${
-              enrichStage >= field.stage ? 'opacity-100' : 'opacity-0'
-            }`}>
+            <div className={`text-sm font-medium transition-all duration-300 ${enrichStage >= field.stage ? 'opacity-100' : 'opacity-0'}`}>
               {field.value}
             </div>
           </div>
@@ -343,69 +207,50 @@ const EnrichmentMockup = ({ isActive }: { isActive: boolean }) => {
   );
 };
 
-// Step 3: Pipeline Management Mockup
 const PipelineMockup = ({ isActive }: { isActive: boolean }) => {
-  const [movingDeal, setMovingDeal] = useState<number | null>(null);
   const [dealPosition, setDealPosition] = useState(0);
 
   useEffect(() => {
     if (!isActive) {
-      setMovingDeal(null);
       setDealPosition(0);
       return;
     }
 
-    const timeout = setTimeout(() => {
-      setMovingDeal(1);
-      setTimeout(() => {
-        setDealPosition(1);
-        setTimeout(() => setMovingDeal(null), 500);
-      }, 800);
-    }, 800);
-
+    const timeout = setTimeout(() => setDealPosition(1), 900);
     return () => clearTimeout(timeout);
   }, [isActive]);
 
   const stages = [
-    { name: "Qualified", deals: [{ id: 1, name: "TechFl...", value: "$25,000" }], color: "bg-blue-500" },
-    { name: "Meeting", deals: [{ id: 2, name: "DataSy...", value: "$18,000" }], color: "bg-yellow-500" },
+    { name: "Qualified", deals: [{ id: 1, name: "Northline", value: "$25,000" }], color: "bg-blue-500" },
+    { name: "Meeting", deals: [{ id: 2, name: "SignalFox", value: "$18,000" }], color: "bg-yellow-500" },
     { name: "Proposal", deals: [], color: "bg-purple-500" },
-    { name: "Closed", deals: [{ id: 3, name: "CloudB...", value: "$42,000" }], color: "bg-green-500" },
+    { name: "Closed", deals: [{ id: 3, name: "GraphiteIQ", value: "$42,000" }], color: "bg-green-500" },
   ];
 
   return (
-    <div className="grid grid-cols-4 gap-1 sm:gap-2">
+    <div className="grid grid-cols-4 gap-2">
       {stages.map((stage, stageIndex) => (
-        <div key={stageIndex} className="min-w-0">
-          <div className="flex items-center gap-1 mb-1 sm:mb-2">
-            <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0 ${stage.color}`} />
-            <span className="text-[9px] sm:text-xs font-medium truncate">{stage.name}</span>
+        <div key={stageIndex}>
+          <div className="flex items-center gap-1 mb-2">
+            <div className={`w-2 h-2 rounded-full ${stage.color}`} />
+            <span className="text-xs font-medium truncate">{stage.name}</span>
           </div>
-          <div className="bg-muted/30 rounded-md sm:rounded-lg p-1 sm:p-2 min-h-[60px] sm:min-h-[100px] border border-border/30 space-y-1 sm:space-y-2">
+          <div className="bg-muted/30 rounded-lg p-2 min-h-[110px] border border-border/30 space-y-2">
             {stage.deals.map((deal) => {
-              const isMoving = movingDeal === deal.id;
-              
               if (deal.id === 1 && stageIndex === 0 && dealPosition === 1) return null;
               if (deal.id === 1 && stageIndex === 1 && dealPosition === 0) return null;
 
               return (
-                <div 
-                  key={deal.id}
-                  className={`bg-background/80 rounded sm:rounded-md p-1 sm:p-2 border border-border/50 transition-all duration-500 ${
-                    isMoving ? 'scale-105 shadow-lg shadow-primary/20 border-primary/50' : ''
-                  }`}
-                >
-                  <div className="font-medium text-[8px] sm:text-xs truncate">{deal.name}</div>
-                  <div className="text-[8px] sm:text-xs text-primary">{deal.value}</div>
+                <div key={deal.id} className="bg-background/80 rounded-md p-2 border border-border/50 transition-all duration-500">
+                  <div className="font-medium text-xs truncate">{deal.name}</div>
+                  <div className="text-xs text-primary">{deal.value}</div>
                 </div>
               );
             })}
-            {stages[1].deals.length === 1 && stageIndex === 1 && dealPosition === 1 && (
-              <div 
-                className="bg-background/80 rounded sm:rounded-md p-1 sm:p-2 border border-primary/50 shadow-lg shadow-primary/20 animate-fade-in"
-              >
-                <div className="font-medium text-[8px] sm:text-xs truncate">TechFl...</div>
-                <div className="text-[8px] sm:text-xs text-primary">$25,000</div>
+            {stageIndex === 1 && dealPosition === 1 && (
+              <div className="bg-background/80 rounded-md p-2 border border-primary/50 shadow-lg shadow-primary/20 animate-fade-in">
+                <div className="font-medium text-xs truncate">Northline</div>
+                <div className="text-xs text-primary">$25,000</div>
               </div>
             )}
           </div>
@@ -415,67 +260,57 @@ const PipelineMockup = ({ isActive }: { isActive: boolean }) => {
   );
 };
 
-// Step 4: AI Outreach Mockup
 const OutreachMockup = ({ isActive }: { isActive: boolean }) => {
-  const [showEmail, setShowEmail] = useState(false);
   const [emailLines, setEmailLines] = useState(0);
 
   useEffect(() => {
     if (!isActive) {
-      setShowEmail(false);
       setEmailLines(0);
       return;
     }
 
-    setTimeout(() => setShowEmail(true), 400);
-
     const lineInterval = setInterval(() => {
-      setEmailLines(prev => {
+      setEmailLines((prev) => {
         if (prev >= 4) {
           clearInterval(lineInterval);
           return prev;
         }
         return prev + 1;
       });
-    }, 400);
+    }, 300);
 
     return () => clearInterval(lineInterval);
   }, [isActive]);
 
   const emailContent = [
-    "Hi Sarah,",
-    "I noticed TechFlow just raised Series A - congratulations!",
-    "Many fast-growing SaaS companies like yours use SalesOS to",
-    "scale their outreach. Would you be open to a quick chat?",
+    "Hey Jordan — noticed Northline is hiring SDRs and growing the sales team in NYC.",
+    "That usually means more pressure to build a repeatable prospecting workflow fast.",
+    "SalesOS helps teams describe their ICP in plain English, find better-fit leads, and move into outreach faster.",
+    "If helpful, I can show you what that workflow could look like for a team like yours.",
   ];
 
   return (
-    <div className="bg-background/50 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border/50 overflow-hidden">
-      <div className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-3 border-b border-border/30 bg-muted/30">
-        <Mail className="w-3 h-3 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
-        <span className="text-xs sm:text-sm font-medium">AI-Generated Email</span>
-        <div className="ml-auto flex items-center gap-1 sm:gap-1.5">
-          <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-primary animate-pulse" />
-          <span className="text-[10px] sm:text-xs text-muted-foreground">Personalized</span>
+    <div className="bg-background/60 backdrop-blur-sm rounded-xl border border-border/50 overflow-hidden">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-border/30 bg-muted/30">
+        <Mail className="w-4 h-4 text-primary" />
+        <span className="text-sm font-medium">Outreach draft</span>
+        <div className="ml-auto flex items-center gap-1.5 text-xs text-primary">
+          <Sparkles className="w-3 h-3" />
+          Personalized
         </div>
       </div>
-      <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
-        <div className="flex items-center gap-2 text-xs sm:text-sm">
+      <div className="p-4 space-y-3">
+        <div className="flex items-center gap-2 text-sm">
           <span className="text-muted-foreground">To:</span>
-          <span className="text-foreground truncate">sarah@techflow.io</span>
+          <span className="text-foreground truncate">jordan@northline.io</span>
         </div>
-        <div className="flex items-center gap-2 text-xs sm:text-sm">
+        <div className="flex items-center gap-2 text-sm">
           <span className="text-muted-foreground flex-shrink-0">Subject:</span>
-          <span className="text-foreground truncate">Quick question about TechFlow</span>
+          <span className="text-foreground truncate">Quick idea for Northline's outbound hiring push</span>
         </div>
-        <div className={`pt-2 sm:pt-3 border-t border-border/30 space-y-1.5 sm:space-y-2 transition-opacity duration-300 ${showEmail ? 'opacity-100' : 'opacity-0'}`}>
+        <div className="pt-3 border-t border-border/30 space-y-2">
           {emailContent.map((line, i) => (
-            <p 
-              key={i}
-              className={`text-xs sm:text-sm transition-all duration-300 ${
-                i < emailLines ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
-              }`}
-            >
+            <p key={i} className={`text-sm transition-all duration-300 ${i < emailLines ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
               {line}
             </p>
           ))}
@@ -485,7 +320,6 @@ const OutreachMockup = ({ isActive }: { isActive: boolean }) => {
   );
 };
 
-// Step 5: Analytics Mockup
 const AnalyticsMockup = ({ isActive }: { isActive: boolean }) => {
   const [animatedValues, setAnimatedValues] = useState({ leads: 0, meetings: 0, revenue: 0, rate: 0 });
 
@@ -496,8 +330,8 @@ const AnalyticsMockup = ({ isActive }: { isActive: boolean }) => {
     }
 
     const targets = { leads: 247, meetings: 34, revenue: 89, rate: 32 };
-    const duration = 1500;
-    const steps = 30;
+    const duration = 1200;
+    const steps = 24;
     const interval = duration / steps;
 
     let step = 0;
@@ -524,31 +358,26 @@ const AnalyticsMockup = ({ isActive }: { isActive: boolean }) => {
   ];
 
   return (
-    <div className="space-y-3 sm:space-y-4">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {stats.map((stat, i) => (
-          <div key={i} className="bg-background/50 backdrop-blur-sm rounded-md sm:rounded-lg p-2 sm:p-3 border border-border/50 text-center">
-            <div className={`text-sm sm:text-lg font-bold ${stat.color}`}>
-              {stat.prefix}{stat.value}{stat.suffix}
-            </div>
-            <div className="text-[10px] sm:text-xs text-muted-foreground">{stat.label}</div>
+          <div key={i} className="bg-background/60 backdrop-blur-sm rounded-lg p-3 border border-border/50 text-center">
+            <div className={`text-lg font-bold ${stat.color}`}>{stat.prefix}{stat.value}{stat.suffix}</div>
+            <div className="text-xs text-muted-foreground">{stat.label}</div>
           </div>
         ))}
       </div>
-      <div className="bg-background/50 backdrop-blur-sm rounded-md sm:rounded-lg p-3 sm:p-4 border border-border/50">
-        <div className="flex items-center gap-2 mb-2 sm:mb-3">
-          <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-green-400" />
-          <span className="text-xs sm:text-sm font-medium">Monthly Growth</span>
+      <div className="bg-background/60 backdrop-blur-sm rounded-lg p-4 border border-border/50">
+        <div className="flex items-center gap-2 mb-3">
+          <TrendingUp className="w-4 h-4 text-green-400" />
+          <span className="text-sm font-medium">Monthly growth</span>
         </div>
-        <div className="flex items-end gap-0.5 sm:gap-1 h-12 sm:h-16">
+        <div className="flex items-end gap-1 h-16">
           {[40, 55, 45, 65, 50, 80, 70, 95].map((height, i) => (
-            <div 
-              key={i} 
+            <div
+              key={i}
               className="flex-1 bg-gradient-to-t from-primary/80 to-primary/20 rounded-t transition-all duration-500"
-              style={{ 
-                height: isActive ? `${height}%` : '10%',
-                transitionDelay: `${i * 80}ms`
-              }}
+              style={{ height: isActive ? `${height}%` : '10%', transitionDelay: `${i * 70}ms` }}
             />
           ))}
         </div>
@@ -557,7 +386,6 @@ const AnalyticsMockup = ({ isActive }: { isActive: boolean }) => {
   );
 };
 
-// Step 6: AI Coach Mockup
 const CoachMockup = ({ isActive }: { isActive: boolean }) => {
   const [messages, setMessages] = useState<number[]>([]);
 
@@ -567,43 +395,31 @@ const CoachMockup = ({ isActive }: { isActive: boolean }) => {
       return;
     }
 
-    const delays = [400, 1200, 2000];
-    const timeouts = delays.map((delay, i) => 
-      setTimeout(() => setMessages(prev => [...prev, i]), delay)
-    );
-
+    const delays = [250, 800, 1350];
+    const timeouts = delays.map((delay, i) => setTimeout(() => setMessages((prev) => [...prev, i]), delay));
     return () => timeouts.forEach(clearTimeout);
   }, [isActive]);
 
   const chatMessages = [
-    { type: "user", text: "How can I improve my close rate?" },
-    { type: "ai", text: "Based on your data, deals with 3+ touchpoints close 40% more often. I recommend adding a discovery call before proposals." },
-    { type: "ai", text: "Also, your fastest-closing deals mention ROI within the first email. Consider leading with value metrics." },
+    { type: "user", text: "Where are deals slowing down?" },
+    { type: "ai", text: "Most friction is between first reply and booked meeting. Teams usually improve this by tightening follow-up timing and CTA clarity." },
+    { type: "ai", text: "Your best-fit leads also mention concrete ROI earlier. Consider pushing that higher in the outreach sequence." },
   ];
 
   return (
-    <div className="bg-background/50 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border/50 overflow-hidden">
-      <div className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-3 border-b border-border/30 bg-muted/30">
-        <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
-        <span className="text-xs sm:text-sm font-medium">AI Sales Coach</span>
+    <div className="bg-background/60 backdrop-blur-sm rounded-xl border border-border/50 overflow-hidden">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-border/30 bg-muted/30">
+        <MessageSquare className="w-4 h-4 text-primary" />
+        <span className="text-sm font-medium">AI workflow guidance</span>
       </div>
-      <div className="p-3 sm:p-4 space-y-2 sm:space-y-3 min-h-[120px] sm:min-h-[160px]">
+      <div className="p-4 space-y-3 min-h-[180px]">
         {chatMessages.map((msg, i) => (
-          <div 
-            key={i}
-            className={`flex transition-all duration-500 ${
-              messages.includes(i) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-            } ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
-          >
-            <div className={`max-w-[90%] sm:max-w-[85%] rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm ${
-              msg.type === 'user' 
-                ? 'bg-primary text-primary-foreground' 
-                : 'bg-muted/50 border border-border/50'
-            }`}>
+          <div key={i} className={`flex transition-all duration-500 ${messages.includes(i) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'} ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${msg.type === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted/50 border border-border/50'}`}>
               {msg.type === 'ai' && (
-                <div className="flex items-center gap-1 sm:gap-1.5 mb-0.5 sm:mb-1">
-                  <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-primary" />
-                  <span className="text-[10px] sm:text-xs text-primary font-medium">AI Coach</span>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Sparkles className="w-3 h-3 text-primary" />
+                  <span className="text-xs text-primary font-medium">AI guidance</span>
                 </div>
               )}
               {msg.text}
@@ -615,7 +431,6 @@ const CoachMockup = ({ isActive }: { isActive: boolean }) => {
   );
 };
 
-// End Screen CTA Mockup
 const EndScreenMockup = ({ isActive }: { isActive: boolean }) => {
   const [showElements, setShowElements] = useState(0);
 
@@ -626,77 +441,52 @@ const EndScreenMockup = ({ isActive }: { isActive: boolean }) => {
     }
 
     const timers = [
-      setTimeout(() => setShowElements(1), 200),
-      setTimeout(() => setShowElements(2), 500),
-      setTimeout(() => setShowElements(3), 800),
-      setTimeout(() => setShowElements(4), 1100),
+      setTimeout(() => setShowElements(1), 180),
+      setTimeout(() => setShowElements(2), 420),
+      setTimeout(() => setShowElements(3), 680),
     ];
 
     return () => timers.forEach(clearTimeout);
   }, [isActive]);
 
   const benefits = [
-    "AI-powered lead discovery",
-    "Smart data enrichment",
-    "Intelligent pipeline management",
-    "Personalized outreach at scale",
+    "Plain-English lead discovery",
+    "Lead enrichment and prioritization",
+    "Personalized outreach workflow",
+    "Clearer pipeline visibility",
   ];
 
   return (
-    <div className="space-y-4 sm:space-y-6 text-center py-4">
-      {/* Main CTA heading */}
+    <div className="space-y-6 text-center py-4">
       <div className={`transition-all duration-500 ${showElements >= 1 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-        <img 
-          src="/salesos-logo-small.webp" 
-          alt="SalesOS" 
-          width="64"
-          height="64"
-          className="h-12 sm:h-16 w-auto mx-auto mb-4"
-        />
-        <h3 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2">
-          Want this workflow for your team?
-        </h3>
+        <img src="/salesos-logo-small.webp" alt="SalesOS" width="64" height="64" className="h-16 w-auto mx-auto mb-4" />
+        <h3 className="text-2xl md:text-3xl font-bold mb-2">Ready to run the workflow live?</h3>
         <p className="text-sm sm:text-base text-muted-foreground max-w-md mx-auto">
-          Choose the SalesOS plan that matches your prospecting volume and outbound motion.
+          If the product motion makes sense, pick the SalesOS plan that matches your prospecting volume and team size.
         </p>
       </div>
 
-      {/* Benefits checklist */}
-      <div className={`flex flex-wrap justify-center gap-2 sm:gap-3 transition-all duration-500 ${showElements >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+      <div className={`flex flex-wrap justify-center gap-3 transition-all duration-500 ${showElements >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
         {benefits.map((benefit, i) => (
-          <div
-            key={i}
-            className="flex items-center gap-1.5 bg-primary/10 border border-primary/20 rounded-full px-3 py-1.5"
-            style={{ transitionDelay: `${i * 100}ms` }}
-          >
+          <div key={i} className="flex items-center gap-1.5 bg-primary/10 border border-primary/20 rounded-full px-3 py-1.5">
             <CheckCircle2 className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-            <span className="text-xs sm:text-sm font-medium">{benefit}</span>
+            <span className="text-sm font-medium">{benefit}</span>
           </div>
         ))}
       </div>
 
-      {/* CTA Button */}
       <div className={`flex items-center justify-center pt-2 transition-all duration-500 ${showElements >= 3 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-        <a
-          href="/pricing"
-          className="inline-flex items-center gap-2 bg-gradient-to-r from-primary to-accent text-primary-foreground font-semibold px-8 py-3 rounded-xl hover:opacity-90 transition-opacity shadow-lg shadow-primary/25"
-        >
+        <a href="/pricing" className="inline-flex items-center gap-2 bg-gradient-to-r from-primary to-accent text-primary-foreground font-semibold px-8 py-3 rounded-xl hover:opacity-90 transition-opacity shadow-lg shadow-primary/25">
           View plans
           <ArrowRight className="w-4 h-4" />
         </a>
-      </div>
-
-      {/* Trust indicator */}
-      <div className={`text-xs text-muted-foreground transition-all duration-500 ${showElements >= 4 ? 'opacity-100' : 'opacity-0'}`}>
-        Plans from $39/month • Sample workflow available • Cancel anytime
       </div>
     </div>
   );
 };
 
 const mockupComponents = [
-  IntroMockup,
-  AILeadDiscoveryMockup,
+  SearchMockup,
   EnrichmentMockup,
   PipelineMockup,
   OutreachMockup,
@@ -705,504 +495,159 @@ const mockupComponents = [
   EndScreenMockup,
 ];
 
-// Audio waveform visualization component
-const AudioWaveform = ({ isPlaying }: { isPlaying: boolean }) => {
-  return (
-    <div className="flex items-center gap-0.5 h-4">
-      {[0.4, 0.7, 0.5, 0.9, 0.6, 0.8, 0.5].map((height, i) => (
-        <div
-          key={i}
-          className={`w-0.5 bg-primary rounded-full transition-all duration-150 ${
-            isPlaying ? 'animate-pulse' : ''
-          }`}
-          style={{
-            height: isPlaying ? `${height * 100}%` : '20%',
-            animationDelay: `${i * 100}ms`,
-          }}
-        />
-      ))}
-    </div>
-  );
-};
-
 export const Demo = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [stepProgress, setStepProgress] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  
+
   const sectionRef = useRef<HTMLElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  
-  // Local podcast audio file
-  const PODCAST_AUDIO_URL = "/audio/demo-podcast.mp3";
-  
-  // Duration per slide = time between timestamps (or 15s default)
-  const getStepDuration = useCallback((stepIndex: number) => {
-    const currentStart = SLIDE_TIMESTAMPS[stepIndex] || 0;
-    const nextStart = SLIDE_TIMESTAMPS[stepIndex + 1];
-    if (nextStart !== undefined) {
-      return (nextStart - currentStart) * 1000; // Convert to ms
-    }
-    return 15000; // Default 15 seconds for last slide
-  }, []);
+  const autoAdvanceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const progressRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const stepDuration = 4200;
 
-  // Start/resume audio playback at specific timestamp
-  const startAudio = useCallback((seekToStep?: number) => {
-    if (isMuted) return;
-
-    if (!audioRef.current) {
-      const audio = new Audio(PODCAST_AUDIO_URL);
-      audio.loop = false; // Don't loop - we'll handle slide transitions
-      audioRef.current = audio;
-
-      audio.onplay = () => setIsAudioPlaying(true);
-      audio.onpause = () => setIsAudioPlaying(false);
-      audio.onended = () => setIsAudioPlaying(false);
-      audio.onerror = () => setIsAudioPlaying(false);
-    }
-
-    // Seek to the correct timestamp for the current slide
-    if (seekToStep !== undefined) {
-      const timestamp = SLIDE_TIMESTAMPS[seekToStep] || 0;
-      audioRef.current.currentTime = timestamp;
-    }
-
-    audioRef.current.play().catch((error) => {
-      console.error("Audio playback failed:", error);
-    });
-  }, [isMuted]);
-
-  // Pause audio playback
-  const pauseAudio = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
-  }, []);
-
-
-  // Intersection observer
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) {
-          setIsVisible(true);
-        }
+        if (entries[0].isIntersecting) setIsVisible(true);
       },
       { threshold: 0.2 }
     );
 
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
+    if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
   }, []);
 
-  // Progress bar animation
   useEffect(() => {
     if (!isPlaying || !isVisible) {
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-      }
+      if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current);
+      if (progressRef.current) clearInterval(progressRef.current);
       return;
     }
 
-    const stepDuration = getStepDuration(currentStep);
     setStepProgress(0);
     const startTime = Date.now();
 
-    progressIntervalRef.current = setInterval(() => {
+    progressRef.current = setInterval(() => {
       const elapsed = Date.now() - startTime;
       const progress = Math.min((elapsed / stepDuration) * 100, 100);
       setStepProgress(progress);
-    }, 50);
+    }, 40);
 
-    return () => {
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-      }
-    };
-  }, [currentStep, isPlaying, isVisible, getStepDuration]);
-
-  // Auto-advance steps synced with audio timestamps
-  useEffect(() => {
-    if (!isPlaying || !isVisible) return;
-
-    const stepDuration = getStepDuration(currentStep);
-
-    const timeout = setTimeout(() => {
+    autoAdvanceRef.current = setTimeout(() => {
       setIsTransitioning(true);
       setTimeout(() => {
-        const nextStep = (currentStep + 1) % demoSteps.length;
-        setCurrentStep(nextStep);
+        setCurrentStep((prev) => (prev + 1) % demoSteps.length);
         setIsTransitioning(false);
-        // Seek audio to the next slide's timestamp
-        if (audioRef.current && !isMuted) {
-          audioRef.current.currentTime = SLIDE_TIMESTAMPS[nextStep] || 0;
-        }
-      }, 300);
+      }, 220);
     }, stepDuration);
 
-    return () => clearTimeout(timeout);
-  }, [isPlaying, isVisible, currentStep, getStepDuration, isMuted]);
-
-  // No longer needed - we use a single podcast audio that plays continuously
-
-  // Handle mute toggle and play state - sync audio to current step
-  useEffect(() => {
-    if (isMuted || !isPlaying) {
-      pauseAudio();
-    } else if (isPlaying && !isMuted) {
-      startAudio(currentStep);
-    }
-  }, [isMuted, isPlaying, startAudio, pauseAudio]);
-
-  // Cleanup audio on unmount
-  useEffect(() => {
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
+      if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current);
+      if (progressRef.current) clearInterval(progressRef.current);
     };
-  }, []);
-
-  // Fullscreen handling
-  const toggleFullscreen = useCallback(() => {
-    if (!containerRef.current) return;
-
-    if (!isFullscreen) {
-      if (containerRef.current.requestFullscreen) {
-        containerRef.current.requestFullscreen();
-      }
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      }
-    }
-  }, [isFullscreen]);
-
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
-
-  const handleTogglePlay = useCallback(() => {
-    if (!isPlaying) {
-      setIsPlaying(true);
-      if (!isMuted) {
-        startAudio(currentStep);
-      }
-    } else {
-      setIsPlaying(false);
-      pauseAudio();
-    }
-  }, [isPlaying, isMuted, startAudio, pauseAudio, currentStep]);
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeydown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isFullscreen) {
-        document.exitFullscreen();
-      } else if (e.key === ' ') {
-        e.preventDefault();
-        handleTogglePlay();
-      } else if (e.key === 'm') {
-        setIsMuted(prev => !prev);
-      } else if (e.key === 'ArrowRight') {
-        nextStep();
-      } else if (e.key === 'ArrowLeft') {
-        prevStep();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeydown);
-    return () => window.removeEventListener('keydown', handleKeydown);
-  }, [isFullscreen, handleTogglePlay]);
+  }, [currentStep, isPlaying, isVisible]);
 
   const goToStep = (index: number) => {
     setIsTransitioning(true);
     setTimeout(() => {
       setCurrentStep(index);
       setIsTransitioning(false);
-      // Seek audio to the selected slide's timestamp
-      if (audioRef.current) {
-        audioRef.current.currentTime = SLIDE_TIMESTAMPS[index] || 0;
-      }
-      if (isPlaying && !isMuted) {
-        startAudio(index);
-      }
-    }, 300);
+    }, 220);
   };
 
-  const nextStep = () => {
-    setIsTransitioning(true);
-    setTimeout(() => {
-      const next = (currentStep + 1) % demoSteps.length;
-      setCurrentStep(next);
-      setIsTransitioning(false);
-      // Seek audio to the next slide's timestamp
-      if (audioRef.current) {
-        audioRef.current.currentTime = SLIDE_TIMESTAMPS[next] || 0;
-      }
-      if (isPlaying && !isMuted) {
-        startAudio(next);
-      }
-    }, 300);
-  };
-
-  const prevStep = () => {
-    setIsTransitioning(true);
-    setTimeout(() => {
-      const prev = (currentStep - 1 + demoSteps.length) % demoSteps.length;
-      setCurrentStep(prev);
-      setIsTransitioning(false);
-      // Seek audio to the previous slide's timestamp
-      if (audioRef.current) {
-        audioRef.current.currentTime = SLIDE_TIMESTAMPS[prev] || 0;
-      }
-      if (isPlaying && !isMuted) {
-        startAudio(prev);
-      }
-    }, 300);
-  };
+  const nextStep = () => goToStep((currentStep + 1) % demoSteps.length);
+  const prevStep = () => goToStep((currentStep - 1 + demoSteps.length) % demoSteps.length);
 
   const CurrentMockup = mockupComponents[currentStep];
   const currentStepData = demoSteps[currentStep];
 
   return (
-    <section 
-      ref={sectionRef} 
-      id="demo" 
-      className={`py-12 sm:py-16 md:py-28 bg-background relative overflow-hidden transition-all duration-500 ${
-        isFullscreen ? 'fixed inset-0 z-50 py-0 flex items-center justify-center bg-black' : ''
-      }`}
-    >
-      {/* Top hairline separator */}
-      {!isFullscreen && (
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
-      )}
-      
-      {/* Background accent - more subtle */}
+    <section ref={sectionRef} id="demo" className="py-10 sm:py-14 md:py-20 bg-background relative overflow-hidden transition-all duration-500">
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-primary/3 rounded-full blur-[120px]" />
         <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-primary/2 rounded-full blur-[100px]" />
       </div>
 
-      <div 
-        ref={containerRef}
-        className={`container mx-auto px-4 sm:px-6 relative ${
-          isFullscreen ? 'max-w-6xl w-full h-full flex flex-col justify-center' : ''
-        }`}
-      >
-        {!isFullscreen && (
-          <div className={`text-center mb-8 sm:mb-12 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-            <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 mb-4">
-              <Play className="w-3 h-3 text-primary" />
-              <span className="text-xs font-medium text-primary">Watch Demo</span>
-            </div>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4">
-              See SalesOS
-              <span className="text-gradient-animated"> In Action</span>
-            </h2>
-            <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-2">
-              Explore how top sales teams are using SalesOS to close more deals
-            </p>
-          </div>
-        )}
-
-        <div className={`mx-auto ${isFullscreen ? 'w-full max-w-5xl' : 'max-w-[calc(100vw-2rem)] sm:max-w-2xl md:max-w-3xl lg:max-w-4xl'}`}>
-          <Card 
-            className={`overflow-hidden bg-card border-border relative transition-all duration-700 delay-200 ${
-              isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
-            } ${isFullscreen ? 'border-0 rounded-none bg-black/95' : 'rounded-xl sm:rounded-2xl'}`}
-          >
-            {/* Video-like progress bar */}
+      <div className="container mx-auto px-4 sm:px-6 relative">
+        <div className="mx-auto max-w-5xl">
+          <Card className={`overflow-hidden bg-card border-border relative transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'} rounded-2xl sm:rounded-3xl`}>
             <div className="h-1 bg-muted/30 relative overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-100 ease-linear"
-                style={{ width: `${stepProgress}%` }}
-              />
-              {/* Step markers */}
-              <div className="absolute inset-0 flex">
-                {demoSteps.map((_, i) => (
-                  <div
-                    key={i}
-                    className={`flex-1 border-r border-background/50 last:border-r-0 ${
-                      i < currentStep ? 'bg-primary/30' : ''
-                    }`}
-                  />
-                ))}
-              </div>
+              <div className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-100 ease-linear" style={{ width: `${stepProgress}%` }} />
             </div>
 
-            {/* Header with step info */}
-            <div className="flex items-center justify-between p-3 sm:p-4 border-b border-border/50 bg-muted/30">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
-                  <currentStepData.icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
+            <div className="flex items-center justify-between p-4 sm:p-5 border-b border-border/50 bg-muted/30">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
+                  <currentStepData.icon className="w-5 h-5 text-primary-foreground" />
                 </div>
                 <div className="min-w-0">
-                  <div className="font-semibold text-sm sm:text-base truncate">{currentStepData.title}</div>
-                  <div className="text-xs sm:text-sm text-muted-foreground">Step {currentStep + 1} of {demoSteps.length}</div>
+                  <div className="font-semibold text-base truncate">{currentStepData.title}</div>
+                  <div className="text-sm text-muted-foreground">Step {currentStep + 1} of {demoSteps.length}</div>
                 </div>
               </div>
-              
-              {/* Control buttons */}
-              <div className="flex items-center gap-1 sm:gap-2">
-                {/* Audio indicator */}
-                {isAudioPlaying && (
-                  <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded-full mr-1">
-                    <AudioLines className="w-3 h-3 text-primary" />
-                    <AudioWaveform isPlaying={isAudioPlaying} />
-                  </div>
-                )}
-                
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsMuted(!isMuted)}
-                  className="text-muted-foreground hover:text-foreground h-8 w-8"
-                >
-                  {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleTogglePlay}
-                  className="text-muted-foreground hover:text-foreground h-8 w-8"
-                >
-                  {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={toggleFullscreen}
-                  className="text-muted-foreground hover:text-foreground h-8 w-8 hidden sm:flex"
-                >
-                  {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
-                </Button>
-              </div>
+
+              <Button variant="ghost" size="sm" onClick={() => setIsPlaying((prev) => !prev)} className="flex items-center gap-2">
+                {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                <span className="hidden sm:inline">{isPlaying ? 'Pause' : 'Auto-play'}</span>
+              </Button>
             </div>
 
-            {/* Main demo area */}
-            <div className={`p-3 sm:p-4 md:p-6 bg-gradient-to-b from-background to-muted/20 relative overflow-hidden ${
-              isFullscreen ? 'min-h-[400px] sm:min-h-[500px]' : 'min-h-[260px] sm:min-h-[280px] md:min-h-[320px]'
-            }`}>
-              <div className="mb-2 sm:mb-3 md:mb-4">
-                <p className="text-xs sm:text-sm md:text-base text-muted-foreground line-clamp-2">{currentStepData.description}</p>
+            <div className="p-4 sm:p-6 md:p-8 bg-gradient-to-b from-background to-muted/20 relative overflow-hidden min-h-[360px] sm:min-h-[420px] md:min-h-[460px]">
+              <div className="mb-5 sm:mb-6">
+                <p className="text-sm sm:text-base text-muted-foreground max-w-2xl">{currentStepData.description}</p>
               </div>
               <div className={`transition-all duration-300 ${isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
                 <CurrentMockup isActive={isVisible && !isTransitioning} />
               </div>
-              
-              {/* Synced captions overlay */}
-              {isPlaying && !isMuted && currentStepData.caption && (
-                <div className="absolute bottom-2 left-2 right-2 sm:bottom-4 sm:left-4 sm:right-4 md:bottom-6 md:left-6 md:right-6">
-                  <div className={`bg-black/80 backdrop-blur-sm rounded-lg px-2 py-1.5 sm:px-3 sm:py-2 md:px-4 md:py-3 transition-all duration-500 ${
-                    isTransitioning ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'
-                  }`}>
-                    <p className="text-white text-[10px] sm:text-xs md:text-sm leading-relaxed text-center line-clamp-3">
-                      {currentStepData.caption}
-                    </p>
-                  </div>
-                </div>
-              )}
             </div>
 
-            {/* Navigation with feature icons */}
             <div className="border-t border-border/50 bg-muted/30">
-              {/* Feature icon navigation */}
-              {!isFullscreen && (
-                <div className="px-2 sm:px-3 md:px-4 pt-2 sm:pt-3 md:pt-4">
-                  <div className="flex items-center justify-center gap-0.5 sm:gap-1 md:gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1">
-                    {demoSteps.map((step, index) => (
-                      <button
-                        key={step.id}
-                        onClick={() => goToStep(index)}
-                        className={`flex flex-col items-center gap-0.5 sm:gap-1 p-1 sm:p-1.5 md:p-2 rounded-lg transition-all duration-300 min-w-[40px] sm:min-w-[48px] md:min-w-[56px] flex-shrink-0 ${
-                          index === currentStep
-                            ? 'bg-primary/15 scale-105'
-                            : 'hover:bg-muted/50'
-                        }`}
-                      >
-                        <div className={`w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 rounded-md sm:rounded-lg flex items-center justify-center transition-colors ${
-                          index === currentStep 
-                            ? 'bg-primary text-primary-foreground' 
-                            : index < currentStep
-                            ? 'bg-primary/30 text-primary'
-                            : 'bg-muted text-muted-foreground'
-                        }`}>
-                          <step.icon className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4" />
-                        </div>
-                        <span className={`text-[7px] sm:text-[8px] md:text-[10px] font-medium truncate max-w-[36px] sm:max-w-[44px] md:max-w-[50px] ${
-                          index === currentStep ? 'text-primary' : 'text-muted-foreground'
-                        }`}>
-                          {step.title.split(' ')[0]}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
+              <div className="px-3 sm:px-4 pt-4">
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2">
+                  {demoSteps.map((step, index) => (
+                    <button
+                      key={step.id}
+                      onClick={() => goToStep(index)}
+                      className={`flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all duration-300 ${
+                        index === currentStep ? 'bg-primary/15 scale-[1.02]' : 'hover:bg-muted/50'
+                      }`}
+                    >
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${
+                        index === currentStep
+                          ? 'bg-primary text-primary-foreground'
+                          : index < currentStep
+                          ? 'bg-primary/30 text-primary'
+                          : 'bg-muted text-muted-foreground'
+                      }`}>
+                        <step.icon className="w-4 h-4" />
+                      </div>
+                      <span className={`text-[10px] sm:text-xs font-medium text-center leading-tight ${index === currentStep ? 'text-primary' : 'text-muted-foreground'}`}>
+                        {step.title}
+                      </span>
+                    </button>
+                  ))}
                 </div>
-              )}
-              
-              {/* Prev/Next controls */}
-              <div className="flex items-center justify-between p-2 sm:p-3 md:p-4">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={prevStep}
-                  className="flex items-center gap-1 text-xs px-2 h-8"
-                >
-                  <ChevronLeft className="w-3 h-3 sm:w-4 sm:h-4" />
-                  <span className="hidden sm:inline text-xs">Previous</span>
+              </div>
+
+              <div className="flex items-center justify-between p-4">
+                <Button variant="ghost" size="sm" onClick={prevStep} className="flex items-center gap-1.5">
+                  <ChevronLeft className="w-4 h-4" />
+                  <span className="hidden sm:inline">Previous</span>
                 </Button>
 
-                {/* Step counter */}
-                <span className="text-[10px] sm:text-xs md:text-sm text-muted-foreground">
-                  {currentStep + 1} / {demoSteps.length}
-                </span>
+                <span className="text-xs sm:text-sm text-muted-foreground">{currentStep + 1} / {demoSteps.length}</span>
 
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={nextStep}
-                  className="flex items-center gap-1 text-xs px-2 h-8"
-                >
-                  <span className="hidden sm:inline text-xs">Next</span>
-                  <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4" />
+                <Button variant="ghost" size="sm" onClick={nextStep} className="flex items-center gap-1.5">
+                  <span className="hidden sm:inline">Next</span>
+                  <ChevronRight className="w-4 h-4" />
                 </Button>
               </div>
             </div>
           </Card>
-
-          {/* Keyboard shortcuts hint */}
-          {isFullscreen && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-4 text-xs text-muted-foreground bg-black/50 rounded-full px-4 py-2">
-              <span><kbd className="bg-muted/30 px-1.5 py-0.5 rounded">Space</kbd> Play/Pause</span>
-              <span><kbd className="bg-muted/30 px-1.5 py-0.5 rounded">M</kbd> Mute</span>
-              <span><kbd className="bg-muted/30 px-1.5 py-0.5 rounded">←</kbd><kbd className="bg-muted/30 px-1.5 py-0.5 rounded ml-0.5">→</kbd> Navigate</span>
-              <span><kbd className="bg-muted/30 px-1.5 py-0.5 rounded">Esc</kbd> Exit</span>
-            </div>
-          )}
         </div>
       </div>
-      
-      {/* Bottom hairline separator */}
-      {!isFullscreen && (
-        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
-      )}
     </section>
   );
 };
