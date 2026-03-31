@@ -45,6 +45,17 @@ BREVITY — non-negotiable hard limits:
 - No filler transitions between sentences (no "Additionally,", "Furthermore,", "With that in mind,").
 - No paragraph should be more than 2 sentences.`;
 
+const ELITE_OUTBOUND_RULES = `
+ELITE OUTBOUND STYLE:
+- Sound like a sharp operator who understands revenue motion, not a marketing intern.
+- Lead with relevance, not flattery.
+- Use plain language a real seller would actually send from their inbox.
+- One clear idea per email. No stacking claims.
+- CTA should feel easy to answer in 2 seconds.
+- Avoid generic asks like "Can I get 15 minutes?" unless it is the clearest possible close.
+- Prefer low-friction CTAs such as "worth a look?", "open to seeing it?", "should I send the 2-minute breakdown?", or "worth comparing to your current process?" when appropriate.
+- Never sound needy, overexcited, or hype-y.`;
+
 const SIGNOFF_RULES = `
 FORMAT:
 - Greeting: "Hi {firstName}," — nothing else on that line.
@@ -109,7 +120,7 @@ STRUCTURE — exactly 4 sentences in the body (not counting greeting and sign-of
 2. PAIN: One sentence naming the specific pressure or friction that observation creates for someone in their role.
 3. SOLUTION: One sentence explaining what you do and how it directly addresses that pain.
 4. CTA: One soft question. "Worth 15 min?", "Open to a quick look?", "Want to see how it works?"
-${BREVITY_RULES}${PERSONALIZATION_RULES}${BANNED_PHRASES}
+${BREVITY_RULES}${ELITE_OUTBOUND_RULES}${PERSONALIZATION_RULES}${BANNED_PHRASES}
 ${CLAIMS_RULES}
 ${SIGNOFF_RULES}`;
   }
@@ -124,7 +135,7 @@ STRUCTURE — exactly 3 sentences in the body (not counting greeting and sign-of
 1. One specific observation about their company or role that shows you understand their world. This is NOT a compliment. It is a relevant business observation.
 2. One sentence connecting your value prop to that observation — what you collapse, fix, or accelerate for them specifically.
 3. Soft CTA as a question: "Worth 15 min to see it?", "Open to a quick look?", "Want to see how?"
-${BREVITY_RULES}${PERSONALIZATION_RULES}${BANNED_PHRASES}
+${BREVITY_RULES}${ELITE_OUTBOUND_RULES}${PERSONALIZATION_RULES}${BANNED_PHRASES}
 ${CLAIMS_RULES}
 ${SIGNOFF_RULES}`;
 
@@ -140,7 +151,7 @@ STRUCTURE — 2-3 sentences:
 
 TONE: Casual, confident, not apologetic. You're following up because it's relevant, not because you're desperate.
 NEVER use: "just following up", "circling back", "bumping this to the top", "wanted to check in"
-${BREVITY_RULES}${PERSONALIZATION_RULES}${BANNED_PHRASES}
+${BREVITY_RULES}${ELITE_OUTBOUND_RULES}${PERSONALIZATION_RULES}${BANNED_PHRASES}
 ${CLAIMS_RULES}
 ${SIGNOFF_RULES}`;
 
@@ -155,7 +166,7 @@ STRUCTURE — 2-3 sentences:
 3. Easy out: "If not the right person, happy to be redirected."
 
 RULE: Be direct about what you want. Do not bury the ask in qualifiers.
-${BREVITY_RULES}${PERSONALIZATION_RULES}${BANNED_PHRASES}
+${BREVITY_RULES}${ELITE_OUTBOUND_RULES}${PERSONALIZATION_RULES}${BANNED_PHRASES}
 ${CLAIMS_RULES}
 ${SIGNOFF_RULES}`;
 
@@ -170,7 +181,7 @@ STRUCTURE — 2-3 sentences:
 3. CTA to book: "Want to see it?", "Worth 15 min?", "Open to a quick demo this week?"
 
 RULE: Make the demo feel valuable, not like a sales pitch. Outcome first, product second.
-${BREVITY_RULES}${PERSONALIZATION_RULES}${BANNED_PHRASES}
+${BREVITY_RULES}${ELITE_OUTBOUND_RULES}${PERSONALIZATION_RULES}${BANNED_PHRASES}
 ${CLAIMS_RULES}
 ${SIGNOFF_RULES}`;
 
@@ -186,7 +197,7 @@ STRUCTURE — 3-4 sentences:
 4. Next step — direct and easy: "Want me to send it over?", "Worth a call to walk through it?"
 
 RULE: Outcome-focused, not feature-focused. They care about what changes, not what the product does.
-${BREVITY_RULES}${PERSONALIZATION_RULES}${BANNED_PHRASES}
+${BREVITY_RULES}${ELITE_OUTBOUND_RULES}${PERSONALIZATION_RULES}${BANNED_PHRASES}
 ${CLAIMS_RULES}
 ${SIGNOFF_RULES}`;
 
@@ -198,7 +209,7 @@ STRUCTURE — 3 sentences:
 1. One specific, relevant observation about this person or their company.
 2. One sentence connecting your value prop to that observation.
 3. Soft CTA as a question.
-${BREVITY_RULES}${PERSONALIZATION_RULES}${BANNED_PHRASES}
+${BREVITY_RULES}${ELITE_OUTBOUND_RULES}${PERSONALIZATION_RULES}${BANNED_PHRASES}
 ${CLAIMS_RULES}
 ${SIGNOFF_RULES}`;
   }

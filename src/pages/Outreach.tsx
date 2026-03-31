@@ -1094,7 +1094,7 @@ ${formattedBody}
         to_email: lead.contact_email,
         subject: subjectLine,
         body_html: htmlBody,
-        body_text: generatedEmail,
+        body_text: fullEmailBody,
         template_id: currentTemplateId || null,
         status: "scheduled",
         scheduled_at: scheduledAt.toISOString(),
