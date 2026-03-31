@@ -40,6 +40,9 @@ const DemoPage = () => {
                       Watch everything sharpen.
                     </span>
                   </h1>
+                  <div className="mt-3 inline-flex rounded-full border border-primary/12 bg-white/80 px-3 py-1 text-[11px] text-foreground/55 shadow-sm">
+                    demo build marker: de834a3 → root-cause debug pass
+                  </div>
                 </div>
 
                 <p className="text-lg md:text-2xl text-foreground/60 max-w-3xl mx-auto leading-relaxed mb-10">

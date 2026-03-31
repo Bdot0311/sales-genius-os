@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
     VitePWA({
-      registerType: "autoUpdate",
+      registerType: "prompt",
       devOptions: {
         enabled: false,
       },
@@ -59,7 +59,7 @@ export default defineConfig(({ mode }) => ({
         display: "standalone",
         orientation: "any",
         scope: "/",
-        start_url: "/dashboard",
+        start_url: "/",
         categories: ["business", "productivity"],
         icons: [
           { src: "pwa-192x192.png", sizes: "192x192", type: "image/png" },
