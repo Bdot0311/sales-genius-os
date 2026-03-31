@@ -245,7 +245,7 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
             className="text-2xl font-bold mb-2 animate-fade-in"
             style={{ animationDelay: '0.2s', animationFillMode: 'both' }}
           >
-            {mode === "signin" ? "Welcome back" : "Create your account"}
+            {mode === "signin" ? "Welcome back" : "Get started with SalesOS"}
           </h2>
           <p 
             className="text-muted-foreground animate-fade-in"
@@ -253,7 +253,7 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
           >
             {mode === "signin" 
               ? "Sign in to your account"
-              : "Sign up to access your subscription"
+              : "Create your account to explore the workflow and continue setup"
             }
           </p>
         </div>
@@ -390,8 +390,8 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
                 Create Account
               </Button>
 
-              <p className="text-xs text-muted-foreground text-center">
-                Note: You need an active subscription to create an account
+              <p className="text-xs text-muted-foreground text-center leading-relaxed">
+                If you have not chosen a plan yet, you may be redirected to pricing during setup.
               </p>
             </form>
           </TabsContent>
@@ -402,9 +402,9 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
           style={{ animationDelay: '0.5s', animationFillMode: 'both' }}
         >
           <p className="text-sm text-muted-foreground">
-            Don't have a subscription?{" "}
+            Need to choose a plan first?{" "}
             <a href="/pricing" className="text-primary hover:underline transition-colors duration-200">
-              Purchase a plan
+              View pricing
             </a>
           </p>
         </div>

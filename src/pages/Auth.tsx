@@ -231,7 +231,12 @@ const Auth = () => {
         </Link>
       </Button>
 
-      <div className="relative z-10 w-full max-w-md mx-auto">
+      <div className="relative z-10 w-full max-w-md mx-auto space-y-4">
+        <div className="text-center px-4">
+          <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
+            Start with the workflow. If your account needs a paid plan or trial to continue, SalesOS will point you to pricing during setup.
+          </p>
+        </div>
         <AuthForm />
       </div>
     </div>

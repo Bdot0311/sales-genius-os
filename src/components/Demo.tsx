@@ -57,8 +57,8 @@ const SLIDE_CAPTIONS = [
 const demoSteps = [
   {
     id: 0,
-    title: "AI-Powered Sales",
-    description: "Revolutionizing how sales teams work with intelligent automation.",
+    title: "Plain-English Prospecting",
+    description: "A guided look at how SalesOS moves from target idea to outreach-ready lead list.",
     icon: Zap,
     audioStart: SLIDE_TIMESTAMPS[0],
     caption: SLIDE_CAPTIONS[0],
