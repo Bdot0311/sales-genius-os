@@ -140,7 +140,7 @@ export const PricingTeaser = () => {
             {/* Price anchor */}
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-xs font-medium text-primary mb-5">
               <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-              Early access pricing — locked in for founding members
+              Start free and upgrade when you are ready
             </div>
             <p className="text-3xl font-bold text-foreground mb-1">
               Start free

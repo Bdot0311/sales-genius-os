@@ -84,10 +84,10 @@ export const TestimonialsSection = () => {
               Early Users
             </div>
             <h2 id="testimonials-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
-              What teams are saying
+              What the workflow is designed to improve
             </h2>
             <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-              From our early access cohort. Real results from real sales teams.
+              No fake testimonials here. These are the practical outcomes SalesOS is built to help B2B outbound teams achieve.
             </p>
           </div>
 

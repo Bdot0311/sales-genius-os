@@ -25,7 +25,7 @@ export const TrustedByBar = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <p className="text-xs font-semibold text-muted-foreground/40 uppercase tracking-widest mb-4">
-            From our early access cohort
+            Built for modern outbound teams
           </p>
           {/* Company pills */}
           <div className="flex items-center justify-center flex-wrap gap-2 mb-3">

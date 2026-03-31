@@ -183,7 +183,7 @@ export const SocialProofComparison = () => {
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
             </Button>
             <p className="text-xs text-muted-foreground/60 mt-3">
-              Based on average results from our early access cohort, Q1 2026.
+              Start free and see whether the workflow fits your team before you commit.
             </p>
           </div>
         </div>
