@@ -214,7 +214,7 @@ export const SoftwareApplicationSchema = () => {
           "@type": "Person",
           "name": "Sarah Johnson"
         },
-        "reviewBody": "SalesOS transformed our sales process. The AI lead scoring alone increased our conversion rate by 40%."
+        "reviewBody": "SalesOS transformed our sales process. The AI lead scoring helped our team focus on better-fit opportunities and prioritize follow-up more effectively."
       },
       {
         "@type": "Review",
