@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -127,6 +128,7 @@ const Outreach = () => {
   const [showVariantPicker, setShowVariantPicker] = useState(false);
   const [currentTemplateId, setCurrentTemplateId] = useState<string | null>(null);
   const [showShortcuts, setShowShortcuts] = useState(true);
+  const [use4SentenceFramework, setUse4SentenceFramework] = useState(false);
   const [showFollowUpSuggestion, setShowFollowUpSuggestion] = useState(false);
   const [lastSentEmailInfo, setLastSentEmailInfo] = useState<{
     leadId: string;
@@ -612,11 +614,14 @@ const Outreach = () => {
     setIsGeneratingSubject(true);
     try {
       const lead = leads.find((l) => l.id === selectedLead);
+      const template = EMAIL_TEMPLATES.find(t => t.value === selectedTemplate);
       const { data, error } = await supabase.functions.invoke("generate-email", {
         body: {
           lead,
           tone: emailTone,
           goal: "subject_only",
+          templateGoal: template?.goal || "introduction",
+          templateDescription: template?.description || "",
           triggerContext,
           openerWord: openerWord === "auto" ? "" : openerWord,
           businessDescription,
@@ -717,6 +722,7 @@ const Outreach = () => {
             tone: emailTone,
             goal: "subject_only",
             templateGoal: goal,
+            templateDescription: template?.description || "",
             triggerContext,
             openerWord: openerWord === "auto" ? "" : openerWord,
             businessDescription,
@@ -733,10 +739,12 @@ const Outreach = () => {
           lead,
           tone: emailTone,
           goal,
+          templateDescription: template?.description || "",
           subjectLine: finalSubjectLine,
           triggerContext,
           openerWord: openerWord === "auto" ? "" : openerWord,
           businessDescription,
+          use4SentenceFramework,
         },
       });
 
@@ -796,6 +804,7 @@ const Outreach = () => {
       const goal = template?.goal || "introduction";
 
       // Generate 3 variants in parallel
+      const variantTemplate = EMAIL_TEMPLATES.find(t => t.value === selectedTemplate);
       const variantPromises = [1, 2, 3].map(async (num) => {
         // Generate subject
         const { data: subjectData } = await supabase.functions.invoke("generate-email", {
@@ -803,6 +812,8 @@ const Outreach = () => {
             lead,
             tone: emailTone,
             goal: "subject_only",
+            templateGoal: goal,
+            templateDescription: variantTemplate?.description || "",
             triggerContext,
             openerWord: openerWord === "auto" ? "" : openerWord,
             variantNum: num,
@@ -817,11 +828,13 @@ const Outreach = () => {
             lead,
             tone: emailTone,
             goal,
+            templateDescription: variantTemplate?.description || "",
             subjectLine: subject,
             triggerContext,
             openerWord: openerWord === "auto" ? "" : openerWord,
             variantNum: num,
             businessDescription,
+            use4SentenceFramework,
           },
         });
 
@@ -1756,9 +1769,18 @@ For logos, use HTML:
                         </Tooltip>
                       </TooltipProvider>
                     </div>
-                    <p className="text-xs text-muted-foreground text-center">
-                      Uses proven 4-sentence framework • Click shuffle for A/B testing
-                    </p>
+                    <div className="flex items-center justify-center gap-2">
+                      <Switch
+                        id="framework-toggle"
+                        checked={use4SentenceFramework}
+                        onCheckedChange={setUse4SentenceFramework}
+                      />
+                      <label htmlFor="framework-toggle" className="text-xs text-muted-foreground cursor-pointer select-none">
+                        {use4SentenceFramework
+                          ? "4-sentence framework (observation → pain → solution → CTA)"
+                          : "Template-specific structure • Click shuffle for A/B testing"}
+                      </label>
+                    </div>
                     {!businessDescription && selectedLead && (
                       <p className="text-xs text-amber-600 text-center">
                         ⚠️ Add your business description above for stronger personalization and social proof

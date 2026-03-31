@@ -32,26 +32,28 @@ serve(async (req) => {
       technologies && technologies.length > 0 ? `- Technologies: ${technologies.slice(0, 5).join(', ')}` : null,
     ].filter(Boolean).join('\n');
 
-    const prompt = `You are an expert B2B sales strategist. Generate a follow-up email suggestion for a sales rep who just sent an introductory cold email.
+    const prompt = `You are a senior B2B sales rep writing a follow-up email after an initial cold outreach.
 
 CONTEXT:
 ${leadContext}
 
-TASK: Create a strategic follow-up plan with:
-1. A compelling subject line that references the original email (don't use "Re:" prefix, be creative)
-2. A brief 3-4 sentence follow-up email body that:
-   - References the previous email without being pushy
-   - Adds new value specific to the lead's role, industry, or company context
-   - Ends with a soft, permission-based CTA
-3. Recommended number of days to wait before sending (typically 3-5 days)
-4. A brief trigger context description for the CRM
+TASK: Create a strategic follow-up with:
+1. A subject line (max 6 words, lowercase except proper nouns, specific to this lead or company — not generic)
+2. A 2-3 sentence follow-up email body that:
+   - References the prior email in one sentence: "Sent you a note last week about X"
+   - Adds ONE new angle or proof point not in the first email
+   - Ends with a casual, direct CTA: "Still open to a quick look?", "Any thoughts?", "Worth another look?"
+3. Recommended days before sending (3-5)
+4. A brief CRM trigger context
 
-CRITICAL RULES:
-- Keep it SHORT (under 80 words for body)
-- Be conversational, NOT salesy
-- Add genuine value specific to their industry/role — don't just "check in"
-- If company description or job title is provided, reference their actual context
-- NEVER fabricate facts or invent company data
+HARD RULES:
+- Email body under 60 words. Hard ceiling.
+- Tone: casual and confident, not apologetic or needy
+- Sign-off: first name only — no "Best,", no "Thanks,"
+- NEVER: "just following up", "circling back", "bumping this", "checking in", "I hope this finds you well"
+- NEVER: "I noticed that", "I came across", "I was impressed by", "I've been analyzing"
+- Use EXACTLY ONE specific data point from the lead context
+- NEVER fabricate facts, company names, or metrics not in the provided data
 
 Respond in this EXACT JSON format:
 {
@@ -115,8 +117,8 @@ Respond in this EXACT JSON format:
       console.error("Failed to parse AI response:", content);
       // Fallback suggestion
       suggestion = {
-        suggestedSubject: `Quick thought for ${companyName}`,
-        suggestedBody: `Hi ${leadName},\n\nWanted to circle back on my previous note. I've been thinking about how we might be able to help ${companyName}.\n\nWorth a quick 10-minute call to explore?\n\nBest,`,
+        suggestedSubject: `re: outreach to ${companyName}`,
+        suggestedBody: `Hi ${leadName.split(' ')[0]},\n\nSent you a note last week — wanted to add one more angle in case it's useful.\n\nStill open to a quick look?\n\n${leadName.split(' ')[0]}`,
         suggestedDays: 3,
         triggerContext: `Follow-up on introduction to ${leadName} at ${companyName}`,
       };
@@ -125,8 +127,8 @@ Respond in this EXACT JSON format:
     // Validate the suggestion structure
     if (!suggestion.suggestedSubject || !suggestion.suggestedBody || !suggestion.suggestedDays) {
       suggestion = {
-        suggestedSubject: suggestion.suggestedSubject || `Following up - ${companyName}`,
-        suggestedBody: suggestion.suggestedBody || `Hi ${leadName},\n\nJust following up on my previous email. Would love to connect if you have a moment.\n\nBest,`,
+        suggestedSubject: suggestion.suggestedSubject || `re: ${companyName} outreach`,
+        suggestedBody: suggestion.suggestedBody || `Hi ${leadName.split(' ')[0]},\n\nSent you a note last week — still think there's something here worth a look.\n\nOpen to a quick call?\n\n${leadName.split(' ')[0]}`,
         suggestedDays: suggestion.suggestedDays || 3,
         triggerContext: suggestion.triggerContext || `Follow-up with ${leadName}`,
       };
