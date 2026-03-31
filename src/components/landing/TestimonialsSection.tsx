@@ -84,10 +84,10 @@ export const TestimonialsSection = () => {
               Early Users
             </div>
             <h2 id="testimonials-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
-              What the workflow is designed to improve
+              What SalesOS is built to improve
             </h2>
             <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-              No fake testimonials here. These are the practical outcomes SalesOS is built to help B2B outbound teams achieve.
+              Faster prospecting, clearer lead prioritization, and more relevant outreach for B2B teams running outbound.
             </p>
           </div>
 
