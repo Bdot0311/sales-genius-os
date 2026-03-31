@@ -44,7 +44,6 @@ export const PricingTeaser = () => {
       className="relative py-24 md:py-32 overflow-hidden"
       aria-labelledby="pricing-heading"
     >
-      {/* Unified background */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div 
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px]"
@@ -55,24 +54,20 @@ export const PricingTeaser = () => {
         />
       </div>
       
-      {/* Top hairline separator */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
       
       <div className="container relative z-10 mx-auto px-6">
         <div className="max-w-[900px] mx-auto">
-          {/* Header */}
           <div className={`text-center mb-12 scroll-reveal ${isVisible ? 'visible' : ''}`}>
             <h2 id="pricing-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
               Built for outbound teams. Priced to start fast.
             </h2>
             <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-              Start free, test real workflows, and upgrade when you're ready to unlock more lead volume, enrichment, and outreach power.
+              Explore the workflow first, then unlock the lead volume, enrichment, and outreach capacity your team needs.
             </p>
           </div>
 
-          {/* Two-column fit grid */}
           <div className="grid md:grid-cols-2 gap-6 mb-10">
-            {/* Who it's for */}
             <div 
               className={`group relative p-6 md:p-8 rounded-xl border border-primary/20 bg-primary/[0.03] scroll-reveal ${
                 isVisible ? 'visible' : ''
@@ -80,10 +75,9 @@ export const PricingTeaser = () => {
               style={{ '--reveal-delay': '100ms' } as React.CSSProperties}
             >
               <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none spotlight-card" />
-              
               <div className="relative z-10">
                 <h3 className="font-semibold text-lg mb-5 text-primary">
-                  Who it's for
+                  Who it&apos;s for
                 </h3>
                 <ul className="space-y-3">
                   {forYou.map((item, index) => (
@@ -98,7 +92,6 @@ export const PricingTeaser = () => {
               </div>
             </div>
 
-            {/* Who it's NOT for */}
             <div 
               className={`relative p-6 md:p-8 rounded-xl border border-destructive/20 bg-destructive/[0.03] scroll-reveal ${
                 isVisible ? 'visible' : ''
@@ -107,7 +100,7 @@ export const PricingTeaser = () => {
             >
               <div className="relative z-10">
                 <h3 className="font-semibold text-lg mb-5 text-destructive/80">
-                  Who it's NOT for
+                  Who it&apos;s not for
                 </h3>
                 <ul className="space-y-3">
                   {notForYou.map((item, index) => (
@@ -123,30 +116,24 @@ export const PricingTeaser = () => {
             </div>
           </div>
 
-          {/* ROI testimonial near CTA */}
           <div className={`mb-8 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '280ms' } as React.CSSProperties}>
-            <blockquote className="relative p-5 rounded-xl border border-border/30 bg-card/40 text-center">
-              <p className="text-sm text-foreground/80 italic leading-relaxed mb-3">
-                "We went from manually hunting leads to launching targeted outreach the same day. That alone changed the pace of pipeline generation."
+            <div className="relative p-5 rounded-xl border border-border/30 bg-card/40 text-center">
+              <p className="text-sm text-foreground/80 leading-relaxed">
+                Start with the workflow, then unlock the lead volume, verified data, exports, and outreach capacity your team actually needs.
               </p>
-              <footer className="text-xs text-muted-foreground">
-                — Early SalesOS user
-              </footer>
-            </blockquote>
+            </div>
           </div>
 
-          {/* Pricing logic */}
           <div className={`text-center scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '300ms' } as React.CSSProperties}>
-            {/* Price anchor */}
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-xs font-medium text-primary mb-5">
               <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-              Start free and upgrade when you are ready
+              Explore SalesOS, then choose your plan
             </div>
             <p className="text-3xl font-bold text-foreground mb-1">
-              Start free
+              Explore SalesOS
             </p>
             <p className="text-sm text-muted-foreground mb-2">
-              Explore the product with sample data and see how the workflow feels before you commit.
+              Preview the workflow with sample data and see how SalesOS fits your process.
             </p>
             <p className="text-sm text-muted-foreground mb-6">
               Paid plans from <span className="text-foreground font-semibold">$39/mo</span> — unlock prospecting, verified data, exports, and personalized outreach.
@@ -157,7 +144,7 @@ export const PricingTeaser = () => {
               className="group mb-3"
               onClick={() => navigate('/auth')}
             >
-              Start free — no card needed
+              Explore SalesOS
               <span className="ml-2 group-hover:translate-x-0.5 transition-transform duration-150">→</span>
             </Button>
             <div className="block">
@@ -171,13 +158,12 @@ export const PricingTeaser = () => {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground/40 mt-4">
-              Upgrade when you are ready to run real prospecting and outreach at volume.
+              Upgrade when you are ready to run live prospecting and outreach at volume.
             </p>
           </div>
         </div>
       </div>
       
-      {/* Bottom hairline separator */}
       <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
     </section>
   );

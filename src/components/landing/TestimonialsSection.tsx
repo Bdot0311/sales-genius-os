@@ -74,7 +74,7 @@ export const TestimonialsSection = () => {
         <div className="max-w-[1120px] mx-auto">
           <div className={`text-center mb-14 scroll-reveal ${isVisible ? 'visible' : ''}`}>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-xs font-medium text-primary mb-5">
-              Why teams would use this
+              SalesOS outcomes
             </div>
             <h2 id="testimonials-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
               What SalesOS is built to improve

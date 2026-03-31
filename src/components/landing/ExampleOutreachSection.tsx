@@ -35,10 +35,10 @@ export const ExampleOutreachSection = () => {
               Example output
             </div>
             <h2 id="example-outreach-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
-              Show the message, not just the promise
+              Turn lead context into outreach
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              Early-stage buyers want to picture the output. A concrete outreach example does more work than another paragraph about AI.
+              Generate more relevant outbound from the lead and company details already inside SalesOS.
             </p>
           </div>
 
@@ -46,17 +46,17 @@ export const ExampleOutreachSection = () => {
             <div className={`rounded-2xl border border-border/30 bg-card/40 p-6 scroll-reveal ${isVisible ? 'visible' : ''}`}>
               <div className="flex items-center gap-2 mb-4 text-sm font-medium text-foreground">
                 <Sparkles className="w-4 h-4 text-primary" />
-                What this proves
+                Built for outbound teams
               </div>
               <ul className="space-y-3 text-sm text-muted-foreground leading-relaxed">
-                <li>• The message uses actual lead context instead of generic mail-merge fluff.</li>
-                <li>• The product should reduce time spent drafting first touches from scratch.</li>
-                <li>• The goal is not “AI for AI’s sake” — it is faster, more relevant outbound.</li>
+                <li>• Use lead context to make first-touch emails more specific.</li>
+                <li>• Reduce time spent drafting outreach from scratch.</li>
+                <li>• Keep messaging closer to the account, role, and buying signal.</li>
               </ul>
               <div className="mt-5 rounded-xl border border-primary/20 bg-primary/5 p-4">
-                <p className="text-xs font-medium text-primary mb-1">Best homepage lesson</p>
+                <p className="text-xs font-medium text-primary mb-1">SalesOS output</p>
                 <p className="text-sm text-muted-foreground">
-                  Prospects trust visible workflow examples more than polished buzzwords.
+                  Outreach drafts are generated from the same lead context your team is already reviewing.
                 </p>
               </div>
             </div>
@@ -77,7 +77,7 @@ export const ExampleOutreachSection = () => {
               <div className="mt-4 flex items-start gap-3 rounded-xl border border-border/20 bg-muted/20 p-4">
                 <Reply className="w-4 h-4 text-primary mt-0.5" />
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  This kind of example helps buyers immediately judge whether the product output feels relevant, usable, and worth testing.
+                  Review the draft, refine the message, and move into live outreach with less manual setup.
                 </p>
               </div>
             </div>

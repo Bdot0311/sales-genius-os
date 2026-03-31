@@ -58,13 +58,13 @@ export const ExampleSearchSection = () => {
         <div className="max-w-[1120px] mx-auto">
           <div className={`text-center mb-14 scroll-reveal ${isVisible ? 'visible' : ''}`}>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-xs font-medium text-primary mb-5">
-              Concrete example
+              Live search example
             </div>
             <h2 id="example-search-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
-              This is what the workflow should feel like
+              Find the right leads faster
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              Instead of abstract marketing promises, here is a realistic example of how someone might use SalesOS to find and act on a target list.
+              Describe your ideal customer in plain English and review matched prospects with company and contact context in one workflow.
             </p>
           </div>
 
@@ -72,20 +72,20 @@ export const ExampleSearchSection = () => {
             <div className={`rounded-2xl border border-border/30 bg-card/40 p-6 scroll-reveal ${isVisible ? 'visible' : ''}`}>
               <div className="flex items-center gap-2 mb-4 text-sm font-medium text-foreground">
                 <Search className="w-4 h-4 text-primary" />
-                Example search
+                Search query
               </div>
               <div className="rounded-xl border border-primary/20 bg-background/70 p-4 text-sm text-foreground leading-relaxed">
                 “{sampleSearch}”
               </div>
               <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
-                The point is speed: you describe who you want in normal language, then review a smaller set of leads that actually look worth contacting.
+                Search naturally, narrow the field quickly, and move straight into lead review.
               </p>
             </div>
 
             <div className={`rounded-2xl border border-border/30 bg-card/40 p-6 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '100ms' } as React.CSSProperties}>
               <div className="flex items-center gap-2 mb-4 text-sm font-medium text-foreground">
                 <Building2 className="w-4 h-4 text-primary" />
-                Sample matched leads
+                Matched leads
               </div>
               <div className="space-y-3">
                 {sampleLeads.map((lead, index) => (
@@ -113,10 +113,10 @@ export const ExampleSearchSection = () => {
           <div className={`mt-10 rounded-2xl border border-border/30 bg-muted/20 p-6 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '180ms' } as React.CSSProperties}>
             <div className="flex items-center gap-2 mb-3 text-sm font-medium text-foreground">
               <User className="w-4 h-4 text-primary" />
-              Why this matters
+              What happens next
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              If the workflow helps you move from “who should we target?” to “here are 10 people worth contacting” faster, the product is doing its job. That is the promise the homepage should keep reinforcing.
+              Move from target definition to qualified prospects without bouncing between list builders, spreadsheets, and disconnected tools.
             </p>
             <div className="mt-4 inline-flex items-center gap-2 text-sm text-primary font-medium">
               Search faster

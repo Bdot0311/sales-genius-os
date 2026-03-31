@@ -46,7 +46,7 @@ export const FounderNoteSection = () => {
                   SalesOS was built around a simple frustration: too much outbound work still starts with messy filters, manual list-building, and a pile of disconnected tools.
                 </p>
                 <p>
-                  The goal is not to drown teams in more software. The goal is to help you describe who you want to reach, find better-fit leads faster, and move into outreach without wasting hours on setup.
+                  SalesOS helps teams describe who they want to reach, find better-fit leads faster, and move into outreach without wasting hours on setup.
                 </p>
                 <p>
                   If you run founder-led sales, manage outbound for clients, or need a faster path from ICP to pipeline, that is exactly who SalesOS is for.
