@@ -20,6 +20,8 @@ const ProblemSection = lazy(() => import("@/components/landing/ProblemSection").
 const ModulesSection = lazy(() => import("@/components/landing/ModulesSection").then(m => ({ default: m.ModulesSection })));
 const TestimonialsSection = lazy(() => import("@/components/landing/TestimonialsSection").then(m => ({ default: m.TestimonialsSection })));
 const DifferentiationSection = lazy(() => import("@/components/landing/DifferentiationSection").then(m => ({ default: m.DifferentiationSection })));
+const ExampleSearchSection = lazy(() => import("@/components/landing/ExampleSearchSection").then(m => ({ default: m.ExampleSearchSection })));
+const ExampleOutreachSection = lazy(() => import("@/components/landing/ExampleOutreachSection").then(m => ({ default: m.ExampleOutreachSection })));
 const Demo = lazy(() => import("@/components/Demo").then(m => ({ default: m.Demo })));
 const IntegrationsSection = lazy(() => import("@/components/landing/IntegrationsSection").then(m => ({ default: m.IntegrationsSection })));
 const PricingTeaser = lazy(() => import("@/components/landing/PricingTeaser").then(m => ({ default: m.PricingTeaser })));
@@ -37,67 +39,57 @@ const SectionLoader = () => (
 // AEO: Define clear, structured content for AI answer engines
 const gettingStartedSteps = [
   {
-    name: "Sign up for free",
-    text: "Create your SalesOS account in under 2 minutes. No credit card required. Explore dashboards, pipeline, and sample data instantly."
+    name: "Start free",
+    text: "Create your SalesOS account and explore the workflow without needing a credit card up front."
   },
   {
-    name: "Build your Ideal Customer Profile",
-    text: "Use the ICP Builder to define industries, company size, job titles, tech stack, and buying signals. Every lead gets an automatic match score."
+    name: "Describe your ideal customer",
+    text: "Enter the titles, industries, company size, geography, or buying signals you want in plain English."
   },
   {
-    name: "Get ranked matches with enriched profiles",
-    text: "AI scores each lead by ICP fit. Every profile comes with verified emails, LinkedIn, company data, and tech stack."
+    name: "Review matched leads",
+    text: "See qualified prospects with company and contact context so your team can prioritize faster."
   },
   {
-    name: "Engage with quality-checked outreach",
-    text: "AI writes personalized emails with built-in spam scoring, readability checks, and CTA analysis. Branch sequences based on opens and replies."
+    name: "Generate outreach",
+    text: "Create more relevant outbound messages using the context gathered on each lead."
   },
   {
-    name: "Close deals from your unified inbox",
-    text: "Replies auto-classified by intent. AI drafts responses. Deliverability monitoring keeps your sender reputation healthy."
+    name: "Manage follow-up",
+    text: "Keep replies, next steps, and outreach activity organized from one workflow instead of juggling separate tools."
   }
 ];
 
 const keyFeatures = [
   {
-    name: "ICP Builder with Lead Scoring",
-    description: "Define your Ideal Customer Profile with industries, titles, tech stack, and buying signals. Every lead gets a 0-100 match score for instant prioritization.",
+    name: "Plain-English lead search",
+    description: "Describe your target customer naturally instead of relying on complicated search syntax.",
     position: 1
   },
   {
-    name: "Email Quality Pre-Send Checker",
-    description: "Five automated checks before every send: spam word detection, length analysis, readability scoring, CTA clarity, and personalization depth.",
+    name: "Lead prioritization",
+    description: "Review best-fit prospects first with useful company and contact context.",
     position: 2
   },
   {
-    name: "Unified Reply Inbox",
-    description: "All prospect replies in one inbox, auto-classified by intent (interested, meeting, question, not now, OOO). AI drafts context-aware responses.",
+    name: "Personalized outreach",
+    description: "Generate more relevant outbound drafts using lead and company information.",
     position: 3
   },
   {
-    name: "Sequence Branching and A/B Testing",
-    description: "Branch sequences based on opens and replies. A/B test subject lines and launch faster with pre-built templates like Signal Strike and Executive Thread.",
+    name: "Reply management",
+    description: "Keep responses and follow-ups organized after prospects engage.",
     position: 4
   },
   {
-    name: "Deliverability Dashboard",
-    description: "Monitor mailbox health scores, warmup progress, DNS checks (SPF, DKIM, DMARC), and smart sending rules to keep emails out of spam.",
+    name: "Workflow automation",
+    description: "Reduce repetitive sales work with sequences, handoffs, and automation support.",
     position: 5
   },
   {
-    name: "Visual Pipeline Management",
-    description: "Drag-and-drop interface to manage deals through custom stages with real-time analytics, forecasting, and ICP lookalike discovery.",
+    name: "Integrations",
+    description: "Connect SalesOS with tools like Google Workspace, Slack, HubSpot, Salesforce, Calendly, and Zapier.",
     position: 6
-  },
-  {
-    name: "Real-Time AI Coaching",
-    description: "Get instant suggestions and insights to improve your sales approach and close rates.",
-    position: 7
-  },
-  {
-    name: "CRM Integrations",
-    description: "Seamlessly connect with HubSpot, Salesforce, Pipedrive, and 5000+ apps via Zapier.",
-    position: 8
   }
 ];
 
@@ -108,9 +100,9 @@ const Index = () => {
   return (
     <>
       <SEOHead 
-        title="SalesOS - Find, Engage & Close More Deals | AI Sales Platform"
-        description="AI-powered lead discovery, personalized outreach, pipeline management, and sales coaching, all in one platform. Start free, upgrade when ready. No credit card required."
-        keywords="AI sales platform, lead discovery, sales automation, personalized outreach, pipeline management, B2B sales, AI email generation, sales coaching, CRM"
+        title="SalesOS - Plain-English B2B Lead Discovery"
+        description="Describe your ideal customer in plain English, find qualified B2B leads, and launch more relevant outreach faster with SalesOS."
+        keywords="B2B lead generation, lead discovery, outbound sales software, plain English lead search, sales outreach, lead enrichment, B2B prospecting"
         ogImage="https://ghgfjnepvxvxrncmskys.supabase.co/storage/v1/object/public/social-images/salesos-logo.png"
       />
       
@@ -143,13 +135,15 @@ const Index = () => {
             <HeroSection />
             <TrustedByBar />
 
-            {/* Below the fold - lazy loaded — Pain → Agitate → Solution → Proof → Close */}
+            {/* Below the fold - lazy loaded — problem, workflow, examples, then close */}
             <Suspense fallback={<SectionLoader />}>
               <ProblemSection />
               <HowItWorks />
+              <ExampleSearchSection />
               <ModulesSection />
-              <TestimonialsSection />
+              <ExampleOutreachSection />
               <DifferentiationSection />
+              <TestimonialsSection />
               <Demo />
               <IntegrationsSection />
               <PricingTeaser />
