@@ -48,10 +48,10 @@ type Plan = FreePlan | PaidPlan;
 
 const freePlan: FreePlan = {
   key: 'free',
-  name: "Free",
+  name: "Explore",
   price: "$0",
-  period: "/forever",
-  description: "Explore the platform, no credit card needed",
+  period: "",
+  description: "Preview the workflow before choosing a paid plan",
   features: [
     "View-only dashboard access",
     "Sample data exploration",
@@ -59,7 +59,7 @@ const freePlan: FreePlan = {
     "Analytics summary",
     "Community support",
   ],
-  cta: "Get started free",
+  cta: "Explore the product",
   ctaRoute: "/auth",
 };
 
@@ -222,7 +222,7 @@ const creditFAQs = [
   },
   {
     question: "Is there a free plan?",
-    answer: "Yes. The free plan lets you explore the full SalesOS interface, including dashboards, pipeline view, and analytics. Contacting verified prospects requires a paid plan. No credit card needed to sign up."
+    answer: "Yes. The Explore option lets you preview the SalesOS interface, including dashboards, pipeline view, and analytics. Access to verified prospecting and outbound workflows requires a paid plan."
   },
   {
     question: "Do you offer yearly billing?",
@@ -434,7 +434,7 @@ export const Pricing = () => {
                   }`}
                   onClick={() => handleCheckout(plan)}
                 >
-                  {plan.key === 'free' ? 'Get started free' : 'Start 14-day free trial'}
+                  {plan.key === 'free' ? 'Explore the product' : 'Choose this plan'}
                 </Button>
               </div>
             );
@@ -460,7 +460,7 @@ export const Pricing = () => {
                 <tr className="border-b border-border/30">
                   <th className="text-left py-3 sm:py-4 px-3 sm:px-4 font-medium text-muted-foreground text-sm min-w-[140px] sm:min-w-[180px]">Features</th>
                   <th className="text-center py-3 sm:py-4 px-2 sm:px-3 min-w-[80px] sm:min-w-[100px]">
-                    <div className="font-semibold text-sm sm:text-base">Free</div>
+                    <div className="font-semibold text-sm sm:text-base">Explore</div>
                     <div className="text-xs sm:text-sm text-muted-foreground">$0</div>
                   </th>
                   <th className="text-center py-3 sm:py-4 px-2 sm:px-3 min-w-[80px] sm:min-w-[100px]">

@@ -39,8 +39,8 @@ interface SEOHeadProps {
 const DEFAULT_OG_IMAGE = 'https://storage.googleapis.com/gpt-engineer-file-uploads/ZFJK1zezovOpOdjy9TptFukIhhc2/social-images/social-1768238149761-SalesOS full logo.png';
 
 export const SEOHead = ({
-  title = "SalesOS - Find, Engage & Close More Deals | AI Sales Platform",
-  description = "Describe your ideal customer in plain English. Get ranked matches with enriched profiles. Your first lead in under 2 minutes. 14-day free trial, no credit card.",
+  title = "SalesOS - Plain-English B2B Lead Discovery",
+  description = "Describe your ideal customer in plain English, review qualified B2B leads, and launch more relevant outreach with SalesOS.",
   canonicalUrl,
   ogImage = DEFAULT_OG_IMAGE,
   ogType = "website",

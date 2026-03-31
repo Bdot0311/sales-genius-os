@@ -654,10 +654,10 @@ const EndScreenMockup = ({ isActive }: { isActive: boolean }) => {
           className="h-12 sm:h-16 w-auto mx-auto mb-4"
         />
         <h3 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2">
-          Ready to Transform Your Sales?
+          Want this workflow for your team?
         </h3>
         <p className="text-sm sm:text-base text-muted-foreground max-w-md mx-auto">
-          Start closing more deals with SalesOS today
+          Choose the SalesOS plan that matches your prospecting volume and outbound motion.
         </p>
       </div>
 
@@ -681,14 +681,14 @@ const EndScreenMockup = ({ isActive }: { isActive: boolean }) => {
           href="/pricing"
           className="inline-flex items-center gap-2 bg-gradient-to-r from-primary to-accent text-primary-foreground font-semibold px-8 py-3 rounded-xl hover:opacity-90 transition-opacity shadow-lg shadow-primary/25"
         >
-          Start for free
+          View plans
           <ArrowRight className="w-4 h-4" />
         </a>
       </div>
 
       {/* Trust indicator */}
       <div className={`text-xs text-muted-foreground transition-all duration-500 ${showElements >= 4 ? 'opacity-100' : 'opacity-0'}`}>
-        No credit card required • Free forever plan • Cancel anytime
+        Plans from $39/month • Sample workflow available • Cancel anytime
       </div>
     </div>
   );

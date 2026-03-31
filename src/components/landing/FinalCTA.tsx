@@ -88,7 +88,7 @@ export const FinalCTA = () => {
                   </h2>
                   
                   <p className="text-lg sm:text-xl text-muted-foreground mb-10 max-w-lg mx-auto leading-relaxed">
-                    Describe your ideal customer, see matched prospects, and start outreach fast. No credit card required to explore the workflow.
+                    Describe your ideal customer, review matched prospects, and choose the SalesOS plan that fits your outbound workflow.
                   </p>
 
                   {/* Social proof — moment of highest doubt */}
@@ -107,22 +107,22 @@ export const FinalCTA = () => {
                     className="h-16 px-10 text-lg font-semibold bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl group shadow-[0_0_30px_hsl(261_75%_65%/0.3)] hover:shadow-[0_0_50px_hsl(261_75%_65%/0.45)] hover:-translate-y-1 transition-all duration-300"
                     onClick={() => navigate('/auth')}
                   >
-                    <span>Start free and find leads</span>
+                    <span>View plans and get started</span>
                     <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1.5 transition-transform duration-200" aria-hidden="true" />
                   </Button>
 
                   {/* Trust signals */}
                   <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-sm text-muted-foreground/60">
-                    <span>No credit card required</span>
+                    <span>Plans from $39/month</span>
                     <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
-                    <span>Sample data included</span>
+                    <span>Sample workflow available</span>
                     <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
                     <span>Setup in 2 min</span>
                   </div>
 
                   {/* Risk reversal */}
                   <p className="mt-5 text-xs text-muted-foreground/40 max-w-sm mx-auto leading-relaxed">
-                    Start free, validate the workflow, and upgrade when you are ready for live prospecting.
+                    Preview the workflow, then choose the plan that matches your prospecting volume and team needs.
                   </p>
                 </div>
               </div>

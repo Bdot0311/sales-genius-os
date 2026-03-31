@@ -44,9 +44,9 @@ const PricingPage = () => {
   return (
     <>
       <SEOHead 
-        title="Pricing Plans - Free Plan & Paid Plans | SalesOS"
-        description="Start free, upgrade when ready. SalesOS plans from $39/month for Starter to $179/month for Pro with 3,000 verified prospects. No credit card required for free plan."
-        keywords="SalesOS pricing, sales software pricing, CRM pricing, lead generation pricing, sales automation cost"
+        title="SalesOS Pricing - Choose the Right Outbound Plan"
+        description="Choose the SalesOS plan that fits your outbound workflow. Starter from $39/month, Growth from $89/month, and Pro from $179/month."
+        keywords="SalesOS pricing, outbound sales software pricing, lead generation pricing, B2B prospecting pricing, sales outreach software cost"
         ogImage="https://storage.googleapis.com/gpt-engineer-file-uploads/ZFJK1zezovOpOdjy9TptFukIhhc2/social-images/social-1768238149761-SalesOS full logo.png"
       />
       <BreadcrumbSchema items={[
@@ -61,14 +61,13 @@ const PricingPage = () => {
           {/* Hero Section */}
            <section className="pt-24 pb-8 container mx-auto px-6 text-center">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              Start Free. Scale When Ready.
+              Pick the plan that fits your outbound motion
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-6">
-              Explore the full platform with a free account. When you're ready to find leads, 
-              choose the plan that fits your workflow, all with a 14-day free trial.
+              SalesOS is built for founder-led teams, outbound agencies, and B2B sales teams that want a faster path from ICP definition to live outreach.
             </p>
             <p className="text-sm text-muted-foreground">
-              No credit card for free plan • Cancel anytime • 30-day money-back guarantee
+              Plans from $39/month • Upgrade anytime • 30-day money-back guarantee
             </p>
           </section>
 
@@ -79,7 +78,7 @@ const PricingPage = () => {
           <section className="py-16 bg-muted/30">
             <div className="container mx-auto px-6">
               <h2 className="text-2xl md:text-3xl font-bold text-center mb-12">
-                Why Teams Choose SalesOS
+                Why buyers choose SalesOS
               </h2>
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
                 {valueProps.map((prop) => (

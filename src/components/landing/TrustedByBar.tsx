@@ -25,7 +25,7 @@ export const TrustedByBar = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <p className="text-xs font-semibold text-muted-foreground/40 uppercase tracking-widest mb-4">
-            Built for modern outbound teams
+            Built for founder-led sales and outbound teams
           </p>
           {/* Company pills */}
           <div className="flex items-center justify-center flex-wrap gap-2 mb-3">
@@ -40,7 +40,7 @@ export const TrustedByBar = () => {
           </div>
           {/* Urgency signal */}
           <p className="text-xs text-muted-foreground/35 italic">
-            Founding member spots are limited — early access pricing locked in forever.
+            For teams that want better-fit leads, faster prospecting, and a simpler outbound workflow.
           </p>
         </div>
 
