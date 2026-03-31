@@ -22,6 +22,7 @@ const TestimonialsSection = lazy(() => import("@/components/landing/Testimonials
 const DifferentiationSection = lazy(() => import("@/components/landing/DifferentiationSection").then(m => ({ default: m.DifferentiationSection })));
 const ExampleSearchSection = lazy(() => import("@/components/landing/ExampleSearchSection").then(m => ({ default: m.ExampleSearchSection })));
 const ExampleOutreachSection = lazy(() => import("@/components/landing/ExampleOutreachSection").then(m => ({ default: m.ExampleOutreachSection })));
+const FounderNoteSection = lazy(() => import("@/components/landing/FounderNoteSection").then(m => ({ default: m.FounderNoteSection })));
 const Demo = lazy(() => import("@/components/Demo").then(m => ({ default: m.Demo })));
 const IntegrationsSection = lazy(() => import("@/components/landing/IntegrationsSection").then(m => ({ default: m.IntegrationsSection })));
 const PricingTeaser = lazy(() => import("@/components/landing/PricingTeaser").then(m => ({ default: m.PricingTeaser })));
@@ -143,6 +144,7 @@ const Index = () => {
               <ModulesSection />
               <ExampleOutreachSection />
               <DifferentiationSection />
+              <FounderNoteSection />
               <TestimonialsSection />
               <Demo />
               <IntegrationsSection />
