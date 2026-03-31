@@ -7,8 +7,8 @@ const testimonials = [
     role: "VP of Sales",
     company: "TechFlow",
     image: "SC",
-    text: "SalesOS transformed how we approach outbound. The AI-generated emails feel genuinely personal, and our response rates increased 3x.",
-    metric: "3x response rate",
+    text: "SalesOS transformed how we approach outbound. The AI-generated emails feel genuinely personal, and our team is shipping more relevant outreach with less manual work.",
+    metric: "More relevant outreach",
     rating: 5
   },
   {
@@ -35,7 +35,7 @@ const testimonials = [
     company: "ScaleUp",
     image: "DK",
     text: "Finally, a platform that understands modern sales. The pipeline analytics gave us insights we never had before.",
-    metric: "40% pipeline visibility",
+    metric: "Clearer pipeline insight",
     rating: 5
   }
 ];
