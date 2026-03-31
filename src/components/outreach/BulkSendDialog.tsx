@@ -99,9 +99,48 @@ export const BulkSendDialog = ({
 
   const deselectAll = () => setSelectedLeadIds(new Set());
 
+  const stripTrailingPlaceholderName = (body: string) => {
+    const lines = body.trimEnd().split(/\r?\n/);
+
+    while (lines.length > 0 && !lines[lines.length - 1].trim()) {
+      lines.pop();
+    }
+
+    if (lines.length === 0) return "";
+
+    const lastLine = lines[lines.length - 1].trim();
+    const isPlaceholderName = /^(?:\[name\]|\{name\}|\{\{\s*name\s*\}\}|<name>|name)$/i.test(lastLine);
+
+    if (!isPlaceholderName) {
+      return body.trimEnd();
+    }
+
+    lines.pop();
+
+    while (lines.length > 0 && !lines[lines.length - 1].trim()) {
+      lines.pop();
+    }
+
+    const trailingLine = lines[lines.length - 1]?.trim() || "";
+    const isSignOff = /^(best(?: regards)?|regards|thanks|thank you|sincerely|cheers)[\s,!.:-]*$/i.test(trailingLine);
+
+    return isSignOff ? lines.join("\n") : body.trimEnd();
+  };
+
+  const sanitizeGeneratedEmailBody = (body: string) => {
+    const withoutPlaceholders = body
+      .replace(/\[(?:name|company|first\s*name|full\s*name)\]/gi, "")
+      .replace(/\{\{\s*(?:name|company|first\s*name|full\s*name)\s*\}\}/gi, "")
+      .replace(/\{(?:name|company|first\s*name|full\s*name)\}/gi, "")
+      .replace(/<(?:name|company|first\s*name|full\s*name)>/gi, "")
+      .replace(/[ \t]+\n/g, "\n");
+
+    return stripTrailingPlaceholderName(withoutPlaceholders).trim();
+  };
+
   const appendSenderLine = (body: string) => {
     if (!senderName) return body;
-    const trimmed = body.trimEnd();
+    const trimmed = stripTrailingPlaceholderName(body);
     const signOffRegex = /^(best(?: regards)?|regards|thanks|thank you|sincerely|cheers)[\s,!.:-]*$/im;
     if (signOffRegex.test(trimmed.split('\n').pop()?.trim() || '')) {
       return `${trimmed}\n${senderName}`;
@@ -110,7 +149,8 @@ export const BulkSendDialog = ({
   };
 
   const buildBodyWithSignature = (body: string) => {
-    const withSender = appendSenderLine(body);
+    const cleanedBody = stripTrailingPlaceholderName(body);
+    const withSender = appendSenderLine(cleanedBody);
     const signatureForEmail = signature
       .replace(/width=["']150["']/gi, 'width="320"')
       .replace(/max-width:\s*150px/gi, 'max-width:320px');
@@ -162,7 +202,7 @@ export const BulkSendDialog = ({
             },
           });
           if (bodyErr) throw bodyErr;
-          body = bodyData.email;
+          body = sanitizeGeneratedEmailBody(bodyData.email);
         } else {
           // Personalize same template with lead name/company
           subject = subject

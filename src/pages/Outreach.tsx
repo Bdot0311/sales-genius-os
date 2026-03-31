@@ -344,6 +344,45 @@ const Outreach = () => {
 
   const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+  const stripTrailingPlaceholderName = (body: string) => {
+    const lines = body.trimEnd().split(/\r?\n/);
+
+    while (lines.length > 0 && !lines[lines.length - 1].trim()) {
+      lines.pop();
+    }
+
+    if (lines.length === 0) return "";
+
+    const lastLine = lines[lines.length - 1].trim();
+    const isPlaceholderName = /^(?:\[name\]|\{name\}|\{\{\s*name\s*\}\}|<name>|name)$/i.test(lastLine);
+
+    if (!isPlaceholderName) {
+      return body.trimEnd();
+    }
+
+    lines.pop();
+
+    while (lines.length > 0 && !lines[lines.length - 1].trim()) {
+      lines.pop();
+    }
+
+    const trailingLine = lines[lines.length - 1]?.trim() || "";
+    const isSignOff = /^(best(?: regards)?|regards|thanks|thank you|sincerely|cheers)[\s,!.:-]*$/i.test(trailingLine);
+
+    return isSignOff ? lines.join("\n") : body.trimEnd();
+  };
+
+  const sanitizeGeneratedEmailBody = (body: string) => {
+    const withoutPlaceholders = body
+      .replace(/\[(?:name|company|first\s*name|full\s*name)\]/gi, "")
+      .replace(/\{\{\s*(?:name|company|first\s*name|full\s*name)\s*\}\}/gi, "")
+      .replace(/\{(?:name|company|first\s*name|full\s*name)\}/gi, "")
+      .replace(/<(?:name|company|first\s*name|full\s*name)>/gi, "")
+      .replace(/[ \t]+\n/g, "\n");
+
+    return stripTrailingPlaceholderName(withoutPlaceholders).trim();
+  };
+
   const hasSenderAsOwnLine = (content: string, senderName: string) => {
     if (!senderName) return false;
     const senderLineRegex = new RegExp(`(^|\\n)\\s*${escapeRegExp(senderName)}\\s*(\\n|$)`, "i");
@@ -351,7 +390,7 @@ const Outreach = () => {
   };
 
   const appendSenderLine = (body: string, senderName: string) => {
-    const trimmedBody = body.trimEnd();
+    const trimmedBody = stripTrailingPlaceholderName(body);
     if (!senderName || hasSenderAsOwnLine(trimmedBody, senderName)) {
       return trimmedBody;
     }
@@ -395,9 +434,10 @@ const Outreach = () => {
       .toLowerCase();
 
     const signatureHasSender = normalizedSender && signatureText.includes(normalizedSender);
+    const cleanedBaseEmailBody = stripTrailingPlaceholderName(baseEmailBody);
     const bodyWithSender = signatureHasSender
-      ? baseEmailBody.trimEnd()
-      : appendSenderLine(baseEmailBody, senderName);
+      ? cleanedBaseEmailBody
+      : appendSenderLine(cleanedBaseEmailBody, senderName);
 
     return signatureForEmail ? `${bodyWithSender}\n\n${signatureForEmail}` : bodyWithSender;
   };
@@ -750,7 +790,7 @@ const Outreach = () => {
 
       if (error) throw error;
       const senderName = await resolveSenderName();
-      const emailBody = appendSenderLine(data.email, senderName);
+      const emailBody = appendSenderLine(sanitizeGeneratedEmailBody(data.email), senderName);
       if (senderName && !senderProfileName.trim()) {
         setSenderProfileName(senderName);
       }
@@ -841,7 +881,7 @@ const Outreach = () => {
         return {
           id: `variant-${num}`,
           subject,
-          body: bodyData?.email || '',
+          body: sanitizeGeneratedEmailBody(bodyData?.email || ''),
         };
       });
 
@@ -867,7 +907,7 @@ const Outreach = () => {
   const selectVariant = async (variant: EmailVariant) => {
     setSubjectLine(variant.subject);
     const senderName = await resolveSenderName();
-    setGeneratedEmail(appendSenderLine(variant.body, senderName));
+    setGeneratedEmail(appendSenderLine(sanitizeGeneratedEmailBody(variant.body), senderName));
     setShowVariantPicker(false);
     setEmailVariants([]);
     toast({

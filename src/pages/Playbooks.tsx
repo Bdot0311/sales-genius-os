@@ -90,7 +90,7 @@ const PLAYBOOKS: Playbook[] = [
           'CTA (1 sentence): "Worth a 15-min look, or bad timing?"',
         ],
         examples: [
-          'Subject: re: your SDR hiring push\n\nNoticed you posted 6 SDR openings this month. Scaling outbound without good data is like hiring drivers without giving them a map.\n\nWe help teams like [similar co] cut prospect research time by 70% so new reps ramp in weeks, not months.\n\nWorth a quick chat, or bad timing?',
+          'Subject: re: your SDR hiring push\n\nNoticed you posted 6 SDR openings this month. Scaling outbound without good data is like hiring drivers without giving them a map.\n\nWe help teams like yours cut manual prospect research so new reps ramp with cleaner data and less busywork.\n\nWorth a quick chat, or bad timing?',
         ],
         tips: 'Under 75 words. The trigger is your permission to reach out — it replaces the need for a clever opener.',
       },
@@ -209,7 +209,7 @@ const PLAYBOOKS: Playbook[] = [
         ],
         examples: [
           'To Champion (VP RevOps): "Your SDR team is spending 3 hours/day on manual research. What if that was 20 minutes?"',
-          'To Decision Maker (CRO): "Companies like [peer] increased pipeline by 35% after fixing their prospecting data layer."',
+          'To Decision Maker (CRO): "A weak prospecting data layer usually shows up as rep inefficiency, inconsistent pipeline quality, and slower ramp."',
           'To Influencer (Sales Ops): "We integrate with Salesforce and Outreach in under a day. No custom dev needed."',
         ],
         tips: 'Never send the same email to multiple people at the same company. They will compare notes.',
@@ -277,7 +277,7 @@ const PLAYBOOKS: Playbook[] = [
           'No pitch, no demo request on the first touch',
         ],
         examples: [
-          'Subject: benchmark data for [their industry] outbound\n\nHi James,\n\nWe just published our 2026 outbound benchmark report. Given HealthBridge\'s hiring push, thought one data point would jump out: companies scaling SDR teams see 40% ramp time improvement when they invest in data quality first.\n\nAttached the full report — pages 3-4 are most relevant to healthtech.\n\nHappy to walk through how your numbers compare if useful.\n\nBest, [Name]',
+          'Subject: benchmark data for [their industry] outbound\n\nHi James,\n\nWe just published our 2026 outbound benchmark report. Given HealthBridge\'s hiring push, thought one data point would jump out: companies scaling SDR teams usually feel ramp-time drag first when data quality is weak.\n\nAttached the full report — pages 3-4 are most relevant to healthtech.\n\nHappy to walk through how your numbers compare if useful.\n\nBest, [Name]',
         ],
         tips: 'The value-first approach works because it flips the dynamic. You\'re not asking — you\'re giving. The meeting comes naturally as a next step.',
       },
@@ -314,7 +314,7 @@ const PLAYBOOKS: Playbook[] = [
     id: 'referral-loop',
     name: 'The Referral & Warm Intro Engine',
     tagline: 'Turn every conversation into 2-3 more',
-    description: 'The most underused outbound strategy. Every meeting, every closed deal, and every lost deal is an opportunity for warm introductions. Referred prospects convert 4-5× higher than cold outreach and close 30% faster.',
+    description: 'The most underused outbound strategy. Every meeting, every closed deal, and every lost deal is an opportunity for warm introductions. Referred prospects usually enter conversations with more trust and less friction than cold outreach.',
     bestFor: 'Any team that wants to compound their pipeline over time with highest-quality leads',
     icon: '🔄',
     color: 'border-l-rose-500',
@@ -344,7 +344,7 @@ const PLAYBOOKS: Playbook[] = [
           'Low-friction CTA: "Worth a quick chat?"',
         ],
         examples: [
-          'Subject: [Referrer name] suggested we connect\n\nHi Rachel,\n\nMarcus Johnson at CloudSync mentioned you\'re scaling outbound and running into data quality issues — same challenge he had 6 months ago.\n\nWe helped his team cut prospect research from 3 hours/day to 20 minutes. Thought it might be relevant for LogiCore.\n\nWorth 15 minutes this week?\n\nBest, [Name]',
+          'Subject: [Referrer name] suggested we connect\n\nHi Rachel,\n\nMarcus Johnson at CloudSync mentioned you\'re scaling outbound and running into data quality issues — same challenge he had 6 months ago.\n\nWe helped his team reduce the manual work tied to prospect research and list prep. Thought it might be relevant for LogiCore.\n\nWorth 15 minutes this week?\n\nBest, [Name]',
         ],
         tips: 'Referral emails get 40-50% reply rates. The referrer\'s name does all the heavy lifting — keep the rest minimal.',
       },
@@ -361,7 +361,7 @@ const PLAYBOOKS: Playbook[] = [
           'CRM field: "Referred by: [name]" — track conversion rates by referral source',
           'Quarterly email to happy customers: "Who else should we be helping?"',
         ],
-        tips: 'The best sales orgs get 30-40% of their pipeline from referrals. It compounds — every new customer becomes a source of future intros.',
+        tips: 'The best sales orgs treat referrals as a compounding channel — every customer, partner, and investor can open a warmer path into the next account.',
       },
     ],
   },

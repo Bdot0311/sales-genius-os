@@ -49,7 +49,46 @@ const SIGNOFF_RULES = `
 FORMAT:
 - Greeting: "Hi {firstName}," — nothing else on that line.
 - Sign-off: ONLY the sender's first name on its own line. No "Best,", no "Thanks," — just the name.
+- Never output placeholder tokens like [Name], {name}, {{name}}, <name>, [Company], or similar anywhere in the email.
 - Generate ONLY the email body. Do NOT include a subject line or any headers.`;
+
+const CLAIMS_RULES = `
+CLAIMS & PROOF:
+- Do NOT invent results, percentages, customer counts, case studies, benchmark data, funding events, hiring plans, launches, or internal initiatives.
+- If a concrete metric or customer proof is not explicitly provided in the input, do not imply one.
+- Prefer specific operational outcomes without numbers unless the number is grounded in provided input.
+- Never write fake credibility devices like "teams cut ramp time 40%" or "customers reply 3x more" unless that exact proof is provided.`;
+
+const PLACEHOLDER_TOKEN_REGEX = /\[(?:name|company|first\s*name|full\s*name)\]|\{\{\s*(?:name|company|first\s*name|full\s*name)\s*\}\}|\{(?:name|company|first\s*name|full\s*name)\}|<(?:name|company|first\s*name|full\s*name)>/gi;
+
+const cleanGeneratedEmail = (rawEmail: string) => {
+  let email = rawEmail.trim();
+
+  if (email.startsWith('```')) {
+    email = email.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '');
+  }
+
+  email = email.replace(/^Subject:.*\n+/i, '').trim();
+  email = email.replace(PLACEHOLDER_TOKEN_REGEX, '').replace(/[ \t]+\n/g, '\n');
+
+  const lines = email.split(/\r?\n/);
+  const cleanedLines: string[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      if (cleanedLines[cleanedLines.length - 1] !== '') cleanedLines.push('');
+      continue;
+    }
+
+    const isBarePlaceholder = /^(?:name|company|first\s*name|full\s*name)$/i.test(trimmed);
+    if (isBarePlaceholder) continue;
+
+    cleanedLines.push(trimmed);
+  }
+
+  return cleanedLines.join('\n').trim();
+};
 
 // ─── Template-specific system prompts ─────────────────────────────────────────
 const getSystemPrompt = (
@@ -71,6 +110,7 @@ STRUCTURE — exactly 4 sentences in the body (not counting greeting and sign-of
 3. SOLUTION: One sentence explaining what you do and how it directly addresses that pain.
 4. CTA: One soft question. "Worth 15 min?", "Open to a quick look?", "Want to see how it works?"
 ${BREVITY_RULES}${PERSONALIZATION_RULES}${BANNED_PHRASES}
+${CLAIMS_RULES}
 ${SIGNOFF_RULES}`;
   }
 
@@ -85,6 +125,7 @@ STRUCTURE — exactly 3 sentences in the body (not counting greeting and sign-of
 2. One sentence connecting your value prop to that observation — what you collapse, fix, or accelerate for them specifically.
 3. Soft CTA as a question: "Worth 15 min to see it?", "Open to a quick look?", "Want to see how?"
 ${BREVITY_RULES}${PERSONALIZATION_RULES}${BANNED_PHRASES}
+${CLAIMS_RULES}
 ${SIGNOFF_RULES}`;
 
     case 'follow-up':
@@ -100,6 +141,7 @@ STRUCTURE — 2-3 sentences:
 TONE: Casual, confident, not apologetic. You're following up because it's relevant, not because you're desperate.
 NEVER use: "just following up", "circling back", "bumping this to the top", "wanted to check in"
 ${BREVITY_RULES}${PERSONALIZATION_RULES}${BANNED_PHRASES}
+${CLAIMS_RULES}
 ${SIGNOFF_RULES}`;
 
     case 'meeting':
@@ -114,6 +156,7 @@ STRUCTURE — 2-3 sentences:
 
 RULE: Be direct about what you want. Do not bury the ask in qualifiers.
 ${BREVITY_RULES}${PERSONALIZATION_RULES}${BANNED_PHRASES}
+${CLAIMS_RULES}
 ${SIGNOFF_RULES}`;
 
     case 'demo':
@@ -128,6 +171,7 @@ STRUCTURE — 2-3 sentences:
 
 RULE: Make the demo feel valuable, not like a sales pitch. Outcome first, product second.
 ${BREVITY_RULES}${PERSONALIZATION_RULES}${BANNED_PHRASES}
+${CLAIMS_RULES}
 ${SIGNOFF_RULES}`;
 
     case 'proposal':
@@ -143,6 +187,7 @@ STRUCTURE — 3-4 sentences:
 
 RULE: Outcome-focused, not feature-focused. They care about what changes, not what the product does.
 ${BREVITY_RULES}${PERSONALIZATION_RULES}${BANNED_PHRASES}
+${CLAIMS_RULES}
 ${SIGNOFF_RULES}`;
 
     default:
@@ -154,6 +199,7 @@ STRUCTURE — 3 sentences:
 2. One sentence connecting your value prop to that observation.
 3. Soft CTA as a question.
 ${BREVITY_RULES}${PERSONALIZATION_RULES}${BANNED_PHRASES}
+${CLAIMS_RULES}
 ${SIGNOFF_RULES}`;
   }
 };
@@ -293,7 +339,8 @@ RULES:
 - Keep it under 50 words.
 - Sound like someone who knows the space, not someone who read their LinkedIn profile.
 - CRITICAL: Every generation must use a different power word, angle, and structure.
-${BANNED_PHRASES}`;
+${BANNED_PHRASES}
+${CLAIMS_RULES}`;
 
       userPrompt = `Generate a personalized trigger/context opener for this lead.
 
@@ -383,13 +430,7 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
 
     const data = await response.json();
     let email = data.choices[0].message.content.trim();
-
-    // Strip any markdown code blocks the model might add
-    if (email.startsWith('```')) {
-      email = email.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '');
-    }
-    // Strip any subject line the model includes despite being told not to
-    email = email.replace(/^Subject:.*\n+/i, '').trim();
+    email = cleanGeneratedEmail(email);
 
     return new Response(JSON.stringify({ email }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
