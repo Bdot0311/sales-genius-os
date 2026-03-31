@@ -11,7 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Send, Sparkles, Users, Search, Settings2, Mail } from "lucide-react";
-import { EmailQualityChecker } from "./EmailQualityChecker";
+import { EmailQualityChecker, scoreEmailQuality } from "./EmailQualityChecker";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
@@ -216,6 +216,10 @@ export const BulkSendDialog = ({
         }
 
         const fullBody = buildBodyWithSignature(body);
+        const quality = scoreEmailQuality(subject, fullBody);
+        if (quality.overallStatus === "red") {
+          throw new Error("Draft failed outbound quality checks");
+        }
         // Round-robin across accounts or use selected one
         let senderAccountId: string;
         if (bulkSenderId === "all" && connectedAccounts.length > 0) {

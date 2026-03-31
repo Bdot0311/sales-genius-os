@@ -27,6 +27,7 @@ import { EmailPerformanceStats } from "@/components/outreach/EmailPerformanceSta
 import { FollowUpSuggestion, FollowUpData } from "@/components/outreach/FollowUpSuggestion";
 import { BarChart3, ListOrdered, Layout, Users } from "lucide-react";
 import { BulkSendDialog } from "@/components/outreach/BulkSendDialog";
+import { EmailQualityChecker, scoreEmailQuality } from "@/components/outreach/EmailQualityChecker";
 import { SequencesList, MessageBlocksList } from "@/components/sequences";
 
 // Opener words for the cold email framework
@@ -947,6 +948,17 @@ const Outreach = () => {
       const senderAccountId = selectedSenderId || connectedAccounts[0]?.id;
       const senderName = await resolveSenderName();
       const fullEmailBody = buildEmailBodyWithSignature(generatedEmail, senderName);
+      const quality = scoreEmailQuality(subjectLine, fullEmailBody);
+
+      if (quality.overallStatus === "red") {
+        toast({
+          title: "Email needs edits before sending",
+          description: "This draft has high-risk outbound issues. Tighten the copy and try again.",
+          variant: "destructive",
+        });
+        setIsSending(false);
+        return;
+      }
 
       const { data, error } = await supabase.functions.invoke('send-email', {
         body: {
@@ -1934,7 +1946,8 @@ For logos, use HTML:
                     </div>
                   </div>
                   {generatedEmail && (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
+                      <EmailQualityChecker subject={subjectLine} body={generatedEmail} />
                       <div className="flex gap-2">
                         <Button 
                           className="flex-1"

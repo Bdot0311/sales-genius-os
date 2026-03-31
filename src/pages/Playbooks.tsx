@@ -45,7 +45,7 @@ const PLAYBOOKS: Playbook[] = [
     id: 'trigger-based',
     name: 'Trigger-Based Outbound',
     tagline: 'Strike when buying signals appear',
-    description: 'The highest-converting outbound strategy in 2025-2026. Instead of blasting cold lists, you monitor real-time signals (funding rounds, job postings, tech adoption, leadership changes) and reach out with relevant context. 3-5× higher reply rates than generic cold email.',
+    description: 'One of the strongest outbound strategies right now. Instead of blasting cold lists, you monitor real-time signals (funding rounds, job postings, tech adoption, leadership changes) and reach out with relevant context.',
     bestFor: 'Any outbound team that wants higher reply rates with less volume',
     icon: '⚡',
     color: 'border-l-amber-500',
@@ -131,7 +131,7 @@ const PLAYBOOKS: Playbook[] = [
         examples: [
           'Connection note: "Hi Sarah — saw your post on scaling SDR teams. Going through the same challenge with our clients. Would love to connect."',
         ],
-        tips: 'LinkedIn acceptance rates are 30-40% with personalized notes vs 15% without. This is about building familiarity, not pitching.',
+        tips: 'Personalized notes tend to outperform generic ones. This is about building familiarity, not pitching.',
       },
       {
         title: 'Day 2: Cold Email #1',
@@ -142,7 +142,7 @@ const PLAYBOOKS: Playbook[] = [
           'Keep under 100 words, one clear CTA',
         ],
         examples: [
-          'Subject: scaling outbound @ [Company]\n\nHi Sarah,\n\nNoticed you\'re building out the SDR org. The hardest part isn\'t hiring — it\'s giving reps enough quality data to actually hit quota.\n\nWe help teams like [similar co] generate verified prospect lists in seconds instead of hours.\n\nOpen to a 15-min demo this week?\n\nBest, [Name]',
+          'Subject: scaling outbound @ [Company]\n\nHi Sarah,\n\nNoticed you\'re building out the SDR org. The hardest part isn\'t hiring — it\'s giving reps enough quality data to actually hit quota.\n\nWe help teams like [similar co] generate verified prospect lists in seconds instead of hours.\n\nOpen to a 15-min demo this week?\n\nBrandon',
         ],
         tips: 'The email should feel like a natural continuation of the LinkedIn touch, not a separate blast.',
       },
@@ -277,7 +277,7 @@ const PLAYBOOKS: Playbook[] = [
           'No pitch, no demo request on the first touch',
         ],
         examples: [
-          'Subject: benchmark data for [their industry] outbound\n\nHi James,\n\nWe just published our 2026 outbound benchmark report. Given HealthBridge\'s hiring push, thought one data point would jump out: companies scaling SDR teams usually feel ramp-time drag first when data quality is weak.\n\nAttached the full report — pages 3-4 are most relevant to healthtech.\n\nHappy to walk through how your numbers compare if useful.\n\nBest, [Name]',
+          'Subject: benchmark data for [their industry] outbound\n\nHi James,\n\nWe just published our 2026 outbound benchmark report. Given HealthBridge\'s hiring push, thought one data point would jump out: companies scaling SDR teams usually feel ramp-time drag first when data quality is weak.\n\nAttached the full report — pages 3-4 are most relevant to healthtech.\n\nHappy to walk through how your numbers compare if useful.\n\nBrandon',
         ],
         tips: 'The value-first approach works because it flips the dynamic. You\'re not asking — you\'re giving. The meeting comes naturally as a next step.',
       },
@@ -306,7 +306,7 @@ const PLAYBOOKS: Playbook[] = [
         examples: [
           '"I\'ve shared a few things over the past couple weeks and had a few ideas specific to HealthBridge. Would it make sense to jump on a 15-min call, or would you prefer I send a quick video walkthrough?"',
         ],
-        tips: 'By this point, you\'re not cold anymore. You\'re a helpful person they recognize. The meeting conversion rate is 3-5× higher than a cold ask.',
+        tips: 'By this point, you\'re not cold anymore. You\'re a helpful person they recognize. Meeting conversion is usually much better than a truly cold ask once they recognize your name and context.',
       },
     ],
   },
@@ -344,7 +344,7 @@ const PLAYBOOKS: Playbook[] = [
           'Low-friction CTA: "Worth a quick chat?"',
         ],
         examples: [
-          'Subject: [Referrer name] suggested we connect\n\nHi Rachel,\n\nMarcus Johnson at CloudSync mentioned you\'re scaling outbound and running into data quality issues — same challenge he had 6 months ago.\n\nWe helped his team reduce the manual work tied to prospect research and list prep. Thought it might be relevant for LogiCore.\n\nWorth 15 minutes this week?\n\nBest, [Name]',
+          'Subject: [Referrer name] suggested we connect\n\nHi Rachel,\n\nMarcus Johnson at CloudSync mentioned you\'re scaling outbound and running into data quality issues — same challenge he had 6 months ago.\n\nWe helped his team reduce the manual work tied to prospect research and list prep. Thought it might be relevant for LogiCore.\n\nWorth 15 minutes this week?\n\nBrandon',
         ],
         tips: 'Referral emails get 40-50% reply rates. The referrer\'s name does all the heavy lifting — keep the rest minimal.',
       },
