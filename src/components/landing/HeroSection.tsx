@@ -329,7 +329,7 @@ export const HeroSection = () => {
               </div>
               <button
                 className="h-14 px-6 text-base text-muted-foreground hover:text-foreground transition-colors duration-200 relative group inline-flex items-center justify-center gap-2"
-                onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}
+                onClick={() => navigate("/demo")}
               >
                 <Play className="w-4 h-4 fill-current" />
                 <span className="relative">

@@ -23,6 +23,7 @@ const Automations = lazy(() => import("./pages/Automations"));
 const SequenceDetail = lazy(() => import("./pages/SequenceDetail"));
 const DashboardIntegrations = lazy(() => import("./pages/DashboardIntegrations"));
 const PricingPage = lazy(() => import("./pages/PricingPage"));
+const DemoPage = lazy(() => import("./pages/DemoPage"));
 const ApiDocs = lazy(() => import("./pages/ApiDocs"));
 const ApiStatus = lazy(() => import("./pages/ApiStatus"));
 const RequestIntegration = lazy(() => import("./pages/RequestIntegration"));
@@ -75,6 +76,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/pricing" element={<PricingPage />} />
+              <Route path="/demo" element={<DemoPage />} />
               <Route path="/api-docs" element={<ApiDocs />} />
               <Route path="/api-status" element={<ApiStatus />} />
               <Route path="/request-integration" element={<RequestIntegration />} />
