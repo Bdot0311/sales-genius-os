@@ -214,7 +214,7 @@ export const EmailQualityChecker = ({ subject, body }: EmailQualityCheckerProps)
     <Card className="border-border/50">
       <CardHeader className="pb-3 pt-4 px-4">
         <CardTitle className="text-sm font-medium flex items-center gap-2">
-          <StatusIcon status={overallStatus} />
+          <StatusIcon status={overallStatus as "green" | "yellow" | "red"} />
           Outbound Quality Check
           <span className="ml-auto text-xs font-normal text-muted-foreground">{overallScore}/100</span>
         </CardTitle>
