@@ -71,6 +71,15 @@ const PricingPage = () => {
             </p>
           </section>
 
+          <section className="pb-2 container mx-auto px-6 text-center">
+            <div className="max-w-3xl mx-auto rounded-2xl border border-border/30 bg-muted/30 p-6">
+              <h2 className="text-2xl font-bold mb-3">Why buy now?</h2>
+              <p className="text-muted-foreground leading-relaxed">
+                If SalesOS saves your team even a few hours a week on list building, lead prioritization, and first-touch drafting, it can pay for itself fast. The right plan is really about how much prospecting volume and workflow support you need.
+              </p>
+            </div>
+          </section>
+
           {/* Pricing Component */}
           <Pricing />
 

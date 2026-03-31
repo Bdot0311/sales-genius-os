@@ -155,23 +155,23 @@ const Confirmation = () => {
   const nextSteps = [
     {
       icon: CheckCircle,
-      title: "Check your email",
-      description: "We've sent your login credentials to your email address. Look for an email from SalesOS with your temporary password."
+      title: "Confirm your plan",
+      description: "SalesOS is activating your plan and preparing your account access."
     },
     {
       icon: Users,
-      title: "Create your account",
-      description: "Use the credentials from your email to sign in and set up your account. You'll be prompted to change your password on first login."
+      title: "Sign in or create your account",
+      description: "Use the same email you used at checkout. If you already have access, sign in. If not, complete account setup."
     },
     {
       icon: BarChart,
-      title: "Start searching for leads",
-      description: "Use your search credits to find qualified prospects and build your pipeline."
+      title: "Start prospecting",
+      description: "Use your plan to begin searching, reviewing leads, and building your outbound workflow."
     },
     {
       icon: Sparkles,
-      title: "Enrich & close deals",
-      description: "Leverage AI-powered enrichment, outreach tools, and automations to convert leads into customers."
+      title: "Launch outreach",
+      description: "Move from lead discovery to personalized outreach and follow-up inside one system."
     }
   ];
 
@@ -203,7 +203,7 @@ const Confirmation = () => {
             <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
               {isVerifying 
                 ? "Please wait while we confirm your subscription..."
-                : "Your subscription is active. Let's get you set up and selling in minutes."
+                : "Your plan is active. Next, we'll guide you into account access and setup."
               }
             </p>
           </div>

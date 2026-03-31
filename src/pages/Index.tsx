@@ -40,8 +40,8 @@ const SectionLoader = () => (
 // AEO: Define clear, structured content for AI answer engines
 const gettingStartedSteps = [
   {
-    name: "Start free",
-    text: "Create your SalesOS account and explore the workflow without needing a credit card up front."
+    name: "Explore the workflow",
+    text: "Preview how SalesOS works before choosing the plan you want for live prospecting and outreach."
   },
   {
     name: "Describe your ideal customer",
@@ -117,7 +117,7 @@ const Index = () => {
       {/* AEO: HowTo Schema for "How to use SalesOS" queries */}
       <HowToSchema 
         name="How to Get Started with SalesOS"
-        description="Learn how to find, engage, and close more deals with SalesOS in just 5 easy steps."
+        description="Learn how to preview the SalesOS workflow, identify qualified leads, and move toward live outreach in 5 clear steps."
         steps={gettingStartedSteps}
         totalTime="PT5M"
       />
