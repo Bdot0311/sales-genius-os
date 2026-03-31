@@ -146,7 +146,6 @@ const Index = () => {
               <DifferentiationSection />
               <FounderNoteSection />
               <TestimonialsSection />
-              <Demo />
               <IntegrationsSection />
               <PricingTeaser />
               <FAQSection />
