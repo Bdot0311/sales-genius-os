@@ -95,13 +95,6 @@ export const OrganizationSchema = ({
       "height": 512
     },
     "image": logo,
-    "sameAs": [
-      "https://twitter.com/salesos",
-      "https://linkedin.com/company/salesos",
-      "https://github.com/salesos",
-      "https://www.youtube.com/@salesos",
-      "https://www.facebook.com/salesos"
-    ],
     "contactPoint": [
       {
         "@type": "ContactPoint",
@@ -195,41 +188,6 @@ export const SoftwareApplicationSchema = () => {
         }
       ]
     },
-    "aggregateRating": {
-      "@type": "AggregateRating",
-      "ratingValue": "4.9",
-      "ratingCount": "847",
-      "bestRating": "5",
-      "worstRating": "1"
-    },
-    "review": [
-      {
-        "@type": "Review",
-        "reviewRating": {
-          "@type": "Rating",
-          "ratingValue": "5",
-          "bestRating": "5"
-        },
-        "author": {
-          "@type": "Person",
-          "name": "Sarah Johnson"
-        },
-        "reviewBody": "SalesOS transformed our sales process. The AI lead scoring alone increased our conversion rate by 40%."
-      },
-      {
-        "@type": "Review",
-        "reviewRating": {
-          "@type": "Rating",
-          "ratingValue": "5",
-          "bestRating": "5"
-        },
-        "author": {
-          "@type": "Person",
-          "name": "Michael Chen"
-        },
-        "reviewBody": "Best sales automation tool we've used. The email generation is incredibly accurate and personalized."
-      }
-    ],
     "featureList": [
       "AI-Powered Lead Generation and Scoring",
       "Intelligent Personalized Email Generation",
@@ -294,11 +252,6 @@ export const ProductSchema = ({ name, description, price, priceCurrency = "USD" 
         "@type": "Organization",
         "@id": `${BASE_URL}/#organization`
       }
-    },
-    "aggregateRating": {
-      "@type": "AggregateRating",
-      "ratingValue": "4.9",
-      "reviewCount": "847"
     }
   };
 

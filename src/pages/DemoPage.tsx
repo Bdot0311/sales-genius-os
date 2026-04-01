@@ -88,8 +88,8 @@ const easeOut3 = (t: number) => 1 - Math.pow(1 - t, 3);
 const norm = (v: number, lo: number, hi: number) =>
   Math.max(0, Math.min(1, (v - lo) / (hi - lo)));
 
-// ─── Scroll chapter: 180vh container, 100vh sticky inner ──────────────────────
-// Content enters (0→0.10), holds (0.10→0.82), exits (0.82→1.0)
+// ─── Scroll chapter: tighter cinematic scene ──────────────────────────────────
+// Content enters quickly, overlaps, then dissolves out
 const ScrollChapter = ({
   children,
   glowPos = "50% 50%",
@@ -100,24 +100,43 @@ const ScrollChapter = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const progress = useScrollProgress(containerRef as { current: HTMLElement | null });
 
-  const enterT = easeOut3(norm(progress, 0, 0.10));
-  const exitT  = easeOut3(norm(progress, 0.82, 1.0));
-  // Fire active very early so animations start as soon as content appears
-  const active = progress >= 0.04;
+  const enterT = easeOut3(norm(progress, 0, 0.12));
+  const holdT = norm(progress, 0.14, 0.6);
+  const exitT = easeOut3(norm(progress, 0.52, 0.94));
+  const active = progress >= 0.015 && progress <= 0.96;
 
-  const opacity    = active ? Math.max(0.02, 1 - exitT * 0.94) : enterT;
-  const translateY = active ? -exitT * 55                       : (1 - enterT) * 70;
-  const scale      = active ? 1 - exitT * 0.05                  : 0.92 + enterT * 0.08;
-  const blur       = active ? exitT * 10                        : (1 - enterT) * 12;
+  const opacity = Math.max(0, Math.min(1, enterT * (1 - exitT * 0.92) + holdT * 0.08));
+  const translateY = (1 - enterT) * 28 - exitT * 26;
+  const scale = 0.968 + enterT * 0.032 - exitT * 0.024;
+  const blur = (1 - enterT) * 10 + exitT * 12;
+  const sceneOpacity = Math.max(0.18, 0.28 + enterT * 0.34 - exitT * 0.22);
+  const sceneScale = 1.04 - enterT * 0.015 + exitT * 0.025;
 
   return (
-    <div ref={containerRef} style={{ height: "180vh" }}>
+    <div ref={containerRef} style={{ height: "116vh" }}>
       <div style={{ position: "sticky", top: 0, height: "100vh", overflow: "hidden" }}>
         {/* per-chapter ambient glow */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
-            background: `radial-gradient(circle at ${glowPos}, hsl(261 75% 50% / 0.11), transparent 52%)`,
+            opacity: sceneOpacity,
+            transform: `scale(${sceneScale})`,
+            background: `
+              radial-gradient(circle at ${glowPos}, hsl(261 75% 56% / 0.18), transparent 42%),
+              radial-gradient(circle at 50% 55%, hsl(220 35% 36% / 0.12), transparent 58%),
+              linear-gradient(180deg, rgba(8,8,16,0.14), rgba(8,8,16,0.62))
+            `,
+            filter: `blur(${(2 + exitT * 6).toFixed(1)}px)`,
+            transition: "opacity 180ms linear, transform 180ms linear, filter 180ms linear",
+          }}
+          aria-hidden="true"
+        />
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            opacity: Math.max(0, enterT * 0.4 - exitT * 0.1),
+            background: `linear-gradient(120deg, transparent 18%, hsl(0 0% 100% / 0.03) 50%, transparent 82%)`,
+            mixBlendMode: "screen",
           }}
           aria-hidden="true"
         />
@@ -187,8 +206,8 @@ const SplitWords = ({
     {text.split(" ").map((word, i) => (
       <span key={i} className="inline-block mr-[0.26em]"
         style={{
-          animation: visible ? `word-rise 0.75s cubic-bezier(0.22,1,0.36,1) both` : "none",
-          animationDelay: `${baseDelay + i * 50}ms`,
+          animation: visible ? `word-rise 0.5s cubic-bezier(0.22,1,0.36,1) both` : "none",
+          animationDelay: `${baseDelay + i * 34}ms`,
           opacity: visible ? undefined : 0,
         }}
       >
@@ -209,19 +228,21 @@ const GlassCard = ({
   children: React.ReactNode; className?: string; active?: boolean;
 }) => (
   <div
-    className={`relative rounded-2xl border border-white/8 bg-black/50 backdrop-blur-xl overflow-hidden ${className}`}
+    className={`relative rounded-[28px] border border-white/8 bg-black/45 backdrop-blur-2xl overflow-hidden ${className}`}
     style={{
       boxShadow: active
-        ? "0 0 55px hsl(261 75% 55% / 0.16), 0 24px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06)"
-        : "0 24px 80px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)",
-      transition: "box-shadow 1.2s ease",
+        ? "0 0 45px hsl(261 75% 55% / 0.12), 0 28px 90px rgba(0,0,0,0.46), inset 0 1px 0 rgba(255,255,255,0.06)"
+        : "0 24px 70px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.04)",
+      backgroundImage: "linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.01))",
+      transition: "box-shadow 0.7s ease, transform 0.7s ease",
+      transform: active ? "scale(1)" : "scale(0.988)",
     }}
   >
     {active && (
       <div className="absolute inset-0 pointer-events-none z-10"
         style={{
           background: "linear-gradient(105deg, transparent 28%, rgba(255,255,255,0.045) 50%, transparent 72%)",
-          animation: "shimmer-sweep 2.6s ease-in-out 0.4s 1 both",
+          animation: "shimmer-sweep 1.8s ease-in-out 0.22s 1 both",
         }}
         aria-hidden="true"
       />
@@ -261,7 +282,7 @@ const Typewriter = ({ text, active, speed = 16 }: { text: string; active: boolea
 const ChapterLabel = ({ num, label, visible }: { num: string; label: string; visible: boolean }) => (
   <div className="flex items-center gap-3 mb-7"
     style={{
-      animation: visible ? "word-rise 0.6s cubic-bezier(0.22,1,0.36,1) both" : "none",
+      animation: visible ? "word-rise 0.42s cubic-bezier(0.22,1,0.36,1) both" : "none",
       opacity: visible ? undefined : 0,
     }}
   >
@@ -277,7 +298,7 @@ const SearchChapter = ({ active }: { active: boolean }) => (
     <div className="w-full max-w-7xl mx-auto px-6 md:px-16 grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-center">
       {/* Left: copy */}
       <div className="relative">
-        <div className="absolute -top-16 -left-6 text-[11rem] font-black text-white/[0.022] leading-none select-none pointer-events-none" aria-hidden="true">01</div>
+        <div className="absolute -top-10 -left-2 text-[7rem] md:text-[8.5rem] font-black text-white/[0.018] leading-none select-none pointer-events-none blur-[1px]" aria-hidden="true">01</div>
         <ChapterLabel num="01" label="Search" visible={active} />
         <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-[1.05] mb-6">
           <div><SplitWords text="Describe who" visible={active} /></div>
@@ -285,12 +306,12 @@ const SearchChapter = ({ active }: { active: boolean }) => (
           <div><SplitWords text="to reach." visible={active} baseDelay={150} gradient /></div>
         </h2>
         <p className="text-base md:text-lg text-white/42 leading-relaxed max-w-sm"
-          style={{ animation: active ? "word-rise 0.7s cubic-bezier(0.22,1,0.36,1) 300ms both" : "none", opacity: active ? undefined : 0 }}>
+          style={{ animation: active ? "word-rise 0.38s cubic-bezier(0.22,1,0.36,1) 90ms both" : "none", opacity: active ? undefined : 0 }}>
           No Boolean filters. No field juggling. Just plain-English targeting that actually works.
         </p>
       </div>
       {/* Right: UI card */}
-      <div style={{ animation: active ? "word-rise 0.8s cubic-bezier(0.22,1,0.36,1) 180ms both" : "none", opacity: active ? undefined : 0 }}>
+      <div style={{ animation: active ? "word-rise 0.42s cubic-bezier(0.22,1,0.36,1) 70ms both" : "none", opacity: active ? undefined : 0 }}>
         <GlassCard active={active}>
           {active && (
             <div className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary to-transparent pointer-events-none z-20"
@@ -324,21 +345,21 @@ const SearchChapter = ({ active }: { active: boolean }) => (
                 <span key={tag} className="px-3 py-1 rounded-full border border-white/10 bg-white/[0.03] text-xs text-white/40 font-medium"
                   style={{
                     opacity: active ? 1 : 0,
-                    transform: active ? "translateY(0) scale(1)" : "translateY(8px) scale(0.92)",
-                    transition: `opacity 0.4s ${400 + i * 80}ms, transform 0.4s ${400 + i * 80}ms`,
+                    transform: active ? "translateY(0) scale(1)" : "translateY(5px) scale(0.96)",
+                    transition: `opacity 0.22s ${120 + i * 28}ms, transform 0.22s ${120 + i * 28}ms`,
                   }}>
                   {tag}
                 </span>
               ))}
             </div>
-            <div style={{ opacity: active ? 1 : 0, transform: active ? "translateY(0)" : "translateY(8px)", transition: "all 0.5s 800ms" }}>
+            <div style={{ opacity: active ? 1 : 0, transform: active ? "translateY(0)" : "translateY(5px)", transition: "all 0.24s 220ms" }}>
               <div className="flex items-center justify-between text-xs text-white/28 mb-2">
                 <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-primary animate-breathe" /> Scanning database</span>
                 <span className="text-primary font-semibold">847 matches</span>
               </div>
               <div className="h-1 rounded-full bg-white/5 overflow-hidden">
                 <div className="h-full rounded-full bg-gradient-to-r from-primary via-purple-400 to-primary/55"
-                  style={{ width: active ? "100%" : "0%", transition: "width 1.4s cubic-bezier(0.4,0,0.2,1) 950ms" }}
+                  style={{ width: active ? "100%" : "0%", transition: "width 0.75s cubic-bezier(0.22,1,0.36,1) 380ms" }}
                 />
               </div>
             </div>
@@ -362,7 +383,7 @@ const LeadsChapter = ({ active }: { active: boolean }) => (
       {/* Left: lead cards */}
       <div className="space-y-4">
         {leadsData.map(({ name, meta, fit, delay }) => (
-          <div key={name} style={{ animation: active ? `word-rise 0.7s cubic-bezier(0.22,1,0.36,1) ${delay}ms both` : "none", opacity: active ? undefined : 0 }}>
+          <div key={name} style={{ animation: active ? `word-rise 0.38s cubic-bezier(0.22,1,0.36,1) ${Math.round(delay * 0.55)}ms both` : "none", opacity: active ? undefined : 0 }}>
             <GlassCard active={active} className="px-6 py-4 flex items-center justify-between gap-4">
               <div>
                 <div className="text-xl font-semibold text-white/95">{name}</div>
@@ -375,7 +396,7 @@ const LeadsChapter = ({ active }: { active: boolean }) => (
       </div>
       {/* Right: copy */}
       <div className="relative">
-        <div className="absolute -top-16 -right-4 text-[11rem] font-black text-white/[0.022] leading-none select-none pointer-events-none text-right" aria-hidden="true">02</div>
+        <div className="absolute -top-10 -right-2 text-[7rem] md:text-[8.5rem] font-black text-white/[0.018] leading-none select-none pointer-events-none text-right blur-[1px]" aria-hidden="true">02</div>
         <ChapterLabel num="02" label="Leads" visible={active} />
         <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-[1.05] mb-6">
           <div><SplitWords text="The right accounts" visible={active} /></div>
@@ -386,7 +407,7 @@ const LeadsChapter = ({ active }: { active: boolean }) => (
           </div>
         </h2>
         <p className="text-base md:text-lg text-white/42 leading-relaxed max-w-sm"
-          style={{ animation: active ? "word-rise 0.7s cubic-bezier(0.22,1,0.36,1) 280ms both" : "none", opacity: active ? undefined : 0 }}>
+          style={{ animation: active ? "word-rise 0.36s cubic-bezier(0.22,1,0.36,1) 90ms both" : "none", opacity: active ? undefined : 0 }}>
           Not a massive list. A tighter one with context already built in — so you know who to call first.
         </p>
       </div>
@@ -406,7 +427,7 @@ const OutreachChapter = ({ active }: { active: boolean }) => {
   useEffect(() => {
     if (!active) { setVisibleLines(0); return; }
     let i = 0;
-    const t = setInterval(() => { i++; setVisibleLines(i); if (i >= outreachLines.length) clearInterval(t); }, 320);
+    const t = setInterval(() => { i++; setVisibleLines(i); if (i >= outreachLines.length) clearInterval(t); }, 110);
     return () => clearInterval(t);
   }, [active]);
 
@@ -415,19 +436,19 @@ const OutreachChapter = ({ active }: { active: boolean }) => {
       <div className="w-full max-w-7xl mx-auto px-6 md:px-16 grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-center">
         {/* Left: copy */}
         <div className="relative">
-          <div className="absolute -top-16 -left-6 text-[11rem] font-black text-white/[0.022] leading-none select-none pointer-events-none" aria-hidden="true">03</div>
+          <div className="absolute -top-10 -left-2 text-[7rem] md:text-[8.5rem] font-black text-white/[0.018] leading-none select-none pointer-events-none blur-[1px]" aria-hidden="true">03</div>
           <ChapterLabel num="03" label="Outreach" visible={active} />
           <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-[1.05] mb-6">
             <div><SplitWords text="Context becomes" visible={active} /></div>
             <div><SplitWords text="outreach." visible={active} baseDelay={110} gradient /></div>
           </h2>
           <p className="text-base md:text-lg text-white/42 leading-relaxed max-w-sm"
-            style={{ animation: active ? "word-rise 0.7s cubic-bezier(0.22,1,0.36,1) 220ms both" : "none", opacity: active ? undefined : 0 }}>
+            style={{ animation: active ? "word-rise 0.42s cubic-bezier(0.22,1,0.36,1) 110ms both" : "none", opacity: active ? undefined : 0 }}>
             Faster first drafts. Built from real lead context. Less blank-page work.
           </p>
         </div>
         {/* Right: email card */}
-        <div style={{ animation: active ? "word-rise 0.8s cubic-bezier(0.22,1,0.36,1) 160ms both" : "none", opacity: active ? undefined : 0 }}>
+        <div style={{ animation: active ? "word-rise 0.4s cubic-bezier(0.22,1,0.36,1) 60ms both" : "none", opacity: active ? undefined : 0 }}>
           <GlassCard active={active}>
             <div className="px-5 py-4 border-b border-white/8 flex items-center justify-between">
               <div>
@@ -442,8 +463,9 @@ const OutreachChapter = ({ active }: { active: boolean }) => {
                 {outreachLines.map((line, i) => (
                   <p key={i} style={{
                     opacity: visibleLines > i ? 1 : 0,
-                    transform: visibleLines > i ? "translateY(0)" : "translateY(14px)",
-                    transition: "opacity 0.55s ease, transform 0.55s ease",
+                    transform: visibleLines > i ? "translateY(0)" : "translateY(5px)",
+                    filter: visibleLines > i ? "blur(0)" : "blur(4px)",
+                    transition: "opacity 0.22s ease, transform 0.22s ease, filter 0.22s ease",
                   }}>{line}</p>
                 ))}
               </div>
@@ -470,7 +492,7 @@ const PipelineChapter = ({ active }: { active: boolean }) => {
     <div className="flex h-full items-center">
       <div className="w-full max-w-5xl mx-auto px-6 md:px-16">
         <div className="text-center mb-10 relative">
-          <div className="absolute -top-20 left-1/2 -translate-x-1/2 text-[11rem] font-black text-white/[0.022] leading-none select-none pointer-events-none" aria-hidden="true">04</div>
+          <div className="absolute -top-12 left-1/2 -translate-x-1/2 text-[7rem] md:text-[8.5rem] font-black text-white/[0.018] leading-none select-none pointer-events-none blur-[1px]" aria-hidden="true">04</div>
           <div className="flex justify-center">
             <ChapterLabel num="04" label="Pipeline" visible={active} />
           </div>
@@ -479,13 +501,13 @@ const PipelineChapter = ({ active }: { active: boolean }) => {
             <div><SplitWords text="to pipeline." visible={active} baseDelay={120} gradient /></div>
           </h2>
           <p className="text-base md:text-lg text-white/42 leading-relaxed max-w-lg mx-auto"
-            style={{ animation: active ? "word-rise 0.7s cubic-bezier(0.22,1,0.36,1) 260ms both" : "none", opacity: active ? undefined : 0 }}>
+            style={{ animation: active ? "word-rise 0.42s cubic-bezier(0.22,1,0.36,1) 120ms both" : "none", opacity: active ? undefined : 0 }}>
             Search, leads, outreach, pipeline — one workflow, one session.
           </p>
         </div>
         <div className="grid grid-cols-4 gap-3 mb-5">
           {metrics.map(([label, to, prefix, suffix], i) => (
-            <div key={label} style={{ animation: active ? `counter-blur-in 0.8s cubic-bezier(0.22,1,0.36,1) ${i * 100}ms both` : "none", opacity: active ? undefined : 0 }}>
+            <div key={label} style={{ animation: active ? `counter-blur-in 0.36s cubic-bezier(0.22,1,0.36,1) ${i * 38}ms both` : "none", opacity: active ? undefined : 0 }}>
               <GlassCard active={active} className="p-4 text-center">
                 <div className="text-2xl md:text-3xl font-bold text-white/95">
                   <Counter to={to} prefix={prefix} suffix={suffix} active={active} />
@@ -495,14 +517,14 @@ const PipelineChapter = ({ active }: { active: boolean }) => {
             </div>
           ))}
         </div>
-        <div style={{ animation: active ? "word-rise 0.8s cubic-bezier(0.22,1,0.36,1) 200ms both" : "none", opacity: active ? undefined : 0 }}>
+        <div style={{ animation: active ? "word-rise 0.34s cubic-bezier(0.22,1,0.36,1) 80ms both" : "none", opacity: active ? undefined : 0 }}>
           <GlassCard active={active} className="p-5">
             <div className="grid grid-cols-4 gap-3 h-28 items-end">
               {bars.map((h, i) => (
                 <div key={labels[i]} className="flex flex-col items-center gap-2 h-full">
                   <div className="w-full flex-1 rounded-xl bg-white/[0.04] overflow-hidden flex items-end">
                     <div className="w-full rounded-xl bg-gradient-to-t from-primary/70 to-primary/28"
-                      style={{ height: active ? `${h}%` : "4%", transition: `height 1.3s cubic-bezier(0.22,1,0.36,1) ${i * 150}ms` }}
+                      style={{ height: active ? `${h}%` : "4%", transition: `height 0.42s cubic-bezier(0.22,1,0.36,1) ${i * 42}ms` }}
                     />
                   </div>
                   <span className="text-xs text-white/28">{labels[i]}</span>

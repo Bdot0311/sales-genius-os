@@ -3,40 +3,28 @@ import { Quote, Star } from "lucide-react";
 
 const testimonials = [
   {
-    name: "Sarah Chen",
-    role: "VP of Sales",
-    company: "TechFlow",
-    image: "SC",
-    text: "SalesOS transformed how we approach outbound. The AI-generated emails feel genuinely personal, and our team is shipping more relevant outreach with less manual work.",
-    metric: "More relevant outreach",
-    rating: 5
+    title: "Plain-English targeting",
+    summary: "Start with a natural-language ICP instead of stacking filters and spreadsheets.",
+    detail: "Designed for teams that want lead discovery to feel more like strategy than list building.",
+    accent: "ICP-first workflow"
   },
   {
-    name: "Marcus Rodriguez",
-    role: "Founder & CEO",
-    company: "DataSync",
-    image: "MR",
-    text: "The automation workflows saved us 20+ hours per week. What used to take our team days now happens automatically.",
-    metric: "20+ hours saved weekly",
-    rating: 5
+    title: "Context-aware outreach",
+    summary: "Lead context carries forward into first-draft emails so reps start with a stronger point of view.",
+    detail: "Built to reduce blank-page work while keeping the final message reviewable by a human seller.",
+    accent: "Lead context preserved"
   },
   {
-    name: "Emily Watson",
-    role: "Sales Director",
-    company: "CloudBase",
-    image: "EW",
-    text: "Lead scoring accuracy is impressive. We're now focusing only on prospects most likely to convert. Game changer for our team.",
-    metric: "85% scoring accuracy",
-    rating: 5
+    title: "One continuous workflow",
+    summary: "Search, qualification, outreach, and pipeline updates live in one system instead of four disconnected tools.",
+    detail: "Useful for revenue teams that want fewer handoffs between prospecting and execution.",
+    accent: "Unified workspace"
   },
   {
-    name: "David Kim",
-    role: "Head of Growth",
-    company: "ScaleUp",
-    image: "DK",
-    text: "Finally, a platform that understands modern sales. The pipeline analytics gave us insights we never had before.",
-    metric: "Clearer pipeline insight",
-    rating: 5
+    title: "Human-reviewed by design",
+    summary: "AI speeds up drafting and prioritization, but the workflow still leaves room for operator judgment.",
+    detail: "A better fit for teams that want assistance without losing control of message quality.",
+    accent: "Operator in control"
   }
 ];
 
@@ -103,11 +91,11 @@ export const Testimonials = () => {
             <span className="text-sm font-medium text-primary">Customer Stories</span>
           </div>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4">
-            Loved by sales teams{" "}
+            Built for sales teams{" "}
             <span className="text-gradient-animated">everywhere</span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            See how leading companies are transforming their sales process with SalesOS.
+            A few reasons revenue teams evaluate SalesOS when they want a faster path from targeting to outreach.
           </p>
         </div>
 
@@ -132,33 +120,36 @@ export const Testimonials = () => {
               </div>
               
               <div className="relative z-10">
-                {/* Stars */}
+                {/* Accent */}
                 <div className="flex gap-1 mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-primary text-primary" />
+                  {[...Array(3)].map((_, i) => (
+                    <Star key={i} className="w-4 h-4 fill-primary/70 text-primary/80" />
                   ))}
                 </div>
                 
-                {/* Quote */}
-                <p className="text-foreground leading-relaxed mb-6 group-hover:text-foreground transition-colors">
-                  "{testimonial.text}"
+                <h3 className="text-xl font-semibold text-foreground mb-3">{testimonial.title}</h3>
+                <p className="text-foreground leading-relaxed mb-3 group-hover:text-foreground transition-colors">
+                  {testimonial.summary}
+                </p>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-6">
+                  {testimonial.detail}
                 </p>
                 
                 {/* Footer */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-sm font-semibold text-primary-foreground group-hover:scale-110 transition-transform duration-500">
-                      {testimonial.image}
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/80 to-accent/80 flex items-center justify-center text-sm font-semibold text-primary-foreground group-hover:scale-110 transition-transform duration-500">
+                      <Quote className="w-5 h-5" />
                     </div>
                     <div>
-                      <div className="font-semibold">{testimonial.name}</div>
+                      <div className="font-semibold">Product signal</div>
                       <div className="text-sm text-muted-foreground">
-                        {testimonial.role}, {testimonial.company}
+                        Real workflow value without invented customer claims
                       </div>
                     </div>
                   </div>
                   <div className="px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-300">
-                    {testimonial.metric}
+                    {testimonial.accent}
                   </div>
                 </div>
               </div>
