@@ -1,0 +1,1 @@
+ALTER TABLE public.lead_scores ADD CONSTRAINT lead_scores_contact_id_unique UNIQUE (contact_id);
