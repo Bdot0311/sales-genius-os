@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Navbar } from "@/components/Navbar";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SEOHead } from "@/components/seo";
 
@@ -30,10 +30,6 @@ const GLOBAL_STYLES = `
     from { filter: blur(8px); opacity: 0; transform: scale(0.85); }
     to   { filter: blur(0);   opacity: 1; transform: scale(1); }
   }
-  @keyframes spin-slow {
-    from { transform: rotate(0deg); }
-    to   { transform: rotate(360deg); }
-  }
   @keyframes breathe {
     0%,100% { opacity: 0.5; transform: scale(1); }
     50%     { opacity: 1;   transform: scale(1.15); }
@@ -46,13 +42,11 @@ const GLOBAL_STYLES = `
     0%,100% { transform: translateY(0); }
     50%     { transform: translateY(6px); }
   }
-  .animate-drift-1 { animation: drift 12s ease-in-out infinite; }
-  .animate-drift-2 { animation: drift 16s ease-in-out infinite reverse; }
-  .animate-drift-3 { animation: drift 20s ease-in-out infinite 3s; }
+  @keyframes dot-pulse {
+    0%,100% { transform: scale(1); opacity: 0.7; }
+    50%     { transform: scale(1.5); opacity: 1; }
+  }
   .animate-breathe { animation: breathe 1.6s ease-in-out infinite; }
-  .animate-spin-slow { animation: spin-slow 20s linear infinite; }
-  .animate-spin-reverse { animation: spin-slow 30s linear infinite reverse; }
-  .animate-glow-pulse { animation: glow-pulse 3s ease-in-out infinite; }
 `;
 
 const useGlobalStyles = () => {
@@ -62,98 +56,6 @@ const useGlobalStyles = () => {
     document.head.appendChild(el);
     return () => el.remove();
   }, []);
-};
-
-// ─── Scroll progress through a sticky container ───────────────────────────────
-// Returns 0→1 as user scrolls from top to bottom of the container
-const useScrollProgress = (ref: { current: HTMLElement | null }) => {
-  const [progress, setProgress] = useState(0);
-  useEffect(() => {
-    const onScroll = () => {
-      if (!ref.current) return;
-      const rect = ref.current.getBoundingClientRect();
-      const scrollable = ref.current.offsetHeight - window.innerHeight;
-      if (scrollable <= 0) return;
-      setProgress(Math.max(0, Math.min(1, -rect.top / scrollable)));
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [ref]);
-  return progress;
-};
-
-// ─── Easing helpers ───────────────────────────────────────────────────────────
-const easeOut3 = (t: number) => 1 - Math.pow(1 - t, 3);
-const norm = (v: number, lo: number, hi: number) =>
-  Math.max(0, Math.min(1, (v - lo) / (hi - lo)));
-
-// ─── Scroll chapter: tighter cinematic scene ──────────────────────────────────
-// Content enters quickly, overlaps, then dissolves out
-const ScrollChapter = ({
-  children,
-  glowPos = "50% 50%",
-}: {
-  children: (active: boolean, progress: number) => React.ReactNode;
-  glowPos?: string;
-}) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const progress = useScrollProgress(containerRef as { current: HTMLElement | null });
-
-  const enterT = easeOut3(norm(progress, 0, 0.12));
-  const holdT = norm(progress, 0.14, 0.6);
-  const exitT = easeOut3(norm(progress, 0.52, 0.94));
-  const active = progress >= 0.015 && progress <= 0.96;
-
-  const opacity = Math.max(0, Math.min(1, enterT * (1 - exitT * 0.92) + holdT * 0.08));
-  const translateY = (1 - enterT) * 28 - exitT * 26;
-  const scale = 0.968 + enterT * 0.032 - exitT * 0.024;
-  const blur = (1 - enterT) * 10 + exitT * 12;
-  const sceneOpacity = Math.max(0.18, 0.28 + enterT * 0.34 - exitT * 0.22);
-  const sceneScale = 1.04 - enterT * 0.015 + exitT * 0.025;
-
-  return (
-    <div ref={containerRef} style={{ height: "116vh" }}>
-      <div style={{ position: "sticky", top: 0, height: "100vh", overflow: "hidden" }}>
-        {/* per-chapter ambient glow */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            opacity: sceneOpacity,
-            transform: `scale(${sceneScale})`,
-            background: `
-              radial-gradient(circle at ${glowPos}, hsl(261 75% 56% / 0.18), transparent 42%),
-              radial-gradient(circle at 50% 55%, hsl(220 35% 36% / 0.12), transparent 58%),
-              linear-gradient(180deg, rgba(8,8,16,0.14), rgba(8,8,16,0.62))
-            `,
-            filter: `blur(${(2 + exitT * 6).toFixed(1)}px)`,
-            transition: "opacity 180ms linear, transform 180ms linear, filter 180ms linear",
-          }}
-          aria-hidden="true"
-        />
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            opacity: Math.max(0, enterT * 0.4 - exitT * 0.1),
-            background: `linear-gradient(120deg, transparent 18%, hsl(0 0% 100% / 0.03) 50%, transparent 82%)`,
-            mixBlendMode: "screen",
-          }}
-          aria-hidden="true"
-        />
-        <div
-          style={{
-            opacity,
-            transform: `translateY(${translateY}px) scale(${scale})`,
-            filter: blur > 0.1 ? `blur(${blur.toFixed(1)}px)` : "none",
-            height: "100%",
-            willChange: "transform, opacity, filter",
-          }}
-        >
-          {children(active, progress)}
-        </div>
-      </div>
-    </div>
-  );
 };
 
 // ─── Primitives ───────────────────────────────────────────────────────────────
@@ -266,7 +168,7 @@ const Typewriter = ({ text, active, speed = 16 }: { text: string; active: boolea
         else clearInterval(t);
       }, speed);
       return () => clearInterval(t);
-    }, 100);
+    }, 300);
     return () => clearTimeout(delay);
   }, [active, text, speed]);
   return (
@@ -296,7 +198,6 @@ const ChapterLabel = ({ num, label, visible }: { num: string; label: string; vis
 const SearchChapter = ({ active }: { active: boolean }) => (
   <div className="flex h-full items-center">
     <div className="w-full max-w-7xl mx-auto px-6 md:px-16 grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-center">
-      {/* Left: copy */}
       <div className="relative">
         <div className="absolute -top-10 -left-2 text-[7rem] md:text-[8.5rem] font-black text-white/[0.018] leading-none select-none pointer-events-none blur-[1px]" aria-hidden="true">01</div>
         <ChapterLabel num="01" label="Search" visible={active} />
@@ -310,7 +211,6 @@ const SearchChapter = ({ active }: { active: boolean }) => (
           No Boolean filters. No field juggling. Just plain-English targeting that actually works.
         </p>
       </div>
-      {/* Right: UI card */}
       <div style={{ animation: active ? "word-rise 0.42s cubic-bezier(0.22,1,0.36,1) 70ms both" : "none", opacity: active ? undefined : 0 }}>
         <GlassCard active={active}>
           {active && (
@@ -380,7 +280,6 @@ const leadsData = [
 const LeadsChapter = ({ active }: { active: boolean }) => (
   <div className="flex h-full items-center">
     <div className="w-full max-w-7xl mx-auto px-6 md:px-16 grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-center">
-      {/* Left: lead cards */}
       <div className="space-y-4">
         {leadsData.map(({ name, meta, fit, delay }) => (
           <div key={name} style={{ animation: active ? `word-rise 0.38s cubic-bezier(0.22,1,0.36,1) ${Math.round(delay * 0.55)}ms both` : "none", opacity: active ? undefined : 0 }}>
@@ -394,7 +293,6 @@ const LeadsChapter = ({ active }: { active: boolean }) => (
           </div>
         ))}
       </div>
-      {/* Right: copy */}
       <div className="relative">
         <div className="absolute -top-10 -right-2 text-[7rem] md:text-[8.5rem] font-black text-white/[0.018] leading-none select-none pointer-events-none text-right blur-[1px]" aria-hidden="true">02</div>
         <ChapterLabel num="02" label="Leads" visible={active} />
@@ -427,14 +325,13 @@ const OutreachChapter = ({ active }: { active: boolean }) => {
   useEffect(() => {
     if (!active) { setVisibleLines(0); return; }
     let i = 0;
-    const t = setInterval(() => { i++; setVisibleLines(i); if (i >= outreachLines.length) clearInterval(t); }, 110);
+    const t = setInterval(() => { i++; setVisibleLines(i); if (i >= outreachLines.length) clearInterval(t); }, 180);
     return () => clearInterval(t);
   }, [active]);
 
   return (
     <div className="flex h-full items-center">
       <div className="w-full max-w-7xl mx-auto px-6 md:px-16 grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-center">
-        {/* Left: copy */}
         <div className="relative">
           <div className="absolute -top-10 -left-2 text-[7rem] md:text-[8.5rem] font-black text-white/[0.018] leading-none select-none pointer-events-none blur-[1px]" aria-hidden="true">03</div>
           <ChapterLabel num="03" label="Outreach" visible={active} />
@@ -447,7 +344,6 @@ const OutreachChapter = ({ active }: { active: boolean }) => {
             Faster first drafts. Built from real lead context. Less blank-page work.
           </p>
         </div>
-        {/* Right: email card */}
         <div style={{ animation: active ? "word-rise 0.4s cubic-bezier(0.22,1,0.36,1) 60ms both" : "none", opacity: active ? undefined : 0 }}>
           <GlassCard active={active}>
             <div className="px-5 py-4 border-b border-white/8 flex items-center justify-between">
@@ -538,152 +434,317 @@ const PipelineChapter = ({ active }: { active: boolean }) => {
   );
 };
 
-// ─── Results (IntersectionObserver is fine here — not a scroll chapter) ───────
-const ResultsBar = () => {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.2 });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
+// ─── Results chapter ──────────────────────────────────────────────────────────
+const ResultsChapter = ({ active }: { active: boolean }) => {
   const stats: [number, string, string, string][] = [
     [3,  "x",  "",   "faster from ICP to outreach"],
     [67, "%",  "",   "less time on list building"],
     [89, "K",  "$",  "in pipeline from one session"],
   ];
   return (
-    <div ref={ref} className="grid grid-cols-3 gap-6 max-w-3xl mx-auto">
-      {stats.map(([to, suffix, prefix, label], i) => (
-        <div key={i} className="text-center"
-          style={{ animation: visible ? `counter-blur-in 0.9s cubic-bezier(0.22,1,0.36,1) ${i * 150}ms both` : "none", opacity: visible ? undefined : 0 }}>
-          <div className="text-4xl md:text-5xl font-black tracking-tight bg-gradient-to-r from-primary via-purple-400 to-primary/70 bg-clip-text text-transparent">
-            <Counter to={to} prefix={prefix} suffix={suffix} active={visible} />
-          </div>
-          <div className="text-sm text-white/38 mt-2">{label}</div>
+    <div className="flex h-full items-center justify-center">
+      <div className="max-w-5xl mx-auto px-6 text-center">
+        <div className="text-[10px] uppercase tracking-[0.28em] text-primary/55 mb-4"
+          style={{ animation: active ? "word-rise 0.5s cubic-bezier(0.22,1,0.36,1) both" : "none", opacity: active ? undefined : 0 }}>
+          Results
         </div>
-      ))}
+        <h2 className="text-4xl md:text-6xl font-black tracking-tight text-white mb-16 leading-tight">
+          <SplitWords text="What changes when" visible={active} />
+          <br />
+          <SplitWords text="prospecting gets easier." visible={active} baseDelay={120} gradient />
+        </h2>
+        <div className="grid grid-cols-3 gap-6 max-w-3xl mx-auto">
+          {stats.map(([to, suffix, prefix, label], i) => (
+            <div key={i}
+              style={{ animation: active ? `counter-blur-in 0.9s cubic-bezier(0.22,1,0.36,1) ${i * 150}ms both` : "none", opacity: active ? undefined : 0 }}>
+              <div className="text-4xl md:text-5xl font-black tracking-tight bg-gradient-to-r from-primary via-purple-400 to-primary/70 bg-clip-text text-transparent">
+                <Counter to={to} prefix={prefix} suffix={suffix} active={active} />
+              </div>
+              <div className="text-sm text-white/38 mt-2">{label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
+
+// ─── CTA chapter ──────────────────────────────────────────────────────────────
+const CTAChapter = ({ active, navigate }: { active: boolean; navigate: (path: string) => void }) => (
+  <div className="flex h-full items-center justify-center">
+    <div className="relative z-10 text-center max-w-2xl mx-auto px-6">
+      <h2 className="text-4xl md:text-6xl font-black tracking-tight text-white mb-5 leading-tight">
+        <SplitWords text="Ready to run your" visible={active} />
+        <br />
+        <SplitWords text="first search?" visible={active} baseDelay={100} gradient />
+      </h2>
+      <p className="text-lg text-white/38 mb-10"
+        style={{ animation: active ? "word-rise 0.5s cubic-bezier(0.22,1,0.36,1) 200ms both" : "none", opacity: active ? undefined : 0 }}>
+        Start free. No card needed. 10 ICP-scored leads on us.
+      </p>
+      <div style={{ animation: active ? "word-rise 0.5s cubic-bezier(0.22,1,0.36,1) 350ms both" : "none", opacity: active ? undefined : 0 }}>
+        <Button variant="hero" size="lg" className="group text-base" onClick={() => navigate("/auth")}>
+          Get 10 free leads
+          <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-0.5 transition-transform" />
+        </Button>
+        <div className="mt-4">
+          <button className="text-sm text-white/25 hover:text-white/50 transition-colors" onClick={() => navigate("/pricing")}>
+            View plans →
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+// ─── Section config ───────────────────────────────────────────────────────────
+const SECTIONS = [
+  { id: "hero",     label: "Intro" },
+  { id: "search",   label: "Search" },
+  { id: "leads",    label: "Leads" },
+  { id: "outreach", label: "Outreach" },
+  { id: "pipeline", label: "Pipeline" },
+  { id: "results",  label: "Results" },
+  { id: "cta",      label: "Get Started" },
+];
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function DemoPage() {
   useGlobalStyles();
   const navigate = useNavigate();
+  const [current, setCurrent] = useState(0);
+  const [transitioning, setTransitioning] = useState(false);
+  const [direction, setDirection] = useState<"next" | "prev">("next");
+  const lockRef = useRef(false);
+  const autoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const totalSections = SECTIONS.length;
+
+  const goTo = useCallback((index: number, dir?: "next" | "prev") => {
+    if (lockRef.current || index === current || index < 0 || index >= totalSections) return;
+    lockRef.current = true;
+    setDirection(dir || (index > current ? "next" : "prev"));
+    setTransitioning(true);
+
+    // Phase 1: fade out current (600ms)
+    setTimeout(() => {
+      setCurrent(index);
+      // Phase 2: fade in new (600ms)
+      setTimeout(() => {
+        setTransitioning(false);
+        lockRef.current = false;
+      }, 80);
+    }, 600);
+  }, [current, totalSections]);
+
+  const next = useCallback(() => goTo(current + 1, "next"), [goTo, current]);
+  const prev = useCallback(() => goTo(current - 1, "prev"), [goTo, current]);
+
+  // Auto-advance for hero only
+  useEffect(() => {
+    if (current === 0 && !transitioning) {
+      autoTimerRef.current = setTimeout(() => next(), 5000);
+    }
+    return () => { if (autoTimerRef.current) clearTimeout(autoTimerRef.current); };
+  }, [current, transitioning, next]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === " ") {
+        e.preventDefault();
+        next();
+      } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        prev();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [next, prev]);
+
+  // Wheel navigation (throttled)
+  useEffect(() => {
+    let accumulated = 0;
+    const threshold = 80;
+    let lastTime = 0;
+
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const now = Date.now();
+      // Reset accumulation if too much time passed
+      if (now - lastTime > 300) accumulated = 0;
+      lastTime = now;
+
+      accumulated += e.deltaY;
+
+      if (Math.abs(accumulated) >= threshold) {
+        if (accumulated > 0) next();
+        else prev();
+        accumulated = 0;
+      }
+    };
+    window.addEventListener("wheel", onWheel, { passive: false });
+    return () => window.removeEventListener("wheel", onWheel);
+  }, [next, prev]);
+
+  // Touch swipe
+  useEffect(() => {
+    let startY = 0;
+    const onStart = (e: TouchEvent) => { startY = e.touches[0].clientY; };
+    const onEnd = (e: TouchEvent) => {
+      const diff = startY - e.changedTouches[0].clientY;
+      if (Math.abs(diff) > 50) {
+        if (diff > 0) next(); else prev();
+      }
+    };
+    window.addEventListener("touchstart", onStart, { passive: true });
+    window.addEventListener("touchend", onEnd, { passive: true });
+    return () => {
+      window.removeEventListener("touchstart", onStart);
+      window.removeEventListener("touchend", onEnd);
+    };
+  }, [next, prev]);
+
+  const isActive = (index: number) => current === index && !transitioning;
+
+  // Ambient glow positions per section
+  const glowPositions = ["50% 44%", "18% 50%", "82% 50%", "22% 50%", "50% 28%", "50% 50%", "50% 50%"];
 
   return (
-    <div className="bg-[#080810] text-white">
+    <div className="bg-[#080810] text-white overflow-hidden" style={{ height: "100vh" }}>
       <SEOHead
         title="See SalesOS in Action | Product Demo"
         description="Watch how SalesOS takes you from ICP to personalized outreach in minutes."
       />
       <Navbar />
 
-      {/* ── Hero ──────────────────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        <Particles count={30} />
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden="true">
-          <div className="w-[620px] h-[620px] rounded-full border border-primary/7 animate-spin-slow" />
-          <div className="absolute w-[440px] h-[440px] rounded-full border border-primary/5 animate-spin-reverse" />
-        </div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_44%,hsl(261_75%_50%/0.13),transparent_54%)]" aria-hidden="true" />
-        <div className="relative z-10 text-center px-6 max-w-5xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/22 bg-primary/8 text-xs font-medium text-primary/88 mb-8"
-            style={{ animation: "word-rise 0.7s cubic-bezier(0.22,1,0.36,1) 0.1s both" }}>
-            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-breathe" />
-            Product walkthrough
-          </div>
-          <h1 className="font-black tracking-tight leading-[0.93] mb-6"
-            style={{ fontSize: "clamp(3.5rem, 10vw, 7rem)" }}>
-            <div style={{ animation: "word-rise 0.9s cubic-bezier(0.22,1,0.36,1) 0.2s both" }}>
-              From idea
-            </div>
-            <div className="bg-gradient-to-r from-primary via-purple-400 to-primary/80 bg-clip-text text-transparent"
+      {/* Ambient background */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <Particles count={20} />
+        <div
+          className="absolute inset-0 transition-all duration-[1200ms] ease-in-out"
+          style={{
+            background: `radial-gradient(circle at ${glowPositions[current]}, hsl(261 75% 50% / 0.13), transparent 54%)`,
+          }}
+          aria-hidden="true"
+        />
+      </div>
+
+      {/* Section container with dissolve transitions */}
+      <div className="fixed inset-0 z-10">
+        {SECTIONS.map((section, index) => {
+          const isCurrent = current === index;
+          const isLeaving = transitioning && current !== index;
+
+          return (
+            <div
+              key={section.id}
+              className="absolute inset-0"
               style={{
-                animation: "word-rise 0.9s cubic-bezier(0.22,1,0.36,1) 0.42s both",
-                filter: "drop-shadow(0 0 42px hsl(261 75% 65% / 0.38))",
-              }}>
-              to pipeline.
+                opacity: isCurrent ? (transitioning ? 0 : 1) : 0,
+                transform: isCurrent
+                  ? transitioning
+                    ? `scale(0.96) translateY(${direction === "next" ? "-20px" : "20px"})`
+                    : "scale(1) translateY(0)"
+                  : `scale(1.04) translateY(${direction === "next" ? "20px" : "-20px"})`,
+                filter: isCurrent && !transitioning ? "blur(0)" : "blur(8px)",
+                transition: "opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), filter 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
+                pointerEvents: isCurrent && !transitioning ? "auto" : "none",
+                zIndex: isCurrent ? 2 : 1,
+              }}
+            >
+              {/* Hero */}
+              {section.id === "hero" && (
+                <div className="flex h-full items-center justify-center">
+                  <div className="relative z-10 text-center px-6 max-w-5xl mx-auto">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/22 bg-primary/8 text-xs font-medium text-primary/88 mb-8"
+                      style={{ animation: isActive(index) ? "word-rise 0.7s cubic-bezier(0.22,1,0.36,1) 0.1s both" : "none", opacity: isActive(index) ? undefined : 0 }}>
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary animate-breathe" />
+                      Product walkthrough
+                    </div>
+                    <h1 className="font-black tracking-tight leading-[0.93] mb-6"
+                      style={{ fontSize: "clamp(3.5rem, 10vw, 7rem)" }}>
+                      <div style={{ animation: isActive(index) ? "word-rise 0.9s cubic-bezier(0.22,1,0.36,1) 0.2s both" : "none", opacity: isActive(index) ? undefined : 0 }}>
+                        From idea
+                      </div>
+                      <div className="bg-gradient-to-r from-primary via-purple-400 to-primary/80 bg-clip-text text-transparent"
+                        style={{
+                          animation: isActive(index) ? "word-rise 0.9s cubic-bezier(0.22,1,0.36,1) 0.42s both" : "none",
+                          opacity: isActive(index) ? undefined : 0,
+                          filter: "drop-shadow(0 0 42px hsl(261 75% 65% / 0.38))",
+                        }}>
+                        to pipeline.
+                      </div>
+                    </h1>
+                    <p className="text-lg md:text-xl text-white/42 max-w-xl mx-auto leading-relaxed mb-12"
+                      style={{ animation: isActive(index) ? "word-rise 0.8s cubic-bezier(0.22,1,0.36,1) 0.68s both" : "none", opacity: isActive(index) ? undefined : 0 }}>
+                      Four steps. One session. See how SalesOS takes you from a targeting idea to personalized outreach.
+                    </p>
+                    <button
+                      onClick={next}
+                      className="flex flex-col items-center gap-2 text-white/30 text-sm mx-auto hover:text-white/60 transition-colors cursor-pointer"
+                      style={{ animation: isActive(index) ? "word-rise 0.7s cubic-bezier(0.22,1,0.36,1) 1s both" : "none", opacity: isActive(index) ? undefined : 0 }}
+                    >
+                      <span>Click or press →</span>
+                      <ChevronDown className="w-4 h-4" style={{ animation: "chevron-bounce 1.8s ease-in-out infinite" }} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {section.id === "search" && <SearchChapter active={isActive(index)} />}
+              {section.id === "leads" && <LeadsChapter active={isActive(index)} />}
+              {section.id === "outreach" && <OutreachChapter active={isActive(index)} />}
+              {section.id === "pipeline" && <PipelineChapter active={isActive(index)} />}
+              {section.id === "results" && <ResultsChapter active={isActive(index)} />}
+              {section.id === "cta" && <CTAChapter active={isActive(index)} navigate={navigate} />}
             </div>
-          </h1>
-          <p className="text-lg md:text-xl text-white/42 max-w-xl mx-auto leading-relaxed mb-12"
-            style={{ animation: "word-rise 0.8s cubic-bezier(0.22,1,0.36,1) 0.68s both" }}>
-            Four steps. One session. Scroll to watch how SalesOS takes you from a targeting idea to personalized outreach.
-          </p>
-          <div style={{ animation: "word-rise 0.7s cubic-bezier(0.22,1,0.36,1) 1s both" }}
-            className="flex flex-col items-center gap-2 text-white/22 text-sm">
-            <span>Scroll to explore</span>
-            <svg width="14" height="22" viewBox="0 0 14 22" fill="none" aria-hidden="true"
-              style={{ animation: "chevron-bounce 1.8s ease-in-out infinite" }}>
-              <path d="M7 1 L7 17 M3 13 L7 17 L11 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
-        </div>
-      </section>
+          );
+        })}
+      </div>
 
-      {/* ── Scroll chapters ───────────────────────────────────────────────── */}
-      <ScrollChapter glowPos="18% 50%">
-        {(active) => <SearchChapter active={active} />}
-      </ScrollChapter>
-
-      <ScrollChapter glowPos="82% 50%">
-        {(active) => <LeadsChapter active={active} />}
-      </ScrollChapter>
-
-      <ScrollChapter glowPos="22% 50%">
-        {(active) => <OutreachChapter active={active} />}
-      </ScrollChapter>
-
-      <ScrollChapter glowPos="50% 28%">
-        {(active) => <PipelineChapter active={active} />}
-      </ScrollChapter>
-
-      {/* ── Results ───────────────────────────────────────────────────────── */}
-      <section className="relative py-28 md:py-36 overflow-hidden bg-[#080810]">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,hsl(261_75%_50%/0.10),transparent_54%)]" aria-hidden="true" />
-        <Particles count={14} />
-        <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
-          <div className="text-[10px] uppercase tracking-[0.28em] text-primary/55 mb-4">Results</div>
-          <h2 className="text-4xl md:text-6xl font-black tracking-tight text-white mb-16 leading-tight">
-            What changes when<br />
-            <span className="bg-gradient-to-r from-primary via-purple-400 to-primary/70 bg-clip-text text-transparent">
-              prospecting gets easier.
+      {/* Navigation dots — right side */}
+      <div className="fixed right-6 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-3">
+        {SECTIONS.map((section, index) => (
+          <button
+            key={section.id}
+            onClick={() => goTo(index)}
+            className="group relative flex items-center"
+            aria-label={`Go to ${section.label}`}
+          >
+            {/* Label tooltip */}
+            <span
+              className="absolute right-6 px-2.5 py-1 rounded-md bg-white/10 backdrop-blur-md text-[10px] text-white/70 font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+            >
+              {section.label}
             </span>
-          </h2>
-          <ResultsBar />
-        </div>
-      </section>
+            <div
+              className="w-2 h-2 rounded-full transition-all duration-300"
+              style={{
+                backgroundColor: current === index ? "hsl(261, 75%, 65%)" : "rgba(255,255,255,0.15)",
+                transform: current === index ? "scale(1.4)" : "scale(1)",
+                boxShadow: current === index ? "0 0 12px hsl(261 75% 65% / 0.5)" : "none",
+              }}
+            />
+          </button>
+        ))}
+      </div>
 
-      {/* ── CTA ───────────────────────────────────────────────────────────── */}
-      <section className="relative py-28 md:py-36 overflow-hidden bg-[#050508]">
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden="true">
-          <div className="w-[520px] h-[520px] rounded-full border border-primary/6 animate-spin-slow" />
-        </div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,hsl(261_75%_50%/0.16),transparent_50%)]" aria-hidden="true" />
-        <div className="relative z-10 text-center max-w-2xl mx-auto px-6">
-          <h2 className="text-4xl md:text-6xl font-black tracking-tight text-white mb-5 leading-tight">
-            Ready to run your<br />
-            <span className="bg-gradient-to-r from-primary via-purple-400 to-primary/70 bg-clip-text text-transparent">
-              first search?
-            </span>
-          </h2>
-          <p className="text-lg text-white/38 mb-10">
-            Start free. No card needed. 10 ICP-scored leads on us.
-          </p>
-          <Button variant="hero" size="lg" className="group text-base" onClick={() => navigate("/auth")}>
-            Get 10 free leads
-            <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-0.5 transition-transform" />
-          </Button>
-          <div className="mt-4">
-            <button className="text-sm text-white/25 hover:text-white/50 transition-colors" onClick={() => navigate("/pricing")}>
-              View plans →
-            </button>
-          </div>
-        </div>
-      </section>
+      {/* Progress bar — bottom */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 h-[2px] bg-white/5">
+        <div
+          className="h-full bg-gradient-to-r from-primary via-purple-400 to-primary/70 transition-all duration-600 ease-out"
+          style={{ width: `${((current + 1) / totalSections) * 100}%` }}
+        />
+      </div>
+
+      {/* Keyboard hint */}
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 text-[10px] text-white/15 select-none">
+        <span className="px-1.5 py-0.5 border border-white/10 rounded text-[9px]">←</span>
+        <span className="px-1.5 py-0.5 border border-white/10 rounded text-[9px]">→</span>
+        <span>or scroll</span>
+      </div>
     </div>
   );
 }
