@@ -85,3 +85,5 @@ project_id = "ghgfjnepvxvxrncmskys"
     verify_jwt = false
   [functions.upload-email-logo]
     verify_jwt = false
+  [functions.check-signup-eligibility]
+    verify_jwt = false

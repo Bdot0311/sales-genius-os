@@ -160,15 +160,15 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
     setLoading(true);
 
     try {
-      // First check if user has an active subscription
+      // First check if user has an active subscription (unauthenticated check)
       const { data: subData, error: subError } = await supabase.functions.invoke(
-        "check-subscription",
+        "check-signup-eligibility",
         {
           body: { email },
         }
       );
 
-      if (subError || !subData?.subscribed) {
+      if (subError || !subData?.eligible) {
         toast({
           title: "No active subscription found",
           description: "Please purchase a subscription or start a trial before creating an account.",
