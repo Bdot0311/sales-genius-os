@@ -91,16 +91,6 @@ export const FinalCTA = () => {
                     Describe your ideal customer, review matched prospects, and choose the SalesOS plan that fits your outbound workflow.
                   </p>
 
-                  {/* Social proof — moment of highest doubt */}
-                  <blockquote className="mb-8 px-4">
-                    <p className="text-sm italic text-muted-foreground/60 leading-relaxed">
-                      "SalesOS cut out the list-building busywork. We could focus on messaging and meetings instead of research."
-                    </p>
-                    <footer className="text-xs text-muted-foreground/40 mt-2">
-                      — Early SalesOS user
-                    </footer>
-                  </blockquote>
-
                   {/* CTA with glow */}
                   <Button
                     size="lg"
@@ -113,11 +103,9 @@ export const FinalCTA = () => {
 
                   {/* Trust signals */}
                   <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-sm text-muted-foreground/60">
-                    <span>Plans from $39/month</span>
-                    <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
-                    <span>Sample workflow available</span>
-                    <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
                     <span>Setup in 2 min</span>
+                    <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
+                    <span>Plans from $39/month</span>
                   </div>
 
                   {/* Risk reversal */}
