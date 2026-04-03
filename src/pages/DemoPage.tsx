@@ -325,7 +325,7 @@ const LeadsChapter = ({ active }: { active: boolean }) => (
         </h2>
         <p className="text-base md:text-lg text-white/42 leading-relaxed max-w-sm"
           style={{ animation: active ? "word-rise 0.36s cubic-bezier(0.22,1,0.36,1) 90ms both" : "none", opacity: active ? undefined : 0 }}>
-          Not a massive list. A tighter one with context already built in — so you know who to call first.
+          See best-fit prospects first with company context, verified contact data, and scoring that helps you prioritize faster.
         </p>
       </div>
     </div>
