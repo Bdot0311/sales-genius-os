@@ -360,7 +360,7 @@ const OutreachChapter = ({ active }: { active: boolean }) => {
           </h2>
           <p className="text-base md:text-lg text-white/42 leading-relaxed max-w-sm"
             style={{ animation: active ? "word-rise 0.42s cubic-bezier(0.22,1,0.36,1) 110ms both" : "none", opacity: active ? undefined : 0 }}>
-            Faster first drafts. Built from real lead context. Less blank-page work.
+            Generate tailored emails, manage replies, and move prospects into your workflow without juggling disconnected tools.
           </p>
         </div>
         <div style={{ animation: active ? "word-rise 0.4s cubic-bezier(0.22,1,0.36,1) 60ms both" : "none", opacity: active ? undefined : 0 }}>
