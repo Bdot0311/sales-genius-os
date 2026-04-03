@@ -792,7 +792,7 @@ const PlatformChapter = ({ active }: { active: boolean }) => (
             }}
           >
             <GlassCard active={active} className="p-4 md:p-5 h-full">
-              <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${module.gradient} flex items-center justify-center mb-4`}>
+              <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-gradient-to-br ${module.gradient} flex items-center justify-center mb-3 md:mb-4`}>
                 <module.icon className="w-5 h-5 text-primary" />
               </div>
               <h3 className="text-lg font-semibold text-white/92 mb-1">{module.title}</h3>
