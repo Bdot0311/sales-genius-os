@@ -674,7 +674,7 @@ const OutreachChapter = ({ active }: { active: boolean }) => {
             </div>
           </h2>
           <p
-            className="text-base md:text-lg text-white/42 leading-relaxed max-w-md"
+            className="text-sm md:text-lg text-white/42 leading-relaxed max-w-md"
             style={{
               animation: active ? "word-rise 0.42s cubic-bezier(0.22,1,0.36,1) 110ms both" : "none",
               opacity: active ? undefined : 0,
