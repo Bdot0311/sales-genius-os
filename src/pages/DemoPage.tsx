@@ -291,9 +291,9 @@ const SearchChapter = ({ active }: { active: boolean }) => (
 
 // ─── Chapter 2: Leads ─────────────────────────────────────────────────────────
 const leadsData = [
-  { name: "J. Park",      meta: "VP Sales · Lattice",              fit: "94% match", delay: 0   },
-  { name: "R. Shah",      meta: "Head of Growth · Notion",         fit: "87% match", delay: 130 },
-  { name: "A. Müller",    meta: "CRO · Personio",                  fit: "91% match", delay: 260 },
+  { name: "Jordan Park",  meta: "Head of Sales · Northline",      fit: "High fit",  delay: 0   },
+  { name: "Rina Shah",    meta: "VP Revenue · SignalFox",          fit: "Good fit",  delay: 130 },
+  { name: "Alex Müller",  meta: "Director of Sales · GraphiteIQ", fit: "Good fit",  delay: 260 },
 ];
 
 const LeadsChapter = ({ active }: { active: boolean }) => (
@@ -334,9 +334,9 @@ const LeadsChapter = ({ active }: { active: boolean }) => (
 
 // ─── Chapter 3: Outreach ──────────────────────────────────────────────────────
 const outreachLines = [
-  "Hey Jordan — noticed Lattice is scaling their sales team and hiring SDRs in NYC.",
+  "Hey Jordan — noticed Northline is hiring SDRs and growing the sales team in NYC.",
   "That usually means more pressure to build a repeatable prospecting workflow fast.",
-  "SalesOS helps teams describe their ICP in plain English, find better-fit leads, and move into outreach faster.",
+  "SalesOS helps teams describe their ICP in plain English, find better-fit leads, and launch more personalized outreach.",
 ];
 
 const OutreachChapter = ({ active }: { active: boolean }) => {
@@ -373,7 +373,7 @@ const OutreachChapter = ({ active }: { active: boolean }) => {
               <span className="rounded-full bg-primary/12 border border-primary/20 text-primary/85 px-3 py-1 text-xs font-medium">Personalized</span>
             </div>
             <div className="px-5 py-5">
-              <div className="text-xs text-white/28 mb-4">Subject: Quick idea for Lattice's outbound hiring push</div>
+              <div className="text-xs text-white/28 mb-4">Subject: Quick idea for Northline's outbound hiring push</div>
               <div className="space-y-4 text-sm md:text-base leading-relaxed text-white/72">
                 {outreachLines.map((line, i) => (
                   <p key={i} style={{
