@@ -658,8 +658,8 @@ const OutreachChapter = ({ active }: { active: boolean }) => {
   }, [active]);
 
   return (
-    <div className="flex h-full items-center">
-      <div className="w-full max-w-7xl mx-auto px-6 md:px-16 grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-center">
+    <div className="flex h-full items-center pt-16 md:pt-0">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-16 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-20 items-center">
         <div className="relative">
           <div className="absolute -top-10 -left-2 text-[7rem] md:text-[8.5rem] font-black text-white/[0.018] leading-none select-none pointer-events-none blur-[1px]" aria-hidden="true">
             03
