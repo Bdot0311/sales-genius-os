@@ -291,9 +291,9 @@ const SearchChapter = ({ active }: { active: boolean }) => (
 
 // ─── Chapter 2: Leads ─────────────────────────────────────────────────────────
 const leadsData = [
-  { name: "J. Park",      meta: "VP Sales · Lattice",              fit: "94% match", delay: 0   },
-  { name: "R. Shah",      meta: "Head of Growth · Notion",         fit: "87% match", delay: 130 },
-  { name: "A. Müller",    meta: "CRO · Personio",                  fit: "91% match", delay: 260 },
+  { name: "Jordan Park",  meta: "Head of Sales · Northline",      fit: "High fit",  delay: 0   },
+  { name: "Rina Shah",    meta: "VP Revenue · SignalFox",          fit: "Good fit",  delay: 130 },
+  { name: "Alex Müller",  meta: "Director of Sales · GraphiteIQ", fit: "Good fit",  delay: 260 },
 ];
 
 const LeadsChapter = ({ active }: { active: boolean }) => (
