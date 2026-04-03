@@ -1122,7 +1122,7 @@ export default function DemoPage() {
   const glowPositions = ["50% 44%", "18% 50%", "82% 50%", "22% 50%", "50% 28%", "50% 50%", "50% 50%"];
 
   return (
-    <div className="bg-[#080810] text-white overflow-hidden" style={{ height: "100vh" }}>
+    <div className="bg-[#080810] text-white overflow-hidden" style={{ height: "100dvh" }}>
       <SEOHead
         title="See SalesOS in Action | Product Demo"
         description="Watch how SalesOS takes you from ICP to personalized outreach in minutes."
