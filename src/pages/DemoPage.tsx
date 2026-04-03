@@ -889,7 +889,7 @@ const SignalsChapter = ({ active }: { active: boolean }) => (
               opacity: active ? undefined : 0,
             }}
           >
-            <GlassCard active={active} className="px-6 py-7 text-center h-full">
+            <GlassCard active={active} className="px-4 py-5 md:px-6 md:py-7 text-center h-full">
               <stat.icon className="w-4 h-4 text-primary/60 mb-3 mx-auto" />
               <div className="text-3xl md:text-4xl font-black tracking-tight bg-gradient-to-r from-primary via-purple-400 to-primary/70 bg-clip-text text-transparent">
                 {stat.stat}
