@@ -842,7 +842,7 @@ const SignalsChapter = ({ active }: { active: boolean }) => (
         <div className="flex justify-center">
           <ChapterLabel num="05" label="Signals" visible={active} />
         </div>
-        <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-[1.05] mb-4">
+        <h2 className="text-3xl md:text-6xl font-bold tracking-tight text-white leading-[1.05] mb-3 md:mb-4">
           <div>
             <SplitWords text="Built for founder-led" visible={active} />
           </div>
