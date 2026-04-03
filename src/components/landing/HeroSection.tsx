@@ -61,9 +61,9 @@ const DashboardMockup = () => {
   }, []);
 
   const leads = [
-    { name: "J. Park", title: "VP Sales", company: "Lattice", score: 94 },
-    { name: "A. Müller", title: "CRO", company: "Personio", score: 91 },
-    { name: "R. Shah", title: "Head of Growth", company: "Notion", score: 87 },
+    { name: "J. Park", title: "Head of Sales", company: "Northline", score: 94 },
+    { name: "R. Shah", title: "VP Revenue", company: "SignalFox", score: 91 },
+    { name: "A. Müller", title: "Dir. of Sales", company: "GraphiteIQ", score: 87 },
   ];
 
   const sequenceSteps = [

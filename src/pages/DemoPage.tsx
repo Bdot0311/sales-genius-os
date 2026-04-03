@@ -227,7 +227,7 @@ const SearchChapter = ({ active }: { active: boolean }) => (
         </h2>
         <p className="text-base md:text-lg text-white/42 leading-relaxed max-w-sm"
           style={{ animation: active ? "word-rise 0.38s cubic-bezier(0.22,1,0.36,1) 90ms both" : "none", opacity: active ? undefined : 0 }}>
-          No Boolean filters. No field juggling. Just plain-English targeting that actually works.
+          Tell SalesOS who you want to reach in plain English: title, industry, company size, geography, or buying signals.
         </p>
       </div>
       <div style={{ animation: active ? "word-rise 0.42s cubic-bezier(0.22,1,0.36,1) 70ms both" : "none", opacity: active ? undefined : 0 }}>
