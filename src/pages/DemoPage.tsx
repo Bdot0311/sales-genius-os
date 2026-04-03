@@ -760,7 +760,7 @@ const PlatformChapter = ({ active }: { active: boolean }) => (
         <div className="flex justify-center">
           <ChapterLabel num="04" label="Platform" visible={active} />
         </div>
-        <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-[1.05] mb-4">
+        <h2 className="text-3xl md:text-6xl font-bold tracking-tight text-white leading-[1.05] mb-3 md:mb-4">
           <div>
             <SplitWords text="From first lead" visible={active} />
           </div>
