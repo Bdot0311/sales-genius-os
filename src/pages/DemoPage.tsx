@@ -732,11 +732,13 @@ export default function DemoPage() {
                       style={{ animation: isActive(index) ? "word-rise 0.8s cubic-bezier(0.22,1,0.36,1) 0.68s both" : "none", opacity: isActive(index) ? undefined : 0 }}>
                       Four steps. One session. See how SalesOS takes you from a targeting idea to personalized outreach.
                     </p>
-                    <button
-                      onClick={next}
-                      className="flex flex-col items-center gap-2 text-white/30 text-sm mx-auto hover:text-white/60 transition-colors cursor-pointer"
+                    <div
+                      className="flex flex-col items-center gap-2 text-white/30 text-sm mx-auto"
                       style={{ animation: isActive(index) ? "word-rise 0.7s cubic-bezier(0.22,1,0.36,1) 1s both" : "none", opacity: isActive(index) ? undefined : 0 }}
                     >
+                      <span className="text-white/20 text-xs tracking-wide">Auto-playing in a moment…</span>
+                      <ChevronDown className="w-4 h-4 text-white/20" style={{ animation: "chevron-bounce 1.8s ease-in-out infinite" }} />
+                    </div>
                       <span>Click or press →</span>
                       <ChevronDown className="w-4 h-4" style={{ animation: "chevron-bounce 1.8s ease-in-out infinite" }} />
                     </button>
