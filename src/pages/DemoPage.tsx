@@ -605,7 +605,7 @@ export default function DemoPage() {
     };
   }, [next, prev]);
 
-  const isActive = (index: number) => current === index && !transitioning;
+  const isActive = (index: number) => current === index;
 
   // Ambient glow positions per section
   const glowPositions = ["50% 44%", "18% 50%", "82% 50%", "22% 50%", "50% 28%", "50% 50%", "50% 50%"];
