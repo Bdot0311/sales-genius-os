@@ -803,9 +803,9 @@ const PlatformChapter = ({ active }: { active: boolean }) => (
         ))}
       </div>
 
-      <GlassCard active={active} className="p-5">
-        <p className="text-xs font-semibold uppercase tracking-widest text-white/32 mb-4">Also included</p>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <GlassCard active={active} className="p-4 md:p-5 hidden md:block">
+        <p className="text-xs font-semibold uppercase tracking-widest text-white/32 mb-3 md:mb-4">Also included</p>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           {supportModules.map((item, index) => (
             <div
               key={item.label}
