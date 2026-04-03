@@ -103,11 +103,9 @@ export const FinalCTA = () => {
 
                   {/* Trust signals */}
                   <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-sm text-muted-foreground/60">
-                    <span>Plans from $39/month</span>
-                    <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
-                    <span>Sample workflow available</span>
-                    <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
                     <span>Setup in 2 min</span>
+                    <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
+                    <span>Plans from $39/month</span>
                   </div>
 
                   {/* Risk reversal */}
