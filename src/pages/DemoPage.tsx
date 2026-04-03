@@ -1221,7 +1221,7 @@ export default function DemoPage() {
         />
       </div>
 
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 text-[10px] text-white/15 select-none">
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 hidden md:flex items-center gap-3 text-[10px] text-white/15 select-none">
         <span className="px-1.5 py-0.5 border border-white/10 rounded text-[9px]">←</span>
         <span className="px-1.5 py-0.5 border border-white/10 rounded text-[9px]">→</span>
         <span>or scroll</span>
