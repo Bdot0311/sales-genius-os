@@ -23,12 +23,12 @@ const GLOBAL_STYLES = `
     100% { top: 100%; opacity: 0; }
   }
   @keyframes word-rise {
-    from { opacity: 0; transform: translateY(28px) scale(0.94); filter: blur(4px); }
-    to   { opacity: 1; transform: translateY(0)    scale(1);    filter: blur(0); }
+    from { opacity: 0; transform: translateY(18px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0)    scale(1); }
   }
-  @keyframes counter-blur-in {
-    from { filter: blur(8px); opacity: 0; transform: scale(0.85); }
-    to   { filter: blur(0);   opacity: 1; transform: scale(1); }
+  @keyframes counter-rise {
+    from { opacity: 0; transform: scale(0.9); }
+    to   { opacity: 1; transform: scale(1); }
   }
   @keyframes breathe {
     0%,100% { opacity: 0.5; transform: scale(1); }
@@ -129,14 +129,12 @@ const SplitWords = ({
     {text.split(" ").map((word, i) => (
       <span key={i} className="inline-block mr-[0.26em]"
         style={{
-          animation: visible ? `word-rise 0.5s cubic-bezier(0.22,1,0.36,1) both` : "none",
-          animationDelay: `${baseDelay + i * 34}ms`,
+          animation: visible ? `word-rise 0.4s cubic-bezier(0.22,1,0.36,1) ${baseDelay + i * 34}ms both` : "none",
           opacity: visible ? undefined : 0,
         }}
       >
         {gradient ? (
-          <span className="bg-gradient-to-r from-primary via-purple-400 to-primary/70 bg-clip-text text-transparent"
-            style={{ filter: "drop-shadow(0 0 22px hsl(261 75% 65% / 0.45))" }}>
+          <span className="bg-gradient-to-r from-primary via-purple-400 to-primary/70 bg-clip-text text-transparent">
             {word}
           </span>
         ) : word}
@@ -293,9 +291,9 @@ const SearchChapter = ({ active }: { active: boolean }) => (
 
 // ─── Chapter 2: Leads ─────────────────────────────────────────────────────────
 const leadsData = [
-  { name: "Jordan Park",  meta: "Head of Sales · Northline",      fit: "High fit",  delay: 0   },
-  { name: "Rina Shah",    meta: "VP Revenue · SignalFox",          fit: "Good fit",  delay: 130 },
-  { name: "Alex Müller",  meta: "Director of Sales · GraphiteIQ", fit: "Good fit",  delay: 260 },
+  { name: "J. Park",      meta: "VP Sales · Lattice",              fit: "94% match", delay: 0   },
+  { name: "R. Shah",      meta: "Head of Growth · Notion",         fit: "87% match", delay: 130 },
+  { name: "A. Müller",    meta: "CRO · Personio",                  fit: "91% match", delay: 260 },
 ];
 
 const LeadsChapter = ({ active }: { active: boolean }) => (
@@ -336,9 +334,9 @@ const LeadsChapter = ({ active }: { active: boolean }) => (
 
 // ─── Chapter 3: Outreach ──────────────────────────────────────────────────────
 const outreachLines = [
-  "Hey Jordan — noticed Northline is hiring SDRs and growing the sales team in NYC.",
+  "Hey Jordan — noticed Lattice is scaling their sales team and hiring SDRs in NYC.",
   "That usually means more pressure to build a repeatable prospecting workflow fast.",
-  "SalesOS helps teams find better-fit leads and move into outreach in a single session.",
+  "SalesOS helps teams describe their ICP in plain English, find better-fit leads, and move into outreach faster.",
 ];
 
 const OutreachChapter = ({ active }: { active: boolean }) => {
@@ -375,14 +373,14 @@ const OutreachChapter = ({ active }: { active: boolean }) => {
               <span className="rounded-full bg-primary/12 border border-primary/20 text-primary/85 px-3 py-1 text-xs font-medium">Personalized</span>
             </div>
             <div className="px-5 py-5">
-              <div className="text-xs text-white/28 mb-4">Subject: Quick idea for Northline's outbound hiring push</div>
+              <div className="text-xs text-white/28 mb-4">Subject: Quick idea for Lattice's outbound hiring push</div>
               <div className="space-y-4 text-sm md:text-base leading-relaxed text-white/72">
                 {outreachLines.map((line, i) => (
                   <p key={i} style={{
                     opacity: visibleLines > i ? 1 : 0,
                     transform: visibleLines > i ? "translateY(0)" : "translateY(5px)",
-                    filter: visibleLines > i ? "blur(0)" : "blur(4px)",
-                    transition: "opacity 0.22s ease, transform 0.22s ease, filter 0.22s ease",
+                    filter: "none",
+                    transition: "opacity 0.22s ease, transform 0.22s ease",
                   }}>{line}</p>
                 ))}
               </div>
@@ -396,13 +394,13 @@ const OutreachChapter = ({ active }: { active: boolean }) => {
 
 // ─── Chapter 4: Pipeline ──────────────────────────────────────────────────────
 const PipelineChapter = ({ active }: { active: boolean }) => {
-  const bars   = [30, 54, 74, 92];
+  const bars   = [100, 67, 29, 14];
   const labels = ["Contacted", "Qualified", "Proposal", "Closed"];
   const metrics: [string, number, string, string][] = [
-    ["Leads",    247,  "",  ""],
-    ["Meetings",  34,  "",  ""],
-    ["Revenue",   89,  "$", "K"],
-    ["Conv.",     32,  "",  "%"],
+    ["Match Rate", 92,  "",  "%"],
+    ["Open Rate",  64,  "",  "%"],
+    ["Replies",    38,  "",  "%"],
+    ["AI Score",   87,  "",  ""],
   ];
 
   return (
@@ -424,7 +422,7 @@ const PipelineChapter = ({ active }: { active: boolean }) => {
         </div>
         <div className="grid grid-cols-4 gap-3 mb-5">
           {metrics.map(([label, to, prefix, suffix], i) => (
-            <div key={label} style={{ animation: active ? `counter-blur-in 0.36s cubic-bezier(0.22,1,0.36,1) ${i * 38}ms both` : "none", opacity: active ? undefined : 0 }}>
+            <div key={label} style={{ animation: active ? `counter-rise 0.36s cubic-bezier(0.22,1,0.36,1) ${i * 38}ms both` : "none", opacity: active ? undefined : 0 }}>
               <GlassCard active={active} className="p-4 text-center">
                 <div className="text-2xl md:text-3xl font-bold text-white/95">
                   <Counter to={to} prefix={prefix} suffix={suffix} active={active} />
@@ -477,7 +475,7 @@ const ResultsChapter = ({ active }: { active: boolean }) => {
         <div className="grid grid-cols-3 gap-6 max-w-3xl mx-auto">
           {stats.map(([to, suffix, prefix, label], i) => (
             <div key={i}
-              style={{ animation: active ? `counter-blur-in 0.9s cubic-bezier(0.22,1,0.36,1) ${i * 150}ms both` : "none", opacity: active ? undefined : 0 }}>
+              style={{ animation: active ? `counter-rise 0.6s cubic-bezier(0.22,1,0.36,1) ${i * 150}ms both` : "none", opacity: active ? undefined : 0 }}>
               <div className="text-4xl md:text-5xl font-black tracking-tight bg-gradient-to-r from-primary via-purple-400 to-primary/70 bg-clip-text text-transparent">
                 <Counter to={to} prefix={prefix} suffix={suffix} active={active} />
               </div>
@@ -706,7 +704,7 @@ export default function DemoPage() {
                         style={{
                           animation: isActive(index) ? "word-rise 0.9s cubic-bezier(0.22,1,0.36,1) 0.42s both" : "none",
                           opacity: isActive(index) ? undefined : 0,
-                          filter: "drop-shadow(0 0 42px hsl(261 75% 65% / 0.38))",
+                          textShadow: "0 0 42px hsl(261 75% 65% / 0.38)",
                         }}>
                         to pipeline.
                       </div>
