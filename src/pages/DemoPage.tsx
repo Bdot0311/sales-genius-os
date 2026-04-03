@@ -48,25 +48,25 @@ const GLOBAL_STYLES = `
   }
   .animate-breathe { animation: breathe 1.6s ease-in-out infinite; }
 
-  @keyframes dissolve-out {
-    0%   { opacity: 1; filter: url(#dissolve-0); transform: scale(1); }
-    40%  { opacity: 0.6; filter: url(#dissolve-30); transform: scale(1.02); }
-    100% { opacity: 0; filter: url(#dissolve-60); transform: scale(1.04); }
+  @keyframes crossfade-out {
+    0%   { opacity: 1; transform: scale(1) translateY(0); }
+    100% { opacity: 0; transform: scale(0.97) translateY(-12px); }
   }
-  @keyframes dissolve-in {
-    0%   { opacity: 0; filter: url(#dissolve-30); transform: scale(0.97); }
-    50%  { opacity: 0.7; filter: url(#dissolve-0); transform: scale(0.99); }
-    100% { opacity: 1; filter: none; transform: scale(1); }
+  @keyframes crossfade-in {
+    0%   { opacity: 0; transform: scale(1.02) translateY(12px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
   }
   @keyframes dot-ring-fill {
     from { stroke-dashoffset: ${2 * Math.PI * 6}; }
     to   { stroke-dashoffset: 0; }
   }
   .dissolving-out {
-    animation: dissolve-out 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: crossfade-out 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    will-change: opacity, transform;
   }
   .dissolving-in {
-    animation: dissolve-in 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: crossfade-in 0.45s cubic-bezier(0.0, 0, 0.2, 1) forwards;
+    will-change: opacity, transform;
   }
 `;
 
@@ -96,7 +96,7 @@ const Counter = ({ to, prefix = "", suffix = "", active }: { to: number; prefix?
   return <>{prefix}{val}{suffix}</>;
 };
 
-const Particles = ({ count = 22 }: { count?: number }) => {
+const Particles = ({ count = 10 }: { count?: number }) => {
   const pts = useRef(
     Array.from({ length: count }, (_, i) => ({
       id: i,
@@ -151,7 +151,7 @@ const GlassCard = ({
   children: React.ReactNode; className?: string; active?: boolean;
 }) => (
   <div
-    className={`relative rounded-[28px] border border-white/8 bg-black/45 backdrop-blur-2xl overflow-hidden ${className}`}
+    className={`relative rounded-[28px] border border-white/8 bg-[#0c0c1a]/90 overflow-hidden ${className}`}
     style={{
       boxShadow: active
         ? "0 0 45px hsl(261 75% 55% / 0.12), 0 28px 90px rgba(0,0,0,0.46), inset 0 1px 0 rgba(255,255,255,0.06)"
@@ -552,7 +552,7 @@ export default function DemoPage() {
     setTimeout(() => {
       setPrev2(null);
       lockRef.current = false;
-    }, 800);
+    }, 500);
   }, [current, totalSections]);
 
   const next = useCallback(() => goTo(current + 1, "next"), [goTo, current]);
@@ -655,7 +655,7 @@ export default function DemoPage() {
 
       {/* Ambient background */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        <Particles count={20} />
+        <Particles count={10} />
         <div
           className="absolute inset-0 transition-all duration-[1200ms] ease-in-out"
           style={{
@@ -665,23 +665,6 @@ export default function DemoPage() {
         />
       </div>
 
-      {/* SVG dissolve filters — turbulence creates organic distortion */}
-      <svg className="fixed w-0 h-0" aria-hidden="true">
-        <defs>
-          <filter id="dissolve-0">
-            <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="2" seed="2" result="noise" />
-            <feDisplacementMap in="SourceGraphic" in2="noise" scale="0" xChannelSelector="R" yChannelSelector="G" />
-          </filter>
-          <filter id="dissolve-30">
-            <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="2" seed="2" result="noise" />
-            <feDisplacementMap in="SourceGraphic" in2="noise" scale="40" xChannelSelector="R" yChannelSelector="G" />
-          </filter>
-          <filter id="dissolve-60">
-            <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="2" seed="2" result="noise" />
-            <feDisplacementMap in="SourceGraphic" in2="noise" scale="100" xChannelSelector="R" yChannelSelector="G" />
-          </filter>
-        </defs>
-      </svg>
 
       {/* Section container with dissolve transitions */}
       <div className="fixed inset-0 z-10">
@@ -764,7 +747,7 @@ export default function DemoPage() {
             aria-label={`Go to ${section.label}`}
           >
             <span
-              className="absolute right-6 px-2.5 py-1 rounded-md bg-white/10 backdrop-blur-md text-[10px] text-white/70 font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+              className="absolute right-6 px-2.5 py-1 rounded-md bg-[#1a1a2e]/90 text-[10px] text-white/70 font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
             >
               {section.label}
             </span>
