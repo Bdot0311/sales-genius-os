@@ -58,6 +58,10 @@ const GLOBAL_STYLES = `
     50%  { opacity: 0.7; filter: url(#dissolve-0); transform: scale(0.99); }
     100% { opacity: 1; filter: none; transform: scale(1); }
   }
+  @keyframes dot-ring-fill {
+    from { stroke-dashoffset: ${2 * Math.PI * 6}; }
+    to   { stroke-dashoffset: 0; }
+  }
   .dissolving-out {
     animation: dissolve-out 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   }
@@ -556,30 +560,46 @@ export default function DemoPage() {
 
   const transitioning = prev2 !== null;
 
-  // Auto-advance for hero only
-  useEffect(() => {
-    if (current === 0 && !transitioning) {
-      autoTimerRef.current = setTimeout(() => next(), 5000);
-    }
-    return () => { if (autoTimerRef.current) clearTimeout(autoTimerRef.current); };
-  }, [current, transitioning, next]);
+  // Auto-advance all sections — pause on manual interaction
+  const [autoplaying, setAutoplaying] = useState(true);
+  const DURATIONS = [5000, 6000, 5500, 5500, 6000, 5000, 7000]; // per-section timing
 
-  // Keyboard navigation
+  useEffect(() => {
+    if (!autoplaying || transitioning) return;
+    const dur = DURATIONS[current] || 5000;
+    autoTimerRef.current = setTimeout(() => {
+      if (current < totalSections - 1) {
+        next();
+      } else {
+        setAutoplaying(false); // stop at the end
+      }
+    }, dur);
+    return () => { if (autoTimerRef.current) clearTimeout(autoTimerRef.current); };
+  }, [current, transitioning, autoplaying, next, totalSections]);
+
+  // Pause autoplay on manual navigation
+  const manualGoTo = useCallback((index: number, dir?: "next" | "prev") => {
+    setAutoplaying(false);
+    goTo(index, dir);
+  }, [goTo]);
+
+  // Keyboard navigation — pauses autoplay
+  const manualNext = useCallback(() => { setAutoplaying(false); next(); }, [next]);
+  const manualPrev = useCallback(() => { setAutoplaying(false); prev(); }, [prev]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === " ") {
-        e.preventDefault();
-        next();
+        e.preventDefault(); manualNext();
       } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-        e.preventDefault();
-        prev();
+        e.preventDefault(); manualPrev();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [next, prev]);
+  }, [manualNext, manualPrev]);
 
-  // Wheel navigation (throttled)
+  // Wheel navigation (throttled) — pauses autoplay
   useEffect(() => {
     let accumulated = 0;
     const threshold = 80;
@@ -588,21 +608,19 @@ export default function DemoPage() {
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       const now = Date.now();
-      // Reset accumulation if too much time passed
       if (now - lastTime > 300) accumulated = 0;
       lastTime = now;
-
       accumulated += e.deltaY;
 
       if (Math.abs(accumulated) >= threshold) {
-        if (accumulated > 0) next();
-        else prev();
+        if (accumulated > 0) manualNext();
+        else manualPrev();
         accumulated = 0;
       }
     };
     window.addEventListener("wheel", onWheel, { passive: false });
     return () => window.removeEventListener("wheel", onWheel);
-  }, [next, prev]);
+  }, [manualNext, manualPrev]);
 
   // Touch swipe
   useEffect(() => {
@@ -611,7 +629,7 @@ export default function DemoPage() {
     const onEnd = (e: TouchEvent) => {
       const diff = startY - e.changedTouches[0].clientY;
       if (Math.abs(diff) > 50) {
-        if (diff > 0) next(); else prev();
+        if (diff > 0) manualNext(); else manualPrev();
       }
     };
     window.addEventListener("touchstart", onStart, { passive: true });
@@ -620,7 +638,7 @@ export default function DemoPage() {
       window.removeEventListener("touchstart", onStart);
       window.removeEventListener("touchend", onEnd);
     };
-  }, [next, prev]);
+  }, [manualNext, manualPrev]);
 
   const isActive = (index: number) => current === index;
 
@@ -714,14 +732,13 @@ export default function DemoPage() {
                       style={{ animation: isActive(index) ? "word-rise 0.8s cubic-bezier(0.22,1,0.36,1) 0.68s both" : "none", opacity: isActive(index) ? undefined : 0 }}>
                       Four steps. One session. See how SalesOS takes you from a targeting idea to personalized outreach.
                     </p>
-                    <button
-                      onClick={next}
-                      className="flex flex-col items-center gap-2 text-white/30 text-sm mx-auto hover:text-white/60 transition-colors cursor-pointer"
+                    <div
+                      className="flex flex-col items-center gap-2 text-white/30 text-sm mx-auto"
                       style={{ animation: isActive(index) ? "word-rise 0.7s cubic-bezier(0.22,1,0.36,1) 1s both" : "none", opacity: isActive(index) ? undefined : 0 }}
                     >
-                      <span>Click or press →</span>
-                      <ChevronDown className="w-4 h-4" style={{ animation: "chevron-bounce 1.8s ease-in-out infinite" }} />
-                    </button>
+                      <span className="text-white/20 text-xs tracking-wide">Auto-playing in a moment…</span>
+                      <ChevronDown className="w-4 h-4 text-white/20" style={{ animation: "chevron-bounce 1.8s ease-in-out infinite" }} />
+                    </div>
                   </div>
                 </div>
               )}
@@ -737,29 +754,44 @@ export default function DemoPage() {
         })}
       </div>
 
-      {/* Navigation dots — right side */}
+      {/* Navigation dots with auto-advance ring */}
       <div className="fixed right-6 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-3">
         {SECTIONS.map((section, index) => (
           <button
             key={section.id}
-            onClick={() => goTo(index)}
+            onClick={() => manualGoTo(index)}
             className="group relative flex items-center"
             aria-label={`Go to ${section.label}`}
           >
-            {/* Label tooltip */}
             <span
               className="absolute right-6 px-2.5 py-1 rounded-md bg-white/10 backdrop-blur-md text-[10px] text-white/70 font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
             >
               {section.label}
             </span>
-            <div
-              className="w-2 h-2 rounded-full transition-all duration-300"
-              style={{
-                backgroundColor: current === index ? "hsl(261, 75%, 65%)" : "rgba(255,255,255,0.15)",
-                transform: current === index ? "scale(1.4)" : "scale(1)",
-                boxShadow: current === index ? "0 0 12px hsl(261 75% 65% / 0.5)" : "none",
-              }}
-            />
+            <div className="relative w-4 h-4 flex items-center justify-center">
+              {/* Progress ring for active dot during autoplay */}
+              {current === index && autoplaying && (
+                <svg className="absolute inset-0 w-4 h-4 -rotate-90" viewBox="0 0 16 16">
+                  <circle cx="8" cy="8" r="6" fill="none" stroke="hsl(261 75% 65% / 0.3)" strokeWidth="1.5" />
+                  <circle cx="8" cy="8" r="6" fill="none" stroke="hsl(261, 75%, 65%)" strokeWidth="1.5"
+                    strokeDasharray={`${2 * Math.PI * 6}`}
+                    strokeDashoffset="0"
+                    strokeLinecap="round"
+                    style={{
+                      animation: `dot-ring-fill ${(DURATIONS[current] || 5000)}ms linear forwards`,
+                    }}
+                  />
+                </svg>
+              )}
+              <div
+                className="w-2 h-2 rounded-full transition-all duration-300"
+                style={{
+                  backgroundColor: current === index ? "hsl(261, 75%, 65%)" : "rgba(255,255,255,0.15)",
+                  transform: current === index ? "scale(1.4)" : "scale(1)",
+                  boxShadow: current === index ? "0 0 12px hsl(261 75% 65% / 0.5)" : "none",
+                }}
+              />
+            </div>
           </button>
         ))}
       </div>
