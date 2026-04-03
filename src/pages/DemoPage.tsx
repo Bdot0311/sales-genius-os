@@ -833,7 +833,7 @@ const PlatformChapter = ({ active }: { active: boolean }) => (
 );
 
 const SignalsChapter = ({ active }: { active: boolean }) => (
-  <div className="flex h-full items-center justify-center pt-16 md:pt-0">
+  <div className="h-full overflow-y-auto md:overflow-visible pt-16 pb-8 md:pb-0 md:pt-0 md:flex md:items-center md:justify-center">
     <div className="w-full max-w-6xl mx-auto px-4 sm:px-6">
       <div className="text-center mb-6 md:mb-10 relative">
         <div className="absolute -top-12 left-1/2 -translate-x-1/2 text-[5rem] md:text-[8.5rem] font-black text-white/[0.018] leading-none select-none pointer-events-none blur-[1px] hidden md:block" aria-hidden="true">
