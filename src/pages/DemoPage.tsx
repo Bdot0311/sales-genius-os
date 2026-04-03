@@ -754,7 +754,7 @@ const PlatformChapter = ({ active }: { active: boolean }) => (
   <div className="flex h-full items-center pt-16 md:pt-0">
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-16">
       <div className="text-center mb-6 md:mb-10 relative">
-        <div className="absolute -top-12 left-1/2 -translate-x-1/2 text-[7rem] md:text-[8.5rem] font-black text-white/[0.018] leading-none select-none pointer-events-none blur-[1px]" aria-hidden="true">
+        <div className="absolute -top-12 left-1/2 -translate-x-1/2 text-[5rem] md:text-[8.5rem] font-black text-white/[0.018] leading-none select-none pointer-events-none blur-[1px] hidden md:block" aria-hidden="true">
           04
         </div>
         <div className="flex justify-center">
