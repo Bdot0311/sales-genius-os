@@ -548,7 +548,7 @@ export default function DemoPage() {
     setTimeout(() => {
       setPrev2(null);
       lockRef.current = false;
-    }, 1200);
+    }, 800);
   }, [current, totalSections]);
 
   const next = useCallback(() => goTo(current + 1, "next"), [goTo, current]);
