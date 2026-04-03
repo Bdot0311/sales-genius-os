@@ -934,7 +934,7 @@ const CTAChapter = ({ active, navigate }: { active: boolean; navigate: (path: st
       </h2>
 
       <p
-        className="text-lg text-white/38 mb-8 max-w-2xl mx-auto leading-relaxed"
+        className="text-base md:text-lg text-white/38 mb-6 md:mb-8 max-w-2xl mx-auto leading-relaxed"
         style={{
           animation: active ? "word-rise 0.45s cubic-bezier(0.22,1,0.36,1) 180ms both" : "none",
           opacity: active ? undefined : 0,
