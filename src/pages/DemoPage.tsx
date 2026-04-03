@@ -513,7 +513,7 @@ export default function DemoPage() {
   useGlobalStyles();
   const navigate = useNavigate();
   const [current, setCurrent] = useState(0);
-  const [transitioning, setTransitioning] = useState(false);
+  const [prev2, setPrev2] = useState<number | null>(null);
   const [direction, setDirection] = useState<"next" | "prev">("next");
   const lockRef = useRef(false);
   const autoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -524,21 +524,20 @@ export default function DemoPage() {
     if (lockRef.current || index === current || index < 0 || index >= totalSections) return;
     lockRef.current = true;
     setDirection(dir || (index > current ? "next" : "prev"));
-    setTransitioning(true);
+    setPrev2(current);
+    setCurrent(index);
 
-    // Phase 1: fade out current (600ms)
+    // Both sections visible for 1s crossfade, then clean up
     setTimeout(() => {
-      setCurrent(index);
-      // Phase 2: fade in new (600ms)
-      setTimeout(() => {
-        setTransitioning(false);
-        lockRef.current = false;
-      }, 80);
-    }, 600);
+      setPrev2(null);
+      lockRef.current = false;
+    }, 1000);
   }, [current, totalSections]);
 
   const next = useCallback(() => goTo(current + 1, "next"), [goTo, current]);
   const prev = useCallback(() => goTo(current - 1, "prev"), [goTo, current]);
+
+  const transitioning = prev2 !== null;
 
   // Auto-advance for hero only
   useEffect(() => {
@@ -606,7 +605,7 @@ export default function DemoPage() {
     };
   }, [next, prev]);
 
-  const isActive = (index: number) => current === index && !transitioning;
+  const isActive = (index: number) => current === index;
 
   // Ambient glow positions per section
   const glowPositions = ["50% 44%", "18% 50%", "82% 50%", "22% 50%", "50% 28%", "50% 50%", "50% 50%"];
@@ -635,26 +634,30 @@ export default function DemoPage() {
       <div className="fixed inset-0 z-10">
         {SECTIONS.map((section, index) => {
           const isCurrent = current === index;
-          const isLeaving = transitioning && current !== index;
+          const isLeaving = prev2 === index;
+          const isVisible = isCurrent || isLeaving;
+
+          if (!isVisible) {
+            return (
+              <div key={section.id} className="absolute inset-0" style={{ opacity: 0, pointerEvents: "none" }} />
+            );
+          }
 
           return (
             <div
               key={section.id}
               className="absolute inset-0"
               style={{
-                opacity: isCurrent ? (transitioning ? 0 : 1) : 0,
+                opacity: isCurrent ? 1 : 0,
                 transform: isCurrent
-                  ? transitioning
-                    ? `scale(0.96) translateY(${direction === "next" ? "-20px" : "20px"})`
-                    : "scale(1) translateY(0)"
-                  : `scale(1.04) translateY(${direction === "next" ? "20px" : "-20px"})`,
-                filter: isCurrent && !transitioning ? "blur(0)" : "blur(8px)",
-                transition: "opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), filter 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
+                  ? "scale(1) translateY(0)"
+                  : `scale(0.94) translateY(${direction === "next" ? "-30px" : "30px"})`,
+                filter: isCurrent ? "blur(0)" : "blur(12px)",
+                transition: "opacity 1s cubic-bezier(0.4, 0, 0.2, 1), transform 1s cubic-bezier(0.4, 0, 0.2, 1), filter 1s cubic-bezier(0.4, 0, 0.2, 1)",
                 pointerEvents: isCurrent && !transitioning ? "auto" : "none",
                 zIndex: isCurrent ? 2 : 1,
               }}
             >
-              {/* Hero */}
               {section.id === "hero" && (
                 <div className="flex h-full items-center justify-center">
                   <div className="relative z-10 text-center px-6 max-w-5xl mx-auto">
