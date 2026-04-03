@@ -648,6 +648,28 @@ export default function DemoPage() {
         />
       </div>
 
+      {/* SVG dissolve filters — turbulence creates organic distortion */}
+      <svg className="fixed w-0 h-0" aria-hidden="true">
+        <defs>
+          <filter id="dissolve-0">
+            <feTurbulence type="fractalNoise" baseFrequency="0.008" numOctaves="3" seed="2" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="0" xChannelSelector="R" yChannelSelector="G" />
+          </filter>
+          <filter id="dissolve-30">
+            <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="4" seed="2" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="60" xChannelSelector="R" yChannelSelector="G" />
+          </filter>
+          <filter id="dissolve-60">
+            <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="4" seed="2" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="140" xChannelSelector="R" yChannelSelector="G" />
+          </filter>
+          <filter id="dissolve-100">
+            <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="5" seed="2" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="280" xChannelSelector="R" yChannelSelector="G" />
+          </filter>
+        </defs>
+      </svg>
+
       {/* Section container with dissolve transitions */}
       <div className="fixed inset-0 z-10">
         {SECTIONS.map((section, index) => {
@@ -664,14 +686,9 @@ export default function DemoPage() {
           return (
             <div
               key={section.id}
-              className="absolute inset-0"
+              className={`absolute inset-0 ${isLeaving ? 'dissolving-out' : ''} ${isCurrent && transitioning ? 'dissolving-in' : ''}`}
               style={{
-                opacity: isCurrent ? 1 : 0,
-                transform: isCurrent
-                  ? "scale(1) translateY(0)"
-                  : `scale(0.94) translateY(${direction === "next" ? "-30px" : "30px"})`,
-                filter: isCurrent ? "blur(0)" : "blur(12px)",
-                transition: "opacity 1s cubic-bezier(0.4, 0, 0.2, 1), transform 1s cubic-bezier(0.4, 0, 0.2, 1), filter 1s cubic-bezier(0.4, 0, 0.2, 1)",
+                opacity: isCurrent && !transitioning ? 1 : undefined,
                 pointerEvents: isCurrent && !transitioning ? "auto" : "none",
                 zIndex: isCurrent ? 2 : 1,
               }}
