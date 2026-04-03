@@ -379,8 +379,8 @@ const OutreachChapter = ({ active }: { active: boolean }) => {
                   <p key={i} style={{
                     opacity: visibleLines > i ? 1 : 0,
                     transform: visibleLines > i ? "translateY(0)" : "translateY(5px)",
-                    filter: visibleLines > i ? "blur(0)" : "blur(4px)",
-                    transition: "opacity 0.22s ease, transform 0.22s ease, filter 0.22s ease",
+                    filter: "none",
+                    transition: "opacity 0.22s ease, transform 0.22s ease",
                   }}>{line}</p>
                 ))}
               </div>
