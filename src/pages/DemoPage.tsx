@@ -334,9 +334,9 @@ const LeadsChapter = ({ active }: { active: boolean }) => (
 
 // ─── Chapter 3: Outreach ──────────────────────────────────────────────────────
 const outreachLines = [
-  "Hey Jordan — noticed Lattice is scaling their sales team and hiring SDRs in NYC.",
+  "Hey Jordan — noticed Northline is hiring SDRs and growing the sales team in NYC.",
   "That usually means more pressure to build a repeatable prospecting workflow fast.",
-  "SalesOS helps teams describe their ICP in plain English, find better-fit leads, and move into outreach faster.",
+  "SalesOS helps teams describe their ICP in plain English, find better-fit leads, and launch more personalized outreach.",
 ];
 
 const OutreachChapter = ({ active }: { active: boolean }) => {
