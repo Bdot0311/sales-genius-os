@@ -513,7 +513,7 @@ export default function DemoPage() {
   useGlobalStyles();
   const navigate = useNavigate();
   const [current, setCurrent] = useState(0);
-  const [transitioning, setTransitioning] = useState(false);
+  const [prev2, setPrev2] = useState<number | null>(null);
   const [direction, setDirection] = useState<"next" | "prev">("next");
   const lockRef = useRef(false);
   const autoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -524,17 +524,14 @@ export default function DemoPage() {
     if (lockRef.current || index === current || index < 0 || index >= totalSections) return;
     lockRef.current = true;
     setDirection(dir || (index > current ? "next" : "prev"));
-    setTransitioning(true);
+    setPrev2(current);
+    setCurrent(index);
 
-    // Phase 1: fade out current (600ms)
+    // Both sections visible for 1s crossfade, then clean up
     setTimeout(() => {
-      setCurrent(index);
-      // Phase 2: fade in new (600ms)
-      setTimeout(() => {
-        setTransitioning(false);
-        lockRef.current = false;
-      }, 80);
-    }, 600);
+      setPrev2(null);
+      lockRef.current = false;
+    }, 1000);
   }, [current, totalSections]);
 
   const next = useCallback(() => goTo(current + 1, "next"), [goTo, current]);
