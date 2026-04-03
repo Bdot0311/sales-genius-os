@@ -704,7 +704,7 @@ export default function DemoPage() {
                         style={{
                           animation: isActive(index) ? "word-rise 0.9s cubic-bezier(0.22,1,0.36,1) 0.42s both" : "none",
                           opacity: isActive(index) ? undefined : 0,
-                          filter: "drop-shadow(0 0 42px hsl(261 75% 65% / 0.38))",
+                          textShadow: "0 0 42px hsl(261 75% 65% / 0.38)",
                         }}>
                         to pipeline.
                       </div>
