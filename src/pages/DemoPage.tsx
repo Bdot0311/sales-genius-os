@@ -537,6 +537,8 @@ export default function DemoPage() {
   const next = useCallback(() => goTo(current + 1, "next"), [goTo, current]);
   const prev = useCallback(() => goTo(current - 1, "prev"), [goTo, current]);
 
+  const transitioning = prev2 !== null;
+
   // Auto-advance for hero only
   useEffect(() => {
     if (current === 0 && !transitioning) {
