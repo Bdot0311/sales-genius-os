@@ -953,7 +953,7 @@ const CTAChapter = ({ active, navigate }: { active: boolean; navigate: (path: st
       >
         <Button
           size="lg"
-          className="group text-base h-14 px-8 bg-primary text-primary-foreground hover:bg-primary/90"
+          className="group text-sm md:text-base h-12 md:h-14 px-6 md:px-8 bg-primary text-primary-foreground hover:bg-primary/90"
           onClick={() => navigate("/auth")}
         >
           View plans and get started
