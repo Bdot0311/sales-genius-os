@@ -232,9 +232,8 @@ const supportModules = [
 ];
 
 const finalTrustSignals = [
-  "Plans from $39/month",
-  "Sample workflow available",
   "Setup in 2 min",
+  "Plans from $39/month",
 ];
 
 const useGlobalStyles = () => {
@@ -945,19 +944,6 @@ const CTAChapter = ({ active, navigate }: { active: boolean; navigate: (path: st
         your outbound workflow.
       </p>
 
-      <blockquote
-        className="mb-8 px-4"
-        style={{
-          animation: active ? "word-rise 0.45s cubic-bezier(0.22,1,0.36,1) 240ms both" : "none",
-          opacity: active ? undefined : 0,
-        }}
-      >
-        <p className="text-sm italic text-white/50 leading-relaxed">
-          &quot;SalesOS cut out the list-building busywork. We could focus on messaging and meetings instead
-          of research.&quot;
-        </p>
-        <footer className="text-xs text-white/28 mt-2">— Early SalesOS user</footer>
-      </blockquote>
 
       <div
         style={{
