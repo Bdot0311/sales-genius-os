@@ -58,6 +58,10 @@ const GLOBAL_STYLES = `
     50%  { opacity: 0.7; filter: url(#dissolve-0); transform: scale(0.99); }
     100% { opacity: 1; filter: none; transform: scale(1); }
   }
+  @keyframes dot-ring-fill {
+    from { stroke-dashoffset: ${2 * Math.PI * 6}; }
+    to   { stroke-dashoffset: 0; }
+  }
   .dissolving-out {
     animation: dissolve-out 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   }
