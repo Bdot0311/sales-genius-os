@@ -576,9 +576,9 @@ const SearchChapter = ({ active }: { active: boolean }) => (
 );
 
 const LeadsChapter = ({ active }: { active: boolean }) => (
-  <div className="flex h-full items-center">
-    <div className="w-full max-w-7xl mx-auto px-6 md:px-16 grid grid-cols-1 md:grid-cols-[1.05fr_0.95fr] gap-12 md:gap-20 items-center">
-      <div className="space-y-4">
+  <div className="flex h-full items-center pt-16 md:pt-0">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-16 grid grid-cols-1 md:grid-cols-[1.05fr_0.95fr] gap-4 md:gap-20 items-center">
+      <div className="space-y-3 md:space-y-4 order-2 md:order-1">
         {demoLeads.map((lead) => (
           <div
             key={lead.email}
@@ -589,20 +589,20 @@ const LeadsChapter = ({ active }: { active: boolean }) => (
               opacity: active ? undefined : 0,
             }}
           >
-            <GlassCard active={active} className="p-5">
-              <div className="flex items-start justify-between gap-4">
+            <GlassCard active={active} className="p-4 md:p-5">
+              <div className="flex items-start justify-between gap-3 md:gap-4">
                 <div className="min-w-0">
-                  <p className="text-lg md:text-xl font-semibold text-white/95">{lead.name}</p>
-                  <p className="text-sm text-white/48 mt-0.5">
+                  <p className="text-base md:text-xl font-semibold text-white/95">{lead.name}</p>
+                  <p className="text-xs md:text-sm text-white/48 mt-0.5">
                     {lead.title} · {lead.company}
                   </p>
-                  <p className="text-xs text-white/34 mt-2">{lead.details}</p>
-                  <div className="mt-3 inline-flex items-center gap-2 text-xs text-white/72">
-                    <Mail className="w-3.5 h-3.5 text-primary" />
+                  <p className="text-[10px] md:text-xs text-white/34 mt-1.5 md:mt-2">{lead.details}</p>
+                  <div className="mt-2 md:mt-3 inline-flex items-center gap-2 text-[10px] md:text-xs text-white/72">
+                    <Mail className="w-3 md:w-3.5 h-3 md:h-3.5 text-primary" />
                     <span>{lead.email}</span>
                   </div>
                 </div>
-                <span className="rounded-full bg-primary/14 border border-primary/22 text-primary px-3 py-1 text-xs font-medium whitespace-nowrap">
+                <span className="rounded-full bg-primary/14 border border-primary/22 text-primary px-2.5 md:px-3 py-1 text-[10px] md:text-xs font-medium whitespace-nowrap">
                   {lead.fit}
                 </span>
               </div>
@@ -611,12 +611,12 @@ const LeadsChapter = ({ active }: { active: boolean }) => (
         ))}
       </div>
 
-      <div className="relative">
-        <div className="absolute -top-10 -right-2 text-[7rem] md:text-[8.5rem] font-black text-white/[0.018] leading-none select-none pointer-events-none text-right blur-[1px]" aria-hidden="true">
+      <div className="relative order-1 md:order-2">
+        <div className="absolute -top-10 -right-2 text-[5rem] md:text-[8.5rem] font-black text-white/[0.018] leading-none select-none pointer-events-none text-right blur-[1px] hidden md:block" aria-hidden="true">
           02
         </div>
         <ChapterLabel num="02" label="Leads" visible={active} />
-        <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-[1.05] mb-6">
+        <h2 className="text-3xl md:text-6xl font-bold tracking-tight text-white leading-[1.05] mb-3 md:mb-6">
           <div>
             <SplitWords text="Review ranked," visible={active} />
           </div>
@@ -625,7 +625,7 @@ const LeadsChapter = ({ active }: { active: boolean }) => (
           </div>
         </h2>
         <p
-          className="text-base md:text-lg text-white/42 leading-relaxed max-w-md"
+          className="text-sm md:text-lg text-white/42 leading-relaxed max-w-md"
           style={{
             animation: active ? "word-rise 0.36s cubic-bezier(0.22,1,0.36,1) 90ms both" : "none",
             opacity: active ? undefined : 0,
