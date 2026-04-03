@@ -576,7 +576,7 @@ const SearchChapter = ({ active }: { active: boolean }) => (
 );
 
 const LeadsChapter = ({ active }: { active: boolean }) => (
-  <div className="flex h-full items-center pt-16 md:pt-0">
+  <div className="h-full overflow-y-auto md:overflow-visible pt-16 pb-8 md:pb-0 md:pt-0 md:flex md:items-center">
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-16 grid grid-cols-1 md:grid-cols-[1.05fr_0.95fr] gap-4 md:gap-20 items-center">
       <div className="space-y-3 md:space-y-4 order-2 md:order-1">
         {demoLeads.map((lead) => (
@@ -658,7 +658,7 @@ const OutreachChapter = ({ active }: { active: boolean }) => {
   }, [active]);
 
   return (
-    <div className="flex h-full items-center pt-16 md:pt-0">
+    <div className="h-full overflow-y-auto md:overflow-visible pt-16 pb-8 md:pb-0 md:pt-0 md:flex md:items-center">
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-16 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-20 items-center">
         <div className="relative">
           <div className="absolute -top-10 -left-2 text-[5rem] md:text-[8.5rem] font-black text-white/[0.018] leading-none select-none pointer-events-none blur-[1px] hidden md:block" aria-hidden="true">
@@ -683,7 +683,7 @@ const OutreachChapter = ({ active }: { active: boolean }) => {
             Generate more relevant outbound from the lead and company details already inside SalesOS.
           </p>
 
-          <GlassCard active={active} className="mt-4 md:mt-6 p-4 md:p-6">
+          <GlassCard active={active} className="mt-4 md:mt-6 p-4 md:p-6 hidden md:block">
             <div className="flex items-center gap-2 mb-4 text-sm font-medium text-white/82">
               <Sparkles className="w-4 h-4 text-primary" />
               Built for outbound teams
@@ -751,7 +751,7 @@ const OutreachChapter = ({ active }: { active: boolean }) => {
 };
 
 const PlatformChapter = ({ active }: { active: boolean }) => (
-  <div className="flex h-full items-center pt-16 md:pt-0">
+  <div className="h-full overflow-y-auto md:overflow-visible pt-16 pb-8 md:pb-0 md:pt-0 md:flex md:items-center">
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-16">
       <div className="text-center mb-6 md:mb-10 relative">
         <div className="absolute -top-12 left-1/2 -translate-x-1/2 text-[5rem] md:text-[8.5rem] font-black text-white/[0.018] leading-none select-none pointer-events-none blur-[1px] hidden md:block" aria-hidden="true">
@@ -833,7 +833,7 @@ const PlatformChapter = ({ active }: { active: boolean }) => (
 );
 
 const SignalsChapter = ({ active }: { active: boolean }) => (
-  <div className="flex h-full items-center justify-center pt-16 md:pt-0">
+  <div className="h-full overflow-y-auto md:overflow-visible pt-16 pb-8 md:pb-0 md:pt-0 md:flex md:items-center md:justify-center">
     <div className="w-full max-w-6xl mx-auto px-4 sm:px-6">
       <div className="text-center mb-6 md:mb-10 relative">
         <div className="absolute -top-12 left-1/2 -translate-x-1/2 text-[5rem] md:text-[8.5rem] font-black text-white/[0.018] leading-none select-none pointer-events-none blur-[1px] hidden md:block" aria-hidden="true">
