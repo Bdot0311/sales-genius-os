@@ -134,8 +134,7 @@ const SplitWords = ({
         }}
       >
         {gradient ? (
-          <span className="bg-gradient-to-r from-primary via-purple-400 to-primary/70 bg-clip-text text-transparent"
-            style={{ filter: "drop-shadow(0 0 22px hsl(261 75% 65% / 0.45))" }}>
+          <span className="bg-gradient-to-r from-primary via-purple-400 to-primary/70 bg-clip-text text-transparent">
             {word}
           </span>
         ) : word}
