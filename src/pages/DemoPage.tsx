@@ -665,7 +665,7 @@ const OutreachChapter = ({ active }: { active: boolean }) => {
             03
           </div>
           <ChapterLabel num="03" label="Outreach" visible={active} />
-          <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-[1.05] mb-6">
+          <h2 className="text-3xl md:text-6xl font-bold tracking-tight text-white leading-[1.05] mb-4 md:mb-6">
             <div>
               <SplitWords text="Turn lead context" visible={active} />
             </div>
