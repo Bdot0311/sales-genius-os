@@ -475,7 +475,7 @@ const ResultsChapter = ({ active }: { active: boolean }) => {
         <div className="grid grid-cols-3 gap-6 max-w-3xl mx-auto">
           {stats.map(([to, suffix, prefix, label], i) => (
             <div key={i}
-              style={{ animation: active ? `counter-blur-in 0.9s cubic-bezier(0.22,1,0.36,1) ${i * 150}ms both` : "none", opacity: active ? undefined : 0 }}>
+              style={{ animation: active ? `counter-rise 0.6s cubic-bezier(0.22,1,0.36,1) ${i * 150}ms both` : "none", opacity: active ? undefined : 0 }}>
               <div className="text-4xl md:text-5xl font-black tracking-tight bg-gradient-to-r from-primary via-purple-400 to-primary/70 bg-clip-text text-transparent">
                 <Counter to={to} prefix={prefix} suffix={suffix} active={active} />
               </div>
