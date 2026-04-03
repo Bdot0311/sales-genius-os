@@ -747,7 +747,7 @@ export default function DemoPage() {
             aria-label={`Go to ${section.label}`}
           >
             <span
-              className="absolute right-6 px-2.5 py-1 rounded-md bg-white/10 backdrop-blur-md text-[10px] text-white/70 font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+              className="absolute right-6 px-2.5 py-1 rounded-md bg-[#1a1a2e]/90 text-[10px] text-white/70 font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
             >
               {section.label}
             </span>
