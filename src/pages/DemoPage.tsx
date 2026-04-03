@@ -422,7 +422,7 @@ const PipelineChapter = ({ active }: { active: boolean }) => {
         </div>
         <div className="grid grid-cols-4 gap-3 mb-5">
           {metrics.map(([label, to, prefix, suffix], i) => (
-            <div key={label} style={{ animation: active ? `counter-blur-in 0.36s cubic-bezier(0.22,1,0.36,1) ${i * 38}ms both` : "none", opacity: active ? undefined : 0 }}>
+            <div key={label} style={{ animation: active ? `counter-rise 0.36s cubic-bezier(0.22,1,0.36,1) ${i * 38}ms both` : "none", opacity: active ? undefined : 0 }}>
               <GlassCard active={active} className="p-4 text-center">
                 <div className="text-2xl md:text-3xl font-bold text-white/95">
                   <Counter to={to} prefix={prefix} suffix={suffix} active={active} />
