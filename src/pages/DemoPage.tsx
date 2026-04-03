@@ -48,25 +48,25 @@ const GLOBAL_STYLES = `
   }
   .animate-breathe { animation: breathe 1.6s ease-in-out infinite; }
 
-  @keyframes dissolve-out {
-    0%   { opacity: 1; filter: url(#dissolve-0); transform: scale(1); }
-    40%  { opacity: 0.6; filter: url(#dissolve-30); transform: scale(1.02); }
-    100% { opacity: 0; filter: url(#dissolve-60); transform: scale(1.04); }
+  @keyframes crossfade-out {
+    0%   { opacity: 1; transform: scale(1) translateY(0); }
+    100% { opacity: 0; transform: scale(0.97) translateY(-12px); }
   }
-  @keyframes dissolve-in {
-    0%   { opacity: 0; filter: url(#dissolve-30); transform: scale(0.97); }
-    50%  { opacity: 0.7; filter: url(#dissolve-0); transform: scale(0.99); }
-    100% { opacity: 1; filter: none; transform: scale(1); }
+  @keyframes crossfade-in {
+    0%   { opacity: 0; transform: scale(1.02) translateY(12px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
   }
   @keyframes dot-ring-fill {
     from { stroke-dashoffset: ${2 * Math.PI * 6}; }
     to   { stroke-dashoffset: 0; }
   }
   .dissolving-out {
-    animation: dissolve-out 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: crossfade-out 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    will-change: opacity, transform;
   }
   .dissolving-in {
-    animation: dissolve-in 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: crossfade-in 0.45s cubic-bezier(0.0, 0, 0.2, 1) forwards;
+    will-change: opacity, transform;
   }
 `;
 
