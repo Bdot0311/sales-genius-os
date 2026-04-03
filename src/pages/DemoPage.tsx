@@ -394,13 +394,13 @@ const OutreachChapter = ({ active }: { active: boolean }) => {
 
 // ─── Chapter 4: Pipeline ──────────────────────────────────────────────────────
 const PipelineChapter = ({ active }: { active: boolean }) => {
-  const bars   = [30, 54, 74, 92];
+  const bars   = [100, 67, 29, 14];
   const labels = ["Contacted", "Qualified", "Proposal", "Closed"];
   const metrics: [string, number, string, string][] = [
-    ["Leads",    247,  "",  ""],
-    ["Meetings",  34,  "",  ""],
-    ["Revenue",   89,  "$", "K"],
-    ["Conv.",     32,  "",  "%"],
+    ["Match Rate", 92,  "",  "%"],
+    ["Open Rate",  64,  "",  "%"],
+    ["Replies",    38,  "",  "%"],
+    ["AI Score",   87,  "",  ""],
   ];
 
   return (
