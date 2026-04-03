@@ -562,7 +562,7 @@ export default function DemoPage() {
 
   // Auto-advance all sections — pause on manual interaction
   const [autoplaying, setAutoplaying] = useState(true);
-  const DURATIONS = [5000, 6000, 5500, 5500, 6000, 5000, 7000]; // per-section timing
+  const DURATIONS = [2500, 6000, 5500, 5500, 6000, 5000, 7000];
 
   useEffect(() => {
     if (!autoplaying || transitioning) return;
