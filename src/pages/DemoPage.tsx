@@ -918,7 +918,7 @@ const CTAChapter = ({ active, navigate }: { active: boolean; navigate: (path: st
         Final step
       </div>
 
-      <h2 className="text-4xl md:text-6xl font-black tracking-tight text-white mb-5 leading-tight">
+      <h2 className="text-3xl md:text-6xl font-black tracking-tight text-white mb-4 md:mb-5 leading-tight">
         <div>
           <SplitWords text="Ready to find your next" visible={active} />
         </div>
