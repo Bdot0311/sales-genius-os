@@ -576,7 +576,7 @@ const SearchChapter = ({ active }: { active: boolean }) => (
 );
 
 const LeadsChapter = ({ active }: { active: boolean }) => (
-  <div className="flex h-full items-center pt-16 md:pt-0">
+  <div className="h-full overflow-y-auto md:overflow-visible pt-16 pb-8 md:pb-0 md:pt-0 md:flex md:items-center">
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-16 grid grid-cols-1 md:grid-cols-[1.05fr_0.95fr] gap-4 md:gap-20 items-center">
       <div className="space-y-3 md:space-y-4 order-2 md:order-1">
         {demoLeads.map((lead) => (
