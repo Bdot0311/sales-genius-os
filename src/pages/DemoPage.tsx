@@ -129,8 +129,7 @@ const SplitWords = ({
     {text.split(" ").map((word, i) => (
       <span key={i} className="inline-block mr-[0.26em]"
         style={{
-          animation: visible ? `word-rise 0.5s cubic-bezier(0.22,1,0.36,1) both` : "none",
-          animationDelay: `${baseDelay + i * 34}ms`,
+          animation: visible ? `word-rise 0.4s cubic-bezier(0.22,1,0.36,1) ${baseDelay + i * 34}ms both` : "none",
           opacity: visible ? undefined : 0,
         }}
       >
