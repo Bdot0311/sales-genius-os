@@ -479,14 +479,14 @@ const IntroChapter = ({ active }: { active: boolean }) => (
 );
 
 const SearchChapter = ({ active }: { active: boolean }) => (
-  <div className="flex h-full items-center">
-    <div className="w-full max-w-7xl mx-auto px-6 md:px-16 grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-center">
+  <div className="flex h-full items-center pt-16 md:pt-0">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-16 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-20 items-center">
       <div className="relative">
-        <div className="absolute -top-10 -left-2 text-[7rem] md:text-[8.5rem] font-black text-white/[0.018] leading-none select-none pointer-events-none blur-[1px]" aria-hidden="true">
+        <div className="absolute -top-10 -left-2 text-[5rem] md:text-[8.5rem] font-black text-white/[0.018] leading-none select-none pointer-events-none blur-[1px] hidden md:block" aria-hidden="true">
           01
         </div>
         <ChapterLabel num="01" label="Search" visible={active} />
-        <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-[1.05] mb-6">
+        <h2 className="text-3xl md:text-6xl font-bold tracking-tight text-white leading-[1.05] mb-4 md:mb-6">
           <div>
             <SplitWords text="Describe your ideal" visible={active} />
           </div>
@@ -495,7 +495,7 @@ const SearchChapter = ({ active }: { active: boolean }) => (
           </div>
         </h2>
         <p
-          className="text-base md:text-lg text-white/42 leading-relaxed max-w-md"
+          className="text-sm md:text-lg text-white/42 leading-relaxed max-w-md"
           style={{
             animation: active ? "word-rise 0.38s cubic-bezier(0.22,1,0.36,1) 90ms both" : "none",
             opacity: active ? undefined : 0,
@@ -520,28 +520,28 @@ const SearchChapter = ({ active }: { active: boolean }) => (
             />
           )}
 
-          <div className="flex items-center gap-2 px-5 py-3.5 border-b border-white/8">
+          <div className="flex items-center gap-2 px-4 md:px-5 py-3 md:py-3.5 border-b border-white/8">
             <Search className="w-4 h-4 text-primary" />
             <span className="text-[11px] text-white/42 font-mono tracking-wider">Search query</span>
             <span className="ml-auto text-[10px] text-primary/55">Plain English</span>
           </div>
 
-          <div className="p-6 md:p-8 space-y-5">
-            <div className="rounded-xl border border-white/8 bg-white/[0.03] p-5 min-h-[96px]">
-              <div className="text-lg md:text-xl font-medium text-white/85 leading-relaxed">
+          <div className="p-4 md:p-8 space-y-4 md:space-y-5">
+            <div className="rounded-xl border border-white/8 bg-white/[0.03] p-4 md:p-5 min-h-[72px] md:min-h-[96px]">
+              <div className="text-base md:text-xl font-medium text-white/85 leading-relaxed">
                 <Typewriter text={demoSearchQuery} active={active} />
               </div>
             </div>
 
-            <p className="text-sm text-white/40 leading-relaxed">
+            <p className="text-xs md:text-sm text-white/40 leading-relaxed">
               Search naturally, narrow the field quickly, and move straight into lead review.
             </p>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5 md:gap-2">
               {["Title", "Industry", "Company size", "Geography", "Buying signal"].map((tag, i) => (
                 <span
                   key={tag}
-                  className="px-3 py-1 rounded-full border border-white/10 bg-white/[0.03] text-xs text-white/40 font-medium"
+                  className="px-2.5 md:px-3 py-1 rounded-full border border-white/10 bg-white/[0.03] text-[10px] md:text-xs text-white/40 font-medium"
                   style={{
                     opacity: active ? 1 : 0,
                     transform: active ? "translateY(0) scale(1)" : "translateY(5px) scale(0.96)",
@@ -554,7 +554,7 @@ const SearchChapter = ({ active }: { active: boolean }) => (
             </div>
 
             <div
-              className="inline-flex flex-wrap items-center gap-2 text-sm text-primary/85"
+              className="inline-flex flex-wrap items-center gap-1.5 md:gap-2 text-xs md:text-sm text-primary/85"
               style={{
                 opacity: active ? 1 : 0,
                 transform: active ? "translateY(0)" : "translateY(5px)",
@@ -562,9 +562,9 @@ const SearchChapter = ({ active }: { active: boolean }) => (
               }}
             >
               {flowSteps.map((step, index) => (
-                <span key={step} className="inline-flex items-center gap-2">
+                <span key={step} className="inline-flex items-center gap-1.5 md:gap-2">
                   <span>{step}</span>
-                  {index < flowSteps.length - 1 && <ArrowRight className="w-4 h-4 text-primary" />}
+                  {index < flowSteps.length - 1 && <ArrowRight className="w-3 h-3 md:w-4 md:h-4 text-primary" />}
                 </span>
               ))}
             </div>
@@ -576,9 +576,9 @@ const SearchChapter = ({ active }: { active: boolean }) => (
 );
 
 const LeadsChapter = ({ active }: { active: boolean }) => (
-  <div className="flex h-full items-center">
-    <div className="w-full max-w-7xl mx-auto px-6 md:px-16 grid grid-cols-1 md:grid-cols-[1.05fr_0.95fr] gap-12 md:gap-20 items-center">
-      <div className="space-y-4">
+  <div className="flex h-full items-center pt-16 md:pt-0">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-16 grid grid-cols-1 md:grid-cols-[1.05fr_0.95fr] gap-4 md:gap-20 items-center">
+      <div className="space-y-3 md:space-y-4 order-2 md:order-1">
         {demoLeads.map((lead) => (
           <div
             key={lead.email}
@@ -589,20 +589,20 @@ const LeadsChapter = ({ active }: { active: boolean }) => (
               opacity: active ? undefined : 0,
             }}
           >
-            <GlassCard active={active} className="p-5">
-              <div className="flex items-start justify-between gap-4">
+            <GlassCard active={active} className="p-4 md:p-5">
+              <div className="flex items-start justify-between gap-3 md:gap-4">
                 <div className="min-w-0">
-                  <p className="text-lg md:text-xl font-semibold text-white/95">{lead.name}</p>
-                  <p className="text-sm text-white/48 mt-0.5">
+                  <p className="text-base md:text-xl font-semibold text-white/95">{lead.name}</p>
+                  <p className="text-xs md:text-sm text-white/48 mt-0.5">
                     {lead.title} · {lead.company}
                   </p>
-                  <p className="text-xs text-white/34 mt-2">{lead.details}</p>
-                  <div className="mt-3 inline-flex items-center gap-2 text-xs text-white/72">
-                    <Mail className="w-3.5 h-3.5 text-primary" />
+                  <p className="text-[10px] md:text-xs text-white/34 mt-1.5 md:mt-2">{lead.details}</p>
+                  <div className="mt-2 md:mt-3 inline-flex items-center gap-2 text-[10px] md:text-xs text-white/72">
+                    <Mail className="w-3 md:w-3.5 h-3 md:h-3.5 text-primary" />
                     <span>{lead.email}</span>
                   </div>
                 </div>
-                <span className="rounded-full bg-primary/14 border border-primary/22 text-primary px-3 py-1 text-xs font-medium whitespace-nowrap">
+                <span className="rounded-full bg-primary/14 border border-primary/22 text-primary px-2.5 md:px-3 py-1 text-[10px] md:text-xs font-medium whitespace-nowrap">
                   {lead.fit}
                 </span>
               </div>
@@ -611,12 +611,12 @@ const LeadsChapter = ({ active }: { active: boolean }) => (
         ))}
       </div>
 
-      <div className="relative">
-        <div className="absolute -top-10 -right-2 text-[7rem] md:text-[8.5rem] font-black text-white/[0.018] leading-none select-none pointer-events-none text-right blur-[1px]" aria-hidden="true">
+      <div className="relative order-1 md:order-2">
+        <div className="absolute -top-10 -right-2 text-[5rem] md:text-[8.5rem] font-black text-white/[0.018] leading-none select-none pointer-events-none text-right blur-[1px] hidden md:block" aria-hidden="true">
           02
         </div>
         <ChapterLabel num="02" label="Leads" visible={active} />
-        <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-[1.05] mb-6">
+        <h2 className="text-3xl md:text-6xl font-bold tracking-tight text-white leading-[1.05] mb-3 md:mb-6">
           <div>
             <SplitWords text="Review ranked," visible={active} />
           </div>
@@ -625,7 +625,7 @@ const LeadsChapter = ({ active }: { active: boolean }) => (
           </div>
         </h2>
         <p
-          className="text-base md:text-lg text-white/42 leading-relaxed max-w-md"
+          className="text-sm md:text-lg text-white/42 leading-relaxed max-w-md"
           style={{
             animation: active ? "word-rise 0.36s cubic-bezier(0.22,1,0.36,1) 90ms both" : "none",
             opacity: active ? undefined : 0,
@@ -658,14 +658,14 @@ const OutreachChapter = ({ active }: { active: boolean }) => {
   }, [active]);
 
   return (
-    <div className="flex h-full items-center">
-      <div className="w-full max-w-7xl mx-auto px-6 md:px-16 grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-center">
+    <div className="flex h-full items-center pt-16 md:pt-0">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-16 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-20 items-center">
         <div className="relative">
-          <div className="absolute -top-10 -left-2 text-[7rem] md:text-[8.5rem] font-black text-white/[0.018] leading-none select-none pointer-events-none blur-[1px]" aria-hidden="true">
+          <div className="absolute -top-10 -left-2 text-[5rem] md:text-[8.5rem] font-black text-white/[0.018] leading-none select-none pointer-events-none blur-[1px] hidden md:block" aria-hidden="true">
             03
           </div>
           <ChapterLabel num="03" label="Outreach" visible={active} />
-          <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-[1.05] mb-6">
+          <h2 className="text-3xl md:text-6xl font-bold tracking-tight text-white leading-[1.05] mb-4 md:mb-6">
             <div>
               <SplitWords text="Turn lead context" visible={active} />
             </div>
@@ -674,7 +674,7 @@ const OutreachChapter = ({ active }: { active: boolean }) => {
             </div>
           </h2>
           <p
-            className="text-base md:text-lg text-white/42 leading-relaxed max-w-md"
+            className="text-sm md:text-lg text-white/42 leading-relaxed max-w-md"
             style={{
               animation: active ? "word-rise 0.42s cubic-bezier(0.22,1,0.36,1) 110ms both" : "none",
               opacity: active ? undefined : 0,
@@ -683,7 +683,7 @@ const OutreachChapter = ({ active }: { active: boolean }) => {
             Generate more relevant outbound from the lead and company details already inside SalesOS.
           </p>
 
-          <GlassCard active={active} className="mt-6 p-6">
+          <GlassCard active={active} className="mt-4 md:mt-6 p-4 md:p-6">
             <div className="flex items-center gap-2 mb-4 text-sm font-medium text-white/82">
               <Sparkles className="w-4 h-4 text-primary" />
               Built for outbound teams
@@ -751,16 +751,16 @@ const OutreachChapter = ({ active }: { active: boolean }) => {
 };
 
 const PlatformChapter = ({ active }: { active: boolean }) => (
-  <div className="flex h-full items-center">
-    <div className="w-full max-w-7xl mx-auto px-6 md:px-16">
-      <div className="text-center mb-10 relative">
-        <div className="absolute -top-12 left-1/2 -translate-x-1/2 text-[7rem] md:text-[8.5rem] font-black text-white/[0.018] leading-none select-none pointer-events-none blur-[1px]" aria-hidden="true">
+  <div className="flex h-full items-center pt-16 md:pt-0">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-16">
+      <div className="text-center mb-6 md:mb-10 relative">
+        <div className="absolute -top-12 left-1/2 -translate-x-1/2 text-[5rem] md:text-[8.5rem] font-black text-white/[0.018] leading-none select-none pointer-events-none blur-[1px] hidden md:block" aria-hidden="true">
           04
         </div>
         <div className="flex justify-center">
           <ChapterLabel num="04" label="Platform" visible={active} />
         </div>
-        <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-[1.05] mb-4">
+        <h2 className="text-3xl md:text-6xl font-bold tracking-tight text-white leading-[1.05] mb-3 md:mb-4">
           <div>
             <SplitWords text="From first lead" visible={active} />
           </div>
@@ -769,7 +769,7 @@ const PlatformChapter = ({ active }: { active: boolean }) => (
           </div>
         </h2>
         <p
-          className="text-base md:text-lg text-white/42 leading-relaxed max-w-3xl mx-auto"
+          className="text-sm md:text-lg text-white/42 leading-relaxed max-w-3xl mx-auto"
           style={{
             animation: active ? "word-rise 0.42s cubic-bezier(0.22,1,0.36,1) 120ms both" : "none",
             opacity: active ? undefined : 0,
@@ -780,7 +780,7 @@ const PlatformChapter = ({ active }: { active: boolean }) => (
         </p>
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-4 mb-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 mb-4 md:mb-5">
         {moduleCards.map((module, index) => (
           <div
             key={module.title}
@@ -791,11 +791,11 @@ const PlatformChapter = ({ active }: { active: boolean }) => (
               opacity: active ? undefined : 0,
             }}
           >
-            <GlassCard active={active} className="p-5 h-full">
-              <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${module.gradient} flex items-center justify-center mb-4`}>
+            <GlassCard active={active} className="p-4 md:p-5 h-full">
+              <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-gradient-to-br ${module.gradient} flex items-center justify-center mb-3 md:mb-4`}>
                 <module.icon className="w-5 h-5 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold text-white/92 mb-1">{module.title}</h3>
+              <h3 className="text-base md:text-lg font-semibold text-white/92 mb-1">{module.title}</h3>
               <p className="text-sm text-primary/80 font-medium mb-2">{module.outcome}</p>
               <p className="text-sm text-white/46 leading-relaxed">{module.description}</p>
             </GlassCard>
@@ -803,9 +803,9 @@ const PlatformChapter = ({ active }: { active: boolean }) => (
         ))}
       </div>
 
-      <GlassCard active={active} className="p-5">
-        <p className="text-xs font-semibold uppercase tracking-widest text-white/32 mb-4">Also included</p>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <GlassCard active={active} className="p-4 md:p-5 hidden md:block">
+        <p className="text-xs font-semibold uppercase tracking-widest text-white/32 mb-3 md:mb-4">Also included</p>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           {supportModules.map((item, index) => (
             <div
               key={item.label}
@@ -833,16 +833,16 @@ const PlatformChapter = ({ active }: { active: boolean }) => (
 );
 
 const SignalsChapter = ({ active }: { active: boolean }) => (
-  <div className="flex h-full items-center justify-center">
-    <div className="w-full max-w-6xl mx-auto px-6">
-      <div className="text-center mb-10 relative">
-        <div className="absolute -top-12 left-1/2 -translate-x-1/2 text-[7rem] md:text-[8.5rem] font-black text-white/[0.018] leading-none select-none pointer-events-none blur-[1px]" aria-hidden="true">
+  <div className="flex h-full items-center justify-center pt-16 md:pt-0">
+    <div className="w-full max-w-6xl mx-auto px-4 sm:px-6">
+      <div className="text-center mb-6 md:mb-10 relative">
+        <div className="absolute -top-12 left-1/2 -translate-x-1/2 text-[5rem] md:text-[8.5rem] font-black text-white/[0.018] leading-none select-none pointer-events-none blur-[1px] hidden md:block" aria-hidden="true">
           05
         </div>
         <div className="flex justify-center">
           <ChapterLabel num="05" label="Signals" visible={active} />
         </div>
-        <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-[1.05] mb-4">
+        <h2 className="text-3xl md:text-6xl font-bold tracking-tight text-white leading-[1.05] mb-3 md:mb-4">
           <div>
             <SplitWords text="Built for founder-led" visible={active} />
           </div>
@@ -851,7 +851,7 @@ const SignalsChapter = ({ active }: { active: boolean }) => (
           </div>
         </h2>
         <p
-          className="text-base md:text-lg text-white/42 leading-relaxed max-w-2xl mx-auto"
+          className="text-sm md:text-lg text-white/42 leading-relaxed max-w-2xl mx-auto"
           style={{
             animation: active ? "word-rise 0.42s cubic-bezier(0.22,1,0.36,1) 120ms both" : "none",
             opacity: active ? undefined : 0,
@@ -878,7 +878,7 @@ const SignalsChapter = ({ active }: { active: boolean }) => (
         ))}
       </div>
 
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
         {trustedStats.map((stat, index) => (
           <div
             key={stat.label}
@@ -889,9 +889,9 @@ const SignalsChapter = ({ active }: { active: boolean }) => (
               opacity: active ? undefined : 0,
             }}
           >
-            <GlassCard active={active} className="px-6 py-7 text-center h-full">
+            <GlassCard active={active} className="px-4 py-5 md:px-6 md:py-7 text-center h-full">
               <stat.icon className="w-4 h-4 text-primary/60 mb-3 mx-auto" />
-              <div className="text-3xl md:text-4xl font-black tracking-tight bg-gradient-to-r from-primary via-purple-400 to-primary/70 bg-clip-text text-transparent">
+              <div className="text-2xl md:text-4xl font-black tracking-tight bg-gradient-to-r from-primary via-purple-400 to-primary/70 bg-clip-text text-transparent">
                 {stat.stat}
               </div>
               <div className="text-sm font-semibold text-white/72 mt-2">{stat.label}</div>
@@ -906,7 +906,7 @@ const SignalsChapter = ({ active }: { active: boolean }) => (
 
 const CTAChapter = ({ active, navigate }: { active: boolean; navigate: (path: string) => void }) => (
   <div className="flex h-full items-center justify-center">
-    <div className="relative z-10 text-center max-w-4xl mx-auto px-6">
+    <div className="relative z-10 text-center max-w-4xl mx-auto px-4 sm:px-6">
       <div
         className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/20 bg-primary/8 text-xs font-medium text-primary mb-6"
         style={{
@@ -918,7 +918,7 @@ const CTAChapter = ({ active, navigate }: { active: boolean; navigate: (path: st
         Final step
       </div>
 
-      <h2 className="text-4xl md:text-6xl font-black tracking-tight text-white mb-5 leading-tight">
+      <h2 className="text-3xl md:text-6xl font-black tracking-tight text-white mb-4 md:mb-5 leading-tight">
         <div>
           <SplitWords text="Ready to find your next" visible={active} />
         </div>
@@ -934,7 +934,7 @@ const CTAChapter = ({ active, navigate }: { active: boolean; navigate: (path: st
       </h2>
 
       <p
-        className="text-lg text-white/38 mb-8 max-w-2xl mx-auto leading-relaxed"
+        className="text-base md:text-lg text-white/38 mb-6 md:mb-8 max-w-2xl mx-auto leading-relaxed"
         style={{
           animation: active ? "word-rise 0.45s cubic-bezier(0.22,1,0.36,1) 180ms both" : "none",
           opacity: active ? undefined : 0,
@@ -953,7 +953,7 @@ const CTAChapter = ({ active, navigate }: { active: boolean; navigate: (path: st
       >
         <Button
           size="lg"
-          className="group text-base h-14 px-8 bg-primary text-primary-foreground hover:bg-primary/90"
+          className="group text-sm md:text-base h-12 md:h-14 px-6 md:px-8 bg-primary text-primary-foreground hover:bg-primary/90"
           onClick={() => navigate("/auth")}
         >
           View plans and get started
@@ -1122,7 +1122,7 @@ export default function DemoPage() {
   const glowPositions = ["50% 44%", "18% 50%", "82% 50%", "22% 50%", "50% 28%", "50% 50%", "50% 50%"];
 
   return (
-    <div className="bg-[#080810] text-white overflow-hidden" style={{ height: "100vh" }}>
+    <div className="bg-[#080810] text-white overflow-hidden" style={{ height: "100dvh" }}>
       <SEOHead
         title="See SalesOS in Action | Product Demo"
         description="Watch how SalesOS takes you from ICP to personalized outreach in minutes."
@@ -1172,7 +1172,7 @@ export default function DemoPage() {
         })}
       </div>
 
-      <div className="fixed right-6 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-3">
+      <div className="fixed right-3 md:right-6 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-2 md:gap-3">
         {SECTIONS.map((section, index) => (
           <button
             key={section.id}
@@ -1180,12 +1180,12 @@ export default function DemoPage() {
             className="group relative flex items-center"
             aria-label={`Go to ${section.label}`}
           >
-            <span className="absolute right-6 px-2.5 py-1 rounded-md bg-[#1a1a2e]/90 text-[10px] text-white/70 font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            <span className="absolute right-6 px-2.5 py-1 rounded-md bg-[#1a1a2e]/90 text-[10px] text-white/70 font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none hidden md:block">
               {section.label}
             </span>
-            <div className="relative w-4 h-4 flex items-center justify-center">
+            <div className="relative w-3.5 h-3.5 md:w-4 md:h-4 flex items-center justify-center">
               {current === index && autoplaying && (
-                <svg className="absolute inset-0 w-4 h-4 -rotate-90" viewBox="0 0 16 16">
+                <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 16 16">
                   <circle cx="8" cy="8" r="6" fill="none" stroke="hsl(261 75% 65% / 0.3)" strokeWidth="1.5" />
                   <circle
                     cx="8"
@@ -1202,7 +1202,7 @@ export default function DemoPage() {
                 </svg>
               )}
               <div
-                className="w-2 h-2 rounded-full transition-all duration-300"
+                className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full transition-all duration-300"
                 style={{
                   backgroundColor: current === index ? "hsl(261, 75%, 65%)" : "rgba(255,255,255,0.15)",
                   transform: current === index ? "scale(1.4)" : "scale(1)",
@@ -1221,7 +1221,7 @@ export default function DemoPage() {
         />
       </div>
 
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 text-[10px] text-white/15 select-none">
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 hidden md:flex items-center gap-3 text-[10px] text-white/15 select-none">
         <span className="px-1.5 py-0.5 border border-white/10 rounded text-[9px]">←</span>
         <span className="px-1.5 py-0.5 border border-white/10 rounded text-[9px]">→</span>
         <span>or scroll</span>
