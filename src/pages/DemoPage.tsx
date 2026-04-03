@@ -50,20 +50,19 @@ const GLOBAL_STYLES = `
 
   @keyframes dissolve-out {
     0%   { opacity: 1; filter: url(#dissolve-0); transform: scale(1); }
-    30%  { opacity: 0.8; filter: url(#dissolve-30); transform: scale(1.01); }
-    60%  { opacity: 0.4; filter: url(#dissolve-60); transform: scale(1.03); }
-    100% { opacity: 0; filter: url(#dissolve-100); transform: scale(1.06); }
+    40%  { opacity: 0.6; filter: url(#dissolve-30); transform: scale(1.02); }
+    100% { opacity: 0; filter: url(#dissolve-60); transform: scale(1.04); }
   }
   @keyframes dissolve-in {
-    0%   { opacity: 0; filter: url(#dissolve-60); transform: scale(0.96); }
-    40%  { opacity: 0.5; filter: url(#dissolve-30); transform: scale(0.99); }
+    0%   { opacity: 0; filter: url(#dissolve-30); transform: scale(0.97); }
+    50%  { opacity: 0.7; filter: url(#dissolve-0); transform: scale(0.99); }
     100% { opacity: 1; filter: none; transform: scale(1); }
   }
   .dissolving-out {
-    animation: dissolve-out 1.1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: dissolve-out 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   }
   .dissolving-in {
-    animation: dissolve-in 1.1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: dissolve-in 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   }
 `;
 
@@ -549,7 +548,7 @@ export default function DemoPage() {
     setTimeout(() => {
       setPrev2(null);
       lockRef.current = false;
-    }, 1200);
+    }, 800);
   }, [current, totalSections]);
 
   const next = useCallback(() => goTo(current + 1, "next"), [goTo, current]);
@@ -652,20 +651,16 @@ export default function DemoPage() {
       <svg className="fixed w-0 h-0" aria-hidden="true">
         <defs>
           <filter id="dissolve-0">
-            <feTurbulence type="fractalNoise" baseFrequency="0.008" numOctaves="3" seed="2" result="noise" />
+            <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="2" seed="2" result="noise" />
             <feDisplacementMap in="SourceGraphic" in2="noise" scale="0" xChannelSelector="R" yChannelSelector="G" />
           </filter>
           <filter id="dissolve-30">
-            <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="4" seed="2" result="noise" />
-            <feDisplacementMap in="SourceGraphic" in2="noise" scale="60" xChannelSelector="R" yChannelSelector="G" />
+            <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="2" seed="2" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="40" xChannelSelector="R" yChannelSelector="G" />
           </filter>
           <filter id="dissolve-60">
-            <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="4" seed="2" result="noise" />
-            <feDisplacementMap in="SourceGraphic" in2="noise" scale="140" xChannelSelector="R" yChannelSelector="G" />
-          </filter>
-          <filter id="dissolve-100">
-            <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="5" seed="2" result="noise" />
-            <feDisplacementMap in="SourceGraphic" in2="noise" scale="280" xChannelSelector="R" yChannelSelector="G" />
+            <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="2" seed="2" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="100" xChannelSelector="R" yChannelSelector="G" />
           </filter>
         </defs>
       </svg>
