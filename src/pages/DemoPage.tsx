@@ -651,20 +651,16 @@ export default function DemoPage() {
       <svg className="fixed w-0 h-0" aria-hidden="true">
         <defs>
           <filter id="dissolve-0">
-            <feTurbulence type="fractalNoise" baseFrequency="0.008" numOctaves="3" seed="2" result="noise" />
+            <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="2" seed="2" result="noise" />
             <feDisplacementMap in="SourceGraphic" in2="noise" scale="0" xChannelSelector="R" yChannelSelector="G" />
           </filter>
           <filter id="dissolve-30">
-            <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="4" seed="2" result="noise" />
-            <feDisplacementMap in="SourceGraphic" in2="noise" scale="60" xChannelSelector="R" yChannelSelector="G" />
+            <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="2" seed="2" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="40" xChannelSelector="R" yChannelSelector="G" />
           </filter>
           <filter id="dissolve-60">
-            <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="4" seed="2" result="noise" />
-            <feDisplacementMap in="SourceGraphic" in2="noise" scale="140" xChannelSelector="R" yChannelSelector="G" />
-          </filter>
-          <filter id="dissolve-100">
-            <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="5" seed="2" result="noise" />
-            <feDisplacementMap in="SourceGraphic" in2="noise" scale="280" xChannelSelector="R" yChannelSelector="G" />
+            <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="2" seed="2" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="100" xChannelSelector="R" yChannelSelector="G" />
           </filter>
         </defs>
       </svg>
