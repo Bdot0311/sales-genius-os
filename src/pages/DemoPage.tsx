@@ -96,7 +96,7 @@ const Counter = ({ to, prefix = "", suffix = "", active }: { to: number; prefix?
   return <>{prefix}{val}{suffix}</>;
 };
 
-const Particles = ({ count = 22 }: { count?: number }) => {
+const Particles = ({ count = 10 }: { count?: number }) => {
   const pts = useRef(
     Array.from({ length: count }, (_, i) => ({
       id: i,
