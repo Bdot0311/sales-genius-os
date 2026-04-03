@@ -47,6 +47,24 @@ const GLOBAL_STYLES = `
     50%     { transform: scale(1.5); opacity: 1; }
   }
   .animate-breathe { animation: breathe 1.6s ease-in-out infinite; }
+
+  @keyframes dissolve-out {
+    0%   { opacity: 1; filter: url(#dissolve-0); transform: scale(1); }
+    30%  { opacity: 0.8; filter: url(#dissolve-30); transform: scale(1.01); }
+    60%  { opacity: 0.4; filter: url(#dissolve-60); transform: scale(1.03); }
+    100% { opacity: 0; filter: url(#dissolve-100); transform: scale(1.06); }
+  }
+  @keyframes dissolve-in {
+    0%   { opacity: 0; filter: url(#dissolve-60); transform: scale(0.96); }
+    40%  { opacity: 0.5; filter: url(#dissolve-30); transform: scale(0.99); }
+    100% { opacity: 1; filter: none; transform: scale(1); }
+  }
+  .dissolving-out {
+    animation: dissolve-out 1.1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+  .dissolving-in {
+    animation: dissolve-in 1.1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
 `;
 
 const useGlobalStyles = () => {
