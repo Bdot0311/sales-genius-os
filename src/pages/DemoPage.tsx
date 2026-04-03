@@ -556,13 +556,28 @@ export default function DemoPage() {
 
   const transitioning = prev2 !== null;
 
-  // Auto-advance for hero only
+  // Auto-advance all sections — pause on manual interaction
+  const [autoplaying, setAutoplaying] = useState(true);
+  const DURATIONS = [5000, 6000, 5500, 5500, 6000, 5000, 7000]; // per-section timing
+
   useEffect(() => {
-    if (current === 0 && !transitioning) {
-      autoTimerRef.current = setTimeout(() => next(), 5000);
-    }
+    if (!autoplaying || transitioning) return;
+    const dur = DURATIONS[current] || 5000;
+    autoTimerRef.current = setTimeout(() => {
+      if (current < totalSections - 1) {
+        next();
+      } else {
+        setAutoplaying(false); // stop at the end
+      }
+    }, dur);
     return () => { if (autoTimerRef.current) clearTimeout(autoTimerRef.current); };
-  }, [current, transitioning, next]);
+  }, [current, transitioning, autoplaying, next, totalSections]);
+
+  // Pause autoplay on manual navigation
+  const manualGoTo = useCallback((index: number, dir?: "next" | "prev") => {
+    setAutoplaying(false);
+    goTo(index, dir);
+  }, [goTo]);
 
   // Keyboard navigation
   useEffect(() => {
