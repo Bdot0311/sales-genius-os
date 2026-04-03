@@ -479,14 +479,14 @@ const IntroChapter = ({ active }: { active: boolean }) => (
 );
 
 const SearchChapter = ({ active }: { active: boolean }) => (
-  <div className="flex h-full items-center">
-    <div className="w-full max-w-7xl mx-auto px-6 md:px-16 grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-center">
+  <div className="flex h-full items-center pt-16 md:pt-0">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-16 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-20 items-center">
       <div className="relative">
-        <div className="absolute -top-10 -left-2 text-[7rem] md:text-[8.5rem] font-black text-white/[0.018] leading-none select-none pointer-events-none blur-[1px]" aria-hidden="true">
+        <div className="absolute -top-10 -left-2 text-[5rem] md:text-[8.5rem] font-black text-white/[0.018] leading-none select-none pointer-events-none blur-[1px] hidden md:block" aria-hidden="true">
           01
         </div>
         <ChapterLabel num="01" label="Search" visible={active} />
-        <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-[1.05] mb-6">
+        <h2 className="text-3xl md:text-6xl font-bold tracking-tight text-white leading-[1.05] mb-4 md:mb-6">
           <div>
             <SplitWords text="Describe your ideal" visible={active} />
           </div>
@@ -495,7 +495,7 @@ const SearchChapter = ({ active }: { active: boolean }) => (
           </div>
         </h2>
         <p
-          className="text-base md:text-lg text-white/42 leading-relaxed max-w-md"
+          className="text-sm md:text-lg text-white/42 leading-relaxed max-w-md"
           style={{
             animation: active ? "word-rise 0.38s cubic-bezier(0.22,1,0.36,1) 90ms both" : "none",
             opacity: active ? undefined : 0,
@@ -520,28 +520,28 @@ const SearchChapter = ({ active }: { active: boolean }) => (
             />
           )}
 
-          <div className="flex items-center gap-2 px-5 py-3.5 border-b border-white/8">
+          <div className="flex items-center gap-2 px-4 md:px-5 py-3 md:py-3.5 border-b border-white/8">
             <Search className="w-4 h-4 text-primary" />
             <span className="text-[11px] text-white/42 font-mono tracking-wider">Search query</span>
             <span className="ml-auto text-[10px] text-primary/55">Plain English</span>
           </div>
 
-          <div className="p-6 md:p-8 space-y-5">
-            <div className="rounded-xl border border-white/8 bg-white/[0.03] p-5 min-h-[96px]">
-              <div className="text-lg md:text-xl font-medium text-white/85 leading-relaxed">
+          <div className="p-4 md:p-8 space-y-4 md:space-y-5">
+            <div className="rounded-xl border border-white/8 bg-white/[0.03] p-4 md:p-5 min-h-[72px] md:min-h-[96px]">
+              <div className="text-base md:text-xl font-medium text-white/85 leading-relaxed">
                 <Typewriter text={demoSearchQuery} active={active} />
               </div>
             </div>
 
-            <p className="text-sm text-white/40 leading-relaxed">
+            <p className="text-xs md:text-sm text-white/40 leading-relaxed">
               Search naturally, narrow the field quickly, and move straight into lead review.
             </p>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5 md:gap-2">
               {["Title", "Industry", "Company size", "Geography", "Buying signal"].map((tag, i) => (
                 <span
                   key={tag}
-                  className="px-3 py-1 rounded-full border border-white/10 bg-white/[0.03] text-xs text-white/40 font-medium"
+                  className="px-2.5 md:px-3 py-1 rounded-full border border-white/10 bg-white/[0.03] text-[10px] md:text-xs text-white/40 font-medium"
                   style={{
                     opacity: active ? 1 : 0,
                     transform: active ? "translateY(0) scale(1)" : "translateY(5px) scale(0.96)",
@@ -554,7 +554,7 @@ const SearchChapter = ({ active }: { active: boolean }) => (
             </div>
 
             <div
-              className="inline-flex flex-wrap items-center gap-2 text-sm text-primary/85"
+              className="inline-flex flex-wrap items-center gap-1.5 md:gap-2 text-xs md:text-sm text-primary/85"
               style={{
                 opacity: active ? 1 : 0,
                 transform: active ? "translateY(0)" : "translateY(5px)",
@@ -562,9 +562,9 @@ const SearchChapter = ({ active }: { active: boolean }) => (
               }}
             >
               {flowSteps.map((step, index) => (
-                <span key={step} className="inline-flex items-center gap-2">
+                <span key={step} className="inline-flex items-center gap-1.5 md:gap-2">
                   <span>{step}</span>
-                  {index < flowSteps.length - 1 && <ArrowRight className="w-4 h-4 text-primary" />}
+                  {index < flowSteps.length - 1 && <ArrowRight className="w-3 h-3 md:w-4 md:h-4 text-primary" />}
                 </span>
               ))}
             </div>
