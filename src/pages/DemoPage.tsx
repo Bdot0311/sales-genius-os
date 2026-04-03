@@ -227,7 +227,7 @@ const SearchChapter = ({ active }: { active: boolean }) => (
         </h2>
         <p className="text-base md:text-lg text-white/42 leading-relaxed max-w-sm"
           style={{ animation: active ? "word-rise 0.38s cubic-bezier(0.22,1,0.36,1) 90ms both" : "none", opacity: active ? undefined : 0 }}>
-          No Boolean filters. No field juggling. Just plain-English targeting that actually works.
+          Tell SalesOS who you want to reach in plain English: title, industry, company size, geography, or buying signals.
         </p>
       </div>
       <div style={{ animation: active ? "word-rise 0.42s cubic-bezier(0.22,1,0.36,1) 70ms both" : "none", opacity: active ? undefined : 0 }}>
@@ -325,7 +325,7 @@ const LeadsChapter = ({ active }: { active: boolean }) => (
         </h2>
         <p className="text-base md:text-lg text-white/42 leading-relaxed max-w-sm"
           style={{ animation: active ? "word-rise 0.36s cubic-bezier(0.22,1,0.36,1) 90ms both" : "none", opacity: active ? undefined : 0 }}>
-          Not a massive list. A tighter one with context already built in — so you know who to call first.
+          See best-fit prospects first with company context, verified contact data, and scoring that helps you prioritize faster.
         </p>
       </div>
     </div>
@@ -360,7 +360,7 @@ const OutreachChapter = ({ active }: { active: boolean }) => {
           </h2>
           <p className="text-base md:text-lg text-white/42 leading-relaxed max-w-sm"
             style={{ animation: active ? "word-rise 0.42s cubic-bezier(0.22,1,0.36,1) 110ms both" : "none", opacity: active ? undefined : 0 }}>
-            Faster first drafts. Built from real lead context. Less blank-page work.
+            Generate tailored emails, manage replies, and move prospects into your workflow without juggling disconnected tools.
           </p>
         </div>
         <div style={{ animation: active ? "word-rise 0.4s cubic-bezier(0.22,1,0.36,1) 60ms both" : "none", opacity: active ? undefined : 0 }}>
@@ -417,7 +417,7 @@ const PipelineChapter = ({ active }: { active: boolean }) => {
           </h2>
           <p className="text-base md:text-lg text-white/42 leading-relaxed max-w-lg mx-auto"
             style={{ animation: active ? "word-rise 0.42s cubic-bezier(0.22,1,0.36,1) 120ms both" : "none", opacity: active ? undefined : 0 }}>
-            Search, leads, outreach, pipeline — one workflow, one session.
+            Understand where deals are progressing, where outreach is stalling, and where your team should focus next.
           </p>
         </div>
         <div className="grid grid-cols-4 gap-3 mb-5">
@@ -711,7 +711,7 @@ export default function DemoPage() {
                     </h1>
                     <p className="text-lg md:text-xl text-white/42 max-w-xl mx-auto leading-relaxed mb-12"
                       style={{ animation: isActive(index) ? "word-rise 0.8s cubic-bezier(0.22,1,0.36,1) 0.68s both" : "none", opacity: isActive(index) ? undefined : 0 }}>
-                      Four steps. One session. See how SalesOS takes you from a targeting idea to personalized outreach.
+                      Describe your ideal customer, review matched leads, and launch personalized outreach — one workflow.
                     </p>
                     <div
                       className="flex flex-col items-center gap-2 text-white/30 text-sm mx-auto"
