@@ -683,7 +683,7 @@ const OutreachChapter = ({ active }: { active: boolean }) => {
             Generate more relevant outbound from the lead and company details already inside SalesOS.
           </p>
 
-          <GlassCard active={active} className="mt-6 p-6">
+          <GlassCard active={active} className="mt-4 md:mt-6 p-4 md:p-6">
             <div className="flex items-center gap-2 mb-4 text-sm font-medium text-white/82">
               <Sparkles className="w-4 h-4 text-primary" />
               Built for outbound teams
