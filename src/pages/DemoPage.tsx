@@ -545,11 +545,11 @@ export default function DemoPage() {
     setPrev2(current);
     setCurrent(index);
 
-    // Both sections visible for 1s crossfade, then clean up
+    // Both sections visible for dissolve duration, then clean up
     setTimeout(() => {
       setPrev2(null);
       lockRef.current = false;
-    }, 1000);
+    }, 1200);
   }, [current, totalSections]);
 
   const next = useCallback(() => goTo(current + 1, "next"), [goTo, current]);
