@@ -1172,7 +1172,7 @@ export default function DemoPage() {
         })}
       </div>
 
-      <div className="fixed right-6 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-3">
+      <div className="fixed right-3 md:right-6 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-2 md:gap-3">
         {SECTIONS.map((section, index) => (
           <button
             key={section.id}
@@ -1180,12 +1180,12 @@ export default function DemoPage() {
             className="group relative flex items-center"
             aria-label={`Go to ${section.label}`}
           >
-            <span className="absolute right-6 px-2.5 py-1 rounded-md bg-[#1a1a2e]/90 text-[10px] text-white/70 font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            <span className="absolute right-6 px-2.5 py-1 rounded-md bg-[#1a1a2e]/90 text-[10px] text-white/70 font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none hidden md:block">
               {section.label}
             </span>
-            <div className="relative w-4 h-4 flex items-center justify-center">
+            <div className="relative w-3.5 h-3.5 md:w-4 md:h-4 flex items-center justify-center">
               {current === index && autoplaying && (
-                <svg className="absolute inset-0 w-4 h-4 -rotate-90" viewBox="0 0 16 16">
+                <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 16 16">
                   <circle cx="8" cy="8" r="6" fill="none" stroke="hsl(261 75% 65% / 0.3)" strokeWidth="1.5" />
                   <circle
                     cx="8"
@@ -1202,7 +1202,7 @@ export default function DemoPage() {
                 </svg>
               )}
               <div
-                className="w-2 h-2 rounded-full transition-all duration-300"
+                className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full transition-all duration-300"
                 style={{
                   backgroundColor: current === index ? "hsl(261, 75%, 65%)" : "rgba(255,255,255,0.15)",
                   transform: current === index ? "scale(1.4)" : "scale(1)",
