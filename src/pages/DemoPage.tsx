@@ -579,22 +579,23 @@ export default function DemoPage() {
     goTo(index, dir);
   }, [goTo]);
 
-  // Keyboard navigation
+  // Keyboard navigation — pauses autoplay
+  const manualNext = useCallback(() => { setAutoplaying(false); next(); }, [next]);
+  const manualPrev = useCallback(() => { setAutoplaying(false); prev(); }, [prev]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === " ") {
-        e.preventDefault();
-        next();
+        e.preventDefault(); manualNext();
       } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-        e.preventDefault();
-        prev();
+        e.preventDefault(); manualPrev();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [next, prev]);
+  }, [manualNext, manualPrev]);
 
-  // Wheel navigation (throttled)
+  // Wheel navigation (throttled) — pauses autoplay
   useEffect(() => {
     let accumulated = 0;
     const threshold = 80;
@@ -603,21 +604,19 @@ export default function DemoPage() {
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       const now = Date.now();
-      // Reset accumulation if too much time passed
       if (now - lastTime > 300) accumulated = 0;
       lastTime = now;
-
       accumulated += e.deltaY;
 
       if (Math.abs(accumulated) >= threshold) {
-        if (accumulated > 0) next();
-        else prev();
+        if (accumulated > 0) manualNext();
+        else manualPrev();
         accumulated = 0;
       }
     };
     window.addEventListener("wheel", onWheel, { passive: false });
     return () => window.removeEventListener("wheel", onWheel);
-  }, [next, prev]);
+  }, [manualNext, manualPrev]);
 
   // Touch swipe
   useEffect(() => {
