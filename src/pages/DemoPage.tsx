@@ -780,7 +780,7 @@ const PlatformChapter = ({ active }: { active: boolean }) => (
         </p>
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-4 mb-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 mb-4 md:mb-5">
         {moduleCards.map((module, index) => (
           <div
             key={module.title}
