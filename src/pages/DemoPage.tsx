@@ -906,7 +906,7 @@ const SignalsChapter = ({ active }: { active: boolean }) => (
 
 const CTAChapter = ({ active, navigate }: { active: boolean; navigate: (path: string) => void }) => (
   <div className="flex h-full items-center justify-center">
-    <div className="relative z-10 text-center max-w-4xl mx-auto px-6">
+    <div className="relative z-10 text-center max-w-4xl mx-auto px-4 sm:px-6">
       <div
         className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/20 bg-primary/8 text-xs font-medium text-primary mb-6"
         style={{
