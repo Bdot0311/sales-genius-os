@@ -417,7 +417,7 @@ const PipelineChapter = ({ active }: { active: boolean }) => {
           </h2>
           <p className="text-base md:text-lg text-white/42 leading-relaxed max-w-lg mx-auto"
             style={{ animation: active ? "word-rise 0.42s cubic-bezier(0.22,1,0.36,1) 120ms both" : "none", opacity: active ? undefined : 0 }}>
-            Search, leads, outreach, pipeline — one workflow, one session.
+            Understand where deals are progressing, where outreach is stalling, and where your team should focus next.
           </p>
         </div>
         <div className="grid grid-cols-4 gap-3 mb-5">
