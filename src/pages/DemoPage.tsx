@@ -739,9 +739,6 @@ export default function DemoPage() {
                       <span className="text-white/20 text-xs tracking-wide">Auto-playing in a moment…</span>
                       <ChevronDown className="w-4 h-4 text-white/20" style={{ animation: "chevron-bounce 1.8s ease-in-out infinite" }} />
                     </div>
-                      <span>Click or press →</span>
-                      <ChevronDown className="w-4 h-4" style={{ animation: "chevron-bounce 1.8s ease-in-out infinite" }} />
-                    </button>
                   </div>
                 </div>
               )}
