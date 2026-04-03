@@ -23,12 +23,12 @@ const GLOBAL_STYLES = `
     100% { top: 100%; opacity: 0; }
   }
   @keyframes word-rise {
-    from { opacity: 0; transform: translateY(28px) scale(0.94); filter: blur(4px); }
-    to   { opacity: 1; transform: translateY(0)    scale(1);    filter: blur(0); }
+    from { opacity: 0; transform: translateY(18px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0)    scale(1); }
   }
-  @keyframes counter-blur-in {
-    from { filter: blur(8px); opacity: 0; transform: scale(0.85); }
-    to   { filter: blur(0);   opacity: 1; transform: scale(1); }
+  @keyframes counter-rise {
+    from { opacity: 0; transform: scale(0.9); }
+    to   { opacity: 1; transform: scale(1); }
   }
   @keyframes breathe {
     0%,100% { opacity: 0.5; transform: scale(1); }
