@@ -711,7 +711,7 @@ export default function DemoPage() {
                     </h1>
                     <p className="text-lg md:text-xl text-white/42 max-w-xl mx-auto leading-relaxed mb-12"
                       style={{ animation: isActive(index) ? "word-rise 0.8s cubic-bezier(0.22,1,0.36,1) 0.68s both" : "none", opacity: isActive(index) ? undefined : 0 }}>
-                      Four steps. One session. See how SalesOS takes you from a targeting idea to personalized outreach.
+                      Describe your ideal customer, review matched leads, and launch personalized outreach — one workflow.
                     </p>
                     <div
                       className="flex flex-col items-center gap-2 text-white/30 text-sm mx-auto"
