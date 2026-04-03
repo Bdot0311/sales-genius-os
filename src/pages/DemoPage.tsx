@@ -655,7 +655,7 @@ export default function DemoPage() {
 
       {/* Ambient background */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        <Particles count={20} />
+        <Particles count={10} />
         <div
           className="absolute inset-0 transition-all duration-[1200ms] ease-in-out"
           style={{
