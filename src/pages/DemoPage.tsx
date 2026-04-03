@@ -751,29 +751,44 @@ export default function DemoPage() {
         })}
       </div>
 
-      {/* Navigation dots — right side */}
+      {/* Navigation dots with auto-advance ring */}
       <div className="fixed right-6 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-3">
         {SECTIONS.map((section, index) => (
           <button
             key={section.id}
-            onClick={() => goTo(index)}
+            onClick={() => manualGoTo(index)}
             className="group relative flex items-center"
             aria-label={`Go to ${section.label}`}
           >
-            {/* Label tooltip */}
             <span
               className="absolute right-6 px-2.5 py-1 rounded-md bg-white/10 backdrop-blur-md text-[10px] text-white/70 font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
             >
               {section.label}
             </span>
-            <div
-              className="w-2 h-2 rounded-full transition-all duration-300"
-              style={{
-                backgroundColor: current === index ? "hsl(261, 75%, 65%)" : "rgba(255,255,255,0.15)",
-                transform: current === index ? "scale(1.4)" : "scale(1)",
-                boxShadow: current === index ? "0 0 12px hsl(261 75% 65% / 0.5)" : "none",
-              }}
-            />
+            <div className="relative w-4 h-4 flex items-center justify-center">
+              {/* Progress ring for active dot during autoplay */}
+              {current === index && autoplaying && (
+                <svg className="absolute inset-0 w-4 h-4 -rotate-90" viewBox="0 0 16 16">
+                  <circle cx="8" cy="8" r="6" fill="none" stroke="hsl(261 75% 65% / 0.3)" strokeWidth="1.5" />
+                  <circle cx="8" cy="8" r="6" fill="none" stroke="hsl(261, 75%, 65%)" strokeWidth="1.5"
+                    strokeDasharray={`${2 * Math.PI * 6}`}
+                    strokeDashoffset="0"
+                    strokeLinecap="round"
+                    style={{
+                      animation: `dot-ring-fill ${(DURATIONS[current] || 5000)}ms linear forwards`,
+                    }}
+                  />
+                </svg>
+              )}
+              <div
+                className="w-2 h-2 rounded-full transition-all duration-300"
+                style={{
+                  backgroundColor: current === index ? "hsl(261, 75%, 65%)" : "rgba(255,255,255,0.15)",
+                  transform: current === index ? "scale(1.4)" : "scale(1)",
+                  boxShadow: current === index ? "0 0 12px hsl(261 75% 65% / 0.5)" : "none",
+                }}
+              />
+            </div>
           </button>
         ))}
       </div>
