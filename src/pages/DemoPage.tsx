@@ -625,7 +625,7 @@ export default function DemoPage() {
     const onEnd = (e: TouchEvent) => {
       const diff = startY - e.changedTouches[0].clientY;
       if (Math.abs(diff) > 50) {
-        if (diff > 0) next(); else prev();
+        if (diff > 0) manualNext(); else manualPrev();
       }
     };
     window.addEventListener("touchstart", onStart, { passive: true });
@@ -634,7 +634,7 @@ export default function DemoPage() {
       window.removeEventListener("touchstart", onStart);
       window.removeEventListener("touchend", onEnd);
     };
-  }, [next, prev]);
+  }, [manualNext, manualPrev]);
 
   const isActive = (index: number) => current === index;
 
