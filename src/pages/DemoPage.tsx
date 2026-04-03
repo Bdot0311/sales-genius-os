@@ -373,7 +373,7 @@ const OutreachChapter = ({ active }: { active: boolean }) => {
               <span className="rounded-full bg-primary/12 border border-primary/20 text-primary/85 px-3 py-1 text-xs font-medium">Personalized</span>
             </div>
             <div className="px-5 py-5">
-              <div className="text-xs text-white/28 mb-4">Subject: Quick idea for Northline's outbound hiring push</div>
+              <div className="text-xs text-white/28 mb-4">Subject: Quick idea for Lattice's outbound hiring push</div>
               <div className="space-y-4 text-sm md:text-base leading-relaxed text-white/72">
                 {outreachLines.map((line, i) => (
                   <p key={i} style={{
