@@ -151,7 +151,7 @@ const GlassCard = ({
   children: React.ReactNode; className?: string; active?: boolean;
 }) => (
   <div
-    className={`relative rounded-[28px] border border-white/8 bg-black/45 backdrop-blur-2xl overflow-hidden ${className}`}
+    className={`relative rounded-[28px] border border-white/8 bg-[#0c0c1a]/90 overflow-hidden ${className}`}
     style={{
       boxShadow: active
         ? "0 0 45px hsl(261 75% 55% / 0.12), 0 28px 90px rgba(0,0,0,0.46), inset 0 1px 0 rgba(255,255,255,0.06)"
