@@ -125,14 +125,27 @@ ${CLAIMS_RULES}
 ${SIGNOFF_RULES}`;
   }
 
+  // Detect intent signal templates by their description and build a signal-specific opener rule
+  const SIGNAL_OPENER_RULES: Record<string, string> = {
+    'just raised funding':     'SIGNAL: They recently raised funding. Reference the round naturally — new capital means new budget, new pressure to grow fast, new accountability to investors. Open with this context without congratulating them excessively.',
+    'new executive hire':      'SIGNAL: A new executive just joined their company. New leaders evaluate and replace tools in their first 90 days. Open by acknowledging the new role and the mandate that comes with it.',
+    'hiring signal':           'SIGNAL: They have an open job posting relevant to your product. The job posting reveals their current pain — reference what the role implies about their process gaps, not the job listing itself.',
+    'competitor customer':     'SIGNAL: They are currently using a competitor product. Do not name the competitor. Instead, reference the category of problem they\'re solving and imply there\'s a faster/better way.',
+    'company expansion':       'SIGNAL: Their company is expanding — new market, new office, or headcount growth. Growth creates operational friction. Open with the specific pressure that comes from scaling fast.',
+  };
+
+  // Match signal description (case-insensitive)
+  const descLower = (templateDescription || '').toLowerCase();
+  const signalOpener = Object.entries(SIGNAL_OPENER_RULES).find(([key]) => descLower.includes(key))?.[1] || '';
+
   switch (goal) {
     case 'introduction':
       return `${base}
 EMAIL TYPE: Cold Introduction — first-touch, earns a reply, sparks curiosity.
 Purpose: ${templateDescription || 'First contact introduction'}
-
+${signalOpener ? `\n${signalOpener}\n` : ''}
 STRUCTURE — exactly 3 sentences in the body (not counting greeting and sign-off):
-1. One specific observation about their company or role that shows you understand their world. This is NOT a compliment. It is a relevant business observation.
+1. ${signalOpener ? 'Use the signal context above as your opening observation — make it feel like you know their world right now, not just their job title.' : 'One specific observation about their company or role that shows you understand their world. NOT a compliment. A relevant business observation.'}
 2. One sentence connecting your value prop to that observation — what you collapse, fix, or accelerate for them specifically.
 3. Soft CTA as a question: "Worth 15 min to see it?", "Open to a quick look?", "Want to see how?"
 ${BREVITY_RULES}${ELITE_OUTBOUND_RULES}${PERSONALIZATION_RULES}${BANNED_PHRASES}
