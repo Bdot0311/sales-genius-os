@@ -6,6 +6,7 @@ import { AlertTriangle, CheckCircle2, XCircle, AlertCircle } from "lucide-react"
 interface EmailQualityCheckerProps {
   subject: string;
   body: string;
+  isFirstTouch?: boolean;
 }
 
 interface CheckResult {
@@ -184,13 +185,77 @@ function computeNaturalness(body: string): CheckResult {
   return { label: "Naturalness", status: "green", message: "Reads like a human seller wrote it", score: 100 };
 }
 
+function computeLinkCount(body: string): CheckResult {
+  const urlRegex = /https?:\/\/[^\s<>"{}|\\^`\[\]]+/gi;
+  const hrefRegex = /href\s*=\s*["'][^"']+["']/gi;
+  const urls = (body.match(urlRegex) || []).length + (body.match(hrefRegex) || []).length;
+  if (urls === 0) return { label: "Links", status: "green", message: "No links — clean for cold outbound", score: 100 };
+  if (urls === 1) return { label: "Links", status: "yellow", message: "1 link detected — consider removing for first touch", score: 60 };
+  return { label: "Links", status: "red", message: `${urls} links — significantly hurts deliverability`, score: 15 };
+}
+
+function computeImageCount(body: string, isFirstTouch: boolean): CheckResult {
+  const imgCount = (body.match(/<img/gi) || []).length;
+  if (imgCount === 0) return { label: "Images", status: "green", message: "No images — good for inbox placement", score: 100 };
+  if (!isFirstTouch) return { label: "Images", status: "yellow", message: `${imgCount} image(s) — acceptable for warm follow-up`, score: 65 };
+  return { label: "Images", status: "red", message: `${imgCount} image(s) on first touch — will trigger promotions tab`, score: 10 };
+}
+
+function computeMeToYouRatio(body: string): CheckResult {
+  const sentences = body.split(/[.!?]+/).filter(s => s.trim().length > 0);
+  let meCount = 0, youCount = 0;
+  for (const s of sentences) {
+    const trimmed = s.trim().toLowerCase();
+    if (/^(i |we |our )/.test(trimmed) || trimmed.startsWith("i'")) meCount++;
+    if (/^(you |your )/.test(trimmed)) youCount++;
+  }
+  const total = meCount + youCount;
+  if (total === 0) return { label: "You-focus", status: "green", message: "Balanced or neutral framing", score: 80 };
+  const youRatio = youCount / total;
+  if (youRatio >= 0.5) return { label: "You-focus", status: "green", message: "Prospect-focused language", score: 100 };
+  if (youRatio >= 0.25) return { label: "You-focus", status: "yellow", message: "More \"I/we\" than \"you\" — flip it", score: 60 };
+  return { label: "You-focus", status: "red", message: "Too self-focused — lead with their world", score: 20 };
+}
+
+function computeCTAPlacement(body: string): CheckResult {
+  const lines = body.split('\n').map(l => l.trim()).filter(Boolean);
+  const signOffRegex = /^(best|regards|thanks|thank you|sincerely|cheers)[\s,!.:-]*$/i;
+  let lastContentIdx = lines.length - 1;
+  while (lastContentIdx > 0 && (signOffRegex.test(lines[lastContentIdx]) || lines[lastContentIdx].length < 20)) {
+    lastContentIdx--;
+  }
+  const lastContentLine = lines[lastContentIdx] || '';
+  const hasQuestion = lastContentLine.includes('?');
+
+  if (hasQuestion) return { label: "CTA position", status: "green", message: "Question is last — good placement", score: 100 };
+
+  const anyQuestion = body.includes('?');
+  if (anyQuestion) return { label: "CTA position", status: "yellow", message: "CTA question buried — move it to the last line", score: 55 };
+  return { label: "CTA position", status: "red", message: "No question detected — add a CTA", score: 20 };
+}
+
+function computeSignatureLength(body: string): CheckResult {
+  const htmlStart = body.search(/<[a-z]/i);
+  const signatureBlock = htmlStart > -1 ? body.substring(htmlStart) : '';
+  const bodyText = htmlStart > -1 ? body.substring(0, htmlStart) : body;
+
+  if (!signatureBlock) return { label: "Signature", status: "green", message: "No HTML signature detected", score: 100 };
+
+  const bodyWords = bodyText.trim().split(/\s+/).filter(Boolean).length;
+  const sigWords = signatureBlock.replace(/<[^>]+>/g, ' ').trim().split(/\s+/).filter(Boolean).length;
+
+  if (sigWords > bodyWords) return { label: "Signature", status: "red", message: "Signature longer than email body — shrink it", score: 25 };
+  if (sigWords > bodyWords * 0.6) return { label: "Signature", status: "yellow", message: "Signature is large relative to body", score: 65 };
+  return { label: "Signature", status: "green", message: "Signature looks proportional", score: 100 };
+}
+
 const StatusIcon = ({ status }: { status: "green" | "yellow" | "red" }) => {
   if (status === "green") return <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />;
   if (status === "yellow") return <AlertCircle className="w-4 h-4 text-yellow-500 flex-shrink-0" />;
   return <XCircle className="w-4 h-4 text-destructive flex-shrink-0" />;
 };
 
-export const scoreEmailQuality = (subject: string, body: string) => {
+export const scoreEmailQuality = (subject: string, body: string, isFirstTouch = true) => {
   const text = body.replace(/<[^>]*>/g, "").trim();
   const checks = [
     computeSpamScore(subject, text),
@@ -200,6 +265,11 @@ export const scoreEmailQuality = (subject: string, body: string) => {
     computePersonalization(text),
     computeCredibility(text),
     computeNaturalness(text),
+    computeLinkCount(body),
+    computeImageCount(body, isFirstTouch),
+    computeMeToYouRatio(text),
+    computeCTAPlacement(text),
+    computeSignatureLength(body),
   ];
 
   const overallScore = Math.round(checks.reduce((sum, c) => sum + c.score, 0) / checks.length);
@@ -207,8 +277,11 @@ export const scoreEmailQuality = (subject: string, body: string) => {
   return { checks, overallScore, overallStatus };
 };
 
-export const EmailQualityChecker = ({ subject, body }: EmailQualityCheckerProps) => {
-  const { checks, overallScore, overallStatus } = useMemo(() => scoreEmailQuality(subject, body), [subject, body]);
+export const EmailQualityChecker = ({ subject, body, isFirstTouch = true }: EmailQualityCheckerProps) => {
+  const { checks, overallScore, overallStatus } = useMemo(
+    () => scoreEmailQuality(subject, body, isFirstTouch),
+    [subject, body, isFirstTouch]
+  );
 
   return (
     <Card className="border-border/50">

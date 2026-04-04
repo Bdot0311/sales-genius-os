@@ -209,6 +209,42 @@ serve(async (req) => {
       }
     }
 
+    // Check opt-out status
+    const { data: optout } = await supabase
+      .from('email_optouts')
+      .select('id')
+      .eq('email', to.toLowerCase().trim())
+      .maybeSingle();
+
+    if (optout) {
+      return new Response(
+        JSON.stringify({ error: 'This recipient has unsubscribed and cannot receive emails.' }),
+        { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Quick MX record check
+    try {
+      const domain = to.split('@')[1];
+      if (domain) {
+        const dnsRes = await fetch(`https://dns.google/resolve?name=${domain}&type=MX`);
+        if (dnsRes.ok) {
+          const dnsData = await dnsRes.json();
+          if (!dnsData.Answer || dnsData.Answer.length === 0) {
+            return new Response(
+              JSON.stringify({ error: `Invalid email domain: ${domain} has no MX records. This email will bounce.` }),
+              { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+        }
+      }
+    } catch (_) {
+      // DNS check failed non-fatally — proceed with send
+    }
+
+    // Generate unsubscribe token
+    const unsubToken = btoa(to + ':' + Date.now()).replace(/=/g, '');
+
     // Send email based on integration type
     if (integrationId === 'google' || !integrationId) {
       // Format body as proper HTML email if it's not already HTML
@@ -265,6 +301,10 @@ serve(async (req) => {
         formattedBody = textLinesToHtml(body);
       }
 
+      // Append unsubscribe footer to plain text body for plain-text paths
+      // For HTML we inject below closing body tag
+      const unsubscribeFooterHtml = `<div style="margin-top:24px;padding-top:12px;border-top:1px solid #e5e5e5;font-size:11px;color:#999;">Not interested? <a href="${supabaseUrl}/functions/v1/unsubscribe?email=${encodeURIComponent(to)}&token=${unsubToken}" style="color:#999;">Unsubscribe</a></div>`;
+
       const htmlBody = `<!DOCTYPE html>
 <html>
 <head>
@@ -290,6 +330,7 @@ serve(async (req) => {
 </head>
 <body>
 ${formattedBody}
+${unsubscribeFooterHtml}
 </body>
 </html>`;
 

@@ -10,11 +10,12 @@ import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Send, Sparkles, Users, Search, Settings2, Mail } from "lucide-react";
+import { Loader2, Send, Sparkles, Users, Search, Settings2, Mail, ChevronLeft, ChevronRight } from "lucide-react";
 import { EmailQualityChecker, scoreEmailQuality } from "./EmailQualityChecker";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
 
 interface Lead {
   id: string;
@@ -71,6 +72,8 @@ export const BulkSendDialog = ({
   const [bulkEnabled, setBulkEnabled] = useState(false);
   const [editingLimit, setEditingLimit] = useState(dailyEmailLimit);
   const [isSavingLimit, setIsSavingLimit] = useState(false);
+  const [delayBetweenSends, setDelayBetweenSends] = useState(60);
+  const [previewLeadIdx, setPreviewLeadIdx] = useState(0);
 
   const remaining = dailyEmailLimit - dailyEmailsSent;
   const emailableLeads = leads.filter((l) => l.contact_email);
@@ -79,6 +82,20 @@ export const BulkSendDialog = ({
       l.contact_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       l.company_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const selectedLeadsArray = leads.filter((l) => selectedLeadIds.has(l.id));
+
+  const resolveVariables = (text: string, lead: Lead) => {
+    return text
+      .replace(/\{name\}/gi, lead.contact_name?.split(" ")[0] || "there")
+      .replace(/\{company\}/gi, lead.company_name || "your company")
+      .replace(/\{full_name\}/gi, lead.contact_name || "there")
+      .replace(/\{job_title\}/gi, lead.job_title || "");
+  };
+
+  const previewLead = selectedLeadsArray[previewLeadIdx] || null;
+  const previewSubject = previewLead ? resolveVariables(sameSubject, previewLead) : sameSubject;
+  const previewBody = previewLead ? resolveVariables(sameBody, previewLead) : sameBody;
 
   const toggleLead = (id: string) => {
     setSelectedLeadIds((prev) => {
@@ -174,8 +191,17 @@ export const BulkSendDialog = ({
 
     let sent = 0;
     let failed = 0;
+    let consecutiveFailures = 0;
 
     for (const lead of selectedLeads) {
+      if (consecutiveFailures >= 3) {
+        toast({
+          title: "Batch paused — 3 consecutive send failures. Check your Gmail connection and daily limits.",
+          variant: "destructive",
+        });
+        break;
+      }
+
       try {
         let subject = sameSubject;
         let body = sameBody;
@@ -249,12 +275,20 @@ export const BulkSendDialog = ({
 
         if (error) throw error;
         sent++;
+        consecutiveFailures = 0;
       } catch (err: any) {
         console.error(`Failed to send to ${lead.contact_name}:`, err);
         failed++;
+        consecutiveFailures++;
       }
 
       setProgress({ sent, failed, total: selectedLeads.length });
+
+      // Velocity throttle between sends (skip after last lead)
+      if (selectedLeads.indexOf(lead) < selectedLeads.length - 1) {
+        const jitter = Math.random() * 30000 - 15000; // ±15s
+        await new Promise(r => setTimeout(r, delayBetweenSends * 1000 + jitter));
+      }
     }
 
     setIsSending(false);
@@ -349,6 +383,23 @@ export const BulkSendDialog = ({
             </Button>
           </div>
 
+          {/* Send velocity throttle */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs text-muted-foreground">Delay between sends (seconds)</Label>
+              <span className="text-xs font-medium">{delayBetweenSends}s ± 15s</span>
+            </div>
+            <Slider
+              min={10}
+              max={180}
+              step={5}
+              value={[delayBetweenSends]}
+              onValueChange={([v]) => setDelayBetweenSends(v)}
+              className="w-full"
+            />
+            <p className="text-xs text-muted-foreground">Randomized ±15s to mimic human behavior and protect deliverability.</p>
+          </div>
+
           {/* Send From selector */}
           {connectedAccounts.length > 1 && (
             <div>
@@ -419,6 +470,43 @@ export const BulkSendDialog = ({
                   className="min-h-[120px]"
                 />
               </div>
+
+              {/* Variable preview section */}
+              {selectedLeadsArray.length > 0 && sameSubject && sameBody && (
+                <div className="mt-2 border rounded-lg p-3 space-y-2 bg-muted/20">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      Preview for: <span className="text-foreground">{previewLead?.contact_name || "—"}</span>
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => setPreviewLeadIdx(i => Math.max(0, i - 1))}
+                        disabled={previewLeadIdx === 0}
+                      >
+                        <ChevronLeft className="w-3 h-3" />
+                      </Button>
+                      <span className="text-xs text-muted-foreground">{previewLeadIdx + 1}/{selectedLeadsArray.length}</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => setPreviewLeadIdx(i => Math.min(selectedLeadsArray.length - 1, i + 1))}
+                        disabled={previewLeadIdx >= selectedLeadsArray.length - 1}
+                      >
+                        <ChevronRight className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="rounded border bg-background p-2 font-mono text-xs space-y-1">
+                    <p className="text-muted-foreground">Subject: <span className="text-foreground">{previewSubject}</span></p>
+                    <hr className="border-border/50" />
+                    <pre className="whitespace-pre-wrap text-foreground text-xs font-mono leading-relaxed">{previewBody}</pre>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -474,7 +562,7 @@ export const BulkSendDialog = ({
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Sending...</span>
                 <span className="font-medium">
-                  {progress.sent + progress.failed} / {progress.total}
+                  Sent {progress.sent} / {progress.total} ({progress.failed} failed)
                 </span>
               </div>
               <Progress value={((progress.sent + progress.failed) / Math.max(progress.total, 1)) * 100} />

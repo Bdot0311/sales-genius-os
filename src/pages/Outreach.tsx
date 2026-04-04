@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Send, Sparkles, CalendarPlus, Settings2, Image, Upload, Wand2, Mail, FileText, Save, Shuffle, Check, X, Keyboard, Clock } from "lucide-react";
+import { Loader2, Send, Sparkles, CalendarPlus, Settings2, Image, Upload, Wand2, Mail, FileText, Save, Shuffle, Check, X, Keyboard, Clock, AlertTriangle, Monitor, Smartphone } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import DOMPurify from "dompurify";
@@ -43,42 +44,135 @@ const OPENER_WORDS = [
 
 // Email templates for quick selection
 const EMAIL_TEMPLATES = [
-  { 
-    value: "meeting_request", 
-    label: "Meeting Request", 
-    description: "Request a quick call or meeting",
-    goal: "meeting",
-    suggestedSubject: "Quick question about {company}"
-  },
-  { 
-    value: "demo_invite", 
-    label: "Demo Invite", 
-    description: "Invite to see a product demo",
-    goal: "demo",
-    suggestedSubject: "15-min demo for {company}?"
-  },
-  { 
-    value: "follow_up", 
-    label: "Follow-up", 
-    description: "Follow up on previous outreach",
-    goal: "follow-up",
-    suggestedSubject: "Following up, {name}"
-  },
-  { 
-    value: "introduction", 
-    label: "Cold Introduction", 
+  {
+    value: "introduction",
+    label: "Cold Introduction",
     description: "First contact introduction",
     goal: "introduction",
-    suggestedSubject: "Idea for {company}"
+    suggestedSubject: "quick q about {company}",
+    category: "standard",
   },
-  { 
-    value: "proposal", 
-    label: "Proposal", 
+  {
+    value: "follow_up",
+    label: "Follow-up",
+    description: "Follow up on previous outreach",
+    goal: "follow-up",
+    suggestedSubject: "re: {company}",
+    category: "standard",
+  },
+  {
+    value: "meeting_request",
+    label: "Meeting Request",
+    description: "Request a quick call or meeting",
+    goal: "meeting",
+    suggestedSubject: "quick call — {company}?",
+    category: "standard",
+  },
+  {
+    value: "demo_invite",
+    label: "Demo Invite",
+    description: "Invite to see a product demo",
+    goal: "demo",
+    suggestedSubject: "15-min demo for {company}?",
+    category: "standard",
+  },
+  {
+    value: "proposal",
+    label: "Proposal",
     description: "Send a proposal or offer",
     goal: "proposal",
-    suggestedSubject: "Proposal for {company}"
+    suggestedSubject: "proposal for {company}",
+    category: "standard",
+  },
+  {
+    value: "signal_funding",
+    label: "Just Raised Funding",
+    description: "They recently announced a funding round — ideal time to reach new budget holders",
+    goal: "introduction",
+    suggestedSubject: "congrats on the raise — quick q",
+    category: "signal",
+  },
+  {
+    value: "signal_new_exec",
+    label: "New Executive Hire",
+    description: "New leader just joined — they're evaluating tools and building their stack",
+    goal: "introduction",
+    suggestedSubject: "re: building your stack at {company}",
+    category: "signal",
+  },
+  {
+    value: "signal_job_posting",
+    label: "Hiring Signal",
+    description: "They're hiring for a role your product helps with — strong intent signal",
+    goal: "introduction",
+    suggestedSubject: "{company}'s {job} hire — quick thought",
+    category: "signal",
+  },
+  {
+    value: "signal_competitor",
+    label: "Competitor Customer",
+    description: "They're using a competitor — make the case to switch",
+    goal: "introduction",
+    suggestedSubject: "switching from {competitor}?",
+    category: "signal",
+  },
+  {
+    value: "signal_expansion",
+    label: "Company Expansion",
+    description: "They're expanding — new office, new market, or headcount growth",
+    goal: "introduction",
+    suggestedSubject: "scaling {company}'s outbound",
+    category: "signal",
   },
 ];
+
+const stripHtmlToText = (html: string): string => {
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<p[^>]*>/gi, '')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+};
+
+function getBestSendTime(lead: any): string {
+  const loc = ((lead?.location || '') + ' ' + (lead?.company_location || '')).toLowerCase();
+  let tz = 'America/New_York';
+  if (/nyc|new york|est/.test(loc)) tz = 'America/New_York';
+  else if (/los angeles|san francisco|pst|seattle|portland/.test(loc)) tz = 'America/Los_Angeles';
+  else if (/chicago|cst|dallas|houston/.test(loc)) tz = 'America/Chicago';
+  else if (/london|uk|england/.test(loc)) tz = 'Europe/London';
+  const label = tz.split('/')[1]?.replace('_', ' ') || 'ET';
+  return `Best time: Tue–Thu, 8–10am ${label}`;
+}
+
+function scoreSubjectLine(subject: string, lead?: any): { score: number; flags: string[] } {
+  if (!subject) return { score: 100, flags: [] };
+  let score = 100;
+  const flags: string[] = [];
+
+  if (subject.length > 60) { score -= 20; flags.push('Over 60 characters'); }
+  if (subject.length > 0 && subject.length < 10) { score -= 20; flags.push('Too short'); }
+  if (/^re:|^fwd:/i.test(subject)) { score -= 25; flags.push('Fake reply/forward prefix'); }
+  if (/\b[A-Z]{3,}\b/.test(subject)) { score -= 15; flags.push('All-caps words'); }
+
+  if (lead) {
+    const firstName = lead.contact_name?.split(' ')[0]?.toLowerCase() || '';
+    const company = lead.company_name?.toLowerCase() || '';
+    const sub = subject.toLowerCase();
+    if ((firstName && sub.includes(firstName)) || (company && sub.includes(company))) {
+      score += 10;
+    }
+  }
+
+  score = Math.max(0, Math.min(100, score));
+  return { score, flags };
+}
 
 interface EmailVariant {
   id: string;
@@ -160,6 +254,15 @@ const Outreach = () => {
 
   // Follow-up reminders state
   const [dueFollowUps, setDueFollowUps] = useState<Array<{ id: string; subject: string; lead_id: string | null; due_date: string }>>([]);
+
+  // P0.1 — Plain text first-touch toggle
+  const [isFirstTouch, setIsFirstTouch] = useState(true);
+
+  // P1.2 — Auto-queue follow-up
+  const [autoQueueFollowUp, setAutoQueueFollowUp] = useState(false);
+
+  // P3.1 — Mobile preview
+  const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
 
   useEffect(() => {
     loadLeads();
@@ -421,12 +524,16 @@ const Outreach = () => {
     return `${trimmedBody}\n${senderName}`;
   };
 
-  const buildEmailBodyWithSignature = (baseEmailBody: string, resolvedSenderName?: string) => {
+  const buildEmailBodyWithSignature = (baseEmailBody: string, resolvedSenderName?: string, firstTouch?: boolean) => {
     const senderName = (resolvedSenderName ?? getSenderName()).trim();
     const normalizedSender = senderName.toLowerCase();
-    const signatureForEmail = signature
+    const useFirstTouch = firstTouch !== undefined ? firstTouch : isFirstTouch;
+
+    const rawSignature = signature
       .replace(/width=["']150["']/gi, 'width="320"')
       .replace(/max-width:\s*150px/gi, 'max-width:320px');
+
+    const signatureForEmail = useFirstTouch ? stripHtmlToText(rawSignature) : rawSignature;
 
     const signatureText = signatureForEmail
       .replace(/<[^>]+>/g, ' ')
@@ -1006,9 +1113,42 @@ const Outreach = () => {
       loadCounts();
       setDailyEmailsSent(prev => prev + 1);
       
-      // Show AI follow-up suggestion for introductory emails
+      // Auto-queue follow-up or show suggestion
       setLastSentEmailInfo(sentLeadInfo);
-      setShowFollowUpSuggestion(true);
+      if (autoQueueFollowUp) {
+        // Silently generate and save follow-up as draft
+        try {
+          const { data: fuData } = await supabase.functions.invoke("generate-followup-suggestion", {
+            body: {
+              leadId: sentLeadInfo.leadId,
+              leadName: sentLeadInfo.leadName,
+              companyName: sentLeadInfo.companyName,
+              originalSubject: sentLeadInfo.subject,
+              jobTitle: sentLeadInfo.jobTitle,
+              industry: sentLeadInfo.industry,
+            },
+          });
+          if (fuData) {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              await supabase.from('email_drafts').insert({
+                user_id: user.id,
+                lead_id: sentLeadInfo.leadId,
+                subject: `[FU] ${fuData.suggestedSubject || 're: ' + sentLeadInfo.subject}`,
+                body: fuData.suggestedBody || '',
+                tone: emailTone,
+                updated_at: new Date().toISOString(),
+              });
+              toast({ title: "Follow-up auto-queued to drafts for Day 3" });
+              loadCounts();
+            }
+          }
+        } catch (_) {
+          // Non-fatal — don't block the send success flow
+        }
+      } else {
+        setShowFollowUpSuggestion(true);
+      }
     } catch (error: any) {
       toast({
         title: "Error sending email",
@@ -1628,16 +1768,49 @@ For logos, use HTML:
                         <SelectValue placeholder="Select a template (optional)" />
                       </SelectTrigger>
                       <SelectContent>
-                        {EMAIL_TEMPLATES.map((template) => (
-                          <SelectItem key={template.value} value={template.value}>
-                            <div className="flex flex-col">
-                              <span>{template.label}</span>
-                              <span className="text-xs text-muted-foreground">{template.description}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
+                        <SelectGroup>
+                          <SelectLabel>— Standard —</SelectLabel>
+                          {EMAIL_TEMPLATES.filter(t => t.category === "standard").map((template) => (
+                            <SelectItem key={template.value} value={template.value}>
+                              <div className="flex flex-col">
+                                <span>{template.label}</span>
+                                <span className="text-xs text-muted-foreground">{template.description}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                        <SelectGroup>
+                          <SelectLabel>— Intent Signals —</SelectLabel>
+                          {EMAIL_TEMPLATES.filter(t => t.category === "signal").map((template) => (
+                            <SelectItem key={template.value} value={template.value}>
+                              <div className="flex flex-col">
+                                <span className="flex items-center gap-1">
+                                  <span>⚡</span>
+                                  {template.label}
+                                </span>
+                                <span className="text-xs text-muted-foreground">{template.description}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  {/* P0.1 — First touch toggle */}
+                  <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+                    <div>
+                      <p className="text-sm font-medium">
+                        {isFirstTouch ? "First touch (plain text)" : "Warm follow-up (HTML allowed)"}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {isFirstTouch ? "Strips HTML from signature — better inbox placement" : "HTML signature allowed for warm sequences"}
+                      </p>
+                    </div>
+                    <Switch
+                      checked={!isFirstTouch}
+                      onCheckedChange={(v) => setIsFirstTouch(!v)}
+                    />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -1751,7 +1924,32 @@ For logos, use HTML:
                   </div>
 
                   <div>
-                    <Label>Subject Line</Label>
+                    <div className="flex items-center justify-between mb-1">
+                      <Label>Subject Line</Label>
+                      {subjectLine && (() => {
+                        const lead = leads.find(l => l.id === selectedLead);
+                        const { score, flags } = scoreSubjectLine(subjectLine, lead);
+                        const color = score >= 80 ? "bg-green-500/15 text-green-700 dark:text-green-400" : score >= 50 ? "bg-yellow-500/15 text-yellow-700 dark:text-yellow-400" : "bg-destructive/15 text-destructive";
+                        return (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium cursor-default ${color}`}>
+                                  {score}/100
+                                </span>
+                              </TooltipTrigger>
+                              {flags.length > 0 && (
+                                <TooltipContent>
+                                  <ul className="text-xs space-y-0.5">
+                                    {flags.slice(0, 2).map((f, i) => <li key={i}>• {f}</li>)}
+                                  </ul>
+                                </TooltipContent>
+                              )}
+                            </Tooltip>
+                          </TooltipProvider>
+                        );
+                      })()}
+                    </div>
                     <div className="flex gap-2">
                       <Input
                         value={subjectLine}
@@ -1833,6 +2031,17 @@ For logos, use HTML:
                         {use4SentenceFramework
                           ? "4-sentence framework (observation → pain → solution → CTA)"
                           : "Template-specific structure • Click shuffle for A/B testing"}
+                      </label>
+                    </div>
+                    {/* P1.2 — Auto-queue follow-up */}
+                    <div className="flex items-center justify-center gap-2">
+                      <Switch
+                        id="auto-followup-toggle"
+                        checked={autoQueueFollowUp}
+                        onCheckedChange={setAutoQueueFollowUp}
+                      />
+                      <label htmlFor="auto-followup-toggle" className="text-xs text-muted-foreground cursor-pointer select-none">
+                        {autoQueueFollowUp ? "Auto-queue follow-up (saves to drafts on send)" : "Auto-queue follow-up"}
                       </label>
                     </div>
                     {!businessDescription && selectedLead && (
@@ -1923,35 +2132,93 @@ For logos, use HTML:
                       {subjectLine || "Add a subject line"}
                     </p>
                   </div>
+
+                  {/* P0.1 — First touch HTML signature warning */}
+                  {isFirstTouch && signature && /<[a-z]/i.test(signature) && (
+                    <Alert className="border-yellow-500/40 bg-yellow-500/10">
+                      <AlertTriangle className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                      <AlertDescription className="text-yellow-700 dark:text-yellow-400 text-xs">
+                        First-touch plain text mode — HTML signature stripped. Keeps you out of promotions tab.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
                   <div>
-                    <Label>Email Body</Label>
-                    <div className="flex gap-2 mt-1.5">
-                      <Textarea
-                        value={generatedEmail}
-                        onChange={(e) => setGeneratedEmail(e.target.value)}
-                        className="min-h-[280px] flex-1"
-                        placeholder="Your personalized sales email will appear here. Click the wand icon to generate with AI..."
-                      />
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="shrink-0 self-start"
-                        onClick={generateEmail}
-                        disabled={isGenerating || !selectedLead}
-                      >
-                        {isGenerating ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Wand2 className="w-4 h-4" />
-                        )}
-                      </Button>
+                    {/* P3.1 — Desktop/Mobile preview toggle */}
+                    <div className="flex items-center justify-between mb-1.5">
+                      <Label>Email Body</Label>
+                      <div className="flex items-center gap-1 rounded-md border p-0.5">
+                        <Button
+                          variant={previewMode === "desktop" ? "secondary" : "ghost"}
+                          size="sm"
+                          className="h-6 px-2 text-xs"
+                          onClick={() => setPreviewMode("desktop")}
+                        >
+                          <Monitor className="w-3 h-3 mr-1" />
+                          Desktop
+                        </Button>
+                        <Button
+                          variant={previewMode === "mobile" ? "secondary" : "ghost"}
+                          size="sm"
+                          className="h-6 px-2 text-xs"
+                          onClick={() => setPreviewMode("mobile")}
+                        >
+                          <Smartphone className="w-3 h-3 mr-1" />
+                          Mobile
+                        </Button>
+                      </div>
                     </div>
+
+                    {previewMode === "mobile" && generatedEmail ? (
+                      <div className="flex justify-center bg-gray-900 rounded-xl p-4">
+                        {/* iPhone mock frame */}
+                        <div className="relative w-[375px]">
+                          {/* Notch bar */}
+                          <div className="bg-gray-800 rounded-t-2xl h-6 flex items-center justify-center">
+                            <div className="w-16 h-3 bg-gray-700 rounded-full" />
+                          </div>
+                          {/* Screen */}
+                          <div
+                            className="bg-white dark:bg-gray-100 rounded-b-2xl p-4 border border-gray-700 overflow-auto"
+                            style={{ maxHeight: '400px', fontSize: '14px', lineHeight: '1.5', color: '#333' }}
+                          >
+                            <div
+                              dangerouslySetInnerHTML={{
+                                __html: DOMPurify.sanitize(generatedEmail.replace(/\n/g, '<br/>'))
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2 mt-1.5">
+                        <Textarea
+                          value={generatedEmail}
+                          onChange={(e) => setGeneratedEmail(e.target.value)}
+                          className="min-h-[280px] flex-1"
+                          placeholder="Your personalized sales email will appear here. Click the wand icon to generate with AI..."
+                        />
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="shrink-0 self-start"
+                          onClick={generateEmail}
+                          disabled={isGenerating || !selectedLead}
+                        >
+                          {isGenerating ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Wand2 className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </div>
+                    )}
                   </div>
                   {generatedEmail && (
                     <div className="space-y-3">
-                      <EmailQualityChecker subject={subjectLine} body={generatedEmail} />
+                      <EmailQualityChecker subject={subjectLine} body={generatedEmail} isFirstTouch={isFirstTouch} />
                       <div className="flex gap-2">
-                        <Button 
+                        <Button
                           className="flex-1"
                           onClick={sendEmail}
                           disabled={isSending || isScheduling || dailyEmailsSent >= dailyEmailLimit}
@@ -2023,7 +2290,7 @@ For logos, use HTML:
                           </PopoverContent>
                         </Popover>
                         {subjectLine.toLowerCase().includes("meeting") && (
-                          <Button 
+                          <Button
                             variant="outline"
                             onClick={scheduleCalendarMeeting}
                           >
@@ -2032,6 +2299,16 @@ For logos, use HTML:
                           </Button>
                         )}
                       </div>
+                      {/* P2.2 — Send-time intelligence hint */}
+                      {selectedLead && (() => {
+                        const lead = leads.find(l => l.id === selectedLead);
+                        if (!lead) return null;
+                        return (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {getBestSendTime(lead)}
+                          </p>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>
@@ -2062,7 +2339,15 @@ For logos, use HTML:
           </TabsContent>
 
           <TabsContent value="performance" className="mt-6">
-            <EmailPerformanceStats />
+            <div className="space-y-4">
+              {/* P3.3 / P4.3 — Open tracking warning */}
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-sm">
+                <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <span>Open tracking pixels can hurt cold email deliverability. <strong>Reply rate</strong> is your real metric — use opens as directional only.</span>
+              </div>
+              <EmailPerformanceStats />
+              <p className="text-xs text-muted-foreground text-center">Focus on reply rate as your primary metric.</p>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
