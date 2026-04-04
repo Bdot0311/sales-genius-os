@@ -1240,6 +1240,8 @@ ${formattedBody}
               businessDescription={businessDescription}
               signature={signature}
               senderName={getSenderName()}
+              emailGoal={EMAIL_TEMPLATES.find(t => t.value === selectedTemplate)?.goal || "introduction"}
+              templateDescription={EMAIL_TEMPLATES.find(t => t.value === selectedTemplate)?.description || ""}
               onComplete={() => {
                 loadCounts();
                 loadDailyEmailLimit();
