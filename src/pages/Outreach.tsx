@@ -870,6 +870,7 @@ const Outreach = () => {
             tone: emailTone,
             goal: "subject_only",
             templateGoal: goal,
+            templateValue: template?.value || "",
             templateDescription: template?.description || "",
             triggerContext,
             openerWord: openerWord === "auto" ? "" : openerWord,
@@ -887,6 +888,7 @@ const Outreach = () => {
           lead,
           tone: emailTone,
           goal,
+          templateValue: template?.value || "",
           templateDescription: template?.description || "",
           subjectLine: finalSubjectLine,
           triggerContext,
@@ -962,6 +964,7 @@ const Outreach = () => {
             goal: "subject_only",
             templateGoal: goal,
             templateDescription: variantTemplate?.description || "",
+            templateValue: variantTemplate?.value || "",
             triggerContext,
             openerWord: openerWord === "auto" ? "" : openerWord,
             variantNum: num,
@@ -977,6 +980,7 @@ const Outreach = () => {
             tone: emailTone,
             goal,
             templateDescription: variantTemplate?.description || "",
+            templateValue: variantTemplate?.value || "",
             subjectLine: subject,
             triggerContext,
             openerWord: openerWord === "auto" ? "" : openerWord,
@@ -1382,6 +1386,7 @@ ${formattedBody}
               senderName={getSenderName()}
               emailGoal={EMAIL_TEMPLATES.find(t => t.value === selectedTemplate)?.goal || "introduction"}
               templateDescription={EMAIL_TEMPLATES.find(t => t.value === selectedTemplate)?.description || ""}
+              templateValue={selectedTemplate || ""}
               onComplete={() => {
                 loadCounts();
                 loadDailyEmailLimit();

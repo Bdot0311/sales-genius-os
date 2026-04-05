@@ -106,7 +106,8 @@ const getSystemPrompt = (
   goal: string,
   tone: string,
   use4Sentence: boolean,
-  templateDescription: string
+  templateDescription: string,
+  templateValue: string = ''
 ): string => {
   const base = `You are a senior B2B sales rep writing short, direct, human outbound emails. Tone: ${tone}.\n`;
 
@@ -125,18 +126,17 @@ ${CLAIMS_RULES}
 ${SIGNOFF_RULES}`;
   }
 
-  // Detect intent signal templates by their description and build a signal-specific opener rule
+  // Signal-specific opener rules — keyed by exact templateValue from the UI
   const SIGNAL_OPENER_RULES: Record<string, string> = {
-    'just raised funding':     'SIGNAL: They recently raised funding. Reference the round naturally — new capital means new budget, new pressure to grow fast, new accountability to investors. Open with this context without congratulating them excessively.',
-    'new executive hire':      'SIGNAL: A new executive just joined their company. New leaders evaluate and replace tools in their first 90 days. Open by acknowledging the new role and the mandate that comes with it.',
-    'hiring signal':           'SIGNAL: They have an open job posting relevant to your product. The job posting reveals their current pain — reference what the role implies about their process gaps, not the job listing itself.',
-    'competitor customer':     'SIGNAL: They are currently using a competitor product. Do not name the competitor. Instead, reference the category of problem they\'re solving and imply there\'s a faster/better way.',
-    'company expansion':       'SIGNAL: Their company is expanding — new market, new office, or headcount growth. Growth creates operational friction. Open with the specific pressure that comes from scaling fast.',
+    'signal_funding':    'SIGNAL: They recently raised funding. Reference the round naturally — new capital means new budget, new pressure to grow fast, new accountability to investors. Open with this context without congratulating them excessively.',
+    'signal_new_exec':   'SIGNAL: A new executive just joined their company. New leaders evaluate and replace tools in their first 90 days. Open by acknowledging the new role and the mandate that comes with it.',
+    'signal_job_posting': 'SIGNAL: They have an open job posting relevant to your product. The job posting reveals their current pain — reference what the role implies about their process gaps, not the job listing itself.',
+    'signal_competitor': 'SIGNAL: They are currently using a competitor product. Do not name the competitor. Instead, reference the category of problem they\'re solving and imply there\'s a faster/better way.',
+    'signal_expansion':  'SIGNAL: Their company is expanding — new market, new office, or headcount growth. Growth creates operational friction. Open with the specific pressure that comes from scaling fast.',
   };
 
-  // Match signal description (case-insensitive)
-  const descLower = (templateDescription || '').toLowerCase();
-  const signalOpener = Object.entries(SIGNAL_OPENER_RULES).find(([key]) => descLower.includes(key))?.[1] || '';
+  // Direct lookup by templateValue (exact match — no fuzzy string search)
+  const signalOpener = SIGNAL_OPENER_RULES[templateValue] || '';
 
   switch (goal) {
     case 'introduction':
@@ -279,6 +279,7 @@ serve(async (req) => {
     const businessDescription = typeof requestData.businessDescription === 'string' ? requestData.businessDescription.trim().slice(0, 500) : '';
     const variantNum         = typeof requestData.variantNum         === 'number'  ? requestData.variantNum                            : 0;
     const use4SentenceFramework = requestData.use4SentenceFramework === true;
+    const templateValue        = typeof requestData.templateValue        === 'string' ? requestData.templateValue.trim()                   : '';
 
     const validationErrors = validateEmailInputs({ lead, tone, goal });
     if (validationErrors.length > 0) {
@@ -396,7 +397,7 @@ Return ONLY the social proof text. No quotes, no explanations.`;
 
     } else if (goal === 'custom' && subjectLine) {
       const effectiveGoal = templateGoal || 'introduction';
-      systemPrompt = getSystemPrompt(effectiveGoal, tone, use4SentenceFramework, templateDescription);
+      systemPrompt = getSystemPrompt(effectiveGoal, tone, use4SentenceFramework, templateDescription, templateValue);
 
       userPrompt = `Write the email body that matches this subject line: "${subjectLine}"
 
@@ -410,7 +411,7 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
 
     } else {
       // Standard generation
-      systemPrompt = getSystemPrompt(goal, tone, use4SentenceFramework, templateDescription);
+      systemPrompt = getSystemPrompt(goal, tone, use4SentenceFramework, templateDescription, templateValue);
 
       userPrompt = `Write the email body for this lead.
 

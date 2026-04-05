@@ -39,6 +39,7 @@ interface BulkSendDialogProps {
   senderName: string;
   emailGoal?: string;
   templateDescription?: string;
+  templateValue?: string;
   onComplete: () => void;
   onDailyLimitChange: (newLimit: number) => Promise<void>;
 }
@@ -56,6 +57,7 @@ export const BulkSendDialog = ({
   senderName,
   emailGoal = "introduction",
   templateDescription = "",
+  templateValue = "",
   onComplete,
   onDailyLimitChange,
 }: BulkSendDialogProps) => {
@@ -215,6 +217,7 @@ export const BulkSendDialog = ({
               goal: "subject_only",
               templateGoal: emailGoal,
               templateDescription,
+              templateValue,
               openerWord: openerWord === "auto" ? "" : openerWord,
               businessDescription,
             },
@@ -229,6 +232,7 @@ export const BulkSendDialog = ({
               tone: emailTone,
               goal: emailGoal,
               templateDescription,
+              templateValue,
               subjectLine: subject,
               openerWord: openerWord === "auto" ? "" : openerWord,
               businessDescription,
