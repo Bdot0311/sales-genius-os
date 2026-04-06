@@ -8,6 +8,8 @@ import { TrendingUp, Users, DollarSign, Target, Loader2, Download, FileText, Spa
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
 import { FeatureHighlight } from "@/components/dashboard/FeatureHighlight";
+import { FreeTierOverlay } from "@/components/dashboard/FreeTierOverlay";
+import { SAMPLE_STATS, SAMPLE_ANALYTICS } from "@/lib/sample-data";
 
 const Analytics = () => {
   const { 
@@ -102,7 +104,9 @@ const Analytics = () => {
     };
   }, []);
 
-  if (planLoading || loading) {
+  const isFreeTier = currentPlan === 'free';
+
+  if (planLoading || (!isFreeTier && loading)) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
@@ -112,33 +116,38 @@ const Analytics = () => {
     );
   }
 
+  // Use sample data for free tier
+  const displayStats = isFreeTier ? SAMPLE_STATS : stats;
+  const displayDealsByStage = isFreeTier ? SAMPLE_ANALYTICS.dealsByStage : dealsByStage;
+  const displayLeadsOverTime = isFreeTier ? SAMPLE_ANALYTICS.leadsOverTime : leadsOverTime;
+
   const COLORS = ["hsl(var(--primary))", "hsl(var(--secondary))", "hsl(var(--accent))", "#8884d8", "#82ca9d"];
 
   const statCards = [
     {
       title: "Total Leads",
-      value: stats.totalLeads,
+      value: displayStats.totalLeads,
       icon: Users,
       color: "text-blue-500",
       bgColor: "bg-blue-500/10",
     },
     {
       title: "Active Deals",
-      value: stats.totalDeals,
+      value: displayStats.totalDeals,
       icon: Target,
       color: "text-purple-500",
       bgColor: "bg-purple-500/10",
     },
     {
       title: "Pipeline Value",
-      value: `$${stats.totalValue.toLocaleString()}`,
+      value: `$${displayStats.totalValue.toLocaleString()}`,
       icon: DollarSign,
       color: "text-green-500",
       bgColor: "bg-green-500/10",
     },
     {
       title: "Avg Deal Size",
-      value: `$${Math.round(stats.avgDealSize).toLocaleString()}`,
+      value: `$${Math.round(displayStats.avgDealSize).toLocaleString()}`,
       icon: TrendingUp,
       color: "text-orange-500",
       bgColor: "bg-orange-500/10",
