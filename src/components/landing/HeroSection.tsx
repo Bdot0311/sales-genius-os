@@ -1,21 +1,23 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Play, Search, Mail, BarChart3, TrendingUp, Target, MessageSquare, Brain, Clock, Zap } from "lucide-react";
+import { ArrowRight, Play, Search, Mail, BarChart3, TrendingUp, Target, MessageSquare, Brain, Clock } from "lucide-react";
 import logoSmall from "@/assets/salesos-logo-64.webp";
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 
 // Animated counter that counts up once
 const AnimatedNumber = ({ value, suffix = "" }: { value: number; suffix?: string }) => {
   const [count, setCount] = useState(0);
-  const [started, setStarted] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
+  const started = useRef(false);
 
   useEffect(() => {
-    if (started) return;
+    if (started.current || !ref.current) return;
+    const el = ref.current;
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          setStarted(true);
+        if (entry.isIntersecting && !started.current) {
+          started.current = true;
+          observer.disconnect();
           const duration = 1400;
           const start = performance.now();
           const step = (now: number) => {
@@ -29,9 +31,9 @@ const AnimatedNumber = ({ value, suffix = "" }: { value: number; suffix?: string
       },
       { threshold: 0.3 }
     );
-    if (ref.current) observer.observe(ref.current);
+    observer.observe(el);
     return () => observer.disconnect();
-  }, [value, started]);
+  }, [value]);
 
   return <span ref={ref}>{count}{suffix}</span>;
 };
