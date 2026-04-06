@@ -4,17 +4,15 @@ import { AddLeadDialog } from "@/components/dashboard/AddLeadDialog";
 import { OnboardingChecklist } from "@/components/dashboard/OnboardingChecklist";
 import { DashboardTour } from "@/components/dashboard/DashboardTour";
 import { ProspectUsageMeter } from "@/components/dashboard/ProspectUsageMeter";
-import { FreeTierOverlay } from "@/components/dashboard/FreeTierOverlay";
+import { SampleDataBanner } from "@/components/dashboard/SampleDataBanner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Users, DollarSign, Calendar, Plus } from "lucide-react";
+import { TrendingUp, Users, DollarSign, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { SAMPLE_STATS } from "@/lib/sample-data";
 
 const Dashboard = () => {
-  const { toast } = useToast();
   const { currentPlan, loading: planLoading } = usePlanFeatures();
   const isFreeTier = currentPlan === 'free';
   const [showChecklist, setShowChecklist] = useState(true);
@@ -27,52 +25,43 @@ const Dashboard = () => {
   });
 
   useEffect(() => {
-    loadStats();
+    if (!isFreeTier) {
+      loadStats();
+    }
     checkFirstVisit();
 
-    // Set up real-time subscriptions
-    const leadsChannel = supabase
-      .channel('dashboard-leads-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => {
-        loadStats();
-      })
-      .subscribe();
+    if (!isFreeTier) {
+      const leadsChannel = supabase
+        .channel('dashboard-leads-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => loadStats())
+        .subscribe();
+      const dealsChannel = supabase
+        .channel('dashboard-deals-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'deals' }, () => loadStats())
+        .subscribe();
+      const activitiesChannel = supabase
+        .channel('dashboard-activities-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'activities' }, () => loadStats())
+        .subscribe();
 
-    const dealsChannel = supabase
-      .channel('dashboard-deals-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'deals' }, () => {
-        loadStats();
-      })
-      .subscribe();
-
-    const activitiesChannel = supabase
-      .channel('dashboard-activities-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'activities' }, () => {
-        loadStats();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(leadsChannel);
-      supabase.removeChannel(dealsChannel);
-      supabase.removeChannel(activitiesChannel);
-    };
-  }, []);
+      return () => {
+        supabase.removeChannel(leadsChannel);
+        supabase.removeChannel(dealsChannel);
+        supabase.removeChannel(activitiesChannel);
+      };
+    }
+  }, [isFreeTier]);
 
   const checkFirstVisit = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-
       const { data } = await supabase
         .from("onboarding_progress")
         .select("completed_tour")
         .eq("user_id", user.id)
         .single();
-
-      if (!data || !data.completed_tour) {
-        setShowTour(true);
-      }
+      if (!data || !data.completed_tour) setShowTour(true);
     } catch (error) {
       console.error("Error checking first visit:", error);
     }
@@ -87,9 +76,7 @@ const Dashboard = () => {
         .select("*")
         .eq("type", "meeting")
         .gte("due_date", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
-
       const totalValue = deals?.reduce((sum, deal) => sum + (Number(deal.value) || 0), 0) || 0;
-
       setStats({
         totalLeads: leads?.length || 0,
         totalDeals: deals?.length || 0,
@@ -104,121 +91,36 @@ const Dashboard = () => {
   const displayStats = isFreeTier ? SAMPLE_STATS : stats;
 
   const statCards = [
-    {
-      title: "Total Leads",
-      value: displayStats.totalLeads,
-      icon: Users,
-      color: "text-blue-500",
-      bgColor: "bg-blue-500/10",
-    },
-    {
-      title: "Active Deals",
-      value: displayStats.totalDeals,
-      icon: TrendingUp,
-      color: "text-purple-500",
-      bgColor: "bg-purple-500/10",
-    },
-    {
-      title: "Pipeline Value",
-      value: `$${displayStats.totalValue.toLocaleString()}`,
-      icon: DollarSign,
-      color: "text-green-500",
-      bgColor: "bg-green-500/10",
-    },
-    {
-      title: "Meetings This Week",
-      value: displayStats.meetingsThisWeek,
-      icon: Calendar,
-      color: "text-orange-500",
-      bgColor: "bg-orange-500/10",
-    },
+    { title: "Total Leads", value: displayStats.totalLeads, icon: Users, color: "text-blue-500", bgColor: "bg-blue-500/10" },
+    { title: "Active Deals", value: displayStats.totalDeals, icon: TrendingUp, color: "text-purple-500", bgColor: "bg-purple-500/10" },
+    { title: "Pipeline Value", value: `$${displayStats.totalValue.toLocaleString()}`, icon: DollarSign, color: "text-green-500", bgColor: "bg-green-500/10" },
+    { title: "Meetings This Week", value: displayStats.meetingsThisWeek, icon: Calendar, color: "text-orange-500", bgColor: "bg-orange-500/10" },
   ];
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Dashboard Tour */}
         <DashboardTour isOpen={showTour} onClose={() => setShowTour(false)} />
 
-        {/* Onboarding Checklist */}
         {showChecklist && (
-          <OnboardingChecklist 
-            onClose={() => setShowChecklist(false)}
-            onStartTour={() => setShowTour(true)}
-          />
+          <OnboardingChecklist onClose={() => setShowChecklist(false)} onStartTour={() => setShowTour(true)} />
         )}
 
-        {/* Header */}
+        {isFreeTier && <SampleDataBanner />}
+
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">Welcome back!</h1>
-            <p className="text-muted-foreground text-sm sm:text-base">
-              Here's what's happening with your sales today
-            </p>
+            <p className="text-muted-foreground text-sm sm:text-base">Here's what's happening with your sales today</p>
           </div>
           <AddLeadDialog onLeadAdded={loadStats} />
         </div>
 
-        {/* Prospect Usage Meter */}
         {!isFreeTier && <ProspectUsageMeter />}
 
-        {/* Stats Grid — sample data for free tier */}
-        {isFreeTier ? (
-          <FreeTierOverlay
-            feature="Dashboard Analytics"
-            description="You're exploring with sample data. Upgrade to track your real leads, deals, pipeline value, and meetings."
-          >
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {statCards.map((stat) => (
-                <Card key={stat.title} className="p-6 bg-card border-border">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-1">{stat.title}</p>
-                      <p className="text-3xl font-bold">{stat.value}</p>
-                    </div>
-                    <div className={`p-3 rounded-lg ${stat.bgColor}`}>
-                      <stat.icon className={`w-6 h-6 ${stat.color}`} />
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-
-            <Card className="p-6 mt-6">
-              <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Button variant="glass" className="justify-start h-auto py-6">
-                  <Users className="w-5 h-5 mr-3" />
-                  <div className="text-left">
-                    <div className="font-semibold">Outreach Studio</div>
-                    <div className="text-xs text-muted-foreground">Generate AI-powered emails</div>
-                  </div>
-                </Button>
-                <Button variant="glass" className="justify-start h-auto py-6">
-                  <TrendingUp className="w-5 h-5 mr-3" />
-                  <div className="text-left">
-                    <div className="font-semibold">View Pipeline</div>
-                    <div className="text-xs text-muted-foreground">Manage your deals</div>
-                  </div>
-                </Button>
-                <Button variant="glass" className="justify-start h-auto py-6">
-                  <Calendar className="w-5 h-5 mr-3" />
-                  <div className="text-left">
-                    <div className="font-semibold">Schedule Meeting</div>
-                    <div className="text-xs text-muted-foreground">Book a call with a lead</div>
-                  </div>
-                </Button>
-              </div>
-            </Card>
-          </FreeTierOverlay>
-        ) : (
-        <>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {statCards.map((stat) => (
-            <Card
-              key={stat.title}
-              className="p-6 bg-card border-border hover:border-primary/50 transition-all duration-300"
-            >
+            <Card key={stat.title} className="p-6 bg-card border-border hover:border-primary/50 transition-all duration-300">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">{stat.title}</p>
@@ -232,7 +134,6 @@ const Dashboard = () => {
           ))}
         </div>
 
-        {/* Quick Actions */}
         <Card className="p-6">
           <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -260,7 +161,6 @@ const Dashboard = () => {
           </div>
         </Card>
 
-        {/* AI Insights */}
         <Card className="p-6 bg-gradient-primary text-white">
           <div className="flex items-start gap-4">
             <div className="p-3 rounded-lg bg-white/20">
@@ -269,11 +169,11 @@ const Dashboard = () => {
             <div className="flex-1">
               <h3 className="font-semibold mb-2">Quick Insight</h3>
               <p className="text-white/90 mb-4">
-                {stats.totalLeads > 0 ? (
-                  `You have ${stats.totalLeads} lead${stats.totalLeads > 1 ? 's' : ''} and ${stats.totalDeals} active deal${stats.totalDeals !== 1 ? 's' : ''} worth $${stats.totalValue.toLocaleString()}. ${stats.meetingsThisWeek > 0 ? `${stats.meetingsThisWeek} meeting${stats.meetingsThisWeek > 1 ? 's' : ''} scheduled this week.` : 'Schedule some meetings to keep momentum!'}`
-                ) : (
-                  "Add your first lead to get started with AI-powered sales coaching and insights."
-                )}
+                {isFreeTier
+                  ? `You have ${displayStats.totalLeads} sample leads and ${displayStats.totalDeals} demo deals worth $${displayStats.totalValue.toLocaleString()}. Upgrade to track real data!`
+                  : stats.totalLeads > 0
+                    ? `You have ${stats.totalLeads} lead${stats.totalLeads > 1 ? 's' : ''} and ${stats.totalDeals} active deal${stats.totalDeals !== 1 ? 's' : ''} worth $${stats.totalValue.toLocaleString()}. ${stats.meetingsThisWeek > 0 ? `${stats.meetingsThisWeek} meeting${stats.meetingsThisWeek > 1 ? 's' : ''} scheduled this week.` : 'Schedule some meetings to keep momentum!'}`
+                    : "Add your first lead to get started with AI-powered sales coaching and insights."}
               </p>
               <Button variant="secondary" size="sm" onClick={() => window.location.href = '/dashboard/coach'}>
                 Get AI Coaching
@@ -281,8 +181,6 @@ const Dashboard = () => {
             </div>
           </div>
         </Card>
-        </>
-        )}
       </div>
     </DashboardLayout>
   );
