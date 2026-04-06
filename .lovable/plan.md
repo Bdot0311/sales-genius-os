@@ -1,33 +1,57 @@
 
 
-# Replace Stack Comparison with Social Proof Comparison
+## Plan: OAuth Sign-In for All Integrations
 
-## What Changes
+Currently only Google uses OAuth (sign-in button). The other integrations (Calendly, Slack, HubSpot, Salesforce) require users to manually find and paste API keys, which is a hassle. This plan converts all eligible integrations to use OAuth sign-in flows, matching the Google experience.
 
-Remove the current "Your Stack Wasn't Built to Win" comparison section and replace it with a conversion-focused "What Changes When You Switch" section. This new section uses aspirational transformation framing instead of negativity -- showing outcomes teams achieve with SalesOS.
+**Zapier stays webhook-based** — Zapier doesn't offer OAuth for this use case; it's inherently webhook-driven.
 
-## Design
+---
 
-- **Heading:** "What Changes When You Switch"
-- **Subheading:** "Teams that consolidate onto SalesOS see measurable improvements across their entire sales operation."
-- **Layout:** Two-column grid with "Before" (neutral, muted) and "With SalesOS" (primary accent, elevated) cards
-- **Bottom:** Social proof line ("Join 500+ sales teams") with CTA button
-- **Animations:** IntersectionObserver scroll-reveal, consistent with existing sections
+### What Changes
 
-## Transformation rows
+**1. Create OAuth init edge functions** (one per provider)
+- `hubspot-oauth-init/index.ts` — builds HubSpot OAuth URL with scopes for CRM access
+- `hubspot-oauth-callback/index.ts` — exchanges code for tokens, stores in `integrations` table
+- `salesforce-oauth-init/index.ts` — builds Salesforce OAuth URL
+- `salesforce-oauth-callback/index.ts` — exchanges code for tokens
+- `calendly-oauth-init/index.ts` — builds Calendly OAuth URL
+- `calendly-oauth-callback/index.ts` — exchanges code for tokens
+- `slack-oauth-init/index.ts` — builds Slack OAuth URL with scopes for notifications
+- `slack-oauth-callback/index.ts` — exchanges code for tokens
 
-| Before (neutral tone) | With SalesOS (outcome) |
-|---|---|
-| Hours toggling between tools | 3x faster lead-to-outreach time |
-| Manual follow-up tracking | Automated sequences with real-time signals |
-| Generic batch emails | AI-personalized outreach, 2-4x higher reply rates |
-| Scattered pipeline data | Single dashboard with deal intelligence |
-| Guesswork on lead quality | AI scoring with 85%+ fit accuracy |
+Each follows the same pattern as the existing `google-oauth-init` and `google-oauth-callback` functions: generate auth URL → redirect user → exchange code → save tokens to `integrations.config`.
 
-## Technical Steps
+**2. Add secrets for each provider's OAuth credentials**
+- `HUBSPOT_CLIENT_ID` + `HUBSPOT_CLIENT_SECRET`
+- `SALESFORCE_CLIENT_ID` + `SALESFORCE_CLIENT_SECRET`
+- `CALENDLY_CLIENT_ID` + `CALENDLY_CLIENT_SECRET`
+- `SLACK_CLIENT_ID` + `SLACK_CLIENT_SECRET`
 
-1. **Create** `src/components/landing/SocialProofComparison.tsx` -- new component following existing patterns (container max-w-[1120px], IntersectionObserver, responsive grid)
-2. **Update** `src/components/landing/index.ts` -- swap `StackComparisonSection` export for `SocialProofComparison`
-3. **Update** `src/pages/Index.tsx` -- import and render `SocialProofComparison` in place of `StackComparisonSection`
-4. **Delete** `src/components/landing/StackComparisonSection.tsx`
+You'll need to register OAuth apps on each provider's developer portal to obtain these.
+
+**3. Update `src/pages/DashboardIntegrations.tsx`**
+- Remove `fields` from Calendly, Slack, HubSpot, Salesforce definitions (no more API key inputs)
+- Extend `handleConnect` to route each integration through its OAuth init edge function (same pattern as Google)
+- Extend `handleOAuthCallback` to detect which provider returned the code (via `state` parameter containing provider ID)
+- Remove the API-key form dialog for OAuth-based integrations
+- Keep Zapier as webhook-based (still uses the form dialog)
+- Show connected account email/name for each OAuth integration (like Google currently does)
+
+**4. Update landing page CTA**
+- In `IntegrationsSection.tsx`, keep "Connect your tools" text — it now accurately describes OAuth sign-in
+
+---
+
+### What Stays the Same
+- Google OAuth flow (already working)
+- Zapier webhook integration
+- Database schema (`integrations` table with JSONB `config`)
+- Disconnect logic
+- Category filtering
+
+---
+
+### User Action Required
+Before implementation, you'll need to create OAuth apps on each platform's developer console and provide the client ID + secret pairs. I'll prompt you for each one during implementation.
 
