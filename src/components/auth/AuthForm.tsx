@@ -114,28 +114,8 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
           return;
         }
 
-        // For non-admin users, verify subscription
-        const { data: subCheck, error: subError } = await supabase.functions.invoke('check-subscription', {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`
-          }
-        });
-
-        if (subError || !subCheck?.subscribed) {
-          // Sign out the user
-          await supabase.auth.signOut();
-          
-          toast({
-            title: "No active subscription",
-            description: "Please purchase a subscription to access your account.",
-            variant: "destructive",
-          });
-          
-          setTimeout(() => {
-            window.location.href = "/pricing";
-          }, 2000);
-          return;
-        }
+        // For non-admin users, allow login regardless of subscription status.
+        // The dashboard and feature gates handle access control.
       }
 
       toast({
@@ -160,27 +140,8 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
     setLoading(true);
 
     try {
-      // First check if user has an active subscription
-      const { data: subData, error: subError } = await supabase.functions.invoke(
-        "check-subscription",
-        {
-          body: { email },
-        }
-      );
-
-      if (subError || !subData?.subscribed) {
-        toast({
-          title: "No active subscription found",
-          description: "Please purchase a subscription or start a trial before creating an account.",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/pricing";
-        }, 1500);
-        return;
-      }
-
-      // If subscription exists, create the account
+      // Create the account — the DB trigger (handle_new_user_subscription)
+      // will automatically provision a free-tier subscription.
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
