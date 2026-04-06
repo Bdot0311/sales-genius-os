@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import type { Session } from "@supabase/supabase-js";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -183,8 +184,38 @@ const DashboardIntegrations = () => {
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [loading, setLoading] = useState(true);
+  const [authSession, setAuthSession] = useState<Session | null>(null);
 
   const categories = ["All", "Scheduling", "Email", "CRM", "Automation", "Communication"];
+
+  const ensureActiveSession = async () => {
+    if (authSession?.access_token) {
+      return authSession;
+    }
+
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) {
+      console.warn("Unable to read session for OAuth:", sessionError);
+    }
+
+    if (sessionData.session?.access_token) {
+      setAuthSession(sessionData.session);
+      return sessionData.session;
+    }
+
+    const { data: refreshedData, error: refreshError } = await supabase.auth.refreshSession();
+    if (refreshError) {
+      console.warn("Unable to refresh session for OAuth:", refreshError);
+      return null;
+    }
+
+    if (refreshedData.session?.access_token) {
+      setAuthSession(refreshedData.session);
+      return refreshedData.session;
+    }
+
+    return null;
+  };
 
   const loadIntegrations = async () => {
     try {
@@ -229,8 +260,8 @@ const DashboardIntegrations = () => {
     code: string,
     stateParam: string | null,
   ) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
+    const activeSession = await ensureActiveSession();
+    if (!activeSession) {
       throw new Error("Please sign in to finish connecting this integration");
     }
 
@@ -238,6 +269,9 @@ const DashboardIntegrations = () => {
     const callbackFn = `${provider}-oauth-callback`;
     const { data, error } = await supabase.functions.invoke(callbackFn, {
       body: { code, redirectUri, state: stateParam },
+      headers: {
+        Authorization: `Bearer ${activeSession.access_token}`,
+      },
     });
 
     if (error) throw error;
@@ -250,18 +284,23 @@ const DashboardIntegrations = () => {
       description: `Successfully connected ${connectedName}`,
     });
 
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    if (authUser) {
-      supabase.from("onboarding_progress")
-        .update({ set_up_integration: true })
-        .eq("user_id", authUser.id)
-        .then(() => {});
-    }
+    supabase.from("onboarding_progress")
+      .update({ set_up_integration: true })
+      .eq("user_id", activeSession.user.id)
+      .then(() => {});
 
     await loadIntegrations();
   };
 
   useEffect(() => {
+    const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAuthSession(session);
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setAuthSession(session);
+    });
+
     void loadIntegrations();
     void handleOAuthCallback();
 
@@ -295,7 +334,10 @@ const DashboardIntegrations = () => {
     };
 
     window.addEventListener("message", handleOAuthMessage);
-    return () => window.removeEventListener("message", handleOAuthMessage);
+    return () => {
+      window.removeEventListener("message", handleOAuthMessage);
+      authSubscription.unsubscribe();
+    };
   }, []);
 
   const handleOAuthCallback = async () => {
@@ -359,8 +401,8 @@ const DashboardIntegrations = () => {
         : null;
 
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
+        const activeSession = await ensureActiveSession();
+        if (!activeSession) {
           if (oauthPopup && !oauthPopup.closed) oauthPopup.close();
           toast({
             title: "Authentication Required",
@@ -374,6 +416,9 @@ const DashboardIntegrations = () => {
         const initFn = `${integration.id}-oauth-init`;
         const { data, error } = await supabase.functions.invoke(initFn, {
           body: { redirectUri },
+          headers: {
+            Authorization: `Bearer ${activeSession.access_token}`,
+          },
         });
 
         if (error) throw error;
