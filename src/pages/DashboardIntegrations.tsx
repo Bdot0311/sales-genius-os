@@ -254,13 +254,22 @@ const DashboardIntegrations = () => {
         const redirectUri = `${window.location.origin}/integrations`;
         const initFn = `${integration.id}-oauth-init`;
 
+        console.log(`[OAuth] Calling ${initFn} with redirectUri:`, redirectUri);
         const { data, error } = await supabase.functions.invoke(initFn, {
           body: { redirectUri },
         });
 
+        console.log(`[OAuth] Response from ${initFn}:`, { data, error, typeOfData: typeof data });
+
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
 
+        if (!data?.authUrl) {
+          console.error(`[OAuth] No authUrl in response:`, data);
+          throw new Error('No authorization URL returned');
+        }
+
+        console.log(`[OAuth] Redirecting to:`, data.authUrl);
         window.location.href = data.authUrl;
         return;
       } catch (error: any) {
