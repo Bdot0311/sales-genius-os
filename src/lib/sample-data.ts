@@ -25,6 +25,13 @@ export const SAMPLE_STATS = {
   avgDealSize: 2618,
 };
 
+export const SAMPLE_MEETINGS = [
+  { id: "m1", subject: "Discovery Call – Northline Systems", description: "Initial qualification call with Jordan", due_date: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), leads: { contact_name: "Jordan Park", company_name: "Northline Systems" } },
+  { id: "m2", subject: "Proposal Review – SignalFox", description: "Walk through pricing tiers", due_date: new Date(Date.now() + 26 * 60 * 60 * 1000).toISOString(), leads: { contact_name: "Rina Shah", company_name: "SignalFox" } },
+  { id: "m3", subject: "Demo – GraphiteIQ", description: "Product demo for analytics team", due_date: new Date(Date.now() + 50 * 60 * 60 * 1000).toISOString(), leads: { contact_name: "Alex Müller", company_name: "GraphiteIQ" } },
+  { id: "m4", subject: "Contract Negotiation – BrightLoop", description: "Final terms discussion", due_date: new Date(Date.now() + 74 * 60 * 60 * 1000).toISOString(), leads: { contact_name: "Maya Chen", company_name: "BrightLoop" } },
+];
+
 export const SAMPLE_ANALYTICS = {
   dealsByStage: [
     { stage: "New", count: 12 },
