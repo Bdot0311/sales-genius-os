@@ -38,7 +38,8 @@ interface Integration {
 }
 
 const OAUTH_PROVIDERS = new Set(["google", "hubspot", "calendly"]);
-const OAUTH_RESULT_STORAGE_KEY = "salesos-oauth-integration-result";
+const PUBLISHED_OAUTH_ORIGIN = "https://sales-genius-os.lovable.app";
+const OAUTH_MESSAGE_TYPE = "salesos-oauth-message";
 
 const isEmbeddedPreview = () => {
   try {
@@ -49,6 +50,39 @@ const isEmbeddedPreview = () => {
     );
   } catch {
     return true;
+  }
+};
+
+const getOAuthRedirectUri = () => {
+  const hostname = window.location.hostname;
+  const usePublishedOrigin =
+    hostname.includes("id-preview--") || hostname.includes("lovableproject.com");
+
+  const baseOrigin = usePublishedOrigin
+    ? PUBLISHED_OAUTH_ORIGIN
+    : window.location.origin;
+
+  return `${baseOrigin}/integrations`;
+};
+
+const getOAuthMessageTargetOrigin = () => {
+  if (!document.referrer) return "*";
+
+  try {
+    return new URL(document.referrer).origin;
+  } catch {
+    return "*";
+  }
+};
+
+const getProviderFromState = (stateParam: string | null) => {
+  if (!stateParam) return "google";
+
+  try {
+    const stateData = JSON.parse(stateParam);
+    return stateData.provider || "google";
+  } catch {
+    return "google";
   }
 };
 
@@ -136,6 +170,10 @@ const integrations: Integration[] = [
   },
 ];
 
+const getProviderLabel = (provider: string) =>
+  integrations.find((integration) => integration.id === provider)?.name ??
+  `${provider.charAt(0).toUpperCase()}${provider.slice(1)}`;
+
 const DashboardIntegrations = () => {
   const { toast } = useToast();
   const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
@@ -147,31 +185,6 @@ const DashboardIntegrations = () => {
   const [loading, setLoading] = useState(true);
 
   const categories = ["All", "Scheduling", "Email", "CRM", "Automation", "Communication"];
-
-  useEffect(() => {
-    loadIntegrations();
-    handleOAuthCallback();
-
-    const handleOAuthStorage = (event: StorageEvent) => {
-      if (event.key !== OAUTH_RESULT_STORAGE_KEY || !event.newValue) return;
-
-      try {
-        const { provider, connectedName } = JSON.parse(event.newValue);
-        toast({
-          title: `${provider.charAt(0).toUpperCase() + provider.slice(1)} Connected!`,
-          description: `Successfully connected ${connectedName}`,
-        });
-        loadIntegrations();
-      } catch (storageError) {
-        console.error("Error reading OAuth connection result:", storageError);
-      } finally {
-        localStorage.removeItem(OAUTH_RESULT_STORAGE_KEY);
-      }
-    };
-
-    window.addEventListener("storage", handleOAuthStorage);
-    return () => window.removeEventListener("storage", handleOAuthStorage);
-  }, []);
 
   const loadIntegrations = async () => {
     try {
@@ -186,7 +199,6 @@ const DashboardIntegrations = () => {
       );
       setConnectedIntegrations(activeIds);
 
-      // Build connected accounts map for all OAuth providers
       const accountsMap = new Map<string, Array<{ id: string; email: string }>>();
       (data || [])
         .filter(i => i.is_active && OAUTH_PROVIDERS.has(i.integration_id))
@@ -212,6 +224,80 @@ const DashboardIntegrations = () => {
     }
   };
 
+  const completeOAuthConnection = async (
+    provider: string,
+    code: string,
+    stateParam: string | null,
+  ) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      throw new Error("Please sign in to finish connecting this integration");
+    }
+
+    const redirectUri = getOAuthRedirectUri();
+    const callbackFn = `${provider}-oauth-callback`;
+    const { data, error } = await supabase.functions.invoke(callbackFn, {
+      body: { code, redirectUri, state: stateParam },
+    });
+
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+
+    const connectedName = data.googleEmail || data.connectedEmail || getProviderLabel(provider);
+
+    toast({
+      title: `${getProviderLabel(provider)} Connected!`,
+      description: `Successfully connected ${connectedName}`,
+    });
+
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (authUser) {
+      supabase.from("onboarding_progress")
+        .update({ set_up_integration: true })
+        .eq("user_id", authUser.id)
+        .then(() => {});
+    }
+
+    await loadIntegrations();
+  };
+
+  useEffect(() => {
+    void loadIntegrations();
+    void handleOAuthCallback();
+
+    const handleOAuthMessage = (event: MessageEvent) => {
+      if (!new Set([window.location.origin, PUBLISHED_OAUTH_ORIGIN]).has(event.origin)) {
+        return;
+      }
+
+      if (event.data?.type !== OAUTH_MESSAGE_TYPE) {
+        return;
+      }
+
+      const payload = event.data.payload as {
+        code?: string;
+        provider?: string;
+        stateParam?: string | null;
+      } | undefined;
+
+      if (!payload?.code || !payload?.provider) {
+        return;
+      }
+
+      void completeOAuthConnection(payload.provider, payload.code, payload.stateParam ?? null).catch((error: any) => {
+        console.error("OAuth popup handoff error:", error);
+        toast({
+          title: "Connection Error",
+          description: error.message || `Failed to connect ${payload.provider}`,
+          variant: "destructive",
+        });
+      });
+    };
+
+    window.addEventListener("message", handleOAuthMessage);
+    return () => window.removeEventListener("message", handleOAuthMessage);
+  }, []);
+
   const handleOAuthCallback = async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
@@ -219,65 +305,30 @@ const DashboardIntegrations = () => {
     
     if (!code) return;
 
-    let provider = 'google';
-    if (stateParam) {
+    const provider = getProviderFromState(stateParam);
+    const openedFromPopup = Boolean(window.opener && window.opener !== window);
+
+    if (openedFromPopup) {
       try {
-        const stateData = JSON.parse(stateParam);
-        if (stateData.provider) provider = stateData.provider;
-      } catch (e) {
-        /* fallback to google */
-      }
-    }
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast({
-          title: "Authentication Required",
-          description: "Please sign in to connect integrations",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const redirectUri = `${window.location.origin}/integrations`;
-      const callbackFn = `${provider}-oauth-callback`;
-      const { data, error } = await supabase.functions.invoke(callbackFn, {
-        body: { code, redirectUri, state: stateParam },
-      });
-
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-
-      const connectedName = data.googleEmail || data.connectedEmail || provider;
-      const openedFromPopup = Boolean(window.opener && window.opener !== window);
-
-      if (openedFromPopup) {
-        localStorage.setItem(
-          OAUTH_RESULT_STORAGE_KEY,
-          JSON.stringify({ provider, connectedName, timestamp: Date.now() })
+        window.opener?.postMessage(
+          {
+            type: OAUTH_MESSAGE_TYPE,
+            payload: { provider, code, stateParam },
+          },
+          getOAuthMessageTargetOrigin(),
         );
-      } else {
-        toast({
-          title: `${provider.charAt(0).toUpperCase() + provider.slice(1)} Connected!`,
-          description: `Successfully connected ${connectedName}`,
-        });
-      }
-
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (authUser) {
-        supabase.from("onboarding_progress")
-          .update({ set_up_integration: true })
-          .eq("user_id", authUser.id)
-          .then(() => {});
+      } catch (error) {
+        console.error('OAuth popup postMessage error:', error);
       }
 
       window.history.replaceState({}, '', '/integrations');
-      await loadIntegrations();
+      window.close();
+      return;
+    }
 
-      if (openedFromPopup) {
-        window.close();
-      }
+    try {
+      await completeOAuthConnection(provider, code, stateParam);
+      window.history.replaceState({}, '', '/integrations');
     } catch (error: any) {
       console.error('OAuth callback error:', error);
       toast({
@@ -319,7 +370,7 @@ const DashboardIntegrations = () => {
           return;
         }
 
-        const redirectUri = `${window.location.origin}/integrations`;
+        const redirectUri = getOAuthRedirectUri();
         const initFn = `${integration.id}-oauth-init`;
         const { data, error } = await supabase.functions.invoke(initFn, {
           body: { redirectUri },
