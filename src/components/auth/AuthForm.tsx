@@ -114,28 +114,8 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
           return;
         }
 
-        // For non-admin users, verify subscription
-        const { data: subCheck, error: subError } = await supabase.functions.invoke('check-subscription', {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`
-          }
-        });
-
-        if (subError || !subCheck?.subscribed) {
-          // Sign out the user
-          await supabase.auth.signOut();
-          
-          toast({
-            title: "No active subscription",
-            description: "Please purchase a subscription to access your account.",
-            variant: "destructive",
-          });
-          
-          setTimeout(() => {
-            window.location.href = "/pricing";
-          }, 2000);
-          return;
-        }
+        // For non-admin users, allow login regardless of subscription status.
+        // The dashboard and feature gates handle access control.
       }
 
       toast({
