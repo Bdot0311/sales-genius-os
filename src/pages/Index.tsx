@@ -136,19 +136,19 @@ const Index = () => {
             <HeroSection />
             <TrustedByBar />
 
-            {/* Below the fold - lazy loaded — problem, workflow, examples, then close */}
+            {/* Below the fold - lazy loaded with content-visibility for rendering efficiency */}
             <Suspense fallback={<SectionLoader />}>
-              <ProblemSection />
-              <HowItWorks />
-              <ExampleSearchSection />
-              <ModulesSection />
-              <ExampleOutreachSection />
-              <DifferentiationSection />
-              <FounderNoteSection />
-              <TestimonialsSection />
-              <IntegrationsSection />
-              <PricingTeaser />
-              <FAQSection />
+              <div className="lazy-section"><ProblemSection /></div>
+              <div className="lazy-section"><HowItWorks /></div>
+              <div className="lazy-section"><ExampleSearchSection /></div>
+              <div className="lazy-section"><ModulesSection /></div>
+              <div className="lazy-section"><ExampleOutreachSection /></div>
+              <div className="lazy-section"><DifferentiationSection /></div>
+              <div className="lazy-section"><FounderNoteSection /></div>
+              <div className="lazy-section"><TestimonialsSection /></div>
+              <div className="lazy-section"><IntegrationsSection /></div>
+              <div className="lazy-section"><PricingTeaser /></div>
+              <div className="lazy-section"><FAQSection /></div>
               <FinalCTA />
             </Suspense>
           </article>
