@@ -421,6 +421,7 @@ const Analytics = () => {
           </Card>
         )}
       </div>
+      )}
     </DashboardLayout>
   );
 };
