@@ -37,7 +37,7 @@ interface Integration {
   fields?: Array<{ name: string; label: string; type: string; placeholder: string }>;
 }
 
-const OAUTH_PROVIDERS = new Set(["google", "hubspot", "salesforce", "calendly", "slack"]);
+const OAUTH_PROVIDERS = new Set(["google", "hubspot", "calendly"]);
 
 const integrations: Integration[] = [
   {
@@ -65,7 +65,9 @@ const integrations: Integration[] = [
     description: "Get real-time notifications for deal updates",
     icon: MessageSquare,
     color: "bg-purple-500",
-    oauthProvider: true,
+    fields: [
+      { name: "webhookUrl", label: "Webhook URL", type: "text", placeholder: "https://hooks.slack.com/..." },
+    ],
   },
   {
     id: "zapier",
@@ -94,7 +96,11 @@ const integrations: Integration[] = [
     description: "Bi-directional data sync with Salesforce",
     icon: Cloud,
     color: "bg-blue-500",
-    oauthProvider: true,
+    fields: [
+      { name: "instanceUrl", label: "Instance URL", type: "text", placeholder: "https://your-instance.salesforce.com" },
+      { name: "clientId", label: "Client ID", type: "text", placeholder: "Enter Client ID" },
+      { name: "clientSecret", label: "Client Secret", type: "password", placeholder: "Enter Client Secret" },
+    ],
   },
 ];
 
