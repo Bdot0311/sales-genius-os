@@ -37,7 +37,7 @@ interface Integration {
   fields?: Array<{ name: string; label: string; type: string; placeholder: string }>;
 }
 
-const OAUTH_PROVIDERS = new Set(["google", "hubspot", "salesforce", "calendly", "slack"]);
+const OAUTH_PROVIDERS = new Set(["google", "hubspot", "calendly"]);
 
 const integrations: Integration[] = [
   {
