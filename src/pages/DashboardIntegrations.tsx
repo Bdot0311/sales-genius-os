@@ -38,6 +38,38 @@ interface Integration {
 }
 
 const OAUTH_PROVIDERS = new Set(["google", "hubspot", "calendly"]);
+const OAUTH_RESULT_STORAGE_KEY = "salesos-oauth-integration-result";
+
+const isEmbeddedPreview = () => {
+  try {
+    return (
+      window.self !== window.top ||
+      window.location.hostname.includes("id-preview--") ||
+      window.location.hostname.includes("lovableproject.com")
+    );
+  } catch {
+    return true;
+  }
+};
+
+const openOAuthTarget = (authUrl: string, popup: Window | null) => {
+  if (popup && !popup.closed) {
+    popup.location.replace(authUrl);
+    popup.focus?.();
+    return;
+  }
+
+  try {
+    if (isEmbeddedPreview() && window.top) {
+      window.top.location.href = authUrl;
+      return;
+    }
+  } catch (navigationError) {
+    console.warn("Could not redirect parent window for OAuth:", navigationError);
+  }
+
+  window.location.href = authUrl;
+};
 
 const integrations: Integration[] = [
   {
@@ -119,6 +151,26 @@ const DashboardIntegrations = () => {
   useEffect(() => {
     loadIntegrations();
     handleOAuthCallback();
+
+    const handleOAuthStorage = (event: StorageEvent) => {
+      if (event.key !== OAUTH_RESULT_STORAGE_KEY || !event.newValue) return;
+
+      try {
+        const { provider, connectedName } = JSON.parse(event.newValue);
+        toast({
+          title: `${provider.charAt(0).toUpperCase() + provider.slice(1)} Connected!`,
+          description: `Successfully connected ${connectedName}`,
+        });
+        loadIntegrations();
+      } catch (storageError) {
+        console.error("Error reading OAuth connection result:", storageError);
+      } finally {
+        localStorage.removeItem(OAUTH_RESULT_STORAGE_KEY);
+      }
+    };
+
+    window.addEventListener("storage", handleOAuthStorage);
+    return () => window.removeEventListener("storage", handleOAuthStorage);
   }, []);
 
   const loadIntegrations = async () => {
@@ -167,13 +219,14 @@ const DashboardIntegrations = () => {
     
     if (!code) return;
 
-    // Determine provider from state
-    let provider = 'google'; // default fallback
+    let provider = 'google';
     if (stateParam) {
       try {
         const stateData = JSON.parse(stateParam);
         if (stateData.provider) provider = stateData.provider;
-      } catch (e) { /* fallback to google */ }
+      } catch (e) {
+        /* fallback to google */
+      }
     }
 
     try {
@@ -188,7 +241,6 @@ const DashboardIntegrations = () => {
       }
 
       const redirectUri = `${window.location.origin}/integrations`;
-
       const callbackFn = `${provider}-oauth-callback`;
       const { data, error } = await supabase.functions.invoke(callbackFn, {
         body: { code, redirectUri, state: stateParam },
@@ -198,12 +250,20 @@ const DashboardIntegrations = () => {
       if (data?.error) throw new Error(data.error);
 
       const connectedName = data.googleEmail || data.connectedEmail || provider;
-      toast({
-        title: `${provider.charAt(0).toUpperCase() + provider.slice(1)} Connected!`,
-        description: `Successfully connected ${connectedName}`,
-      });
+      const openedFromPopup = Boolean(window.opener && window.opener !== window);
 
-      // Mark onboarding step complete
+      if (openedFromPopup) {
+        localStorage.setItem(
+          OAUTH_RESULT_STORAGE_KEY,
+          JSON.stringify({ provider, connectedName, timestamp: Date.now() })
+        );
+      } else {
+        toast({
+          title: `${provider.charAt(0).toUpperCase() + provider.slice(1)} Connected!`,
+          description: `Successfully connected ${connectedName}`,
+        });
+      }
+
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (authUser) {
         supabase.from("onboarding_progress")
@@ -213,7 +273,11 @@ const DashboardIntegrations = () => {
       }
 
       window.history.replaceState({}, '', '/integrations');
-      loadIntegrations();
+      await loadIntegrations();
+
+      if (openedFromPopup) {
+        window.close();
+      }
     } catch (error: any) {
       console.error('OAuth callback error:', error);
       toast({
@@ -238,11 +302,15 @@ const DashboardIntegrations = () => {
       });
 
   const handleConnect = async (integration: Integration) => {
-    // Handle OAuth providers
     if (integration.oauthProvider) {
+      const oauthPopup = isEmbeddedPreview()
+        ? window.open("", "_blank", "popup=yes,width=640,height=800")
+        : null;
+
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
+          if (oauthPopup && !oauthPopup.closed) oauthPopup.close();
           toast({
             title: "Authentication Required",
             description: `Please sign in to connect ${integration.name}`,
@@ -253,26 +321,18 @@ const DashboardIntegrations = () => {
 
         const redirectUri = `${window.location.origin}/integrations`;
         const initFn = `${integration.id}-oauth-init`;
-
-        console.log(`[OAuth] Calling ${initFn} with redirectUri:`, redirectUri);
         const { data, error } = await supabase.functions.invoke(initFn, {
           body: { redirectUri },
         });
 
-        console.log(`[OAuth] Response from ${initFn}:`, { data, error, typeOfData: typeof data });
-
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
+        if (!data?.authUrl) throw new Error('No authorization URL returned');
 
-        if (!data?.authUrl) {
-          console.error(`[OAuth] No authUrl in response:`, data);
-          throw new Error('No authorization URL returned');
-        }
-
-        console.log(`[OAuth] Redirecting to:`, data.authUrl);
-        window.location.href = data.authUrl;
+        openOAuthTarget(data.authUrl, oauthPopup);
         return;
       } catch (error: any) {
+        if (oauthPopup && !oauthPopup.closed) oauthPopup.close();
         console.error(`${integration.name} OAuth init error:`, error);
         toast({
           title: "Connection Error",
@@ -283,7 +343,6 @@ const DashboardIntegrations = () => {
       }
     }
 
-    // For webhook-based integrations (Zapier), show the dialog
     if (integration.fields && integration.fields.length > 0) {
       setSelectedIntegration(integration);
       setFormData({});
