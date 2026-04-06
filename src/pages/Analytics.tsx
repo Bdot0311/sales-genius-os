@@ -8,6 +8,8 @@ import { TrendingUp, Users, DollarSign, Target, Loader2, Download, FileText, Spa
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
 import { FeatureHighlight } from "@/components/dashboard/FeatureHighlight";
+import { FreeTierOverlay } from "@/components/dashboard/FreeTierOverlay";
+import { SAMPLE_STATS, SAMPLE_ANALYTICS } from "@/lib/sample-data";
 
 const Analytics = () => {
   const { 
@@ -102,7 +104,9 @@ const Analytics = () => {
     };
   }, []);
 
-  if (planLoading || loading) {
+  const isFreeTier = currentPlan === 'free';
+
+  if (planLoading || (!isFreeTier && loading)) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
@@ -112,33 +116,38 @@ const Analytics = () => {
     );
   }
 
+  // Use sample data for free tier
+  const displayStats = isFreeTier ? SAMPLE_STATS : stats;
+  const displayDealsByStage = isFreeTier ? SAMPLE_ANALYTICS.dealsByStage : dealsByStage;
+  const displayLeadsOverTime = isFreeTier ? SAMPLE_ANALYTICS.leadsOverTime : leadsOverTime;
+
   const COLORS = ["hsl(var(--primary))", "hsl(var(--secondary))", "hsl(var(--accent))", "#8884d8", "#82ca9d"];
 
   const statCards = [
     {
       title: "Total Leads",
-      value: stats.totalLeads,
+      value: displayStats.totalLeads,
       icon: Users,
       color: "text-blue-500",
       bgColor: "bg-blue-500/10",
     },
     {
       title: "Active Deals",
-      value: stats.totalDeals,
+      value: displayStats.totalDeals,
       icon: Target,
       color: "text-purple-500",
       bgColor: "bg-purple-500/10",
     },
     {
       title: "Pipeline Value",
-      value: `$${stats.totalValue.toLocaleString()}`,
+      value: `$${displayStats.totalValue.toLocaleString()}`,
       icon: DollarSign,
       color: "text-green-500",
       bgColor: "bg-green-500/10",
     },
     {
       title: "Avg Deal Size",
-      value: `$${Math.round(stats.avgDealSize).toLocaleString()}`,
+      value: `$${Math.round(displayStats.avgDealSize).toLocaleString()}`,
       icon: TrendingUp,
       color: "text-orange-500",
       bgColor: "bg-orange-500/10",
@@ -218,6 +227,56 @@ const Analytics = () => {
         currentPlan={currentPlan}
       />
       
+      {isFreeTier ? (
+        <FreeTierOverlay
+          feature="Analytics Dashboard"
+          description="You're viewing sample analytics. Upgrade to track your real sales performance and metrics."
+        >
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {statCards.map((stat) => (
+                <Card key={stat.title} className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">{stat.title}</p>
+                      <p className="text-3xl font-bold">{stat.value}</p>
+                    </div>
+                    <div className={`p-3 rounded-lg ${stat.bgColor}`}>
+                      <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="p-6">
+                <h2 className="text-xl font-semibold mb-4">Deals by Stage</h2>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={displayDealsByStage}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="stage" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="count" fill="hsl(var(--primary))" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </Card>
+              <Card className="p-6">
+                <h2 className="text-xl font-semibold mb-4">Leads Over Time</h2>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={displayLeadsOverTime}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="leads" stroke="hsl(var(--primary))" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </Card>
+            </div>
+          </div>
+        </FreeTierOverlay>
+      ) : (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -362,6 +421,7 @@ const Analytics = () => {
           </Card>
         )}
       </div>
+      )}
     </DashboardLayout>
   );
 };

@@ -4,14 +4,19 @@ import { AddLeadDialog } from "@/components/dashboard/AddLeadDialog";
 import { OnboardingChecklist } from "@/components/dashboard/OnboardingChecklist";
 import { DashboardTour } from "@/components/dashboard/DashboardTour";
 import { ProspectUsageMeter } from "@/components/dashboard/ProspectUsageMeter";
+import { FreeTierOverlay } from "@/components/dashboard/FreeTierOverlay";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, Users, DollarSign, Calendar, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { usePlanFeatures } from "@/hooks/use-plan-features";
+import { SAMPLE_STATS } from "@/lib/sample-data";
 
 const Dashboard = () => {
   const { toast } = useToast();
+  const { currentPlan, loading: planLoading } = usePlanFeatures();
+  const isFreeTier = currentPlan === 'free';
   const [showChecklist, setShowChecklist] = useState(true);
   const [showTour, setShowTour] = useState(false);
   const [stats, setStats] = useState({
@@ -96,31 +101,33 @@ const Dashboard = () => {
     }
   };
 
+  const displayStats = isFreeTier ? SAMPLE_STATS : stats;
+
   const statCards = [
     {
       title: "Total Leads",
-      value: stats.totalLeads,
+      value: displayStats.totalLeads,
       icon: Users,
       color: "text-blue-500",
       bgColor: "bg-blue-500/10",
     },
     {
       title: "Active Deals",
-      value: stats.totalDeals,
+      value: displayStats.totalDeals,
       icon: TrendingUp,
       color: "text-purple-500",
       bgColor: "bg-purple-500/10",
     },
     {
       title: "Pipeline Value",
-      value: `$${stats.totalValue.toLocaleString()}`,
+      value: `$${displayStats.totalValue.toLocaleString()}`,
       icon: DollarSign,
       color: "text-green-500",
       bgColor: "bg-green-500/10",
     },
     {
       title: "Meetings This Week",
-      value: stats.meetingsThisWeek,
+      value: displayStats.meetingsThisWeek,
       icon: Calendar,
       color: "text-orange-500",
       bgColor: "bg-orange-500/10",
@@ -153,9 +160,59 @@ const Dashboard = () => {
         </div>
 
         {/* Prospect Usage Meter */}
-        <ProspectUsageMeter />
+        {!isFreeTier && <ProspectUsageMeter />}
 
-        {/* Stats Grid */}
+        {/* Stats Grid — sample data for free tier */}
+        {isFreeTier ? (
+          <FreeTierOverlay
+            feature="Dashboard Analytics"
+            description="You're exploring with sample data. Upgrade to track your real leads, deals, pipeline value, and meetings."
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {statCards.map((stat) => (
+                <Card key={stat.title} className="p-6 bg-card border-border">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">{stat.title}</p>
+                      <p className="text-3xl font-bold">{stat.value}</p>
+                    </div>
+                    <div className={`p-3 rounded-lg ${stat.bgColor}`}>
+                      <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+
+            <Card className="p-6 mt-6">
+              <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Button variant="glass" className="justify-start h-auto py-6">
+                  <Users className="w-5 h-5 mr-3" />
+                  <div className="text-left">
+                    <div className="font-semibold">Outreach Studio</div>
+                    <div className="text-xs text-muted-foreground">Generate AI-powered emails</div>
+                  </div>
+                </Button>
+                <Button variant="glass" className="justify-start h-auto py-6">
+                  <TrendingUp className="w-5 h-5 mr-3" />
+                  <div className="text-left">
+                    <div className="font-semibold">View Pipeline</div>
+                    <div className="text-xs text-muted-foreground">Manage your deals</div>
+                  </div>
+                </Button>
+                <Button variant="glass" className="justify-start h-auto py-6">
+                  <Calendar className="w-5 h-5 mr-3" />
+                  <div className="text-left">
+                    <div className="font-semibold">Schedule Meeting</div>
+                    <div className="text-xs text-muted-foreground">Book a call with a lead</div>
+                  </div>
+                </Button>
+              </div>
+            </Card>
+          </FreeTierOverlay>
+        ) : (
+        <>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {statCards.map((stat) => (
             <Card
@@ -224,6 +281,8 @@ const Dashboard = () => {
             </div>
           </div>
         </Card>
+        </>
+        )}
       </div>
     </DashboardLayout>
   );

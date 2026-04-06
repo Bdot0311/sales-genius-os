@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { PipelineColumn } from "@/components/dashboard/PipelineColumn";
 import { AddDealDialog } from "@/components/dashboard/AddDealDialog";
+import { FreeTierOverlay } from "@/components/dashboard/FreeTierOverlay";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Plus, Sparkles, Settings, TrendingUp, Loader2 } from "lucide-react";
@@ -10,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
 import { FeatureHighlight } from "@/components/dashboard/FeatureHighlight";
+import { SAMPLE_DEALS } from "@/lib/sample-data";
 
 interface Deal {
   id: string;
@@ -148,6 +150,13 @@ const Pipeline = () => {
     );
   }
 
+  const isFreeTier = currentPlan === 'free';
+
+  // For free tier, use sample deals
+  const displayDeals = isFreeTier ? SAMPLE_DEALS as any as Deal[] : deals;
+  const getDisplayDealsByStage = (stageKey: string) => displayDeals.filter((deal) => deal.stage === stageKey);
+  const getDisplayTotalValue = (stageKey: string) => getDisplayDealsByStage(stageKey).reduce((sum, deal) => sum + (Number(deal.value) || 0), 0);
+
   return (
     <DashboardLayout>
       <FeatureGateModal 
@@ -210,38 +219,63 @@ const Pipeline = () => {
         />
 
         {/* Pipeline */}
-        <div className="overflow-x-auto pb-6">
-          <div className="flex gap-6 min-w-max">
-            {stages.map((stage) => (
-              <PipelineColumn
-                key={stage.key}
-                title={stage.name}
-                deals={getDealsByStage(stage.key)}
-                totalValue={getTotalValue(stage.key)}
-                color={stage.color}
-                onMoveDeal={handleMoveDealt}
-                stages={stages}
-              />
-            ))}
-          </div>
-        </div>
+        {isFreeTier ? (
+          <FreeTierOverlay
+            feature="Deal Pipeline"
+            description="You're viewing sample pipeline data. Upgrade to create deals, track stages, and manage your sales funnel."
+          >
+            <div className="overflow-x-auto pb-6">
+              <div className="flex gap-6 min-w-max">
+                {stages.map((stage) => (
+                  <PipelineColumn
+                    key={stage.key}
+                    title={stage.name}
+                    deals={getDisplayDealsByStage(stage.key)}
+                    totalValue={getDisplayTotalValue(stage.key)}
+                    color={stage.color}
+                    onMoveDeal={() => {}}
+                    stages={stages}
+                  />
+                ))}
+              </div>
+            </div>
+          </FreeTierOverlay>
+        ) : (
+          <>
+            <div className="overflow-x-auto pb-6">
+              <div className="flex gap-6 min-w-max">
+                {stages.map((stage) => (
+                  <PipelineColumn
+                    key={stage.key}
+                    title={stage.name}
+                    deals={getDealsByStage(stage.key)}
+                    totalValue={getTotalValue(stage.key)}
+                    color={stage.color}
+                    onMoveDeal={handleMoveDealt}
+                    stages={stages}
+                  />
+                ))}
+              </div>
+            </div>
 
-        {loading && (
-          <div className="text-center py-12 text-muted-foreground">
-            Loading deals...
-          </div>
-        )}
+            {loading && (
+              <div className="text-center py-12 text-muted-foreground">
+                Loading deals...
+              </div>
+            )}
 
-        {!loading && deals.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground mb-4">
-              No deals yet. Create your first deal to get started.
-            </p>
-            <Button variant="hero" onClick={() => setAddDialogOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Create First Deal
-            </Button>
-          </div>
+            {!loading && deals.length === 0 && (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground mb-4">
+                  No deals yet. Create your first deal to get started.
+                </p>
+                <Button variant="hero" onClick={() => setAddDialogOpen(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create First Deal
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </DashboardLayout>
