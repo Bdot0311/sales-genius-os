@@ -125,7 +125,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'SalesOS <notifications@updates.salesos.io>',
+        from: 'SalesOS <support@bdotindustries.com>',
         to: [NOTIFICATION_EMAIL],
         subject: `🎉 New Signup: ${fullName || userEmail}`,
         html: emailHtml,
