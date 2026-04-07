@@ -15,8 +15,7 @@ serve(async (req) => {
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
     if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY not configured');
 
-    const NOTIFICATION_EMAIL = Deno.env.get('NOTIFICATION_EMAIL');
-    if (!NOTIFICATION_EMAIL) throw new Error('NOTIFICATION_EMAIL not configured');
+    const NOTIFICATION_EMAIL = Deno.env.get('NOTIFICATION_EMAIL') || 'sales@alephwave.io';
 
     const { record } = await req.json();
     
