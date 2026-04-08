@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
-import { Resend } from "https://esm.sh/resend@2.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,8 +25,6 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-
     const { apiKeyId, userId, keyName, usage, limit, limitType } = await req.json();
 
     if (!apiKeyId || !userId || !keyName || usage === undefined || !limit || !limitType) {
@@ -36,16 +33,13 @@ serve(async (req) => {
 
     logStep("Received alert request", { apiKeyId, userId, keyName, limitType });
 
-    // Get user email
     const { data: profile } = await supabaseClient
       .from("profiles")
       .select("email, full_name")
       .eq("id", userId)
       .single();
 
-    if (!profile) {
-      throw new Error("User profile not found");
-    }
+    if (!profile) throw new Error("User profile not found");
 
     const percentage = Math.round((usage / limit) * 100);
     const isExceeded = usage >= limit;
@@ -53,109 +47,68 @@ serve(async (req) => {
       ? `⚠️ API Rate Limit Exceeded - ${keyName}`
       : `⚡ API Rate Limit Warning - ${keyName}`;
 
-    const emailHtml = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: ${isExceeded ? '#EF4444' : '#F59E0B'}; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
-            .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
-            .alert-box { background: white; padding: 20px; border-left: 4px solid ${isExceeded ? '#EF4444' : '#F59E0B'}; margin: 20px 0; }
-            .stats { display: flex; justify-content: space-between; margin: 20px 0; }
-            .stat { text-align: center; }
-            .stat-value { font-size: 24px; font-weight: bold; color: ${isExceeded ? '#EF4444' : '#F59E0B'}; }
-            .stat-label { font-size: 12px; color: #6b7280; text-transform: uppercase; }
-            .button { background: #8B5CF6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin-top: 20px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>${isExceeded ? '⚠️ Rate Limit Exceeded' : '⚡ Rate Limit Warning'}</h1>
-            </div>
-            <div class="content">
-              <p>Hello ${profile.full_name || 'there'},</p>
-              
-              <div class="alert-box">
-                <h2>API Key: ${keyName}</h2>
-                <p>${isExceeded 
-                  ? `Your API key has exceeded its ${limitType} rate limit. Requests are now being rejected.`
-                  : `Your API key is approaching its ${limitType} rate limit at ${percentage}% usage.`
-                }</p>
-              </div>
-
-              <div class="stats">
-                <div class="stat">
-                  <div class="stat-value">${usage.toLocaleString()}</div>
-                  <div class="stat-label">Current Usage</div>
-                </div>
-                <div class="stat">
-                  <div class="stat-value">${limit.toLocaleString()}</div>
-                  <div class="stat-label">Limit</div>
-                </div>
-                <div class="stat">
-                  <div class="stat-value">${percentage}%</div>
-                  <div class="stat-label">Percentage</div>
-                </div>
-              </div>
-
-              <h3>Recommended Actions:</h3>
-              <ul>
-                ${isExceeded 
-                  ? `
-                    <li>Review your API usage patterns</li>
-                    <li>Consider upgrading your rate limits in settings</li>
-                    <li>Implement request caching to reduce API calls</li>
-                    <li>Contact support if you need immediate assistance</li>
-                  `
-                  : `
-                    <li>Monitor your API usage closely</li>
-                    <li>Optimize your integration to reduce unnecessary calls</li>
-                    <li>Consider upgrading your rate limits if needed</li>
-                  `
-                }
-              </ul>
-
-              <a href="${Deno.env.get("SUPABASE_URL")?.replace('https://', 'https://app.')}/settings" class="button">
-                View API Settings
-              </a>
-
-              <p style="margin-top: 30px; font-size: 12px; color: #6b7280;">
-                This is an automated alert from your SalesOS API monitoring system.
-              </p>
-            </div>
+    const emailHtml = `<!DOCTYPE html><html><head><style>
+      body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+      .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+      .header { background: ${isExceeded ? '#EF4444' : '#F59E0B'}; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+      .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
+      .alert-box { background: white; padding: 20px; border-left: 4px solid ${isExceeded ? '#EF4444' : '#F59E0B'}; margin: 20px 0; }
+      .stat-value { font-size: 24px; font-weight: bold; color: ${isExceeded ? '#EF4444' : '#F59E0B'}; }
+    </style></head><body>
+      <div class="container">
+        <div class="header"><h1>${isExceeded ? '⚠️ Rate Limit Exceeded' : '⚡ Rate Limit Warning'}</h1></div>
+        <div class="content">
+          <p>Hello ${profile.full_name || 'there'},</p>
+          <div class="alert-box">
+            <h2>API Key: ${keyName}</h2>
+            <p>${isExceeded ? `Your API key has exceeded its ${limitType} rate limit.` : `Your API key is at ${percentage}% of its ${limitType} rate limit.`}</p>
           </div>
-        </body>
-      </html>
-    `;
+          <p>Usage: <strong>${usage.toLocaleString()}</strong> / ${limit.toLocaleString()} (${percentage}%)</p>
+          <p style="margin-top: 30px; font-size: 12px; color: #6b7280;">Automated alert from SalesOS API monitoring.</p>
+        </div>
+      </div>
+    </body></html>`;
 
-    const emailResponse = await resend.emails.send({
-      from: "SalesOS <onboarding@resend.dev>",
-      to: [profile.email],
-      subject: subject,
-      html: emailHtml,
+    const messageId = crypto.randomUUID();
+
+    const { error: enqueueError } = await supabaseClient.rpc('enqueue_email', {
+      queue_name: 'transactional_emails',
+      payload: {
+        message_id: messageId,
+        to: profile.email,
+        from: `SalesOS <noreply@notify.bdotindustries.com>`,
+        sender_domain: 'notify.bdotindustries.com',
+        subject,
+        html: emailHtml,
+        text: `Rate limit ${isExceeded ? 'exceeded' : 'warning'} for API key ${keyName}: ${usage}/${limit} (${percentage}%)`,
+        purpose: 'transactional',
+        label: 'rate-limit-alert',
+        idempotency_key: `rate-limit-${apiKeyId}-${Date.now()}`,
+        queued_at: new Date().toISOString(),
+      },
     });
 
-    logStep("Email sent successfully");
+    if (enqueueError) throw enqueueError;
 
-    return new Response(
-      JSON.stringify({ success: true }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      }
-    );
+    await supabaseClient.from('email_send_log').insert({
+      message_id: messageId,
+      template_name: 'rate-limit-alert',
+      recipient_email: profile.email,
+      status: 'pending',
+    });
+
+    logStep("Email enqueued successfully");
+
+    return new Response(JSON.stringify({ success: true }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200,
+    });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR", { message: errorMessage });
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      }
-    );
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+    });
   }
 });
