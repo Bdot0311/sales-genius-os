@@ -96,13 +96,15 @@ export default defineConfig(({ mode }) => ({
           'vendor-react': ['react', 'react-dom'],
           'vendor-router': ['react-router-dom'],
           'vendor-query': ['@tanstack/react-query'],
-          'vendor-ui': [
-            '@radix-ui/react-tooltip',
+          // Split Radix UI into smaller chunks so only what's needed loads
+          'vendor-ui-core': [
             '@radix-ui/react-dialog',
             '@radix-ui/react-popover',
-            '@radix-ui/react-tabs',
+          ],
+          'vendor-ui-nav': [
             '@radix-ui/react-dropdown-menu',
             '@radix-ui/react-select',
+            '@radix-ui/react-tabs',
           ],
         },
       },
