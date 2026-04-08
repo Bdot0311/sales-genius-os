@@ -309,7 +309,7 @@ export const HeroSection = () => {
 
             {/* Subheadline */}
             <p
-              className={`hero-description text-base sm:text-lg text-muted-foreground max-w-xl mx-auto lg:mx-0 mb-8 leading-relaxed transition-all duration-700 delay-200 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+              className="hero-description text-base sm:text-lg text-muted-foreground max-w-xl mx-auto lg:mx-0 mb-8 leading-relaxed"
             >
               Tell SalesOS who you want to reach. It finds best-fit prospects, enriches them with verified contact and company data, and helps you launch personalized outreach in minutes.
             </p>
