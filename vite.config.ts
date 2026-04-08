@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "prompt",
-      injectRegister: 'script-defer',
+      injectRegister: null,
       devOptions: {
         enabled: false,
       },
