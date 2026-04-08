@@ -29,9 +29,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Description:", description);
     console.log("Use Case:", useCase);
 
-    // For now, just log the request
-    // You'll need to configure Resend API key and uncomment email sending code
-    // Instructions: https://resend.com/api-keys
+    // Request logged successfully - email notifications handled via Lovable email queue
     
     return new Response(
       JSON.stringify({ 
