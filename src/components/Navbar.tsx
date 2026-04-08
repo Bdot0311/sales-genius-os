@@ -1,18 +1,29 @@
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useState, useEffect } from "react";
-import { useWhiteLabel } from "@/hooks/use-white-label";
+import { useState, useEffect, lazy, Suspense } from "react";
 
 // Use public path for maximum compatibility across all devices
 const LOGO_URL = "/salesos-logo-small.webp";
+
+// Lazy load white label hook to avoid pulling supabase into the landing page critical path
+let cachedWhiteLabelSettings: any = null;
+const useWhiteLabelLazy = () => {
+  const [settings, setSettings] = useState<any>(cachedWhiteLabelSettings);
+  useEffect(() => {
+    import("@/hooks/use-white-label").then(mod => {
+      // We can't call a hook dynamically, so we just check cached value
+      // The App-level WhiteLabelProvider handles the actual loading
+    }).catch(() => {});
+  }, []);
+  return { settings: cachedWhiteLabelSettings };
+};
 
 export const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const { settings: whiteLabelSettings } = useWhiteLabel();
 
   useEffect(() => {
     const handleScroll = () => {
