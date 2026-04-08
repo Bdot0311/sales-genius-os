@@ -1,11 +1,7 @@
-import { Suspense, lazy } from "react";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { Suspense, lazy, useState, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import Index from "./pages/Index";
-import { useWhiteLabel } from "./hooks/use-white-label";
 
 // Lazy load non-critical pages
 const Auth = lazy(() => import("./pages/Auth"));
@@ -53,71 +49,108 @@ const PageLoader = () => (
   </div>
 );
 
-// Component that applies white label settings - wrapped in error boundary for safety
-const WhiteLabelProvider = ({ children }: { children: React.ReactNode }) => {
-  // Only load white label settings, don't block rendering
-  try {
-    useWhiteLabel();
-  } catch (e) {
-    // Silently catch errors during hydration to prevent app crash
-    console.error("WhiteLabel initialization error:", e);
+/**
+ * Deferred UI shell — loads TooltipProvider, Toasters, and WhiteLabelProvider
+ * AFTER the first paint to reduce Total Blocking Time on the landing page.
+ */
+const DeferredUIShell = ({ children }: { children: React.ReactNode }) => {
+  const [ready, setReady] = useState(false);
+  const [Shell, setShell] = useState<React.ComponentType<{ children: React.ReactNode }> | null>(null);
+
+  useEffect(() => {
+    // Use requestIdleCallback (or setTimeout fallback) to defer heavy imports
+    const load = () => {
+      Promise.all([
+        import("@/components/ui/tooltip"),
+        import("@/components/ui/toaster"),
+        import("@/components/ui/sonner"),
+        import("@/hooks/use-white-label"),
+      ]).then(([tooltipMod, toasterMod, sonnerMod, whiteLabelMod]) => {
+        const TooltipProvider = tooltipMod.TooltipProvider;
+        const Toaster = toasterMod.Toaster;
+        const SonnerToaster = sonnerMod.Toaster;
+        const useWhiteLabel = whiteLabelMod.useWhiteLabel;
+
+        // Create a combined shell component
+        const CombinedShell = ({ children }: { children: React.ReactNode }) => {
+          try { useWhiteLabel(); } catch (e) { console.error("WhiteLabel init error:", e); }
+          return (
+            <TooltipProvider>
+              <Toaster />
+              <SonnerToaster />
+              {children}
+            </TooltipProvider>
+          );
+        };
+
+        setShell(() => CombinedShell);
+        setReady(true);
+      });
+    };
+
+    if ('requestIdleCallback' in window) {
+      (window as any).requestIdleCallback(load, { timeout: 2000 });
+    } else {
+      setTimeout(load, 100);
+    }
+  }, []);
+
+  if (!ready || !Shell) {
+    return <>{children}</>;
   }
-  return <>{children}</>;
+
+  return <Shell>{children}</Shell>;
 };
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <WhiteLabelProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/pricing" element={<PricingPage />} />
-              <Route path="/demo" element={<DemoPage />} />
-              <Route path="/api-docs" element={<ApiDocs />} />
-              <Route path="/api-status" element={<ApiStatus />} />
-              <Route path="/request-integration" element={<RequestIntegration />} />
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="/terms" element={<Terms />} />
-              <Route path="/security" element={<Security />} />
-              <Route path="/confirmation" element={<Confirmation />} />
-              <Route path="/help" element={<HelpCenter />} />
-              <Route path="/help/category/:category" element={<HelpCenter />} />
-              <Route path="/help/article/:slug" element={<HelpCenter />} />
-              <Route path="/install" element={<Install />} />
-              <Route path="/checkout" element={<Checkout />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/dashboard/leads" element={<Leads />} />
-              <Route path="/dashboard/leads/saved" element={<SavedLeads />} />
-              <Route path="/dashboard/coach" element={<Coach />} />
-              <Route path="/dashboard/coach/live" element={<LiveCoaching />} />
-              <Route path="/dashboard/coach/playbooks" element={<Playbooks />} />
-              <Route path="/dashboard/pipeline" element={<Pipeline />} />
-              <Route path="/dashboard/outreach" element={<Outreach />} />
-              <Route path="/dashboard/calendar" element={<Calendar />} />
-              <Route path="/dashboard/analytics" element={<Analytics />} />
-              <Route path="/dashboard/automations" element={<Automations />} />
-              <Route path="/dashboard/sequences/:id" element={<SequenceDetail />} />
-              <Route path="/dashboard/sequences" element={<Sequences />} />
-              <Route path="/dashboard/message-blocks" element={<MessageBlocks />} />
-              <Route path="/dashboard/icp" element={<ICP />} />
-              <Route path="/dashboard/inbox" element={<Inbox />} />
-              <Route path="/dashboard/deliverability" element={<Deliverability />} />
-              <Route path="/integrations" element={<DashboardIntegrations />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/admin/*" element={<Admin />} />
-              <Route path="/unsubscribe" element={<Unsubscribe />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
-      </WhiteLabelProvider>
-    </TooltipProvider>
+    <DeferredUIShell>
+      <BrowserRouter>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/demo" element={<DemoPage />} />
+            <Route path="/api-docs" element={<ApiDocs />} />
+            <Route path="/api-status" element={<ApiStatus />} />
+            <Route path="/request-integration" element={<RequestIntegration />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/security" element={<Security />} />
+            <Route path="/confirmation" element={<Confirmation />} />
+            <Route path="/help" element={<HelpCenter />} />
+            <Route path="/help/category/:category" element={<HelpCenter />} />
+            <Route path="/help/article/:slug" element={<HelpCenter />} />
+            <Route path="/install" element={<Install />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/dashboard/leads" element={<Leads />} />
+            <Route path="/dashboard/leads/saved" element={<SavedLeads />} />
+            <Route path="/dashboard/coach" element={<Coach />} />
+            <Route path="/dashboard/coach/live" element={<LiveCoaching />} />
+            <Route path="/dashboard/coach/playbooks" element={<Playbooks />} />
+            <Route path="/dashboard/pipeline" element={<Pipeline />} />
+            <Route path="/dashboard/outreach" element={<Outreach />} />
+            <Route path="/dashboard/calendar" element={<Calendar />} />
+            <Route path="/dashboard/analytics" element={<Analytics />} />
+            <Route path="/dashboard/automations" element={<Automations />} />
+            <Route path="/dashboard/sequences/:id" element={<SequenceDetail />} />
+            <Route path="/dashboard/sequences" element={<Sequences />} />
+            <Route path="/dashboard/message-blocks" element={<MessageBlocks />} />
+            <Route path="/dashboard/icp" element={<ICP />} />
+            <Route path="/dashboard/inbox" element={<Inbox />} />
+            <Route path="/dashboard/deliverability" element={<Deliverability />} />
+            <Route path="/integrations" element={<DashboardIntegrations />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/admin/*" element={<Admin />} />
+            <Route path="/unsubscribe" element={<Unsubscribe />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
+      </BrowserRouter>
+    </DeferredUIShell>
   </QueryClientProvider>
 );
 

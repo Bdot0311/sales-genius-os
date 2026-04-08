@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { useWhiteLabel } from "@/hooks/use-white-label";
 
 // Use public path for maximum compatibility across all devices
 const LOGO_URL = "/salesos-logo-small.webp";
@@ -12,7 +11,15 @@ export const Navbar = () => {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const { settings: whiteLabelSettings } = useWhiteLabel();
+  const [whiteLabelSettings, setWhiteLabelSettings] = useState<any>(null);
+
+  // Defer white-label settings load to avoid blocking initial render
+  useEffect(() => {
+    const id = setTimeout(() => {
+      import("@/hooks/use-white-label").catch(() => {});
+    }, 3000);
+    return () => clearTimeout(id);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
