@@ -241,157 +241,136 @@ serve(async (req) => {
         }
       }
 
-      // Send welcome email with credentials
-      const resendApiKey = Deno.env.get("RESEND_API_KEY");
-      if (resendApiKey) {
-        const resend = new Resend(resendApiKey);
-        const appUrl = "https://salesos.alephwavex.io";
-        const logoUrl = "https://ghgfjnepvxvxrncmskys.supabase.co/storage/v1/object/public/email-assets/salesos-logo.webp";
-        
-        const customerName = session.customer_details?.name || "there";
-        const planName = planDetails.plan.charAt(0).toUpperCase() + planDetails.plan.slice(1);
+      // Send welcome email with credentials via Lovable email queue
+      const appUrl = "https://salesos.alephwavex.io";
+      const logoUrl = "https://ghgfjnepvxvxrncmskys.supabase.co/storage/v1/object/public/email-assets/salesos-logo.webp";
+      
+      const customerName = session.customer_details?.name || "there";
+      const planName = planDetails.plan.charAt(0).toUpperCase() + planDetails.plan.slice(1);
 
-        const { error: emailError } = await resend.emails.send({
-          from: "SalesOS <support@bdotindustries.com>",
-          to: [customerEmail],
+      const welcomeHtml = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Welcome to SalesOS</title>
+        </head>
+        <body style="margin: 0; padding: 0; background-color: #0a0a0a;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#0a0a0a" style="background-color: #0a0a0a;">
+            <tr>
+              <td align="center" bgcolor="#0a0a0a" style="background-color: #0a0a0a; padding: 40px 20px;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="540" bgcolor="#141414" style="max-width: 540px; background-color: #141414; border-radius: 16px; border: 1px solid #2a2a2a;">
+                  <tr>
+                    <td bgcolor="#9b6dff" align="center" style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); padding: 32px 40px; border-radius: 16px 16px 0 0;">
+                      <img src="${logoUrl}" alt="SalesOS" width="56" height="56" style="display: block; border-radius: 12px; margin-bottom: 16px;" />
+                      <h1 style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">Welcome to SalesOS ${planName}!</h1>
+                      <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: rgba(255,255,255,0.9); margin: 12px 0 0 0; font-size: 16px;">Your AI-powered sales operating system</p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td bgcolor="#141414" style="background-color: #141414; padding: 40px 36px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                      <h2 style="color: #ffffff; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Hey ${customerName}! 👋</h2>
+                      <p style="color: #a1a1aa; line-height: 1.7; margin: 0 0 28px 0; font-size: 16px;">
+                        You just joined thousands of sales professionals using SalesOS to find better leads, close more deals, and save hours every week.
+                      </p>
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#1a1a1a" style="background-color: #1a1a1a; border-radius: 12px; border: 1px solid #2a2a2a; margin-bottom: 20px;">
+                        <tr>
+                          <td bgcolor="#1a1a1a" style="background-color: #1a1a1a; padding: 20px;">
+                            <h3 style="color: #9b6dff; margin: 0 0 12px 0; font-size: 16px; font-weight: 600;">📊 Your ${planName} Plan Includes:</h3>
+                            <p style="color: #ffffff; margin: 0; font-size: 15px;">
+                              • <strong>${planDetails.credits.toLocaleString()}</strong> search credits/month<br>
+                              • Up to <strong>${planDetails.dailyLimit}</strong> searches/day<br>
+                              • Lead Intelligence Engine<br>
+                              • AI-powered enrichment & scoring
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#1a1a1a" style="background-color: #1a1a1a; border-radius: 12px; border: 1px solid #2a2a2a; border-left: 4px solid #9b6dff; margin-bottom: 28px;">
+                        <tr>
+                          <td bgcolor="#1a1a1a" style="background-color: #1a1a1a; padding: 24px;">
+                            <h3 style="color: #9b6dff; margin: 0 0 16px 0; font-size: 16px; font-weight: 600;">🔐 Your Login Credentials</h3>
+                            <p style="color: #a1a1aa; padding: 8px 0; font-size: 15px;">
+                              <strong style="color: #ffffff;">Email:</strong> ${customerEmail}<br>
+                              <strong style="color: #ffffff;">Temporary Password:</strong>
+                              <code style="background: #333333; padding: 6px 12px; border-radius: 6px; color: #9b6dff; font-family: monospace; font-size: 16px;">${tempPassword}</code>
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#1a1a1a" style="background-color: #1a1a1a; border-radius: 10px; border: 1px solid #333333; margin-bottom: 28px;">
+                        <tr>
+                          <td bgcolor="#1a1a1a" style="background-color: #1a1a1a; padding: 16px 20px;">
+                            <p style="color: #fbbf24; font-size: 14px; line-height: 1.6; margin: 0;">
+                              ⚠️ <strong>Security Notice:</strong> Please change your password after your first login for security.
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#141414">
+                        <tr>
+                          <td bgcolor="#141414" align="center" style="background-color: #141414; padding: 8px 0 32px 0;">
+                            <a href="${appUrl}/auth" style="display: inline-block; background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #ffffff; padding: 18px 48px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px;">
+                              Sign In to SalesOS →
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#141414">
+                        <tr>
+                          <td bgcolor="#141414" style="background-color: #141414; padding: 8px 0 16px 0;">
+                            <div style="border-top: 1px solid #2a2a2a;"></div>
+                          </td>
+                        </tr>
+                      </table>
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#141414">
+                        <tr>
+                          <td bgcolor="#141414" align="center" style="background-color: #141414;">
+                            <p style="color: #52525b; font-size: 13px; margin: 0;">
+                              Need help? Contact <a href="mailto:support@bdotindustries.com" style="color: #9b6dff; text-decoration: none;">support@bdotindustries.com</a>
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td bgcolor="#0f0f0f" align="center" style="background-color: #0f0f0f; padding: 24px 36px; border-top: 1px solid #2a2a2a; border-radius: 0 0 16px 16px;">
+                      <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #52525b; font-size: 12px; margin: 0;">
+                        © ${new Date().getFullYear()} BDØT Industries LLC. All rights reserved.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
+      `;
+
+      const { error: emailError } = await supabaseAdmin.rpc('enqueue_email', {
+        queue_name: 'transactional_emails',
+        payload: {
+          message_id: crypto.randomUUID(),
+          to: customerEmail,
+          from: 'SalesOS <noreply@notify.bdotindustries.com>',
+          sender_domain: 'notify.bdotindustries.com',
           subject: `Welcome to SalesOS ${planName} - Your Login Credentials 🔐`,
-          html: `
-            <!DOCTYPE html>
-            <html lang="en">
-            <head>
-              <meta charset="utf-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <meta http-equiv="X-UA-Compatible" content="IE=edge">
-              <meta name="x-apple-disable-message-reformatting">
-              <meta name="color-scheme" content="dark only">
-              <meta name="supported-color-schemes" content="dark only">
-              <title>Welcome to SalesOS</title>
-            </head>
-            <body style="margin: 0; padding: 0; background-color: #0a0a0a;">
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#0a0a0a" style="background-color: #0a0a0a;">
-                <tr>
-                  <td align="center" bgcolor="#0a0a0a" style="background-color: #0a0a0a; padding: 40px 20px;">
-                    <!-- Main Card -->
-                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="540" bgcolor="#141414" style="max-width: 540px; background-color: #141414; border-radius: 16px; border: 1px solid #2a2a2a;">
-                      <!-- Purple Header Banner -->
-                      <tr>
-                        <td bgcolor="#9b6dff" align="center" style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); padding: 32px 40px; border-radius: 16px 16px 0 0;">
-                          <img src="${logoUrl}" alt="SalesOS" width="56" height="56" style="display: block; border-radius: 12px; margin-bottom: 16px;" />
-                          <h1 style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">Welcome to SalesOS ${planName}!</h1>
-                          <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: rgba(255,255,255,0.9); margin: 12px 0 0 0; font-size: 16px;">Your AI-powered sales operating system</p>
-                        </td>
-                      </tr>
-                      <!-- Content Area -->
-                      <tr>
-                        <td bgcolor="#141414" style="background-color: #141414; padding: 40px 36px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-                          
-                          <h2 style="color: #ffffff; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Hey ${customerName}! 👋</h2>
-                          <p style="color: #a1a1aa; line-height: 1.7; margin: 0 0 28px 0; font-size: 16px;">
-                            You just joined thousands of sales professionals using SalesOS to find better leads, close more deals, and save hours every week.
-                          </p>
-                          
-                          <!-- Plan Details Box -->
-                          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#1a1a1a" style="background-color: #1a1a1a; border-radius: 12px; border: 1px solid #2a2a2a; margin-bottom: 20px;">
-                            <tr>
-                              <td bgcolor="#1a1a1a" style="background-color: #1a1a1a; padding: 20px;">
-                                <h3 style="color: #9b6dff; margin: 0 0 12px 0; font-size: 16px; font-weight: 600;">📊 Your ${planName} Plan Includes:</h3>
-                                <p style="color: #ffffff; margin: 0; font-size: 15px;">
-                                  • <strong>${planDetails.credits.toLocaleString()}</strong> search credits/month<br>
-                                  • Up to <strong>${planDetails.dailyLimit}</strong> searches/day<br>
-                                  • Lead Intelligence Engine<br>
-                                  • AI-powered enrichment & scoring
-                                </p>
-                              </td>
-                            </tr>
-                          </table>
-                          
-                          <!-- Credentials Box -->
-                          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#1a1a1a" style="background-color: #1a1a1a; border-radius: 12px; border: 1px solid #2a2a2a; border-left: 4px solid #9b6dff; margin-bottom: 28px;">
-                            <tr>
-                              <td bgcolor="#1a1a1a" style="background-color: #1a1a1a; padding: 24px;">
-                                <h3 style="color: #9b6dff; margin: 0 0 16px 0; font-size: 16px; font-weight: 600;">🔐 Your Login Credentials</h3>
-                                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#1a1a1a" style="background-color: #1a1a1a;">
-                                  <tr>
-                                    <td bgcolor="#1a1a1a" style="background-color: #1a1a1a; color: #a1a1aa; padding: 8px 0; font-size: 15px;">
-                                      <strong style="color: #ffffff;">Email:</strong><br>
-                                      <span style="color: #ffffff;">${customerEmail}</span>
-                                    </td>
-                                  </tr>
-                                  <tr>
-                                    <td bgcolor="#1a1a1a" style="background-color: #1a1a1a; color: #a1a1aa; padding: 8px 0; font-size: 15px;">
-                                      <strong style="color: #ffffff;">Temporary Password:</strong><br>
-                                      <code style="background: #333333; padding: 6px 12px; border-radius: 6px; color: #9b6dff; font-family: monospace; font-size: 16px; display: inline-block; margin-top: 4px;">${tempPassword}</code>
-                                    </td>
-                                  </tr>
-                                </table>
-                              </td>
-                            </tr>
-                          </table>
-                          
-                          <!-- Security Notice -->
-                          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#1a1a1a" style="background-color: #1a1a1a; border-radius: 10px; border: 1px solid #333333; margin-bottom: 28px;">
-                            <tr>
-                              <td bgcolor="#1a1a1a" style="background-color: #1a1a1a; padding: 16px 20px;">
-                                <p style="color: #fbbf24; font-size: 14px; line-height: 1.6; margin: 0;">
-                                  ⚠️ <strong>Security Notice:</strong> Please change your password after your first login for security.
-                                </p>
-                              </td>
-                            </tr>
-                          </table>
-                          
-                          <!-- Primary CTA Button -->
-                          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#141414">
-                            <tr>
-                              <td bgcolor="#141414" align="center" style="background-color: #141414; padding: 8px 0 32px 0;">
-                                <a href="${appUrl}/auth" style="display: inline-block; background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #ffffff; padding: 18px 48px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px; box-shadow: 0 4px 14px rgba(124, 58, 237, 0.4);">
-                                  Sign In to SalesOS →
-                                </a>
-                              </td>
-                            </tr>
-                          </table>
-                          
-                          <!-- Divider -->
-                          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#141414">
-                            <tr>
-                              <td bgcolor="#141414" style="background-color: #141414; padding: 8px 0 16px 0;">
-                                <div style="border-top: 1px solid #2a2a2a;"></div>
-                              </td>
-                            </tr>
-                          </table>
-                          
-                          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#141414">
-                            <tr>
-                              <td bgcolor="#141414" align="center" style="background-color: #141414;">
-                                <p style="color: #52525b; font-size: 13px; margin: 0;">
-                                  Need help? Contact <a href="mailto:support@bdotindustries.com" style="color: #9b6dff; text-decoration: none;">support@bdotindustries.com</a>
-                                </p>
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </tr>
-                      <!-- Footer -->
-                      <tr>
-                        <td bgcolor="#0f0f0f" align="center" style="background-color: #0f0f0f; padding: 24px 36px; border-top: 1px solid #2a2a2a; border-radius: 0 0 16px 16px;">
-                          <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #52525b; font-size: 12px; margin: 0;">
-                            © ${new Date().getFullYear()} BDØT Industries LLC. All rights reserved.
-                          </p>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
-            </body>
-            </html>
-          `,
-        });
+          html: welcomeHtml,
+          text: `Welcome to SalesOS ${planName}! Email: ${customerEmail}, Temporary Password: ${tempPassword}. Sign in at ${appUrl}/auth. Please change your password after first login.`,
+          purpose: 'transactional',
+          label: 'stripe-welcome',
+          idempotency_key: `stripe-welcome-${userData.user?.id}-${Date.now()}`,
+          queued_at: new Date().toISOString(),
+        },
+      });
 
-        if (emailError) {
-          logStep("Error sending welcome email", { error: emailError });
-        } else {
-          logStep("Welcome email sent successfully", { email: customerEmail });
-        }
+      if (emailError) {
+        logStep("Error enqueuing welcome email", { error: emailError });
+      } else {
+        logStep("Welcome email enqueued successfully", { email: customerEmail });
       }
 
       return new Response(JSON.stringify({ 
