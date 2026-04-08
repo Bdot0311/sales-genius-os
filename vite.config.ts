@@ -86,6 +86,9 @@ export default defineConfig(({ mode }) => ({
     include: ["react", "react-dom"],
   },
   build: {
+    // Disable modulePreload to prevent eager downloading of lazy-loaded chunks
+    // (Stripe, Recharts, etc.) on the landing page
+    modulePreload: false,
     // Reduce unused JS by splitting vendor chunks
     rollupOptions: {
       output: {
