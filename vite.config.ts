@@ -15,6 +15,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "prompt",
+      injectRegister: 'script-defer',
       devOptions: {
         enabled: false,
       },
@@ -100,8 +101,6 @@ export default defineConfig(({ mode }) => ({
             '@radix-ui/react-dropdown-menu',
             '@radix-ui/react-select',
           ],
-          'vendor-stripe': ['@stripe/stripe-js', '@stripe/react-stripe-js'],
-          'vendor-charts': ['recharts'],
         },
       },
     },

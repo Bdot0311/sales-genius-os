@@ -109,7 +109,7 @@ export const FooterSection = () => {
           {/* Bottom */}
           <div className="pt-8 border-t border-border/30 flex flex-col items-center gap-4">
             <a href="https://sellwithboost.com" target="_blank" rel="noopener noreferrer">
-              <img src="https://sellwithboost.com/badge/listing-dark.svg" alt="Listed on Sell With Boost" className="h-10 w-auto" width={160} height={40} />
+              <img src="https://sellwithboost.com/badge/listing-dark.svg" alt="Listed on Sell With Boost" className="h-10 w-auto" width={160} height={40} loading="lazy" />
             </a>
             <p className="text-sm text-muted-foreground/70 text-center">
               © {new Date().getFullYear()} BDØT Industries LLC. All rights reserved.
