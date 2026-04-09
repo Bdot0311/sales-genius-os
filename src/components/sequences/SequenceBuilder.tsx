@@ -44,7 +44,13 @@ import {
   Users,
   BarChart3,
   Save,
+  Info,
+  AlertTriangle,
+  Lightbulb,
 } from "lucide-react";
+import { OUTBOUND_KB } from "@/lib/outbound-kb";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function SequenceBuilder() {
   const { id } = useParams<{ id: string }>();
@@ -162,8 +168,17 @@ export function SequenceBuilder() {
   };
 
   const resetStepForm = () => {
+    // Pre-populate delay with recommended cadence day for the next step
+    const nextStepIndex = editingStep
+      ? steps.findIndex(s => s.id === editingStep.id)
+      : steps.length;
+    const cadence = OUTBOUND_KB.sequenceRules.cadenceDays;
+    const suggestedDelay = nextStepIndex < cadence.length
+      ? (nextStepIndex === 0 ? 0 : cadence[nextStepIndex] - (cadence[nextStepIndex - 1] || 0))
+      : 7;
+
     setStepForm({
-      delay_days: 1,
+      delay_days: suggestedDelay,
       delay_hours: 0,
       subject_template: "",
       body_template: "",
@@ -275,17 +290,71 @@ export function SequenceBuilder() {
         />
       )}
 
+      {/* KB Guidance Banners */}
+      {steps.length > 0 && steps.length < OUTBOUND_KB.sequenceRules.minTouches && (
+        <Alert className="border-yellow-500/30 bg-yellow-500/5">
+          <AlertTriangle className="w-4 h-4 text-yellow-500" />
+          <AlertDescription className="text-sm">
+            <span className="font-medium">Add {OUTBOUND_KB.sequenceRules.minTouches - steps.length} more step{OUTBOUND_KB.sequenceRules.minTouches - steps.length !== 1 ? "s" : ""}.</span>{" "}
+            Sequences with {OUTBOUND_KB.sequenceRules.minTouches}+ touches achieve 8.3% reply rates vs. 4.1% for shorter ones.
+            42% of replies come from follow-ups — don't stop at {steps.length}.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {steps.length > OUTBOUND_KB.sequenceRules.maxTouches && (
+        <Alert className="border-red-500/30 bg-red-500/5">
+          <AlertTriangle className="w-4 h-4 text-red-500" />
+          <AlertDescription className="text-sm">
+            <span className="font-medium">Over the recommended maximum of {OUTBOUND_KB.sequenceRules.maxTouches} steps.</span>{" "}
+            Beyond {OUTBOUND_KB.sequenceRules.maxTouches} follow-ups, spam complaint rates rise noticeably.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {steps.length >= 5 && (() => {
+        const lastBody = (steps[steps.length - 1]?.body_template || "").toLowerCase();
+        const isBreakup = lastBody.includes("closing the loop") || lastBody.includes("won't follow up") || lastBody.includes("assume timing") || lastBody.includes("last time");
+        if (isBreakup) return null;
+        return (
+          <Alert className="border-[#9263E9]/30 bg-[#9263E9]/5">
+            <Lightbulb className="w-4 h-4 text-[#9263E9]" />
+            <AlertDescription className="text-sm">
+              <span className="font-medium">Consider a breakup email for your last step.</span>{" "}
+              "I've reached out a few times and will assume timing isn't right — happy to reconnect if that changes."
+              Breakup emails consistently generate replies from prospects who appreciated the outreach.
+            </AlertDescription>
+          </Alert>
+        );
+      })()}
+
       {/* Steps Timeline */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">Sequence Steps</h2>
-          <Button 
-            onClick={() => setIsAddStepOpen(true)} 
-            disabled={!canAddMoreSteps}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Step
-          </Button>
+          <div className="flex items-center gap-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                    <Info className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="font-medium mb-1">Recommended cadence</p>
+                  <p className="text-xs text-muted-foreground">Day 0 → Day 3 → Day 7 → Day 12 → Day 18</p>
+                  <p className="text-xs text-muted-foreground mt-1">Best days: Tue / Wed / Thu · Best times: 7–9 AM or 2–4 PM prospect's timezone</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <Button
+              onClick={() => setIsAddStepOpen(true)}
+              disabled={!canAddMoreSteps}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Step
+            </Button>
+          </div>
         </div>
 
         {steps.length === 0 ? (
@@ -397,6 +466,28 @@ export function SequenceBuilder() {
               <p className="text-xs text-muted-foreground">
                 Use {"{{variable}}"} for personalization: contact_name, company_name, job_title
               </p>
+              {(() => {
+                const thisStepNum = editingStep
+                  ? steps.findIndex(s => s.id === editingStep.id) + 1
+                  : steps.length + 1;
+                if (thisStepNum === 2) {
+                  return (
+                    <p className="text-xs text-[#9263E9] flex items-center gap-1">
+                      <Info className="w-3 h-3" />
+                      Email 2: Use "Re: [original subject]" for continuity — it improves open rate.
+                    </p>
+                  );
+                }
+                if (thisStepNum >= 3) {
+                  return (
+                    <p className="text-xs text-[#9263E9] flex items-center gap-1">
+                      <Info className="w-3 h-3" />
+                      Email {thisStepNum}: Use a fresh subject line (not Re:) — thread fatigue hurts opens.
+                    </p>
+                  );
+                }
+                return null;
+              })()}
             </div>
 
             {/* Body */}

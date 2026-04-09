@@ -1,4 +1,5 @@
 import type { ICPProfile } from "@/hooks/use-icp-profiles";
+import { OUTBOUND_KB, BuyingSignalType } from "./outbound-kb";
 
 interface Lead {
   job_title?: string | null;
@@ -68,3 +69,50 @@ export function getScoreColor(score: number): string {
   if (score >= 41) return "bg-yellow-500/10 text-yellow-500 border-yellow-500/20";
   return "bg-red-500/10 text-red-500 border-red-500/20";
 }
+
+// ─── Signal-based scoring ─────────────────────────────────────────────────────
+
+export interface SignalScoreResult {
+  score: number;            // 0–100 normalized
+  rawWeight: number;        // sum of matched signal weights
+  matchedSignals: Array<{ signal: BuyingSignalType; label: string; weight: number }>;
+  badge: "none" | "high_intent" | "buying_signal";
+  badgeLabel: string;
+}
+
+/**
+ * Compute a signal score (0–100) for a lead given its detected buying signals.
+ * `detectedSignals` should be an array of BuyingSignalType strings present on the lead.
+ */
+export function computeSignalScore(detectedSignals: string[]): SignalScoreResult {
+  const maxPossibleWeight = OUTBOUND_KB.buyingSignals.reduce((sum, s) => sum + s.weight, 0);
+
+  const matched = OUTBOUND_KB.buyingSignals.filter(s =>
+    detectedSignals.some(d => d === s.signal || d.toLowerCase().includes(s.signal.replace(/_/g, ' ')))
+  );
+
+  const rawWeight = matched.reduce((sum, s) => sum + s.weight, 0);
+  const score = Math.round((rawWeight / maxPossibleWeight) * 100);
+
+  let badge: SignalScoreResult["badge"] = "none";
+  let badgeLabel = "";
+
+  if (rawWeight > 40) {
+    badge = "buying_signal";
+    badgeLabel = "Buying Signal Detected";
+  } else if (rawWeight > 20) {
+    badge = "high_intent";
+    badgeLabel = "High Intent";
+  }
+
+  return {
+    score,
+    rawWeight,
+    matchedSignals: matched.map(s => ({ signal: s.signal as BuyingSignalType, label: s.label, weight: s.weight })),
+    badge,
+    badgeLabel,
+  };
+}
+
+/** All available buying signals with their weights — for display in UI */
+export const ALL_BUYING_SIGNALS = OUTBOUND_KB.buyingSignals;

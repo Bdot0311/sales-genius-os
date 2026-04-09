@@ -14,7 +14,8 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Mail, Plus, Trash2, AlertCircle, Lock } from "lucide-react";
+import { Mail, Plus, Trash2, AlertCircle, Lock, ShieldAlert, ShieldCheck, ShieldX } from "lucide-react";
+import { OUTBOUND_KB } from "@/lib/outbound-kb";
 import { toast } from "sonner";
 
 interface Mailbox {
@@ -275,7 +276,10 @@ const Deliverability = () => {
           </Card>
         </div>
 
-        {/* Section 4: Sending Rules */}
+        {/* Section 4: Deliverability Health Thresholds */}
+        <DeliverabilityHealthThresholds mailboxCount={(mailboxes || []).length} />
+
+        {/* Section 5: Sending Rules */}
         <div className="space-y-4">
           <h2 className="text-xl font-semibold">Sending Rules</h2>
           <Card>
@@ -324,5 +328,101 @@ const Deliverability = () => {
     </DashboardLayout>
   );
 };
+
+function DeliverabilityHealthThresholds({ mailboxCount }: { mailboxCount: number }) {
+  const d = OUTBOUND_KB.deliverability;
+
+  type AlertLevel = "green" | "yellow" | "red";
+
+  const thresholds: Array<{
+    label: string;
+    level: AlertLevel;
+    message: string;
+  }> = [
+    {
+      label: "Bounce Rate",
+      level: "green",
+      message: `Keep below ${d.maxBounceRatePercent}%. Above ${d.dangerBounceRatePercent}% triggers ESP throttling. Verify every list before sending.`,
+    },
+    {
+      label: "Spam Complaint Rate",
+      level: "green",
+      message: `Keep below ${d.maxSpamComplaintRatePercent}%. Above ${d.dangerSpamComplaintRatePercent}% risks enforcement action from Google/Outlook.`,
+    },
+    {
+      label: "Daily Volume per Mailbox",
+      level: mailboxCount === 0 ? "yellow" : "green",
+      message: `Cap at ${d.maxEmailsPerMailboxPerDay} emails/mailbox/day. ${mailboxCount === 0 ? "Connect a mailbox to start tracking." : `You have ${mailboxCount} mailbox${mailboxCount !== 1 ? "es" : ""} connected.`}`,
+    },
+    {
+      label: "Warmup Period",
+      level: "green",
+      message: `Minimum ${d.warmupMinWeeks} weeks — recommended ${d.warmupRecommendedWeeks} weeks before cold outreach. Never skip warmup on new domains.`,
+    },
+    {
+      label: "Domain Isolation",
+      level: "yellow",
+      message: "Never send cold email from your primary business domain. Use secondary sending domains only (e.g. trysalesos.com).",
+    },
+  ];
+
+  const authChecks = d.requiredAuth.map((auth) => ({
+    label: `${auth} Record`,
+    description:
+      auth === "SPF"   ? "Authorizes sending servers for your domain" :
+      auth === "DKIM"  ? "Cryptographic signature proving email integrity" :
+                         "Policy for unauthenticated email handling",
+  }));
+
+  const levelIcon = (level: AlertLevel) => {
+    if (level === "green")  return <ShieldCheck className="w-4 h-4 text-green-500 shrink-0" />;
+    if (level === "yellow") return <ShieldAlert className="w-4 h-4 text-yellow-500 shrink-0" />;
+    return <ShieldX className="w-4 h-4 text-red-500 shrink-0" />;
+  };
+
+  const levelBg = (level: AlertLevel) => {
+    if (level === "green")  return "border-green-500/20 bg-green-500/5";
+    if (level === "yellow") return "border-yellow-500/20 bg-yellow-500/5";
+    return "border-red-500/20 bg-red-500/5";
+  };
+
+  return (
+    <div className="space-y-4">
+      <h2 className="text-xl font-semibold">Health Thresholds</h2>
+      <div className="grid gap-3 md:grid-cols-2">
+        {thresholds.map((t) => (
+          <div key={t.label} className={`flex items-start gap-3 p-3 rounded-lg border ${levelBg(t.level)}`}>
+            {levelIcon(t.level)}
+            <div>
+              <p className="text-sm font-medium">{t.label}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{t.message}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-[#9263E9]" />
+            Required Authentication
+          </CardTitle>
+          <CardDescription>All three records must be configured on every sending domain before you send a single email.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {authChecks.map((auth) => (
+            <div key={auth.label} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+              <div>
+                <p className="text-sm font-medium">{auth.label}</p>
+                <p className="text-xs text-muted-foreground">{auth.description}</p>
+              </div>
+              <Badge variant="outline" className="text-yellow-500 border-yellow-500/30">Verify in DNS</Badge>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 export default Deliverability;

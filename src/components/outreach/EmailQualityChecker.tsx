@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { AlertTriangle, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { OUTBOUND_KB } from "@/lib/outbound-kb";
 
 interface EmailQualityCheckerProps {
   subject: string;
@@ -21,19 +22,8 @@ const SPAM_TRIGGER_WORDS = [
   "click here", "earn money", "make money", "risk free", "special promotion",
 ];
 
-const GENERIC_OPENERS = [
-  "i hope this finds you well",
-  "i wanted to reach out",
-  "just reaching out",
-  "touching base",
-  "circling back",
-  "just following up",
-  "bumping this to the top",
-  "i noticed that",
-  "i came across",
-  "i was impressed by",
-  "i saw on linkedin",
-];
+// Use canonical dead phrases from KB
+const GENERIC_OPENERS = OUTBOUND_KB.deadPhrases;
 
 const WEAK_CTAS = [
   "can i get 15 minutes",

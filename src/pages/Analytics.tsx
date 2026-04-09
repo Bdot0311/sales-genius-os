@@ -4,10 +4,13 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { TrendingUp, Users, DollarSign, Target, Loader2, Download, FileText, Sparkles } from "lucide-react";
+import { TrendingUp, Users, DollarSign, Target, Loader2, Download, FileText, Sparkles, ArrowRight } from "lucide-react";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
 import { FeatureHighlight } from "@/components/dashboard/FeatureHighlight";
+import { OUTBOUND_KB } from "@/lib/outbound-kb";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 
 const Analytics = () => {
   const { 
@@ -314,6 +317,9 @@ const Analytics = () => {
           </ResponsiveContainer>
         </Card>
 
+        {/* Outbound Benchmarks */}
+        <OutboundBenchmarksCard />
+
         {/* Rep Performance - Pro+ feature */}
         {features.repPerformance ? (
           <Card className="p-6">
@@ -365,5 +371,118 @@ const Analytics = () => {
     </DashboardLayout>
   );
 };
+
+function OutboundBenchmarksCard() {
+  const kb = OUTBOUND_KB.benchmarks;
+
+  // Placeholder: in a real integration this would come from sent_emails aggregated reply rate
+  const userReplyRate: number | null = null;
+
+  const benchmarkTiers = [
+    { label: "Industry Average", rate: kb.industryAvgReplyRate, color: "bg-yellow-500" },
+    { label: "Top Quartile",     rate: kb.topQuartileReplyRate, color: "bg-blue-500" },
+    { label: "Elite (Top 10%)",  rate: kb.eliteReplyRate,       color: "bg-[#9263E9]" },
+  ];
+
+  const getRateStatus = (rate: number) => {
+    if (rate >= kb.eliteReplyRate) return { label: "Elite", color: "text-[#9263E9]", bg: "bg-[#9263E9]/10" };
+    if (rate >= kb.topQuartileReplyRate) return { label: "Top Quartile", color: "text-blue-500", bg: "bg-blue-500/10" };
+    if (rate >= kb.industryAvgReplyRate) return { label: "Average", color: "text-yellow-500", bg: "bg-yellow-500/10" };
+    return { label: "Below Average", color: "text-red-500", bg: "bg-red-500/10" };
+  };
+
+  const likelyCauses = [
+    { issue: "Targeting too broad", fix: "Narrow your ICP — niche segments get 3–5x higher reply rates", link: "/dashboard/icp" },
+    { issue: "Generic copy", fix: "Use signal-based templates and unique openers per prospect", link: "/dashboard/outreach" },
+    { issue: "Deliverability issues", fix: "Check SPF/DKIM/DMARC and warmup status", link: "/dashboard/deliverability" },
+  ];
+
+  return (
+    <Card className="p-6">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-xl font-semibold">Your Performance vs. Industry</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">2026 benchmarks — Instantly Benchmark Report (billions of emails)</p>
+        </div>
+        {userReplyRate !== null && (
+          <Badge className={`${getRateStatus(userReplyRate).bg} ${getRateStatus(userReplyRate).color} border-0`}>
+            {getRateStatus(userReplyRate).label}
+          </Badge>
+        )}
+      </div>
+
+      <div className="space-y-4">
+        {benchmarkTiers.map((tier) => {
+          const pct = Math.round(tier.rate * 100 * 10) / 10;
+          const barWidth = (tier.rate / kb.eliteReplyRate) * 100;
+          return (
+            <div key={tier.label} className="space-y-1.5">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">{tier.label}</span>
+                <span className="font-semibold">{pct}% reply rate</span>
+              </div>
+              <div className="h-2 rounded-full bg-muted overflow-hidden">
+                <div className={`h-full rounded-full ${tier.color}`} style={{ width: `${barWidth}%` }} />
+              </div>
+            </div>
+          );
+        })}
+
+        {userReplyRate !== null && (
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-medium">Your Reply Rate</span>
+              <span className={`font-semibold ${getRateStatus(userReplyRate).color}`}>
+                {Math.round(userReplyRate * 100 * 10) / 10}%
+              </span>
+            </div>
+            <div className="h-2 rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full rounded-full bg-green-500"
+                style={{ width: `${Math.min((userReplyRate / kb.eliteReplyRate) * 100, 100)}%` }}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Insight row */}
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+        <div className="rounded-lg bg-muted/40 p-3">
+          <p className="font-medium mb-0.5">{Math.round(kb.personalizedLiftMultiplier)}x lift</p>
+          <p className="text-muted-foreground text-xs">Personalized vs. generic emails</p>
+        </div>
+        <div className="rounded-lg bg-muted/40 p-3">
+          <p className="font-medium mb-0.5">{Math.round(kb.followUpReplyShare * 100)}% of replies</p>
+          <p className="text-muted-foreground text-xs">Come from follow-up emails (not Email 1)</p>
+        </div>
+        <div className="rounded-lg bg-muted/40 p-3">
+          <p className="font-medium mb-0.5">{Math.round(kb.signalBasedReplyRate * 100)}%+ reply rate</p>
+          <p className="text-muted-foreground text-xs">Signal-based campaigns (5x baseline)</p>
+        </div>
+      </div>
+
+      {/* If below average, surface top 3 causes */}
+      {(userReplyRate === null || userReplyRate < kb.industryAvgReplyRate) && (
+        <div className="mt-5 rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-4">
+          <p className="text-sm font-medium text-yellow-600 dark:text-yellow-400 mb-3">
+            {userReplyRate === null ? "To reach elite reply rates, focus on:" : "Your reply rate is below average. Most likely causes:"}
+          </p>
+          <div className="space-y-2">
+            {likelyCauses.map((cause) => (
+              <div key={cause.issue} className="flex items-start gap-2 text-xs">
+                <ArrowRight className="w-3.5 h-3.5 text-yellow-500 shrink-0 mt-0.5" />
+                <span>
+                  <span className="font-medium">{cause.issue}:</span>{" "}
+                  <span className="text-muted-foreground">{cause.fix}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+}
 
 export default Analytics;

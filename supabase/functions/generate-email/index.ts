@@ -26,11 +26,17 @@ const validateEmailInputs = (data: any) => {
 
 // ─── Shared rules injected into every system prompt ───────────────────────────
 const BANNED_PHRASES = `
-BANNED PHRASES — never use any of these, ever:
+BANNED PHRASES — never use any of these, ever (2026 outbound KB dead phrases):
 - "I noticed that", "I've been analyzing", "I came across", "I was impressed by"
 - "I wanted to reach out", "I hope this finds you well", "just reaching out"
 - "touching base", "circling back", "bumping this to the top", "just following up"
 - "I saw on LinkedIn", "I was doing some research", "I've been looking at your"
+- "hope this email finds you", "I'll keep this brief", "quick question"
+- "did you see my last email", "I came across your profile", "as a leader in"
+- "I'd love to connect", "let me know if you have any questions"
+- "looking forward to hearing from you", "innovative solution", "cutting-edge"
+- "synergy", "leverage", "any update", "per my last email", "just checking in"
+- "wanted to follow up", "I hope this message finds you"
 - Any phrase that sounds like you scraped their LinkedIn profile`;
 
 const PERSONALIZATION_RULES = `
