@@ -302,7 +302,7 @@ const Calendar = () => {
               Connect your Google Calendar in Integrations to see your booked meetings here, or schedule one manually.
             </p>
             <div className="flex gap-3">
-              <Button variant="outline" onClick={() => navigate("/dashboard/integrations")}>
+              <Button variant="outline" onClick={() => navigate("/integrations")}>
                 Connect Calendar
               </Button>
               <Button onClick={() => setIsDialogOpen(true)}>
