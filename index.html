@@ -1,21 +1,6 @@
 <!doctype html>
 <html lang="en" prefix="og: https://ogp.me/ns#">
   <head>
-    <!-- Google tag (gtag.js) - deferred to avoid render blocking -->
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-92ZVN964CE');
-      // Load gtag after page load
-      window.addEventListener('load', function() {
-        var s = document.createElement('script');
-        s.src = 'https://www.googletagmanager.com/gtag/js?id=G-92ZVN964CE';
-        s.async = true;
-        document.head.appendChild(s);
-      });
-    </script>
-    
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
     
@@ -77,16 +62,17 @@
     <!-- Verification -->
     <meta name="google-site-verification" content="eKoMLZR8fPmFLx7hsLBEuVSla6QSzAy9S6JK__ijJq8" />
     
-    <!-- DNS Prefetch and preconnect -->
-    <link rel="dns-prefetch" href="//www.googletagmanager.com" />
-    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
+    <!-- DNS Prefetch and preconnect — only essential origins -->
     <link rel="dns-prefetch" href="//sellwithboost.com" />
     <link rel="preconnect" href="https://sellwithboost.com" crossorigin />
     
-    <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="https://storage.googleapis.com/gpt-engineer-file-uploads/ZFJK1zezovOpOdjy9TptFukIhhc2/uploads/1761024288225-image 2.png" />
+    <!-- Favicon — use local asset to avoid render-blocking external request -->
+    <link rel="icon" type="image/webp" href="/salesos-logo-small.webp" />
     <link rel="apple-touch-icon" sizes="180x180" href="/pwa-192x192.png" />
     
+    <!-- Preload LCP hero image for faster paint -->
+    <link rel="preload" as="image" href="/salesos-logo-small.webp" type="image/webp" />
+
     <!-- Static JSON-LD for crawlers that don't execute JS -->
     <script type="application/ld+json">
     {
@@ -246,7 +232,6 @@
         <li>Salesforce</li>
         <li>Zapier</li>
       </ul>
-      </ul>
 
       <h2>Important Pages</h2>
       <nav>
@@ -282,5 +267,19 @@
 
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+
+    <!-- Google tag (gtag.js) - loaded after main content to avoid render blocking -->
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-92ZVN964CE');
+      window.addEventListener('load', function() {
+        var s = document.createElement('script');
+        s.src = 'https://www.googletagmanager.com/gtag/js?id=G-92ZVN964CE';
+        s.async = true;
+        document.head.appendChild(s);
+      });
+    </script>
   </body>
 </html>

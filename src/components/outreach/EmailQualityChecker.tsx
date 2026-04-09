@@ -263,7 +263,7 @@ export const scoreEmailQuality = (subject: string, body: string, isFirstTouch = 
   ];
 
   const overallScore = Math.round(checks.reduce((sum, c) => sum + c.score, 0) / checks.length);
-  const overallStatus = overallScore >= 75 ? "green" : overallScore >= 50 ? "yellow" : "red";
+  const overallStatus: "green" | "yellow" | "red" = overallScore >= 75 ? "green" : overallScore >= 50 ? "yellow" : "red";
   return { checks, overallScore, overallStatus };
 };
 

@@ -57,7 +57,7 @@ const freePlan: FreePlan = {
     "Sample data exploration",
     "Pipeline overview",
     "Analytics summary",
-    "Community support",
+    "Help center access",
   ],
   cta: "Explore the product",
   ctaRoute: "/auth",
@@ -191,7 +191,7 @@ const comparisonCategories = [
   {
     name: "Support",
     features: [
-      { name: "Community support", free: true, starter: true, growth: true, pro: true },
+      { name: "Help center access", free: true, starter: true, growth: true, pro: true },
       { name: "Standard support", free: false, starter: true, growth: true, pro: true },
       { name: "Priority support", free: false, starter: false, growth: true, pro: true },
       { name: "Premium support", free: false, starter: false, growth: false, pro: true },

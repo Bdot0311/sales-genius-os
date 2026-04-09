@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
-import { Resend } from "https://esm.sh/resend@2.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,202 +7,64 @@ const corsHeaders = {
 };
 
 const logStep = (step: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[WEEKLY-REPORT] ${step}${detailsStr}`);
+  console.log(`[WEEKLY-REPORT] ${step}${details ? ` - ${JSON.stringify(details)}` : ''}`);
 };
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     logStep("Function started");
+    const supabaseClient = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "", { auth: { persistSession: false } });
 
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      { auth: { persistSession: false } }
-    );
-
-    const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-
-    // Get all Pro users
-    const { data: proUsers, error: usersError } = await supabaseClient
-      .from("subscriptions")
-      .select(`
-        user_id,
-        profiles!inner(email, full_name)
-      `)
-      .in("plan", ["pro", "elite"])
-      .eq("status", "active");
-
+    const { data: proUsers, error: usersError } = await supabaseClient.from("subscriptions").select(`user_id, plan, profiles!inner(email, full_name)`).eq("plan", "pro").eq("status", "active");
     if (usersError) throw usersError;
 
-    logStep("Found Pro users", { count: proUsers?.length });
-
     const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    let reportsSent = 0;
 
-    const reports = await Promise.all(
-      (proUsers || []).map(async (user: any) => {
-        try {
-          // Get API usage stats
-          const { data: apiKeys } = await supabaseClient
-            .from("api_keys")
-            .select("id, name, total_requests")
-            .eq("user_id", user.user_id);
+    for (const user of proUsers || []) {
+      try {
+        const { data: newLeads } = await supabaseClient.from("leads").select("id").eq("user_id", user.user_id).gte("created_at", oneWeekAgo);
+        const { data: sentEmails } = await supabaseClient.from("sent_emails").select("id, opened_at, replied_at").eq("user_id", user.user_id).gte("created_at", oneWeekAgo);
+        const { data: deals } = await supabaseClient.from("deals").select("id, value").eq("user_id", user.user_id).gte("created_at", oneWeekAgo);
 
-          const { data: apiUsage } = await supabaseClient
-            .from("api_usage_log")
-            .select("*")
-            .in("api_key_id", apiKeys?.map(k => k.id) || [])
-            .gte("created_at", oneWeekAgo);
+        const totalEmails = sentEmails?.length || 0;
+        const openRate = totalEmails > 0 ? ((sentEmails!.filter(e => e.opened_at).length / totalEmails) * 100).toFixed(1) : '0';
+        const replyRate = totalEmails > 0 ? ((sentEmails!.filter(e => e.replied_at).length / totalEmails) * 100).toFixed(1) : '0';
+        const pipelineValue = deals?.reduce((s, d) => s + (d.value || 0), 0) || 0;
 
-          // Get webhook stats
-          const { data: webhooks } = await supabaseClient
-            .from("webhooks")
-            .select("id, name, total_triggers")
-            .eq("user_id", user.user_id);
+        const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;margin:0;padding:0;background:#f9fafb;">
+<div style="max-width:600px;margin:0 auto;padding:20px;">
+<div style="background:linear-gradient(135deg,#8B5CF6,#6D28D9);color:white;padding:30px;border-radius:8px 8px 0 0;text-align:center;"><h1>📊 Weekly Report</h1></div>
+<div style="background:white;padding:30px;border-radius:0 0 8px 8px;">
+<p>Hello ${(user.profiles as any)?.full_name || 'there'},</p>
+<p>Here's your weekly performance summary:</p>
+<table width="100%" cellpadding="10"><tr>
+<td style="text-align:center;background:#f3f4f6;border-radius:8px;"><div style="font-size:28px;font-weight:bold;color:#8B5CF6;">${newLeads?.length||0}</div><div style="font-size:11px;color:#6b7280;">NEW LEADS</div></td>
+<td style="text-align:center;background:#f3f4f6;border-radius:8px;"><div style="font-size:28px;font-weight:bold;color:#8B5CF6;">${totalEmails}</div><div style="font-size:11px;color:#6b7280;">EMAILS SENT</div></td>
+<td style="text-align:center;background:#f3f4f6;border-radius:8px;"><div style="font-size:28px;font-weight:bold;color:#10B981;">${openRate}%</div><div style="font-size:11px;color:#6b7280;">OPEN RATE</div></td>
+</tr></table>
+<table width="100%" cellpadding="10" style="margin-top:10px;"><tr>
+<td style="text-align:center;background:#f3f4f6;border-radius:8px;"><div style="font-size:28px;font-weight:bold;color:#10B981;">${replyRate}%</div><div style="font-size:11px;color:#6b7280;">REPLY RATE</div></td>
+<td style="text-align:center;background:#f3f4f6;border-radius:8px;"><div style="font-size:28px;font-weight:bold;color:#10B981;">${deals?.length||0}</div><div style="font-size:11px;color:#6b7280;">NEW DEALS</div></td>
+<td style="text-align:center;background:#f3f4f6;border-radius:8px;"><div style="font-size:28px;font-weight:bold;color:#10B981;">$${pipelineValue.toLocaleString()}</div><div style="font-size:11px;color:#6b7280;">PIPELINE</div></td>
+</tr></table>
+<p style="text-align:center;margin-top:30px;"><a href="https://salesos.alephwavex.io/analytics" style="background:#8B5CF6;color:white;padding:12px 30px;text-decoration:none;border-radius:6px;">View Full Analytics →</a></p>
+</div></div></body></html>`;
 
-          const { data: webhookDeliveries } = await supabaseClient
-            .from("webhook_deliveries")
-            .select("status")
-            .in("webhook_id", webhooks?.map(w => w.id) || [])
-            .gte("created_at", oneWeekAgo);
+        const messageId = crypto.randomUUID();
+        await supabaseClient.rpc('enqueue_email', { queue_name: 'transactional_emails', payload: { message_id: messageId, to: (user.profiles as any).email, from: 'SalesOS Reports <noreply@notify.bdotindustries.com>', sender_domain: 'notify.bdotindustries.com', subject: '📊 Your Weekly SalesOS Performance Report', html, text: `Weekly Report: ${newLeads?.length||0} leads, ${totalEmails} emails, ${openRate}% open rate`, purpose: 'transactional', label: 'weekly-report', idempotency_key: `weekly-${user.user_id}-${new Date().toISOString().split('T')[0]}`, queued_at: new Date().toISOString() } });
+        await supabaseClient.from('email_send_log').insert({ message_id: messageId, template_name: 'weekly-report', recipient_email: (user.profiles as any).email, status: 'pending' });
+        reportsSent++;
+      } catch (err) { logStep("Error for user", { userId: user.user_id, error: err }); }
+    }
 
-          // Get team activity
-          const { data: teamActivity } = await supabaseClient
-            .from("team_activity_log")
-            .select("action_type, entity_type")
-            .eq("team_owner_id", user.user_id)
-            .gte("created_at", oneWeekAgo);
-
-          const totalApiRequests = apiUsage?.length || 0;
-          const totalWebhooks = webhookDeliveries?.length || 0;
-          const successfulWebhooks = webhookDeliveries?.filter(d => d.status === 'success').length || 0;
-          const webhookSuccessRate = totalWebhooks > 0 ? (successfulWebhooks / totalWebhooks * 100).toFixed(1) : "0";
-          const teamActions = teamActivity?.length || 0;
-
-          const avgResponseTime = apiUsage?.length 
-            ? (apiUsage.reduce((sum, log) => sum + (log.response_time_ms || 0), 0) / apiUsage.length).toFixed(0)
-            : "0";
-
-          const emailHtml = `
-            <!DOCTYPE html>
-            <html>
-              <head>
-                <style>
-                  body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                  .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                  .header { background: linear-gradient(135deg, #8B5CF6, #6366F1); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }
-                  .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
-                  .stat-card { background: white; padding: 20px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #8B5CF6; }
-                  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0; }
-                  .stat { text-align: center; background: white; padding: 15px; border-radius: 8px; }
-                  .stat-value { font-size: 32px; font-weight: bold; color: #8B5CF6; }
-                  .stat-label { font-size: 12px; color: #6b7280; text-transform: uppercase; margin-top: 5px; }
-                  .section-title { font-size: 18px; font-weight: bold; margin: 25px 0 15px; color: #1f2937; }
-                  .button { background: #8B5CF6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin-top: 20px; }
-                  .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #6b7280; }
-                </style>
-              </head>
-              <body>
-                <div class="container">
-                  <div class="header">
-                    <h1>📊 Weekly Performance Report</h1>
-                    <p>Your SalesOS summary for the past week</p>
-                  </div>
-                  <div class="content">
-                    <p>Hello ${user.profiles.full_name || 'there'},</p>
-                    <p>Here's your weekly performance summary:</p>
-
-                    <div class="stat-grid">
-                      <div class="stat">
-                        <div class="stat-value">${totalApiRequests.toLocaleString()}</div>
-                        <div class="stat-label">API Requests</div>
-                      </div>
-                      <div class="stat">
-                        <div class="stat-value">${avgResponseTime}ms</div>
-                        <div class="stat-label">Avg Response Time</div>
-                      </div>
-                      <div class="stat">
-                        <div class="stat-value">${totalWebhooks.toLocaleString()}</div>
-                        <div class="stat-label">Webhook Deliveries</div>
-                      </div>
-                      <div class="stat">
-                        <div class="stat-value">${webhookSuccessRate}%</div>
-                        <div class="stat-label">Success Rate</div>
-                      </div>
-                    </div>
-
-                    <div class="stat-card">
-                      <h3 class="section-title">🔑 API Activity</h3>
-                      ${apiKeys?.map(key => `
-                        <p><strong>${key.name}:</strong> ${key.total_requests.toLocaleString()} total requests</p>
-                      `).join('') || '<p>No API activity this week</p>'}
-                    </div>
-
-                    <div class="stat-card">
-                      <h3 class="section-title">🔔 Webhook Performance</h3>
-                      ${webhooks?.map(webhook => `
-                        <p><strong>${webhook.name}:</strong> ${webhook.total_triggers} triggers</p>
-                      `).join('') || '<p>No webhook activity this week</p>'}
-                    </div>
-
-                    <div class="stat-card">
-                      <h3 class="section-title">👥 Team Activity</h3>
-                      <p><strong>${teamActions}</strong> actions performed by your team this week</p>
-                    </div>
-
-                    <a href="${Deno.env.get("SUPABASE_URL")?.replace('https://', 'https://app.')}/settings" class="button">
-                      View Detailed Analytics
-                    </a>
-
-                    <div class="footer">
-                      <p>This is your weekly automated report from SalesOS</p>
-                      <p>You're receiving this because you're a Pro plan subscriber</p>
-                    </div>
-                  </div>
-                </div>
-              </body>
-            </html>
-          `;
-
-          await resend.emails.send({
-            from: "SalesOS Reports <onboarding@resend.dev>",
-            to: [user.profiles.email],
-            subject: "📊 Your Weekly SalesOS Performance Report",
-            html: emailHtml,
-          });
-
-          logStep("Report sent", { userId: user.user_id });
-
-          return { userId: user.user_id, success: true };
-        } catch (error) {
-          logStep("Error sending report", { userId: user.user_id, error });
-          return { userId: user.user_id, success: false, error };
-        }
-      })
-    );
-
-    logStep("All reports sent", { results: reports });
-
-    return new Response(
-      JSON.stringify({ message: "Weekly reports sent", results: reports }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      }
-    );
+    logStep("Done", { sent: reportsSent });
+    return new Response(JSON.stringify({ success: true, reportsSent }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR", { message: errorMessage });
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      }
-    );
+    const msg = error instanceof Error ? error.message : String(error);
+    logStep("ERROR", { message: msg });
+    return new Response(JSON.stringify({ error: msg }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 });
   }
 });

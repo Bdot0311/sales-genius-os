@@ -63,6 +63,8 @@ All colors MUST be HSL. Using 8px spacing scale.
 
   body {
     @apply bg-background text-foreground;
+    /* Reduce layout recalculations for the body */
+    text-rendering: optimizeSpeed;
   }
 
   #root {
@@ -74,6 +76,17 @@ All colors MUST be HSL. Using 8px spacing scale.
     padding-bottom: env(safe-area-inset-bottom, 0px);
     padding-left: env(safe-area-inset-left, 0px);
     padding-right: env(safe-area-inset-right, 0px);
+  }
+
+  /* CSS containment to limit layout/paint scope and reduce forced reflows */
+  section {
+    contain: layout style;
+  }
+
+  /* Reduce layout shifts from lazy-loaded sections */
+  .lazy-section {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 600px;
   }
 }
 

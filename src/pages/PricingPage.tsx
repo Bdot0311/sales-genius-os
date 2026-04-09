@@ -120,7 +120,7 @@ const PricingPage = () => {
                   "AI Sales Coach",
                   "Real-time analytics dashboard",
                   "Secure data encryption",
-                  "Email support"
+                  "Help center access"
                 ].map((feature) => (
                   <li key={feature} className="flex items-center gap-3">
                     <Check className="w-5 h-5 text-primary flex-shrink-0" />

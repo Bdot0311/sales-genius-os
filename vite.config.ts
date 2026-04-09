@@ -15,6 +15,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "prompt",
+      injectRegister: null,
       devOptions: {
         enabled: false,
       },
@@ -83,5 +84,36 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     include: ["react", "react-dom"],
+  },
+  build: {
+    // Disable modulePreload to prevent eager downloading of lazy-loaded chunks
+    // (Stripe, Recharts, etc.) on the landing page
+    modulePreload: false,
+    // Reduce unused JS by splitting vendor chunks
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom'],
+          'vendor-router': ['react-router-dom'],
+          'vendor-query': ['@tanstack/react-query'],
+          // Split Radix UI into smaller chunks so only what's needed loads
+          'vendor-ui-core': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-popover',
+          ],
+          'vendor-ui-nav': [
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-select',
+            '@radix-ui/react-tabs',
+          ],
+        },
+      },
+    },
+    // Enable CSS code splitting
+    cssCodeSplit: true,
+    // Target modern browsers to reduce polyfill JS
+    target: 'es2020',
+    // Reduce chunk size warnings threshold
+    chunkSizeWarningLimit: 600,
   },
 }));
