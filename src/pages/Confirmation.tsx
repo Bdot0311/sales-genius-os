@@ -127,28 +127,36 @@ const Confirmation = () => {
 
   const planFeatures = {
     starter: [
-      "400 verified prospects / month",
-      "50 prospects per day",
+      "1,000 verified prospects / month",
+      "100 prospects per day",
       "Prospect search & verified emails",
       "AI email generator",
       "Campaign templates",
       "Standard support"
     ],
     growth: [
-      "1,200 verified prospects / month",
-      "150 prospects per day",
+      "2,500 verified prospects / month",
+      "250 prospects per day",
       "Advanced prospect filters",
       "Bulk prospect export",
       "AI personalized outreach",
       "Priority support"
     ],
     pro: [
-      "3,000 verified prospects / month",
-      "400 prospects per day",
+      "5,000 verified prospects / month",
+      "500 prospects per day",
       "Advanced automation features",
       "CRM integrations",
       "Team collaboration access",
       "Premium support"
+    ],
+    agency: [
+      "15,000 verified prospects / month",
+      "1,500 prospects per day",
+      "White-label client portal",
+      "Branded PDF reports",
+      "Priority API access",
+      "Dedicated account support"
     ]
   };
 

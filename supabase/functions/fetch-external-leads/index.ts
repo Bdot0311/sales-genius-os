@@ -497,9 +497,10 @@ async function fetchCachedResults(railwayBaseUrl: string): Promise<{ searches: a
 // Plan credit configuration - must match stripe-config.ts
 const PLAN_CREDITS = {
   free: { monthlyCredits: 0, dailyLimit: 0, maxResultsPerSearch: 0 },
-  starter: { monthlyCredits: 400, dailyLimit: 50, maxResultsPerSearch: 25 },
-  growth: { monthlyCredits: 1200, dailyLimit: 150, maxResultsPerSearch: 50 },
-  pro: { monthlyCredits: 3000, dailyLimit: 400, maxResultsPerSearch: 100 },
+  starter: { monthlyCredits: 1000, dailyLimit: 100, maxResultsPerSearch: 25 },
+  growth: { monthlyCredits: 2500, dailyLimit: 250, maxResultsPerSearch: 50 },
+  pro: { monthlyCredits: 5000, dailyLimit: 500, maxResultsPerSearch: 100 },
+  agency: { monthlyCredits: 15000, dailyLimit: 1500, maxResultsPerSearch: 200 },
 };
 
 serve(async (req) => {
