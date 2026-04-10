@@ -69,7 +69,7 @@ export const usePlanFeatures = () => {
   }, [checkLimit, triggerGate]);
 
   return {
-    currentPlan: isAdmin ? 'pro' as PlanType : currentPlan,
+    currentPlan: isAdmin ? 'agency' as PlanType : currentPlan,
     features,
     loading,
     hasFeature,
