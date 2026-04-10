@@ -248,7 +248,7 @@ const creditFAQs = [
   },
   {
     question: "What about daily limits?",
-    answer: "Each plan has a daily limit to ensure fair usage: Starter (50/day), Growth (150/day), Pro (400/day). If exceeded, you'll see a message asking you to try again tomorrow."
+    answer: "Each plan has a daily limit to ensure fair usage: Starter (100/day), Growth (150/day), Pro (400/day), Agency (1,000/day). If exceeded, you'll see a message asking you to try again tomorrow."
   },
   {
     question: "Can I purchase more verified prospects?",
@@ -260,7 +260,7 @@ const creditFAQs = [
   },
   {
     question: "Do you offer yearly billing?",
-    answer: "Yes! Save ~20% with annual billing. With yearly plans, your full annual credit pool is granted upfront: Starter gets 4,800, Growth gets 14,400, and Pro gets 36,000 prospects. Monthly plans reset each billing cycle, with Growth and Pro credits rolling over."
+    answer: "Yes! Save ~20% with annual billing. With yearly plans, your full annual credit pool is granted upfront: Starter gets 12,000, Growth gets 14,400, and Pro gets 36,000 prospects. Monthly plans reset each billing cycle, with Growth and Pro credits rolling over."
   },
   {
     question: "Do unused credits roll over?",
