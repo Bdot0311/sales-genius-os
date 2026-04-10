@@ -215,6 +215,7 @@ const Outreach = () => {
   
   const [generatedEmail, setGeneratedEmail] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [fixingCheck, setFixingCheck] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [signature, setSignature] = useState("");
   const [senderProfileName, setSenderProfileName] = useState("");
@@ -925,6 +926,55 @@ const Outreach = () => {
       });
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleQualityFix = async (checkLabel: string) => {
+    if (!generatedEmail || fixingCheck) return;
+    setFixingCheck(checkLabel);
+
+    try {
+      const fixInstructions: Record<string, string> = {
+        'Spam Risk': 'Rewrite this email removing all spam-trigger words like "free", "guarantee", "limited time", "act now". Keep the same message and length.',
+        'Length': 'Rewrite this email to be between 40-75 words. Cut filler, keep the core value prop and CTA. Do not add new claims.',
+        'Readability': 'Rewrite this email at a Grade 8 reading level. Use shorter sentences, simpler words. Keep the same message.',
+        'CTA': 'Rewrite the closing of this email to end with a single low-friction question like "Worth a look?" or "Open to a quick chat?" on the last line before the sign-off.',
+        'Personalization': 'Replace any generic placeholder tokens like [Name], [Company], {name}, {company} with natural-sounding generic references that do not use bracket syntax. Keep everything else the same.',
+        'Credibility': 'Remove or soften any percentage claims, benchmark numbers, or unverified statistics. Replace with specific but unquantified outcomes.',
+        'Naturalness': 'Rewrite the opening line of this email to start naturally. Do not start with "I noticed", "I hope", "I wanted to reach out", "Just reaching out", or similar AI openers.',
+        'Links': 'Remove all URLs and hyperlinks from this email. Replace any linked references with plain-text descriptions.',
+        'Images': 'Remove all HTML image tags (<img>) from this email.',
+        'You-focus': 'Rewrite this email so more sentences start from the prospect\'s perspective ("You", "Your team", "Your workflow") rather than the sender\'s perspective ("I", "We", "Our").',
+        'CTA position': 'Move the question/CTA to be the very last line before the sign-off name. Restructure the email so the ask comes at the end.',
+        'Signature': 'This email has an HTML signature that is too long relative to the body. Shorten the body text is already correct — note this as a manual fix needed in the signature settings.',
+      };
+
+      const instruction = fixInstructions[checkLabel] || `Fix the following issue in this email: ${checkLabel}`;
+      const lead = leads.find((l) => l.id === selectedLead);
+
+      const { data, error } = await supabase.functions.invoke('generate-email', {
+        body: {
+          lead,
+          tone: emailTone,
+          goal: 'custom',
+          customInstruction: `You are editing an existing cold email. Here is the current email body:\n\n---\n${generatedEmail}\n---\n\nYour task: ${instruction}\n\nReturn ONLY the rewritten email body. No subject line. No explanation. No headers. Just the email body text.`,
+          isFirstTouch,
+          businessDescription,
+        }
+      });
+
+      if (error) throw error;
+
+      let fixed = data?.email || data?.body || '';
+      fixed = fixed.replace(/^Subject:\s*.+\n+/i, '').trim();
+
+      if (fixed) {
+        setGeneratedEmail(fixed);
+      }
+    } catch (err) {
+      console.error('Fix failed:', err);
+    } finally {
+      setFixingCheck(null);
     }
   };
 
@@ -2229,7 +2279,13 @@ For logos, use HTML:
                   </div>
                   {generatedEmail && (
                     <div className="space-y-3">
-                      <EmailQualityChecker subject={subjectLine} body={generatedEmail} isFirstTouch={isFirstTouch} />
+                      <EmailQualityChecker
+                        subject={subjectLine}
+                        body={generatedEmail}
+                        isFirstTouch={isFirstTouch}
+                        onFix={handleQualityFix}
+                        fixingCheck={fixingCheck}
+                      />
                       <div className="flex gap-2">
                         <Button
                           className="flex-1"

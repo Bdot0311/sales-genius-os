@@ -1,13 +1,15 @@
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { AlertTriangle, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, XCircle, AlertCircle, Loader2 } from "lucide-react";
 import { OUTBOUND_KB } from "@/lib/outbound-kb";
 
 interface EmailQualityCheckerProps {
   subject: string;
   body: string;
   isFirstTouch?: boolean;
+  onFix?: (checkLabel: string) => Promise<void>;
+  fixingCheck?: string | null;
 }
 
 interface CheckResult {
@@ -267,7 +269,7 @@ export const scoreEmailQuality = (subject: string, body: string, isFirstTouch = 
   return { checks, overallScore, overallStatus };
 };
 
-export const EmailQualityChecker = ({ subject, body, isFirstTouch = true }: EmailQualityCheckerProps) => {
+export const EmailQualityChecker = ({ subject, body, isFirstTouch = true, onFix, fixingCheck }: EmailQualityCheckerProps) => {
   const { checks, overallScore, overallStatus } = useMemo(
     () => scoreEmailQuality(subject, body, isFirstTouch),
     [subject, body, isFirstTouch]
@@ -289,6 +291,22 @@ export const EmailQualityChecker = ({ subject, body, isFirstTouch = true }: Emai
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium">{check.label}</span>
+                {onFix && check.status !== 'green' && (
+                  <button
+                    onClick={() => onFix(check.label)}
+                    disabled={fixingCheck !== null && fixingCheck !== undefined}
+                    className="text-[10px] text-primary hover:text-primary/80 font-medium disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 ml-2 shrink-0"
+                  >
+                    {fixingCheck === check.label ? (
+                      <>
+                        <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                        Fixing...
+                      </>
+                    ) : (
+                      'Fix this'
+                    )}
+                  </button>
+                )}
               </div>
               <p className="text-xs text-muted-foreground">{check.message}</p>
             </div>
