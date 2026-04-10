@@ -9,7 +9,7 @@ const PricingPage = () => {
   const pricingFAQs = [
     { question: "What are verified prospects?", answer: "Verified prospects are contacts with confirmed, up-to-date data including verified email addresses, job titles, and company information." },
     { question: "Are you charging for searches?", answer: "No. Searches are free. Your plan limit only applies when you access verified prospect data." },
-    { question: "Do you offer yearly billing?", answer: "Yes! Save ~20% with annual billing. Your full annual credit pool is granted upfront: Starter gets 12,000, Growth gets 14,400, and Pro gets 36,000 prospects." },
+    { question: "Do you offer yearly billing?", answer: "Yes! Save ~20% with annual billing. Your full annual credit pool is granted upfront: Starter gets 12,000, Growth gets 30,000, and Pro gets 60,000 prospects." },
     { question: "What happens when I reach my limit?", answer: "You can still access saved prospects and pipeline features. Purchase a one-time credit pack or upgrade your plan to continue contacting new prospects." },
     { question: "Can I purchase more verified prospects?", answer: "Yes. Purchase one-time credit packs anytime: 200 prospects ($37.50), 400 prospects ($67.50), or 600 prospects ($90). No recurring commitment." },
     { question: "Do unused credits roll over?", answer: "On monthly plans, Starter credits reset each cycle while Growth and Pro credits roll over. Yearly plans grant your full annual pool upfront." },
