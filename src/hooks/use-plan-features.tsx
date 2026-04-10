@@ -11,7 +11,7 @@ export const usePlanFeatures = () => {
   
   const currentPlan: PlanType = subscription?.plan || 'free';
   // Admins get pro-level features
-  const features = isAdmin ? PLAN_FEATURES.pro : PLAN_FEATURES[currentPlan];
+  const features = isAdmin ? PLAN_FEATURES.agency : PLAN_FEATURES[currentPlan];
 
   // Check if a feature is available on the current plan (admins have access to everything)
   const hasFeature = useCallback((feature: UpgradeFeature): boolean => {

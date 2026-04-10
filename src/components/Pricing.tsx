@@ -375,7 +375,7 @@ export const Pricing = () => {
         </div>
 
         {/* Plan Cards */}
-        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 max-w-7xl mx-auto mb-16 md:mb-20 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '100ms' } as React.CSSProperties}>
+        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-5 max-w-[1400px] mx-auto mb-16 md:mb-20 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '100ms' } as React.CSSProperties}>
           {allPlans.map((plan, index) => {
             const paid = isPaidPlan(plan);
             const displayPrice = paid
