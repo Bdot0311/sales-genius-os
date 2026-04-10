@@ -476,7 +476,7 @@ serve(async (req) => {
             
             // Credits logic:
             // - Yearly plans: full annual pool granted upfront, reset to full pool on renewal
-            // - Monthly Starter: reset to 400 each month (no rollover)
+            // - Monthly Starter: reset to 1000 each month (no rollover)
             // - Monthly Growth/Pro: rollover - ADD new credits to existing balance
             let newCredits = planDetails.credits;
             
