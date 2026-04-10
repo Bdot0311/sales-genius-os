@@ -166,7 +166,7 @@ export const SoftwareApplicationSchema = () => {
           "priceCurrency": "USD",
           "priceValidUntil": "2027-12-31",
           "availability": "https://schema.org/InStock",
-          "description": "For solo founders - 400 prospect credits, AI email generation, verified emails"
+          "description": "For solo founders - 1,000 verified prospects/month, AI email generation, verified emails"
         },
         {
           "@type": "Offer",
@@ -175,7 +175,7 @@ export const SoftwareApplicationSchema = () => {
           "priceCurrency": "USD",
           "priceValidUntil": "2027-12-31",
           "availability": "https://schema.org/InStock",
-          "description": "For growing teams - 1,200 prospect credits, advanced filters, bulk export, campaign automation"
+          "description": "For growing teams - 2,500 verified prospects/month, advanced filters, bulk export, campaign automation"
         },
         {
           "@type": "Offer",
@@ -184,7 +184,7 @@ export const SoftwareApplicationSchema = () => {
           "priceCurrency": "USD",
           "priceValidUntil": "2027-12-31",
           "availability": "https://schema.org/InStock",
-          "description": "High-volume outbound - 3,000 prospect credits, API access, CRM integrations, team collaboration"
+          "description": "High-volume outbound - 5,000 verified prospects/month, API access, CRM integrations, team collaboration"
         }
       ]
     },
