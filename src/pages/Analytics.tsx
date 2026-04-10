@@ -10,6 +10,7 @@ import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
 import { FeatureHighlight } from "@/components/dashboard/FeatureHighlight";
 import { OUTBOUND_KB } from "@/lib/outbound-kb";
+import { SAMPLE_STATS, SAMPLE_ANALYTICS } from "@/lib/sample-data";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
