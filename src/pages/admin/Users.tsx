@@ -127,7 +127,7 @@ const AdminUsers = () => {
     try {
       const { error } = await supabase.rpc('admin_update_subscription', {
         _user_id: userId,
-        _plan: plan,
+        _plan: plan as any,
       });
       if (error) throw error;
       toast.success('Subscription updated');
