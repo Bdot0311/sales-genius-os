@@ -58,9 +58,9 @@ export const PLAN_CONFIG = {
     monthlyPrice: 39,
     yearlyPrice: 31,
     yearlyTotal: 372,
-    monthlyProspects: 400,
-    yearlyProspects: 4800, // Full annual pool upfront (400 x 12)
-    dailyLimit: 50,
+    monthlyProspects: 1000,
+    yearlyProspects: 12000,
+    dailyLimit: 100,
     emailRevealCost: 1,
     phoneRevealCost: 10,
     companyRevealCost: 1,

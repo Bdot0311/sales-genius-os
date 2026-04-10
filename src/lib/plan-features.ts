@@ -91,8 +91,8 @@ export const PLAN_FEATURES = {
     price: 39,
     
     // Credits
-    monthlySearchCredits: 400,
-    dailySearchLimit: 50,
+    monthlySearchCredits: 1000,
+    dailySearchLimit: 100,
     exportTier: 'standard' as const,
     
     // Lead Intelligence Engine
