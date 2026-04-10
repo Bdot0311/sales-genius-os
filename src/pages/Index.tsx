@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Navbar } from "@/components/Navbar";
 import { HeroSection } from "@/components/landing/HeroSection";
+import { ProductShowcase } from "@/components/landing/ProductShowcase";
 import {
   SEOHead,
   OrganizationSchema,
@@ -128,6 +129,7 @@ const Index = () => {
           <article>
             {/* Above the fold - eagerly loaded */}
             <HeroSection />
+            <ProductShowcase />
 
             {/* Below the fold - lazy loaded with content-visibility for rendering efficiency */}
             <Suspense fallback={<SectionLoader />}>

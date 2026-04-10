@@ -60,12 +60,14 @@ export const Navbar = () => {
 
   return (
     <nav
-      className={`fixed left-0 right-0 z-50 transition-all duration-200 ${
-        isScrolled
-          ? 'bg-background/95 backdrop-blur-md border-b border-border/40'
-          : 'bg-transparent'
+      className={`fixed left-0 right-0 z-50 transition-all duration-300 ${
+        isScrolled ? 'backdrop-blur-xl border-b' : ''
       }`}
-      style={{ top: 'env(safe-area-inset-top, 0px)' }}
+      style={{
+        top: 'env(safe-area-inset-top, 0px)',
+        background: isScrolled ? 'hsl(0 0% 3% / 0.92)' : 'transparent',
+        borderColor: isScrolled ? 'hsl(0 0% 100% / 0.07)' : 'transparent',
+      }}
       role="navigation"
       aria-label="Main navigation"
     >
@@ -110,12 +112,15 @@ export const Navbar = () => {
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center gap-1">
+            <div className="hidden md:flex items-center gap-0.5">
               {navLinks.map((link) => (
                 <button
                   key={link.label}
                   onClick={() => handleNavigation(link.path)}
-                  className="px-3 lg:px-4 py-2 text-sm text-muted-foreground hover:text-primary transition-colors rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className="px-3 lg:px-4 py-2 text-sm transition-colors rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  style={{ color: 'hsl(0 0% 100% / 0.45)' }}
+                  onMouseEnter={e => (e.currentTarget.style.color = 'hsl(0 0% 100% / 0.85)')}
+                  onMouseLeave={e => (e.currentTarget.style.color = 'hsl(0 0% 100% / 0.45)')}
                 >
                   {link.label}
                 </button>
@@ -123,26 +128,30 @@ export const Navbar = () => {
             </div>
 
             {/* CTA Buttons */}
-            <div className="flex items-center gap-2 sm:gap-3">
-              {/* Primary CTA — Start free */}
-              <Button
-                size="sm"
-                className="hidden md:flex bg-foreground text-background hover:bg-foreground/90 text-sm font-medium"
-                onClick={() => navigate("/auth")}
-              >
-                Start free
-                <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
-              </Button>
-
+            <div className="flex items-center gap-3">
               {/* De-emphasized Login */}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-sm text-muted-foreground hover:text-foreground font-medium px-3"
+              <button
+                className="hidden md:block text-sm transition-colors"
+                style={{ color: 'hsl(0 0% 100% / 0.4)' }}
+                onMouseEnter={e => (e.currentTarget.style.color = 'hsl(0 0% 100% / 0.75)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'hsl(0 0% 100% / 0.4)')}
                 onClick={() => navigate("/auth")}
               >
-                Login
-              </Button>
+                Log in
+              </button>
+
+              {/* Primary CTA — pill button */}
+              <button
+                className="hidden md:inline-flex items-center gap-1.5 px-5 rounded-full text-sm font-semibold text-white cta-pill-glow"
+                style={{
+                  height: '38px',
+                  background: 'linear-gradient(135deg, hsl(261 75% 60%) 0%, hsl(261 75% 50%) 100%)',
+                }}
+                onClick={() => navigate("/auth")}
+              >
+                Sign up
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
 
               {/* Mobile menu button */}
               <Button
