@@ -64,8 +64,7 @@ const useGlobalStyles = () => {
   }, []);
 };
 
-// ─── Scroll progress through a sticky container ───────────────────────────────
-// Returns 0→1 as user scrolls from top to bottom of the container
+// ─── Single scroll progress for a ref ────────────────────────────────────────
 const useScrollProgress = (ref: { current: HTMLElement | null }) => {
   const [progress, setProgress] = useState(0);
   useEffect(() => {
@@ -88,53 +87,93 @@ const easeOut3 = (t: number) => 1 - Math.pow(1 - t, 3);
 const norm = (v: number, lo: number, hi: number) =>
   Math.max(0, Math.min(1, (v - lo) / (hi - lo)));
 
-// ─── Scroll chapter: Apple-style instant dissolve ─────────────────────────────
-// Content enters fast (first 12% of scroll), holds long, dissolves out fast (last 18%)
-const ScrollChapter = ({
-  children,
-  glowPos = "50% 50%",
+// ─── MeltContainer ────────────────────────────────────────────────────────────
+// All chapters are stacked in ONE sticky viewport. Scroll progress controls
+// which chapter is visible. Chapters crossfade simultaneously — each fades out
+// as the next fades in, creating a true melt effect (not sequential).
+const MELT_FADE = 0.09; // fraction of total progress for each crossfade
+
+const MeltContainer = ({
+  chapters,
 }: {
-  children: (active: boolean, progress: number) => React.ReactNode;
-  glowPos?: string;
+  chapters: Array<{
+    render: (active: boolean) => React.ReactNode;
+    glowPos: string;
+  }>;
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const progress = useScrollProgress(containerRef as { current: HTMLElement | null });
+  const N = chapters.length;
 
-  // Apple-like: fast in, long hold, fast out — no blur
-  const enterT = easeOut3(norm(progress, 0, 0.13));   // 0→13%: snap in
-  const exitT  = easeOut3(norm(progress, 0.80, 0.97)); // 80→97%: snap out
-  const active = progress >= 0.01 && progress <= 0.97;
+  // Boundaries between chapters: evenly spaced
+  const boundaries = Array.from({ length: N - 1 }, (_, i) => (i + 1) / N);
 
-  // Pure opacity + minimal translateY — no blur
-  const opacity    = Math.max(0, Math.min(1, enterT - exitT));
-  const translateY = (1 - enterT) * 22 - exitT * 18;
+  const getFadeIn  = (i: number) =>
+    i === 0 ? 1 : easeOut3(norm(progress, boundaries[i - 1] - MELT_FADE, boundaries[i - 1] + MELT_FADE));
 
-  // Ambient glow — stays on while active
-  const glowOpacity = Math.max(0, enterT * 0.55 - exitT * 0.55);
+  const getFadeOut = (i: number) =>
+    i === N - 1 ? 0 : easeOut3(norm(progress, boundaries[i] - MELT_FADE, boundaries[i] + MELT_FADE));
+
+  // Which chapter number is currently dominant (for the dot indicator)
+  const activeIdx = boundaries.reduce((acc, b) => (progress >= b - MELT_FADE ? acc + 1 : acc), 0);
 
   return (
-    <div ref={containerRef} style={{ height: "140vh" }}>
+    <div ref={containerRef} style={{ height: `${N * 130}vh` }}>
       <div style={{ position: "sticky", top: 0, height: "100vh", overflow: "hidden" }}>
-        {/* Per-chapter ambient purple glow */}
+
+        {chapters.map(({ render, glowPos }, i) => {
+          const fadeIn   = getFadeIn(i);
+          const fadeOut  = getFadeOut(i);
+          const opacity  = Math.max(0, Math.min(1, fadeIn - fadeOut));
+          // Chapter slides up as it fades out, slides in from below as it fades in
+          const translateY = (1 - fadeIn) * 26 - fadeOut * 20;
+          const active   = opacity > 0.45;
+
+          return (
+            <div
+              key={i}
+              aria-hidden={!active}
+              style={{
+                position: "absolute",
+                inset: 0,
+                opacity,
+                transform: `translateY(${translateY}px)`,
+                willChange: "opacity, transform",
+                pointerEvents: active ? "auto" : "none",
+              }}
+            >
+              {/* Per-chapter ambient glow */}
+              <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  opacity: Math.max(0, opacity * 0.9),
+                  background: `radial-gradient(circle at ${glowPos}, hsl(261 75% 56% / 0.16), transparent 45%)`,
+                }}
+                aria-hidden="true"
+              />
+              {render(active)}
+            </div>
+          );
+        })}
+
+        {/* Chapter dot indicator — bottom center */}
         <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            opacity: glowOpacity,
-            background: `radial-gradient(circle at ${glowPos}, hsl(261 75% 56% / 0.15), transparent 45%)`,
-          }}
+          className="absolute bottom-7 left-1/2 -translate-x-1/2 flex items-center gap-2.5 z-20"
           aria-hidden="true"
-        />
-        {/* Content — pure opacity dissolve, Apple-style */}
-        <div
-          style={{
-            opacity,
-            transform: `translateY(${translateY}px)`,
-            height: "100%",
-            willChange: "transform, opacity",
-          }}
         >
-          {children(active, progress)}
+          {chapters.map((_, i) => (
+            <div
+              key={i}
+              className="rounded-full transition-all duration-500"
+              style={{
+                width:  activeIdx === i ? "20px" : "5px",
+                height: "5px",
+                background: activeIdx === i ? "hsl(261 75% 65%)" : "hsl(0 0% 100% / 0.2)",
+              }}
+            />
+          ))}
         </div>
+
       </div>
     </div>
   );
@@ -608,22 +647,13 @@ export default function DemoPage() {
         </div>
       </section>
 
-      {/* ── Scroll chapters ───────────────────────────────────────────────── */}
-      <ScrollChapter glowPos="18% 50%">
-        {(active) => <SearchChapter active={active} />}
-      </ScrollChapter>
-
-      <ScrollChapter glowPos="82% 50%">
-        {(active) => <LeadsChapter active={active} />}
-      </ScrollChapter>
-
-      <ScrollChapter glowPos="22% 50%">
-        {(active) => <OutreachChapter active={active} />}
-      </ScrollChapter>
-
-      <ScrollChapter glowPos="50% 28%">
-        {(active) => <PipelineChapter active={active} />}
-      </ScrollChapter>
+      {/* ── Melt chapters — all stack in one container, crossfade simultaneously ── */}
+      <MeltContainer chapters={[
+        { render: (active) => <SearchChapter   active={active} />, glowPos: "18% 50%" },
+        { render: (active) => <LeadsChapter    active={active} />, glowPos: "82% 50%" },
+        { render: (active) => <OutreachChapter active={active} />, glowPos: "22% 50%" },
+        { render: (active) => <PipelineChapter active={active} />, glowPos: "50% 28%" },
+      ]} />
 
       {/* ── Results ───────────────────────────────────────────────────────── */}
       <section className="relative py-28 md:py-36 overflow-hidden bg-[#080810]">

@@ -24,13 +24,87 @@ const steps = [
     number: "02",
     title: "Review who's actually worth emailing.",
     body: "Your prospects come back ranked by ICP fit with verified business emails. You see match score, company context, and open job signals — before you write a single word.",
-    visual: null,
+    visual: (
+      <div
+        className="mt-5 rounded-xl overflow-hidden"
+        style={{
+          background: "hsl(261 75% 50% / 0.05)",
+          border: "1px solid hsl(261 75% 50% / 0.18)",
+        }}
+      >
+        {[
+          { name: "Jordan Park",  role: "Head of Sales · Northline",  fit: 94 },
+          { name: "Rina Shah",    role: "VP Revenue · SignalFox",      fit: 88 },
+          { name: "Alex Müller",  role: "Dir. of Sales · GraphiteIQ", fit: 81 },
+        ].map(({ name, role, fit }, i) => (
+          <div
+            key={name}
+            className="flex items-center justify-between gap-4 px-4 py-3"
+            style={{
+              borderBottom: i < 2 ? "1px solid hsl(261 75% 50% / 0.1)" : undefined,
+            }}
+          >
+            <div>
+              <p className="text-sm font-semibold" style={{ color: "hsl(0 0% 88%)" }}>{name}</p>
+              <p className="text-xs mt-0.5" style={{ color: "hsl(0 0% 100% / 0.35)" }}>{role}</p>
+            </div>
+            <div className="flex items-center gap-2.5 flex-shrink-0">
+              <div
+                className="h-1 w-14 rounded-full overflow-hidden"
+                style={{ background: "hsl(0 0% 100% / 0.08)" }}
+              >
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${fit}%`,
+                    background: "linear-gradient(to right, hsl(261 75% 55%), hsl(280 80% 65%))",
+                  }}
+                />
+              </div>
+              <span className="text-xs font-semibold" style={{ color: "hsl(261 75% 68%)" }}>
+                {fit}%
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    ),
   },
   {
     number: "03",
     title: "Send something worth reading.",
     body: "SalesOS drafts a first-touch email from the prospect's actual context — company news, role, growth signals. Edit it in 30 seconds and ship.",
-    visual: null,
+    visual: (
+      <div
+        className="mt-5 rounded-xl overflow-hidden"
+        style={{
+          background: "hsl(261 75% 50% / 0.05)",
+          border: "1px solid hsl(261 75% 50% / 0.18)",
+        }}
+      >
+        <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: "1px solid hsl(261 75% 50% / 0.1)" }}>
+          <span className="text-xs font-medium" style={{ color: "hsl(261 75% 60%)" }}>AI Draft</span>
+          <span
+            className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+            style={{
+              background: "hsl(261 75% 50% / 0.15)",
+              border: "1px solid hsl(261 75% 50% / 0.25)",
+              color: "hsl(261 75% 72%)",
+            }}
+          >
+            Quality check passed
+          </span>
+        </div>
+        <div className="px-4 py-3 space-y-1.5">
+          <p className="text-[11px]" style={{ color: "hsl(0 0% 100% / 0.3)" }}>
+            Subject: Quick idea for Northline's outbound push
+          </p>
+          <p className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
+            Hey Jordan — saw Northline is scaling the sales team in NYC and hiring SDRs right now. That usually means more pressure to build pipeline fast…
+          </p>
+        </div>
+      </div>
+    ),
   },
 ];
 
