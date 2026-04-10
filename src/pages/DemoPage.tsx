@@ -88,8 +88,8 @@ const easeOut3 = (t: number) => 1 - Math.pow(1 - t, 3);
 const norm = (v: number, lo: number, hi: number) =>
   Math.max(0, Math.min(1, (v - lo) / (hi - lo)));
 
-// ─── Scroll chapter: tighter cinematic scene ──────────────────────────────────
-// Content enters quickly, overlaps, then dissolves out
+// ─── Scroll chapter: Apple-style instant dissolve ─────────────────────────────
+// Content enters fast (first 12% of scroll), holds long, dissolves out fast (last 18%)
 const ScrollChapter = ({
   children,
   glowPos = "50% 50%",
@@ -100,53 +100,37 @@ const ScrollChapter = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const progress = useScrollProgress(containerRef as { current: HTMLElement | null });
 
-  const enterT = easeOut3(norm(progress, 0, 0.12));
-  const holdT = norm(progress, 0.14, 0.6);
-  const exitT = easeOut3(norm(progress, 0.52, 0.94));
-  const active = progress >= 0.015 && progress <= 0.96;
+  // Apple-like: fast in, long hold, fast out — no blur
+  const enterT = easeOut3(norm(progress, 0, 0.13));   // 0→13%: snap in
+  const exitT  = easeOut3(norm(progress, 0.80, 0.97)); // 80→97%: snap out
+  const active = progress >= 0.01 && progress <= 0.97;
 
-  const opacity = Math.max(0, Math.min(1, enterT * (1 - exitT * 0.92) + holdT * 0.08));
-  const translateY = (1 - enterT) * 28 - exitT * 26;
-  const scale = 0.968 + enterT * 0.032 - exitT * 0.024;
-  const blur = (1 - enterT) * 10 + exitT * 12;
-  const sceneOpacity = Math.max(0.18, 0.28 + enterT * 0.34 - exitT * 0.22);
-  const sceneScale = 1.04 - enterT * 0.015 + exitT * 0.025;
+  // Pure opacity + minimal translateY — no blur
+  const opacity    = Math.max(0, Math.min(1, enterT - exitT));
+  const translateY = (1 - enterT) * 22 - exitT * 18;
+
+  // Ambient glow — stays on while active
+  const glowOpacity = Math.max(0, enterT * 0.55 - exitT * 0.55);
 
   return (
-    <div ref={containerRef} style={{ height: "116vh" }}>
+    <div ref={containerRef} style={{ height: "140vh" }}>
       <div style={{ position: "sticky", top: 0, height: "100vh", overflow: "hidden" }}>
-        {/* per-chapter ambient glow */}
+        {/* Per-chapter ambient purple glow */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
-            opacity: sceneOpacity,
-            transform: `scale(${sceneScale})`,
-            background: `
-              radial-gradient(circle at ${glowPos}, hsl(261 75% 56% / 0.18), transparent 42%),
-              radial-gradient(circle at 50% 55%, hsl(220 35% 36% / 0.12), transparent 58%),
-              linear-gradient(180deg, rgba(8,8,16,0.14), rgba(8,8,16,0.62))
-            `,
-            filter: `blur(${(2 + exitT * 6).toFixed(1)}px)`,
-            transition: "opacity 180ms linear, transform 180ms linear, filter 180ms linear",
+            opacity: glowOpacity,
+            background: `radial-gradient(circle at ${glowPos}, hsl(261 75% 56% / 0.15), transparent 45%)`,
           }}
           aria-hidden="true"
         />
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            opacity: Math.max(0, enterT * 0.4 - exitT * 0.1),
-            background: `linear-gradient(120deg, transparent 18%, hsl(0 0% 100% / 0.03) 50%, transparent 82%)`,
-            mixBlendMode: "screen",
-          }}
-          aria-hidden="true"
-        />
+        {/* Content — pure opacity dissolve, Apple-style */}
         <div
           style={{
             opacity,
-            transform: `translateY(${translateY}px) scale(${scale})`,
-            filter: blur > 0.1 ? `blur(${blur.toFixed(1)}px)` : "none",
+            transform: `translateY(${translateY}px)`,
             height: "100%",
-            willChange: "transform, opacity, filter",
+            willChange: "transform, opacity",
           }}
         >
           {children(active, progress)}
@@ -408,7 +392,7 @@ const LeadsChapter = ({ active }: { active: boolean }) => (
         </h2>
         <p className="text-base md:text-lg text-white/42 leading-relaxed max-w-sm"
           style={{ animation: active ? "word-rise 0.36s cubic-bezier(0.22,1,0.36,1) 90ms both" : "none", opacity: active ? undefined : 0 }}>
-          Not a massive list. A tighter one with context already built in — so you know who to call first.
+          Not a massive list. A tighter one with context already built in — so you know who to email first.
         </p>
       </div>
     </div>
