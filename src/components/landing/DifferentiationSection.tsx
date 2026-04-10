@@ -51,13 +51,25 @@ export const DifferentiationSection = () => {
       style={{ background: "hsl(0,0%,3%)" }}
       aria-labelledby="differentiation-heading"
     >
-      {/* Top hairline separator */}
-      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "hsl(0 0% 100% / 0.06)" }} />
+      {/* Top hairline */}
+      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "hsl(261 75% 50% / 0.18)" }} />
+
+      {/* Purple glow — right */}
+      <div
+        className="absolute top-1/2 right-0 -translate-y-1/2 w-[450px] h-[550px] pointer-events-none"
+        style={{
+          background: "radial-gradient(ellipse at right, hsl(261 75% 55% / 0.08) 0%, transparent 65%)",
+        }}
+        aria-hidden="true"
+      />
 
       <div className="container relative z-10 mx-auto px-6">
         <div className="max-w-3xl mx-auto">
           {/* Section label */}
-          <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground/50 mb-8">
+          <p
+            className="text-[10px] font-medium uppercase tracking-[0.28em] mb-8"
+            style={{ color: "hsl(261 75% 60%)" }}
+          >
             Why not Apollo?
           </p>
 
@@ -77,8 +89,16 @@ export const DifferentiationSection = () => {
           >
             Apollo sells you contacts.
             <br />
-            <span className="italic" style={{ color: "hsl(0 0% 55%)" }}>
-              We show you who to call next.
+            <span
+              className="italic"
+              style={{
+                background: "linear-gradient(135deg, hsl(261 75% 72%) 0%, hsl(280 80% 68%) 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}
+            >
+              We show you who to email next.
             </span>
           </h2>
 
@@ -101,12 +121,16 @@ export const DifferentiationSection = () => {
 
                 {/* Arrow */}
                 <ArrowRight
-                  className="flex-shrink-0 w-4 h-4 text-muted-foreground/30"
+                  className="flex-shrink-0 w-4 h-4"
+                  style={{ color: "hsl(261 75% 50% / 0.5)" }}
                   aria-hidden="true"
                 />
 
                 {/* SalesOS truth */}
-                <span className="flex-1 text-sm text-foreground font-medium leading-relaxed">
+                <span
+                  className="flex-1 text-sm font-medium leading-relaxed"
+                  style={{ color: "hsl(261 75% 72%)" }}
+                >
                   {row.truth}
                 </span>
               </div>
@@ -136,8 +160,8 @@ export const DifferentiationSection = () => {
         </div>
       </div>
 
-      {/* Bottom hairline separator */}
-      <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: "hsl(0 0% 100% / 0.06)" }} />
+      {/* Bottom hairline */}
+      <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: "hsl(261 75% 50% / 0.18)" }} />
     </section>
   );
 };

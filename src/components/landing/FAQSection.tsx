@@ -16,12 +16,12 @@ const faqs = [
   {
     question: "What happens after I find a lead?",
     answer:
-      "SalesOS enriches the contact with verified email and phone, scores them by ICP fit, and drafts a first-touch email using their company context. You review, edit, and send — from the same screen.",
+      "SalesOS enriches the contact with a verified business email, scores them by ICP fit, and drafts a first-touch email using their company context. You review, edit, and send — from the same screen.",
   },
   {
     question: "How is this different from just buying a contact list?",
     answer:
-      "A contact list gives you 10,000 names. SalesOS gives you 50 that are actually worth calling, ranked by fit, with a draft email ready for each one. Volume without qualification is just noise.",
+      "A contact list gives you 10,000 names. SalesOS gives you 50 that are actually worth emailing, ranked by fit, with a draft already written for each one. Volume without qualification is just noise.",
   },
   {
     question: "What's the catch with the free plan?",
@@ -56,7 +56,16 @@ export const FAQSection = () => {
       {/* Top hairline */}
       <div
         className="absolute top-0 left-0 right-0 h-px"
-        style={{ background: "hsl(0 0% 100% / 0.06)" }}
+        style={{ background: "hsl(261 75% 50% / 0.18)" }}
+      />
+
+      {/* Purple glow — left */}
+      <div
+        className="absolute top-1/2 left-0 -translate-y-1/2 w-[400px] h-[500px] pointer-events-none"
+        style={{
+          background: "radial-gradient(ellipse at left, hsl(261 75% 55% / 0.07) 0%, transparent 65%)",
+        }}
+        aria-hidden="true"
       />
 
       <FAQSchema faqs={faqs} />
@@ -72,7 +81,7 @@ export const FAQSection = () => {
           >
             <p
               className="text-[10px] uppercase tracking-[0.28em] mb-5 font-medium"
-              style={{ color: "hsl(0 0% 100% / 0.25)" }}
+              style={{ color: "hsl(261 75% 60%)" }}
             >
               FAQ
             </p>
@@ -162,7 +171,7 @@ export const FAQSection = () => {
       {/* Bottom hairline */}
       <div
         className="absolute bottom-0 left-0 right-0 h-px"
-        style={{ background: "hsl(0 0% 100% / 0.06)" }}
+        style={{ background: "hsl(261 75% 50% / 0.18)" }}
       />
     </section>
   );

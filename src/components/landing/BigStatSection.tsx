@@ -21,17 +21,17 @@ export const BigStatSection = () => {
     <section
       className="relative py-20 md:py-28"
       style={{
-        borderTop: "1px solid hsl(0 0% 100% / 0.06)",
-        borderBottom: "1px solid hsl(0 0% 100% / 0.06)",
         background: "hsl(0,0%,3%)",
+        borderTop: "1px solid hsl(261 75% 50% / 0.18)",
+        borderBottom: "1px solid hsl(261 75% 50% / 0.18)",
       }}
     >
-      {/* Faint center glow */}
+      {/* Purple glow */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "radial-gradient(ellipse 60% 50% at 50% 50%, hsl(261 75% 55% / 0.05) 0%, transparent 70%)",
+            "radial-gradient(ellipse 60% 50% at 50% 50%, hsl(261 75% 55% / 0.09) 0%, transparent 70%)",
         }}
         aria-hidden="true"
       />
@@ -44,10 +44,10 @@ export const BigStatSection = () => {
               className="flex flex-col items-center md:items-start text-center md:text-left px-8 py-6"
               style={{
                 borderRight:
-                  i < 2 ? "1px solid hsl(0 0% 100% / 0.07)" : undefined,
+                  i < 2 ? "1px solid hsl(261 75% 50% / 0.12)" : undefined,
               }}
             >
-              {/* Big number using display font */}
+              {/* Big number — purple gradient */}
               <span
                 className="font-display block mb-3"
                 style={{
@@ -56,7 +56,7 @@ export const BigStatSection = () => {
                   lineHeight: 1,
                   letterSpacing: "-0.03em",
                   background:
-                    "linear-gradient(135deg, hsl(0 0% 98%) 0%, hsl(0 0% 65%) 100%)",
+                    "linear-gradient(135deg, hsl(0 0% 98%) 0%, hsl(261 75% 72%) 100%)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
@@ -72,7 +72,7 @@ export const BigStatSection = () => {
               </span>
               <span
                 className="block text-xs"
-                style={{ color: "hsl(0 0% 38%)" }}
+                style={{ color: "hsl(261 75% 60% / 0.6)" }}
               >
                 {stat.sub}
               </span>

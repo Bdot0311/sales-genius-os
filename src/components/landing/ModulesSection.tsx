@@ -12,14 +12,14 @@ const modules = [
   {
     number: "02",
     title: "Outreach Studio",
-    tagline: "Context-aware drafts you actually want to send.",
+    tagline: "Context-aware email drafts you actually want to send.",
     description:
       "Each email is built from real company and contact context — news, growth signals, open roles. A quality checker flags issues before you hit send. Shuffle between angles in one click.",
   },
   {
     number: "03",
     title: "Reply Management",
-    tagline: "Inbox zero for your pipeline.",
+    tagline: "Inbox zero for your email pipeline.",
     description:
       "Every response, tracked. Follow-up sequences that keep momentum after the first email lands. No prospect slips through because you forgot to check a separate inbox.",
   },
@@ -28,7 +28,7 @@ const modules = [
     title: "Pipeline & Analytics",
     tagline: "See what's moving. Know what to push.",
     description:
-      "Understand where deals are progressing, where outreach is stalling, and what to prioritize next week. Built for outbound teams — not enterprise dashboards with 40 tabs.",
+      "Understand where email threads are progressing, where outreach is stalling, and what to prioritize next week. Built for outbound teams — not enterprise dashboards with 40 tabs.",
   },
 ];
 
@@ -66,10 +66,20 @@ export const ModulesSection = () => {
       style={{ background: "hsl(0,0%,3%)" }}
       aria-labelledby="modules-heading"
     >
-      {/* Top hairline */}
+      {/* Purple glow blob — center */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse 70% 50% at 50% 50%, hsl(261 75% 55% / 0.06) 0%, transparent 65%)",
+        }}
+        aria-hidden="true"
+      />
+
+      {/* Top hairline — purple tint */}
       <div
         className="absolute top-0 left-0 right-0 h-px"
-        style={{ background: "hsl(0 0% 100% / 0.06)" }}
+        style={{ background: "hsl(261 75% 50% / 0.18)" }}
       />
 
       <div className="container relative z-10 mx-auto px-6">
@@ -83,7 +93,7 @@ export const ModulesSection = () => {
           >
             <p
               className="text-[10px] uppercase tracking-[0.28em] mb-5 font-medium"
-              style={{ color: "hsl(0 0% 100% / 0.25)" }}
+              style={{ color: "hsl(261 75% 60%)" }}
             >
               The Platform
             </p>
@@ -101,8 +111,14 @@ export const ModulesSection = () => {
               Everything you need
               <br />
               <span
-                className="italic"
-                style={{ color: "hsl(0 0% 55%)" }}
+                style={{
+                  background:
+                    "linear-gradient(135deg, hsl(261 75% 72%) 0%, hsl(280 80% 68%) 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                  fontStyle: "italic",
+                }}
               >
                 to run outbound.
               </span>
@@ -118,14 +134,14 @@ export const ModulesSection = () => {
                 onMouseEnter={() => setActiveIndex(index)}
                 onMouseLeave={() => setActiveIndex(null)}
               >
-                {/* Top border */}
+                {/* Top border — pulses to purple on hover */}
                 <div
-                  className="h-px transition-colors duration-300"
+                  className="h-px transition-all duration-300"
                   style={{
                     background:
                       activeIndex === index
-                        ? "hsl(261 75% 55% / 0.3)"
-                        : "hsl(0 0% 100% / 0.07)",
+                        ? "linear-gradient(to right, hsl(261 75% 55% / 0.6), hsl(280 80% 60% / 0.3), transparent)"
+                        : "hsl(261 75% 50% / 0.12)",
                   }}
                 />
 
@@ -135,14 +151,14 @@ export const ModulesSection = () => {
                   }`}
                   style={{ transitionDelay: `${index * 100}ms` }}
                 >
-                  {/* Number */}
+                  {/* Number — purple by default */}
                   <span
                     className="flex-shrink-0 font-mono text-sm transition-colors duration-300 w-10"
                     style={{
                       color:
                         activeIndex === index
                           ? "hsl(261 75% 65%)"
-                          : "hsl(0 0% 100% / 0.2)",
+                          : "hsl(261 75% 50% / 0.5)",
                     }}
                   >
                     {mod.number}
@@ -169,11 +185,11 @@ export const ModulesSection = () => {
                     </p>
                   </div>
 
-                  {/* Description — appears on hover on desktop, always visible on mobile */}
+                  {/* Description */}
                   <div
-                    className="flex-1 md:transition-all md:duration-300"
+                    className="flex-1 transition-all duration-300"
                     style={{
-                      opacity: activeIndex === index ? 1 : 0.45,
+                      opacity: activeIndex === index ? 1 : 0.4,
                     }}
                   >
                     <p
@@ -189,11 +205,11 @@ export const ModulesSection = () => {
             {/* Bottom border */}
             <div
               className="h-px"
-              style={{ background: "hsl(0 0% 100% / 0.07)" }}
+              style={{ background: "hsl(261 75% 50% / 0.12)" }}
             />
           </div>
 
-          {/* Also included — small, subtle */}
+          {/* Also included */}
           <div
             className={`mt-14 flex flex-col sm:flex-row sm:items-center gap-4 transition-all duration-700 ${
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
@@ -202,7 +218,7 @@ export const ModulesSection = () => {
           >
             <p
               className="text-[10px] uppercase tracking-[0.2em] flex-shrink-0"
-              style={{ color: "hsl(0 0% 100% / 0.2)" }}
+              style={{ color: "hsl(261 75% 55% / 0.5)" }}
             >
               Also included
             </p>
@@ -237,8 +253,7 @@ export const ModulesSection = () => {
                 (e.currentTarget.style.color = "hsl(261 75% 65%)")
               }
             >
-              See plans and pricing
-              <span className="text-base leading-none">→</span>
+              See plans and pricing →
             </button>
           </div>
         </div>
@@ -247,7 +262,7 @@ export const ModulesSection = () => {
       {/* Bottom hairline */}
       <div
         className="absolute bottom-0 left-0 right-0 h-px"
-        style={{ background: "hsl(0 0% 100% / 0.06)" }}
+        style={{ background: "hsl(261 75% 50% / 0.18)" }}
       />
     </section>
   );

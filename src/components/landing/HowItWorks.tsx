@@ -7,16 +7,23 @@ const steps = [
     title: "Describe your customer once.",
     body: "Type who you want in plain English — title, industry, company size, location, hiring signals. No filters. No boolean. Just intent.",
     visual: (
-      <div className="mt-4 rounded-md border border-border/40 bg-muted/30 px-4 py-3 font-mono text-sm text-muted-foreground leading-relaxed">
-        <span className="text-primary/60 select-none mr-2">{">"}</span>
+      <div
+        className="mt-5 rounded-md px-4 py-3 font-mono text-sm leading-relaxed"
+        style={{
+          background: "hsl(261 75% 50% / 0.08)",
+          border: "1px solid hsl(261 75% 50% / 0.2)",
+          color: "hsl(261 75% 72%)",
+        }}
+      >
+        <span style={{ color: "hsl(261 75% 50% / 0.5)" }} className="mr-2 select-none">{">"}</span>
         "VP of Sales at Series B SaaS companies in the US, 50–200 employees, actively hiring SDRs"
       </div>
     ),
   },
   {
     number: "02",
-    title: "Review who's actually worth calling.",
-    body: "Your prospects come back ranked by ICP fit with verified contact data. You see match score, company context, and open job signals before you dial.",
+    title: "Review who's actually worth emailing.",
+    body: "Your prospects come back ranked by ICP fit with verified business emails. You see match score, company context, and open job signals — before you write a single word.",
     visual: null,
   },
   {
@@ -35,17 +42,11 @@ export const HowItWorks = () => {
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) {
-          setIsVisible(true);
-        }
+        if (entries[0].isIntersecting) setIsVisible(true);
       },
       { threshold: 0.2 }
     );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
+    if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
   }, []);
 
@@ -57,12 +58,29 @@ export const HowItWorks = () => {
       style={{ background: "hsl(0,0%,3%)" }}
       aria-labelledby="how-it-works-heading"
     >
+      {/* Purple glow — right side */}
+      <div
+        className="absolute top-1/2 right-0 -translate-y-1/2 w-[500px] h-[600px] pointer-events-none"
+        style={{
+          background: "radial-gradient(ellipse at right, hsl(261 75% 55% / 0.07) 0%, transparent 65%)",
+        }}
+        aria-hidden="true"
+      />
+
       {/* Top hairline */}
-      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "hsl(0 0% 100% / 0.06)" }} />
+      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "hsl(261 75% 50% / 0.18)" }} />
 
       <div className="container relative z-10 mx-auto px-6">
         <div className="max-w-[720px]">
-          {/* Headline — left-aligned, no badge, no subheadline */}
+          {/* Section label */}
+          <p
+            className="text-[10px] font-medium uppercase tracking-[0.28em] mb-6"
+            style={{ color: "hsl(261 75% 60%)" }}
+          >
+            How it works
+          </p>
+
+          {/* Headline */}
           <h2
             id="how-it-works-heading"
             className={`font-display max-w-xl mb-16 scroll-reveal ${isVisible ? "visible" : ""}`}
@@ -76,7 +94,14 @@ export const HowItWorks = () => {
           >
             Three steps.
             <br />
-            <span className="italic" style={{ color: "hsl(0 0% 55%)" }}>
+            <span
+              style={{
+                background: "linear-gradient(135deg, hsl(261 75% 72%) 0%, hsl(280 80% 68%) 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}
+            >
               One workflow.
             </span>
           </h2>
@@ -86,28 +111,42 @@ export const HowItWorks = () => {
             {steps.map((step, index) => (
               <div
                 key={index}
-                className={`relative border-b border-border/15 py-10 scroll-reveal ${isVisible ? "visible" : ""}`}
-                style={
-                  { "--reveal-delay": `${index * 140}ms` } as React.CSSProperties
-                }
+                className={`relative border-b py-10 scroll-reveal ${isVisible ? "visible" : ""}`}
+                style={{
+                  "--reveal-delay": `${index * 140}ms`,
+                  borderColor: "hsl(261 75% 50% / 0.12)",
+                } as React.CSSProperties}
               >
                 {/* Large faded background number */}
                 <span
-                  className="absolute top-4 right-0 text-8xl font-bold text-muted-foreground/10 leading-none select-none pointer-events-none"
+                  className="absolute top-4 right-0 text-8xl font-bold leading-none select-none pointer-events-none"
+                  style={{ color: "hsl(261 75% 50% / 0.06)" }}
                   aria-hidden="true"
                 >
                   {step.number}
                 </span>
 
-                {/* Step content with left border accent */}
-                <div className="relative border-l-2 border-primary/30 pl-6">
-                  <p className="text-xs font-mono text-primary/50 tracking-widest mb-3 uppercase">
+                {/* Step content with purple left border */}
+                <div
+                  className="relative pl-6"
+                  style={{ borderLeft: "2px solid hsl(261 75% 55% / 0.5)" }}
+                >
+                  <p
+                    className="font-mono text-xs tracking-widest mb-3 uppercase"
+                    style={{ color: "hsl(261 75% 60%)" }}
+                  >
                     {step.number}
                   </p>
-                  <h3 className="text-2xl font-semibold mb-3 leading-snug">
+                  <h3
+                    className="text-2xl font-semibold mb-3 leading-snug"
+                    style={{ color: "hsl(0 0% 90%)" }}
+                  >
                     {step.title}
                   </h3>
-                  <p className="text-muted-foreground leading-relaxed max-w-lg">
+                  <p
+                    className="leading-relaxed max-w-lg"
+                    style={{ color: "hsl(0 0% 100% / 0.45)" }}
+                  >
                     {step.body}
                   </p>
                   {step.visual}
@@ -123,16 +162,23 @@ export const HowItWorks = () => {
           >
             <button
               onClick={() => navigate("/auth")}
-              className="text-primary hover:underline underline-offset-4 text-sm font-medium transition-colors"
+              className="text-sm font-medium transition-colors duration-200 inline-flex items-center gap-1.5"
+              style={{ color: "hsl(261 75% 65%)" }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.color = "hsl(261 75% 80%)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.color = "hsl(261 75% 65%)")
+              }
             >
-              Try it with your own ICP &rarr;
+              Try it with your own ICP →
             </button>
           </div>
         </div>
       </div>
 
       {/* Bottom hairline */}
-      <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: "hsl(0 0% 100% / 0.06)" }} />
+      <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: "hsl(261 75% 50% / 0.18)" }} />
     </section>
   );
 };

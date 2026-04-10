@@ -25,21 +25,21 @@ export const FinalCTA = () => {
       style={{ background: "hsl(0,0%,3%)" }}
       aria-labelledby="final-cta-heading"
     >
-      {/* Radial glow — subtle, center */}
+      {/* Radial glow — strong purple */}
       <div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full pointer-events-none"
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] rounded-full pointer-events-none"
         style={{
           background:
-            "radial-gradient(circle, hsl(261 75% 50% / 0.08) 0%, transparent 65%)",
+            "radial-gradient(circle, hsl(261 75% 50% / 0.14) 0%, hsl(280 70% 55% / 0.06) 40%, transparent 65%)",
           filter: "blur(60px)",
         }}
         aria-hidden="true"
       />
 
-      {/* Top hairline */}
+      {/* Top hairline — purple */}
       <div
         className="absolute top-0 left-0 right-0 h-px"
-        style={{ background: "hsl(0 0% 100% / 0.06)" }}
+        style={{ background: "hsl(261 75% 50% / 0.18)" }}
       />
 
       <div className="container relative z-10 mx-auto px-6">
@@ -51,7 +51,7 @@ export const FinalCTA = () => {
           {/* Label */}
           <p
             className="text-[10px] uppercase tracking-[0.28em] mb-8 font-medium"
-            style={{ color: "hsl(0 0% 100% / 0.2)" }}
+            style={{ color: "hsl(261 75% 60%)" }}
           >
             Ready when you are
           </p>
@@ -90,7 +90,7 @@ export const FinalCTA = () => {
             }`}
             style={{ color: "hsl(0 0% 100% / 0.35)" }}
           >
-            See who's worth calling in under 2 minutes. No list. No guesswork.
+            See who's worth emailing in under 2 minutes. No list. No guesswork.
           </p>
 
           {/* CTA button */}

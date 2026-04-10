@@ -27,15 +27,15 @@ export const FounderNoteSection = () => {
       {/* Top hairline */}
       <div
         className="absolute top-0 left-0 right-0 h-px"
-        style={{ background: "hsl(0 0% 100% / 0.06)" }}
+        style={{ background: "hsl(261 75% 50% / 0.18)" }}
       />
 
-      {/* Subtle glow */}
+      {/* Purple glow — center */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "radial-gradient(ellipse 60% 50% at 50% 50%, hsl(261 75% 55% / 0.04) 0%, transparent 70%)",
+            "radial-gradient(ellipse 60% 50% at 50% 50%, hsl(261 75% 55% / 0.07) 0%, transparent 70%)",
         }}
         aria-hidden="true"
       />
@@ -52,7 +52,7 @@ export const FounderNoteSection = () => {
               fontSize: "clamp(5rem, 12vw, 10rem)",
               fontWeight: 800,
               fontStyle: "italic",
-              color: "hsl(261 75% 55% / 0.25)",
+              color: "hsl(261 75% 55% / 0.4)",
               lineHeight: 0.8,
             }}
             aria-hidden="true"
@@ -93,7 +93,7 @@ export const FounderNoteSection = () => {
               className="text-base leading-relaxed"
               style={{ color: "hsl(0 0% 100% / 0.5)" }}
             >
-              SalesOS is what I wanted to exist — one place to describe who I want to reach, see who's actually worth calling, and send something worth reading. Not magic. Just the workflow that should have existed years ago.
+              SalesOS is what I wanted to exist — one place to describe who I want to reach, see who's actually worth emailing, and write something worth reading. Not magic. Just the workflow that should have existed years ago.
             </p>
           </div>
 
@@ -117,7 +117,7 @@ export const FounderNoteSection = () => {
               className="text-xs"
               style={{ color: "hsl(0 0% 100% / 0.25)" }}
             >
-              Built in NYC · Launched 2024
+              Built in NYC · Launched 2026
             </p>
           </div>
 
@@ -160,7 +160,7 @@ export const FounderNoteSection = () => {
       {/* Bottom hairline */}
       <div
         className="absolute bottom-0 left-0 right-0 h-px"
-        style={{ background: "hsl(0 0% 100% / 0.06)" }}
+        style={{ background: "hsl(261 75% 50% / 0.18)" }}
       />
     </section>
   );
