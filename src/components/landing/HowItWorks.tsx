@@ -1,26 +1,29 @@
 import { useEffect, useRef, useState } from "react";
-import { MessageSquare, BarChart3, Send, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
 const steps = [
   {
     number: "01",
-    icon: MessageSquare,
-    title: "Describe your ideal customer",
-    description: "Tell SalesOS who you want to reach in plain English: title, industry, company size, geography, or buying signals.",
+    title: "Describe your customer once.",
+    body: "Type who you want in plain English — title, industry, company size, location, hiring signals. No filters. No boolean. Just intent.",
+    visual: (
+      <div className="mt-4 rounded-md border border-border/40 bg-muted/30 px-4 py-3 font-mono text-sm text-muted-foreground leading-relaxed">
+        <span className="text-primary/60 select-none mr-2">{">"}</span>
+        "VP of Sales at Series B SaaS companies in the US, 50–200 employees, actively hiring SDRs"
+      </div>
+    ),
   },
   {
     number: "02",
-    icon: BarChart3,
-    title: "Review ranked, enriched matches",
-    description: "See best-fit prospects first with company context, verified contact data, and scoring that helps you prioritize faster.",
+    title: "Review who's actually worth calling.",
+    body: "Your prospects come back ranked by ICP fit with verified contact data. You see match score, company context, and open job signals before you dial.",
+    visual: null,
   },
   {
     number: "03",
-    icon: Send,
-    title: "Launch personalized outreach",
-    description: "Generate tailored emails, manage replies, and move prospects into your workflow without juggling disconnected tools.",
+    title: "Send something worth reading.",
+    body: "SalesOS drafts a first-touch email from the prospect's actual context — company news, role, growth signals. Edit it in 30 seconds and ship.",
+    visual: null,
   },
 ];
 
@@ -47,96 +50,89 @@ export const HowItWorks = () => {
   }, []);
 
   return (
-    <section 
+    <section
       ref={sectionRef}
-      id="how-it-works" 
+      id="how-it-works"
       className="relative py-24 md:py-32 overflow-hidden"
       aria-labelledby="how-it-works-heading"
     >
-      {/* Unified background */}
+      {/* Background glow */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div 
+        <div
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[600px]"
           style={{
-            background: 'radial-gradient(ellipse at center, hsl(261 75% 50% / 0.06) 0%, transparent 60%)',
+            background:
+              "radial-gradient(ellipse at center, hsl(261 75% 50% / 0.06) 0%, transparent 60%)",
           }}
           aria-hidden="true"
         />
       </div>
-      
+
       {/* Top hairline separator */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
-      
+
       <div className="container relative z-10 mx-auto px-6">
-        <div className="max-w-[1120px] mx-auto">
-          {/* Header */}
-          <div className={`text-center mb-16 scroll-reveal ${isVisible ? 'visible' : ''}`}>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-xs font-medium text-primary mb-5">
-              3 Steps. That's it.
-            </div>
-            <h2 id="how-it-works-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
-              How it works
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-              From ICP description to qualified leads in three simple steps.
-            </p>
-          </div>
+        <div className="max-w-[720px]">
+          {/* Headline — left-aligned, no badge, no subheadline */}
+          <h2
+            id="how-it-works-heading"
+            className={`text-4xl sm:text-5xl font-bold tracking-tight max-w-xl mb-16 scroll-reveal ${isVisible ? "visible" : ""}`}
+          >
+            Three steps.
+            <br />
+            One workflow.
+          </h2>
 
-          {/* Steps - horizontal on desktop, stacked on mobile */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-0 mb-10 relative">
-            {/* Connecting line (desktop) */}
-            <div className="hidden md:block absolute top-[68px] left-[16.67%] right-[16.67%] h-px overflow-hidden">
-              <div 
-                className={`h-full bg-gradient-to-r from-primary/40 via-primary/20 to-primary/40 transition-all duration-1000 ease-out ${isVisible ? 'w-full' : 'w-0'}`}
-                style={{ transitionDelay: '400ms' }}
-              />
-            </div>
-
+          {/* Step list */}
+          <div className="flex flex-col">
             {steps.map((step, index) => (
-              <div 
+              <div
                 key={index}
-                className={`relative scroll-reveal ${isVisible ? 'visible' : ''}`}
-                style={{ '--reveal-delay': `${index * 120}ms` } as React.CSSProperties}
+                className={`relative border-b border-border/15 py-10 scroll-reveal ${isVisible ? "visible" : ""}`}
+                style={
+                  { "--reveal-delay": `${index * 140}ms` } as React.CSSProperties
+                }
               >
-                <div className="text-center md:px-6">
-                  {/* Step number with glow */}
-                  <div className="text-xs font-mono text-primary/70 mb-4 tracking-wider">{step.number}</div>
-                  
-                  {/* Icon with gradient bg */}
-                  <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center relative group">
-                    <step.icon className="w-7 h-7 text-primary" aria-hidden="true" />
-                    {/* Subtle ring */}
-                    <div className={`absolute inset-0 rounded-2xl border border-primary/20 transition-all duration-500 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`} 
-                      style={{ transitionDelay: `${index * 120 + 200}ms` }}
-                    />
-                  </div>
-                  
-                  {/* Content */}
-                  <h3 className="text-lg font-semibold mb-2">{step.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed max-w-xs mx-auto">{step.description}</p>
+                {/* Large faded background number */}
+                <span
+                  className="absolute top-4 right-0 text-8xl font-bold text-muted-foreground/10 leading-none select-none pointer-events-none"
+                  aria-hidden="true"
+                >
+                  {step.number}
+                </span>
+
+                {/* Step content with left border accent */}
+                <div className="relative border-l-2 border-primary/30 pl-6">
+                  <p className="text-xs font-mono text-primary/50 tracking-widest mb-3 uppercase">
+                    {step.number}
+                  </p>
+                  <h3 className="text-2xl font-semibold mb-3 leading-snug">
+                    {step.title}
+                  </h3>
+                  <p className="text-muted-foreground leading-relaxed max-w-lg">
+                    {step.body}
+                  </p>
+                  {step.visual}
                 </div>
               </div>
             ))}
           </div>
 
-          {/* No complexity line + secondary CTA */}
-          <div className={`text-center scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '350ms' } as React.CSSProperties}>
-            <p className="text-sm text-muted-foreground/70 font-medium mb-6">
-              No boolean queries. No complex filters. No data entry.
-            </p>
-            <Button
-              variant="outline"
-              size="lg"
-              className="h-12 px-6 text-base font-medium rounded-lg btn-outline-hover group"
-              onClick={() => navigate('/auth')}
+          {/* Bottom CTA */}
+          <div
+            className={`pt-10 scroll-reveal ${isVisible ? "visible" : ""}`}
+            style={{ "--reveal-delay": "420ms" } as React.CSSProperties}
+          >
+            <button
+              onClick={() => navigate("/auth")}
+              className="text-primary hover:underline underline-offset-4 text-sm font-medium transition-colors"
             >
-              Try it now — describe your first ICP
-              <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-0.5 transition-transform duration-150" aria-hidden="true" />
-            </Button>
+              Try it with your own ICP &rarr;
+            </button>
           </div>
         </div>
       </div>
-      
+
       {/* Bottom hairline separator */}
       <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
     </section>

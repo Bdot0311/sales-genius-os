@@ -1,6 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { MessageSquareHeart, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
 export const FounderNoteSection = () => {
@@ -23,54 +21,69 @@ export const FounderNoteSection = () => {
   return (
     <section
       ref={ref}
-      className="relative py-24 md:py-32 overflow-hidden"
+      className="relative py-24 md:py-32 overflow-hidden bg-muted/20"
       aria-labelledby="founder-note-heading"
     >
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
 
       <div className="container relative z-10 mx-auto px-6">
-        <div className="max-w-4xl mx-auto">
-          <div className={`rounded-3xl border border-border/30 bg-card/40 p-8 md:p-12 scroll-reveal ${isVisible ? 'visible' : ''}`}>
-            <div className="max-w-3xl mx-auto text-center">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-xs font-medium text-primary mb-6">
-                <MessageSquareHeart className="w-3.5 h-3.5" />
-                Founder note
-              </div>
+        <div
+          className={`max-w-2xl mx-auto transition-all duration-700 ${
+            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+          }`}
+        >
+          {/* Quote card */}
+          <div className="relative rounded-2xl border border-border/30 bg-card/60 p-8 md:p-12 border-l-4 border-l-primary/30">
+            {/* Opening line */}
+            <p
+              id="founder-note-heading"
+              className="text-2xl sm:text-3xl font-light italic leading-relaxed text-foreground"
+            >
+              "I was paying $500/month for Apollo and still spending three hours
+              a day on LinkedIn."
+            </p>
 
-              <h2 id="founder-note-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-5">
-                Built for teams that are tired of cobbling outbound together
-              </h2>
-
-              <div className="space-y-4 text-base text-muted-foreground leading-relaxed text-left sm:text-center">
-                <p>
-                  SalesOS was built around a simple frustration: too much outbound work still starts with messy filters, manual list-building, and a pile of disconnected tools.
-                </p>
-                <p>
-                  SalesOS helps teams describe who they want to reach, find better-fit leads faster, and move into outreach without wasting hours on setup.
-                </p>
-                <p>
-                  If you run founder-led sales, manage outbound for clients, or need a faster path from ICP to pipeline, that is exactly who SalesOS is for.
-                </p>
-              </div>
-
-              <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-                <Button
-                  size="lg"
-                  className="group"
-                  onClick={() => navigate('/pricing')}
-                >
-                  View plans
-                  <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-0.5" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={() => navigate('/auth')}
-                >
-                  Explore the workflow
-                </Button>
-              </div>
+            {/* Body */}
+            <div className="mt-6 space-y-4 text-base text-muted-foreground leading-relaxed">
+              <p>
+                The data wasn't the problem. The workflow was. I'd export a
+                list, paste it into a spreadsheet, score it manually, write
+                emails one at a time, and track replies in a separate inbox.
+                Four tools. Six context switches. Most of it was just overhead.
+              </p>
+              <p>
+                SalesOS is what I wanted to exist — one place to describe who I
+                want to reach, see who's actually worth reaching out to, and
+                send something worth reading. It's not magic. It's just the
+                workflow that should have existed years ago.
+              </p>
             </div>
+
+            {/* Signature */}
+            <div className="mt-8 pt-6 border-t border-border/20">
+              <p className="text-sm font-medium text-foreground">
+                — Brandon, Founder of SalesOS
+              </p>
+              <p className="text-xs text-muted-foreground/50 mt-1">
+                Built in NYC · Launched 2024
+              </p>
+            </div>
+          </div>
+
+          {/* Below-card CTAs */}
+          <div className="mt-8 flex items-center gap-6 pl-1">
+            <button
+              onClick={() => navigate("/pricing")}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200"
+            >
+              View plans &rarr;
+            </button>
+            <button
+              onClick={() => navigate("/auth")}
+              className="text-sm text-foreground font-medium hover:text-primary transition-colors duration-200"
+            >
+              Try it free &rarr;
+            </button>
           </div>
         </div>
       </div>

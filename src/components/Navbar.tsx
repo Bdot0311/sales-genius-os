@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ArrowRight } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 
@@ -59,10 +59,10 @@ export const Navbar = () => {
   ];
 
   return (
-    <nav 
+    <nav
       className={`fixed left-0 right-0 z-50 transition-all duration-200 ${
-        isScrolled 
-          ? 'bg-background/95 backdrop-blur-md border-b border-border/40' 
+        isScrolled
+          ? 'bg-background/95 backdrop-blur-md border-b border-border/40'
           : 'bg-transparent'
       }`}
       style={{ top: 'env(safe-area-inset-top, 0px)' }}
@@ -72,9 +72,10 @@ export const Navbar = () => {
       <div className="container mx-auto px-4 sm:px-6">
         <div className="max-w-[1120px] mx-auto">
           <div className="flex items-center justify-between h-14 sm:h-16">
+
             {/* Logo */}
-            <div 
-              className="flex items-center gap-2 sm:gap-2.5 cursor-pointer flex-shrink-0" 
+            <div
+              className="flex items-center gap-2 sm:gap-2.5 cursor-pointer flex-shrink-0"
               onClick={() => navigate('/')}
               role="link"
               tabIndex={0}
@@ -82,18 +83,18 @@ export const Navbar = () => {
               aria-label="SalesOS home"
             >
               {whiteLabelSettings?.logo_url ? (
-                <img 
-                  src={whiteLabelSettings.logo_url} 
-                  alt={whiteLabelSettings.company_name || "Logo"} 
-                  className="h-7 sm:h-8" 
+                <img
+                  src={whiteLabelSettings.logo_url}
+                  alt={whiteLabelSettings.company_name || "Logo"}
+                  className="h-7 sm:h-8"
                 />
               ) : (
                 <>
-                  <img 
+                  <img
                     src={LOGO_URL}
-                    alt="SalesOS Logo" 
-                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-contain" 
-                    width={32} 
+                    alt="SalesOS Logo"
+                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-contain"
+                    width={32}
                     height={32}
                     loading="eager"
                     fetchPriority="high"
@@ -123,19 +124,30 @@ export const Navbar = () => {
 
             {/* CTA Buttons */}
             <div className="flex items-center gap-2 sm:gap-3">
-              <Button 
-                variant="ghost" 
+              {/* Primary CTA — Start free */}
+              <Button
                 size="sm"
-                className="text-sm text-muted-foreground hover:text-primary hover:bg-primary/10 font-medium px-3"
+                className="hidden md:flex bg-foreground text-background hover:bg-foreground/90 text-sm font-medium"
+                onClick={() => navigate("/auth")}
+              >
+                Start free
+                <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+              </Button>
+
+              {/* De-emphasized Login */}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-sm text-muted-foreground hover:text-foreground font-medium px-3"
                 onClick={() => navigate("/auth")}
               >
                 Login
               </Button>
-              
+
               {/* Mobile menu button */}
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 className="md:hidden w-9 h-9"
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 aria-expanded={isMenuOpen}
@@ -144,12 +156,13 @@ export const Navbar = () => {
                 {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </Button>
             </div>
+
           </div>
         </div>
       </div>
-      
+
       {/* Mobile Menu */}
-      <div 
+      <div
         className={`md:hidden overflow-hidden transition-all duration-200 ${
           isMenuOpen ? 'max-h-80 opacity-100' : 'max-h-0 opacity-0'
         }`}
@@ -167,10 +180,18 @@ export const Navbar = () => {
                 {link.label}
               </button>
             ))}
-            <div className="pt-3 border-t border-border/40 mt-3">
-              <Button 
-                className="w-full bg-foreground text-background hover:bg-foreground/90"
-                onClick={() => navigate("/auth")}
+            <div className="pt-3 border-t border-border/40 mt-3 flex flex-col gap-2">
+              <Button
+                className="w-full bg-foreground text-background hover:bg-foreground/90 font-medium"
+                onClick={() => { navigate("/auth"); setIsMenuOpen(false); }}
+              >
+                Start free
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full text-muted-foreground"
+                onClick={() => { navigate("/auth"); setIsMenuOpen(false); }}
               >
                 Login
               </Button>

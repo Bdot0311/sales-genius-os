@@ -1,12 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { X } from "lucide-react";
 
-const painPoints = [
-  "You are still building lead lists by hand instead of talking to prospects",
-  "Finding the right contacts means juggling databases, filters, and boolean search",
-  "You waste time on bad-fit accounts because there is no clear scoring or prioritization",
-  "Personalized outreach takes too long to produce consistently",
-  "Replies, follow-ups, and next steps get scattered across too many tools",
+const lines = [
+  "You spend Monday building a list.",
+  "Tuesday writing emails.",
+  "Wednesday realizing half are wrong-fit.",
 ];
 
 export const ProblemSection = () => {
@@ -33,51 +30,56 @@ export const ProblemSection = () => {
   return (
     <section
       ref={ref}
-      className="relative py-16 md:py-24 overflow-hidden"
+      className="relative py-24 md:py-32 overflow-hidden"
       aria-labelledby="problem-heading"
     >
       {/* Top hairline separator */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
 
       <div className="container relative z-10 mx-auto px-6">
-        <div className="max-w-[720px] mx-auto">
-          <div
-            className={`relative p-8 md:p-10 rounded-2xl border border-border/30 bg-gradient-to-b from-muted/50 to-muted/20 scroll-reveal ${
-              isVisible ? 'visible' : ''
-            }`}
-          >
-            {/* Spotlight effect */}
-            <div className="absolute inset-0 rounded-2xl opacity-0 hover:opacity-100 transition-opacity duration-200 pointer-events-none spotlight-card" />
+        <div className="max-w-4xl mx-auto text-center">
+          {/* Section label */}
+          <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground/50 mb-10">
+            The Problem
+          </p>
 
-            <div className="relative z-10">
-              <h2
-                id="problem-heading"
-                className="text-2xl sm:text-3xl font-bold tracking-tight mb-3 text-center"
+          {/* Staggered headline lines */}
+          <h2 id="problem-heading" className="space-y-2 mb-12">
+            {lines.map((line, index) => (
+              <span
+                key={index}
+                className={`block text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight transition-all duration-700 ${
+                  isVisible
+                    ? "opacity-100 translate-y-0"
+                    : "opacity-0 translate-y-4"
+                }`}
+                style={{ transitionDelay: `${index * 100}ms` }}
               >
-                Sound familiar?
-              </h2>
-              <p className="text-center text-muted-foreground text-sm sm:text-base mb-8 max-w-lg mx-auto leading-relaxed">
-                Most B2B sales teams spend nearly half their time finding leads instead of closing them. The tools that are supposed to help make it worse — not better.
-              </p>
+                {line}
+              </span>
+            ))}
+          </h2>
 
-              <ul className="space-y-4">
-                {painPoints.map((point, index) => (
-                  <li
-                    key={index}
-                    className={`flex items-start gap-4 scroll-reveal ${isVisible ? 'visible' : ''}`}
-                    style={{ '--reveal-delay': `${(index + 1) * 80}ms` } as React.CSSProperties}
-                  >
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-destructive/10 flex items-center justify-center mt-0.5">
-                      <X className="w-3.5 h-3.5 text-destructive" aria-hidden="true" />
-                    </div>
-                    <span className="text-base sm:text-lg text-muted-foreground leading-relaxed">
-                      {point}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
+          {/* Subtext */}
+          <p
+            className={`text-lg text-muted-foreground font-light max-w-2xl mx-auto leading-relaxed transition-all duration-700 ${
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            }`}
+            style={{ transitionDelay: "400ms" }}
+          >
+            The average outbound team spends 40% of their week on research.
+            SalesOS cuts that to under 20 minutes — and the leads are actually
+            worth calling.
+          </p>
+
+          {/* Divider */}
+          <div
+            className={`mt-16 h-px bg-gradient-to-r from-transparent via-border/40 to-transparent transition-all duration-700 ${
+              isVisible ? "opacity-100" : "opacity-0"
+            }`}
+            style={{ transitionDelay: "500ms" }}
+            aria-hidden="true"
+          />
         </div>
       </div>
 

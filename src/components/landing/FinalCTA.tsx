@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export const FinalCTA = () => {
   const [isVisible, setIsVisible] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLElement>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -26,108 +26,67 @@ export const FinalCTA = () => {
   }, []);
 
   return (
-    <section 
-      ref={ref} 
-      className="relative py-28 md:py-40 overflow-hidden"
+    <section
+      ref={ref}
+      className="relative py-32 md:py-40 overflow-hidden"
       aria-labelledby="final-cta-heading"
     >
-      {/* Dramatic background */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div 
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[700px] aurora-ambient"
-          style={{
-            background: 'radial-gradient(ellipse at center, hsl(261 75% 50% / 0.15) 0%, hsl(280 70% 45% / 0.08) 30%, transparent 60%)',
-          }}
-          aria-hidden="true"
-        />
-        {/* Secondary glow */}
-        <div 
-          className="absolute top-1/3 left-1/4 w-[500px] h-[500px] animate-glow-pulse"
-          style={{
-            background: 'radial-gradient(circle, hsl(280 75% 55% / 0.08) 0%, transparent 60%)',
-          }}
-          aria-hidden="true"
-        />
-        <div 
-          className="absolute bottom-1/3 right-1/4 w-[400px] h-[400px] animate-glow-pulse"
-          style={{
-            background: 'radial-gradient(circle, hsl(261 75% 55% / 0.06) 0%, transparent 60%)',
-            animationDelay: '1.5s',
-          }}
-          aria-hidden="true"
-        />
-      </div>
-      
+      {/* Radial glow blob */}
+      <div
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full pointer-events-none blur-3xl"
+        style={{
+          background:
+            "radial-gradient(circle, hsl(261 75% 50% / 0.05) 0%, transparent 70%)",
+        }}
+        aria-hidden="true"
+      />
+
       {/* Top hairline separator */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
-      
+
       <div className="container relative z-10 mx-auto px-6">
-        <div className="max-w-[1120px] mx-auto">
-          <div className={`max-w-3xl mx-auto text-center scroll-reveal ${isVisible ? 'visible' : ''}`}>
-            {/* Animated border card */}
-            <div className="animated-border pulse-glow">
-              <div className="relative p-12 md:p-16 rounded-2xl bg-gradient-to-b from-card/95 via-card/90 to-card/80 overflow-hidden">
-                {/* Inner glow */}
-                <div 
-                  className="absolute inset-0 pointer-events-none"
-                  style={{
-                    background: 'radial-gradient(ellipse at 50% 0%, hsl(261 75% 65% / 0.08) 0%, transparent 50%)',
-                  }}
-                  aria-hidden="true"
-                />
-                
-                {/* Sparkle icon */}
-                <div className={`inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 mb-6 transition-all duration-700 delay-100 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}>
-                  <Sparkles className="w-7 h-7 text-primary" aria-hidden="true" />
-                </div>
-                
-                <div className="relative z-10">
-                  <h2 id="final-cta-heading" className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight mb-5">
-                    Ready to find your next{" "}
-                    <span className="text-shimmer">best-fit lead</span>?
-                  </h2>
-                  
-                  <p className="text-lg sm:text-xl text-muted-foreground mb-10 max-w-lg mx-auto leading-relaxed">
-                    Describe your ideal customer, review matched prospects, and choose the SalesOS plan that fits your outbound workflow.
-                  </p>
+        <div
+          className={`flex flex-col items-center text-center scroll-reveal ${isVisible ? "visible" : ""}`}
+        >
+          {/* Label */}
+          <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground/50 mb-6">
+            READY WHEN YOU ARE
+          </p>
 
-                  {/* Social proof — moment of highest doubt */}
-                  <blockquote className="mb-8 px-4">
-                    <p className="text-sm italic text-muted-foreground/60 leading-relaxed">
-                      "SalesOS cut out the list-building busywork. We could focus on messaging and meetings instead of research."
-                    </p>
-                    <footer className="text-xs text-muted-foreground/40 mt-2">
-                      — Early SalesOS user
-                    </footer>
-                  </blockquote>
+          {/* Headline */}
+          <h2
+            id="final-cta-heading"
+            className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-tight"
+          >
+            Your next customer
+            <br />
+            <span className="bg-gradient-to-r from-primary to-primary/50 bg-clip-text text-transparent">
+              is already out there.
+            </span>
+          </h2>
 
-                  {/* CTA with glow */}
-                  <Button
-                    size="lg"
-                    className="h-16 px-10 text-lg font-semibold bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl group shadow-[0_0_30px_hsl(261_75%_65%/0.3)] hover:shadow-[0_0_50px_hsl(261_75%_65%/0.45)] hover:-translate-y-1 transition-all duration-300"
-                    onClick={() => navigate('/auth')}
-                  >
-                    <span>View plans and get started</span>
-                    <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1.5 transition-transform duration-200" aria-hidden="true" />
-                  </Button>
+          {/* Subheadline */}
+          <p className="text-xl font-light text-muted-foreground text-center max-w-xl mx-auto mt-4">
+            Stop researching. Start selling.
+          </p>
 
-                  {/* Trust signals */}
-                  <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-sm text-muted-foreground/60">
-                    <span>Plans from $39/month</span>
-                    <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
-                    <span>Sample workflow available</span>
-                    <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
-                    <span>Setup in 2 min</span>
-                  </div>
+          {/* CTA */}
+          <Button
+            size="lg"
+            className="mt-10 h-14 px-10 text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl group shadow-[0_0_30px_hsl(261_75%_65%/0.3)] hover:shadow-[0_0_50px_hsl(261_75%_65%/0.45)] hover:-translate-y-1 transition-all duration-300"
+            onClick={() => navigate("/auth")}
+          >
+            <span>Start for free</span>
+            <ArrowRight
+              className="w-5 h-5 ml-2 group-hover:translate-x-1.5 transition-transform duration-200"
+              aria-hidden="true"
+            />
+          </Button>
 
-                  {/* Risk reversal */}
-                  <p className="mt-5 text-xs text-muted-foreground/40 max-w-sm mx-auto leading-relaxed">
-                    Preview the workflow, then choose the plan that matches your prospecting volume and team needs.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* Trust line */}
+          <p className="mt-4 text-xs text-muted-foreground/50">
+            No credit card required · Plans from $39/mo · Cancel anytime
+          </p>
         </div>
       </div>
     </section>

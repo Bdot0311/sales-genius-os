@@ -1,11 +1,10 @@
 import { lazy, Suspense } from "react";
 import { Navbar } from "@/components/Navbar";
 import { HeroSection } from "@/components/landing/HeroSection";
-import { TrustedByBar } from "@/components/landing/TrustedByBar";
-import { 
-  SEOHead, 
-  OrganizationSchema, 
-  SoftwareApplicationSchema, 
+import {
+  SEOHead,
+  OrganizationSchema,
+  SoftwareApplicationSchema,
   WebSiteSchema,
   ServiceSchema,
   SpeakableSchema,
@@ -18,14 +17,9 @@ import { useSpotlightEffect } from "@/hooks/use-spotlight-effect";
 const HowItWorks = lazy(() => import("@/components/landing/HowItWorks").then(m => ({ default: m.HowItWorks })));
 const ProblemSection = lazy(() => import("@/components/landing/ProblemSection").then(m => ({ default: m.ProblemSection })));
 const ModulesSection = lazy(() => import("@/components/landing/ModulesSection").then(m => ({ default: m.ModulesSection })));
-const TestimonialsSection = lazy(() => import("@/components/landing/TestimonialsSection").then(m => ({ default: m.TestimonialsSection })));
+const BigStatSection = lazy(() => import("@/components/landing/BigStatSection").then(m => ({ default: m.BigStatSection })));
 const DifferentiationSection = lazy(() => import("@/components/landing/DifferentiationSection").then(m => ({ default: m.DifferentiationSection })));
-const ExampleSearchSection = lazy(() => import("@/components/landing/ExampleSearchSection").then(m => ({ default: m.ExampleSearchSection })));
-const ExampleOutreachSection = lazy(() => import("@/components/landing/ExampleOutreachSection").then(m => ({ default: m.ExampleOutreachSection })));
 const FounderNoteSection = lazy(() => import("@/components/landing/FounderNoteSection").then(m => ({ default: m.FounderNoteSection })));
-const Demo = lazy(() => import("@/components/Demo").then(m => ({ default: m.Demo })));
-const IntegrationsSection = lazy(() => import("@/components/landing/IntegrationsSection").then(m => ({ default: m.IntegrationsSection })));
-const PricingTeaser = lazy(() => import("@/components/landing/PricingTeaser").then(m => ({ default: m.PricingTeaser })));
 const FAQSection = lazy(() => import("@/components/landing/FAQSection").then(m => ({ default: m.FAQSection })));
 const FinalCTA = lazy(() => import("@/components/landing/FinalCTA").then(m => ({ default: m.FinalCTA })));
 const FooterSection = lazy(() => import("@/components/landing/FooterSection").then(m => ({ default: m.FooterSection })));
@@ -97,63 +91,58 @@ const keyFeatures = [
 const Index = () => {
   // Enable cursor-following spotlight effect on cards
   useSpotlightEffect();
-  
+
   return (
     <>
-      <SEOHead 
-        title="SalesOS - Plain-English B2B Lead Discovery"
-        description="Describe your ideal customer in plain English, find qualified B2B leads, and launch more relevant outreach faster with SalesOS."
+      <SEOHead
+        title="SalesOS — Find Who to Sell To. Then Actually Sell to Them."
+        description="SalesOS turns your ICP into ranked prospects with verified contact data and AI-drafted emails. Less research. More pipeline."
         keywords="B2B lead generation, lead discovery, outbound sales software, plain English lead search, sales outreach, lead enrichment, B2B prospecting"
         ogImage="https://ghgfjnepvxvxrncmskys.supabase.co/storage/v1/object/public/social-images/salesos-logo.png"
       />
-      
+
       {/* Core Schema Markup */}
       <OrganizationSchema />
       <SoftwareApplicationSchema />
       <WebSiteSchema />
       <ServiceSchema />
       <SpeakableSchema cssSelectors={["h1", "h2", ".hero-description", ".feature-description"]} />
-      
+
       {/* AEO: HowTo Schema for "How to use SalesOS" queries */}
-      <HowToSchema 
+      <HowToSchema
         name="How to Get Started with SalesOS"
         description="Learn how to preview the SalesOS workflow, identify qualified leads, and move toward live outreach in 5 clear steps."
         steps={gettingStartedSteps}
         totalTime="PT5M"
       />
-      
+
       {/* AEO: ItemList for feature discovery */}
-      <ItemListSchema 
+      <ItemListSchema
         name="SalesOS Key Features"
         items={keyFeatures}
       />
-      
+
       <div className="min-h-screen bg-background text-foreground">
         <Navbar />
         <main itemScope itemType="https://schema.org/WebPage">
           <article>
             {/* Above the fold - eagerly loaded */}
             <HeroSection />
-            <TrustedByBar />
 
             {/* Below the fold - lazy loaded with content-visibility for rendering efficiency */}
             <Suspense fallback={<SectionLoader />}>
               <div className="lazy-section"><ProblemSection /></div>
               <div className="lazy-section"><HowItWorks /></div>
-              <div className="lazy-section"><ExampleSearchSection /></div>
               <div className="lazy-section"><ModulesSection /></div>
-              <div className="lazy-section"><ExampleOutreachSection /></div>
+              <div className="lazy-section"><BigStatSection /></div>
               <div className="lazy-section"><DifferentiationSection /></div>
               <div className="lazy-section"><FounderNoteSection /></div>
-              <div className="lazy-section"><TestimonialsSection /></div>
-              <div className="lazy-section"><IntegrationsSection /></div>
-              <div className="lazy-section"><PricingTeaser /></div>
               <div className="lazy-section"><FAQSection /></div>
               <FinalCTA />
             </Suspense>
           </article>
         </main>
-        
+
         {/* Footer */}
         <Suspense fallback={<SectionLoader />}>
           <FooterSection />
