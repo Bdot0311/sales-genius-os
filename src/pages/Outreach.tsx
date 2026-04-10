@@ -186,6 +186,7 @@ interface EmailVariant {
   id: string;
   subject: string;
   body: string;
+  label?: string;
 }
 
 interface EmailDraft {
@@ -933,31 +934,55 @@ const Outreach = () => {
     if (!generatedEmail || fixingCheck) return;
     setFixingCheck(checkLabel);
 
+    // Hard constraints that MUST hold after every fix — same rules as the edge function
+    const IMMUTABLE_RULES = `
+IMMUTABLE RULES — these apply regardless of the fix task:
+- Total email body MUST stay under 75 words. Count carefully.
+- NEVER use: "I noticed", "I hope this finds you", "I wanted to reach out", "just reaching out", "touching base", "circling back", "I came across", "as a leader in", "innovative solution", "cutting-edge", "synergy", "leverage", "I'd love to connect", "looking forward to hearing from you", "quick question", "just following up", "wanted to follow up"
+- Greeting stays as "Hi [FirstName]," — do not change it
+- Sign-off stays as just the sender's first name on its own line — do not add "Best," or "Thanks,"
+- Do NOT introduce new percentage claims, statistics, or unverified benchmarks
+- Do NOT add new links or URLs
+- Do NOT add new placeholder tokens like [Name] or {company}
+- Return ONLY the email body — no subject line, no headers, no explanation`;
+
+    // Surgical, targeted instructions per check — only touch what's broken
+    const fixInstructions: Record<string, string> = {
+      'Spam Risk': `TASK: Remove spam-trigger words only. Identify words like "free", "guarantee", "winner", "act now", "limited time", "special promotion", "earn money", "risk free" and replace each with a plain business equivalent. Change as FEW words as possible — do not rewrite sentences that don't contain spam words.`,
+      'Length': `TASK: Adjust the word count to 50–70 words. If over 70 words, cut the most generic or redundant sentence. If under 40 words, add one specific detail about the prospect's situation. Do not change the opening line or the CTA.`,
+      'Readability': `TASK: Simplify sentence structure only. Find any sentence over 20 words and split it or shorten it. Replace multi-syllable words (e.g. "utilize" → "use", "facilitate" → "help", "leverage" → "use"). Do not change the meaning or the CTA.`,
+      'CTA': `TASK: Fix the call-to-action only. Replace the current ask with a single low-friction question on the last content line before the sign-off. Use one of: "Worth a look?", "Open to seeing it?", "Worth a quick chat?", "Should I send a 2-minute breakdown?", or "Want to compare to your current process?" — pick whichever fits the email's tone. Do not change the opening or body.`,
+      'Personalization': `TASK: Remove unfilled placeholder tokens only. Find any text matching patterns like [Name], [Company], {name}, {company}, <FirstName>, {{company}} and replace with a natural generic reference (e.g. "your team", "your company", "your workflow"). Change nothing else.`,
+      'Credibility': `TASK: Remove or soften unverified claims only. Find percentage stats, multiplier claims (3x, 4x), benchmark numbers, or phrases like "teams cut ramp time" and either remove them or replace with a specific but unquantified outcome (e.g. "3x faster" → "noticeably faster"). Change nothing else.`,
+      'Naturalness': `TASK: Rewrite the opening line only (the first sentence after "Hi [Name],"). It must NOT start with: "I noticed", "I hope", "I wanted", "Just", "I came across", "I was", "I've been". Start with a direct observation about their company or role — something that shows you understand their world right now. Keep the rest of the email exactly as-is.`,
+      'Links': `TASK: Remove URLs and hyperlinks only. Find all instances of http://, https://, href= and remove them. If a URL was inline, replace it with a plain-text description of what it was linking to. Change nothing else.`,
+      'Images': `TASK: Remove HTML image tags only. Delete every <img ...> tag from the email. Change nothing else.`,
+      'You-focus': `TASK: Flip sentence subjects where possible. Find sentences that start with "I" or "We" and rewrite them to start from the prospect's perspective ("Your team", "You", "Your workflow"). Aim to convert at least 2 "I/We" sentences. Keep all facts and the CTA identical.`,
+      'CTA position': `TASK: Move the CTA to the last line before the sign-off only. Find the question or call-to-action sentence and move it to immediately before the sender's name. Reorder sentences if needed but do not rewrite them. The sign-off (sender name) stays last.`,
+      'Signature': `TASK: This is a manual fix — the HTML signature block is too long relative to the email body. Return the email body unchanged and append this note on a new line at the very end: "[Tip: Shorten your signature in Settings → Email Signature to improve deliverability]"`,
+    };
+
+    const instruction = fixInstructions[checkLabel] || `Fix only the following issue and nothing else: ${checkLabel}`;
+    const lead = leads.find((l) => l.id === selectedLead);
+
     try {
-      const fixInstructions: Record<string, string> = {
-        'Spam Risk': 'Rewrite this email removing all spam-trigger words like "free", "guarantee", "limited time", "act now". Keep the same message and length.',
-        'Length': 'Rewrite this email to be between 40-75 words. Cut filler, keep the core value prop and CTA. Do not add new claims.',
-        'Readability': 'Rewrite this email at a Grade 8 reading level. Use shorter sentences, simpler words. Keep the same message.',
-        'CTA': 'Rewrite the closing of this email to end with a single low-friction question like "Worth a look?" or "Open to a quick chat?" on the last line before the sign-off.',
-        'Personalization': 'Replace any generic placeholder tokens like [Name], [Company], {name}, {company} with natural-sounding generic references that do not use bracket syntax. Keep everything else the same.',
-        'Credibility': 'Remove or soften any percentage claims, benchmark numbers, or unverified statistics. Replace with specific but unquantified outcomes.',
-        'Naturalness': 'Rewrite the opening line of this email to start naturally. Do not start with "I noticed", "I hope", "I wanted to reach out", "Just reaching out", or similar AI openers.',
-        'Links': 'Remove all URLs and hyperlinks from this email. Replace any linked references with plain-text descriptions.',
-        'Images': 'Remove all HTML image tags (<img>) from this email.',
-        'You-focus': 'Rewrite this email so more sentences start from the prospect\'s perspective ("You", "Your team", "Your workflow") rather than the sender\'s perspective ("I", "We", "Our").',
-        'CTA position': 'Move the question/CTA to be the very last line before the sign-off name. Restructure the email so the ask comes at the end.',
-        'Signature': 'This email has an HTML signature that is too long relative to the body. Shorten the body text is already correct — note this as a manual fix needed in the signature settings.',
-      };
-
-      const instruction = fixInstructions[checkLabel] || `Fix the following issue in this email: ${checkLabel}`;
-      const lead = leads.find((l) => l.id === selectedLead);
-
       const { data, error } = await supabase.functions.invoke('generate-email', {
         body: {
           lead,
           tone: emailTone,
           goal: 'custom',
-          customInstruction: `You are editing an existing cold email. Here is the current email body:\n\n---\n${generatedEmail}\n---\n\nYour task: ${instruction}\n\nReturn ONLY the rewritten email body. No subject line. No explanation. No headers. Just the email body text.`,
+          customInstruction: `You are a precision editor for cold outbound emails. Your job is to make ONE targeted fix and leave everything else exactly as-is.
+
+CURRENT EMAIL BODY:
+---
+${generatedEmail}
+---
+
+${instruction}
+
+${IMMUTABLE_RULES}
+
+Return ONLY the corrected email body. No subject line. No explanation. No "Here is the rewritten email:" prefix. Just the email body text starting with the greeting.`,
           isFirstTouch,
           businessDescription,
         }
@@ -966,7 +991,10 @@ const Outreach = () => {
       if (error) throw error;
 
       let fixed = data?.email || data?.body || '';
+      // Strip any accidental subject line prefix
       fixed = fixed.replace(/^Subject:\s*.+\n+/i, '').trim();
+      // Strip any "Here is the rewritten email:" style preambles
+      fixed = fixed.replace(/^(?:here is|here's|below is|the (?:updated|revised|rewritten|fixed) email[:\s]*)\n+/i, '').trim();
 
       if (fixed) {
         setGeneratedEmail(fixed);
@@ -1008,50 +1036,70 @@ const Outreach = () => {
 
     try {
       const lead = leads.find((l) => l.id === selectedLead);
-      const template = EMAIL_TEMPLATES.find(t => t.value === selectedTemplate);
-      const goal = template?.goal || "introduction";
 
-      // Generate 3 variants in parallel
-      const variantTemplate = EMAIL_TEMPLATES.find(t => t.value === selectedTemplate);
-      const variantPromises = [1, 2, 3].map(async (num) => {
+      // Pick 3 diverse templates to compare — current + 2 different styles
+      // Always include the currently selected template, then pick 2 different categories
+      const currentTemplate = EMAIL_TEMPLATES.find(t => t.value === selectedTemplate);
+      const otherTemplates = EMAIL_TEMPLATES.filter(t => t.value !== selectedTemplate);
+
+      // Prefer variety: pick one standard and one signal if possible
+      const standards = otherTemplates.filter(t => t.category === 'standard');
+      const signals = otherTemplates.filter(t => t.category === 'signal');
+
+      const pick = (arr: typeof EMAIL_TEMPLATES) =>
+        arr[Math.floor(Math.random() * arr.length)];
+
+      const templateA = currentTemplate || EMAIL_TEMPLATES[0];
+      const templateB = standards.length > 0 ? pick(standards) : pick(otherTemplates);
+      // For C: pick a signal if we have one and it's not already B, otherwise another standard
+      const signalCandidates = signals.filter(t => t.value !== templateB.value);
+      const templateC = signalCandidates.length > 0
+        ? pick(signalCandidates)
+        : pick(otherTemplates.filter(t => t.value !== templateB.value));
+
+      const variantTemplates = [templateA, templateB, templateC];
+
+      const variantPromises = variantTemplates.map(async (tmpl, idx) => {
         // Generate subject
         const { data: subjectData } = await supabase.functions.invoke("generate-email", {
           body: {
             lead,
             tone: emailTone,
             goal: "subject_only",
-            templateGoal: goal,
-            templateDescription: variantTemplate?.description || "",
-            templateValue: variantTemplate?.value || "",
+            templateGoal: tmpl.goal,
+            templateDescription: tmpl.description,
+            templateValue: tmpl.value,
             triggerContext,
             openerWord: openerWord === "auto" ? "" : openerWord,
-            variantNum: num,
+            variantNum: idx + 1,
             businessDescription,
           },
         });
-        const subject = subjectData?.email?.replace(/^Subject:\s*/i, '').trim() || `Variant ${num}`;
+        const subject = subjectData?.email?.replace(/^Subject:\s*/i, '').trim() || tmpl.suggestedSubject;
 
         // Generate body
         const { data: bodyData } = await supabase.functions.invoke("generate-email", {
           body: {
             lead,
             tone: emailTone,
-            goal,
-            templateDescription: variantTemplate?.description || "",
-            templateValue: variantTemplate?.value || "",
+            goal: tmpl.goal,
+            templateDescription: tmpl.description,
+            templateValue: tmpl.value,
             subjectLine: subject,
             triggerContext,
             openerWord: openerWord === "auto" ? "" : openerWord,
-            variantNum: num,
+            variantNum: idx + 1,
             businessDescription,
             use4SentenceFramework,
           },
         });
 
         return {
-          id: `variant-${num}`,
+          id: `variant-${idx + 1}`,
           subject,
           body: sanitizeGeneratedEmailBody(bodyData?.email || ''),
+          // Attach label so the picker can show which template each variant used
+          label: tmpl.label,
         };
       });
 
@@ -1059,8 +1107,8 @@ const Outreach = () => {
       setEmailVariants(variants);
 
       toast({
-        title: "Variants generated",
-        description: "3 email variants ready for comparison",
+        title: "3 angles generated",
+        description: `${variantTemplates.map(t => t.label).join(' · ')}`,
       });
     } catch (error: any) {
       toast({
@@ -2135,7 +2183,7 @@ For logos, use HTML:
                   {showVariantPicker && (
                     <div className="mt-4 p-4 border rounded-lg bg-muted/20">
                       <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-semibold text-sm">A/B Email Variants</h3>
+                        <h3 className="font-semibold text-sm">3 angles — pick the best one</h3>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -2151,25 +2199,34 @@ For logos, use HTML:
                       {isGeneratingVariants ? (
                         <div className="flex items-center justify-center py-8">
                           <Loader2 className="w-6 h-6 animate-spin mr-2" />
-                          <span className="text-sm text-muted-foreground">Generating 3 variants...</span>
+                          <span className="text-sm text-muted-foreground">Generating 3 different angles...</span>
                         </div>
                       ) : (
                         <div className="space-y-3">
                           {emailVariants.map((variant, index) => (
                             <div
                               key={variant.id}
-                              className="p-3 border rounded-lg bg-background hover:border-primary cursor-pointer transition-colors"
+                              className="p-3 border rounded-lg bg-background hover:border-primary cursor-pointer transition-colors group"
                               onClick={() => selectVariant(variant)}
                             >
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex-1 min-w-0">
-                                  <Badge variant="outline" className="mb-2">Variant {index + 1}</Badge>
+                                  <div className="flex items-center gap-2 mb-1.5">
+                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">
+                                      {String.fromCharCode(65 + index)}
+                                    </Badge>
+                                    {variant.label && (
+                                      <span className="text-[10px] text-muted-foreground/70 truncate">
+                                        {variant.label}
+                                      </span>
+                                    )}
+                                  </div>
                                   <p className="text-sm font-medium truncate">{variant.subject}</p>
                                   <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                                    {variant.body.slice(0, 120)}...
+                                    {variant.body.slice(0, 130)}...
                                   </p>
                                 </div>
-                                <Button variant="ghost" size="icon" className="shrink-0">
+                                <Button variant="ghost" size="icon" className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                                   <Check className="w-4 h-4" />
                                 </Button>
                               </div>
