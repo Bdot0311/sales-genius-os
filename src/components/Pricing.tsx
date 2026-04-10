@@ -71,10 +71,10 @@ const paidPlans: PaidPlan[] = [
     yearlyPrice: 31,
     yearlyTotal: 372,
     description: "For solo founders and early outbound",
-    mainValue: "Contact up to 400 verified prospects",
-    monthlyProspects: 400,
-    yearlyProspects: 4800,
-    dailyLimit: "50 prospects per day",
+    mainValue: "Contact up to 1,000 verified prospects",
+    monthlyProspects: 1000,
+    yearlyProspects: 12000,
+    dailyLimit: "100 prospects per day",
     features: [
       "Prospect search & verified emails",
       "ICP Builder (3 profiles)",
@@ -162,8 +162,8 @@ const comparisonCategories = [
   {
     name: "Verified Prospects",
     features: [
-      { name: "Monthly verified prospects", free: "0", starter: "400", growth: "1,200", pro: "3,000", agency: "10,000" },
-      { name: "Daily prospect limit", free: "0", starter: "50", growth: "150", pro: "400", agency: "1,000" },
+      { name: "Monthly verified prospects", free: "0", starter: "1,000", growth: "1,200", pro: "3,000", agency: "10,000" },
+      { name: "Daily prospect limit", free: "0", starter: "100", growth: "150", pro: "400", agency: "1,000" },
       { name: "Prospect search", free: "—", starter: true, growth: true, pro: true, agency: true },
       { name: "Verified email data", free: "—", starter: true, growth: true, pro: true, agency: true },
       { name: "Advanced prospect filters", free: false, starter: false, growth: true, pro: true, agency: true },
