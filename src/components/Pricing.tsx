@@ -162,8 +162,8 @@ const comparisonCategories = [
   {
     name: "Verified Prospects",
     features: [
-      { name: "Monthly verified prospects", free: "0", starter: "1,000", growth: "1,200", pro: "3,000", agency: "10,000" },
-      { name: "Daily prospect limit", free: "0", starter: "100", growth: "150", pro: "400", agency: "1,000" },
+      { name: "Monthly verified prospects", free: "0", starter: "1,000", growth: "2,500", pro: "5,000", agency: "15,000" },
+      { name: "Daily prospect limit", free: "0", starter: "100", growth: "250", pro: "500", agency: "1,500" },
       { name: "Prospect search", free: "—", starter: true, growth: true, pro: true, agency: true },
       { name: "Verified email data", free: "—", starter: true, growth: true, pro: true, agency: true },
       { name: "Advanced prospect filters", free: false, starter: false, growth: true, pro: true, agency: true },
