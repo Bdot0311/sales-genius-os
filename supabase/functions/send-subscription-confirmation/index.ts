@@ -36,9 +36,10 @@ serve(async (req) => {
     const logoUrl = "https://ghgfjnepvxvxrncmskys.supabase.co/storage/v1/object/public/email-assets/salesos-logo.webp";
 
     const planFeatures: Record<string, string[]> = {
-      starter: ["400 prospect credits per month", "Basic lead enrichment", "AI email generator", "Email support"],
-      growth: ["1,200 prospect credits per month", "Standard lead enrichment", "Pipeline management", "Credits roll over monthly", "Email support"],
-      pro: ["3,000 prospect credits per month", "Premium lead enrichment", "AI Sales Coach", "Workflow automations", "API access & integrations", "Team collaboration", "Priority support"]
+      starter: ["1,000 prospect credits per month", "Basic lead enrichment", "AI email generator", "Email support"],
+      growth: ["2,500 prospect credits per month", "Standard lead enrichment", "Pipeline management", "Credits roll over monthly", "Email support"],
+      pro: ["5,000 prospect credits per month", "Premium lead enrichment", "AI Sales Coach", "Workflow automations", "API access & integrations", "Team collaboration", "Priority support"],
+      agency: ["15,000 prospect credits per month", "White-label client portal", "Branded PDF reports", "Priority API access", "Dedicated account support"]
     };
 
     const features = planFeatures[planName.toLowerCase()] || planFeatures.starter;

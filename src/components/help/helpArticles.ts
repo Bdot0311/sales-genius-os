@@ -321,14 +321,16 @@ You can upgrade or downgrade your SalesOS subscription at any time.
 | Plan | Price | Verified Prospects | Features |
 |------|-------|-------------------|----------|
 | Free | \\$0/forever | 0 | View-only dashboard access |
-| Starter | \\$39/mo | 400/month (reset each cycle) | 50/day limit, AI email generator |
-| Growth | \\$89/mo | 1,200/month (credits roll over) | 150/day limit, advanced filters |
-| Pro | \\$179/mo | 3,000/month (credits roll over) | 400/day limit, unlimited sequences |
+| Starter | \\$39/mo | 1,000/month (reset each cycle) | 100/day limit, AI email generator |
+| Growth | \\$89/mo | 2,500/month (credits roll over) | 250/day limit, advanced filters |
+| Pro | \\$179/mo | 5,000/month (credits roll over) | 500/day limit, unlimited sequences |
+| Agency | \\$249/mo | 15,000/month (credits roll over) | 1,500/day limit, white-label portal |
 
 Save ~20% with annual billing. Yearly plans grant your full annual credit pool upfront:
-- Starter: 4,800 prospects (\\$31/mo, \\$372/yr)
-- Growth: 14,400 prospects (\\$71/mo, \\$852/yr)
-- Pro: 36,000 prospects (\\$143/mo, \\$1,716/yr)
+- Starter: 12,000 prospects (\\$31/mo, \\$372/yr)
+- Growth: 30,000 prospects (\\$71/mo, \\$852/yr)
+- Pro: 60,000 prospects (\\$143/mo, \\$1,716/yr)
+- Agency: 180,000 prospects (\\$199/mo, \\$2,388/yr)
 
 ### Upgrade Benefits
 
@@ -425,14 +427,16 @@ Your plan includes a monthly limit of verified prospects you can contact.
 ### Credit Allocation
 
 **Monthly plans:**
-- Starter: 400 prospects per month (resets each cycle)
-- Growth: 1,200 prospects per month (unused credits roll over)
-- Pro: 3,000 prospects per month (unused credits roll over)
+- Starter: 1,000 prospects per month (resets each cycle)
+- Growth: 2,500 prospects per month (unused credits roll over)
+- Pro: 5,000 prospects per month (unused credits roll over)
+- Agency: 15,000 prospects per month (unused credits roll over)
 
 **Yearly plans (full pool granted upfront):**
-- Starter: 4,800 prospects for the year
-- Growth: 14,400 prospects for the year
-- Pro: 36,000 prospects for the year
+- Starter: 12,000 prospects for the year
+- Growth: 30,000 prospects for the year
+- Pro: 60,000 prospects for the year
+- Agency: 180,000 prospects for the year
 
 ### Running Low?
 

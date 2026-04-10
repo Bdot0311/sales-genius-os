@@ -47,11 +47,12 @@ SalesOS is a comprehensive sales automation platform designed for SaaS companies
 
 ## Pricing
 
-SalesOS offers four pricing tiers:
+SalesOS offers five pricing tiers:
 - **Free**: $0/forever - Explore the platform with view-only dashboard access. No credit card required.
-- **Starter**: $39/month - 400 verified prospects/month, 50/day limit, prospect search, verified email data, AI email generator.
-- **Growth**: $89/month - 1,200 verified prospects/month, 150/day limit, advanced filters, bulk export, 5 active sequences.
-- **Pro**: $179/month - 3,000 verified prospects/month, 400/day limit, unlimited sequences, API access, priority support.
+- **Starter**: $39/month - 1,000 verified prospects/month, 100/day limit, prospect search, verified email data, AI email generator.
+- **Growth**: $89/month - 2,500 verified prospects/month, 250/day limit, advanced filters, bulk export, unified inbox.
+- **Pro**: $179/month - 5,000 verified prospects/month, 500/day limit, unlimited sequences, API access, premium support.
+- **Agency**: $249/month - 15,000 verified prospects/month, 1,500/day limit, white-label portal, dedicated support.
 
 All paid plans include a 14-day free trial. Save ~20% with annual billing. No credit card required for the free plan.
 
