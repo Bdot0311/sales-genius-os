@@ -16,17 +16,17 @@ const logStep = (step: string, details?: any) => {
 // Monthly = credits reset each cycle, Yearly = full annual pool granted upfront
 const PLAN_PRODUCTS: Record<string, { plan: string, credits: number, dailyLimit: number, isYearly?: boolean }> = {
   // New product IDs - monthly
-  'prod_U78FZoAWovU1rX': { plan: 'starter', credits: 400, dailyLimit: 50, isYearly: false },
-  'prod_U78Ff02VQAzrLC': { plan: 'growth', credits: 1200, dailyLimit: 150, isYearly: false },
-  'prod_U78Fs2HpZzcZJc': { plan: 'pro', credits: 3000, dailyLimit: 400, isYearly: false },
+  'prod_U78FZoAWovU1rX': { plan: 'starter', credits: 1000, dailyLimit: 100, isYearly: false },
+  'prod_U78Ff02VQAzrLC': { plan: 'growth', credits: 2500, dailyLimit: 250, isYearly: false },
+  'prod_U78Fs2HpZzcZJc': { plan: 'pro', credits: 5000, dailyLimit: 500, isYearly: false },
   // New product IDs - yearly (full annual pool upfront)
-  'prod_U78FC92stOkRxS': { plan: 'starter', credits: 4800, dailyLimit: 50, isYearly: true },
-  'prod_U78Fk0l7swAukt': { plan: 'growth', credits: 14400, dailyLimit: 150, isYearly: true },
-  'prod_U78Fuo9Mg04kz9': { plan: 'pro', credits: 36000, dailyLimit: 400, isYearly: true },
+  'prod_U78FC92stOkRxS': { plan: 'starter', credits: 12000, dailyLimit: 100, isYearly: true },
+  'prod_U78Fk0l7swAukt': { plan: 'growth', credits: 30000, dailyLimit: 250, isYearly: true },
+  'prod_U78Fuo9Mg04kz9': { plan: 'pro', credits: 60000, dailyLimit: 500, isYearly: true },
   // Legacy product IDs (monthly)
-  'prod_U6gflsh1Zzoh3V': { plan: 'starter', credits: 400, dailyLimit: 50 },
-  'prod_U6gfTND3QdfgcC': { plan: 'growth', credits: 1200, dailyLimit: 150 },
-  'prod_U6gfOj1Xgfd1vy': { plan: 'pro', credits: 3000, dailyLimit: 400 },
+  'prod_U6gflsh1Zzoh3V': { plan: 'starter', credits: 1000, dailyLimit: 100 },
+  'prod_U6gfTND3QdfgcC': { plan: 'growth', credits: 2500, dailyLimit: 250 },
+  'prod_U6gfOj1Xgfd1vy': { plan: 'pro', credits: 5000, dailyLimit: 500 },
 };
 
 const ADDON_PRODUCTS = {
@@ -220,7 +220,7 @@ serve(async (req) => {
 
       // Sync to database (only if authenticated)
       if (userId) {
-        const leadsLimit = plan === 'free' ? 0 : plan === 'starter' ? 400 : plan === 'growth' ? 1200 : 3000;
+        const leadsLimit = plan === 'free' ? 0 : plan === 'starter' ? 1000 : plan === 'growth' ? 2500 : plan === 'agency' ? 15000 : 5000;
         
         // Get current subscription to preserve remaining credits if same billing cycle
         const { data: currentSub } = await supabaseClient

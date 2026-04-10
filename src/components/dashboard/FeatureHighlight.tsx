@@ -13,6 +13,7 @@ export const FeatureHighlight = ({ availableOn, onUpgrade, inline = false }: Fea
     starter: 'Starter',
     growth: 'Growth',
     pro: 'Pro',
+    agency: 'Agency',
   };
   const planName = planNames[availableOn] || 'Pro';
   

@@ -19,7 +19,7 @@ export interface UserSubscription {
   user_id: string;
   email: string;
   full_name: string;
-  plan: 'free' | 'starter' | 'growth' | 'pro';
+  plan: 'free' | 'starter' | 'growth' | 'pro' | 'agency';
   status: string;
   account_status: string;
   leads_limit: number;
@@ -112,6 +112,7 @@ const AdminUsers = () => {
       starter: subscriptions.filter(s => s.plan === 'starter').length,
       growth: subscriptions.filter(s => s.plan === 'growth').length,
       pro: subscriptions.filter(s => s.plan === 'pro').length,
+      agency: subscriptions.filter(s => s.plan === 'agency').length,
     };
     const conversionRate = total > 0 ? Math.round((paid / total) * 100) : 0;
     return { total, admins, trials, locked, paid, free, planBreakdown, conversionRate };
@@ -122,11 +123,11 @@ const AdminUsers = () => {
     sub.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const updateSubscription = async (userId: string, plan: 'free' | 'starter' | 'growth' | 'pro') => {
+  const updateSubscription = async (userId: string, plan: 'free' | 'starter' | 'growth' | 'pro' | 'agency') => {
     try {
       const { error } = await supabase.rpc('admin_update_subscription', {
         _user_id: userId,
-        _plan: plan,
+        _plan: plan as any,
       });
       if (error) throw error;
       toast.success('Subscription updated');
@@ -209,9 +210,16 @@ const AdminUsers = () => {
           <div className="flex gap-1 h-3 rounded-full overflow-hidden bg-muted/50">
             {stats.total > 0 && (
               <>
+                {stats.planBreakdown.agency > 0 && (
+                  <div
+                    className="bg-violet-500 rounded-l-full transition-all duration-500"
+                    style={{ width: `${(stats.planBreakdown.agency / stats.total) * 100}%` }}
+                    title={`Agency: ${stats.planBreakdown.agency}`}
+                  />
+                )}
                 {stats.planBreakdown.pro > 0 && (
                   <div
-                    className="bg-primary rounded-l-full transition-all duration-500"
+                    className="bg-primary transition-all duration-500"
                     style={{ width: `${(stats.planBreakdown.pro / stats.total) * 100}%` }}
                     title={`Pro: ${stats.planBreakdown.pro}`}
                   />
@@ -241,6 +249,9 @@ const AdminUsers = () => {
             )}
           </div>
           <div className="flex gap-4 mt-3 flex-wrap">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <div className="w-2 h-2 rounded-full bg-violet-500" /> Agency ({stats.planBreakdown.agency})
+            </div>
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <div className="w-2 h-2 rounded-full bg-primary" /> Pro ({stats.planBreakdown.pro})
             </div>

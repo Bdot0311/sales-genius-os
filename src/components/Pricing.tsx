@@ -71,10 +71,10 @@ const paidPlans: PaidPlan[] = [
     yearlyPrice: 31,
     yearlyTotal: 372,
     description: "For solo founders and early outbound",
-    mainValue: "Contact up to 400 verified prospects",
-    monthlyProspects: 400,
-    yearlyProspects: 4800,
-    dailyLimit: "50 prospects per day",
+    mainValue: "Contact up to 1,000 verified prospects",
+    monthlyProspects: 1000,
+    yearlyProspects: 12000,
+    dailyLimit: "100 prospects per day",
     features: [
       "Prospect search & verified emails",
       "ICP Builder (3 profiles)",
@@ -93,10 +93,10 @@ const paidPlans: PaidPlan[] = [
     yearlyPrice: 71,
     yearlyTotal: 852,
     description: "For teams booking meetings consistently",
-    mainValue: "Contact up to 1,200 verified prospects",
-    monthlyProspects: 1200,
-    yearlyProspects: 14400,
-    dailyLimit: "150 prospects per day",
+    mainValue: "Contact up to 2,500 verified prospects",
+    monthlyProspects: 2500,
+    yearlyProspects: 30000,
+    dailyLimit: "250 prospects per day",
     features: [
       "Everything in Starter, plus:",
       "Unified reply inbox with AI drafts",
@@ -116,10 +116,10 @@ const paidPlans: PaidPlan[] = [
     yearlyPrice: 143,
     yearlyTotal: 1716,
     description: "For high-volume outbound operations",
-    mainValue: "Contact up to 3,000 verified prospects",
-    monthlyProspects: 3000,
-    yearlyProspects: 36000,
-    dailyLimit: "400 prospects per day",
+    mainValue: "Contact up to 5,000 verified prospects",
+    monthlyProspects: 5000,
+    yearlyProspects: 60000,
+    dailyLimit: "500 prospects per day",
     features: [
       "Everything in Growth, plus:",
       "Sequence branching & A/B testing",
@@ -138,10 +138,10 @@ const paidPlans: PaidPlan[] = [
     yearlyPrice: 199,
     yearlyTotal: 2388,
     description: "For agencies running outbound for multiple clients",
-    mainValue: "Contact up to 10,000 verified prospects",
-    monthlyProspects: 10000,
-    yearlyProspects: 120000,
-    dailyLimit: "1,000 prospects per day",
+    mainValue: "Contact up to 15,000 verified prospects",
+    monthlyProspects: 15000,
+    yearlyProspects: 180000,
+    dailyLimit: "1,500 prospects per day",
     features: [
       "Everything in Pro, plus:",
       "White-label client portal",
@@ -162,8 +162,8 @@ const comparisonCategories = [
   {
     name: "Verified Prospects",
     features: [
-      { name: "Monthly verified prospects", free: "0", starter: "400", growth: "1,200", pro: "3,000", agency: "10,000" },
-      { name: "Daily prospect limit", free: "0", starter: "50", growth: "150", pro: "400", agency: "1,000" },
+      { name: "Monthly verified prospects", free: "0", starter: "1,000", growth: "2,500", pro: "5,000", agency: "15,000" },
+      { name: "Daily prospect limit", free: "0", starter: "100", growth: "250", pro: "500", agency: "1,500" },
       { name: "Prospect search", free: "—", starter: true, growth: true, pro: true, agency: true },
       { name: "Verified email data", free: "—", starter: true, growth: true, pro: true, agency: true },
       { name: "Advanced prospect filters", free: false, starter: false, growth: true, pro: true, agency: true },
@@ -248,7 +248,7 @@ const creditFAQs = [
   },
   {
     question: "What about daily limits?",
-    answer: "Each plan has a daily limit to ensure fair usage: Starter (50/day), Growth (150/day), Pro (400/day). If exceeded, you'll see a message asking you to try again tomorrow."
+    answer: "Each plan has a daily limit to ensure fair usage: Starter (100/day), Growth (250/day), Pro (500/day), Agency (1,500/day). If exceeded, you'll see a message asking you to try again tomorrow."
   },
   {
     question: "Can I purchase more verified prospects?",
@@ -260,7 +260,7 @@ const creditFAQs = [
   },
   {
     question: "Do you offer yearly billing?",
-    answer: "Yes! Save ~20% with annual billing. With yearly plans, your full annual credit pool is granted upfront: Starter gets 4,800, Growth gets 14,400, and Pro gets 36,000 prospects. Monthly plans reset each billing cycle, with Growth and Pro credits rolling over."
+    answer: "Yes! Save ~20% with annual billing. With yearly plans, your full annual credit pool is granted upfront: Starter gets 12,000, Growth gets 30,000, and Pro gets 60,000 prospects. Monthly plans reset each billing cycle, with Growth and Pro credits rolling over."
   },
   {
     question: "Do unused credits roll over?",
@@ -375,7 +375,7 @@ export const Pricing = () => {
         </div>
 
         {/* Plan Cards */}
-        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 max-w-7xl mx-auto mb-16 md:mb-20 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '100ms' } as React.CSSProperties}>
+        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-5 max-w-[1400px] mx-auto mb-16 md:mb-20 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '100ms' } as React.CSSProperties}>
           {allPlans.map((plan, index) => {
             const paid = isPaidPlan(plan);
             const displayPrice = paid

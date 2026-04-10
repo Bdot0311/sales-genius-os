@@ -91,8 +91,8 @@ export const PLAN_FEATURES = {
     price: 39,
     
     // Credits
-    monthlySearchCredits: 400,
-    dailySearchLimit: 50,
+    monthlySearchCredits: 1000,
+    dailySearchLimit: 100,
     exportTier: 'standard' as const,
     
     // Lead Intelligence Engine
@@ -175,8 +175,8 @@ export const PLAN_FEATURES = {
     price: 89,
     
     // Search Credits
-    monthlySearchCredits: 1200,
-    dailySearchLimit: 150,
+    monthlySearchCredits: 2500,
+    dailySearchLimit: 250,
     exportTier: 'advanced' as const,
     
     // Lead Intelligence Engine
@@ -259,8 +259,8 @@ export const PLAN_FEATURES = {
     price: 249,
 
     // Search Credits
-    monthlySearchCredits: 10000,
-    dailySearchLimit: 1000,
+    monthlySearchCredits: 15000,
+    dailySearchLimit: 1500,
     exportTier: 'unlimited' as const,
 
     // Lead Intelligence Engine
@@ -352,8 +352,8 @@ export const PLAN_FEATURES = {
     price: 179,
     
     // Search Credits
-    monthlySearchCredits: 3000,
-    dailySearchLimit: 400,
+    monthlySearchCredits: 5000,
+    dailySearchLimit: 500,
     exportTier: 'unlimited' as const,
     
     // Lead Intelligence Engine

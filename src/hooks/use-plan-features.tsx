@@ -11,14 +11,14 @@ export const usePlanFeatures = () => {
   
   const currentPlan: PlanType = subscription?.plan || 'free';
   // Admins get pro-level features
-  const features = isAdmin ? PLAN_FEATURES.pro : PLAN_FEATURES[currentPlan];
+  const features = isAdmin ? PLAN_FEATURES.agency : PLAN_FEATURES[currentPlan];
 
   // Check if a feature is available on the current plan (admins have access to everything)
   const hasFeature = useCallback((feature: UpgradeFeature): boolean => {
     if (isAdmin) return true;
     
     const requiredPlan = UPGRADE_MESSAGES[feature].availableOn as PlanType;
-    const planOrder: PlanType[] = ['free', 'starter', 'growth', 'pro'];
+    const planOrder: PlanType[] = ['free', 'starter', 'growth', 'pro', 'agency'];
     const currentIndex = planOrder.indexOf(currentPlan);
     const requiredIndex = planOrder.indexOf(requiredPlan);
     return currentIndex >= requiredIndex;
@@ -69,7 +69,7 @@ export const usePlanFeatures = () => {
   }, [checkLimit, triggerGate]);
 
   return {
-    currentPlan: isAdmin ? 'pro' as PlanType : currentPlan,
+    currentPlan: isAdmin ? 'agency' as PlanType : currentPlan,
     features,
     loading,
     hasFeature,

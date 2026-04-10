@@ -125,8 +125,8 @@ const Settings = () => {
       price: '$39',
       description: 'For solo founders and early outbound',
       features: [
-        '400 prospects / month (resets each cycle)',
-        '50 prospects per day',
+        '1,000 prospects / month (resets each cycle)',
+        '100 prospects per day',
         'Prospect search & verified emails',
         'AI email generator',
         'Standard support'
@@ -139,8 +139,8 @@ const Settings = () => {
       price: '$89',
       description: 'For teams booking meetings consistently',
       features: [
-        '1,200 prospects / month (credits roll over)',
-        '150 prospects per day',
+        '2,500 prospects / month (credits roll over)',
+        '250 prospects per day',
         'Advanced prospect filters',
         'Bulk prospect export',
         'AI personalized outreach',
@@ -155,13 +155,27 @@ const Settings = () => {
       price: '$179',
       description: 'For high-volume outbound operations',
       features: [
-        '3,000 prospects / month (credits roll over)',
-        '400 prospects per day',
+        '5,000 prospects / month (credits roll over)',
+        '500 prospects per day',
         'Advanced automation features',
         'CRM integrations',
         'Premium support'
       ],
       paymentLink: 'https://buy.stripe.com/8x2bJ15Svfmvd341ca1B60q'
+    },
+    {
+      name: 'Agency',
+      value: 'agency',
+      price: '$249',
+      description: 'For agencies running outbound for multiple clients',
+      features: [
+        '15,000 prospects / month (credits roll over)',
+        '1,500 prospects per day',
+        'White-label client portal',
+        'Priority API access',
+        'Dedicated account support'
+      ],
+      paymentLink: ''
     }
   ];
 

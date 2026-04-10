@@ -9,7 +9,7 @@ interface Stats {
   paid: number;
   free: number;
   conversionRate: number;
-  planBreakdown: { free: number; starter: number; growth: number; pro: number };
+  planBreakdown: { free: number; starter: number; growth: number; pro: number; agency: number };
 }
 
 export const UserStatsCards = ({ stats }: { stats: Stats }) => {

@@ -9,7 +9,7 @@ interface UserTableProps {
   subscriptions: UserSubscription[];
   loading: boolean;
   isUserAdmin: (userId: string) => boolean;
-  onUpdateSubscription: (userId: string, plan: 'free' | 'starter' | 'growth' | 'pro') => void;
+  onUpdateSubscription: (userId: string, plan: 'free' | 'starter' | 'growth' | 'pro' | 'agency') => void;
   onLockUser: (userId: string) => void;
   onUnlockUser: (userId: string) => void;
   onToggleAdmin: (userId: string, isAdmin: boolean) => void;
@@ -19,6 +19,7 @@ interface UserTableProps {
 
 const getPlanBadgeClass = (plan: string) => {
   switch (plan) {
+    case 'agency': return 'bg-violet-500/20 text-violet-400 border-violet-500/30';
     case 'pro': return 'bg-primary/20 text-primary border-primary/30';
     case 'growth': return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
     case 'starter': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
@@ -103,6 +104,7 @@ export const UserTable = ({
                         <SelectItem value="starter">Starter</SelectItem>
                         <SelectItem value="growth">Growth</SelectItem>
                         <SelectItem value="pro">Pro</SelectItem>
+                        <SelectItem value="agency">Agency</SelectItem>
                       </SelectContent>
                     </Select>
                   </TableCell>
