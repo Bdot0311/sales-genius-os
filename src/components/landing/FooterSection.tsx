@@ -21,7 +21,7 @@ const footerLinks = {
 
 export const FooterSection = () => {
   return (
-    <footer className="py-16 md:py-20 bg-muted/20 border-t border-border/30">
+    <footer className="py-16 md:py-20 border-t" style={{ background: "hsl(0,0%,2%)", borderColor: "hsl(0 0% 100% / 0.06)" }}>
       <div className="container mx-auto px-6">
         <div className="max-w-[1120px] mx-auto">
           <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-12 mb-12">
@@ -107,7 +107,7 @@ export const FooterSection = () => {
           </div>
 
           {/* Bottom */}
-          <div className="pt-8 border-t border-border/30 flex flex-col items-center gap-4">
+          <div className="pt-8 border-t flex flex-col items-center gap-4" style={{ borderColor: "hsl(0 0% 100% / 0.07)" }}>
             <a href="https://sellwithboost.com" target="_blank" rel="noopener noreferrer">
               <img src="https://sellwithboost.com/badge/listing-dark.svg" alt="Listed on Sell With Boost" className="h-10 w-auto" width={160} height={40} loading="lazy" />
             </a>

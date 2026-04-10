@@ -13,7 +13,6 @@ export const FounderNoteSection = () => {
       },
       { threshold: 0.15 }
     );
-
     if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
   }, []);
@@ -21,74 +20,148 @@ export const FounderNoteSection = () => {
   return (
     <section
       ref={ref}
-      className="relative py-24 md:py-32 overflow-hidden bg-muted/20"
+      className="relative py-28 md:py-40 overflow-hidden"
+      style={{ background: "hsl(0,0%,3%)" }}
       aria-labelledby="founder-note-heading"
     >
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
+      {/* Top hairline */}
+      <div
+        className="absolute top-0 left-0 right-0 h-px"
+        style={{ background: "hsl(0 0% 100% / 0.06)" }}
+      />
+
+      {/* Subtle glow */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse 60% 50% at 50% 50%, hsl(261 75% 55% / 0.04) 0%, transparent 70%)",
+        }}
+        aria-hidden="true"
+      />
 
       <div className="container relative z-10 mx-auto px-6">
-        <div
-          className={`max-w-2xl mx-auto transition-all duration-700 ${
-            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-          }`}
-        >
-          {/* Quote card */}
-          <div className="relative rounded-2xl border border-border/30 bg-card/60 p-8 md:p-12 border-l-4 border-l-primary/30">
-            {/* Opening line */}
-            <p
-              id="founder-note-heading"
-              className="text-2xl sm:text-3xl font-light italic leading-relaxed text-foreground"
-            >
-              "I was paying $500/month for Apollo and still spending three hours
-              a day on LinkedIn."
-            </p>
+        <div className="max-w-3xl mx-auto">
 
-            {/* Body */}
-            <div className="mt-6 space-y-4 text-base text-muted-foreground leading-relaxed">
-              <p>
-                The data wasn't the problem. The workflow was. I'd export a
-                list, paste it into a spreadsheet, score it manually, write
-                emails one at a time, and track replies in a separate inbox.
-                Four tools. Six context switches. Most of it was just overhead.
-              </p>
-              <p>
-                SalesOS is what I wanted to exist — one place to describe who I
-                want to reach, see who's actually worth reaching out to, and
-                send something worth reading. It's not magic. It's just the
-                workflow that should have existed years ago.
-              </p>
-            </div>
-
-            {/* Signature */}
-            <div className="mt-8 pt-6 border-t border-border/20">
-              <p className="text-sm font-medium text-foreground">
-                — Brandon, Founder of SalesOS
-              </p>
-              <p className="text-xs text-muted-foreground/50 mt-1">
-                Built in NYC · Launched 2024
-              </p>
-            </div>
+          {/* Giant opening quotation mark */}
+          <div
+            className={`font-display leading-none mb-4 select-none transition-all duration-700 ${
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+            }`}
+            style={{
+              fontSize: "clamp(5rem, 12vw, 10rem)",
+              fontWeight: 800,
+              fontStyle: "italic",
+              color: "hsl(261 75% 55% / 0.25)",
+              lineHeight: 0.8,
+            }}
+            aria-hidden="true"
+          >
+            "
           </div>
 
-          {/* Below-card CTAs */}
-          <div className="mt-8 flex items-center gap-6 pl-1">
-            <button
-              onClick={() => navigate("/pricing")}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200"
+          {/* Opening line — display scale */}
+          <p
+            id="founder-note-heading"
+            className={`font-display italic mb-10 transition-all duration-700 delay-100 ${
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
+            }`}
+            style={{
+              fontSize: "clamp(1.6rem, 3.5vw, 2.6rem)",
+              fontWeight: 700,
+              lineHeight: 1.2,
+              letterSpacing: "-0.01em",
+              color: "hsl(0 0% 90%)",
+            }}
+          >
+            I was paying $500/month for Apollo and still spending three hours a day on LinkedIn.
+          </p>
+
+          {/* Body */}
+          <div
+            className={`space-y-5 mb-12 transition-all duration-700 delay-200 ${
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            }`}
+          >
+            <p
+              className="text-base leading-relaxed"
+              style={{ color: "hsl(0 0% 100% / 0.5)" }}
             >
-              View plans &rarr;
-            </button>
+              The data wasn't the problem. The workflow was. I'd export a list, paste it into a spreadsheet, score it manually, write emails one at a time, and track replies in a separate inbox. Four tools. Six context switches. Most of it was just overhead.
+            </p>
+            <p
+              className="text-base leading-relaxed"
+              style={{ color: "hsl(0 0% 100% / 0.5)" }}
+            >
+              SalesOS is what I wanted to exist — one place to describe who I want to reach, see who's actually worth calling, and send something worth reading. Not magic. Just the workflow that should have existed years ago.
+            </p>
+          </div>
+
+          {/* Signature */}
+          <div
+            className={`transition-all duration-700 delay-300 ${
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            }`}
+          >
+            <div
+              className="h-px mb-6 w-12"
+              style={{ background: "hsl(261 75% 55% / 0.4)" }}
+            />
+            <p
+              className="text-sm font-medium mb-1"
+              style={{ color: "hsl(0 0% 70%)" }}
+            >
+              Brandon, Founder of SalesOS
+            </p>
+            <p
+              className="text-xs"
+              style={{ color: "hsl(0 0% 100% / 0.25)" }}
+            >
+              Built in NYC · Launched 2024
+            </p>
+          </div>
+
+          {/* CTAs */}
+          <div
+            className={`mt-10 flex items-center gap-6 transition-all duration-700 delay-[400ms] ${
+              isVisible ? "opacity-100" : "opacity-0"
+            }`}
+          >
             <button
               onClick={() => navigate("/auth")}
-              className="text-sm text-foreground font-medium hover:text-primary transition-colors duration-200"
+              className="text-sm font-medium transition-colors duration-200"
+              style={{ color: "hsl(261 75% 65%)" }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.color = "hsl(261 75% 80%)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.color = "hsl(261 75% 65%)")
+              }
             >
-              Try it free &rarr;
+              Try it free →
+            </button>
+            <button
+              onClick={() => navigate("/pricing")}
+              className="text-sm transition-colors duration-200"
+              style={{ color: "hsl(0 0% 100% / 0.3)" }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.color = "hsl(0 0% 100% / 0.6)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.color = "hsl(0 0% 100% / 0.3)")
+              }
+            >
+              View plans →
             </button>
           </div>
         </div>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
+      {/* Bottom hairline */}
+      <div
+        className="absolute bottom-0 left-0 right-0 h-px"
+        style={{ background: "hsl(0 0% 100% / 0.06)" }}
+      />
     </section>
   );
 };

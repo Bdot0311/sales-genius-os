@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from "react";
 
 const faqs = [
   {
-    question: "Do I need to know boolean search or SQL to use this?",
+    question: "Do I need boolean search or SQL to use this?",
     answer:
       "No. You type who you want in plain English — like 'VP of Sales at NYC SaaS companies with 50–200 employees.' SalesOS handles the rest.",
   },
@@ -37,17 +37,11 @@ export const FAQSection = () => {
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) {
-          setIsVisible(true);
-        }
+        if (entries[0].isIntersecting) setIsVisible(true);
       },
       { threshold: 0.1 }
     );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
+    if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
   }, []);
 
@@ -55,58 +49,81 @@ export const FAQSection = () => {
     <section
       ref={sectionRef}
       id="faq"
-      className="relative py-24 md:py-32 overflow-hidden"
+      className="relative py-24 md:py-36 overflow-hidden"
+      style={{ background: "hsl(0,0%,3%)" }}
       aria-labelledby="faq-heading"
     >
-      {/* Background glow */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px]"
-          style={{
-            background:
-              "radial-gradient(ellipse at center, hsl(261 75% 50% / 0.06) 0%, transparent 60%)",
-          }}
-          aria-hidden="true"
-        />
-      </div>
-
-      {/* Top hairline separator */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
+      {/* Top hairline */}
+      <div
+        className="absolute top-0 left-0 right-0 h-px"
+        style={{ background: "hsl(0 0% 100% / 0.06)" }}
+      />
 
       <FAQSchema faqs={faqs} />
 
       <div className="container relative z-10 mx-auto px-6">
         <div className="max-w-[720px] mx-auto">
+
           {/* Header */}
           <div
-            className={`text-center mb-12 scroll-reveal ${isVisible ? "visible" : ""}`}
+            className={`mb-14 transition-all duration-700 ${
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+            }`}
           >
+            <p
+              className="text-[10px] uppercase tracking-[0.28em] mb-5 font-medium"
+              style={{ color: "hsl(0 0% 100% / 0.25)" }}
+            >
+              FAQ
+            </p>
             <h2
               id="faq-heading"
-              className="text-3xl sm:text-4xl font-bold tracking-tight"
+              className="font-display"
+              style={{
+                fontSize: "clamp(2rem, 4vw, 3.2rem)",
+                fontWeight: 800,
+                lineHeight: 1.1,
+                letterSpacing: "-0.02em",
+                color: "hsl(0 0% 93%)",
+              }}
             >
-              Questions we actually get asked.
+              Questions we actually
+              <br />
+              <span className="italic" style={{ color: "hsl(0 0% 55%)" }}>
+                get asked.
+              </span>
             </h2>
           </div>
 
           {/* Accordion */}
           <div
-            className={`scroll-reveal ${isVisible ? "visible" : ""}`}
-            style={{ "--reveal-delay": "100ms" } as React.CSSProperties}
+            className={`transition-all duration-700 ${
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            }`}
+            style={{ transitionDelay: "150ms" }}
           >
-            <Accordion type="single" collapsible className="space-y-2">
+            <Accordion type="single" collapsible className="flex flex-col">
               {faqs.map((faq, index) => (
                 <AccordionItem
                   key={index}
                   value={`item-${index}`}
-                  className="border border-border/30 rounded-xl px-6 bg-card/40 data-[state=open]:bg-card/60 data-[state=open]:border-primary/20 transition-all duration-200"
+                  className="border-b"
+                  style={{ borderColor: "hsl(0 0% 100% / 0.07)" }}
                 >
-                  <AccordionTrigger className="text-left py-4 hover:no-underline hover:text-primary transition-colors duration-200">
-                    <span className="font-medium text-[15px]">
+                  <AccordionTrigger
+                    className="text-left py-5 hover:no-underline transition-colors duration-200 group"
+                    style={{ color: "hsl(0 0% 80%)" }}
+                  >
+                    <span
+                      className="font-medium text-[15px] leading-snug group-hover:text-white transition-colors duration-200"
+                    >
                       {faq.question}
                     </span>
                   </AccordionTrigger>
-                  <AccordionContent className="pb-4 text-muted-foreground text-sm leading-relaxed">
+                  <AccordionContent
+                    className="pb-5 text-sm leading-relaxed"
+                    style={{ color: "hsl(0 0% 100% / 0.45)" }}
+                  >
                     {faq.answer}
                   </AccordionContent>
                 </AccordionItem>
@@ -115,12 +132,26 @@ export const FAQSection = () => {
           </div>
 
           <div
-            className={`scroll-reveal ${isVisible ? "visible" : ""}`}
-            style={{ "--reveal-delay": "200ms" } as React.CSSProperties}
+            className={`mt-10 transition-all duration-700 ${
+              isVisible ? "opacity-100" : "opacity-0"
+            }`}
+            style={{ transitionDelay: "300ms" }}
           >
-            <p className="text-center text-sm text-muted-foreground mt-8">
+            <p className="text-sm" style={{ color: "hsl(0 0% 100% / 0.3)" }}>
               Still have questions?{" "}
-              <a href="/help" className="text-primary hover:underline">
+              <a
+                href="/help"
+                className="transition-colors duration-150"
+                style={{ color: "hsl(261 75% 65%)" }}
+                onMouseEnter={(e) =>
+                  ((e.target as HTMLElement).style.color =
+                    "hsl(261 75% 80%)")
+                }
+                onMouseLeave={(e) =>
+                  ((e.target as HTMLElement).style.color =
+                    "hsl(261 75% 65%)")
+                }
+              >
                 Talk to us →
               </a>
             </p>
@@ -128,8 +159,11 @@ export const FAQSection = () => {
         </div>
       </div>
 
-      {/* Bottom hairline separator */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
+      {/* Bottom hairline */}
+      <div
+        className="absolute bottom-0 left-0 right-0 h-px"
+        style={{ background: "hsl(0 0% 100% / 0.06)" }}
+      />
     </section>
   );
 };

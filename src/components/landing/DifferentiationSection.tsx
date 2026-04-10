@@ -48,10 +48,11 @@ export const DifferentiationSection = () => {
     <section
       ref={ref}
       className="relative py-24 md:py-32 overflow-hidden"
+      style={{ background: "hsl(0,0%,3%)" }}
       aria-labelledby="differentiation-heading"
     >
       {/* Top hairline separator */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
+      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "hsl(0 0% 100% / 0.06)" }} />
 
       <div className="container relative z-10 mx-auto px-6">
         <div className="max-w-3xl mx-auto">
@@ -63,13 +64,22 @@ export const DifferentiationSection = () => {
           {/* Headline */}
           <h2
             id="differentiation-heading"
-            className={`text-4xl sm:text-5xl font-bold tracking-tight mb-14 transition-all duration-700 ${
+            className={`font-display mb-14 transition-all duration-700 ${
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
+            style={{
+              fontSize: "clamp(2.4rem, 5vw, 4rem)",
+              fontWeight: 800,
+              lineHeight: 1.08,
+              letterSpacing: "-0.02em",
+              color: "hsl(0 0% 95%)",
+            }}
           >
             Apollo sells you contacts.
             <br />
-            We show you who to call next.
+            <span className="italic" style={{ color: "hsl(0 0% 55%)" }}>
+              We show you who to call next.
+            </span>
           </h2>
 
           {/* Comparison rows */}
@@ -127,7 +137,7 @@ export const DifferentiationSection = () => {
       </div>
 
       {/* Bottom hairline separator */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
+      <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: "hsl(0 0% 100% / 0.06)" }} />
     </section>
   );
 };

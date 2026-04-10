@@ -54,33 +54,31 @@ export const HowItWorks = () => {
       ref={sectionRef}
       id="how-it-works"
       className="relative py-24 md:py-32 overflow-hidden"
+      style={{ background: "hsl(0,0%,3%)" }}
       aria-labelledby="how-it-works-heading"
     >
-      {/* Background glow */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[600px]"
-          style={{
-            background:
-              "radial-gradient(ellipse at center, hsl(261 75% 50% / 0.06) 0%, transparent 60%)",
-          }}
-          aria-hidden="true"
-        />
-      </div>
-
-      {/* Top hairline separator */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
+      {/* Top hairline */}
+      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "hsl(0 0% 100% / 0.06)" }} />
 
       <div className="container relative z-10 mx-auto px-6">
         <div className="max-w-[720px]">
           {/* Headline — left-aligned, no badge, no subheadline */}
           <h2
             id="how-it-works-heading"
-            className={`text-4xl sm:text-5xl font-bold tracking-tight max-w-xl mb-16 scroll-reveal ${isVisible ? "visible" : ""}`}
+            className={`font-display max-w-xl mb-16 scroll-reveal ${isVisible ? "visible" : ""}`}
+            style={{
+              fontSize: "clamp(2.4rem, 5vw, 3.8rem)",
+              fontWeight: 800,
+              lineHeight: 1.06,
+              letterSpacing: "-0.02em",
+              color: "hsl(0 0% 95%)",
+            }}
           >
             Three steps.
             <br />
-            One workflow.
+            <span className="italic" style={{ color: "hsl(0 0% 55%)" }}>
+              One workflow.
+            </span>
           </h2>
 
           {/* Step list */}
@@ -133,8 +131,8 @@ export const HowItWorks = () => {
         </div>
       </div>
 
-      {/* Bottom hairline separator */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
+      {/* Bottom hairline */}
+      <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: "hsl(0 0% 100% / 0.06)" }} />
     </section>
   );
 };

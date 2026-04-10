@@ -31,10 +31,11 @@ export const ProblemSection = () => {
     <section
       ref={ref}
       className="relative py-24 md:py-32 overflow-hidden"
+      style={{ background: "hsl(0,0%,3%)" }}
       aria-labelledby="problem-heading"
     >
-      {/* Top hairline separator */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
+      {/* Top hairline */}
+      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "hsl(0 0% 100% / 0.06)" }} />
 
       <div className="container relative z-10 mx-auto px-6">
         <div className="max-w-4xl mx-auto text-center">
@@ -83,8 +84,8 @@ export const ProblemSection = () => {
         </div>
       </div>
 
-      {/* Bottom hairline separator */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
+      {/* Bottom hairline */}
+      <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: "hsl(0 0% 100% / 0.06)" }} />
     </section>
   );
 };

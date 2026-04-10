@@ -1,162 +1,254 @@
 import { useEffect, useRef, useState } from "react";
-import { Brain, Mail, TrendingUp, Mic, Workflow, ArrowRight, Target, Inbox, ShieldCheck } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-const coreModules = [
+const modules = [
   {
-    icon: Target,
-    title: "Plain-English ICP Search",
-    outcome: "Find the right prospects faster",
-    description: "Describe your target customer naturally instead of wrestling with filters and boolean logic. SalesOS turns that into a workable lead search flow.",
-    gradient: "from-primary/20 to-primary/5",
-    accentColor: "group-hover:shadow-[0_0_30px_hsl(261_75%_65%/0.15)]",
+    number: "01",
+    title: "Lead Discovery",
+    tagline: "From ICP to ranked prospects in under 2 minutes.",
+    description:
+      "Describe who you want in plain English — title, industry, company size, buying signals. SalesOS returns verified contacts ranked by fit. No filters. No boolean syntax. No list-building.",
   },
   {
-    icon: Mail,
-    title: "Personalized Outreach",
-    outcome: "Write smarter first touches",
-    description: "Use company and contact context to generate more tailored outbound messages, then review and refine before sending.",
-    gradient: "from-[hsl(280_75%_60%/0.2)] to-[hsl(280_75%_60%/0.05)]",
-    accentColor: "group-hover:shadow-[0_0_30px_hsl(280_75%_60%/0.15)]",
+    number: "02",
+    title: "Outreach Studio",
+    tagline: "Context-aware drafts you actually want to send.",
+    description:
+      "Each email is built from real company and contact context — news, growth signals, open roles. A quality checker flags issues before you hit send. Shuffle between angles in one click.",
   },
   {
-    icon: Inbox,
+    number: "03",
     title: "Reply Management",
-    outcome: "Keep momentum after the first email",
-    description: "Track responses, manage follow-ups, and keep conversations organized so promising leads do not disappear into a messy inbox.",
-    gradient: "from-[hsl(200_75%_55%/0.2)] to-[hsl(200_75%_55%/0.05)]",
-    accentColor: "group-hover:shadow-[0_0_30px_hsl(200_75%_55%/0.15)]",
+    tagline: "Inbox zero for your pipeline.",
+    description:
+      "Every response, tracked. Follow-up sequences that keep momentum after the first email lands. No prospect slips through because you forgot to check a separate inbox.",
   },
   {
-    icon: TrendingUp,
-    title: "Pipeline Visibility",
-    outcome: "See what is actually moving",
-    description: "Understand where deals are progressing, where outreach is stalling, and where your team should focus next.",
-    gradient: "from-[hsl(150_60%_50%/0.2)] to-[hsl(150_60%_50%/0.05)]",
-    accentColor: "group-hover:shadow-[0_0_30px_hsl(150_60%_50%/0.15)]",
+    number: "04",
+    title: "Pipeline & Analytics",
+    tagline: "See what's moving. Know what to push.",
+    description:
+      "Understand where deals are progressing, where outreach is stalling, and what to prioritize next week. Built for outbound teams — not enterprise dashboards with 40 tabs.",
   },
 ];
 
 const alsoIncluded = [
-  { icon: Workflow, label: "Sequences and follow-up logic", description: "Build repeatable outbound workflows without manually tracking every next step." },
-  { icon: ShieldCheck, label: "Deliverability support", description: "Monitor key sending health signals so your outreach has a better chance of landing in inboxes." },
-  { icon: Mic, label: "Sales coaching tools", description: "Support reps with guidance before and during real conversations." },
-  { icon: Brain, label: "Automation building blocks", description: "Reduce repetitive sales work with workflow automations that keep the process moving." },
+  "Multi-step sequences",
+  "Deliverability monitoring",
+  "Sales coaching tools",
+  "Zapier & API automation",
+  "White-label client portal",
+  "Agency reporting",
 ];
 
 export const ModulesSection = () => {
   const [isVisible, setIsVisible] = useState(false);
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const sectionRef = useRef<HTMLElement>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) {
-          setIsVisible(true);
-        }
+        if (entries[0].isIntersecting) setIsVisible(true);
       },
       { threshold: 0.1 }
     );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
+    if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
   }, []);
 
   return (
-    <section 
+    <section
       ref={sectionRef}
-      id="features" 
-      className="relative py-24 md:py-32 overflow-hidden"
+      id="features"
+      className="relative py-24 md:py-36 overflow-hidden"
+      style={{ background: "hsl(0,0%,3%)" }}
       aria-labelledby="modules-heading"
     >
-      {/* Unified background */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div 
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[700px]"
-          style={{
-            background: 'radial-gradient(ellipse at center, hsl(261 75% 50% / 0.07) 0%, transparent 60%)',
-          }}
-          aria-hidden="true"
-        />
-      </div>
-      
-      {/* Top hairline separator */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
-      
+      {/* Top hairline */}
+      <div
+        className="absolute top-0 left-0 right-0 h-px"
+        style={{ background: "hsl(0 0% 100% / 0.06)" }}
+      />
+
       <div className="container relative z-10 mx-auto px-6">
         <div className="max-w-[1120px] mx-auto">
-          {/* Header */}
-          <div className={`text-center mb-16 scroll-reveal ${isVisible ? 'visible' : ''}`}>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-xs font-medium text-primary mb-5">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-              Core Platform
-            </div>
-            <h2 id="modules-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-4 max-w-2xl mx-auto">
-              From first lead to closed deal — in one place
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-              The core workflow: find the right leads, reach out with quality-checked emails, manage every reply, and track what's closing.
+
+          {/* Header — left-aligned, editorial */}
+          <div
+            className={`mb-20 transition-all duration-700 ${
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+            }`}
+          >
+            <p
+              className="text-[10px] uppercase tracking-[0.28em] mb-5 font-medium"
+              style={{ color: "hsl(0 0% 100% / 0.25)" }}
+            >
+              The Platform
             </p>
-          </div>
-
-          {/* Core modules grid */}
-          <div className="grid sm:grid-cols-2 gap-5 mb-12">
-            {coreModules.map((module, index) => (
-              <article
-                key={index}
-                className={`group relative p-6 rounded-xl border border-border/30 bg-card/40 card-hover-lift transition-shadow duration-300 ${module.accentColor} scroll-reveal ${
-                  isVisible ? 'visible' : ''
-                }`}
-                style={{ '--reveal-delay': `${index * 70}ms` } as React.CSSProperties}
+            <h2
+              id="modules-heading"
+              className="font-display"
+              style={{
+                fontSize: "clamp(2.4rem, 5vw, 4rem)",
+                fontWeight: 800,
+                lineHeight: 1.05,
+                letterSpacing: "-0.02em",
+                color: "hsl(0 0% 96%)",
+              }}
+            >
+              Everything you need
+              <br />
+              <span
+                className="italic"
+                style={{ color: "hsl(0 0% 55%)" }}
               >
-                {/* Spotlight effect on hover */}
-                <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none spotlight-card" />
-
-                <div className="relative z-10">
-                  {/* Gradient icon container */}
-                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${module.gradient} flex items-center justify-center mb-4 icon-float-hover`}>
-                    <module.icon className="w-5.5 h-5.5 text-primary" aria-hidden="true" />
-                  </div>
-
-                  <h3 className="font-semibold text-[15px] mb-1 group-hover:text-primary transition-colors duration-200">
-                    {module.title}
-                  </h3>
-                  <p className="text-sm text-primary/80 font-medium mb-2 flex items-center gap-1.5">
-                    {module.outcome}
-                    <ArrowRight className="w-3 h-3 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200" />
-                  </p>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {module.description}
-                  </p>
-                </div>
-              </article>
-            ))}
+                to run outbound.
+              </span>
+            </h2>
           </div>
 
-          {/* Also included */}
-          <div className={`rounded-xl border border-border/20 bg-muted/20 p-6 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '320ms' } as React.CSSProperties}>
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-4">Also included</p>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {alsoIncluded.map((item, index) => (
-                <div key={index} className="flex gap-3">
-                  <div className="flex-shrink-0 w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center mt-0.5">
-                    <item.icon className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
+          {/* Module rows */}
+          <div className="flex flex-col">
+            {modules.map((mod, index) => (
+              <div
+                key={mod.number}
+                className="group relative cursor-default"
+                onMouseEnter={() => setActiveIndex(index)}
+                onMouseLeave={() => setActiveIndex(null)}
+              >
+                {/* Top border */}
+                <div
+                  className="h-px transition-colors duration-300"
+                  style={{
+                    background:
+                      activeIndex === index
+                        ? "hsl(261 75% 55% / 0.3)"
+                        : "hsl(0 0% 100% / 0.07)",
+                  }}
+                />
+
+                <div
+                  className={`flex flex-col md:flex-row md:items-start gap-6 py-9 transition-all duration-700 ${
+                    isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+                  }`}
+                  style={{ transitionDelay: `${index * 100}ms` }}
+                >
+                  {/* Number */}
+                  <span
+                    className="flex-shrink-0 font-mono text-sm transition-colors duration-300 w-10"
+                    style={{
+                      color:
+                        activeIndex === index
+                          ? "hsl(261 75% 65%)"
+                          : "hsl(0 0% 100% / 0.2)",
+                    }}
+                  >
+                    {mod.number}
+                  </span>
+
+                  {/* Title + tagline */}
+                  <div className="flex-1 md:w-64 md:flex-none">
+                    <h3
+                      className="text-xl font-semibold mb-1 transition-colors duration-200"
+                      style={{
+                        color:
+                          activeIndex === index
+                            ? "hsl(0 0% 98%)"
+                            : "hsl(0 0% 80%)",
+                      }}
+                    >
+                      {mod.title}
+                    </h3>
+                    <p
+                      className="text-sm leading-relaxed"
+                      style={{ color: "hsl(261 75% 65% / 0.8)" }}
+                    >
+                      {mod.tagline}
+                    </p>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground leading-snug mb-0.5">{item.label}</p>
-                    <p className="text-xs text-muted-foreground leading-relaxed">{item.description}</p>
+
+                  {/* Description — appears on hover on desktop, always visible on mobile */}
+                  <div
+                    className="flex-1 md:transition-all md:duration-300"
+                    style={{
+                      opacity: activeIndex === index ? 1 : 0.45,
+                    }}
+                  >
+                    <p
+                      className="text-sm leading-relaxed"
+                      style={{ color: "hsl(0 0% 100% / 0.5)" }}
+                    >
+                      {mod.description}
+                    </p>
                   </div>
                 </div>
+              </div>
+            ))}
+            {/* Bottom border */}
+            <div
+              className="h-px"
+              style={{ background: "hsl(0 0% 100% / 0.07)" }}
+            />
+          </div>
+
+          {/* Also included — small, subtle */}
+          <div
+            className={`mt-14 flex flex-col sm:flex-row sm:items-center gap-4 transition-all duration-700 ${
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            }`}
+            style={{ transitionDelay: "500ms" }}
+          >
+            <p
+              className="text-[10px] uppercase tracking-[0.2em] flex-shrink-0"
+              style={{ color: "hsl(0 0% 100% / 0.2)" }}
+            >
+              Also included
+            </p>
+            <div className="flex flex-wrap gap-x-5 gap-y-2">
+              {alsoIncluded.map((item, i) => (
+                <span
+                  key={i}
+                  className="text-xs"
+                  style={{ color: "hsl(0 0% 100% / 0.35)" }}
+                >
+                  {item}
+                </span>
               ))}
             </div>
           </div>
+
+          {/* CTA */}
+          <div
+            className={`mt-14 transition-all duration-700 ${
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            }`}
+            style={{ transitionDelay: "600ms" }}
+          >
+            <button
+              onClick={() => navigate("/pricing")}
+              className="inline-flex items-center gap-2 text-sm font-medium transition-colors duration-200"
+              style={{ color: "hsl(261 75% 65%)" }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.color = "hsl(261 75% 80%)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.color = "hsl(261 75% 65%)")
+              }
+            >
+              See plans and pricing
+              <span className="text-base leading-none">→</span>
+            </button>
+          </div>
         </div>
       </div>
-      
-      {/* Bottom hairline separator */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
+
+      {/* Bottom hairline */}
+      <div
+        className="absolute bottom-0 left-0 right-0 h-px"
+        style={{ background: "hsl(0 0% 100% / 0.06)" }}
+      />
     </section>
   );
 };

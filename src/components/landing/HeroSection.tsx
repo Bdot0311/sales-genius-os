@@ -2,6 +2,8 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { ArrowRight } from "lucide-react";
 
+const integrations = ["Gmail", "HubSpot", "Salesforce", "Slack", "Calendly", "Zapier", "LinkedIn"];
+
 export const HeroSection = () => {
   const navigate = useNavigate();
   const [visible, setVisible] = useState(false);
@@ -150,7 +152,7 @@ export const HeroSection = () => {
 
         {/* Trust line */}
         <p
-          className={`text-xs text-white/25 flex items-center justify-center gap-2.5 transition-all duration-700 delay-[250ms] ${visible ? "opacity-100" : "opacity-0"}`}
+          className={`text-xs text-white/25 flex items-center justify-center gap-2.5 mb-10 transition-all duration-700 delay-[250ms] ${visible ? "opacity-100" : "opacity-0"}`}
         >
           No credit card required
           <span className="w-px h-3 bg-white/20 inline-block" />
@@ -158,6 +160,29 @@ export const HeroSection = () => {
           <span className="w-px h-3 bg-white/20 inline-block" />
           Setup in 2 minutes
         </p>
+
+        {/* Integration trust strip */}
+        <div
+          className={`flex flex-col items-center gap-3 transition-all duration-700 delay-[320ms] ${visible ? "opacity-100" : "opacity-0"}`}
+        >
+          <p className="text-[10px] uppercase tracking-[0.22em] text-white/18 font-medium"
+            style={{ color: "hsl(0 0% 100% / 0.18)" }}
+          >
+            Connects with the tools you already use
+          </p>
+          <div className="flex items-center flex-wrap justify-center gap-x-5 gap-y-2">
+            {integrations.map((name) => (
+              <span
+                key={name}
+                className="text-xs font-medium tracking-wide"
+                style={{ color: "hsl(0 0% 100% / 0.22)" }}
+              >
+                {name}
+              </span>
+            ))}
+          </div>
+        </div>
+
       </div>
 
       {/* Scroll hint */}

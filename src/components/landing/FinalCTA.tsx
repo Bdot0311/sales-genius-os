@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -11,82 +10,116 @@ export const FinalCTA = () => {
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
+        if (entry.isIntersecting) setIsVisible(true);
       },
       { threshold: 0.2 }
     );
-
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
-
+    if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
   }, []);
 
   return (
     <section
       ref={ref}
-      className="relative py-32 md:py-40 overflow-hidden"
+      className="relative py-40 md:py-52 overflow-hidden"
+      style={{ background: "hsl(0,0%,3%)" }}
       aria-labelledby="final-cta-heading"
     >
-      {/* Radial glow blob */}
+      {/* Radial glow — subtle, center */}
       <div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full pointer-events-none blur-3xl"
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full pointer-events-none"
         style={{
           background:
-            "radial-gradient(circle, hsl(261 75% 50% / 0.05) 0%, transparent 70%)",
+            "radial-gradient(circle, hsl(261 75% 50% / 0.08) 0%, transparent 65%)",
+          filter: "blur(60px)",
         }}
         aria-hidden="true"
       />
 
-      {/* Top hairline separator */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+      {/* Top hairline */}
+      <div
+        className="absolute top-0 left-0 right-0 h-px"
+        style={{ background: "hsl(0 0% 100% / 0.06)" }}
+      />
 
       <div className="container relative z-10 mx-auto px-6">
         <div
-          className={`flex flex-col items-center text-center scroll-reveal ${isVisible ? "visible" : ""}`}
+          className={`flex flex-col items-center text-center transition-all duration-700 ${
+            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+          }`}
         >
           {/* Label */}
-          <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground/50 mb-6">
-            READY WHEN YOU ARE
+          <p
+            className="text-[10px] uppercase tracking-[0.28em] mb-8 font-medium"
+            style={{ color: "hsl(0 0% 100% / 0.2)" }}
+          >
+            Ready when you are
           </p>
 
-          {/* Headline */}
+          {/* Headline — Playfair Display */}
           <h2
             id="final-cta-heading"
-            className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-tight"
+            className="font-display mb-6"
+            style={{
+              fontSize: "clamp(3rem, 8vw, 7rem)",
+              fontWeight: 800,
+              lineHeight: 1.04,
+              letterSpacing: "-0.02em",
+              color: "hsl(0 0% 96%)",
+            }}
           >
-            Your next customer
-            <br />
-            <span className="bg-gradient-to-r from-primary to-primary/50 bg-clip-text text-transparent">
-              is already out there.
+            <span className="block">Every day you wait,</span>
+            <span
+              className="block italic"
+              style={{
+                background:
+                  "linear-gradient(135deg, hsl(261 75% 72%) 0%, hsl(280 80% 68%) 50%, hsl(261 75% 60%) 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}
+            >
+              your competitor doesn't.
             </span>
           </h2>
 
-          {/* Subheadline */}
-          <p className="text-xl font-light text-muted-foreground text-center max-w-xl mx-auto mt-4">
-            Stop researching. Start selling.
-          </p>
-
-          {/* CTA */}
-          <Button
-            size="lg"
-            className="mt-10 h-14 px-10 text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl group shadow-[0_0_30px_hsl(261_75%_65%/0.3)] hover:shadow-[0_0_50px_hsl(261_75%_65%/0.45)] hover:-translate-y-1 transition-all duration-300"
-            onClick={() => navigate("/auth")}
+          {/* Sub */}
+          <p
+            className={`text-lg font-light max-w-md mx-auto mb-12 transition-all duration-700 delay-100 ${
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            }`}
+            style={{ color: "hsl(0 0% 100% / 0.35)" }}
           >
-            <span>Start for free</span>
-            <ArrowRight
-              className="w-5 h-5 ml-2 group-hover:translate-x-1.5 transition-transform duration-200"
-              aria-hidden="true"
-            />
-          </Button>
-
-          {/* Trust line */}
-          <p className="mt-4 text-xs text-muted-foreground/50">
-            No credit card required · Plans from $39/mo · Cancel anytime
+            See who's worth calling in under 2 minutes. No list. No guesswork.
           </p>
+
+          {/* CTA button */}
+          <div
+            className={`transition-all duration-700 delay-200 ${
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            }`}
+          >
+            <button
+              onClick={() => navigate("/auth")}
+              className="cta-pill-glow inline-flex items-center gap-2 px-10 rounded-full text-sm font-semibold text-white group"
+              style={{
+                height: "56px",
+                background:
+                  "linear-gradient(135deg, hsl(261 75% 60%) 0%, hsl(261 75% 50%) 100%)",
+              }}
+              aria-label="Start for free"
+            >
+              Start for free
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform duration-200" />
+            </button>
+
+            <p
+              className="mt-4 text-xs"
+              style={{ color: "hsl(0 0% 100% / 0.2)" }}
+            >
+              No credit card required · Plans from $39/mo · Cancel anytime
+            </p>
+          </div>
         </div>
       </div>
     </section>
