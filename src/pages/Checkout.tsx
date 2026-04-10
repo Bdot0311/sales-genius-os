@@ -15,7 +15,7 @@ const stripePromise = loadStripe(
     "pk_live_51T8THPFTerosS6hiQnrx3VN6cwsIJCVHKPrHT50Y71g3Z1IiQ0HbdZvqHHp5bV3k9mOGFZQKHVDT2tT8FPGnXkqN00e2ecLQHm"
 );
 
-type PlanKey = "starter" | "growth" | "pro";
+type PlanKey = "starter" | "growth" | "pro" | "agency";
 type IntervalKey = "monthly" | "yearly";
 
 const priceIdMap: Record<`${PlanKey}_${IntervalKey}`, string> = {
@@ -25,12 +25,15 @@ const priceIdMap: Record<`${PlanKey}_${IntervalKey}`, string> = {
   growth_yearly: STRIPE_PRICE_IDS.growth_yearly,
   pro_monthly: STRIPE_PRICE_IDS.pro_monthly,
   pro_yearly: STRIPE_PRICE_IDS.pro_yearly,
+  agency_monthly: STRIPE_PRICE_IDS.agency_monthly,
+  agency_yearly: STRIPE_PRICE_IDS.agency_yearly,
 };
 
 const planLabels: Record<PlanKey, string> = {
   starter: "Starter",
   growth: "Growth",
   pro: "Pro",
+  agency: "Agency",
 };
 
 const Checkout = () => {
