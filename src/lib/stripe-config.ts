@@ -4,10 +4,12 @@ export const STRIPE_PRICE_IDS = {
   starter_monthly: 'price_1T8tywFTerosS6hi0fHQuybr',
   growth_monthly: 'price_1T8tyyFTerosS6hiTsTXkWDa',
   pro_monthly: 'price_1T8tz0FTerosS6hiKJluR3kk',
+  agency_monthly: 'price_agency_monthly_placeholder',   // Replace with real Stripe price ID
   // Base subscription plans - Yearly
   starter_yearly: 'price_1T8tyxFTerosS6hiSakB51fA',
   growth_yearly: 'price_1T8tyzFTerosS6hiUyzpHnCK',
   pro_yearly: 'price_1T8tz0FTerosS6hiIHNG82Bh',
+  agency_yearly: 'price_agency_yearly_placeholder',     // Replace with real Stripe price ID
   // Legacy price IDs (kept for backwards compatibility)
   starter: 'price_1T8THgFTerosS6hiyasgavsP',
   growth: 'price_1T8THhFTerosS6hicTGH2TUP',
@@ -32,7 +34,7 @@ export const STRIPE_PRODUCT_IDS = {
   addon500: 'prod_U6gfxI0gDG2bSk',
 } as const;
 
-export type PlanType = 'free' | 'starter' | 'growth' | 'pro';
+export type PlanType = 'free' | 'starter' | 'growth' | 'pro' | 'agency';
 export type BillingInterval = 'monthly' | 'yearly';
 export type AddonType = 'addon200' | 'addon500';
 
@@ -85,6 +87,19 @@ export const PLAN_CONFIG = {
     monthlyProspects: 3000,
     yearlyProspects: 36000,
     dailyLimit: 400,
+    emailRevealCost: 1,
+    phoneRevealCost: 10,
+    companyRevealCost: 1,
+    exportTier: 'unlimited' as const,
+  },
+  agency: {
+    name: 'Agency',
+    monthlyPrice: 249,
+    yearlyPrice: 199,
+    yearlyTotal: 2388,
+    monthlyProspects: 10000,
+    yearlyProspects: 120000,
+    dailyLimit: 1000,
     emailRevealCost: 1,
     phoneRevealCost: 10,
     companyRevealCost: 1,

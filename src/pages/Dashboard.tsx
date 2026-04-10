@@ -5,6 +5,7 @@ import { OnboardingChecklist } from "@/components/dashboard/OnboardingChecklist"
 import { DashboardTour } from "@/components/dashboard/DashboardTour";
 import { ProspectUsageMeter } from "@/components/dashboard/ProspectUsageMeter";
 import { SampleDataBanner } from "@/components/dashboard/SampleDataBanner";
+import QuickStartWizard from "@/components/onboarding/QuickStartWizard";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, Users, DollarSign, Calendar } from "lucide-react";
@@ -17,12 +18,19 @@ const Dashboard = () => {
   const isFreeTier = currentPlan === 'free';
   const [showChecklist, setShowChecklist] = useState(true);
   const [showTour, setShowTour] = useState(false);
+  const [showWizard, setShowWizard] = useState(false);
   const [stats, setStats] = useState({
     totalLeads: 0,
     totalDeals: 0,
     totalValue: 0,
     meetingsThisWeek: 0,
   });
+
+  useEffect(() => {
+    if (!localStorage.getItem('salesos_quickstart_done')) {
+      setShowWizard(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (!isFreeTier) {
@@ -182,6 +190,14 @@ const Dashboard = () => {
           </div>
         </Card>
       </div>
+
+      <QuickStartWizard
+        open={showWizard}
+        onOpenChange={(open) => {
+          if (!open) localStorage.setItem('salesos_quickstart_done', '1');
+          setShowWizard(open);
+        }}
+      />
     </DashboardLayout>
   );
 };

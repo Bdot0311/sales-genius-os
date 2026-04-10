@@ -124,6 +124,14 @@ const EMAIL_TEMPLATES = [
     suggestedSubject: "scaling {company}'s outbound",
     category: "signal",
   },
+  {
+    value: "signal_dogfood",
+    label: "Using a Competitor",
+    description: "They are currently using a competitor product",
+    goal: "introduction",
+    suggestedSubject: "a better alternative to {competitor}",
+    category: "signal",
+  },
 ];
 
 const stripHtmlToText = (html: string): string => {

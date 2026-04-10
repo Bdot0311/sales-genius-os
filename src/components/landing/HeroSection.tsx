@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Play, Clock } from "lucide-react";
+import { ArrowRight, Play, Clock, CheckCircle2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef, lazy, Suspense } from "react";
 
@@ -90,6 +90,31 @@ export const HeroSection = () => {
                   <span className="absolute left-0 -bottom-0.5 w-0 h-px bg-primary group-hover:w-full transition-all duration-300" />
                 </span>
               </button>
+            </div>
+
+            {/* Trust strip */}
+            <div
+              className={`transition-all duration-700 delay-[400ms] ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+            >
+              <div className="flex flex-wrap justify-center lg:justify-start gap-x-6 gap-y-2 mb-2">
+                {[
+                  "MX-verified before every send",
+                  "30-day money-back guarantee",
+                  "No credit card required on free plan",
+                  "SOC 2 compliant",
+                ].map((label) => (
+                  <span
+                    key={label}
+                    className="inline-flex items-center gap-1 text-xs text-muted-foreground"
+                  >
+                    <CheckCircle2 className="w-3 h-3 text-green-500 shrink-0" />
+                    {label}
+                  </span>
+                ))}
+              </div>
+              <p className="text-xs text-center lg:text-left text-muted-foreground/70 max-w-lg mx-auto lg:mx-0 mb-4">
+                Prospect data verified in real time — bounce rates under 5% guaranteed or credits refunded.
+              </p>
             </div>
 
             {/* Social proof signal — visible without scrolling */}

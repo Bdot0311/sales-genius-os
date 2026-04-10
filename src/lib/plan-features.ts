@@ -254,6 +254,99 @@ export const PLAN_FEATURES = {
     recommendationLevel: 'general',
   },
   
+  agency: {
+    name: 'Agency',
+    price: 249,
+
+    // Search Credits
+    monthlySearchCredits: 10000,
+    dailySearchLimit: 1000,
+    exportTier: 'unlimited' as const,
+
+    // Lead Intelligence Engine
+    maxResultsPerSearch: 200,
+    enrichmentLevel: 'premium',
+    advancedFilters: true,
+    apiAccessLeads: true,
+
+    // ICP Builder
+    icpProfiles: -1, // unlimited
+    icpMatchScoring: true,
+    icpLookalike: true,
+
+    // AI Outreach Studio
+    activeSequences: -1,
+    personalizationLevel: 'premium',
+    aiFirstLines: true,
+    multiChannelLogic: true,
+    emailQualityChecker: true,
+
+    // Email Sequences
+    stepsPerSequence: -1,
+    sequenceType: 'custom' as const,
+    sequenceBranching: true,
+    sequenceTemplates: true,
+    replyAnalysis: true,
+    replyAnalysisCustomSignals: true,
+    handoffAlerts: 'webhook' as const,
+    relevanceFilter: 'advanced' as const,
+    messageBlocks: -1,
+    messageBlocksTeamSharing: true,
+    engagementStates: 'custom' as const,
+    sequenceABTesting: -1,
+    sequenceAnalytics: 'premium' as const,
+
+    // Reply Inbox
+    unifiedInbox: true,
+    inboxAIDrafts: true,
+    inboxAutoClassification: true,
+
+    // Meeting Automator
+    calendarConnections: -1,
+    smartRouting: true,
+    priorityBooking: true,
+
+    // Smart Deal Pipeline
+    automatedStageProgression: true,
+    revenueForecasting: true,
+    customPipelines: true,
+    advancedAutomationTriggers: true,
+
+    // AI Sales Coach
+    coachingLevel: 'premium',
+    realTimeAnalysis: 'full',
+    liveCoaching: true,
+    customPlaybooks: true,
+
+    // Automation Builder
+    automationRules: -1,
+    advancedWorkflows: true,
+    conditionalLogicDepth: -1,
+
+    // Deliverability
+    deliverabilityDashboard: true,
+    mailboxWarmup: true,
+    dnsHealthChecker: true,
+
+    // Analytics Dashboard
+    analyticsLevel: 'premium',
+    funnelAnalytics: true,
+    repPerformance: true,
+    customReports: true,
+    dataExports: true,
+    apiAccessAnalytics: true,
+
+    // AI Recommendations
+    recommendationLevel: 'predictive',
+
+    // Agency-exclusive features
+    whiteLabelPortal: true,
+    clientPortalAccess: true,
+    agencyReporting: true,
+    referralProgram: true,
+    priorityAPIAccess: true,
+  },
+
   pro: {
     name: 'Pro',
     price: 179,
@@ -338,6 +431,13 @@ export const PLAN_FEATURES = {
     
     // AI Recommendations
     recommendationLevel: 'predictive',
+
+    // Agency-exclusive features (not available on Pro)
+    whiteLabelPortal: false,
+    clientPortalAccess: false,
+    agencyReporting: false,
+    referralProgram: false,
+    priorityAPIAccess: false,
   },
 } as const;
 
@@ -533,6 +633,7 @@ export const getNextPlan = (currentPlan: PlanType): PlanType | null => {
   if (currentPlan === 'free') return 'starter';
   if (currentPlan === 'starter') return 'growth';
   if (currentPlan === 'growth') return 'pro';
+  if (currentPlan === 'pro') return 'agency';
   return null;
 };
 

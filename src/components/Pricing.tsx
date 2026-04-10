@@ -17,7 +17,7 @@ import { QuickBuyCreditsDialog } from "@/components/dashboard/QuickBuyCreditsDia
 type BillingInterval = 'monthly' | 'yearly';
 
 interface PaidPlan {
-  key: 'starter' | 'growth' | 'pro';
+  key: 'starter' | 'growth' | 'pro' | 'agency';
   name: string;
   monthlyPrice: number;
   yearlyPrice: number;
@@ -131,6 +131,29 @@ const paidPlans: PaidPlan[] = [
     monthlyPriceId: STRIPE_PRICE_IDS.pro_monthly,
     yearlyPriceId: STRIPE_PRICE_IDS.pro_yearly,
   },
+  {
+    key: 'agency',
+    name: "Agency",
+    monthlyPrice: 249,
+    yearlyPrice: 199,
+    yearlyTotal: 2388,
+    description: "For agencies running outbound for multiple clients",
+    mainValue: "Contact up to 10,000 verified prospects",
+    monthlyProspects: 10000,
+    yearlyProspects: 120000,
+    dailyLimit: "1,000 prospects per day",
+    features: [
+      "Everything in Pro, plus:",
+      "White-label client portal",
+      "Branded PDF reports for clients",
+      "Client portal sharing (no login required)",
+      "Referral & reseller program",
+      "Priority API access",
+      "Dedicated account support",
+    ],
+    monthlyPriceId: STRIPE_PRICE_IDS.agency_monthly,
+    yearlyPriceId: STRIPE_PRICE_IDS.agency_yearly,
+  },
 ];
 
 
@@ -139,62 +162,73 @@ const comparisonCategories = [
   {
     name: "Verified Prospects",
     features: [
-      { name: "Monthly verified prospects", free: "0", starter: "400", growth: "1,200", pro: "3,000" },
-      { name: "Daily prospect limit", free: "0", starter: "50", growth: "150", pro: "400" },
-      { name: "Prospect search", free: "—", starter: true, growth: true, pro: true },
-      { name: "Verified email data", free: "—", starter: true, growth: true, pro: true },
-      { name: "Advanced prospect filters", free: false, starter: false, growth: true, pro: true },
-      { name: "Bulk prospect export", free: false, starter: false, growth: true, pro: true },
+      { name: "Monthly verified prospects", free: "0", starter: "400", growth: "1,200", pro: "3,000", agency: "10,000" },
+      { name: "Daily prospect limit", free: "0", starter: "50", growth: "150", pro: "400", agency: "1,000" },
+      { name: "Prospect search", free: "—", starter: true, growth: true, pro: true, agency: true },
+      { name: "Verified email data", free: "—", starter: true, growth: true, pro: true, agency: true },
+      { name: "Advanced prospect filters", free: false, starter: false, growth: true, pro: true, agency: true },
+      { name: "Bulk prospect export", free: false, starter: false, growth: true, pro: true, agency: true },
     ]
   },
   {
     name: "ICP & Lead Intelligence",
     features: [
-      { name: "ICP Builder", free: false, starter: "3 profiles", growth: "10 profiles", pro: "Unlimited" },
-      { name: "ICP match scoring", free: false, starter: true, growth: true, pro: true },
-      { name: "ICP lookalike discovery", free: false, starter: false, growth: true, pro: true },
+      { name: "ICP Builder", free: false, starter: "3 profiles", growth: "10 profiles", pro: "Unlimited", agency: "Unlimited" },
+      { name: "ICP match scoring", free: false, starter: true, growth: true, pro: true, agency: true },
+      { name: "ICP lookalike discovery", free: false, starter: false, growth: true, pro: true, agency: true },
     ]
   },
   {
     name: "Outreach & Campaigns",
     features: [
-      { name: "AI email generator", free: false, starter: true, growth: true, pro: true },
-      { name: "Email quality checker", free: false, starter: true, growth: true, pro: true },
-      { name: "Campaign templates", free: false, starter: true, growth: true, pro: true },
-      { name: "Sequence templates", free: false, starter: true, growth: true, pro: true },
-      { name: "AI personalized outreach", free: false, starter: false, growth: true, pro: true },
-      { name: "Sequence branching", free: false, starter: false, growth: false, pro: true },
-      { name: "Sequence A/B testing", free: false, starter: false, growth: false, pro: true },
-      { name: "Advanced automation features", free: false, starter: false, growth: false, pro: true },
+      { name: "AI email generator", free: false, starter: true, growth: true, pro: true, agency: true },
+      { name: "Email quality checker", free: false, starter: true, growth: true, pro: true, agency: true },
+      { name: "Campaign templates", free: false, starter: true, growth: true, pro: true, agency: true },
+      { name: "Sequence templates", free: false, starter: true, growth: true, pro: true, agency: true },
+      { name: "AI personalized outreach", free: false, starter: false, growth: true, pro: true, agency: true },
+      { name: "Sequence branching", free: false, starter: false, growth: false, pro: true, agency: true },
+      { name: "Sequence A/B testing", free: false, starter: false, growth: false, pro: true, agency: true },
+      { name: "Advanced automation features", free: false, starter: false, growth: false, pro: true, agency: true },
     ]
   },
   {
     name: "Reply Inbox & Deliverability",
     features: [
-      { name: "Unified reply inbox", free: false, starter: false, growth: true, pro: true },
-      { name: "AI draft responses", free: false, starter: false, growth: true, pro: true },
-      { name: "Auto reply classification", free: false, starter: false, growth: true, pro: true },
-      { name: "Deliverability dashboard", free: false, starter: false, growth: true, pro: true },
-      { name: "Mailbox warmup tracker", free: false, starter: false, growth: true, pro: true },
-      { name: "DNS health checker", free: false, starter: false, growth: true, pro: true },
+      { name: "Unified reply inbox", free: false, starter: false, growth: true, pro: true, agency: true },
+      { name: "AI draft responses", free: false, starter: false, growth: true, pro: true, agency: true },
+      { name: "Auto reply classification", free: false, starter: false, growth: true, pro: true, agency: true },
+      { name: "Deliverability dashboard", free: false, starter: false, growth: true, pro: true, agency: true },
+      { name: "Mailbox warmup tracker", free: false, starter: false, growth: true, pro: true, agency: true },
+      { name: "DNS health checker", free: false, starter: false, growth: true, pro: true, agency: true },
     ]
   },
   {
     name: "Pipeline & Analytics",
     features: [
-      { name: "Visual pipeline", free: "View only", starter: true, growth: true, pro: true },
-      { name: "CRM integrations", free: false, starter: false, growth: false, pro: true },
-      { name: "Team collaboration access", free: false, starter: false, growth: false, pro: true },
-      { name: "High-priority data processing", free: false, starter: false, growth: false, pro: true },
+      { name: "Visual pipeline", free: "View only", starter: true, growth: true, pro: true, agency: true },
+      { name: "CRM integrations", free: false, starter: false, growth: false, pro: true, agency: true },
+      { name: "Team collaboration access", free: false, starter: false, growth: false, pro: true, agency: true },
+      { name: "High-priority data processing", free: false, starter: false, growth: false, pro: true, agency: true },
+    ]
+  },
+  {
+    name: "Agency Features",
+    features: [
+      { name: "White-label client portal", free: false, starter: false, growth: false, pro: false, agency: true },
+      { name: "Branded PDF reports", free: false, starter: false, growth: false, pro: false, agency: true },
+      { name: "Client portal sharing", free: false, starter: false, growth: false, pro: false, agency: true },
+      { name: "Referral & reseller program", free: false, starter: false, growth: false, pro: false, agency: true },
+      { name: "Priority API access", free: false, starter: false, growth: false, pro: false, agency: true },
     ]
   },
   {
     name: "Support",
     features: [
-      { name: "Help center access", free: true, starter: true, growth: true, pro: true },
-      { name: "Standard support", free: false, starter: true, growth: true, pro: true },
-      { name: "Priority support", free: false, starter: false, growth: true, pro: true },
-      { name: "Premium support", free: false, starter: false, growth: false, pro: true },
+      { name: "Help center access", free: true, starter: true, growth: true, pro: true, agency: true },
+      { name: "Standard support", free: false, starter: true, growth: true, pro: true, agency: true },
+      { name: "Priority support", free: false, starter: false, growth: true, pro: true, agency: true },
+      { name: "Premium support", free: false, starter: false, growth: false, pro: true, agency: true },
+      { name: "Dedicated account manager", free: false, starter: false, growth: false, pro: false, agency: true },
     ]
   },
 ];
@@ -475,6 +509,10 @@ export const Pricing = () => {
                     <div className="font-semibold text-sm sm:text-base">Pro</div>
                     <div className="text-xs sm:text-sm text-muted-foreground">$179/mo</div>
                   </th>
+                  <th className="text-center py-3 sm:py-4 px-2 sm:px-3 min-w-[80px] sm:min-w-[100px] bg-amber-500/5 rounded-t-lg">
+                    <div className="font-semibold text-sm sm:text-base text-amber-500">Agency</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">$249/mo</div>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -482,7 +520,7 @@ export const Pricing = () => {
                   <>
                     {/* Category Header */}
                     <tr key={`cat-${catIndex}`} className="border-b border-border/20">
-                      <td colSpan={5} className="py-3 sm:py-4 px-3 sm:px-4">
+                      <td colSpan={6} className="py-3 sm:py-4 px-3 sm:px-4">
                         <div className="flex items-center gap-2 font-semibold text-foreground text-sm sm:text-base">
                           <Coins className="w-4 h-4 text-primary flex-shrink-0" />
                           {category.name}
@@ -491,8 +529,8 @@ export const Pricing = () => {
                     </tr>
                     {/* Feature Rows */}
                     {category.features.map((feature, featureIndex) => (
-                      <tr 
-                        key={`feature-${catIndex}-${featureIndex}`} 
+                      <tr
+                        key={`feature-${catIndex}-${featureIndex}`}
                         className="border-b border-border/10 hover:bg-muted/30 transition-colors"
                       >
                         <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-xs sm:text-sm text-muted-foreground">{feature.name}</td>
@@ -500,6 +538,7 @@ export const Pricing = () => {
                         <td className="py-2.5 sm:py-3 px-2 sm:px-3 text-center">{renderFeatureValue(feature.starter)}</td>
                         <td className="py-2.5 sm:py-3 px-2 sm:px-3 text-center bg-primary/5">{renderFeatureValue(feature.growth)}</td>
                         <td className="py-2.5 sm:py-3 px-2 sm:px-3 text-center">{renderFeatureValue(feature.pro)}</td>
+                        <td className="py-2.5 sm:py-3 px-2 sm:px-3 text-center bg-amber-500/5">{renderFeatureValue(feature.agency)}</td>
                       </tr>
                     ))}
                   </>

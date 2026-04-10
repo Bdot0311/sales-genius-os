@@ -38,6 +38,7 @@ const Deliverability = lazy(() => import("./pages/Deliverability"));
 const Sequences = lazy(() => import("./pages/Sequences"));
 const MessageBlocks = lazy(() => import("./pages/MessageBlocks"));
 const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
+const ClientPortal = lazy(() => import("./pages/ClientPortal"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -145,6 +146,7 @@ const App = () => (
             <Route path="/settings" element={<Settings />} />
             <Route path="/admin/*" element={<Admin />} />
             <Route path="/unsubscribe" element={<Unsubscribe />} />
+            <Route path="/client-portal/:token" element={<ClientPortal />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

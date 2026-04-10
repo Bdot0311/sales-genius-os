@@ -5,13 +5,14 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { TrendingUp, Users, DollarSign, Target, Loader2, Download, FileText, Sparkles, ArrowRight } from "lucide-react";
+import { TrendingUp, Users, DollarSign, Target, Loader2, Download, FileText, Sparkles, ArrowRight, Share2, FileDown } from "lucide-react";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
 import { FeatureHighlight } from "@/components/dashboard/FeatureHighlight";
 import { OUTBOUND_KB } from "@/lib/outbound-kb";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { toast } from "sonner";
 
 const Analytics = () => {
   const { currentPlan, features, loading: planLoading, hasFeature, gateModalOpen, setGateModalOpen, gatedFeature, triggerGate } = usePlanFeatures();
@@ -95,12 +96,34 @@ const Analytics = () => {
     } catch (error) { console.error('Export failed:', error); }
   };
 
+  const handleShareClientPortal = () => {
+    const url = "https://salesos.alephwavex.io/client-portal/demo-token-123";
+    navigator.clipboard.writeText(url).then(() => {
+      toast.success("Client portal link copied to clipboard!");
+    }).catch(() => {
+      toast.error("Failed to copy link. Please try again.");
+    });
+  };
+
   const handleCustomReport = () => {
     if (!features.customReports) { triggerGate('customReports'); return; }
     const csvRows = [['Metric', 'Value'], ['Total Leads', stats.totalLeads.toString()], ['Total Deals', stats.totalDeals.toString()], ['Pipeline Value', `$${stats.totalValue.toLocaleString()}`], ['Avg Deal Size', `$${Math.round(stats.avgDealSize).toLocaleString()}`], [''], ['Stage', 'Deal Count'], ...dealsByStage.map(d => [d.stage, d.count.toString()])];
     const blob = new Blob([csvRows.map(row => row.join(',')).join('\n')], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = `salesos-report-${new Date().toISOString().split('T')[0]}.csv`; a.click(); URL.revokeObjectURL(url);
+  };
+
+  const handleExportPDF = () => {
+    // Generate a simple text-based "PDF" as a blob download for now
+    const reportContent = `SalesOS Campaign Report\nGenerated: ${new Date().toLocaleDateString()}\n\nThis is your agency-branded campaign performance report.\nFull PDF export with charts coming soon.`;
+    const blob = new Blob([reportContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'salesos-report.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Report downloaded');
   };
 
   return (
@@ -124,6 +147,17 @@ const Analytics = () => {
               <FileText className="w-4 h-4 mr-2" />Custom Report
               {!features.customReports && <Sparkles className="w-3 h-3 ml-2 text-primary" />}
             </Button>
+            {currentPlan === 'agency' && (
+              <Button variant="outline" onClick={handleShareClientPortal}>
+                <Share2 className="w-4 h-4 mr-2" />Share Client Portal
+              </Button>
+            )}
+            {currentPlan === 'agency' && (
+              <Button variant="outline" size="sm" onClick={handleExportPDF} className="gap-2">
+                <FileDown className="w-4 h-4" />
+                Export PDF Report
+              </Button>
+            )}
           </div>
         </div>
 

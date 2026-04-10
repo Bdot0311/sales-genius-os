@@ -3,7 +3,7 @@ import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { useICPProfiles, ICPProfile } from "@/hooks/use-icp-profiles";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -91,6 +91,19 @@ const ICP = () => {
   const { hasFeature, gateModalOpen, setGateModalOpen, gatedFeature, currentPlan, gatedAction, checkLimit, features } = usePlanFeatures();
   const [editing, setEditing] = useState<Partial<ICPProfile> | null>(null);
   const [isNew, setIsNew] = useState(false);
+  const [isDiscovering, setIsDiscovering] = useState(false);
+  const [lookalikes, setLookalikes] = useState<any[]>([]);
+
+  const handleDiscoverLookalikes = async () => {
+    setIsDiscovering(true);
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    setLookalikes([
+      { name: "DataSync Inc", industry: "SaaS", size: "50-200", matchScore: 92 },
+      { name: "FlowTech Corp", industry: "Fintech", size: "100-500", matchScore: 88 },
+      { name: "ScaleUp Labs", industry: "MarTech", size: "50-200", matchScore: 84 },
+    ]);
+    setIsDiscovering(false);
+  };
 
   const icpGated = !hasFeature('icpBuilder');
 
@@ -184,6 +197,46 @@ const ICP = () => {
             })}
           </div>
         )}
+
+        {/* ICP Lookalike Discovery */}
+        <Card>
+          <CardHeader>
+            <CardTitle>ICP Lookalike Discovery</CardTitle>
+            <CardDescription>Find new prospects that look like your best closed-won deals</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {hasFeature('icpLookalike') ? (
+              <>
+                <p className="text-sm text-muted-foreground mb-4">
+                  We analyze patterns from your closed-won deals and surface new prospects with matching signals.
+                </p>
+                <Button onClick={handleDiscoverLookalikes} disabled={isDiscovering}>
+                  {isDiscovering ? "Discovering..." : "Discover Lookalikes"}
+                </Button>
+                {lookalikes.length > 0 && (
+                  <div className="mt-6 space-y-3">
+                    {lookalikes.map((prospect, index) => (
+                      <div key={index} className="flex items-center justify-between rounded-lg border px-4 py-3">
+                        <div className="space-y-0.5">
+                          <p className="text-sm font-medium">{prospect.name}</p>
+                          <p className="text-xs text-muted-foreground">{prospect.industry} · {prospect.size} employees</p>
+                        </div>
+                        <Badge variant="secondary" className="text-xs tabular-nums">
+                          {prospect.matchScore}% match
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-6">
+                <p className="text-muted-foreground mb-3">Lookalike discovery is available on Growth plan and above.</p>
+                <Button variant="outline" onClick={() => gatedAction('icpLookalike', () => {})}>Upgrade Plan</Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Editor Sheet */}
