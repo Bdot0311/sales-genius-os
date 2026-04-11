@@ -79,6 +79,28 @@ export const ProductShowcase = () => {
             />
           </div>
         </div>
+
+        {/* Integration strip — below the mockup */}
+        <div className="flex flex-col items-center gap-3 pt-10 pb-14">
+          <p
+            className="text-[10px] uppercase tracking-[0.22em] font-medium"
+            style={{ color: "hsl(0 0% 100% / 0.18)" }}
+          >
+            Connects with the tools you already use
+          </p>
+          <div className="flex items-center flex-wrap justify-center gap-x-6 gap-y-2">
+            {["Gmail", "HubSpot", "Salesforce", "Slack", "Calendly", "Zapier"].map((name) => (
+              <span
+                key={name}
+                className="text-xs font-medium tracking-wide"
+                style={{ color: "hsl(0 0% 100% / 0.25)" }}
+              >
+                {name}
+              </span>
+            ))}
+          </div>
+        </div>
+
       </div>
     </section>
   );
