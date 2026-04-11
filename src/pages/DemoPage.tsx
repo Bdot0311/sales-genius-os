@@ -73,12 +73,14 @@ const norm = (v: number, lo: number, hi: number) =>
   Math.max(0, Math.min(1, (v - lo) / (hi - lo)));
 
 // ─── MeltContainer ────────────────────────────────────────────────────────────
-// CSS sticky breaks when any ancestor has overflow:hidden.
-// Instead we use a JS manual-pin: outer div is tall (creates scroll room),
-// inner div is absolute top-0, and on every scroll event we translateY it
-// down by the exact pixels scrolled — keeping it locked to the screen.
-// This is sticky reimplemented in JS and works in all ancestor contexts.
-const MELT_FADE = 0.16; // generous overlap → dramatic wicked-witch dissolve
+// Three-phase pinning — the only approach that works regardless of ancestor
+// overflow:hidden contexts:
+//   before  → position:absolute top:0    (hasn't entered view yet)
+//   active  → position:fixed   top:0     (truly screen-locked, zero jitter)
+//   after   → position:absolute bottom:0 (anchored to bottom of scroll space)
+// Progress is computed from window.scrollY vs outer.offsetTop so it never
+// depends on getBoundingClientRect timing.
+const MELT_FADE = 0.18;
 
 const MeltContainer = ({
   chapters,
@@ -89,28 +91,33 @@ const MeltContainer = ({
   }>;
 }) => {
   const outerRef = useRef<HTMLDivElement>(null);
-  const innerRef = useRef<HTMLDivElement>(null);
   const rafRef   = useRef<number>(0);
-  const [progress, setProgress] = useState(0);
   const N = chapters.length;
+
+  type Phase = "before" | "active" | "after";
+  const [phase, setPhase]       = useState<Phase>("before");
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     const update = () => {
       const outer = outerRef.current;
-      const inner = innerRef.current;
-      if (!outer || !inner) return;
+      if (!outer) return;
 
-      const rect       = outer.getBoundingClientRect();
+      // Use offsetTop for stable measurement (not rect which changes on scroll)
+      const outerTop   = outer.offsetTop;
       const scrollable = outer.offsetHeight - window.innerHeight;
-      if (scrollable <= 0) return;
+      const scrolled   = window.scrollY - outerTop;
 
-      // Pixels the outer has scrolled past the viewport top
-      const scrolled = Math.max(0, Math.min(scrollable, -rect.top));
-
-      // Pin the inner: move it down by scrolled so it stays on screen
-      inner.style.transform = `translateY(${scrolled}px)`;
-
-      setProgress(scrolled / scrollable);
+      if (scrolled < 0) {
+        setPhase("before");
+        setProgress(0);
+      } else if (scrolled >= scrollable) {
+        setPhase("after");
+        setProgress(1);
+      } else {
+        setPhase("active");
+        setProgress(scrolled / scrollable);
+      }
     };
 
     const onScroll = () => {
@@ -137,20 +144,24 @@ const MeltContainer = ({
 
   const activeIdx = boundaries.reduce((acc, b) => (progress >= b - MELT_FADE ? acc + 1 : acc), 0);
 
+  // Viewport style switches by phase
+  const viewportStyle: React.CSSProperties =
+    phase === "active"
+      ? { position: "fixed",    top: 0, left: 0, right: 0, height: "100vh" }
+      : phase === "after"
+      ? { position: "absolute", bottom: 0, left: 0, right: 0, height: "100vh" }
+      : { position: "absolute", top: 0,    left: 0, right: 0, height: "100vh" };
+
   return (
-    <div ref={outerRef} style={{ height: `${N * 120}vh`, position: "relative" }}>
-      {/* inner starts at top-0, JS translates it down as user scrolls */}
+    <div
+      ref={outerRef}
+      style={{ height: `${N * 120}vh`, position: "relative" }}
+    >
       <div
-        ref={innerRef}
         style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: "100vh",
+          ...viewportStyle,
           overflow: "hidden",
           background: "hsl(0,0%,3%)",
-          willChange: "transform",
         }}
       >
         {/* Dot grid */}
@@ -167,11 +178,10 @@ const MeltContainer = ({
           const fadeIn  = getFadeIn(i);
           const fadeOut = getFadeOut(i);
           const opacity = Math.max(0, Math.min(1, fadeIn - fadeOut));
-          // Rises in from below, melts upward as it exits — wicked witch
-          const ty    = (1 - fadeIn) * 55 - fadeOut * 55;
-          const scale = 0.93 + opacity * 0.07;
-          const blur  = (1 - opacity) * 10;
-          const active = opacity > 0.45;
+          const ty      = (1 - fadeIn) * 60 - fadeOut * 60;
+          const scale   = 0.93 + opacity * 0.07;
+          const blur    = (1 - opacity) * 12;
+          const active  = opacity > 0.45;
 
           return (
             <div
@@ -187,7 +197,6 @@ const MeltContainer = ({
                 pointerEvents: active ? "auto" : "none",
               }}
             >
-              {/* Ambient glow */}
               <div
                 className="absolute inset-0 pointer-events-none"
                 style={{
