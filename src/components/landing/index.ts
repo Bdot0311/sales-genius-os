@@ -8,4 +8,5 @@ export { DifferentiationSection } from './DifferentiationSection';
 export { FounderNoteSection } from './FounderNoteSection';
 export { FAQSection } from './FAQSection';
 export { FinalCTA } from './FinalCTA';
+export { TrustBar } from './TrustBar';
 export { FooterSection } from './FooterSection';

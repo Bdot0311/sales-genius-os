@@ -82,13 +82,21 @@ export const ProductShowcase = () => {
           >
             Connects with the tools you already use
           </p>
-          <div className="flex items-center flex-wrap justify-center gap-x-6 gap-y-2">
+          <div className="flex items-center flex-wrap justify-center gap-2">
             {["Gmail", "HubSpot", "Salesforce", "Slack", "Calendly", "Zapier"].map((name) => (
               <span
                 key={name}
-                className="text-xs font-medium tracking-wide"
-                style={{ color: "hsl(0 0% 100% / 0.25)" }}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium tracking-wide"
+                style={{
+                  background: "hsl(0 0% 100% / 0.04)",
+                  border: "1px solid hsl(0 0% 100% / 0.09)",
+                  color: "hsl(0 0% 100% / 0.35)",
+                }}
               >
+                <span
+                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                  style={{ background: "hsl(261 75% 60% / 0.7)" }}
+                />
                 {name}
               </span>
             ))}

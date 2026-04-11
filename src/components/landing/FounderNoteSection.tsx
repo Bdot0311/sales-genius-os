@@ -107,18 +107,51 @@ export const FounderNoteSection = () => {
               className="h-px mb-6 w-12"
               style={{ background: "hsl(261 75% 55% / 0.4)" }}
             />
-            <p
-              className="text-sm font-medium mb-1"
-              style={{ color: "hsl(0 0% 70%)" }}
-            >
-              Brandon, Founder of SalesOS
-            </p>
-            <p
-              className="text-xs"
-              style={{ color: "hsl(0 0% 100% / 0.25)" }}
-            >
-              Built in NYC · Launched 2026
-            </p>
+            <div className="flex items-center gap-3">
+              {/* Founder avatar — swap src for a real photo when ready */}
+              <div
+                className="w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-sm font-bold text-white select-none"
+                style={{
+                  background:
+                    "linear-gradient(135deg, hsl(261 75% 55%), hsl(280 80% 65%))",
+                }}
+                aria-hidden="true"
+              >
+                B
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <p
+                    className="text-sm font-medium"
+                    style={{ color: "hsl(0 0% 70%)" }}
+                  >
+                    Brandon, Founder of SalesOS
+                  </p>
+                  <a
+                    href="https://linkedin.com/in/brandon"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs transition-colors duration-200"
+                    style={{ color: "hsl(261 75% 55% / 0.55)" }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.color = "hsl(261 75% 72%)")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.color = "hsl(261 75% 55% / 0.55)")
+                    }
+                    aria-label="Brandon on LinkedIn"
+                  >
+                    ↗ LinkedIn
+                  </a>
+                </div>
+                <p
+                  className="text-xs mt-0.5"
+                  style={{ color: "hsl(0 0% 100% / 0.25)" }}
+                >
+                  Built in NYC · Launched 2026
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* CTAs */}

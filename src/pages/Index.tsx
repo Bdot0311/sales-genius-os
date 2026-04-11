@@ -23,6 +23,7 @@ const DifferentiationSection = lazy(() => import("@/components/landing/Different
 const FounderNoteSection = lazy(() => import("@/components/landing/FounderNoteSection").then(m => ({ default: m.FounderNoteSection })));
 const FAQSection = lazy(() => import("@/components/landing/FAQSection").then(m => ({ default: m.FAQSection })));
 const FinalCTA = lazy(() => import("@/components/landing/FinalCTA").then(m => ({ default: m.FinalCTA })));
+const TrustBar = lazy(() => import("@/components/landing/TrustBar").then(m => ({ default: m.TrustBar })));
 const FooterSection = lazy(() => import("@/components/landing/FooterSection").then(m => ({ default: m.FooterSection })));
 
 // Minimal fallback for lazy sections
@@ -141,6 +142,7 @@ const Index = () => {
               <FounderNoteSection />
               <FAQSection />
               <FinalCTA />
+              <TrustBar />
             </Suspense>
           </article>
         </main>

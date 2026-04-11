@@ -67,6 +67,15 @@ const steps = [
             </div>
           </div>
         ))}
+        <div
+          className="flex items-center gap-1.5 px-4 py-2.5"
+          style={{ borderTop: "1px solid hsl(261 75% 50% / 0.1)" }}
+        >
+          <span style={{ color: "hsl(261 75% 62%)", fontSize: "10px" }}>✓</span>
+          <span className="text-[10px]" style={{ color: "hsl(0 0% 100% / 0.22)" }}>
+            Business emails verified via SMTP + multi-source enrichment
+          </span>
+        </div>
       </div>
     ),
   },
