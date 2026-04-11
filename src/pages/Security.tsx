@@ -10,7 +10,7 @@ const Security = () => {
         title="Security Practices & Data Protection - Enterprise Grade | SalesOS"
         description="Learn about SalesOS security practices. Enterprise-grade data protection with encryption, SOC 2 compliance, GDPR/CCPA compliance, and 24/7 monitoring."
         keywords="SalesOS security, data encryption, SOC 2, GDPR compliance, enterprise security, data protection"
-        ogImage="https://storage.googleapis.com/gpt-engineer-file-uploads/ZFJK1zezovOpOdjy9TptFukIhhc2/social-images/social-1768238149761-SalesOS full logo.png"
+        ogImage="https://salesos.alephwavex.io/salesos-og.png"
       />
       <BreadcrumbSchema items={[
         { name: "Home", url: "https://salesos.alephwavex.io" },

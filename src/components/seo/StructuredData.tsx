@@ -151,7 +151,7 @@ export const SoftwareApplicationSchema = () => {
     "description": "SalesOS turns your ICP into ranked prospects with SMTP-verified contact data and AI-drafted first-touch emails — in under 2 minutes. Describe your ideal customer in plain English: no boolean search, no list building, no manual scoring.",
     "url": BASE_URL,
     "downloadUrl": `${BASE_URL}/auth`,
-    "screenshot": "https://storage.googleapis.com/gpt-engineer-file-uploads/ZFJK1zezovOpOdjy9TptFukIhhc2/social-images/social-1768238149761-SalesOS full logo.png",
+    "screenshot": "https://salesos.alephwavex.io/salesos-og.png",
     "offers": {
       "@type": "AggregateOffer",
       "lowPrice": "39",

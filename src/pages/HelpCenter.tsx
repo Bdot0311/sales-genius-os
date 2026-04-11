@@ -202,7 +202,7 @@ const HelpCenter = () => {
         title="Help Center - SalesOS Support & Documentation"
         description="Get instant answers to your SalesOS questions. Browse guides, troubleshooting tips, API documentation, and contact our support team."
         keywords="SalesOS help, support, documentation, guides, troubleshooting, FAQ"
-        ogImage="https://storage.googleapis.com/gpt-engineer-file-uploads/ZFJK1zezovOpOdjy9TptFukIhhc2/social-images/social-1768238149761-SalesOS full logo.png"
+        ogImage="https://salesos.alephwavex.io/salesos-og.png"
       />
       <BreadcrumbSchema
         items={[

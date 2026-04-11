@@ -47,7 +47,7 @@ const PricingPage = () => {
         title="SalesOS Pricing - Choose the Right Outbound Plan"
         description="Choose the SalesOS plan that fits your outbound workflow. Starter from $39/month, Growth from $89/month, and Pro from $179/month."
         keywords="SalesOS pricing, outbound sales software pricing, lead generation pricing, B2B prospecting pricing, sales outreach software cost"
-        ogImage="https://storage.googleapis.com/gpt-engineer-file-uploads/ZFJK1zezovOpOdjy9TptFukIhhc2/social-images/social-1768238149761-SalesOS full logo.png"
+        ogImage="https://salesos.alephwavex.io/salesos-og.png"
       />
       <BreadcrumbSchema items={[
         { name: "Home", url: "https://salesos.alephwavex.io" },

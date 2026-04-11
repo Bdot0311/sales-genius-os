@@ -36,7 +36,7 @@ interface SEOHeadProps {
   articleContent?: string; // For reading time calculation
 }
 
-const DEFAULT_OG_IMAGE = 'https://storage.googleapis.com/gpt-engineer-file-uploads/ZFJK1zezovOpOdjy9TptFukIhhc2/social-images/social-1768238149761-SalesOS full logo.png';
+const DEFAULT_OG_IMAGE = 'https://salesos.alephwavex.io/salesos-og.png';
 
 export const SEOHead = ({
   title = "SalesOS - Plain-English B2B Lead Discovery",
@@ -197,7 +197,7 @@ export const SEOHead = ({
       ))}
       
       {/* DNS Prefetch for external resources */}
-      <link rel="dns-prefetch" href="//storage.googleapis.com" />
+      <link rel="preconnect" href="https://salesos.alephwavex.io" />
     </>
   );
 };

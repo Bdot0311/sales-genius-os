@@ -9,7 +9,7 @@ const Terms = () => {
         title="Terms of Service - User Agreement & Policies | SalesOS"
         description="Review the SalesOS Terms of Service. Understand your rights and responsibilities when using our AI-powered sales platform."
         keywords="SalesOS terms of service, terms and conditions, user agreement, service agreement"
-        ogImage="https://storage.googleapis.com/gpt-engineer-file-uploads/ZFJK1zezovOpOdjy9TptFukIhhc2/social-images/social-1768238149761-SalesOS full logo.png"
+        ogImage="https://salesos.alephwavex.io/salesos-og.png"
       />
       <BreadcrumbSchema items={[
         { name: "Home", url: "https://salesos.alephwavex.io" },

@@ -100,7 +100,7 @@ const Index = () => {
         title="SalesOS — Find Who to Sell To. Then Actually Sell to Them."
         description="Describe your ideal customer in plain English. SalesOS returns ranked B2B prospects with SMTP-verified emails and an AI-drafted first-touch message — in under 2 minutes."
         keywords="B2B lead generation, lead discovery, outbound email software, ICP scoring, SMTP verified emails, plain English lead search, B2B prospecting, AI email drafting, email enrichment, outbound sales automation, find B2B leads, lead scoring software, B2B email outreach"
-        ogImage="https://ghgfjnepvxvxrncmskys.supabase.co/storage/v1/object/public/social-images/salesos-logo.png"
+        ogImage="https://salesos.alephwavex.io/salesos-og.png"
       />
 
       {/* Core Schema Markup */}
