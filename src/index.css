@@ -78,15 +78,9 @@ All colors MUST be HSL. Using 8px spacing scale.
     padding-right: env(safe-area-inset-right, 0px);
   }
 
-  /* CSS containment to limit layout/paint scope and reduce forced reflows */
+  /* CSS containment — paint only to avoid scroll glitches on mobile */
   section {
-    contain: layout style;
-  }
-
-  /* Reduce layout shifts from lazy-loaded sections */
-  .lazy-section {
-    content-visibility: auto;
-    contain-intrinsic-size: auto 600px;
+    contain: paint;
   }
 }
 
