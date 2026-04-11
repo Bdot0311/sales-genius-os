@@ -2,10 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "dev",
-      "runtimeExecutable": "/opt/homebrew/bin/npm",
+      "name": "sales-genius-os",
+      "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
-      "port": 8080
+      "port": 5173
     }
   ]
 }
