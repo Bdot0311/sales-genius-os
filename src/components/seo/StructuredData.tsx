@@ -118,7 +118,7 @@ export const OrganizationSchema = ({
     "founder": {
       "@type": "Person",
       "name": "Brandon",
-      "url": "https://linkedin.com/in/brandon"
+      "url": "https://www.linkedin.com/in/buildwitbrandon"
     },
     "foundingDate": "2026",
     "knowsAbout": [

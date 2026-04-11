@@ -128,7 +128,7 @@ export const FounderNoteSection = () => {
                     Brandon, Founder of SalesOS
                   </p>
                   <a
-                    href="https://linkedin.com/in/brandon"
+                    href="https://www.linkedin.com/in/buildwitbrandon"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs transition-colors duration-200"
