@@ -76,7 +76,7 @@ const JsonLdScript = ({ schema }: { schema: object }) => (
 // Organization Schema for brand recognition - Enhanced for AEO
 export const OrganizationSchema = ({
   name = "SalesOS",
-  description = "SalesOS is an AI-Powered Sales Operating System that helps SaaS companies close more deals with intelligent lead generation, automated outreach, and real-time coaching. Founded to revolutionize B2B sales through artificial intelligence.",
+  description = "SalesOS is a B2B lead discovery and outbound email platform. Describe your ideal customer in plain English, get ranked prospects with SMTP-verified emails, and send AI-drafted first-touch emails — all from one workflow.",
   url = BASE_URL,
   logo = "https://storage.googleapis.com/gpt-engineer-file-uploads/ZFJK1zezovOpOdjy9TptFukIhhc2/uploads/1761024288225-image 2.png"
 }: OrganizationSchemaProps) => {
@@ -85,7 +85,7 @@ export const OrganizationSchema = ({
     "@type": "Organization",
     "@id": `${BASE_URL}/#organization`,
     "name": name,
-    "alternateName": ["SalesOS AI", "Sales OS", "SalesOS Platform"],
+    "alternateName": ["Sales OS", "SalesOS Platform"],
     "description": description,
     "url": url,
     "logo": {
@@ -111,24 +111,26 @@ export const OrganizationSchema = ({
     ],
     "address": {
       "@type": "PostalAddress",
+      "addressLocality": "New York",
+      "addressRegion": "NY",
       "addressCountry": "US"
     },
     "founder": {
       "@type": "Person",
-      "name": "SalesOS Team"
+      "name": "Brandon",
+      "url": "https://linkedin.com/in/brandon"
     },
-    "foundingDate": "2024",
+    "foundingDate": "2026",
     "knowsAbout": [
+      "B2B Lead Generation",
+      "Outbound Email",
+      "ICP Scoring",
+      "Lead Enrichment",
+      "Email Verification",
       "Sales Automation",
-      "AI Lead Generation",
-      "B2B Sales",
-      "CRM Integration",
-      "Email Automation",
-      "Sales Intelligence",
-      "Pipeline Management",
-      "Sales Coaching"
+      "Personalized Outreach"
     ],
-    "slogan": "Close More Deals with AI-Powered Sales",
+    "slogan": "Find who to sell to. Then actually sell to them.",
     "areaServed": "Worldwide"
   };
 
@@ -142,16 +144,14 @@ export const SoftwareApplicationSchema = () => {
     "@type": "SoftwareApplication",
     "@id": `${BASE_URL}/#software`,
     "name": "SalesOS",
-    "alternateName": "SalesOS AI Sales Platform",
+    "alternateName": "SalesOS Lead Discovery Platform",
     "applicationCategory": "BusinessApplication",
-    "applicationSubCategory": "Sales Automation Software",
+    "applicationSubCategory": "B2B Lead Generation Software",
     "operatingSystem": "Web Browser (Chrome, Firefox, Safari, Edge)",
-    "description": "SalesOS is the #1 AI-powered sales operating system for B2B SaaS companies. Generate leads, automate outreach, manage pipelines, and close more deals with intelligent sales automation and real-time AI coaching.",
+    "description": "SalesOS turns your ICP into ranked prospects with SMTP-verified contact data and AI-drafted first-touch emails — in under 2 minutes. Describe your ideal customer in plain English: no boolean search, no list building, no manual scoring.",
     "url": BASE_URL,
     "downloadUrl": `${BASE_URL}/auth`,
     "screenshot": "https://storage.googleapis.com/gpt-engineer-file-uploads/ZFJK1zezovOpOdjy9TptFukIhhc2/social-images/social-1768238149761-SalesOS full logo.png",
-    "softwareVersion": "2.0",
-    "releaseNotes": "Latest release includes enhanced AI lead scoring, improved email generation, and new CRM integrations.",
     "offers": {
       "@type": "AggregateOffer",
       "lowPrice": "39",
@@ -166,7 +166,7 @@ export const SoftwareApplicationSchema = () => {
           "priceCurrency": "USD",
           "priceValidUntil": "2027-12-31",
           "availability": "https://schema.org/InStock",
-          "description": "For solo founders - 1,000 verified prospects/month, AI email generation, verified emails"
+          "description": "For solo founders — verified prospects/month, AI email drafting, SMTP-verified emails"
         },
         {
           "@type": "Offer",
@@ -175,7 +175,7 @@ export const SoftwareApplicationSchema = () => {
           "priceCurrency": "USD",
           "priceValidUntil": "2027-12-31",
           "availability": "https://schema.org/InStock",
-          "description": "For growing teams - 2,500 verified prospects/month, advanced filters, bulk export, campaign automation"
+          "description": "For growing teams — higher prospect volume, advanced filters, bulk export, sequence automation"
         },
         {
           "@type": "Offer",
@@ -184,24 +184,22 @@ export const SoftwareApplicationSchema = () => {
           "priceCurrency": "USD",
           "priceValidUntil": "2027-12-31",
           "availability": "https://schema.org/InStock",
-          "description": "High-volume outbound - 5,000 verified prospects/month, API access, CRM integrations, team collaboration"
+          "description": "High-volume outbound — maximum prospect volume, API access, CRM integrations"
         }
       ]
     },
     "featureList": [
-      "AI-Powered Lead Generation and Scoring",
-      "Intelligent Personalized Email Generation",
-      "Real-Time AI Sales Coaching",
-      "Visual Pipeline Management",
-      "Automated Workflow Builder",
-      "CRM Integration (HubSpot, Salesforce, Pipedrive)",
-      "Predictive Sales Analytics",
-      "Team Collaboration Tools",
-      "API Access for Custom Integrations",
-      "White-Label Branding Options"
+      "Plain-English ICP-based lead search",
+      "ICP fit scoring for every prospect",
+      "SMTP-verified business email enrichment",
+      "AI-drafted first-touch email per prospect",
+      "Reply management and follow-up tracking",
+      "Sequence automation",
+      "CRM integration (HubSpot, Salesforce)",
+      "Gmail integration for email delivery",
+      "Pipeline management"
     ],
     "softwareRequirements": "Modern web browser with JavaScript enabled",
-    "permissions": "Internet access required",
     "author": {
       "@type": "Organization",
       "@id": `${BASE_URL}/#organization`

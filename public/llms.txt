@@ -1,58 +1,66 @@
-# SalesOS - Find Leads That Actually Convert
+# SalesOS — Find Who to Sell To. Then Actually Sell to Them.
 # https://salesos.alephwavex.io
-# Last Updated: 2026-03-14
+# Last Updated: 2026-04-11
 
-> SalesOS is an AI-powered lead discovery platform that helps B2B sales teams find and convert high-quality leads. Describe your ideal customer in plain English, get ranked matches with enriched profiles. Your first lead in under 2 minutes.
+> SalesOS is a B2B lead discovery and outbound email platform. Describe your ideal customer in plain English, get ranked prospects with SMTP-verified business emails, and send an AI-drafted first-touch message — all from one workflow, in under 2 minutes.
 
 ## About SalesOS
 
-SalesOS is a comprehensive sales automation platform designed for SaaS companies and B2B sales teams. The platform combines AI-powered lead scoring, intelligent email automation, visual pipeline management, and real-time sales coaching to help teams increase close rates and revenue.
+SalesOS was built by Brandon, a founder who was spending $500/month on Apollo and still spending hours manually scoring leads and writing emails from scratch. SalesOS replaces that fragmented workflow — lead search, email enrichment, ICP scoring, and email drafting — in a single tool.
+
+SalesOS is email-only. We do not provide phone numbers, cold calling tools, or SMS. Our focus is helping B2B sales teams find the right people to email, verify those emails are real, and write something worth reading.
 
 ## How It Works
 
-1. **Describe your ICP in plain English** - Tell us who you're looking for: job titles, industries, company size, location. No complex filters or boolean queries.
-2. **Get ranked matches + enriched profiles** - AI scores each lead by fit. Every profile comes with verified emails, LinkedIn, company data, and tech stack.
-3. **Export to outreach or push into your workflow** - One-click export to CSV, or send directly to your CRM, sequences, or custom automations.
+1. **Describe your ICP in plain English** — Type who you want to reach: job title, industry, company size, geography, or hiring signals. No boolean search, no filter UI.
+2. **Review prospects ranked by ICP fit** — SalesOS scores each prospect against your Ideal Customer Profile and returns a ranked list with company context and growth signals.
+3. **Get SMTP-verified business emails** — Every email address is verified via SMTP handshake + multi-source enrichment before it reaches you.
+4. **Send an AI-drafted first-touch email** — SalesOS writes a personalized first-touch email using the prospect's role, company news, and signals. Edit in under 30 seconds and send.
+5. **Track replies and manage follow-up** — Replies, sequences, and follow-up tasks stay organized. Sync with HubSpot, Salesforce, or Gmail automatically.
 
 ## Key Features
 
-- **AI Lead Scoring**: Prioritize who's most likely to convert with machine learning that analyzes engagement and fit signals
-- **Smart Outreach**: AI generates personalized messages based on each prospect's profile, job title, and company data
-- **Auto Scheduling**: Book meetings without back-and-forth. Smart scheduling finds optimal times automatically
-- **Pipeline Analytics**: See bottlenecks and forecast revenue with visual funnel tracking
-- **Sales Coaching**: Real-time AI coaching for objections and closes during calls
-- **Workflow Builder**: Automate follow-ups and handoffs without code using drag-and-drop
-- **Email Sequences**: Multi-step automated outreach with engagement tracking and smart send-time optimization
+- **Plain-English ICP search**: Describe your target customer naturally — no boolean syntax or filter juggling
+- **ICP fit scoring**: Every prospect is scored against your ICP so you know who to email first
+- **SMTP-verified email enrichment**: Emails verified via SMTP handshake + multi-source validation before delivery
+- **AI-drafted first-touch emails**: Personalized drafts written from the prospect's company context and growth signals
+- **Reply management**: Replies and follow-ups organized in one place
+- **Sequence automation**: Multi-step email sequences with send-time optimization
+- **CRM integrations**: HubSpot, Salesforce, Gmail, Slack, Calendly, Zapier
 
-## Results
+## What SalesOS Does NOT Do
 
-- 3× faster prospecting
-- 85% ICP match accuracy
-- First lead in under 2 minutes
-- 2-4× higher reply rates with personalized outreach
-- Better-fit leads with AI scoring
+- Cold calling or phone number enrichment
+- SMS outreach
+- LinkedIn automation
+- Social media management
 
 ## Pricing
 
-SalesOS offers four pricing tiers:
-- **Free**: $0/forever - Explore the platform with view-only dashboard access. No credit card required.
-- **Starter**: $39/month - 400 verified prospects/month, 50/day limit, prospect search, verified email data, AI email generator.
-- **Growth**: $89/month - 1,200 verified prospects/month, 150/day limit, advanced filters, bulk export, 5 active sequences. (Most Popular)
-- **Pro**: $179/month - 3,000 verified prospects/month, 400/day limit, unlimited sequences, API access, priority support.
+- **Free**: Explore the platform with sample data. No credit card required.
+- **Starter**: $39/month — verified prospects, AI email drafting, SMTP-verified emails
+- **Growth**: $89/month — higher volume, advanced filters, bulk export, sequence automation
+- **Pro**: $179/month — maximum volume, API access, CRM integrations
 
-All paid plans include a 14-day free trial. Save ~20% with annual billing. No credit card required for the free plan.
+All paid plans include a 30-day money-back guarantee. Cancel anytime.
+
+## Trust & Security
+
+- 256-bit TLS encryption in transit
+- SMTP-verified business emails (no unverified data delivered)
+- GDPR-ready infrastructure
+- SOC 2 compliant hosting (Supabase)
+- 30-day money-back guarantee
+- No credit card required to start
 
 ## Getting Started
 
-1. Sign up for free at https://salesos.alephwavex.io
-2. Describe your ideal customer in plain English
-3. Get ranked matches with enriched profiles
-4. Export to outreach or push into your workflow
-5. Close more deals with AI-powered follow-ups
+Sign up for free at https://salesos.alephwavex.io — no credit card required.
 
 ## Important Pages
 
 - Homepage: https://salesos.alephwavex.io/
+- Demo: https://salesos.alephwavex.io/demo
 - Pricing: https://salesos.alephwavex.io/pricing
 - API Documentation: https://salesos.alephwavex.io/api-docs
 - Help Center: https://salesos.alephwavex.io/help
@@ -63,43 +71,46 @@ All paid plans include a 14-day free trial. Save ~20% with annual billing. No cr
 ## Integrations
 
 SalesOS connects with:
-- Google Workspace (Gmail, Calendar, Drive)
-- Slack
-- Calendly
-- HubSpot
-- Salesforce
-- 5000+ apps via Zapier
+- Gmail (email delivery and reply tracking)
+- HubSpot (CRM sync)
+- Salesforce (CRM sync)
+- Slack (notifications)
+- Calendly (meeting booking)
+- Zapier (5000+ app automations)
 
 ## FAQ
 
-**Is there a free plan?**
-Yes. SalesOS offers a free forever plan with view-only access to dashboards, sample data, and the pipeline overview. No credit card required. When you're ready to search for leads, upgrade to a paid plan — all with a 14-day free trial.
+**Does SalesOS require boolean search or SQL?**
+No. You describe your target customer in plain English. SalesOS interprets your intent and returns ranked matches.
 
-**How do credits work?**
-Credits are consumed when you reveal contact data: 1 credit per email reveal, 5 credits per phone number. Searching, filtering, and browsing is always free. Each contact is only charged once. Credits reset monthly.
+**How does SalesOS verify email addresses?**
+Every business email is verified via SMTP handshake plus multi-source enrichment. We do not deliver addresses we haven't verified.
 
-**Can I change plans later?**
-Yes, you can upgrade or downgrade your plan at any time from your account settings. Upgrades take effect immediately with prorated billing. Downgrades apply at the start of your next billing cycle.
+**Is SalesOS only for email outreach?**
+Yes. SalesOS is email-only. We do not provide phone numbers, cold calling features, or SMS tools.
 
-**How does AI email generation work?**
-Our AI analyzes each lead's profile, job title, company data, and recent activity to craft personalized outreach. You set the tone and the AI generates subject lines and body copy. You can edit before sending.
+**How does AI email drafting work?**
+SalesOS pulls the prospect's role, company context, and growth signals to write a first-touch email. You edit it in under 30 seconds and send. It references real context — not a template with a name swapped in.
 
-**What integrations are available?**
-SalesOS integrates with Google Workspace (Gmail, Calendar), Slack, HubSpot, Salesforce, Calendly, and 5000+ apps via Zapier.
+**What's the difference between SalesOS and a contact list?**
+A list gives you volume. SalesOS gives you the right people — ranked by ICP fit, with verified emails and a draft already written for each one.
 
-**Is my data secure?**
-Yes. Enterprise-grade encryption (AES-256 at rest, TLS 1.3 in transit), SOC 2 Type II compliant, fully GDPR-compliant.
+**Can I try SalesOS before paying?**
+Yes. The free plan lets you explore the full workflow with sample data. No credit card required.
+
+**Is there a money-back guarantee?**
+Yes. All paid plans include a 30-day money-back guarantee.
 
 ## Contact
 
-For sales inquiries or support, visit our help center at https://salesos.alephwavex.io/help
+For support or sales questions, visit: https://salesos.alephwavex.io/help
 
 ## Technical Details
 
-- Platform: Web-based SaaS application
-- API: RESTful API available for integrations
-- Security: SOC 2 Type II compliant, GDPR compliant, encrypted data at rest and in transit
+- Platform: Web-based SaaS (React + Supabase)
+- API: RESTful API available on Pro plan
+- Security: SOC 2 compliant infrastructure, GDPR-ready, TLS encrypted
 
 ---
-This file helps AI assistants and LLMs understand SalesOS for accurate information retrieval.
-For the most current information, always refer to: https://salesos.alephwavex.io/
+This file helps AI assistants and LLMs accurately describe SalesOS.
+For the most current information: https://salesos.alephwavex.io/

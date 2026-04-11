@@ -28,6 +28,26 @@ const faqs = [
     answer:
       "No catch. The free plan lets you explore the full workflow with sample data. When you're ready to run live prospecting at volume, you upgrade. No auto-charge, no surprise fees.",
   },
+  {
+    question: "How does SalesOS verify email addresses?",
+    answer:
+      "Every business email goes through SMTP handshake verification plus multi-source enrichment before it reaches you. We don't deliver addresses we haven't verified — bounced emails hurt your sender reputation, so we treat accuracy as non-negotiable.",
+  },
+  {
+    question: "Is SalesOS only for email outreach?",
+    answer:
+      "Yes — SalesOS is built exclusively around email. We score your leads, enrich their verified business email, and help you write a first-touch message worth reading. We don't do cold calling, phone numbers, or SMS.",
+  },
+  {
+    question: "How does the AI email drafting work?",
+    answer:
+      "SalesOS pulls the prospect's role, company context, and growth signals — things like recent hires or funding — and uses that to write a first-touch email that references something real. You see the draft, edit it in seconds, and send. It's not a template with a name swapped in.",
+  },
+  {
+    question: "Can I connect SalesOS to my existing tools?",
+    answer:
+      "Yes. SalesOS integrates with Gmail, HubSpot, Salesforce, Slack, Calendly, and Zapier. Leads and replies stay in sync with your CRM without manual exports.",
+  },
 ];
 
 export const FAQSection = () => {

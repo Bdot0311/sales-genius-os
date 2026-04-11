@@ -36,56 +36,56 @@ const SectionLoader = () => (
 // AEO: Define clear, structured content for AI answer engines
 const gettingStartedSteps = [
   {
-    name: "Explore the workflow",
-    text: "Preview how SalesOS works before choosing the plan you want for live prospecting and outreach."
+    name: "Describe your ideal customer in plain English",
+    text: "Type who you want to reach — job title, industry, company size, location, or hiring signals. No boolean search, no filters. SalesOS interprets natural language."
   },
   {
-    name: "Describe your ideal customer",
-    text: "Enter the titles, industries, company size, geography, or buying signals you want in plain English."
+    name: "Review prospects ranked by ICP fit",
+    text: "SalesOS returns a ranked list of B2B prospects scored against your ICP. Each entry includes company context, growth signals, and an ICP match percentage."
   },
   {
-    name: "Review matched leads",
-    text: "See qualified prospects with company and contact context so your team can prioritize faster."
+    name: "Get SMTP-verified business emails",
+    text: "Every prospect comes enriched with a verified business email — validated via SMTP handshake and multi-source enrichment before it reaches you."
   },
   {
-    name: "Generate outreach",
-    text: "Create more relevant outbound messages using the context gathered on each lead."
+    name: "Send an AI-drafted first-touch email",
+    text: "SalesOS drafts a personalized first-touch email using the prospect's role, company news, and growth signals. Edit it in under 30 seconds and send directly from the platform."
   },
   {
-    name: "Manage follow-up",
-    text: "Keep replies, next steps, and outreach activity organized from one workflow instead of juggling separate tools."
+    name: "Track replies and manage follow-up",
+    text: "Replies, sequences, and follow-up tasks stay organized in one place. Connect to HubSpot, Salesforce, or Gmail to keep your CRM in sync automatically."
   }
 ];
 
 const keyFeatures = [
   {
-    name: "Plain-English lead search",
-    description: "Describe your target customer naturally instead of relying on complicated search syntax.",
+    name: "Plain-English ICP-based lead search",
+    description: "Describe your target customer in plain English — title, industry, company size, location. No boolean syntax required.",
     position: 1
   },
   {
-    name: "Lead prioritization",
-    description: "Review best-fit prospects first with useful company and contact context.",
+    name: "ICP fit scoring",
+    description: "Every prospect is scored against your Ideal Customer Profile so you know who to email first.",
     position: 2
   },
   {
-    name: "Personalized outreach",
-    description: "Generate more relevant outbound drafts using lead and company information.",
+    name: "SMTP-verified business email enrichment",
+    description: "Business emails are verified via SMTP handshake before delivery, reducing bounce rates and protecting sender reputation.",
     position: 3
   },
   {
-    name: "Reply management",
-    description: "Keep responses and follow-ups organized after prospects engage.",
+    name: "AI-drafted first-touch emails",
+    description: "SalesOS writes a personalized first-touch email for each prospect using their company context and growth signals.",
     position: 4
   },
   {
-    name: "Workflow automation",
-    description: "Reduce repetitive sales work with sequences, handoffs, and automation support.",
+    name: "Reply management and sequence automation",
+    description: "Manage replies, follow-ups, and multi-step email sequences from one unified workflow.",
     position: 5
   },
   {
-    name: "Integrations",
-    description: "Connect SalesOS with tools like Google Workspace, Slack, HubSpot, Salesforce, Calendly, and Zapier.",
+    name: "CRM and tool integrations",
+    description: "Connect with Gmail, HubSpot, Salesforce, Slack, Calendly, and Zapier. Leads and replies sync automatically.",
     position: 6
   }
 ];
@@ -98,8 +98,8 @@ const Index = () => {
     <>
       <SEOHead
         title="SalesOS — Find Who to Sell To. Then Actually Sell to Them."
-        description="SalesOS turns your ICP into ranked prospects with verified contact data and AI-drafted emails. Less research. More pipeline."
-        keywords="B2B lead generation, lead discovery, outbound sales software, plain English lead search, sales outreach, lead enrichment, B2B prospecting"
+        description="Describe your ideal customer in plain English. SalesOS returns ranked B2B prospects with SMTP-verified emails and an AI-drafted first-touch message — in under 2 minutes."
+        keywords="B2B lead generation, lead discovery, outbound email software, ICP scoring, SMTP verified emails, plain English lead search, B2B prospecting, AI email drafting, email enrichment, outbound sales automation, find B2B leads, lead scoring software, B2B email outreach"
         ogImage="https://ghgfjnepvxvxrncmskys.supabase.co/storage/v1/object/public/social-images/salesos-logo.png"
       />
 
@@ -108,7 +108,7 @@ const Index = () => {
       <SoftwareApplicationSchema />
       <WebSiteSchema />
       <ServiceSchema />
-      <SpeakableSchema cssSelectors={["h1", "h2", ".hero-description", ".feature-description"]} />
+      <SpeakableSchema cssSelectors={["h1", "h2", "h3", "#hero-heading", "#how-it-works-heading", "#faq-heading", "#founder-note-heading"]} />
 
       {/* AEO: HowTo Schema for "How to use SalesOS" queries */}
       <HowToSchema
