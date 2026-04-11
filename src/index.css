@@ -809,6 +809,12 @@ All colors MUST be HSL. Using 8px spacing scale.
   min-height: 100vh;
 }
 
+@media (max-width: 640px) {
+  .hero-fullscreen {
+    min-height: calc(100svh + 4rem);
+  }
+}
+
 /* Animated border for CTA pill */
 @keyframes border-spin {
   0%   { background-position: 0% 50%; }
