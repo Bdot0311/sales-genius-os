@@ -123,7 +123,7 @@ const Index = () => {
         items={keyFeatures}
       />
 
-      <div className="min-h-screen bg-background text-foreground">
+      <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
         <Navbar />
         <main itemScope itemType="https://schema.org/WebPage">
           <article>
@@ -131,15 +131,15 @@ const Index = () => {
             <HeroSection />
             <ProductShowcase />
 
-            {/* Below the fold - lazy loaded with content-visibility for rendering efficiency */}
+            {/* Below the fold - lazy loaded */}
             <Suspense fallback={<SectionLoader />}>
-              <div className="lazy-section"><ProblemSection /></div>
-              <div className="lazy-section"><HowItWorks /></div>
-              <div className="lazy-section"><ModulesSection /></div>
-              <div className="lazy-section"><BigStatSection /></div>
-              <div className="lazy-section"><DifferentiationSection /></div>
-              <div className="lazy-section"><FounderNoteSection /></div>
-              <div className="lazy-section"><FAQSection /></div>
+              <ProblemSection />
+              <HowItWorks />
+              <ModulesSection />
+              <BigStatSection />
+              <DifferentiationSection />
+              <FounderNoteSection />
+              <FAQSection />
               <FinalCTA />
             </Suspense>
           </article>
