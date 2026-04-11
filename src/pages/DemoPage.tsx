@@ -67,31 +67,18 @@ const GradText = ({ children }: { children: React.ReactNode }) => (
   </span>
 );
 
-// ─── Scroll progress ──────────────────────────────────────────────────────────
-const useScrollProgress = (ref: { current: HTMLElement | null }) => {
-  const [progress, setProgress] = useState(0);
-  useEffect(() => {
-    const onScroll = () => {
-      if (!ref.current) return;
-      const rect = ref.current.getBoundingClientRect();
-      const scrollable = ref.current.offsetHeight - window.innerHeight;
-      if (scrollable <= 0) return;
-      setProgress(Math.max(0, Math.min(1, -rect.top / scrollable)));
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [ref]);
-  return progress;
-};
-
 // ─── Easing ───────────────────────────────────────────────────────────────────
 const easeOut3 = (t: number) => 1 - Math.pow(1 - t, 3);
 const norm = (v: number, lo: number, hi: number) =>
   Math.max(0, Math.min(1, (v - lo) / (hi - lo)));
 
 // ─── MeltContainer ────────────────────────────────────────────────────────────
-const MELT_FADE = 0.09;
+// CSS sticky breaks when any ancestor has overflow:hidden.
+// Instead we use a JS manual-pin: outer div is tall (creates scroll room),
+// inner div is absolute top-0, and on every scroll event we translateY it
+// down by the exact pixels scrolled — keeping it locked to the screen.
+// This is sticky reimplemented in JS and works in all ancestor contexts.
+const MELT_FADE = 0.16; // generous overlap → dramatic wicked-witch dissolve
 
 const MeltContainer = ({
   chapters,
@@ -101,9 +88,46 @@ const MeltContainer = ({
     glowPos: string;
   }>;
 }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const progress = useScrollProgress(containerRef as { current: HTMLElement | null });
+  const outerRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const rafRef   = useRef<number>(0);
+  const [progress, setProgress] = useState(0);
   const N = chapters.length;
+
+  useEffect(() => {
+    const update = () => {
+      const outer = outerRef.current;
+      const inner = innerRef.current;
+      if (!outer || !inner) return;
+
+      const rect       = outer.getBoundingClientRect();
+      const scrollable = outer.offsetHeight - window.innerHeight;
+      if (scrollable <= 0) return;
+
+      // Pixels the outer has scrolled past the viewport top
+      const scrolled = Math.max(0, Math.min(scrollable, -rect.top));
+
+      // Pin the inner: move it down by scrolled so it stays on screen
+      inner.style.transform = `translateY(${scrolled}px)`;
+
+      setProgress(scrolled / scrollable);
+    };
+
+    const onScroll = () => {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = requestAnimationFrame(update);
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", update);
+    update();
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", update);
+      cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
+
   const boundaries = Array.from({ length: N - 1 }, (_, i) => (i + 1) / N);
 
   const getFadeIn = (i: number) =>
@@ -114,10 +138,22 @@ const MeltContainer = ({
   const activeIdx = boundaries.reduce((acc, b) => (progress >= b - MELT_FADE ? acc + 1 : acc), 0);
 
   return (
-    <div ref={containerRef} style={{ height: `${N * 130}vh` }}>
-      <div style={{ position: "sticky", top: 0, height: "100vh", overflow: "hidden", background: "hsl(0,0%,3%)" }}>
-
-        {/* Shared dot grid — matches landing page */}
+    <div ref={outerRef} style={{ height: `${N * 120}vh`, position: "relative" }}>
+      {/* inner starts at top-0, JS translates it down as user scrolls */}
+      <div
+        ref={innerRef}
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: "100vh",
+          overflow: "hidden",
+          background: "hsl(0,0%,3%)",
+          willChange: "transform",
+        }}
+      >
+        {/* Dot grid */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
@@ -128,11 +164,14 @@ const MeltContainer = ({
         />
 
         {chapters.map(({ render, glowPos }, i) => {
-          const fadeIn   = getFadeIn(i);
-          const fadeOut  = getFadeOut(i);
-          const opacity  = Math.max(0, Math.min(1, fadeIn - fadeOut));
-          const translateY = (1 - fadeIn) * 26 - fadeOut * 20;
-          const active   = opacity > 0.45;
+          const fadeIn  = getFadeIn(i);
+          const fadeOut = getFadeOut(i);
+          const opacity = Math.max(0, Math.min(1, fadeIn - fadeOut));
+          // Rises in from below, melts upward as it exits — wicked witch
+          const ty    = (1 - fadeIn) * 55 - fadeOut * 55;
+          const scale = 0.93 + opacity * 0.07;
+          const blur  = (1 - opacity) * 10;
+          const active = opacity > 0.45;
 
           return (
             <div
@@ -142,18 +181,19 @@ const MeltContainer = ({
                 position: "absolute",
                 inset: 0,
                 opacity,
-                transform: `translateY(${translateY}px)`,
-                willChange: "opacity, transform",
+                transform: `translateY(${ty.toFixed(1)}px) scale(${scale.toFixed(3)})`,
+                filter: blur > 0.5 ? `blur(${blur.toFixed(1)}px)` : "none",
+                willChange: "opacity, transform, filter",
                 pointerEvents: active ? "auto" : "none",
               }}
             >
-              {/* Per-chapter ambient glow */}
+              {/* Ambient glow */}
               <div
                 className="absolute inset-0 pointer-events-none"
                 style={{
-                  opacity: Math.max(0, opacity * 0.9),
-                  background: `radial-gradient(ellipse 55% 55% at ${glowPos}, hsl(261 75% 55% / 0.14), transparent 65%)`,
-                  filter: "blur(20px)",
+                  background: `radial-gradient(ellipse 55% 55% at ${glowPos}, hsl(261 75% 55% / 0.15), transparent 65%)`,
+                  filter: "blur(24px)",
+                  opacity: Math.max(0, opacity * 0.95),
                 }}
                 aria-hidden="true"
               />
@@ -162,7 +202,7 @@ const MeltContainer = ({
           );
         })}
 
-        {/* Chapter dot indicator — bottom center */}
+        {/* Dot indicator */}
         <div
           className="absolute bottom-7 left-1/2 -translate-x-1/2 flex items-center gap-2.5 z-20"
           aria-hidden="true"
@@ -179,7 +219,6 @@ const MeltContainer = ({
             />
           ))}
         </div>
-
       </div>
     </div>
   );
