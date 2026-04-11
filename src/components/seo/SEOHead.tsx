@@ -39,8 +39,8 @@ interface SEOHeadProps {
 const DEFAULT_OG_IMAGE = 'https://salesos.alephwavex.io/salesos-og.png';
 
 export const SEOHead = ({
-  title = "SalesOS - Plain-English B2B Lead Discovery",
-  description = "Describe your ideal customer in plain English, review qualified B2B leads, and launch more relevant outreach with SalesOS.",
+  title = "SalesOS — Find Who to Sell To. Then Actually Sell to Them.",
+  description = "Describe your ideal customer in plain English. SalesOS returns ranked B2B prospects with SMTP-verified emails and an AI-drafted first-touch message — in under 2 minutes.",
   canonicalUrl,
   ogImage = DEFAULT_OG_IMAGE,
   ogType = "website",
@@ -130,7 +130,7 @@ export const SEOHead = ({
       <meta property="og:image" content={ogImage} />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
-      <meta property="og:image:alt" content="SalesOS - AI-Powered Sales Operating System" />
+      <meta property="og:image:alt" content="SalesOS — Find who to sell to. Then actually sell to them." />
       <meta property="og:site_name" content="SalesOS" />
       <meta property="og:locale" content={locale} />
       {alternateLocales.map((loc) => (
@@ -159,7 +159,7 @@ export const SEOHead = ({
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={safeDescription} />
       <meta name="twitter:image" content={ogImage} />
-      <meta name="twitter:image:alt" content="SalesOS - AI-Powered Sales Operating System" />
+      <meta name="twitter:image:alt" content="SalesOS — Find who to sell to. Then actually sell to them." />
       
       {/* Reading time for articles */}
       {readingTime && (
