@@ -73,9 +73,12 @@ const norm = (v: number, lo: number, hi: number) =>
   Math.max(0, Math.min(1, (v - lo) / (hi - lo)));
 
 // ─── MeltContainer ────────────────────────────────────────────────────────────
-// Uses position:sticky on the viewport panel — simplest approach, zero jitter.
-// The outer div is N*120vh tall and creates the scroll budget.
-// Progress = -outerRect.top / (outerHeight - viewportHeight), always 0→1.
+// Three-phase fixed pinning using getBoundingClientRect() — immune to ancestor
+// overflow:hidden because position:fixed escapes all containing blocks.
+// before  → position:absolute top:0    (scroll budget not yet reached)
+// active  → position:fixed   top:0     (locked to viewport, GPU-composited)
+// after   → position:absolute bottom:0 (anchored to bottom of scroll space)
+// Progress = -rect.top / (outerHeight - viewportHeight), always 0→1.
 const MELT_FADE = 0.05;
 
 const MeltContainer = ({
@@ -90,6 +93,8 @@ const MeltContainer = ({
   const rafRef   = useRef<number>(0);
   const N = chapters.length;
 
+  type Phase = "before" | "active" | "after";
+  const [phase, setPhase]       = useState<Phase>("before");
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
@@ -99,8 +104,17 @@ const MeltContainer = ({
       const rect = outer.getBoundingClientRect();
       const scrollable = outer.offsetHeight - window.innerHeight;
       if (scrollable <= 0) return;
-      const p = Math.max(0, Math.min(1, -rect.top / scrollable));
-      setProgress(p);
+
+      if (rect.top > 0) {
+        setPhase("before");
+        setProgress(0);
+      } else if (rect.bottom <= window.innerHeight) {
+        setPhase("after");
+        setProgress(1);
+      } else {
+        setPhase("active");
+        setProgress(Math.max(0, Math.min(1, -rect.top / scrollable)));
+      }
     };
 
     const onScroll = () => {
@@ -127,17 +141,21 @@ const MeltContainer = ({
 
   const activeIdx = boundaries.reduce((acc, b) => (progress >= b - MELT_FADE ? acc + 1 : acc), 0);
 
+  const viewportStyle: React.CSSProperties =
+    phase === "active"
+      ? { position: "fixed",    top: 0, left: 0, right: 0, height: "100vh" }
+      : phase === "after"
+      ? { position: "absolute", bottom: 0, left: 0, right: 0, height: "100vh" }
+      : { position: "absolute", top: 0,    left: 0, right: 0, height: "100vh" };
+
   return (
     <div
       ref={outerRef}
       style={{ height: `${N * 120}vh`, position: "relative" }}
     >
-      {/* Sticky viewport — stays pinned while outer div scrolls */}
       <div
         style={{
-          position: "sticky",
-          top: 0,
-          height: "100vh",
+          ...viewportStyle,
           overflow: "hidden",
           background: "hsl(0,0%,3%)",
         }}
