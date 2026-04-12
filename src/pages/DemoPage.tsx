@@ -779,8 +779,8 @@ const ResultsChapter = ({ active }: { active: boolean }) => {
               opacity: active ? undefined : 0,
             }}
           >
-            Everything you need.<br />
-            <span className="italic"><GradText>Nothing you have to fake.</GradText></span>
+            Everything you need,<br />
+            <span className="italic"><GradText>built into one workflow.</GradText></span>
           </h2>
         </div>
         <div className="grid grid-cols-2 gap-5 max-w-3xl mx-auto">
