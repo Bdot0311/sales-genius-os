@@ -674,26 +674,18 @@ const OutreachChapter = ({ active }: { active: boolean }) => {
 
 // ─── Chapter 4: Pipeline ──────────────────────────────────────────────────────
 const PipelineChapter = ({ active }: { active: boolean }) => {
-  const bars   = [30, 54, 74, 92];
-  const labels = ["Contacted", "Qualified", "Proposal", "Closed"];
-  const metrics: [string, number, string, string][] = [
-    ["Leads",    247, "",  ""],
-    ["Meetings",  34, "",  ""],
-    ["Revenue",   89, "$", "K"],
-    ["Conv.",     32, "",  "%"],
+  const stages = [
+    { label: "Contacted", desc: "Email sent" },
+    { label: "Qualified", desc: "Reply received" },
+    { label: "Proposal",  desc: "Meeting booked" },
+    { label: "Closed",    desc: "Deal won" },
   ];
+  const bars = [30, 54, 74, 92];
 
   return (
     <div className="flex h-full items-center">
-      <div className="w-full max-w-5xl mx-auto px-6 md:px-16">
-        <div className="text-center mb-10 relative">
-          <div
-            className="absolute -top-12 left-1/2 -translate-x-1/2 leading-none select-none pointer-events-none"
-            style={{ fontSize: "clamp(5rem, 12vw, 9rem)", fontWeight: 800, color: "hsl(261 75% 50% / 0.04)" }}
-            aria-hidden="true"
-          >
-            04
-          </div>
+      <div className="w-full max-w-4xl mx-auto px-6 md:px-16">
+        <div className="text-center mb-12">
           <div className="flex justify-center">
             <SectionLabel num="04" label="Pipeline" visible={active} />
           </div>
@@ -710,9 +702,7 @@ const PipelineChapter = ({ active }: { active: boolean }) => {
             }}
           >
             From prospecting<br />
-            <span className="italic">
-              <GradText>to pipeline.</GradText>
-            </span>
+            <span className="italic"><GradText>to pipeline.</GradText></span>
           </h2>
           <p
             className="text-base md:text-lg leading-relaxed max-w-lg mx-auto"
@@ -722,30 +712,8 @@ const PipelineChapter = ({ active }: { active: boolean }) => {
               opacity: active ? undefined : 0,
             }}
           >
-            Search, score, draft, send — one workflow, one session.
+            Every stage tracked in one place — from first email to closed deal.
           </p>
-        </div>
-
-        <div className="grid grid-cols-4 gap-3 mb-4">
-          {metrics.map(([label, to, prefix, suffix], i) => (
-            <div
-              key={label}
-              style={{
-                animation: active ? `counter-blur-in 0.36s cubic-bezier(0.22,1,0.36,1) ${i * 38}ms both` : "none",
-                opacity: active ? undefined : 0,
-              }}
-            >
-              <GlassCard active={active} className="p-4 text-center">
-                <div
-                  className="font-display text-2xl md:text-3xl font-bold"
-                  style={{ color: "hsl(0 0% 95%)" }}
-                >
-                  <Counter to={to} prefix={prefix} suffix={suffix} active={active} />
-                </div>
-                <div className="text-xs mt-1" style={{ color: "hsl(261 75% 60% / 0.6)" }}>{label}</div>
-              </GlassCard>
-            </div>
-          ))}
         </div>
 
         <div
@@ -754,10 +722,10 @@ const PipelineChapter = ({ active }: { active: boolean }) => {
             opacity: active ? undefined : 0,
           }}
         >
-          <GlassCard active={active} className="p-5">
-            <div className="grid grid-cols-4 gap-3 h-28 items-end">
-              {bars.map((h, i) => (
-                <div key={labels[i]} className="flex flex-col items-center gap-2 h-full">
+          <GlassCard active={active} className="p-6">
+            <div className="grid grid-cols-4 gap-4 h-36 items-end">
+              {stages.map(({ label, desc }, i) => (
+                <div key={label} className="flex flex-col items-center gap-2 h-full">
                   <div
                     className="w-full flex-1 rounded-xl overflow-hidden flex items-end"
                     style={{ background: "hsl(0 0% 100% / 0.04)" }}
@@ -765,13 +733,16 @@ const PipelineChapter = ({ active }: { active: boolean }) => {
                     <div
                       className="w-full rounded-xl"
                       style={{
-                        height: active ? `${h}%` : "4%",
+                        height: active ? `${bars[i]}%` : "4%",
                         background: "linear-gradient(to top, hsl(261 75% 55% / 0.8), hsl(280 80% 65% / 0.4))",
-                        transition: `height 0.5s cubic-bezier(0.22,1,0.36,1) ${i * 50}ms`,
+                        transition: `height 0.6s cubic-bezier(0.22,1,0.36,1) ${i * 60}ms`,
                       }}
                     />
                   </div>
-                  <span className="text-xs" style={{ color: "hsl(0 0% 100% / 0.28)" }}>{labels[i]}</span>
+                  <div className="text-center">
+                    <div className="text-xs font-medium" style={{ color: "hsl(0 0% 100% / 0.7)" }}>{label}</div>
+                    <div className="text-[10px] mt-0.5" style={{ color: "hsl(0 0% 100% / 0.28)" }}>{desc}</div>
+                  </div>
                 </div>
               ))}
             </div>
