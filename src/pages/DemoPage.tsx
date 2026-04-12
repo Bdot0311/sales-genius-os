@@ -73,14 +73,10 @@ const norm = (v: number, lo: number, hi: number) =>
   Math.max(0, Math.min(1, (v - lo) / (hi - lo)));
 
 // ─── MeltContainer ────────────────────────────────────────────────────────────
-// Three-phase pinning — the only approach that works regardless of ancestor
-// overflow:hidden contexts:
-//   before  → position:absolute top:0    (hasn't entered view yet)
-//   active  → position:fixed   top:0     (truly screen-locked, zero jitter)
-//   after   → position:absolute bottom:0 (anchored to bottom of scroll space)
-// Progress is computed from window.scrollY vs outer.offsetTop so it never
-// depends on getBoundingClientRect timing.
-const MELT_FADE = 0.18;
+// Uses position:sticky on the viewport panel — simplest approach, zero jitter.
+// The outer div is N*120vh tall and creates the scroll budget.
+// Progress = -outerRect.top / (outerHeight - viewportHeight), always 0→1.
+const MELT_FADE = 0.05;
 
 const MeltContainer = ({
   chapters,
@@ -94,30 +90,17 @@ const MeltContainer = ({
   const rafRef   = useRef<number>(0);
   const N = chapters.length;
 
-  type Phase = "before" | "active" | "after";
-  const [phase, setPhase]       = useState<Phase>("before");
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     const update = () => {
       const outer = outerRef.current;
       if (!outer) return;
-
-      // Use offsetTop for stable measurement (not rect which changes on scroll)
-      const outerTop   = outer.offsetTop;
+      const rect = outer.getBoundingClientRect();
       const scrollable = outer.offsetHeight - window.innerHeight;
-      const scrolled   = window.scrollY - outerTop;
-
-      if (scrolled < 0) {
-        setPhase("before");
-        setProgress(0);
-      } else if (scrolled >= scrollable) {
-        setPhase("after");
-        setProgress(1);
-      } else {
-        setPhase("active");
-        setProgress(scrolled / scrollable);
-      }
+      if (scrollable <= 0) return;
+      const p = Math.max(0, Math.min(1, -rect.top / scrollable));
+      setProgress(p);
     };
 
     const onScroll = () => {
@@ -144,22 +127,17 @@ const MeltContainer = ({
 
   const activeIdx = boundaries.reduce((acc, b) => (progress >= b - MELT_FADE ? acc + 1 : acc), 0);
 
-  // Viewport style switches by phase
-  const viewportStyle: React.CSSProperties =
-    phase === "active"
-      ? { position: "fixed",    top: 0, left: 0, right: 0, height: "100vh" }
-      : phase === "after"
-      ? { position: "absolute", bottom: 0, left: 0, right: 0, height: "100vh" }
-      : { position: "absolute", top: 0,    left: 0, right: 0, height: "100vh" };
-
   return (
     <div
       ref={outerRef}
       style={{ height: `${N * 120}vh`, position: "relative" }}
     >
+      {/* Sticky viewport — stays pinned while outer div scrolls */}
       <div
         style={{
-          ...viewportStyle,
+          position: "sticky",
+          top: 0,
+          height: "100vh",
           overflow: "hidden",
           background: "hsl(0,0%,3%)",
         }}
@@ -786,53 +764,147 @@ const PipelineChapter = ({ active }: { active: boolean }) => {
   );
 };
 
-// ─── Results bar ──────────────────────────────────────────────────────────────
-const ResultsBar = () => {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.2 });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-
-  const stats: [number, string, string, string][] = [
-    [3,  "x",  "",  "faster from ICP to outreach"],
-    [67, "%",  "",  "less time on list building"],
-    [89, "K",  "$", "in pipeline from one session"],
+// ─── Chapter 5: What you get ─────────────────────────────────────────────────
+const ResultsChapter = ({ active }: { active: boolean }) => {
+  const items = [
+    { heading: "Verified contacts", body: "Every email is SMTP-confirmed before it reaches you — no bounces, no guessing." },
+    { heading: "Outreach written", body: "A personalized first-touch email is drafted for each prospect using their company context." },
+    { heading: "Pipeline in one place", body: "Replies, follow-ups, and sequences stay organized without switching between tools." },
+    { heading: "CRM stays in sync", body: "Connect Gmail, HubSpot, or Salesforce and leads sync automatically on every action." },
   ];
 
   return (
-    <div ref={ref} className="grid grid-cols-3 gap-6 max-w-3xl mx-auto">
-      {stats.map(([to, suffix, prefix, label], i) => (
-        <div
-          key={i}
-          className="text-center"
-          style={{
-            animation: visible ? `counter-blur-in 0.9s cubic-bezier(0.22,1,0.36,1) ${i * 150}ms both` : "none",
-            opacity: visible ? undefined : 0,
-          }}
-        >
-          <div
+    <div className="flex h-full items-center justify-center">
+      <div className="w-full max-w-4xl mx-auto px-6">
+        <div className="text-center mb-14">
+          <SectionLabel num="05" label="What you get" visible={active} />
+          <h2
             className="font-display"
             style={{
-              fontSize: "clamp(2.8rem, 6vw, 4.5rem)",
+              fontSize: "clamp(2.4rem, 5vw, 4rem)",
               fontWeight: 800,
-              letterSpacing: "-0.03em",
-              lineHeight: 1,
-              background: "linear-gradient(135deg, hsl(0 0% 98%) 0%, hsl(261 75% 72%) 100%)",
+              lineHeight: 1.06,
+              letterSpacing: "-0.02em",
+              color: "hsl(0 0% 95%)",
+              animation: active ? "word-rise 0.6s cubic-bezier(0.22,1,0.36,1) 0.05s both" : "none",
+              opacity: active ? undefined : 0,
+            }}
+          >
+            Everything you need.<br />
+            <span className="italic"><GradText>Nothing you have to fake.</GradText></span>
+          </h2>
+        </div>
+        <div className="grid grid-cols-2 gap-5 max-w-3xl mx-auto">
+          {items.map(({ heading, body }, i) => (
+            <div
+              key={i}
+              className="rounded-xl p-6 text-left"
+              style={{
+                background: "hsl(0 0% 100% / 0.04)",
+                border: "1px solid hsl(261 75% 50% / 0.18)",
+                animation: active ? `counter-blur-in 0.5s cubic-bezier(0.22,1,0.36,1) ${i * 80 + 80}ms both` : "none",
+                opacity: active ? undefined : 0,
+              }}
+            >
+              <div
+                className="text-sm font-semibold mb-2"
+                style={{ color: "hsl(261 75% 72%)" }}
+              >
+                {heading}
+              </div>
+              <div className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
+                {body}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── Chapter 6: CTA ───────────────────────────────────────────────────────────
+const CTAChapter = ({ active }: { active: boolean }) => {
+  const navigate = useNavigate();
+  return (
+    <div className="flex h-full items-center justify-center">
+      {/* Purple glow */}
+      <div
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full pointer-events-none"
+        style={{
+          background: "radial-gradient(circle, hsl(261 75% 50% / 0.14) 0%, hsl(280 70% 55% / 0.06) 40%, transparent 65%)",
+          filter: "blur(60px)",
+        }}
+        aria-hidden="true"
+      />
+      <div className="relative z-10 text-center max-w-2xl mx-auto px-6">
+        <p
+          className="text-[10px] uppercase tracking-[0.28em] mb-8 font-medium"
+          style={{
+            color: "hsl(261 75% 60%)",
+            animation: active ? "word-rise 0.5s cubic-bezier(0.22,1,0.36,1) both" : "none",
+            opacity: active ? undefined : 0,
+          }}
+        >
+          Ready when you are
+        </p>
+        <h2
+          className="font-display mb-6"
+          style={{
+            fontSize: "clamp(3rem, 8vw, 6.5rem)",
+            fontWeight: 800,
+            lineHeight: 1.04,
+            letterSpacing: "-0.02em",
+            color: "hsl(0 0% 96%)",
+            animation: active ? "word-rise 0.6s cubic-bezier(0.22,1,0.36,1) 0.08s both" : "none",
+            opacity: active ? undefined : 0,
+          }}
+        >
+          <span className="block">Ready to run your</span>
+          <span
+            className="block italic"
+            style={{
+              background: "linear-gradient(135deg, hsl(261 75% 72%) 0%, hsl(280 80% 68%) 50%, hsl(261 75% 60%) 100%)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
             }}
           >
-            <Counter to={to} prefix={prefix} suffix={suffix} active={visible} />
-          </div>
-          <div className="text-sm mt-2" style={{ color: "hsl(0 0% 100% / 0.38)" }}>{label}</div>
+            first search?
+          </span>
+        </h2>
+        <p
+          className="text-lg font-light mb-12"
+          style={{
+            color: "hsl(0 0% 100% / 0.35)",
+            animation: active ? "word-rise 0.5s cubic-bezier(0.22,1,0.36,1) 0.16s both" : "none",
+            opacity: active ? undefined : 0,
+          }}
+        >
+          Start free. No card needed. See your first leads in under 2 minutes.
+        </p>
+        <div
+          style={{
+            animation: active ? "word-rise 0.5s cubic-bezier(0.22,1,0.36,1) 0.24s both" : "none",
+            opacity: active ? undefined : 0,
+          }}
+        >
+          <button
+            onClick={() => navigate("/auth")}
+            className="cta-pill-glow inline-flex items-center gap-2 px-10 rounded-full text-sm font-semibold text-white group"
+            style={{
+              height: "56px",
+              background: "linear-gradient(135deg, hsl(261 75% 60%) 0%, hsl(261 75% 50%) 100%)",
+            }}
+          >
+            Start for free
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform duration-200" />
+          </button>
+          <p className="mt-4 text-xs" style={{ color: "hsl(0 0% 100% / 0.2)" }}>
+            No credit card required · Plans from $39/mo · Cancel anytime
+          </p>
         </div>
-      ))}
+      </div>
     </div>
   );
 };
@@ -972,119 +1044,9 @@ export default function DemoPage() {
         { render: (active) => <LeadsChapter    active={active} />, glowPos: "82% 50%" },
         { render: (active) => <OutreachChapter active={active} />, glowPos: "22% 50%" },
         { render: (active) => <PipelineChapter active={active} />, glowPos: "50% 28%" },
+        { render: (active) => <ResultsChapter  active={active} />, glowPos: "50% 50%" },
+        { render: (active) => <CTAChapter      active={active} />, glowPos: "50% 60%" },
       ]} />
-
-      {/* Bottom hairline */}
-      <div style={{ background: "hsl(261 75% 50% / 0.18)", height: "1px" }} />
-
-      {/* ── Results ───────────────────────────────────────────────────────── */}
-      <section
-        className="relative py-28 md:py-36 overflow-hidden"
-        style={{
-          background: "hsl(0,0%,3%)",
-          borderBottom: "1px solid hsl(261 75% 50% / 0.18)",
-        }}
-      >
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: "radial-gradient(ellipse 60% 50% at 50% 50%, hsl(261 75% 55% / 0.09) 0%, transparent 70%)",
-          }}
-          aria-hidden="true"
-        />
-        <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
-          <p
-            className="text-[10px] uppercase tracking-[0.28em] font-medium mb-5"
-            style={{ color: "hsl(261 75% 60%)" }}
-          >
-            Results
-          </p>
-          <h2
-            className="font-display mb-16"
-            style={{
-              fontSize: "clamp(2.4rem, 5vw, 3.8rem)",
-              fontWeight: 800,
-              lineHeight: 1.06,
-              letterSpacing: "-0.02em",
-              color: "hsl(0 0% 95%)",
-            }}
-          >
-            What changes when<br />
-            <span className="italic">
-              <GradText>prospecting gets easier.</GradText>
-            </span>
-          </h2>
-          <ResultsBar />
-        </div>
-      </section>
-
-      {/* ── CTA — matches FinalCTA from landing ───────────────────────────── */}
-      <section
-        className="relative py-40 md:py-52 overflow-hidden"
-        style={{ background: "hsl(0,0%,3%)" }}
-      >
-        {/* Purple glow */}
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] rounded-full pointer-events-none"
-          style={{
-            background: "radial-gradient(circle, hsl(261 75% 50% / 0.14) 0%, hsl(280 70% 55% / 0.06) 40%, transparent 65%)",
-            filter: "blur(60px)",
-          }}
-          aria-hidden="true"
-        />
-        <div
-          className="absolute top-0 left-0 right-0 h-px"
-          style={{ background: "hsl(261 75% 50% / 0.18)" }}
-        />
-        <div className="relative z-10 text-center max-w-2xl mx-auto px-6">
-          <p
-            className="text-[10px] uppercase tracking-[0.28em] mb-8 font-medium"
-            style={{ color: "hsl(261 75% 60%)" }}
-          >
-            Ready when you are
-          </p>
-          <h2
-            className="font-display mb-6"
-            style={{
-              fontSize: "clamp(3rem, 8vw, 6.5rem)",
-              fontWeight: 800,
-              lineHeight: 1.04,
-              letterSpacing: "-0.02em",
-              color: "hsl(0 0% 96%)",
-            }}
-          >
-            <span className="block">Ready to run your</span>
-            <span
-              className="block italic"
-              style={{
-                background: "linear-gradient(135deg, hsl(261 75% 72%) 0%, hsl(280 80% 68%) 50%, hsl(261 75% 60%) 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
-            >
-              first search?
-            </span>
-          </h2>
-          <p className="text-lg font-light mb-12" style={{ color: "hsl(0 0% 100% / 0.35)" }}>
-            Start free. No card needed. See your first leads in under 2 minutes.
-          </p>
-          <button
-            onClick={() => navigate("/auth")}
-            className="cta-pill-glow inline-flex items-center gap-2 px-10 rounded-full text-sm font-semibold text-white group"
-            style={{
-              height: "56px",
-              background: "linear-gradient(135deg, hsl(261 75% 60%) 0%, hsl(261 75% 50%) 100%)",
-            }}
-          >
-            Start for free
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform duration-200" />
-          </button>
-          <p className="mt-4 text-xs" style={{ color: "hsl(0 0% 100% / 0.2)" }}>
-            No credit card required · Plans from $39/mo · Cancel anytime
-          </p>
-        </div>
-      </section>
     </div>
   );
 }
