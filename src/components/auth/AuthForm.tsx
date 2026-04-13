@@ -140,6 +140,28 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
     setLoading(true);
 
     try {
+      // Capture signup source from URL params or referrer
+      const urlParams = new URLSearchParams(window.location.search);
+      const utmSource = urlParams.get('utm_source');
+      const utmMedium = urlParams.get('utm_medium');
+      const utmCampaign = urlParams.get('utm_campaign');
+      const ref = urlParams.get('ref');
+      const referrer = document.referrer;
+
+      let signupSource = 'Direct';
+      if (utmSource) {
+        signupSource = utmSource + (utmMedium ? ` / ${utmMedium}` : '') + (utmCampaign ? ` (${utmCampaign})` : '');
+      } else if (ref) {
+        signupSource = `Ref: ${ref}`;
+      } else if (referrer) {
+        try {
+          const refHost = new URL(referrer).hostname.replace('www.', '');
+          if (!refHost.includes(window.location.hostname.replace('www.', ''))) {
+            signupSource = refHost;
+          }
+        } catch { /* ignore invalid referrer */ }
+      }
+
       // Create the account — the DB trigger (handle_new_user_subscription)
       // will automatically provision a free-tier subscription.
       const { data, error } = await supabase.auth.signUp({
@@ -147,6 +169,7 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/`,
+          data: { signup_source: signupSource },
         },
       });
 

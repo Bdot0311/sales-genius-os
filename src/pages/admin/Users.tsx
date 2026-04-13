@@ -26,6 +26,7 @@ export interface UserSubscription {
   stripe_customer_id: string;
   current_period_end: string;
   trial_end_date: string | null;
+  signup_source: string | null;
 }
 
 export interface UserRole {
