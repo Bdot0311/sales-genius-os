@@ -93,6 +93,18 @@ export const UserTable = ({
                     </div>
                   </TableCell>
                   <TableCell>
+                    {sub.signup_source ? (
+                      <div className="flex items-center gap-1.5">
+                        <Globe className="h-3 w-3 text-muted-foreground shrink-0" />
+                        <span className="text-xs text-muted-foreground truncate max-w-[120px]" title={sub.signup_source}>
+                          {sub.signup_source}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground/50">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
                     <Select
                       value={sub.plan}
                       onValueChange={(v) => onUpdateSubscription(sub.user_id, v as any)}
