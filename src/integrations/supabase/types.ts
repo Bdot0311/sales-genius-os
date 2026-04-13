@@ -1482,6 +1482,7 @@ export type Database = {
           email_signature: string | null
           full_name: string | null
           id: string
+          signup_source: string | null
           social_proof: string | null
           updated_at: string
         }
@@ -1493,6 +1494,7 @@ export type Database = {
           email_signature?: string | null
           full_name?: string | null
           id: string
+          signup_source?: string | null
           social_proof?: string | null
           updated_at?: string
         }
@@ -1504,6 +1506,7 @@ export type Database = {
           email_signature?: string | null
           full_name?: string | null
           id?: string
+          signup_source?: string | null
           social_proof?: string | null
           updated_at?: string
         }
