@@ -2,7 +2,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Shield, Clock, Lock, Unlock, Trash2 } from "lucide-react";
+import { Shield, Clock, Lock, Unlock, Trash2, Globe } from "lucide-react";
 import type { UserSubscription } from "@/pages/admin/Users";
 
 interface UserTableProps {
