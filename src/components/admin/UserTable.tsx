@@ -51,6 +51,7 @@ export const UserTable = ({
         <TableHeader>
           <TableRow className="border-border/50 hover:bg-transparent">
             <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">User</TableHead>
+            <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Source</TableHead>
             <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Plan</TableHead>
             <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</TableHead>
             <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Account</TableHead>
