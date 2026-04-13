@@ -2597,6 +2597,7 @@ export type Database = {
           full_name: string
           leads_limit: number
           plan: Database["public"]["Enums"]["subscription_plan"]
+          signup_source: string
           status: string
           stripe_customer_id: string
           trial_end_date: string
