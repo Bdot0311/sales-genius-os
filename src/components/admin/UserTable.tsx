@@ -63,7 +63,7 @@ export const UserTable = ({
         <TableBody>
           {loading ? (
             <TableRow>
-              <TableCell colSpan={7} className="text-center py-12">
+             <TableCell colSpan={8} className="text-center py-12">
                 <div className="flex items-center justify-center gap-2">
                   <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary border-t-transparent" />
                   <span className="text-muted-foreground">Loading users...</span>
@@ -72,7 +72,7 @@ export const UserTable = ({
             </TableRow>
           ) : subscriptions.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+              <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
                 No users found
               </TableCell>
             </TableRow>
