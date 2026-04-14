@@ -222,7 +222,7 @@ const AdminSecurity = () => {
       supabase.removeChannel(channel);
       clearInterval(refreshInterval);
     };
-  }, [loadAllData, loadBlockedIPs, loadStats]);
+  }, [loadAllData, loadBlockedIPs, loadStats, loadRateLimitBuckets]);
 
   const handleBlockIP = async () => {
     if (!newIP.trim()) {
