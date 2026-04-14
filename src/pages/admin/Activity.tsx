@@ -76,7 +76,7 @@ const AdminActivity = () => {
       .channel('system-updates')
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'system_events' },
+        { event: 'INSERT', schema: 'public', table: 'security_events' },
         () => loadSystemEvents()
       )
       .subscribe();
