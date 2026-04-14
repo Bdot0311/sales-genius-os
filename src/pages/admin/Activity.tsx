@@ -146,7 +146,7 @@ const AdminActivity = () => {
 
   const loadSystemEvents = async () => {
     const { data, error } = await supabase
-      .from('system_events')
+      .from('security_events')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(50);
@@ -155,7 +155,13 @@ const AdminActivity = () => {
       console.error('Error loading system events:', error);
       return;
     }
-    setSystemEvents(data || []);
+    setSystemEvents((data || []).map(e => ({
+      id: e.id,
+      event_type: e.event_type,
+      description: e.severity,
+      severity: e.severity,
+      created_at: e.created_at,
+    })));
   };
 
   const getActionIcon = (action: string) => {
