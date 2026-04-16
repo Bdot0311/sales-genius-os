@@ -57,7 +57,7 @@ const Deliverability = () => {
       // Get sent emails with bounce/complaint status
       const { data: sentEmails, error } = await supabase
         .from("sent_emails")
-        .select("status, bounce_reason, created_at")
+        .select("status, created_at")
         .eq("user_id", user.id)
         .gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()); // Last 30 days
 
