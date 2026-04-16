@@ -14,7 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Mail, Plus, Trash2, AlertCircle, Lock, ShieldAlert, ShieldCheck, ShieldX } from "lucide-react";
+import { Mail, Plus, Trash2, AlertCircle, Lock, ShieldAlert, ShieldCheck, ShieldX, TrendingUp, AlertTriangle, Ban } from "lucide-react";
 import { OUTBOUND_KB } from "@/lib/outbound-kb";
 import { toast } from "sonner";
 
@@ -29,6 +29,15 @@ interface Mailbox {
 
 const WARMUP_LIMITS = [10, 25, 50, 100];
 
+interface ReputationMetrics {
+  bounceRate: number;
+  spamComplaintRate: number;
+  totalSent: number;
+  totalBounced: number;
+  totalSpamComplaints: number;
+  lastUpdated: string;
+}
+
 const Deliverability = () => {
   const queryClient = useQueryClient();
   const { hasFeature, gateModalOpen, setGateModalOpen, gatedFeature, currentPlan, triggerGate } = usePlanFeatures();
@@ -37,6 +46,39 @@ const Deliverability = () => {
   const [showDNSCheck, setShowDNSCheck] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [newEmail, setNewEmail] = useState("");
+
+  // Fetch reputation metrics
+  const { data: reputationMetrics, isLoading: metricsLoading } = useQuery({
+    queryKey: ["reputation-metrics"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      // Get sent emails with bounce/complaint status
+      const { data: sentEmails, error } = await supabase
+        .from("sent_emails")
+        .select("status, bounce_reason, created_at")
+        .eq("user_id", user.id)
+        .gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()); // Last 30 days
+
+      if (error) throw error;
+
+      const totalSent = sentEmails?.length || 0;
+      const totalBounced = sentEmails?.filter(e => e.status === 'bounced').length || 0;
+      const totalSpamComplaints = sentEmails?.filter(e => e.status === 'spam_complaint').length || 0;
+
+      return {
+        bounceRate: totalSent > 0 ? (totalBounced / totalSent) * 100 : 0,
+        spamComplaintRate: totalSent > 0 ? (totalSpamComplaints / totalSent) * 100 : 0,
+        totalSent,
+        totalBounced,
+        totalSpamComplaints,
+        lastUpdated: new Date().toISOString(),
+      } as ReputationMetrics;
+    },
+    enabled: !deliverabilityGated,
+    refetchInterval: 60000, // Refetch every minute
+  });
 
   const { data: mailboxes, isLoading } = useQuery({
     queryKey: ["mailbox-warmup"],
@@ -276,8 +318,106 @@ const Deliverability = () => {
           </Card>
         </div>
 
-        {/* Section 4: Deliverability Health Thresholds */}
-        <DeliverabilityHealthThresholds mailboxCount={(mailboxes || []).length} />
+        {/* Section 4: Reputation Metrics Dashboard */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold">Reputation Metrics</h2>
+            <Badge variant="outline" className="text-xs">
+              Last 30 days
+            </Badge>
+          </div>
+          <div className="grid gap-4 md:grid-cols-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription className="flex items-center gap-2">
+                  <Mail className="w-4 h-4" />
+                  Total Sent
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold">
+                  {metricsLoading ? "—" : reputationMetrics?.totalSent || 0}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription className="flex items-center gap-2">
+                  <Ban className="w-4 h-4" />
+                  Bounce Rate
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2">
+                  <p className={`text-2xl font-bold ${
+                    (reputationMetrics?.bounceRate || 0) > 5 ? 'text-red-500' :
+                    (reputationMetrics?.bounceRate || 0) > 2 ? 'text-yellow-500' : 'text-green-500'
+                  }`}>
+                    {metricsLoading ? "—" : `${(reputationMetrics?.bounceRate || 0).toFixed(2)}%`}
+                  </p>
+                </div>
+                {(reputationMetrics?.bounceRate || 0) > 2 && (
+                  <p className="text-xs text-yellow-600 mt-1">
+                    <AlertTriangle className="w-3 h-3 inline mr-1" />
+                    Above 2% threshold
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription className="flex items-center gap-2">
+                  <ShieldAlert className="w-4 h-4" />
+                  Spam Complaints
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2">
+                  <p className={`text-2xl font-bold ${
+                    (reputationMetrics?.spamComplaintRate || 0) > 0.3 ? 'text-red-500' :
+                    (reputationMetrics?.spamComplaintRate || 0) > 0.1 ? 'text-yellow-500' : 'text-green-500'
+                  }`}>
+                    {metricsLoading ? "—" : `${(reputationMetrics?.spamComplaintRate || 0).toFixed(3)}%`}
+                  </p>
+                </div>
+                {(reputationMetrics?.spamComplaintRate || 0) > 0.1 && (
+                  <p className="text-xs text-yellow-600 mt-1">
+                    <AlertTriangle className="w-3 h-3 inline mr-1" />
+                    Above 0.1% threshold
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4" />
+                  Health Score
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  if (metricsLoading) return <p className="text-2xl font-bold">—</p>;
+                  const bounceScore = Math.max(0, 100 - (reputationMetrics?.bounceRate || 0) * 20);
+                  const spamScore = Math.max(0, 100 - (reputationMetrics?.spamComplaintRate || 0) * 1000);
+                  const overall = Math.round((bounceScore + spamScore) / 2);
+                  return (
+                    <div className="flex items-center gap-2">
+                      <p className={`text-2xl font-bold ${
+                        overall >= 80 ? 'text-green-500' : overall >= 60 ? 'text-yellow-500' : 'text-red-500'
+                      }`}>
+                        {overall}/100
+                      </p>
+                    </div>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Section 5: Deliverability Health Thresholds */}
+        <DeliverabilityHealthThresholds mailboxCount={(mailboxes || []).length} metrics={reputationMetrics} />
 
         {/* Section 5: Sending Rules */}
         <div className="space-y-4">
@@ -329,10 +469,24 @@ const Deliverability = () => {
   );
 };
 
-function DeliverabilityHealthThresholds({ mailboxCount }: { mailboxCount: number }) {
+function DeliverabilityHealthThresholds({ mailboxCount, metrics }: { mailboxCount: number; metrics?: ReputationMetrics }) {
   const d = OUTBOUND_KB.deliverability;
 
   type AlertLevel = "green" | "yellow" | "red";
+
+  const getBounceLevel = (): AlertLevel => {
+    if (!metrics) return "green";
+    if (metrics.bounceRate > d.dangerBounceRatePercent) return "red";
+    if (metrics.bounceRate > d.maxBounceRatePercent) return "yellow";
+    return "green";
+  };
+
+  const getSpamLevel = (): AlertLevel => {
+    if (!metrics) return "green";
+    if (metrics.spamComplaintRate > d.dangerSpamComplaintRatePercent) return "red";
+    if (metrics.spamComplaintRate > d.maxSpamComplaintRatePercent) return "yellow";
+    return "green";
+  };
 
   const thresholds: Array<{
     label: string;
@@ -341,13 +495,13 @@ function DeliverabilityHealthThresholds({ mailboxCount }: { mailboxCount: number
   }> = [
     {
       label: "Bounce Rate",
-      level: "green",
-      message: `Keep below ${d.maxBounceRatePercent}%. Above ${d.dangerBounceRatePercent}% triggers ESP throttling. Verify every list before sending.`,
+      level: getBounceLevel(),
+      message: `Current: ${metrics?.bounceRate.toFixed(2) || 0}%. Keep below ${d.maxBounceRatePercent}%. Above ${d.dangerBounceRatePercent}% triggers ESP throttling.`,
     },
     {
       label: "Spam Complaint Rate",
-      level: "green",
-      message: `Keep below ${d.maxSpamComplaintRatePercent}%. Above ${d.dangerSpamComplaintRatePercent}% risks enforcement action from Google/Outlook.`,
+      level: getSpamLevel(),
+      message: `Current: ${metrics?.spamComplaintRate.toFixed(3) || 0}%. Keep below ${d.maxSpamComplaintRatePercent}%. Above ${d.dangerSpamComplaintRatePercent}% risks enforcement.`,
     },
     {
       label: "Daily Volume per Mailbox",

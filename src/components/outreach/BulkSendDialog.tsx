@@ -10,8 +10,9 @@ import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Send, Sparkles, Users, Search, Settings2, Mail, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, Send, Sparkles, Users, Search, Settings2, Mail, ChevronLeft, ChevronRight, AlertTriangle, Shield, CheckCircle2, XCircle, HelpCircle } from "lucide-react";
 import { EmailQualityChecker, scoreEmailQuality } from "./EmailQualityChecker";
+import { generateComplianceFooter, parseSpintax, validateSenderDomain } from "@/lib/compliance";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
@@ -24,6 +25,8 @@ interface Lead {
   contact_email: string | null;
   job_title: string | null;
   industry: string | null;
+  email_verified?: boolean;
+  email_verification_status?: 'valid' | 'invalid' | 'catch_all' | 'unknown' | null;
 }
 
 interface BulkSendDialogProps {
@@ -42,6 +45,13 @@ interface BulkSendDialogProps {
   templateValue?: string;
   onComplete: () => void;
   onDailyLimitChange: (newLimit: number) => Promise<void>;
+  complianceSettings?: {
+    physicalAddress: string;
+    includeUnsubscribe: boolean;
+    includeComplianceFooter: boolean;
+    userId: string;
+  };
+  useSpintax?: boolean;
 }
 
 export const BulkSendDialog = ({
@@ -60,6 +70,8 @@ export const BulkSendDialog = ({
   templateValue = "",
   onComplete,
   onDailyLimitChange,
+  complianceSettings,
+  useSpintax = false,
 }: BulkSendDialogProps) => {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
@@ -76,16 +88,57 @@ export const BulkSendDialog = ({
   const [isSavingLimit, setIsSavingLimit] = useState(false);
   const [delayBetweenSends, setDelayBetweenSends] = useState(60);
   const [previewLeadIdx, setPreviewLeadIdx] = useState(0);
+  const [verifiedOnly, setVerifiedOnly] = useState(true);
 
   const remaining = dailyEmailLimit - dailyEmailsSent;
   const emailableLeads = leads.filter((l) => l.contact_email);
-  const filteredLeads = emailableLeads.filter(
+  const verifiedLeads = emailableLeads.filter((l) =>
+    !verifiedOnly || l.email_verified !== false
+  );
+  const filteredLeads = verifiedLeads.filter(
     (l) =>
       l.contact_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       l.company_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const selectedLeadsArray = leads.filter((l) => selectedLeadIds.has(l.id));
+  const invalidSelectedCount = selectedLeadsArray.filter((lead) => lead.email_verified === false).length;
+
+  const getVerificationBadge = (lead: Lead) => {
+    if (lead.email_verified === true || lead.email_verification_status === "valid") {
+      return (
+        <Badge variant="secondary" className="gap-1 text-green-700">
+          <CheckCircle2 className="w-3 h-3" />
+          Verified
+        </Badge>
+      );
+    }
+
+    if (lead.email_verified === false || lead.email_verification_status === "invalid") {
+      return (
+        <Badge variant="destructive" className="gap-1">
+          <XCircle className="w-3 h-3" />
+          Invalid
+        </Badge>
+      );
+    }
+
+    if (lead.email_verification_status === "catch_all") {
+      return (
+        <Badge variant="outline" className="gap-1 text-amber-700 border-amber-300">
+          <AlertTriangle className="w-3 h-3" />
+          Catch-all
+        </Badge>
+      );
+    }
+
+    return (
+      <Badge variant="outline" className="gap-1">
+        <HelpCircle className="w-3 h-3" />
+        Unknown
+      </Badge>
+    );
+  };
 
   const resolveVariables = (text: string, lead: Lead) => {
     return text
@@ -171,19 +224,64 @@ export const BulkSendDialog = ({
     return trimmed;
   };
 
-  const buildBodyWithSignature = (body: string) => {
-    const cleanedBody = stripTrailingPlaceholderName(body);
+  const buildBodyWithSignature = (body: string, leadId?: string) => {
+    // Apply spintax if enabled
+    const processedBody = useSpintax ? parseSpintax(body) : body;
+    const cleanedBody = stripTrailingPlaceholderName(processedBody);
     const withSender = appendSenderLine(cleanedBody);
     const signatureForEmail = signature
       .replace(/width=["']150["']/gi, 'width="320"')
       .replace(/max-width:\s*150px/gi, 'max-width:320px');
-    return signatureForEmail ? `${withSender}\n\n${signatureForEmail}` : withSender;
+
+    let emailBody = signatureForEmail ? `${withSender}\n\n${signatureForEmail}` : withSender;
+
+    // Add compliance footer
+    if (complianceSettings?.includeComplianceFooter && complianceSettings.physicalAddress) {
+      const footer = generateComplianceFooter({
+        includeUnsubscribe: complianceSettings.includeUnsubscribe,
+        includePhysicalAddress: true,
+        userId: complianceSettings.userId,
+        leadId,
+        physicalAddress: complianceSettings.physicalAddress,
+      });
+      if (footer) {
+        emailBody = `${emailBody}\n\n---\n${footer}`;
+      }
+    }
+
+    return emailBody;
   };
 
   const bulkSend = async () => {
     if (selectedLeadIds.size === 0) return;
     if (connectedAccounts.length === 0) {
       toast({ title: "No email accounts connected", variant: "destructive" });
+      return;
+    }
+
+    // Check for personal email domains in bulk send
+    const senderEmail = bulkSenderId === "all"
+      ? connectedAccounts[0]?.email
+      : connectedAccounts.find(a => a.id === bulkSenderId)?.email;
+
+    if (senderEmail) {
+      const validation = validateSenderDomain(senderEmail);
+      if (validation.isPersonal && selectedLeadIds.size > 5) {
+        toast({
+          title: "Domain restriction",
+          description: "Bulk sending from personal email addresses (Gmail, Outlook, etc.) is restricted. Please connect a business domain for bulk operations.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    if (verifiedOnly && invalidSelectedCount > 0) {
+      toast({
+        title: "Unverified leads selected",
+        description: "Remove invalid emails or disable the verified-only filter before sending.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -252,7 +350,7 @@ export const BulkSendDialog = ({
             .replace(/\{job_title\}/gi, lead.job_title || "");
         }
 
-        const fullBody = buildBodyWithSignature(body);
+        const fullBody = buildBodyWithSignature(body, lead.id);
         const quality = scoreEmailQuality(subject, fullBody);
         if (quality.overallStatus === "red") {
           throw new Error("Draft failed outbound quality checks");
@@ -424,6 +522,25 @@ export const BulkSendDialog = ({
                   Emails will be distributed evenly across all {connectedAccounts.length} connected accounts
                 </p>
               )}
+
+              {/* Domain validation warning */}
+              {(() => {
+                const senderEmail = bulkSenderId === "all"
+                  ? connectedAccounts[0]?.email
+                  : connectedAccounts.find(a => a.id === bulkSenderId)?.email;
+                if (!senderEmail) return null;
+                const validation = validateSenderDomain(senderEmail);
+                if (!validation.isPersonal) return null;
+                return (
+                  <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                    <div className="text-xs text-amber-800">
+                      <p className="font-medium">Personal email detected</p>
+                      <p className="mt-1">Bulk sending from Gmail/Outlook is limited to 5 emails. Connect a business domain for higher volume.</p>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
@@ -527,6 +644,26 @@ export const BulkSendDialog = ({
                 </Button>
               </div>
             </div>
+            <div className="flex items-center justify-between gap-3 mb-3 rounded-lg border p-3">
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Verified emails only</p>
+                <p className="text-xs text-muted-foreground">
+                  Hides leads marked invalid and keeps bulk sends cleaner.
+                </p>
+              </div>
+              <Switch checked={verifiedOnly} onCheckedChange={setVerifiedOnly} />
+            </div>
+            <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground">
+              <span>{filteredLeads.length} leads shown</span>
+              <span>•</span>
+              <span>{verifiedLeads.length} pass verification filter</span>
+              {verifiedOnly && emailableLeads.length !== verifiedLeads.length && (
+                <>
+                  <span>•</span>
+                  <span>{emailableLeads.length - verifiedLeads.length} hidden as invalid</span>
+                </>
+              )}
+            </div>
             <div className="relative mb-2">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
@@ -546,7 +683,10 @@ export const BulkSendDialog = ({
                   >
                     <Checkbox checked={selectedLeadIds.has(lead.id)} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{lead.contact_name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium truncate">{lead.contact_name}</p>
+                        {getVerificationBadge(lead)}
+                      </div>
                       <p className="text-xs text-muted-foreground truncate">
                         {lead.company_name} · {lead.contact_email}
                       </p>
@@ -554,7 +694,9 @@ export const BulkSendDialog = ({
                   </div>
                 ))}
                 {filteredLeads.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-4">No leads with email found</p>
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    {verifiedOnly ? "No verified leads found" : "No leads with email found"}
+                  </p>
                 )}
               </div>
             </ScrollArea>

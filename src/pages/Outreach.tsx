@@ -30,6 +30,8 @@ import { BarChart3, ListOrdered, Layout, Users } from "lucide-react";
 import { BulkSendDialog } from "@/components/outreach/BulkSendDialog";
 import { EmailQualityChecker, scoreEmailQuality } from "@/components/outreach/EmailQualityChecker";
 import { SequencesList, MessageBlocksList } from "@/components/sequences";
+import { generateComplianceFooter, validateSenderDomain, checkSendTimeCompliance, parseSpintax } from "@/lib/compliance";
+import { AlertCircle, Ban } from "lucide-react";
 
 // Opener words for the cold email framework
 const OPENER_WORDS = [
@@ -274,6 +276,17 @@ const Outreach = () => {
   // P3.1 — Mobile preview
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
 
+  // Compliance state
+  const [complianceSettings, setComplianceSettings] = useState({
+    physicalAddress: "",
+    includeUnsubscribe: true,
+    includeComplianceFooter: true,
+    userId: "",
+  });
+  const [domainWarnings, setDomainWarnings] = useState<string[]>([]);
+  const [sendTimeWarning, setSendTimeWarning] = useState<string | null>(null);
+  const [useSpintax, setUseSpintax] = useState(false);
+
   useEffect(() => {
     loadLeads();
     loadSignature();
@@ -282,6 +295,7 @@ const Outreach = () => {
     loadConnectedAccounts();
     loadDailyEmailLimit();
     loadDueFollowUps();
+    loadComplianceSettings();
   }, []);
 
   const loadDueFollowUps = async () => {
@@ -423,6 +437,26 @@ const Outreach = () => {
     setSenderProfileName(defaultName);
   };
 
+  const loadComplianceSettings = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data } = await supabase
+      .from("profiles")
+      .select("physical_address, include_unsubscribe, include_compliance_footer")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (data) {
+      setComplianceSettings({
+        physicalAddress: data.physical_address || "",
+        includeUnsubscribe: data.include_unsubscribe !== false,
+        includeComplianceFooter: data.include_compliance_footer !== false,
+        userId: user.id,
+      });
+    }
+  };
+
   const formatNameFromEmail = (email: string) => {
     const localPart = email.split("@")[0] || "";
     return localPart
@@ -534,10 +568,13 @@ const Outreach = () => {
     return `${trimmedBody}\n${senderName}`;
   };
 
-  const buildEmailBodyWithSignature = (baseEmailBody: string, resolvedSenderName?: string, firstTouch?: boolean) => {
+  const buildEmailBodyWithSignature = (baseEmailBody: string, resolvedSenderName?: string, firstTouch?: boolean, leadId?: string) => {
     const senderName = (resolvedSenderName ?? getSenderName()).trim();
     const normalizedSender = senderName.toLowerCase();
     const useFirstTouch = firstTouch !== undefined ? firstTouch : isFirstTouch;
+
+    // Apply spintax if enabled
+    let processedBody = useSpintax ? parseSpintax(baseEmailBody) : baseEmailBody;
 
     const rawSignature = signature
       .replace(/width=["']150["']/gi, 'width="320"')
@@ -552,12 +589,28 @@ const Outreach = () => {
       .toLowerCase();
 
     const signatureHasSender = normalizedSender && signatureText.includes(normalizedSender);
-    const cleanedBaseEmailBody = stripTrailingPlaceholderName(baseEmailBody);
+    const cleanedBaseEmailBody = stripTrailingPlaceholderName(processedBody);
     const bodyWithSender = signatureHasSender
       ? cleanedBaseEmailBody
       : appendSenderLine(cleanedBaseEmailBody, senderName);
 
-    return signatureForEmail ? `${bodyWithSender}\n\n${signatureForEmail}` : bodyWithSender;
+    let emailBody = signatureForEmail ? `${bodyWithSender}\n\n${signatureForEmail}` : bodyWithSender;
+
+    // Add compliance footer
+    if (complianceSettings.includeComplianceFooter && complianceSettings.physicalAddress) {
+      const footer = generateComplianceFooter({
+        includeUnsubscribe: complianceSettings.includeUnsubscribe,
+        includePhysicalAddress: true,
+        userId: complianceSettings.userId,
+        leadId,
+        physicalAddress: complianceSettings.physicalAddress,
+      });
+      if (footer) {
+        emailBody = `${emailBody}\n\n---\n${footer}`;
+      }
+    }
+
+    return emailBody;
   };
 
   const loadBusinessDescription = async () => {
@@ -1163,8 +1216,17 @@ Return ONLY the corrected email body. No subject line. No explanation. No "Here 
       }
 
       const senderAccountId = selectedSenderId || connectedAccounts[0]?.id;
+
+      // Check send-time compliance
+      const sendTimeCheck = checkSendTimeCompliance(scheduleDate || new Date());
+      if (!sendTimeCheck.isCompliant && !scheduleDate) {
+        setSendTimeWarning(sendTimeCheck.reason || "Outside recommended send window");
+      } else {
+        setSendTimeWarning(null);
+      }
+
       const senderName = await resolveSenderName();
-      const fullEmailBody = buildEmailBodyWithSignature(generatedEmail, senderName);
+      const fullEmailBody = buildEmailBodyWithSignature(generatedEmail, senderName, undefined, lead.id);
       const quality = scoreEmailQuality(subjectLine, fullEmailBody);
 
       if (quality.overallStatus === "red") {
@@ -1493,6 +1555,8 @@ ${formattedBody}
               emailGoal={EMAIL_TEMPLATES.find(t => t.value === selectedTemplate)?.goal || "introduction"}
               templateDescription={EMAIL_TEMPLATES.find(t => t.value === selectedTemplate)?.description || ""}
               templateValue={selectedTemplate || ""}
+              complianceSettings={complianceSettings}
+              useSpintax={useSpintax}
               onComplete={() => {
                 loadCounts();
                 loadDailyEmailLimit();
@@ -1804,7 +1868,36 @@ For logos, use HTML:
                         {" "}to start sending.
                       </p>
                     )}
+
+                    {/* Domain validation warnings */}
+                    {selectedSenderId && (() => {
+                      const account = connectedAccounts.find(a => a.id === selectedSenderId);
+                      if (!account) return null;
+                      const validation = validateSenderDomain(account.email);
+                      if (!validation.isPersonal) return null;
+                      return (
+                        <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-xs">
+                          <div className="flex items-start gap-1.5">
+                            <AlertTriangle className="w-3.5 h-3.5 text-amber-600 mt-0.5 flex-shrink-0" />
+                            <div className="text-amber-800">
+                              <p className="font-medium">Personal email detected</p>
+                              <ul className="list-disc list-inside mt-1 space-y-0.5">
+                                {validation.warnings.map((w, i) => <li key={i}>{w}</li>)}
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
+
+                  {/* Send time compliance warning */}
+                  {sendTimeWarning && (
+                    <div className="p-2 bg-yellow-50 border border-yellow-200 rounded flex items-start gap-2">
+                      <Clock className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                      <p className="text-xs text-yellow-800">{sendTimeWarning}</p>
+                    </div>
+                  )}
 
                   <div>
                     <Label>Select Lead</Label>
@@ -2262,6 +2355,23 @@ For logos, use HTML:
                       </AlertDescription>
                     </Alert>
                   )}
+
+                  {/* Spintax toggle */}
+                  <div className="flex items-center justify-between p-2 border rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Shuffle className="w-4 h-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm font-medium">Spintax Variation</p>
+                        <p className="text-xs text-muted-foreground">
+                          Randomize phrasing {Hi|Hello|Hey} to avoid pattern detection
+                        </p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={useSpintax}
+                      onCheckedChange={setUseSpintax}
+                    />
+                  </div>
 
                   <div>
                     {/* P3.1 — Desktop/Mobile preview toggle */}

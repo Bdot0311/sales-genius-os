@@ -13,7 +13,10 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { CreditCard, TrendingUp, Check, RefreshCw, User, Save, Loader2, Palette, Activity, Bell, Key, GitBranch, Code2, Webhook, FileText, RotateCcw, Users, History, FileSearch, Globe, Coins, ExternalLink, Settings2, Copy, Gift } from "lucide-react";
+import { CreditCard, TrendingUp, Check, RefreshCw, User, Save, Loader2, Palette, Activity, Bell, Key, GitBranch, Code2, Webhook, FileText, RotateCcw, Users, History, FileSearch, Globe, Coins, ExternalLink, Settings2, Copy, Gift, MapPin, Shield, AlertTriangle } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { CAN_SPAM_PENALTY, generateComplianceFooter } from "@/lib/compliance";
+import { Switch } from "@/components/ui/switch";
 import { PLAN_FEATURES } from "@/lib/plan-features";
 import { APIKeysTab } from "@/components/settings/APIKeysTab";
 import { TeamMembersTab } from "@/components/settings/TeamMembersTab";
@@ -40,7 +43,10 @@ const Settings = () => {
   const [profile, setProfile] = useState({
     full_name: "",
     email: "",
-    company_name: ""
+    company_name: "",
+    physical_address: "",
+    include_unsubscribe: true,
+    include_compliance_footer: true,
   });
 
   useEffect(() => {
@@ -67,13 +73,19 @@ const Settings = () => {
         setProfile({
           full_name: data.full_name || "",
           email: data.email || user.email || "",
-          company_name: data.company_name || ""
+          company_name: data.company_name || "",
+          physical_address: data.physical_address || "",
+          include_unsubscribe: data.include_unsubscribe !== false,
+          include_compliance_footer: data.include_compliance_footer !== false,
         });
       } else {
         setProfile({
           full_name: "",
           email: user.email || "",
-          company_name: ""
+          company_name: "",
+          physical_address: "",
+          include_unsubscribe: true,
+          include_compliance_footer: true,
         });
       }
     } catch (error) {
@@ -94,6 +106,9 @@ const Settings = () => {
           full_name: profile.full_name,
           email: profile.email,
           company_name: profile.company_name,
+          physical_address: profile.physical_address,
+          include_unsubscribe: profile.include_unsubscribe,
+          include_compliance_footer: profile.include_compliance_footer,
           updated_at: new Date().toISOString()
         });
 
@@ -370,6 +385,88 @@ const Settings = () => {
                     placeholder="Acme Inc."
                   />
                 </div>
+
+                {/* CAN-SPAM Compliance Section */}
+                <div className="border-t pt-6 mt-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Shield className="h-5 w-5 text-primary" />
+                    <h3 className="text-lg font-semibold">CAN-SPAM Compliance</h3>
+                  </div>
+
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5" />
+                      <p className="text-sm text-amber-800">
+                        The CAN-SPAM Act requires a physical postal address and clear opt-out mechanism.
+                        Non-compliance can result in penalties up to ${CAN_SPAM_PENALTY.toLocaleString()} per violation.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="physical_address" className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        Physical Address
+                      </Label>
+                      <Textarea
+                        id="physical_address"
+                        value={profile.physical_address}
+                        onChange={(e) => setProfile({ ...profile, physical_address: e.target.value })}
+                        placeholder={`123 Business Street\nSuite 100\nSan Francisco, CA 94105`}
+                        className="min-h-[80px]"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Required by CAN-SPAM. This will appear in the footer of all sent emails.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <p className="font-medium">Include Unsubscribe Link</p>
+                        <p className="text-sm text-muted-foreground">
+                          Add one-click unsubscribe to every email
+                        </p>
+                      </div>
+                      <Switch
+                        checked={profile.include_unsubscribe}
+                        onCheckedChange={(checked) =>
+                          setProfile({ ...profile, include_unsubscribe: checked })
+                        }
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <p className="font-medium">Compliance Footer</p>
+                        <p className="text-sm text-muted-foreground">
+                          Auto-add CAN-SPAM required footer to emails
+                        </p>
+                      </div>
+                      <Switch
+                        checked={profile.include_compliance_footer}
+                        onCheckedChange={(checked) =>
+                          setProfile({ ...profile, include_compliance_footer: checked })
+                        }
+                      />
+                    </div>
+
+                    {profile.physical_address && profile.include_compliance_footer && (
+                      <div className="p-3 bg-muted rounded-lg">
+                        <p className="text-xs font-medium text-muted-foreground mb-2">Preview:</p>
+                        <pre className="text-xs text-muted-foreground whitespace-pre-wrap">
+                          {generateComplianceFooter({
+                            includeUnsubscribe: profile.include_unsubscribe,
+                            includePhysicalAddress: profile.include_compliance_footer,
+                            userId: 'preview',
+                            physicalAddress: profile.physical_address,
+                          })}
+                        </pre>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 <Button
                   onClick={handleSaveProfile}
                   disabled={savingProfile}
