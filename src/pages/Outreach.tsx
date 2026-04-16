@@ -2363,7 +2363,7 @@ For logos, use HTML:
                       <div>
                         <p className="text-sm font-medium">Spintax Variation</p>
                         <p className="text-xs text-muted-foreground">
-                          Randomize phrasing {Hi|Hello|Hey} to avoid pattern detection
+                          Randomize phrasing {"Hi|Hello|Hey"} to avoid pattern detection
                         </p>
                       </div>
                     </div>
