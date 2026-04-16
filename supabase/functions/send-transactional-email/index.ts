@@ -4,9 +4,9 @@ import { createClient } from 'npm:@supabase/supabase-js@2'
 import { TEMPLATES } from '../_shared/transactional-email-templates/registry.ts'
 
 // Configuration baked in at scaffold time
-const SITE_NAME = "sales-genius-os"
-const SENDER_DOMAIN = "notify.bdotindustries.com"
-const FROM_DOMAIN = "notify.bdotindustries.com"
+const SITE_NAME = "SalesOS"
+const SENDER_DOMAIN = "notify.dreamscapeeventsny.com"
+const FROM_DOMAIN = "notify.dreamscapeeventsny.com"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',

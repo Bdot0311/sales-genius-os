@@ -204,6 +204,13 @@ const AdminSecurity = () => {
           }
         }
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'rate_limit_buckets' },
+        () => {
+          loadRateLimitBuckets();
+        }
+      )
       .subscribe();
 
     // Auto-refresh every 30 seconds
@@ -215,7 +222,7 @@ const AdminSecurity = () => {
       supabase.removeChannel(channel);
       clearInterval(refreshInterval);
     };
-  }, [loadAllData, loadBlockedIPs, loadStats]);
+  }, [loadAllData, loadBlockedIPs, loadStats, loadRateLimitBuckets]);
 
   const handleBlockIP = async () => {
     if (!newIP.trim()) {

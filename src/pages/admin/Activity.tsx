@@ -76,7 +76,7 @@ const AdminActivity = () => {
       .channel('system-updates')
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'system_events' },
+        { event: 'INSERT', schema: 'public', table: 'security_events' },
         () => loadSystemEvents()
       )
       .subscribe();
@@ -106,28 +106,26 @@ const AdminActivity = () => {
       return;
     }
 
-    // Enrich with user emails
-    const enrichedActivities = await Promise.all(
-      (data || []).map(async (activity) => {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('email')
-          .eq('id', activity.user_id)
-          .maybeSingle();
-        
-        return {
-          id: activity.id,
-          user_id: activity.user_id,
-          action: activity.action,
-          entity_type: activity.entity_type,
-          entity_id: activity.entity_id,
-          ip_address: activity.ip_address,
-          user_agent: activity.user_agent,
-          created_at: activity.created_at,
-          user_email: profile?.email || 'Unknown',
-        };
-      })
-    );
+    // Batch fetch user emails
+    const userIds = [...new Set((data || []).map(a => a.user_id))];
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, email')
+      .in('id', userIds);
+
+    const emailMap = new Map(profiles?.map(p => [p.id, p.email]) || []);
+
+    const enrichedActivities = (data || []).map(activity => ({
+      id: activity.id,
+      user_id: activity.user_id,
+      action: activity.action,
+      entity_type: activity.entity_type,
+      entity_id: activity.entity_id,
+      ip_address: activity.ip_address,
+      user_agent: activity.user_agent,
+      created_at: activity.created_at,
+      user_email: emailMap.get(activity.user_id) || 'Unknown',
+    }));
 
     setActivities(enrichedActivities);
   };
@@ -148,7 +146,7 @@ const AdminActivity = () => {
 
   const loadSystemEvents = async () => {
     const { data, error } = await supabase
-      .from('system_events')
+      .from('security_events')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(50);
@@ -157,7 +155,13 @@ const AdminActivity = () => {
       console.error('Error loading system events:', error);
       return;
     }
-    setSystemEvents(data || []);
+    setSystemEvents((data || []).map(e => ({
+      id: e.id,
+      event_type: e.event_type,
+      description: e.severity,
+      severity: e.severity,
+      created_at: e.created_at,
+    })));
   };
 
   const getActionIcon = (action: string) => {
