@@ -443,15 +443,16 @@ const Outreach = () => {
 
     const { data } = await supabase
       .from("profiles")
-      .select("physical_address, include_unsubscribe, include_compliance_footer")
+      .select("*")
       .eq("id", user.id)
       .maybeSingle();
 
     if (data) {
+      const profileData = data as Record<string, unknown>;
       setComplianceSettings({
-        physicalAddress: data.physical_address || "",
-        includeUnsubscribe: data.include_unsubscribe !== false,
-        includeComplianceFooter: data.include_compliance_footer !== false,
+        physicalAddress: (profileData.physical_address as string) || "",
+        includeUnsubscribe: profileData.include_unsubscribe !== false,
+        includeComplianceFooter: profileData.include_compliance_footer !== false,
         userId: user.id,
       });
     }
@@ -2363,7 +2364,7 @@ For logos, use HTML:
                       <div>
                         <p className="text-sm font-medium">Spintax Variation</p>
                         <p className="text-xs text-muted-foreground">
-                          Randomize phrasing {Hi|Hello|Hey} to avoid pattern detection
+                          Randomize phrasing {"Hi|Hello|Hey"} to avoid pattern detection
                         </p>
                       </div>
                     </div>

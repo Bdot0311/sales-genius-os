@@ -71,13 +71,14 @@ const Settings = () => {
       }
 
       if (data) {
+        const profileData = data as Record<string, unknown>;
         setProfile({
-          full_name: data.full_name || "",
-          email: data.email || user.email || "",
-          company_name: data.company_name || "",
-          physical_address: data.physical_address || "",
-          include_unsubscribe: data.include_unsubscribe !== false,
-          include_compliance_footer: data.include_compliance_footer !== false,
+          full_name: (profileData.full_name as string) || "",
+          email: (profileData.email as string) || user.email || "",
+          company_name: (profileData.company_name as string) || "",
+          physical_address: (profileData.physical_address as string) || "",
+          include_unsubscribe: profileData.include_unsubscribe !== false,
+          include_compliance_footer: profileData.include_compliance_footer !== false,
         });
       } else {
         setProfile({
