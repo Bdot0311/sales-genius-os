@@ -185,12 +185,23 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
         }
 
         // Send welcome email in background
+        const displayName = data.user.user_metadata?.full_name || email.split('@')[0];
         supabase.functions.invoke('send-welcome-email', {
           body: { 
             email: data.user.email,
-            name: data.user.user_metadata?.full_name || email.split('@')[0]
+            name: displayName
           }
         }).catch(err => console.error('Welcome email error:', err));
+
+        // Send personal founder note in background
+        supabase.functions.invoke('send-transactional-email', {
+          body: {
+            templateName: 'founder-note',
+            recipientEmail: data.user.email,
+            idempotencyKey: `founder-note-${data.user.id}`,
+            templateData: { name: displayName },
+          }
+        }).catch(err => console.error('Founder note error:', err));
 
         toast({
           title: "Account created!",
