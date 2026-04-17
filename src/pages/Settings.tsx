@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { PageHeader } from "@/components/dashboard/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -238,14 +239,8 @@ const Settings = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Settings</h1>
-            <p className="text-muted-foreground">Manage your profile and subscription</p>
-          </div>
-        </div>
-
+      <PageHeader title="Settings" description="Account, preferences, and billing" />
+      <div className="px-6 py-6 space-y-6 max-w-[1400px] mx-auto">
         <Tabs defaultValue="profile" className="space-y-6">
           <div className="bg-card border rounded-lg p-3 mb-6">
             <div className="space-y-2">

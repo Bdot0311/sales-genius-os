@@ -6,9 +6,7 @@ import { DashboardTour } from "@/components/dashboard/DashboardTour";
 import { ProspectUsageMeter } from "@/components/dashboard/ProspectUsageMeter";
 import { SampleDataBanner } from "@/components/dashboard/SampleDataBanner";
 import QuickStartWizard from "@/components/onboarding/QuickStartWizard";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { TrendingUp, Users, DollarSign, Calendar } from "lucide-react";
+import { TrendingUp, Users, DollarSign, Calendar, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { SAMPLE_STATS } from "@/lib/sample-data";
@@ -99,96 +97,96 @@ const Dashboard = () => {
   const displayStats = isFreeTier ? SAMPLE_STATS : stats;
 
   const statCards = [
-    { title: "Total Leads", value: displayStats.totalLeads, icon: Users, color: "text-blue-500", bgColor: "bg-blue-500/10" },
-    { title: "Active Deals", value: displayStats.totalDeals, icon: TrendingUp, color: "text-purple-500", bgColor: "bg-purple-500/10" },
-    { title: "Pipeline Value", value: `$${displayStats.totalValue.toLocaleString()}`, icon: DollarSign, color: "text-green-500", bgColor: "bg-green-500/10" },
-    { title: "Meetings This Week", value: displayStats.meetingsThisWeek, icon: Calendar, color: "text-orange-500", bgColor: "bg-orange-500/10" },
+    { title: "Total Leads", value: displayStats.totalLeads, icon: Users, color: "text-blue-400" },
+    { title: "Active Deals", value: displayStats.totalDeals, icon: TrendingUp, color: "text-violet-400" },
+    { title: "Pipeline Value", value: `$${displayStats.totalValue.toLocaleString()}`, icon: DollarSign, color: "text-emerald-400" },
+    { title: "Meetings This Week", value: displayStats.meetingsThisWeek, icon: Calendar, color: "text-amber-400" },
   ];
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="px-6 py-6 space-y-6 max-w-[1400px] mx-auto">
         <DashboardTour isOpen={showTour} onClose={() => setShowTour(false)} />
-
         {showChecklist && (
           <OnboardingChecklist onClose={() => setShowChecklist(false)} onStartTour={() => setShowTour(true)} />
         )}
-
         {isFreeTier && <SampleDataBanner />}
 
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {/* Header row */}
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">Welcome back!</h1>
-            <p className="text-muted-foreground text-sm sm:text-base">Here's what's happening with your sales today</p>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-widest mb-1 font-medium">Overview</p>
+            <h1 className="text-xl font-semibold">
+              {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+            </h1>
           </div>
           <AddLeadDialog onLeadAdded={loadStats} />
         </div>
 
         {!isFreeTier && <ProspectUsageMeter />}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Metrics strip */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-border/60 rounded-lg overflow-hidden border border-border/60">
           {statCards.map((stat) => (
-            <Card key={stat.title} className="p-6 bg-card border-border hover:border-primary/50 transition-all duration-300">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">{stat.title}</p>
-                  <p className="text-3xl font-bold">{stat.value}</p>
-                </div>
-                <div className={`p-3 rounded-lg ${stat.bgColor}`}>
-                  <stat.icon className={`w-6 h-6 ${stat.color}`} />
-                </div>
+            <div key={stat.title} className="bg-card px-5 py-4 flex flex-col gap-1">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">{stat.title}</p>
+                <stat.icon className={`w-3.5 h-3.5 ${stat.color}`} />
               </div>
-            </Card>
+              <p className="text-2xl font-semibold tabular-nums">{stat.value}</p>
+            </div>
           ))}
         </div>
 
-        <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button variant="glass" className="justify-start h-auto py-6" onClick={() => window.location.href = '/dashboard/outreach'}>
-              <Users className="w-5 h-5 mr-3" />
-              <div className="text-left">
-                <div className="font-semibold">Outreach Studio</div>
-                <div className="text-xs text-muted-foreground">Generate AI-powered emails</div>
-              </div>
-            </Button>
-            <Button variant="glass" className="justify-start h-auto py-6" onClick={() => window.location.href = '/dashboard/pipeline'}>
-              <TrendingUp className="w-5 h-5 mr-3" />
-              <div className="text-left">
-                <div className="font-semibold">View Pipeline</div>
-                <div className="text-xs text-muted-foreground">Manage your deals</div>
-              </div>
-            </Button>
-            <Button variant="glass" className="justify-start h-auto py-6" onClick={() => window.location.href = '/dashboard/calendar'}>
-              <Calendar className="w-5 h-5 mr-3" />
-              <div className="text-left">
-                <div className="font-semibold">Schedule Meeting</div>
-                <div className="text-xs text-muted-foreground">Book a call with a lead</div>
-              </div>
-            </Button>
+        {/* Quick actions + insight */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2 space-y-2">
+            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-widest">Quick Actions</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[
+                { label: "Outreach Studio", desc: "Generate AI-powered emails", icon: Mail, href: '/dashboard/outreach' },
+                { label: "View Pipeline", desc: "Manage your deals", icon: TrendingUp, href: '/dashboard/pipeline' },
+                { label: "Schedule Meeting", desc: "Book a call with a lead", icon: Calendar, href: '/dashboard/calendar' },
+              ].map((action) => (
+                <button
+                  key={action.label}
+                  onClick={() => window.location.href = action.href}
+                  className="flex items-start gap-3 p-4 rounded-lg border border-border/60 bg-card hover:bg-accent/50 hover:border-primary/30 transition-all text-left group"
+                >
+                  <div className="p-1.5 rounded-md bg-primary/10 group-hover:bg-primary/20 transition-colors flex-shrink-0">
+                    <action.icon className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">{action.label}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{action.desc}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
-        </Card>
 
-        <Card className="p-6 bg-gradient-primary text-white">
-          <div className="flex items-start gap-4">
-            <div className="p-3 rounded-lg bg-white/20">
-              <TrendingUp className="w-6 h-6" />
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 flex flex-col justify-between">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="p-1.5 rounded-md bg-primary/15">
+                <TrendingUp className="w-3.5 h-3.5 text-primary" />
+              </div>
+              <p className="text-[11px] font-semibold text-primary uppercase tracking-wider">AI Insight</p>
             </div>
-            <div className="flex-1">
-              <h3 className="font-semibold mb-2">Quick Insight</h3>
-              <p className="text-white/90 mb-4">
-                {isFreeTier
-                  ? `You have ${displayStats.totalLeads} sample leads and ${displayStats.totalDeals} demo deals worth $${displayStats.totalValue.toLocaleString()}. Upgrade to track real data!`
-                  : stats.totalLeads > 0
-                    ? `You have ${stats.totalLeads} lead${stats.totalLeads > 1 ? 's' : ''} and ${stats.totalDeals} active deal${stats.totalDeals !== 1 ? 's' : ''} worth $${stats.totalValue.toLocaleString()}. ${stats.meetingsThisWeek > 0 ? `${stats.meetingsThisWeek} meeting${stats.meetingsThisWeek > 1 ? 's' : ''} scheduled this week.` : 'Schedule some meetings to keep momentum!'}`
-                    : "Add your first lead to get started with AI-powered sales coaching and insights."}
-              </p>
-              <Button variant="secondary" size="sm" onClick={() => window.location.href = '/dashboard/coach'}>
-                Get AI Coaching
-              </Button>
-            </div>
+            <p className="text-sm text-foreground/80 leading-relaxed flex-1">
+              {isFreeTier
+                ? `${displayStats.totalLeads} sample leads, ${displayStats.totalDeals} demo deals worth $${displayStats.totalValue.toLocaleString()}. Upgrade to track real data.`
+                : stats.totalLeads > 0
+                  ? `${stats.totalLeads} lead${stats.totalLeads > 1 ? 's' : ''}, ${stats.totalDeals} deal${stats.totalDeals !== 1 ? 's' : ''} worth $${stats.totalValue.toLocaleString()}. ${stats.meetingsThisWeek > 0 ? `${stats.meetingsThisWeek} meeting${stats.meetingsThisWeek > 1 ? 's' : ''} this week.` : 'No meetings this week yet.'}`
+                  : 'Add your first lead to get AI-powered insights and coaching.'}
+            </p>
+            <button
+              onClick={() => window.location.href = '/dashboard/coach'}
+              className="mt-4 text-xs text-primary hover:text-primary/80 font-medium flex items-center gap-1 transition-colors"
+            >
+              Open AI Coach →
+            </button>
           </div>
-        </Card>
+        </div>
       </div>
 
       <QuickStartWizard

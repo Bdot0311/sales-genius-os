@@ -1,6 +1,5 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { Globe, CheckCircle, Loader2 } from "lucide-react";
@@ -52,24 +51,24 @@ export const LeadsTableView = ({
   };
 
   return (
-    <div className="border rounded-lg overflow-x-auto">
+    <div className="overflow-x-auto">
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead className="w-12">
+          <TableRow className="border-b border-border/60 hover:bg-transparent">
+            <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground/70 font-medium py-2.5 px-4 w-12">
               <Checkbox
                 checked={selectedLeads.length === leads.length && leads.length > 0}
                 onCheckedChange={onSelectAll}
               />
             </TableHead>
-            <TableHead>Company</TableHead>
-            <TableHead>Contact</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Industry</TableHead>
-            <TableHead>Score</TableHead>
-            <TableHead>Source</TableHead>
-            <TableHead>Added</TableHead>
-            <TableHead className="w-32">Action</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground/70 font-medium py-2.5 px-4">Company</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground/70 font-medium py-2.5 px-4">Contact</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground/70 font-medium py-2.5 px-4">Status</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground/70 font-medium py-2.5 px-4">Industry</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground/70 font-medium py-2.5 px-4">Score</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground/70 font-medium py-2.5 px-4">Source</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground/70 font-medium py-2.5 px-4">Added</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground/70 font-medium py-2.5 px-4 w-32">Action</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -78,45 +77,49 @@ export const LeadsTableView = ({
             return (
               <TableRow
                 key={lead.id}
-                className={`cursor-pointer hover:bg-muted/50 ${isDiscovered ? 'bg-blue-500/5' : ''}`}
+                className={`border-b border-border/40 hover:bg-accent/30 transition-colors cursor-pointer group ${isDiscovered ? 'bg-blue-500/[0.03]' : ''}`}
                 onClick={() => onLeadClick(lead)}
               >
-                <TableCell onClick={(e) => e.stopPropagation()}>
+                <TableCell className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
                   <Checkbox
                     checked={selectedLeads.includes(lead.id)}
                     onCheckedChange={() => onSelectLead(lead.id)}
                   />
                 </TableCell>
-                <TableCell className="font-medium">{lead.company_name}</TableCell>
-                <TableCell>
+                <TableCell className="py-3 px-4 font-medium text-sm">{lead.company_name}</TableCell>
+                <TableCell className="py-3 px-4">
                   <div className="space-y-1">
                     <div className="text-sm">{lead.contact_name}</div>
                     <div className="text-xs text-muted-foreground">{lead.contact_email}</div>
                   </div>
                 </TableCell>
-                <TableCell>
+                <TableCell className="py-3 px-4">
                   {isDiscovered ? (
-                    <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
-                      <Globe className="w-3 h-3 mr-1" />
+                    <span className="inline-flex items-center gap-1.5 text-xs text-blue-400">
+                      <Globe className="w-3 h-3 flex-shrink-0" />
                       Discovered
-                    </Badge>
+                    </span>
                   ) : lead.lead_status === 'archived' ? (
-                    <Badge variant="secondary" className="text-xs">Archived</Badge>
+                    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground flex-shrink-0" />
+                      Archived
+                    </span>
                   ) : (
-                    <Badge variant="default" className="text-xs">Active</Badge>
+                    <span className="inline-flex items-center gap-1.5 text-xs text-emerald-400">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
+                      Active
+                    </span>
                   )}
                 </TableCell>
-                <TableCell>{lead.industry || "—"}</TableCell>
-                <TableCell onClick={(e) => e.stopPropagation()}>
+                <TableCell className="py-3 px-4">{lead.industry || "—"}</TableCell>
+                <TableCell className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
                   <ICPScoreBreakdown lead={lead} score={lead.icp_score} />
                 </TableCell>
-                <TableCell>
-                  <Badge variant="outline">{lead.source || "Unknown"}</Badge>
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
+                <TableCell className="py-3 px-4"><span className="text-xs text-muted-foreground">{lead.source || "—"}</span></TableCell>
+                <TableCell className="py-3 px-4 text-xs text-muted-foreground">
                   {formatDistanceToNow(new Date(lead.created_at), { addSuffix: true })}
                 </TableCell>
-                <TableCell onClick={(e) => e.stopPropagation()}>
+                <TableCell className="py-3 px-4 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
                   {isDiscovered && onActivateLead ? (
                     <Button
                       variant="hero"

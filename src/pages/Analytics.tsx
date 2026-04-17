@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { PageHeader } from "@/components/dashboard/PageHeader";
 import { SampleDataBanner } from "@/components/dashboard/SampleDataBanner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -131,15 +132,11 @@ const Analytics = () => {
     <DashboardLayout>
       <FeatureGateModal open={gateModalOpen} onOpenChange={setGateModalOpen} feature={gatedFeature || 'funnelAnalytics'} currentPlan={currentPlan} />
 
-      <div className="space-y-6">
-        {isFreeTier && <SampleDataBanner />}
-
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Analytics</h1>
-            <p className="text-muted-foreground">Track your sales performance and metrics</p>
-          </div>
-          <div className="flex gap-2">
+      <PageHeader
+        title="Analytics"
+        description="Performance metrics and insights"
+        actions={
+          <>
             <Button variant="outline" onClick={handleExport}>
               <Download className="w-4 h-4 mr-2" />Export
               {!features.dataExports && <Sparkles className="w-3 h-3 ml-2 text-primary" />}
@@ -159,8 +156,11 @@ const Analytics = () => {
                 Export PDF Report
               </Button>
             )}
-          </div>
-        </div>
+          </>
+        }
+      />
+      <div className="px-6 py-6 space-y-6 max-w-[1400px] mx-auto">
+        {isFreeTier && <SampleDataBanner />}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {statCards.map((stat) => (

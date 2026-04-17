@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +26,6 @@ import {
   Clock,
   Search,
   Zap,
-  HelpCircle,
   Inbox,
   Target,
   ShieldCheck,
@@ -37,30 +36,46 @@ import { useSubscriptionStatus } from "@/hooks/use-subscription-status";
 import { useAdmin } from "@/hooks/use-admin";
 import { useWhiteLabel } from "@/hooks/use-white-label";
 import { useSearchCredits } from "@/hooks/use-search-credits";
-import { Download } from "lucide-react";
 
 interface DashboardLayoutProps {
   children: ReactNode;
 }
 
-const navigation = [
-  { name: "Overview", icon: LayoutDashboard, href: "/dashboard" },
-  { name: "Inbox", icon: Inbox, href: "/dashboard/inbox" },
-  { name: "Leads", icon: Users, href: "/dashboard/leads" },
-  { name: "ICP", icon: Target, href: "/dashboard/icp" },
-  { name: "Pipeline", icon: TrendingUp, href: "/dashboard/pipeline" },
-  { name: "Outreach", icon: Mail, href: "/dashboard/outreach" },
-  { name: "Calendar", icon: Calendar, href: "/dashboard/calendar" },
-  { name: "Analytics", icon: BarChart3, href: "/dashboard/analytics" },
-  { name: "Deliverability", icon: ShieldCheck, href: "/dashboard/deliverability" },
-  { name: "Coach", icon: Mic, href: "/dashboard/coach" },
-  { name: "Automations", icon: Workflow, href: "/dashboard/automations" },
-  { name: "Integrations", icon: Puzzle, href: "/integrations" },
-  { name: "Settings", icon: Settings, href: "/settings" },
+const navSections = [
+  {
+    label: "WORKSPACE",
+    items: [
+      { name: "Overview", icon: LayoutDashboard, href: "/dashboard" },
+      { name: "Inbox", icon: Inbox, href: "/dashboard/inbox" },
+      { name: "Leads", icon: Users, href: "/dashboard/leads" },
+      { name: "ICP Builder", icon: Target, href: "/dashboard/icp" },
+      { name: "Pipeline", icon: TrendingUp, href: "/dashboard/pipeline" },
+    ],
+  },
+  {
+    label: "TOOLS",
+    items: [
+      { name: "Outreach", icon: Mail, href: "/dashboard/outreach" },
+      { name: "Sequences", icon: Zap, href: "/dashboard/sequences" },
+      { name: "Calendar", icon: Calendar, href: "/dashboard/calendar" },
+      { name: "Analytics", icon: BarChart3, href: "/dashboard/analytics" },
+      { name: "Coach", icon: Mic, href: "/dashboard/coach" },
+    ],
+  },
+  {
+    label: "PLATFORM",
+    items: [
+      { name: "Deliverability", icon: ShieldCheck, href: "/dashboard/deliverability" },
+      { name: "Automations", icon: Workflow, href: "/dashboard/automations" },
+      { name: "Integrations", icon: Puzzle, href: "/integrations" },
+      { name: "Settings", icon: Settings, href: "/settings" },
+    ],
+  },
 ];
 
 export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -118,7 +133,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed z-50 bg-card border-r border-border transition-all duration-300 ${
+        className={`fixed z-50 bg-[hsl(224,13%,7%)] border-r border-border/60 transition-all duration-300 ${
           sidebarCollapsed ? "w-[4.5rem]" : "w-64"
         } ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -155,155 +170,113 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </div>
 
           {/* Navigation */}
-          <nav className={`flex-1 ${sidebarCollapsed ? "p-2" : "p-4"} space-y-1 overflow-y-auto`}>
-            {navigation.map((item) => (
-              <TooltipProvider key={item.name} delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={() => {
-                        navigate(item.href);
-                        setSidebarOpen(false);
-                      }}
-                      className={`w-full flex items-center gap-3 ${sidebarCollapsed ? "justify-center px-2" : "px-4"} py-3 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors`}
-                    >
-                      <item.icon className="w-5 h-5 flex-shrink-0" />
-                      {!sidebarCollapsed && <span>{item.name}</span>}
-                    </button>
-                  </TooltipTrigger>
-                  {sidebarCollapsed && (
-                    <TooltipContent side="right">
-                      <p>{item.name}</p>
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              </TooltipProvider>
+          <nav className={`flex-1 ${sidebarCollapsed ? "p-2" : "px-3 py-3"} overflow-y-auto`}>
+            {navSections.map((section) => (
+              <div key={section.label} className="mb-1">
+                {!sidebarCollapsed && (
+                  <p className="px-3 pt-3 pb-1 text-[10px] font-semibold tracking-widest text-muted-foreground/50 uppercase select-none">
+                    {section.label}
+                  </p>
+                )}
+                {section.items.map((item) => {
+                  const isActive = location.pathname === item.href ||
+                    (item.href !== '/dashboard' && location.pathname.startsWith(item.href));
+                  return (
+                    <TooltipProvider key={item.name} delayDuration={0}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => { navigate(item.href); setSidebarOpen(false); }}
+                            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors mb-0.5 ${
+                              sidebarCollapsed ? "justify-center" : ""
+                            } ${
+                              isActive
+                                ? "bg-accent text-foreground font-medium border-l-2 border-primary"
+                                : "text-muted-foreground hover:text-foreground hover:bg-accent/50 border-l-2 border-transparent"
+                            }`}
+                            style={isActive && !sidebarCollapsed ? { paddingLeft: '10px' } : undefined}
+                          >
+                            <item.icon className="w-4 h-4 flex-shrink-0" />
+                            {!sidebarCollapsed && <span>{item.name}</span>}
+                          </button>
+                        </TooltipTrigger>
+                        {sidebarCollapsed && (
+                          <TooltipContent side="right"><p>{item.name}</p></TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
+                  );
+                })}
+              </div>
             ))}
             {isAdmin && (
               <TooltipProvider delayDuration={0}>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
-                      onClick={() => {
-                        navigate('/admin');
-                        setSidebarOpen(false);
-                      }}
-                      className={`w-full flex items-center gap-3 ${sidebarCollapsed ? "justify-center px-2" : "px-4"} py-3 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors`}
+                      onClick={() => { navigate('/admin'); setSidebarOpen(false); }}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors border-l-2 border-transparent text-muted-foreground hover:text-foreground hover:bg-accent/50 ${sidebarCollapsed ? "justify-center" : ""}`}
                     >
-                      <Shield className="w-5 h-5 flex-shrink-0" />
+                      <Shield className="w-4 h-4 flex-shrink-0" />
                       {!sidebarCollapsed && <span>Admin Panel</span>}
                     </button>
                   </TooltipTrigger>
                   {sidebarCollapsed && (
-                    <TooltipContent side="right">
-                      <p>Admin Panel</p>
-                    </TooltipContent>
+                    <TooltipContent side="right"><p>Admin Panel</p></TooltipContent>
                   )}
                 </Tooltip>
               </TooltipProvider>
             )}
           </nav>
 
-          {/* Help & Install prompts */}
-          {!sidebarCollapsed ? (
-            <div className="flex-shrink-0 px-4 py-3 border-t border-border bg-muted/30 space-y-2">
-              <a 
-                href="/help" 
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <HelpCircle className="w-4 h-4 flex-shrink-0" />
-                <span>Need help? Visit our Help Center</span>
-              </a>
-              <button
-                onClick={() => { navigate('/install'); setSidebarOpen(false); }}
-                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-primary transition-colors w-full"
-              >
-                <Download className="w-4 h-4 flex-shrink-0" />
-                <span>Install App</span>
-              </button>
-            </div>
-          ) : (
-            <div className="flex-shrink-0 px-2 py-3 border-t border-border bg-muted/30 flex flex-col items-center gap-2">
+          {/* User section - fixed at bottom */}
+          {sidebarCollapsed ? (
+            <div className="flex-shrink-0 p-2 border-t border-border/60 flex flex-col items-center gap-2">
               <TooltipProvider delayDuration={0}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <a href="/help" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors">
-                      <HelpCircle className="w-4 h-4" />
-                    </a>
+                    <div className="w-7 h-7 rounded-full bg-gradient-primary flex items-center justify-center text-white text-xs font-semibold cursor-default">
+                      {user.email?.[0].toUpperCase()}
+                    </div>
                   </TooltipTrigger>
-                  <TooltipContent side="right"><p>Help Center</p></TooltipContent>
+                  <TooltipContent side="right">
+                    <p>{user.email}</p>
+                    <p className="text-xs text-muted-foreground capitalize">{subscription?.plan || 'Growth'} Plan</p>
+                  </TooltipContent>
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button onClick={() => { navigate('/install'); setSidebarOpen(false); }} className="text-muted-foreground hover:text-primary transition-colors">
-                      <Download className="w-4 h-4" />
-                    </button>
+                    <Button variant="ghost" size="icon" onClick={handleSignOut} className="h-6 w-6 text-muted-foreground hover:text-foreground">
+                      <LogOut className="w-3.5 h-3.5" />
+                    </Button>
                   </TooltipTrigger>
-                  <TooltipContent side="right"><p>Install App</p></TooltipContent>
+                  <TooltipContent side="right"><p>Sign Out</p></TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             </div>
-          )}
-
-          {/* User section - fixed at bottom */}
-          <div className={`flex-shrink-0 ${sidebarCollapsed ? "p-2" : "p-4"} border-t border-border bg-card`}>
-            {sidebarCollapsed ? (
-              <div className="flex flex-col items-center gap-2">
-                <TooltipProvider delayDuration={0}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-semibold cursor-default">
-                        {user.email?.[0].toUpperCase()}
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">
-                      <p>{user.email}</p>
-                      <p className="text-xs text-muted-foreground capitalize">{subscription?.plan || 'Growth'} Plan</p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" onClick={handleSignOut} className="h-8 w-8">
-                        <LogOut className="w-4 h-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right"><p>Sign Out</p></TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-            ) : (
-              <>
-                <div className="flex items-center gap-3 mb-3 px-4">
-                  <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-semibold">
-                    {user.email?.[0].toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{user.email}</p>
-                    <p className="text-xs text-muted-foreground capitalize">
-                      {subscription?.plan || 'Growth'} Plan
-                    </p>
-                  </div>
+          ) : (
+            <div className="flex-shrink-0 border-t border-border/60 p-3">
+              <div className="flex items-center gap-3 p-2 rounded-md hover:bg-accent/50 transition-colors">
+                <div className="w-7 h-7 rounded-full bg-gradient-primary flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                  {user.email?.[0].toUpperCase()}
                 </div>
-                <Button
-                  variant="ghost"
-                  onClick={handleSignOut}
-                  className="w-full justify-start"
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Sign Out
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium truncate">{user.email}</p>
+                  <p className="text-[10px] text-muted-foreground capitalize">{subscription?.plan || 'Growth'} Plan</p>
+                </div>
+                <Button variant="ghost" size="icon" onClick={handleSignOut} className="h-6 w-6 flex-shrink-0 text-muted-foreground hover:text-foreground">
+                  <LogOut className="w-3.5 h-3.5" />
                 </Button>
-              </>
-            )}
-          </div>
+              </div>
+            </div>
+          )}
         </div>
       </aside>
 
       {/* Main content */}
       <div className={`transition-all duration-300 ${sidebarCollapsed ? "lg:ml-[4.5rem]" : "lg:ml-64"}`}>
         {/* Top bar */}
-        <header className="sticky top-0 z-30 min-h-[3rem] bg-card border-b border-border flex items-center px-2 sm:px-6 py-1.5 gap-1">
+        <header className="h-12 sticky top-0 z-30 bg-background/80 backdrop-blur border-b border-border/60 flex items-center px-2 sm:px-6 gap-1">
           <Button
             variant="ghost"
             size="icon"

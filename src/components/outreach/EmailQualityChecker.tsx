@@ -247,6 +247,20 @@ const StatusIcon = ({ status }: { status: "green" | "yellow" | "red" }) => {
   return <XCircle className="w-4 h-4 text-destructive flex-shrink-0" />;
 };
 
+const BANNED_PHRASES = [
+  "hope this finds you well",
+  "just checking in",
+  "reaching out because",
+  "leverage",
+  "optimize",
+  "streamline",
+  "synergy",
+  "revolutionar",
+  "cutting-edge",
+  "industry-leading",
+  "best-in-class",
+];
+
 export const scoreEmailQuality = (subject: string, body: string, isFirstTouch = true) => {
   const text = body.replace(/<[^>]*>/g, "").trim();
   const checks = [
@@ -264,16 +278,66 @@ export const scoreEmailQuality = (subject: string, body: string, isFirstTouch = 
     computeSignatureLength(body),
   ];
 
+  // Word count checks
+  const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+  if (wordCount > 130) {
+    checks.push({
+      label: "Word Ceiling",
+      status: "red",
+      message: "Email exceeds 130-word ceiling — trim for better deliverability",
+      score: 20,
+    });
+  } else if (wordCount > 75) {
+    checks.push({
+      label: "Word Ceiling",
+      status: "yellow",
+      message: "Keep under 75 words for best reply rates",
+      score: 60,
+    });
+  }
+
+  // Banned phrases check
+  const lowerText = text.toLowerCase();
+  const foundBanned = BANNED_PHRASES.filter((phrase) => lowerText.includes(phrase));
+  if (foundBanned.length > 0) {
+    checks.push({
+      label: "Banned Phrases",
+      status: "red",
+      message: `Banned phrase detected: "${foundBanned[0]}"`,
+      score: 20,
+    });
+  }
+
+  // CTA question mark checks
+  const questionMarks = (text.match(/\?/g) || []).length;
+  if (questionMarks === 0) {
+    checks.push({
+      label: "CTA Question",
+      status: "yellow",
+      message: "End with a single low-friction question",
+      score: 50,
+    });
+  } else if (questionMarks > 1) {
+    checks.push({
+      label: "CTA Question",
+      status: "yellow",
+      message: "Use a single CTA question — multiple questions reduce replies",
+      score: 60,
+    });
+  }
+
   const overallScore = Math.round(checks.reduce((sum, c) => sum + c.score, 0) / checks.length);
   const overallStatus: "green" | "yellow" | "red" = overallScore >= 75 ? "green" : overallScore >= 50 ? "yellow" : "red";
-  return { checks, overallScore, overallStatus };
+  return { checks, overallScore, overallStatus, wordCount };
 };
 
 export const EmailQualityChecker = ({ subject, body, isFirstTouch = true, onFix, fixingCheck }: EmailQualityCheckerProps) => {
-  const { checks, overallScore, overallStatus } = useMemo(
+  const { checks, overallScore, overallStatus, wordCount } = useMemo(
     () => scoreEmailQuality(subject, body, isFirstTouch),
     [subject, body, isFirstTouch]
   );
+
+  const wordCountColor = wordCount <= 75 ? "text-green-500" : wordCount <= 130 ? "text-yellow-500" : "text-destructive";
 
   return (
     <Card className="border-border/50">
@@ -285,6 +349,13 @@ export const EmailQualityChecker = ({ subject, body, isFirstTouch = true, onFix,
         </CardTitle>
       </CardHeader>
       <CardContent className="px-4 pb-4 space-y-3">
+        {/* Word Count indicator */}
+        <div className="flex items-center justify-between py-1.5 px-2.5 rounded-md bg-muted/40">
+          <span className="text-xs text-muted-foreground font-medium">Word Count</span>
+          <span className={`text-xs font-semibold tabular-nums ${wordCountColor}`}>
+            {wordCount} {wordCount <= 75 ? "✓" : wordCount <= 130 ? "↑" : "↑↑"}
+          </span>
+        </div>
         {checks.map((check) => (
           <div key={check.label} className="flex items-start gap-2">
             <StatusIcon status={check.status} />

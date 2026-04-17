@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { PageHeader } from "@/components/dashboard/PageHeader";
 import { PipelineColumn } from "@/components/dashboard/PipelineColumn";
 import { AddDealDialog } from "@/components/dashboard/AddDealDialog";
 import { SampleDataBanner } from "@/components/dashboard/SampleDataBanner";
@@ -103,15 +104,11 @@ const Pipeline = () => {
     <DashboardLayout>
       <FeatureGateModal open={gateModalOpen} onOpenChange={setGateModalOpen} feature={gatedFeature || 'customPipelines'} currentPlan={currentPlan} />
 
-      <div className="space-y-6">
-        {isFreeTier && <SampleDataBanner />}
-
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">Deal Pipeline</h1>
-            <p className="text-muted-foreground text-sm sm:text-base">Manage your deals across all stages</p>
-          </div>
-          <div className="flex gap-2 flex-wrap">
+      <PageHeader
+        title="Pipeline"
+        description="Track deals through your sales stages"
+        actions={
+          <>
             <Button variant="outline" size="sm" onClick={handleForecasting}>
               <TrendingUp className="w-4 h-4 mr-2" />Forecast
               {!features.revenueForecasting && <Sparkles className="w-3 h-3 ml-2 text-primary" />}
@@ -125,8 +122,11 @@ const Pipeline = () => {
             <Button variant="hero" size="sm" onClick={() => setAddDialogOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />New Deal
             </Button>
-          </div>
-        </div>
+          </>
+        }
+      />
+      <div className="px-6 py-6 space-y-6 max-w-[1400px] mx-auto">
+        {isFreeTier && <SampleDataBanner />}
 
         {!features.automatedStageProgression && (
           <Card className="p-4 border-dashed border-primary/30 bg-primary/5">

@@ -53,37 +53,102 @@ const SEQUENCE_TEMPLATES = [
   {
     id: "signal-strike",
     name: "Signal Strike",
-    description: "5-step, 14-day signal-based outreach",
+    description: "4-touch, 14-day signal-based sequence",
     icon: Zap,
     steps: [
-      { delay_days: 0, delay_hours: 0, subject_template: "Noticed {{company_name}}'s recent move", body_template: "Hi {{contact_name}},\n\nI saw {{company_name}} just {{signal}} — congrats. Teams in your position often find that {{pain_point}} becomes a bottleneck fast.\n\nWe help companies like yours solve that in weeks, not months.\n\nWorth a quick look?", trigger_condition: "on_enroll" },
-      { delay_days: 3, delay_hours: 0, subject_template: "LinkedIn connection request", body_template: "Send a LinkedIn connection request to {{contact_name}}. Use this note:\n\n\"Hi {{contact_name}}, I shared some ideas about {{company_name}}'s growth — thought we should connect.\"", trigger_condition: "on_delay" },
-      { delay_days: 5, delay_hours: 0, subject_template: "Different angle on {{company_name}}", body_template: "Hi {{contact_name}},\n\nQuick follow-up — wanted to share a different angle.\n\nTeams scaling as fast as {{company_name}} typically waste 15+ hours/week on manual prospecting. We cut that to under 2.\n\nOpen to 15 minutes this week?", trigger_condition: "on_delay" },
-      { delay_days: 8, delay_hours: 0, subject_template: "Thought you'd find this useful", body_template: "Hi {{contact_name}},\n\nNo pitch today — just sharing an insight on how fast-growing teams are rethinking outbound.\n\nThe shift from batch-and-blast to signal-based outreach typically sees 2-4x higher reply rates.\n\nWorth exploring?", trigger_condition: "on_delay" },
-      { delay_days: 14, delay_hours: 0, subject_template: "Closing the loop", body_template: "Hi {{contact_name}},\n\nI'll keep this short — I've reached out a few times and don't want to be a nuisance.\n\nIf the timing isn't right, no worries at all. If things change, I'm here.\n\nWishing {{company_name}} continued success.", trigger_condition: "on_delay" },
+      {
+        delay_days: 0,
+        delay_hours: 0,
+        subject_template: "{{company_name}} question",
+        body_template: `{{contact_name}}, saw {{company_name}} {{signal}}.\n\nMost {{industry}} teams at your stage hit a wall with {{pain_point}}—it compounds fast.\n\nWe helped {{custom_case_study_name}} cut that time by 60% in 90 days.\n\nWorth a quick look?`,
+        trigger_condition: "on_enroll",
+      },
+      {
+        delay_days: 3,
+        delay_hours: 0,
+        subject_template: "Re: {{company_name}} question",
+        body_template: `{{contact_name}}, one more angle:\n\nTeams scaling like {{company_name}} usually find {{pain_point}} eats 10-15 hours a week nobody budgeted for.\n\nWe fix that without adding headcount.\n\n{{custom_case_study_name}} saw results in the first 30 days.\n\nOpen to a 15-min call this week?`,
+        trigger_condition: "on_delay",
+      },
+      {
+        delay_days: 8,
+        delay_hours: 0,
+        subject_template: "Timing question",
+        body_template: `{{contact_name}}, not sure if Q{{custom_quarter}} is the right time for {{company_name}}.\n\nIf it's not, happy to reconnect when it makes sense—I'll follow up in a few months.\n\nIf you are evaluating options now, I can send a one-pager on how we compare to {{competitor1}}.\n\nWhich fits better?`,
+        trigger_condition: "on_delay",
+      },
+      {
+        delay_days: 14,
+        delay_hours: 0,
+        subject_template: "Closing the loop",
+        body_template: `{{contact_name}}, I'll leave it here.\n\nIf {{pain_point}} becomes a priority at {{company_name}}, I'd be glad to help—just reply to this thread.\n\nWishing you a strong quarter.`,
+        trigger_condition: "on_delay",
+      },
     ],
   },
   {
     id: "executive-thread",
     name: "Executive Thread",
-    description: "3-step, 7-day C-suite sequence",
+    description: "3-touch, 7-day C-suite sequence",
     icon: Crown,
     steps: [
-      { delay_days: 0, delay_hours: 0, subject_template: "{{company_name}}'s {{pain_point}} challenge", body_template: "Hi {{contact_name}},\n\n{{company_name}} is scaling fast, and I imagine {{pain_point}} is on your radar.\n\nWe help leaders like you solve that. Worth a look?", trigger_condition: "on_enroll" },
-      { delay_days: 3, delay_hours: 0, subject_template: "Re: {{company_name}}'s {{pain_point}} challenge", body_template: "Hi {{contact_name}},\n\nWanted to make sure this didn't get buried.\n\nHappy to share how we helped a similar company cut their outreach time by 3x. Should I send over a brief overview?", trigger_condition: "on_delay" },
-      { delay_days: 7, delay_hours: 0, subject_template: "Re: {{company_name}}'s {{pain_point}} challenge", body_template: "Hi {{contact_name}},\n\nI'll assume the timing isn't right — totally understand.\n\nIf things shift, I'd love to reconnect. Wishing you and {{company_name}} a strong quarter.", trigger_condition: "on_delay" },
+      {
+        delay_days: 0,
+        delay_hours: 0,
+        subject_template: "{{company_name}}'s {{pain_point}}",
+        body_template: `{{contact_name}}, {{company_name}} is scaling fast.\n\nLeaders at your stage tell us {{pain_point}} becomes the bottleneck nobody sees coming until it costs a quarter.\n\nWe solved that for {{custom_case_study_name}}—{{custom_result}} in 6 months.\n\nWorth a look?`,
+        trigger_condition: "on_enroll",
+      },
+      {
+        delay_days: 3,
+        delay_hours: 0,
+        subject_template: "Re: {{company_name}}'s {{pain_point}}",
+        body_template: `{{contact_name}}, wanted to make sure this didn't get buried.\n\nHappy to share a one-pager on how we helped a similar {{industry}} company hit {{custom_result}}—no call needed yet.\n\nShould I send it over?`,
+        trigger_condition: "on_delay",
+      },
+      {
+        delay_days: 7,
+        delay_hours: 0,
+        subject_template: "Re: {{company_name}}'s {{pain_point}}",
+        body_template: `{{contact_name}}, timing may not be right—completely understood.\n\nIf things shift at {{company_name}}, I'd welcome the chance to reconnect.\n\nWishing you and the team a strong quarter.`,
+        trigger_condition: "on_delay",
+      },
     ],
   },
   {
     id: "the-challenger",
     name: "The Challenger",
-    description: "4-step, 10-day insight-led sequence",
+    description: "4-touch, 10-day insight-led sequence",
     icon: Target,
     steps: [
-      { delay_days: 0, delay_hours: 0, subject_template: "The biggest mistake in {{industry}} outbound", body_template: "Hi {{contact_name}},\n\nMost {{industry}} teams still rely on batch-and-blast email. The data says that approach fails 95% of the time.\n\nThe top 5% are doing something different — and it's not what you'd expect.\n\nWorth seeing how they do it?", trigger_condition: "on_enroll" },
-      { delay_days: 4, delay_hours: 0, subject_template: "The data behind the claim", body_template: "Hi {{contact_name}},\n\nFollowing up with the data I mentioned:\n\nTeams using signal-based outreach see 2-4x higher reply rates vs. traditional cold email.\n\nWe've helped companies like {{company_name}} get there. Happy to show you how.", trigger_condition: "on_delay" },
-      { delay_days: 7, delay_hours: 0, subject_template: "Did this resonate?", body_template: "Hi {{contact_name}},\n\nCurious if the insight about signal-based outreach resonated with what you're seeing at {{company_name}}.\n\nIf so, I'd love to share a quick framework that makes it actionable. No commitment — just value.", trigger_condition: "on_delay" },
-      { delay_days: 10, delay_hours: 0, subject_template: "Last note from me", body_template: "Hi {{contact_name}},\n\nI'll leave it here. If the ideas I shared were off-base, no hard feelings.\n\nBut if {{company_name}} ever revisits its outbound strategy, I'd be glad to help.\n\nAll the best.", trigger_condition: "on_delay" },
+      {
+        delay_days: 0,
+        delay_hours: 0,
+        subject_template: "{{industry}} outbound mistake",
+        body_template: `{{contact_name}}, most {{industry}} teams still run batch-and-blast email.\n\nThe data says that approach fails 95% of the time—the top 5% do something different.\n\nWe helped {{custom_case_study_name}} hit a 6% reply rate in 60 days using signal-based outreach.\n\nWorth seeing how they did it?`,
+        trigger_condition: "on_enroll",
+      },
+      {
+        delay_days: 4,
+        delay_hours: 0,
+        subject_template: "The data behind this",
+        body_template: `{{contact_name}}, the stat I mentioned:\n\nSignal-based outreach drives 2-4x higher reply rates vs. traditional cold email in {{industry}}.\n\n{{custom_case_study_name}} went from 1% to 5.8% reply rate in one quarter.\n\nHappy to show {{company_name}} the playbook—quick call?`,
+        trigger_condition: "on_delay",
+      },
+      {
+        delay_days: 7,
+        delay_hours: 0,
+        subject_template: "Did this land?",
+        body_template: `{{contact_name}}, curious if the signal-based angle resonated with what you're seeing at {{company_name}}.\n\nIf so, I have a short framework that makes it immediately actionable—no commitment, just value.\n\nWant me to send it?`,
+        trigger_condition: "on_delay",
+      },
+      {
+        delay_days: 10,
+        delay_hours: 0,
+        subject_template: "Last note",
+        body_template: `{{contact_name}}, I'll leave it here.\n\nIf {{company_name}} ever revisits its outbound strategy, reply to this thread—happy to help.\n\nAll the best.`,
+        trigger_condition: "on_delay",
+      },
     ],
   },
 ];
@@ -171,16 +236,17 @@ export function SequencesList() {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-10 w-32" />
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-48" />
-          ))}
-        </div>
+      <div className="space-y-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="flex items-center gap-4 p-4 rounded-lg border border-border/60 bg-card">
+            <Skeleton className="w-10 h-10 rounded-xl flex-shrink-0" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-4 w-48" />
+              <Skeleton className="h-3 w-64" />
+            </div>
+            <Skeleton className="h-6 w-16 rounded-full" />
+          </div>
+        ))}
       </div>
     );
   }
@@ -190,8 +256,8 @@ export function SequencesList() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Email Sequences</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-lg font-semibold">Email Sequences</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
             Automated multi-step email campaigns
           </p>
         </div>
@@ -332,19 +398,19 @@ export function SequencesList() {
 
       {/* Sequences Grid */}
       {sequences.length === 0 ? (
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Mail className="w-12 h-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No sequences yet</h3>
-            <p className="text-muted-foreground text-center mb-4">
-              Create your first email sequence to start automating outreach.
-            </p>
-            <Button onClick={() => setIsCreateOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Create Your First Sequence
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
+          <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center mb-4">
+            <Mail className="w-5 h-5 text-muted-foreground" />
+          </div>
+          <h3 className="text-sm font-semibold mb-1">No sequences yet</h3>
+          <p className="text-xs text-muted-foreground max-w-[280px] leading-relaxed mb-4">
+            Create your first email sequence to automate follow-ups with signal-based, 4-touch campaigns that average 3–8% reply rates.
+          </p>
+          <Button size="sm" onClick={() => setIsCreateOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Create Sequence
+          </Button>
+        </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {sequences.map((sequence) => (
