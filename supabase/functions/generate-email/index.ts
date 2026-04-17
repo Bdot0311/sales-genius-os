@@ -286,6 +286,7 @@ serve(async (req) => {
     const variantNum         = typeof requestData.variantNum         === 'number'  ? requestData.variantNum                            : 0;
     const use4SentenceFramework = requestData.use4SentenceFramework === true;
     const templateValue        = typeof requestData.templateValue        === 'string' ? requestData.templateValue.trim()                   : '';
+    const customInstruction   = typeof requestData.customInstruction   === 'string' ? requestData.customInstruction.slice(0, 8000)         : '';
 
     const validationErrors = validateEmailInputs({ lead, tone, goal });
     if (validationErrors.length > 0) {
@@ -401,6 +402,13 @@ ${businessDescription ? `\nSender's product: ${businessDescription}` : ''}
 
 Return ONLY the social proof text. No quotes, no explanations.`;
 
+    } else if (goal === 'custom' && customInstruction) {
+      // Precision-editor mode used by EmailQualityChecker "Fix this" buttons.
+      // The client supplies a full instruction including the current email body and a surgical fix task.
+      // We pass it through directly so the model edits in place rather than regenerating.
+      systemPrompt = `You are a precision editor for cold outbound emails. You make the smallest possible change to address the specified issue while preserving the rest of the email verbatim. Return ONLY the corrected email body.`;
+      userPrompt = customInstruction;
+
     } else if (goal === 'custom' && subjectLine) {
       const effectiveGoal = templateGoal || 'introduction';
       systemPrompt = getSystemPrompt(effectiveGoal, tone, use4SentenceFramework, templateDescription, templateValue);
@@ -430,7 +438,8 @@ ${businessDescription ? `\nWhat we do: ${businessDescription}` : ''}
 Write the email body. Start with "Hi ${firstName}," and end with just the sender's name on its own line.`;
     }
 
-    const temperature = variantNum > 0 ? 1.0 : 0.85;
+    const isPrecisionEdit = goal === 'custom' && !!customInstruction;
+    const temperature = isPrecisionEdit ? 0.3 : (variantNum > 0 ? 1.0 : 0.85);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

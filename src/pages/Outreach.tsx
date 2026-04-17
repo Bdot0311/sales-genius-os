@@ -1014,9 +1014,28 @@ IMMUTABLE RULES — these apply regardless of the fix task:
       'You-focus': `TASK: Flip sentence subjects where possible. Find sentences that start with "I" or "We" and rewrite them to start from the prospect's perspective ("Your team", "You", "Your workflow"). Aim to convert at least 2 "I/We" sentences. Keep all facts and the CTA identical.`,
       'CTA position': `TASK: Move the CTA to the last line before the sign-off only. Find the question or call-to-action sentence and move it to immediately before the sender's name. Reorder sentences if needed but do not rewrite them. The sign-off (sender name) stays last.`,
       'Signature': `TASK: This is a manual fix — the HTML signature block is too long relative to the email body. Return the email body unchanged and append this note on a new line at the very end: "[Tip: Shorten your signature in Settings → Email Signature to improve deliverability]"`,
+      'Word Ceiling': `TASK: Trim the email body to under 75 words. Cut the most generic or redundant sentence first. If still over, compress the context sentence. Preserve the greeting, the specific hook/observation, and the final CTA question exactly. Do not rewrite — only delete.`,
+      'CTA Question': `TASK: Fix the question count. The email must end with exactly ONE question mark — on the final content line before the sign-off. If there are zero questions, convert the closing statement into one low-friction question (e.g. "Worth a look?", "Open to seeing it?"). If there are multiple, keep only the final one and convert the others to statements. Change nothing else.`,
     };
 
-    const instruction = fixInstructions[checkLabel] || `Fix only the following issue and nothing else: ${checkLabel}`;
+    // Banned Phrases check — look up the actual banned phrase currently present in the body
+    // so the model knows exactly what to remove.
+    let instruction = fixInstructions[checkLabel];
+    if (!instruction && checkLabel === 'Banned Phrases') {
+      const BANNED = [
+        'hope this finds you well', 'just checking in', 'reaching out because',
+        'leverage', 'optimize', 'streamline', 'synergy',
+        'revolutionar', 'cutting-edge', 'industry-leading', 'best-in-class',
+      ];
+      const lower = generatedEmail.toLowerCase();
+      const hit = BANNED.find((p) => lower.includes(p));
+      instruction = hit
+        ? `TASK: Remove the banned phrase "${hit}" from the email body. Replace it with a plain, direct equivalent that keeps the sentence meaning. Change as FEW words as possible — do not rewrite surrounding sentences.`
+        : `TASK: Scan for cold-outreach banned phrases ("hope this finds you well", "just checking in", "reaching out because", "leverage", "optimize", "streamline", "synergy", "revolutionary", "cutting-edge", "industry-leading", "best-in-class") and replace the first match with a plain equivalent. Change nothing else.`;
+    }
+    if (!instruction) {
+      instruction = `Fix only the following issue and nothing else: ${checkLabel}`;
+    }
     const lead = leads.find((l) => l.id === selectedLead);
 
     try {
