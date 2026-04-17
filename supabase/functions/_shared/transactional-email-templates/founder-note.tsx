@@ -26,9 +26,9 @@ const FounderNoteEmail = ({ name }: FounderNoteProps) => (
           I'm {FOUNDER_NAME}, founder of {COMPANY_NAME} — the team behind {SITE_NAME}.
         </Text>
         <Text style={text}>
-          I just wanted to personally say how happy I am that you joined us. We built {SITE_NAME} 
-          because we were tired of bloated, overpriced sales tools that made outbound feel like 
-          a chore. Our mission is simple: give founders, sales teams, and agencies the 
+          I just wanted to personally say how happy I am that you joined us. We built {SITE_NAME}{' '}
+          because we were tired of bloated, overpriced sales tools that made outbound feel like
+          a chore. Our mission is simple: give founders, sales teams, and agencies the
           infrastructure to close more deals — without the noise.
         </Text>
         <Text style={text}>
