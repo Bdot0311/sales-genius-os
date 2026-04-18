@@ -16,17 +16,35 @@ const Terms = () => {
         { name: "Terms of Service", url: "https://salesos.alephwavex.io/terms" }
       ]} />
       
-      <div className="min-h-screen bg-background text-foreground">
+      <div
+        className="min-h-screen text-foreground overflow-x-hidden"
+        style={{ background: "hsl(0 0% 3%)" }}
+      >
         <Navbar />
-        <main className="container mx-auto px-6 py-24 max-w-4xl">
+        <main className="container mx-auto px-5 sm:px-6 pt-[calc(env(safe-area-inset-top)+6.5rem)] pb-20 max-w-4xl">
           <article>
-            <header>
-              <h1 className="text-4xl font-bold mb-8">Terms of Service</h1>
+            <header className="mb-10">
+              <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-medium text-white/70 backdrop-blur-sm sm:text-xs">
+                <span className="h-1.5 w-1.5 rounded-full bg-violet-400" />
+                Legal
+              </span>
+              <h1 className="font-display text-4xl sm:text-5xl mb-4">
+                Terms of{" "}
+                <span
+                  className="bg-clip-text text-transparent"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(135deg, hsl(261 75% 72%) 0%, hsl(280 70% 70%) 100%)",
+                  }}
+                >
+                  Service
+                </span>
+              </h1>
             </header>
-            
-            <div className="prose prose-lg max-w-none space-y-8">
+
+            <div className="prose prose-invert prose-lg max-w-none space-y-8 text-white/75 prose-headings:text-white prose-strong:text-white/90 prose-a:text-primary prose-li:marker:text-primary/50">
               <section>
-                <p className="text-muted-foreground mb-6">
+                <p className="text-white/55 mb-6">
                   <strong>Last Updated:</strong> <time dateTime="2025-01">January 2025</time>
                 </p>
                 <p>
@@ -153,24 +171,28 @@ const Terms = () => {
                 </address>
               </section>
 
-              <nav aria-labelledby="related-links" className="mt-12 pt-8 border-t border-border">
+              <nav
+                aria-labelledby="related-links"
+                className="mt-12 pt-8 border-t"
+                style={{ borderColor: "hsl(0 0% 100% / 0.08)" }}
+              >
                 <h2 id="related-links" className="text-xl font-semibold mb-4">Related Pages</h2>
                 <ul className="grid sm:grid-cols-2 gap-3">
                   <li>
                     <a href="/privacy" className="text-primary hover:underline">Privacy Policy</a>
-                    <span className="text-muted-foreground"> – How we handle your data</span>
+                    <span className="text-white/55"> – How we handle your data</span>
                   </li>
                   <li>
                     <a href="/security" className="text-primary hover:underline">Security Practices</a>
-                    <span className="text-muted-foreground"> – Our security measures</span>
+                    <span className="text-white/55"> – Our security measures</span>
                   </li>
                   <li>
                     <a href="/help" className="text-primary hover:underline">Help Center</a>
-                    <span className="text-muted-foreground"> – Support and documentation</span>
+                    <span className="text-white/55"> – Support and documentation</span>
                   </li>
                   <li>
                     <a href="/pricing" className="text-primary hover:underline">Pricing Plans</a>
-                    <span className="text-muted-foreground"> – View subscription options</span>
+                    <span className="text-white/55"> – View subscription options</span>
                   </li>
                 </ul>
               </nav>

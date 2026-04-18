@@ -1,4 +1,5 @@
 import { lazy, Suspense, useState } from "react";
+import { IntegrationStrip } from "@/components/landing/IntegrationLogos";
 
 const DashboardMockup = lazy(() => import("@/components/landing/DashboardMockup"));
 
@@ -74,34 +75,11 @@ export const ProductShowcase = () => {
           </div>
         </div>
 
-        {/* Integration strip — below the mockup */}
-        <div className="flex flex-col items-center gap-3 pt-10 pb-14">
-          <p
-            className="text-[10px] uppercase tracking-[0.22em] font-medium"
-            style={{ color: "hsl(0 0% 100% / 0.18)" }}
-          >
-            Connects with the tools you already use
-          </p>
-          <div className="flex items-center flex-wrap justify-center gap-2">
-            {["Gmail", "HubSpot", "Salesforce", "Slack", "Calendly", "Zapier"].map((name) => (
-              <span
-                key={name}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium tracking-wide"
-                style={{
-                  background: "hsl(0 0% 100% / 0.04)",
-                  border: "1px solid hsl(0 0% 100% / 0.09)",
-                  color: "hsl(0 0% 100% / 0.35)",
-                }}
-              >
-                <span
-                  className="w-1.5 h-1.5 rounded-full shrink-0"
-                  style={{ background: "hsl(261 75% 60% / 0.7)" }}
-                />
-                {name}
-              </span>
-            ))}
-          </div>
-        </div>
+        {/* Integration strip — below the mockup. Also serves as the #integrations anchor for the navbar. */}
+        <IntegrationStrip
+          id="integrations"
+          className="scroll-mt-24 pt-10 pb-14"
+        />
 
       </div>
     </section>
