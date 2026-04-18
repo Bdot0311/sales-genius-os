@@ -71,20 +71,25 @@ export const HelpSearch = ({ onSearch, placeholder = "Search for help articles..
     <div ref={wrapperRef} className={`relative ${className}`}>
       <form onSubmit={handleSubmit}>
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
           <Input
             type="text"
             placeholder={placeholder}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="pl-12 pr-12 h-14 text-lg bg-card border-border focus:border-primary"
+            className="pl-12 pr-12 h-14 text-base sm:text-lg rounded-full focus:border-primary"
+            style={{
+              background: "hsl(0 0% 100% / 0.04)",
+              border: "1px solid hsl(0 0% 100% / 0.08)",
+              color: "hsl(0 0% 100% / 0.9)",
+            }}
           />
           {query && (
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              className="absolute right-2 top-1/2 -translate-y-1/2"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-white/55 hover:text-white hover:bg-white/10"
               onClick={() => {
                 setQuery("");
                 setResults([]);
@@ -98,27 +103,34 @@ export const HelpSearch = ({ onSearch, placeholder = "Search for help articles..
       </form>
 
       {isOpen && results.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-lg shadow-lg z-50 overflow-hidden">
+        <div
+          className="absolute top-full left-0 right-0 mt-2 rounded-2xl shadow-2xl z-50 overflow-hidden backdrop-blur-xl"
+          style={{
+            background: "hsl(0 0% 6% / 0.97)",
+            border: "1px solid hsl(0 0% 100% / 0.08)",
+          }}
+        >
           {results.map((article) => (
             <button
               key={article.id}
-              className="w-full px-4 py-3 text-left hover:bg-muted/50 transition-colors border-b border-border last:border-0"
+              className="w-full px-4 py-3 text-left hover:bg-white/5 transition-colors border-b last:border-0"
+              style={{ borderColor: "hsl(0 0% 100% / 0.06)" }}
               onClick={() => handleSelectArticle(article.slug)}
             >
-              <div className="flex items-center justify-between">
-                <span className="font-medium text-foreground">{article.title}</span>
-                <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded">
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-medium text-white">{article.title}</span>
+                <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full shrink-0">
                   {getCategoryLabel(article.category)}
                 </span>
               </div>
-              <p className="text-sm text-muted-foreground mt-1 line-clamp-1">
+              <p className="text-sm text-white/55 mt-1 line-clamp-1">
                 {article.description}
               </p>
             </button>
           ))}
           {query.length >= 2 && (
             <button
-              className="w-full px-4 py-3 text-left hover:bg-muted/50 transition-colors text-primary font-medium"
+              className="w-full px-4 py-3 text-left hover:bg-white/5 transition-colors text-primary font-medium text-sm"
               onClick={handleSubmit}
             >
               See all results for "{query}"
@@ -128,10 +140,22 @@ export const HelpSearch = ({ onSearch, placeholder = "Search for help articles..
       )}
 
       {isOpen && query.length >= 2 && results.length === 0 && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-lg shadow-lg z-50 p-4 text-center">
-          <p className="text-muted-foreground">No articles found for "{query}"</p>
-          <p className="text-sm text-muted-foreground mt-1">
-            Try different keywords or <a href="mailto:support@bdotindustries.com" className="text-primary hover:underline">contact support</a>
+        <div
+          className="absolute top-full left-0 right-0 mt-2 rounded-2xl shadow-2xl z-50 p-4 text-center backdrop-blur-xl"
+          style={{
+            background: "hsl(0 0% 6% / 0.97)",
+            border: "1px solid hsl(0 0% 100% / 0.08)",
+          }}
+        >
+          <p className="text-white/70">No articles found for "{query}"</p>
+          <p className="text-sm text-white/50 mt-1">
+            Try different keywords or{" "}
+            <a
+              href="mailto:support@bdotindustries.com"
+              className="text-primary hover:underline"
+            >
+              contact support
+            </a>
           </p>
         </div>
       )}

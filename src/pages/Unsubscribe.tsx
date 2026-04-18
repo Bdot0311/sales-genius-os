@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, XCircle, Loader2, MailX } from "lucide-react";
 
 type Status = "loading" | "valid" | "already_unsubscribed" | "invalid" | "success" | "error";
@@ -64,35 +63,94 @@ const Unsubscribe = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="max-w-md w-full">
-        <CardHeader className="text-center">
-          <CardTitle className="flex items-center justify-center gap-2">
-            <MailX className="h-6 w-6 text-muted-foreground" />
-            Email Preferences
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="text-center space-y-4">
+    <div
+      className="relative flex min-h-screen flex-col items-center justify-center px-4 overflow-hidden"
+      style={{ background: "hsl(0 0% 3%)" }}
+    >
+      {/* Dot grid */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle, hsl(0 0% 100% / 0.06) 1px, transparent 1px)",
+          backgroundSize: "32px 32px",
+        }}
+        aria-hidden="true"
+      />
+      <div
+        className="absolute top-[-120px] left-[-100px] h-[420px] w-[420px] rounded-full hero-orb pointer-events-none sm:h-[560px] sm:w-[560px]"
+        style={{
+          background:
+            "radial-gradient(ellipse at center, hsl(261 75% 55% / 0.18) 0%, transparent 70%)",
+          filter: "blur(40px)",
+        }}
+        aria-hidden="true"
+      />
+      <div
+        className="absolute bottom-[-140px] right-[-120px] h-[380px] w-[380px] rounded-full hero-orb pointer-events-none sm:h-[480px] sm:w-[480px]"
+        style={{
+          background:
+            "radial-gradient(ellipse at center, hsl(280 70% 60% / 0.14) 0%, transparent 70%)",
+          filter: "blur(50px)",
+        }}
+        aria-hidden="true"
+      />
+
+      <div
+        className="relative z-10 w-full max-w-md rounded-2xl p-8 backdrop-blur-sm"
+        style={{
+          background: "hsl(0 0% 100% / 0.025)",
+          border: "1px solid hsl(0 0% 100% / 0.06)",
+        }}
+      >
+        <div className="mb-6 flex flex-col items-center text-center">
+          <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-medium text-white/70 backdrop-blur-sm sm:text-xs">
+            <span className="h-1.5 w-1.5 rounded-full bg-violet-400" />
+            Preferences
+          </span>
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/20">
+            <MailX className="h-6 w-6 text-primary" />
+          </div>
+          <h1 className="font-display text-2xl text-white">
+            Email{" "}
+            <span
+              className="bg-clip-text text-transparent"
+              style={{
+                backgroundImage:
+                  "linear-gradient(135deg, hsl(261 75% 72%) 0%, hsl(280 70% 70%) 100%)",
+              }}
+            >
+              Preferences
+            </span>
+          </h1>
+        </div>
+
+        <div className="text-center space-y-4">
           {status === "loading" && (
             <div className="flex flex-col items-center gap-3">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-muted-foreground">Validating your request...</p>
+              <p className="text-white/60">Validating your request...</p>
             </div>
           )}
 
           {status === "valid" && (
-            <div className="space-y-4">
-              <p className="text-foreground">
+            <div className="space-y-5">
+              <p className="text-white/80">
                 Would you like to unsubscribe from future emails?
               </p>
-              <Button onClick={handleUnsubscribe} disabled={processing} variant="destructive">
+              <Button
+                onClick={handleUnsubscribe}
+                disabled={processing}
+                variant="destructive"
+                className="rounded-full gap-2"
+              >
                 {processing ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin" />
                     Processing...
                   </>
                 ) : (
-                  "Confirm Unsubscribe"
+                  "Confirm unsubscribe"
                 )}
               </Button>
             </div>
@@ -100,9 +158,11 @@ const Unsubscribe = () => {
 
           {status === "success" && (
             <div className="flex flex-col items-center gap-3">
-              <CheckCircle className="h-10 w-10 text-green-500" />
-              <p className="text-foreground font-medium">You've been unsubscribed.</p>
-              <p className="text-sm text-muted-foreground">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-500/10 ring-1 ring-green-500/30">
+                <CheckCircle className="h-7 w-7 text-green-400" />
+              </div>
+              <p className="text-white font-medium">You've been unsubscribed.</p>
+              <p className="text-sm text-white/55">
                 You will no longer receive emails from us.
               </p>
             </div>
@@ -110,16 +170,20 @@ const Unsubscribe = () => {
 
           {status === "already_unsubscribed" && (
             <div className="flex flex-col items-center gap-3">
-              <CheckCircle className="h-10 w-10 text-muted-foreground" />
-              <p className="text-foreground">You're already unsubscribed.</p>
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/5 ring-1 ring-white/10">
+                <CheckCircle className="h-7 w-7 text-white/55" />
+              </div>
+              <p className="text-white/80">You're already unsubscribed.</p>
             </div>
           )}
 
           {status === "invalid" && (
             <div className="flex flex-col items-center gap-3">
-              <XCircle className="h-10 w-10 text-destructive" />
-              <p className="text-foreground">Invalid or expired link.</p>
-              <p className="text-sm text-muted-foreground">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 ring-1 ring-destructive/30">
+                <XCircle className="h-7 w-7 text-destructive" />
+              </div>
+              <p className="text-white/80">Invalid or expired link.</p>
+              <p className="text-sm text-white/55">
                 This unsubscribe link is no longer valid.
               </p>
             </div>
@@ -127,15 +191,17 @@ const Unsubscribe = () => {
 
           {status === "error" && (
             <div className="flex flex-col items-center gap-3">
-              <XCircle className="h-10 w-10 text-destructive" />
-              <p className="text-foreground">Something went wrong.</p>
-              <p className="text-sm text-muted-foreground">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 ring-1 ring-destructive/30">
+                <XCircle className="h-7 w-7 text-destructive" />
+              </div>
+              <p className="text-white/80">Something went wrong.</p>
+              <p className="text-sm text-white/55">
                 Please try again later or contact support.
               </p>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };

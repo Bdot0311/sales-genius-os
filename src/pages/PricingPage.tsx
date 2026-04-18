@@ -1,9 +1,19 @@
 import { Navbar } from "@/components/Navbar";
 import { Pricing } from "@/components/Pricing";
-import { Footer } from "@/components/Footer";
 import { SEOHead, BreadcrumbSchema, FAQSchema } from "@/components/seo";
 import { Link } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import { Check, Shield, Zap, Users, Headphones } from "lucide-react";
+
+const FooterSection = lazy(() =>
+  import("@/components/landing/FooterSection").then((m) => ({ default: m.FooterSection }))
+);
+
+const SectionLoader = () => (
+  <div className="py-16 flex items-center justify-center">
+    <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+  </div>
+);
 
 const PricingPage = () => {
   const pricingFAQs = [
@@ -21,29 +31,29 @@ const PricingPage = () => {
   const valueProps = [
     {
       icon: Zap,
-      title: "ICP-Driven Discovery",
+      title: "ICP-driven discovery",
       description: "Build Ideal Customer Profiles and get ranked leads with automatic match scores. Find lookalikes from closed deals."
     },
     {
       icon: Users,
-      title: "Unified Reply Inbox",
-      description: "All replies auto-classified by intent with AI-drafted responses. Never miss a hot lead again."
+      title: "Unified reply inbox",
+      description: "Replies auto-classified by intent with AI-drafted responses. Never miss a hot lead again."
     },
     {
       icon: Shield,
-      title: "Deliverability Suite",
+      title: "Deliverability suite",
       description: "Mailbox warmup, DNS health checks, and smart sending rules protect your sender reputation."
     },
     {
       icon: Headphones,
-      title: "Pre-Send Quality Checks",
+      title: "Pre-send quality checks",
       description: "Every email scanned for spam triggers, readability, and personalization before it leaves your outbox."
     }
   ];
 
   return (
     <>
-      <SEOHead 
+      <SEOHead
         title="SalesOS Pricing - Choose the Right Outbound Plan"
         description="Choose the SalesOS plan that fits your outbound workflow. Starter from $39/month, Growth from $89/month, and Pro from $179/month."
         keywords="SalesOS pricing, outbound sales software pricing, lead generation pricing, B2B prospecting pricing, sales outreach software cost"
@@ -54,28 +64,104 @@ const PricingPage = () => {
         { name: "Pricing", url: "https://salesos.alephwavex.io/pricing" }
       ]} />
       <FAQSchema faqs={pricingFAQs} />
-      
-      <div className="min-h-screen bg-background text-foreground">
+
+      <div
+        className="min-h-screen text-foreground overflow-x-hidden"
+        style={{ background: "hsl(0 0% 3%)" }}
+      >
         <Navbar />
         <main>
-          {/* Hero Section */}
-           <section className="pt-24 pb-8 container mx-auto px-6 text-center">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              Pick the plan that fits your outbound motion
-            </h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-6">
-              SalesOS is built for founder-led teams, outbound agencies, and B2B sales teams that want a faster path from ICP definition to live outreach.
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Plans from $39/month • Upgrade anytime • 30-day money-back guarantee
-            </p>
+          {/* Hero — matches landing page aesthetic */}
+          <section
+            className="relative overflow-hidden pt-[calc(env(safe-area-inset-top)+6.5rem)] pb-10 sm:pt-[calc(env(safe-area-inset-top)+7rem)] sm:pb-14"
+            aria-labelledby="pricing-heading"
+          >
+            {/* Dot grid */}
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                backgroundImage:
+                  "radial-gradient(circle, hsl(0 0% 100% / 0.06) 1px, transparent 1px)",
+                backgroundSize: "32px 32px",
+              }}
+              aria-hidden="true"
+            />
+            {/* Orbs */}
+            <div
+              className="absolute top-[-120px] left-[-100px] h-[420px] w-[420px] rounded-full hero-orb pointer-events-none sm:h-[560px] sm:w-[560px]"
+              style={{
+                background:
+                  "radial-gradient(ellipse at center, hsl(261 75% 55% / 0.16) 0%, hsl(261 75% 55% / 0.04) 50%, transparent 70%)",
+                filter: "blur(40px)",
+              }}
+              aria-hidden="true"
+            />
+            <div
+              className="absolute top-[-80px] right-[-120px] h-[380px] w-[380px] rounded-full hero-orb pointer-events-none sm:h-[500px] sm:w-[500px]"
+              style={{
+                background:
+                  "radial-gradient(ellipse at center, hsl(280 70% 60% / 0.12) 0%, transparent 70%)",
+                filter: "blur(50px)",
+                animationDelay: "6s",
+              }}
+              aria-hidden="true"
+            />
+
+            <div className="noise-texture" aria-hidden="true" />
+
+            <div className="relative z-10 container mx-auto px-5 sm:px-6">
+              <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
+                <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-medium text-white/70 backdrop-blur-sm sm:text-xs">
+                  <span className="h-1.5 w-1.5 rounded-full bg-violet-400" />
+                  Pricing · 30-day money-back guarantee
+                </span>
+
+                <h1
+                  id="pricing-heading"
+                  className="font-display mb-5 text-4xl leading-[1.05] sm:text-5xl md:text-6xl"
+                >
+                  Pick the plan that fits your{" "}
+                  <span
+                    className="bg-clip-text text-transparent"
+                    style={{
+                      backgroundImage:
+                        "linear-gradient(135deg, hsl(261 75% 72%) 0%, hsl(280 70% 70%) 100%)",
+                    }}
+                  >
+                    outbound motion
+                  </span>
+                </h1>
+
+                <p className="mb-4 max-w-2xl text-base leading-relaxed text-white/60 sm:text-lg">
+                  SalesOS is built for founder-led teams, outbound agencies, and
+                  B2B sales teams that want a faster path from ICP definition to
+                  live outreach.
+                </p>
+
+                <p className="text-xs uppercase tracking-[0.22em] text-white/35">
+                  Plans from $39 / month · Upgrade anytime
+                </p>
+              </div>
+            </div>
           </section>
 
-          <section className="pb-2 container mx-auto px-6 text-center">
-            <div className="max-w-3xl mx-auto rounded-2xl border border-border/30 bg-muted/30 p-6">
-              <h2 className="text-2xl font-bold mb-3">Why buy now?</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                If SalesOS saves your team even a few hours a week on list building, lead prioritization, and first-touch drafting, it can pay for itself fast. The right plan is really about how much prospecting volume and workflow support you need.
+          {/* Why buy now — pulled into the dark canvas */}
+          <section className="relative container mx-auto px-5 pb-4 sm:px-6">
+            <div
+              className="max-w-3xl mx-auto rounded-2xl p-6 sm:p-7 text-center"
+              style={{
+                background: "hsl(0 0% 100% / 0.03)",
+                border: "1px solid hsl(0 0% 100% / 0.08)",
+              }}
+            >
+              <h2 className="text-xl sm:text-2xl font-semibold mb-2">
+                Why buy now?
+              </h2>
+              <p className="text-white/55 leading-relaxed text-sm sm:text-base">
+                If SalesOS saves your team even a few hours a week on list
+                building, lead prioritization, and first-touch drafting, it pays
+                for itself fast. The right plan is about how much prospecting
+                volume and workflow support you need.
               </p>
             </div>
           </section>
@@ -83,34 +169,49 @@ const PricingPage = () => {
           {/* Pricing Component */}
           <Pricing />
 
-          {/* Value Props Section */}
-          <section className="py-16 bg-muted/30">
-            <div className="container mx-auto px-6">
-              <h2 className="text-2xl md:text-3xl font-bold text-center mb-12">
-                Why buyers choose SalesOS
+          {/* Value Props — dark canvas */}
+          <section
+            className="relative overflow-hidden py-16 sm:py-20"
+            style={{ background: "hsl(0 0% 2.5%)" }}
+          >
+            <div className="container mx-auto px-5 sm:px-6 relative z-10">
+              <p className="mb-3 text-center text-[10px] uppercase tracking-[0.25em] text-white/30">
+                Why teams pick SalesOS
+              </p>
+              <h2 className="text-center text-2xl sm:text-3xl font-semibold mb-10 sm:mb-12">
+                Everything you need for modern outbound
               </h2>
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+              <div className="grid gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-4">
                 {valueProps.map((prop) => (
-                  <div key={prop.title} className="text-center">
-                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-primary/10 text-primary mb-4">
-                      <prop.icon className="w-6 h-6" />
+                  <div
+                    key={prop.title}
+                    className="group relative rounded-2xl p-6 transition-colors duration-300"
+                    style={{
+                      background: "hsl(0 0% 100% / 0.025)",
+                      border: "1px solid hsl(0 0% 100% / 0.06)",
+                    }}
+                  >
+                    <div className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-primary/10 text-primary mb-4 ring-1 ring-primary/20">
+                      <prop.icon className="w-5 h-5" />
                     </div>
                     <h3 className="font-semibold mb-2">{prop.title}</h3>
-                    <p className="text-sm text-muted-foreground">{prop.description}</p>
+                    <p className="text-sm text-white/55 leading-relaxed">
+                      {prop.description}
+                    </p>
                   </div>
                 ))}
               </div>
             </div>
           </section>
 
-          {/* Comparison Summary */}
-          <section className="py-16 container mx-auto px-6">
-            <h2 className="text-2xl md:text-3xl font-bold text-center mb-8">
-              All Plans Include
+          {/* All plans include */}
+          <section className="py-16 sm:py-20 container mx-auto px-5 sm:px-6">
+            <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-10">
+              All plans include
             </h2>
             <div className="max-w-3xl mx-auto">
-              <ul className="grid sm:grid-cols-2 gap-4">
-              {[
+              <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-3">
+                {[
                   "ICP Builder with lead match scoring",
                   "Email Quality Pre-Send Checker",
                   "Unified Reply Inbox with AI drafts",
@@ -120,50 +221,55 @@ const PricingPage = () => {
                   "AI Sales Coach",
                   "Real-time analytics dashboard",
                   "Secure data encryption",
-                  "Help center access"
+                  "Help center access",
                 ].map((feature) => (
-                  <li key={feature} className="flex items-center gap-3">
-                    <Check className="w-5 h-5 text-primary flex-shrink-0" />
-                    <span>{feature}</span>
+                  <li key={feature} className="flex items-start gap-3 text-sm">
+                    <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 ring-1 ring-primary/25">
+                      <Check className="w-3 h-3 text-primary" />
+                    </span>
+                    <span className="text-white/75">{feature}</span>
                   </li>
                 ))}
               </ul>
             </div>
           </section>
 
-
-
-
-
-          <section className="py-12 border-t border-border">
-            <div className="container mx-auto px-6">
-              <h2 className="text-xl font-semibold mb-6 text-center">Learn More About SalesOS</h2>
+          {/* Related pages */}
+          <section
+            className="py-12 border-t"
+            style={{ borderColor: "hsl(0 0% 100% / 0.06)" }}
+          >
+            <div className="container mx-auto px-5 sm:px-6">
+              <p className="mb-5 text-center text-[10px] uppercase tracking-[0.25em] text-white/30">
+                Learn more about SalesOS
+              </p>
               <nav aria-label="Related pages">
-                <ul className="flex flex-wrap justify-center gap-x-8 gap-y-4 text-sm">
-                  <li>
-                    <Link to="/" className="text-primary hover:underline">Features Overview</Link>
-                  </li>
-                  <li>
-                    <Link to="/help" className="text-primary hover:underline">Help Center</Link>
-                  </li>
-                  <li>
-                    <Link to="/api-docs" className="text-primary hover:underline">API Documentation</Link>
-                  </li>
-                  <li>
-                    <Link to="/security" className="text-primary hover:underline">Security Practices</Link>
-                  </li>
-                  <li>
-                    <Link to="/terms" className="text-primary hover:underline">Terms of Service</Link>
-                  </li>
-                  <li>
-                    <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>
-                  </li>
+                <ul className="flex flex-wrap justify-center gap-x-8 gap-y-3 text-sm">
+                  {[
+                    { to: "/", label: "Features" },
+                    { to: "/help", label: "Help Center" },
+                    { to: "/api-docs", label: "API Docs" },
+                    { to: "/security", label: "Security" },
+                    { to: "/terms", label: "Terms" },
+                    { to: "/privacy", label: "Privacy" },
+                  ].map((item) => (
+                    <li key={item.to}>
+                      <Link
+                        to={item.to}
+                        className="text-white/55 hover:text-white transition-colors"
+                      >
+                        {item.label}
+                      </Link>
+                    </li>
+                  ))}
                 </ul>
               </nav>
             </div>
           </section>
         </main>
-        <Footer />
+        <Suspense fallback={<SectionLoader />}>
+          <FooterSection />
+        </Suspense>
       </div>
     </>
   );

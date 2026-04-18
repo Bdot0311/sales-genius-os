@@ -195,25 +195,43 @@ const ApiStatus = () => {
           })
         }}
       />
-      <div className="min-h-screen flex flex-col bg-background">
+      <div
+        className="min-h-screen flex flex-col overflow-x-hidden"
+        style={{ background: "hsl(0 0% 3%)" }}
+      >
         <Navbar />
-      <div className="flex-1 container mx-auto px-4 pt-24 pb-12 max-w-6xl">
+      <div className="flex-1 container mx-auto px-5 sm:px-6 pt-[calc(env(safe-area-inset-top)+6.5rem)] pb-12 max-w-6xl">
         <div className="space-y-6">
           <div className="mb-6">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => navigate(-1)}
-              className="gap-2"
+              className="gap-2 rounded-full border-white/10 bg-white/5 hover:bg-white/10 text-white/80"
             >
               <ArrowLeft className="w-4 h-4" />
               Back
             </Button>
           </div>
-          
+
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div>
-              <h1 className="text-3xl font-bold">API Status</h1>
-              <p className="text-muted-foreground">
+              <span className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-medium text-white/70 backdrop-blur-sm sm:text-xs">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                Live
+              </span>
+              <h1 className="font-display text-3xl sm:text-4xl mb-2">
+                API{" "}
+                <span
+                  className="bg-clip-text text-transparent"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(135deg, hsl(261 75% 72%) 0%, hsl(280 70% 70%) 100%)",
+                  }}
+                >
+                  Status
+                </span>
+              </h1>
+              <p className="text-white/60">
                 Real-time system status and incident history
               </p>
             </div>
