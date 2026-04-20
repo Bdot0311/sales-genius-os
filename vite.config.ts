@@ -14,8 +14,8 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
     VitePWA({
-      registerType: "prompt",
-      injectRegister: null,
+      registerType: "autoUpdate",
+      injectRegister: "auto",
       devOptions: {
         enabled: false,
       },
