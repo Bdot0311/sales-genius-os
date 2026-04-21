@@ -1,79 +1,79 @@
 export const BigStatSection = () => {
   const stats = [
     {
-      value: "< 2 min",
+      value: "< 2",
+      unit: "min",
       label: "From ICP to first lead",
       sub: "No list-building required",
     },
     {
-      value: "10.7%",
-      label: "Reply rate on signal sequences",
+      value: "10.7",
+      unit: "% reply",
+      label: "Signal-based sequences",
       sub: "vs 3.4% industry average",
     },
     {
-      value: "1 tool",
+      value: "1",
+      unit: "tool",
       label: "Search, enrich, write, send",
-      sub: "Stop switching between 4 apps",
+      sub: "Stop switching between four apps",
     },
   ];
 
   return (
     <section
-      className="relative py-20 md:py-28"
+      className="relative py-24 sm:py-32"
       style={{
-        background: "hsl(0,0%,3%)",
-        borderTop: "1px solid hsl(261 75% 50% / 0.18)",
-        borderBottom: "1px solid hsl(261 75% 50% / 0.18)",
+        background: "hsl(34 33% 96%)",
+        borderTop: "1px solid hsl(28 10% 88%)",
+        borderBottom: "1px solid hsl(28 10% 88%)",
       }}
+      aria-label="Key outcomes"
     >
-      {/* Purple glow */}
+      {/* Subtle warm wash */}
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse 60% 50% at 50% 50%, hsl(261 75% 55% / 0.09) 0%, transparent 70%)",
+            "radial-gradient(ellipse 60% 50% at 50% 50%, hsl(14 75% 82% / 0.28) 0%, transparent 70%)",
         }}
         aria-hidden="true"
       />
 
-      <div className="container mx-auto px-6 max-w-5xl relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-3">
+      <div className="relative z-10 mx-auto max-w-[1120px] px-6 sm:px-8">
+        <div className="mb-12 flex items-center justify-center gap-3">
+          <span className="hairline w-10" />
+          <span className="eyebrow">By the numbers</span>
+          <span className="hairline w-10" />
+        </div>
+
+        <div className="grid grid-cols-1 gap-12 md:grid-cols-3 md:gap-6">
           {stats.map((stat, i) => (
             <div
               key={stat.label}
-              className="flex flex-col items-center md:items-start text-center md:text-left px-8 py-6"
+              className="flex flex-col items-start px-6 md:px-10"
               style={{
-                borderRight:
-                  i < 2 ? "1px solid hsl(261 75% 50% / 0.12)" : undefined,
+                borderLeft:
+                  i > 0 ? "1px solid hsl(28 10% 84%)" : "1px solid transparent",
               }}
             >
-              {/* Big number — purple gradient */}
+              <div className="flex items-baseline gap-3">
+                <span
+                  className="editorial-stat"
+                  style={{ fontSize: "clamp(3.2rem, 6vw, 5.25rem)" }}
+                >
+                  {stat.value}
+                </span>
+                <span className="stat-unit pb-2">{stat.unit}</span>
+              </div>
+
               <span
-                className="font-display block mb-3"
-                style={{
-                  fontSize: "clamp(2.8rem, 5vw, 4.5rem)",
-                  fontWeight: 800,
-                  lineHeight: 1,
-                  letterSpacing: "-0.03em",
-                  background:
-                    "linear-gradient(135deg, hsl(0 0% 98%) 0%, hsl(261 75% 72%) 100%)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                }}
-              >
-                {stat.value}
-              </span>
-              <span
-                className="block text-sm font-medium mb-1"
-                style={{ color: "hsl(0 0% 75%)" }}
+                className="mt-5 text-[15px] font-medium"
+                style={{ color: "hsl(28 10% 14%)" }}
               >
                 {stat.label}
               </span>
-              <span
-                className="block text-xs"
-                style={{ color: "hsl(261 75% 60% / 0.6)" }}
-              >
+              <span className="mt-1 text-sm" style={{ color: "hsl(28 6% 48%)" }}>
                 {stat.sub}
               </span>
             </div>

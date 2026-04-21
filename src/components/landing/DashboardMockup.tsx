@@ -36,6 +36,17 @@ const AnimatedNumber = ({ value, suffix = "" }: { value: number; suffix?: string
   return <span ref={ref}>{count}{suffix}</span>;
 };
 
+// Warm-dark palette for the mockup interior
+const CORAL = "hsl(14 59% 62%)";
+const CORAL_SOFT = "hsl(14 59% 62% / 0.14)";
+const CORAL_RING = "hsl(14 59% 62% / 0.25)";
+const TEXT_HI = "hsl(34 30% 92%)";
+const TEXT_MID = "hsl(30 10% 72%)";
+const TEXT_LO = "hsl(30 8% 48%)";
+const SURFACE = "hsl(28 8% 13%)";
+const SURFACE_2 = "hsl(28 8% 16%)";
+const LINE = "hsl(28 10% 22%)";
+
 const DashboardMockup = () => {
   const [activeStep, setActiveStep] = useState(0);
   const [pipelineAnim, setPipelineAnim] = useState(false);
@@ -71,172 +82,209 @@ const DashboardMockup = () => {
   ];
 
   const pipelineStages = [
-    { label: "Contacted", count: 42, color: "bg-primary/40" },
-    { label: "Qualified", count: 28, color: "bg-primary/60" },
-    { label: "Proposal", count: 12, color: "bg-primary/80" },
-    { label: "Closed", count: 6, color: "bg-primary" },
+    { label: "Contacted", count: 42, opacity: 0.35 },
+    { label: "Qualified", count: 28, opacity: 0.55 },
+    { label: "Proposal", count: 12, opacity: 0.75 },
+    { label: "Closed", count: 6, opacity: 1 },
   ];
 
   return (
-    <div className="relative">
+    <div className="relative" style={{ background: SURFACE }}>
+      {/* Window chrome */}
       <div
-        className="absolute -inset-8 rounded-3xl pointer-events-none"
-        style={{
-          background: "radial-gradient(ellipse at 50% 50%, hsl(261 75% 55% / 0.08) 0%, transparent 70%)",
-        }}
-        aria-hidden="true"
-      />
-
-      <div className="relative rounded-xl border border-border/30 bg-card/90 backdrop-blur-sm overflow-hidden shadow-2xl shadow-primary/5">
-        <div className="relative flex items-center gap-2 px-4 py-2.5 border-b border-border/30 bg-muted/20">
-          <div className="flex gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full bg-destructive/50" />
-            <div className="w-2.5 h-2.5 rounded-full bg-primary/50" />
-            <div className="w-2.5 h-2.5 rounded-full bg-muted-foreground/30" />
-          </div>
-          <div className="flex-1 flex justify-center">
-          <div className="px-3 py-1 rounded-md bg-muted/40 text-[10px] text-muted-foreground font-mono flex items-center gap-1.5">
+        className="relative flex items-center gap-2 px-4 py-2.5"
+        style={{ borderBottom: `1px solid ${LINE}`, background: SURFACE_2 }}
+      >
+        <div className="flex gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-full" style={{ background: "hsl(4 60% 55% / 0.55)" }} />
+          <div className="w-2.5 h-2.5 rounded-full" style={{ background: "hsl(40 80% 55% / 0.55)" }} />
+          <div className="w-2.5 h-2.5 rounded-full" style={{ background: "hsl(142 40% 50% / 0.55)" }} />
+        </div>
+        <div className="flex-1 flex justify-center">
+          <div
+            className="px-3 py-1 rounded-md font-mono text-[10px] flex items-center gap-1.5"
+            style={{ background: "hsl(28 8% 18%)", color: TEXT_MID }}
+          >
             <img src={logoSmall} alt="SalesOS" className="w-4 h-4 rounded-sm" width={16} height={16} />
             <span>Dashboard</span>
           </div>
-          </div>
-          <div
-            className="w-1.5 h-1.5 rounded-full bg-primary transition-opacity duration-300"
-            style={{ opacity: refreshTick % 2 === 0 ? 0.8 : 0.2 }}
-            aria-hidden="true"
-          />
         </div>
+        <div
+          className="w-1.5 h-1.5 rounded-full transition-opacity duration-300"
+          style={{ background: CORAL, opacity: refreshTick % 2 === 0 ? 0.85 : 0.25 }}
+          aria-hidden="true"
+        />
+      </div>
 
-        <div className="relative grid grid-cols-2 gap-3 p-4">
-          <div
-            className="col-span-2 rounded-lg border border-border/20 bg-background/60 p-3 transition-all duration-500"
-            style={{
-              opacity: activeStep >= 1 ? 1 : 0,
-              transform: activeStep >= 1 ? "translateY(0)" : "translateY(8px)",
-            }}
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <Search className="w-3.5 h-3.5 text-primary" />
-              <span className="text-[11px] font-semibold text-foreground/80 uppercase tracking-wider">Lead Search</span>
-              <div className="ml-auto text-[9px] text-muted-foreground/50 font-mono">847 results</div>
-            </div>
-            <div className="space-y-1.5">
-              {leads.map((l, i) => (
-                <div
-                  key={`${i}-${refreshTick}`}
-                  className="flex items-center justify-between px-2.5 py-1.5 rounded-md bg-muted/20 border border-border/10 transition-all duration-500"
-                  style={{
-                    opacity: activeStep >= 1 ? 1 : 0,
-                    transition: `opacity 0.3s ease ${i * 120}ms`,
-                  }}
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center text-[9px] font-bold text-primary">
-                      {l.name.charAt(0)}
-                    </div>
-                    <div>
-                      <span className="text-[11px] font-medium text-foreground">{l.name}</span>
-                      <span className="text-[10px] text-muted-foreground ml-1.5">{l.title}, {l.company}</span>
-                    </div>
-                  </div>
-                  <div className="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-semibold tabular-nums">
-                    <AnimatedNumber value={l.score} suffix="%" />
-                  </div>
-                </div>
-              ))}
-            </div>
+      <div className="relative grid grid-cols-2 gap-3 p-4">
+        {/* Lead Search */}
+        <div
+          className="col-span-2 rounded-lg p-3 transition-all duration-500"
+          style={{
+            border: `1px solid ${LINE}`,
+            background: SURFACE_2,
+            opacity: activeStep >= 1 ? 1 : 0,
+            transform: activeStep >= 1 ? "translateY(0)" : "translateY(8px)",
+          }}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <Search className="w-3.5 h-3.5" style={{ color: CORAL }} />
+            <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: TEXT_HI }}>
+              Lead Search
+            </span>
+            <div className="ml-auto text-[9px] font-mono" style={{ color: TEXT_LO }}>847 results</div>
           </div>
-
-          <div
-            className="rounded-lg border border-border/20 bg-background/60 p-3 transition-all duration-500"
-            style={{
-              opacity: activeStep >= 2 ? 1 : 0,
-              transform: activeStep >= 2 ? "translateY(0)" : "translateY(8px)",
-            }}
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <Mail className="w-3.5 h-3.5 text-primary" />
-              <span className="text-[11px] font-semibold text-foreground/80 uppercase tracking-wider">Sequence</span>
-            </div>
-            <div className="space-y-1.5">
-              {sequenceSteps.map((s, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-2 transition-all duration-300"
-                  style={{
-                    transform: activeStep >= 2 ? "translateX(0)" : "translateX(-8px)",
-                    opacity: activeStep >= 2 ? 1 : 0,
-                    transitionDelay: `${i * 80}ms`,
-                  }}
-                >
-                  <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${s.status === "sent" ? "bg-green-500" : s.status === "queued" ? "bg-primary animate-pulse" : "bg-muted-foreground/30"}`} />
-                  <span className="text-[10px] text-muted-foreground">{s.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div
-            className="rounded-lg border border-border/20 bg-background/60 p-3 transition-all duration-500"
-            style={{
-              opacity: activeStep >= 3 ? 1 : 0,
-              transform: activeStep >= 3 ? "translateY(0)" : "translateY(8px)",
-            }}
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <BarChart3 className="w-3.5 h-3.5 text-primary" />
-              <span className="text-[11px] font-semibold text-foreground/80 uppercase tracking-wider">Pipeline</span>
-            </div>
-            <div className="space-y-1.5">
-              {pipelineStages.map((s, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <div className="flex-1 h-1.5 rounded-full bg-muted/30 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${s.color} transition-all duration-1000 ease-out`}
-                      style={{
-                        width: pipelineAnim ? `${(s.count / 42) * 100}%` : "0%",
-                        transitionDelay: `${i * 150}ms`,
-                      }}
-                    />
-                  </div>
-                  <span className="text-[10px] text-muted-foreground w-16 text-right">{s.label}</span>
-                  <span className="text-[10px] font-semibold text-foreground w-5 text-right tabular-nums">{s.count}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div
-            className="col-span-2 grid grid-cols-4 gap-2 transition-all duration-500"
-            style={{
-              opacity: activeStep >= 3 ? 1 : 0,
-              transform: activeStep >= 3 ? "translateY(0)" : "translateY(6px)",
-            }}
-          >
-            {[
-              { icon: Target, label: "Match Rate", val: 92, suf: "%", glow: false },
-              { icon: TrendingUp, label: "Open Rate", val: 64, suf: "%", glow: false },
-              { icon: MessageSquare, label: "Replies", val: 38, suf: "%", glow: false },
-              { icon: Brain, label: "AI Score", val: 87, suf: "", glow: true },
-            ].map((m, i) => (
+          <div className="space-y-1.5">
+            {leads.map((l, i) => (
               <div
-                key={i}
-                className={`rounded-lg border bg-background/60 p-2 text-center relative overflow-hidden ${m.glow ? "border-primary/30" : "border-border/20"}`}
+                key={`${i}-${refreshTick}`}
+                className="flex items-center justify-between px-2.5 py-1.5 rounded-md transition-all duration-500"
+                style={{
+                  background: SURFACE,
+                  border: `1px solid ${LINE}`,
+                  opacity: activeStep >= 1 ? 1 : 0,
+                  transition: `opacity 0.3s ease ${i * 120}ms`,
+                }}
               >
-                {m.glow && (
+                <div className="flex items-center gap-2">
                   <div
-                    className="absolute inset-0 bg-primary/5 animate-pulse pointer-events-none"
-                    aria-hidden="true"
-                  />
-                )}
-                <m.icon className={`w-3 h-3 mx-auto mb-1 relative ${m.glow ? "text-primary drop-shadow-[0_0_6px_hsl(261_75%_65%/0.5)]" : "text-primary"}`} />
-                <div className="text-[13px] font-bold text-foreground relative tabular-nums">
-                  <AnimatedNumber value={m.val} suffix={m.suf} />
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold"
+                    style={{ background: CORAL_SOFT, color: CORAL }}
+                  >
+                    {l.name.charAt(0)}
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-medium" style={{ color: TEXT_HI }}>{l.name}</span>
+                    <span className="text-[10px] ml-1.5" style={{ color: TEXT_MID }}>{l.title}, {l.company}</span>
+                  </div>
                 </div>
-                <div className="text-[9px] text-muted-foreground relative">{m.label}</div>
+                <div
+                  className="px-1.5 py-0.5 rounded text-[10px] font-semibold tabular-nums"
+                  style={{ background: CORAL_SOFT, color: CORAL }}
+                >
+                  <AnimatedNumber value={l.score} suffix="%" />
+                </div>
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Sequence */}
+        <div
+          className="rounded-lg p-3 transition-all duration-500"
+          style={{
+            border: `1px solid ${LINE}`,
+            background: SURFACE_2,
+            opacity: activeStep >= 2 ? 1 : 0,
+            transform: activeStep >= 2 ? "translateY(0)" : "translateY(8px)",
+          }}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <Mail className="w-3.5 h-3.5" style={{ color: CORAL }} />
+            <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: TEXT_HI }}>Sequence</span>
+          </div>
+          <div className="space-y-1.5">
+            {sequenceSteps.map((s, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-2 transition-all duration-300"
+                style={{
+                  transform: activeStep >= 2 ? "translateX(0)" : "translateX(-8px)",
+                  opacity: activeStep >= 2 ? 1 : 0,
+                  transitionDelay: `${i * 80}ms`,
+                }}
+              >
+                <div
+                  className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                  style={{
+                    background:
+                      s.status === "sent" ? "hsl(142 45% 52%)"
+                        : s.status === "queued" ? CORAL
+                        : "hsl(28 10% 42%)",
+                  }}
+                />
+                <span className="text-[10px]" style={{ color: TEXT_MID }}>{s.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Pipeline */}
+        <div
+          className="rounded-lg p-3 transition-all duration-500"
+          style={{
+            border: `1px solid ${LINE}`,
+            background: SURFACE_2,
+            opacity: activeStep >= 3 ? 1 : 0,
+            transform: activeStep >= 3 ? "translateY(0)" : "translateY(8px)",
+          }}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <BarChart3 className="w-3.5 h-3.5" style={{ color: CORAL }} />
+            <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: TEXT_HI }}>Pipeline</span>
+          </div>
+          <div className="space-y-1.5">
+            {pipelineStages.map((s, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <div
+                  className="flex-1 h-1.5 rounded-full overflow-hidden"
+                  style={{ background: "hsl(28 10% 20%)" }}
+                >
+                  <div
+                    className="h-full rounded-full transition-all duration-1000 ease-out"
+                    style={{
+                      width: pipelineAnim ? `${(s.count / 42) * 100}%` : "0%",
+                      background: CORAL,
+                      opacity: s.opacity,
+                      transitionDelay: `${i * 150}ms`,
+                    }}
+                  />
+                </div>
+                <span className="text-[10px] w-16 text-right" style={{ color: TEXT_MID }}>{s.label}</span>
+                <span className="text-[10px] font-semibold w-5 text-right tabular-nums" style={{ color: TEXT_HI }}>
+                  {s.count}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Metric row */}
+        <div
+          className="col-span-2 grid grid-cols-4 gap-2 transition-all duration-500"
+          style={{
+            opacity: activeStep >= 3 ? 1 : 0,
+            transform: activeStep >= 3 ? "translateY(0)" : "translateY(6px)",
+          }}
+        >
+          {[
+            { icon: Target, label: "Match Rate", val: 92, suf: "%", glow: false },
+            { icon: TrendingUp, label: "Open Rate", val: 64, suf: "%", glow: false },
+            { icon: MessageSquare, label: "Replies", val: 38, suf: "%", glow: false },
+            { icon: Brain, label: "AI Score", val: 87, suf: "", glow: true },
+          ].map((m, i) => (
+            <div
+              key={i}
+              className="rounded-lg p-2 text-center relative overflow-hidden"
+              style={{
+                border: `1px solid ${m.glow ? CORAL_RING : LINE}`,
+                background: SURFACE_2,
+              }}
+            >
+              {m.glow && (
+                <div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ background: CORAL_SOFT }}
+                  aria-hidden="true"
+                />
+              )}
+              <m.icon className="w-3 h-3 mx-auto mb-1 relative" style={{ color: CORAL }} />
+              <div className="text-[13px] font-bold relative tabular-nums" style={{ color: TEXT_HI }}>
+                <AnimatedNumber value={m.val} suffix={m.suf} />
+              </div>
+              <div className="text-[9px] relative" style={{ color: TEXT_MID }}>{m.label}</div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

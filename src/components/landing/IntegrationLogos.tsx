@@ -81,13 +81,12 @@ export const IntegrationStrip = ({
     >
       <p
         id={id ? `${id}-label` : undefined}
-        className="text-[10px] uppercase tracking-[0.22em] font-medium"
-        style={{ color: "hsl(0 0% 100% / 0.25)" }}
+        className="eyebrow-muted"
       >
         {label}
       </p>
       <ul
-        className="flex flex-wrap items-center justify-center gap-x-8 gap-y-5 sm:gap-x-12"
+        className="flex flex-wrap items-center justify-center gap-x-10 gap-y-5 sm:gap-x-14"
         role="list"
       >
         {INTEGRATIONS.map(({ name, Logo, color }) => (
@@ -97,14 +96,14 @@ export const IntegrationStrip = ({
               style={
                 {
                   "--brand-color": color,
-                  color: "hsl(0 0% 100% / 0.45)",
+                  color: "hsl(28 6% 38%)",
                 } as React.CSSProperties
               }
               onMouseEnter={(e) => {
                 e.currentTarget.style.color = color;
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.color = "hsl(0 0% 100% / 0.45)";
+                e.currentTarget.style.color = "hsl(28 6% 38%)";
               }}
             >
               <Logo className="h-5 w-5 sm:h-6 sm:w-6 transition-transform duration-300 group-hover:scale-110" />

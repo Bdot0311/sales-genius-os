@@ -21,100 +21,139 @@ const footerLinks = {
 
 export const FooterSection = () => {
   return (
-    <footer className="py-16 md:py-20 border-t" style={{ background: "hsl(0,0%,2%)", borderColor: "hsl(0 0% 100% / 0.06)" }}>
-      <div className="container mx-auto px-6">
-        <div className="max-w-[1120px] mx-auto">
-          <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-12 mb-12">
-            {/* Brand */}
-            <div className="lg:col-span-2">
-              <div className="flex items-center gap-2.5 mb-4">
-                <img 
-                  src={salesosLogo} 
-                  alt="SalesOS Logo" 
-                  className="w-8 h-8 rounded-lg" 
-                  width={32}
-                  height={32}
-                />
-                <span className="text-lg font-semibold">
-                  <span className="text-foreground">Sales</span>
-                  <span className="text-primary">OS</span>
-                </span>
-              </div>
-              <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
-                Plain-English lead discovery and outbound workflow software for B2B teams that want to move from prospecting to outreach faster.
-              </p>
+    <footer
+      className="py-16 md:py-20"
+      style={{
+        background: "hsl(34 33% 96%)",
+        borderTop: "1px solid hsl(28 10% 86%)",
+      }}
+    >
+      <div className="mx-auto max-w-[1120px] px-6 sm:px-8">
+        <div className="mb-14 grid gap-12 md:grid-cols-2 lg:grid-cols-5">
+          {/* Brand */}
+          <div className="lg:col-span-2">
+            <div className="mb-4 flex items-center gap-2.5">
+              <img
+                src={salesosLogo}
+                alt="SalesOS Logo"
+                className="h-8 w-8 rounded-lg"
+                width={32}
+                height={32}
+              />
+              <span className="text-lg font-semibold">
+                <span style={{ color: "hsl(28 10% 14%)" }}>Sales</span>
+                <span style={{ color: "hsl(14 59% 52%)" }}>OS</span>
+              </span>
             </div>
-
-            {/* Product */}
-            <div>
-              <h4 className="font-semibold text-sm mb-4 text-foreground">Product</h4>
-              <ul className="space-y-3">
-                {footerLinks.product.map((link) => (
-                  <li key={link.label}>
-                    {link.href.startsWith('/') ? (
-                      <Link 
-                        to={link.href} 
-                        className="text-sm text-muted-foreground hover:text-primary transition-colors duration-150"
-                      >
-                        {link.label}
-                      </Link>
-                    ) : (
-                      <a 
-                        href={link.href} 
-                        className="text-sm text-muted-foreground hover:text-primary transition-colors duration-150"
-                      >
-                        {link.label}
-                      </a>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Resources */}
-            <div>
-              <h4 className="font-semibold text-sm mb-4 text-foreground">Resources</h4>
-              <ul className="space-y-3">
-                {footerLinks.resources.map((link) => (
-                  <li key={link.label}>
-                    <Link 
-                      to={link.href} 
-                      className="text-sm text-muted-foreground hover:text-primary transition-colors duration-150"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Legal */}
-            <div>
-              <h4 className="font-semibold text-sm mb-4 text-foreground">Legal</h4>
-              <ul className="space-y-3">
-                {footerLinks.legal.map((link) => (
-                  <li key={link.label}>
-                    <Link 
-                      to={link.href} 
-                      className="text-sm text-muted-foreground hover:text-primary transition-colors duration-150"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          {/* Bottom */}
-          <div className="pt-8 border-t flex flex-col items-center gap-4" style={{ borderColor: "hsl(0 0% 100% / 0.07)" }}>
-            <a href="https://sellwithboost.com" target="_blank" rel="noopener noreferrer">
-              <img src="https://sellwithboost.com/badge/listing-dark.svg" alt="Listed on Sell With Boost" className="h-10 w-auto" width={160} height={40} loading="lazy" />
-            </a>
-            <p className="text-sm text-muted-foreground/70 text-center">
-              © {new Date().getFullYear()} BDØT Industries LLC. All rights reserved.
+            <p
+              className="max-w-xs text-[15px] leading-relaxed"
+              style={{ color: "hsl(28 6% 38%)" }}
+            >
+              Plain-English lead discovery and outbound workflow software for B2B
+              teams that want to move from prospecting to outreach faster.
             </p>
+
+            <div className="mt-6 flex items-center gap-3">
+              <span className="dot-ornament" aria-hidden="true">
+                <span /><span /><span /><span />
+              </span>
+              <span className="font-mono text-[11px] uppercase tracking-wider" style={{ color: "hsl(28 6% 48%)" }}>
+                Built in NYC
+              </span>
+            </div>
           </div>
+
+          {/* Product */}
+          <div>
+            <h4 className="eyebrow-muted mb-5">Product</h4>
+            <ul className="space-y-3">
+              {footerLinks.product.map((link) => (
+                <li key={link.label}>
+                  {link.href.startsWith('/') ? (
+                    <Link
+                      to={link.href}
+                      className="text-[15px] transition-colors duration-150"
+                      style={{ color: "hsl(28 8% 26%)" }}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = "hsl(14 59% 52%)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = "hsl(28 8% 26%)")}
+                    >
+                      {link.label}
+                    </Link>
+                  ) : (
+                    <a
+                      href={link.href}
+                      className="text-[15px] transition-colors duration-150"
+                      style={{ color: "hsl(28 8% 26%)" }}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = "hsl(14 59% 52%)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = "hsl(28 8% 26%)")}
+                    >
+                      {link.label}
+                    </a>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Resources */}
+          <div>
+            <h4 className="eyebrow-muted mb-5">Resources</h4>
+            <ul className="space-y-3">
+              {footerLinks.resources.map((link) => (
+                <li key={link.label}>
+                  <Link
+                    to={link.href}
+                    className="text-[15px] transition-colors duration-150"
+                    style={{ color: "hsl(28 8% 26%)" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "hsl(14 59% 52%)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "hsl(28 8% 26%)")}
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Legal */}
+          <div>
+            <h4 className="eyebrow-muted mb-5">Legal</h4>
+            <ul className="space-y-3">
+              {footerLinks.legal.map((link) => (
+                <li key={link.label}>
+                  <Link
+                    to={link.href}
+                    className="text-[15px] transition-colors duration-150"
+                    style={{ color: "hsl(28 8% 26%)" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "hsl(14 59% 52%)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "hsl(28 8% 26%)")}
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        {/* Bottom */}
+        <div
+          className="flex flex-col items-center gap-4 pt-8"
+          style={{ borderTop: "1px solid hsl(28 10% 88%)" }}
+        >
+          <a href="https://sellwithboost.com" target="_blank" rel="noopener noreferrer">
+            <img
+              src="https://sellwithboost.com/badge/listing-dark.svg"
+              alt="Listed on Sell With Boost"
+              className="h-10 w-auto opacity-80"
+              width={160}
+              height={40}
+              loading="lazy"
+            />
+          </a>
+          <p className="font-mono text-[11px] uppercase tracking-wider" style={{ color: "hsl(28 6% 48%)" }}>
+            © {new Date().getFullYear()} BDØT Industries LLC · All rights reserved
+          </p>
         </div>
       </div>
     </footer>

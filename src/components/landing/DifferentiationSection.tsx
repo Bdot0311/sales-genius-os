@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const rows = [
@@ -10,7 +9,7 @@ const rows = [
   },
   {
     legacy: "Boolean search that takes 45 minutes to configure",
-    truth: "Plain English. Leads in under 2 minutes.",
+    truth: "Plain English. Leads in under two minutes.",
   },
   {
     legacy: "A data tool that stops at the export",
@@ -30,138 +29,119 @@ export const DifferentiationSection = () => {
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
+        if (entry.isIntersecting) setIsVisible(true);
       },
       { threshold: 0.2 }
     );
-
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
-
+    if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
   }, []);
 
   return (
     <section
       ref={ref}
-      className="relative py-24 md:py-32 overflow-hidden"
-      style={{ background: "hsl(0,0%,3%)" }}
+      className="relative overflow-hidden py-24 sm:py-32"
+      style={{ background: "hsl(34 33% 96%)" }}
       aria-labelledby="differentiation-heading"
     >
-      {/* Top hairline */}
-      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "hsl(261 75% 50% / 0.18)" }} />
+      <div className="absolute top-0 left-0 right-0 hairline" />
 
-      {/* Purple glow — right */}
-      <div
-        className="absolute top-1/2 right-0 -translate-y-1/2 w-[450px] h-[550px] pointer-events-none"
-        style={{
-          background: "radial-gradient(ellipse at right, hsl(261 75% 55% / 0.08) 0%, transparent 65%)",
-        }}
-        aria-hidden="true"
-      />
+      <div className="relative z-10 mx-auto max-w-[1120px] px-6 sm:px-8">
+        <div className="mx-auto max-w-3xl">
+          <div className="mb-8 flex items-center gap-3">
+            <span className="eyebrow">04 / vs Apollo</span>
+            <span className="hairline w-12" />
+          </div>
 
-      <div className="container relative z-10 mx-auto px-6">
-        <div className="max-w-3xl mx-auto">
-          {/* Section label */}
-          <p
-            className="text-[10px] font-medium uppercase tracking-[0.28em] mb-8"
-            style={{ color: "hsl(261 75% 60%)" }}
-          >
-            Why not Apollo?
-          </p>
-
-          {/* Headline */}
           <h2
             id="differentiation-heading"
-            className={`font-display mb-14 transition-all duration-700 ${
-              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            className={`font-display mb-16 transition-all duration-700 ${
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
             }`}
             style={{
-              fontSize: "clamp(2.4rem, 5vw, 4rem)",
-              fontWeight: 800,
-              lineHeight: 1.08,
-              letterSpacing: "-0.02em",
-              color: "hsl(0 0% 95%)",
+              fontSize: "clamp(2.2rem, 5vw, 3.75rem)",
+              fontWeight: 400,
+              lineHeight: 1.05,
+              letterSpacing: "-0.025em",
+              color: "hsl(28 10% 14%)",
             }}
           >
-            Apollo sells you contacts.
-            <br />
-            <span
-              className="italic"
-              style={{
-                background: "linear-gradient(135deg, hsl(261 75% 72%) 0%, hsl(280 80% 68%) 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
-            >
+            Apollo sells you contacts.{" "}
+            <span className="italic" style={{ color: "hsl(14 59% 52%)", fontWeight: 500 }}>
               We show you who to email next.
             </span>
           </h2>
 
-          {/* Comparison rows */}
           <div className="flex flex-col">
             {rows.map((row, index) => (
               <div
                 key={index}
-                className={`flex items-center gap-6 py-5 border-b border-border/10 transition-all duration-700 ${
-                  isVisible
-                    ? "opacity-100 translate-y-0"
-                    : "opacity-0 translate-y-3"
+                className={`grid grid-cols-12 items-center gap-4 border-t py-6 transition-all duration-700 ${
+                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
                 }`}
-                style={{ transitionDelay: `${index * 80 + 200}ms` }}
+                style={{
+                  transitionDelay: `${index * 80 + 160}ms`,
+                  borderColor: "hsl(28 10% 88%)",
+                }}
               >
-                {/* Legacy / crossed-out side */}
-                <span className="flex-1 text-sm text-muted-foreground/40 line-through leading-relaxed">
+                <span
+                  className="col-span-12 text-[15px] leading-relaxed line-through sm:col-span-5"
+                  style={{ color: "hsl(28 6% 60%)" }}
+                >
                   {row.legacy}
                 </span>
 
-                {/* Arrow */}
                 <ArrowRight
-                  className="flex-shrink-0 w-4 h-4"
-                  style={{ color: "hsl(261 75% 50% / 0.5)" }}
+                  className="col-span-12 hidden h-4 w-4 sm:col-span-1 sm:block"
+                  style={{ color: "hsl(14 59% 52%)" }}
                   aria-hidden="true"
                 />
 
-                {/* SalesOS truth */}
                 <span
-                  className="flex-1 text-sm font-medium leading-relaxed"
-                  style={{ color: "hsl(261 75% 72%)" }}
+                  className="col-span-12 text-[16px] font-medium leading-relaxed sm:col-span-6"
+                  style={{ color: "hsl(28 10% 14%)" }}
                 >
                   {row.truth}
                 </span>
               </div>
             ))}
+            <div className="hairline" />
           </div>
 
-          {/* CTA */}
           <div
             className={`mt-12 flex flex-col items-start gap-3 transition-all duration-700 ${
-              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
             }`}
             style={{ transitionDelay: "500ms" }}
           >
-            <Button
-              variant="outline"
-              size="lg"
+            <button
               onClick={() => navigate("/pricing")}
-              className="group"
+              className="inline-flex h-[52px] items-center gap-2 rounded-full border px-7 text-[15px] font-medium transition-colors duration-200 group"
+              style={{
+                borderColor: "hsl(28 10% 22%)",
+                color: "hsl(28 10% 14%)",
+                background: "transparent",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "hsl(14 59% 52%)";
+                e.currentTarget.style.color = "hsl(14 59% 52%)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "hsl(28 10% 22%)";
+                e.currentTarget.style.color = "hsl(28 10% 14%)";
+              }}
             >
               See how it stacks up
-              <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-0.5" />
-            </Button>
-            <p className="text-xs text-muted-foreground/50">
+              <ArrowUpRight className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+            </button>
+            <p className="text-sm" style={{ color: "hsl(28 6% 48%)" }}>
               No credit card · Cancel anytime
             </p>
           </div>
         </div>
       </div>
 
-      {/* Bottom hairline */}
-      <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: "hsl(261 75% 50% / 0.18)" }} />
+      <div className="absolute bottom-0 left-0 right-0 hairline" />
     </section>
   );
 };

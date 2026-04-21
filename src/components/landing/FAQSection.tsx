@@ -6,6 +6,7 @@ import {
 } from "@/components/ui/accordion";
 import { FAQSchema } from "@/components/seo";
 import { useEffect, useRef, useState } from "react";
+import { ArrowUpRight } from "lucide-react";
 
 const faqs = [
   {
@@ -69,65 +70,48 @@ export const FAQSection = () => {
     <section
       ref={sectionRef}
       id="faq"
-      className="relative py-24 md:py-36 overflow-hidden"
-      style={{ background: "hsl(0,0%,3%)" }}
+      className="relative overflow-hidden py-24 sm:py-36"
+      style={{ background: "hsl(34 33% 96%)" }}
       aria-labelledby="faq-heading"
     >
-      {/* Top hairline */}
-      <div
-        className="absolute top-0 left-0 right-0 h-px"
-        style={{ background: "hsl(261 75% 50% / 0.18)" }}
-      />
-
-      {/* Purple glow — left */}
-      <div
-        className="absolute top-1/2 left-0 -translate-y-1/2 w-[400px] h-[500px] pointer-events-none"
-        style={{
-          background: "radial-gradient(ellipse at left, hsl(261 75% 55% / 0.07) 0%, transparent 65%)",
-        }}
-        aria-hidden="true"
-      />
+      <div className="absolute top-0 left-0 right-0 hairline" />
 
       <FAQSchema faqs={faqs} />
 
-      <div className="container relative z-10 mx-auto px-6">
-        <div className="max-w-[720px] mx-auto">
-
+      <div className="relative z-10 mx-auto max-w-[1120px] px-6 sm:px-8">
+        <div className="mx-auto max-w-[760px]">
           {/* Header */}
           <div
             className={`mb-14 transition-all duration-700 ${
-              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
             }`}
           >
-            <p
-              className="text-[10px] uppercase tracking-[0.28em] mb-5 font-medium"
-              style={{ color: "hsl(261 75% 60%)" }}
-            >
-              FAQ
-            </p>
+            <div className="mb-6 flex items-center gap-3">
+              <span className="eyebrow">05 / FAQ</span>
+              <span className="hairline w-12" />
+            </div>
             <h2
               id="faq-heading"
               className="font-display"
               style={{
-                fontSize: "clamp(2rem, 4vw, 3.2rem)",
-                fontWeight: 800,
+                fontSize: "clamp(2rem, 4.2vw, 3.2rem)",
+                fontWeight: 400,
                 lineHeight: 1.1,
-                letterSpacing: "-0.02em",
-                color: "hsl(0 0% 93%)",
+                letterSpacing: "-0.022em",
+                color: "hsl(28 10% 14%)",
               }}
             >
-              Questions we actually
-              <br />
-              <span className="italic" style={{ color: "hsl(0 0% 55%)" }}>
-                get asked.
+              Questions we{" "}
+              <span className="italic" style={{ color: "hsl(14 59% 52%)", fontWeight: 500 }}>
+                actually get asked.
               </span>
             </h2>
           </div>
 
-          {/* Accordion */}
+          {/* Accordion — thin 1px rules, no boxes */}
           <div
             className={`transition-all duration-700 ${
-              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
             }`}
             style={{ transitionDelay: "150ms" }}
           >
@@ -137,21 +121,21 @@ export const FAQSection = () => {
                   key={index}
                   value={`item-${index}`}
                   className="border-b"
-                  style={{ borderColor: "hsl(0 0% 100% / 0.07)" }}
+                  style={{ borderColor: "hsl(28 10% 88%)" }}
                 >
                   <AccordionTrigger
-                    className="text-left py-5 hover:no-underline transition-colors duration-200 group"
-                    style={{ color: "hsl(0 0% 80%)" }}
+                    className="group py-6 text-left transition-colors duration-200 hover:no-underline"
+                    style={{ color: "hsl(28 10% 14%)" }}
                   >
                     <span
-                      className="font-medium text-[15px] leading-snug group-hover:text-white transition-colors duration-200"
+                      className="pr-4 text-[17px] font-medium leading-snug transition-colors duration-200 group-hover:text-[hsl(14_59%_52%)]"
                     >
                       {faq.question}
                     </span>
                   </AccordionTrigger>
                   <AccordionContent
-                    className="pb-5 text-sm leading-relaxed"
-                    style={{ color: "hsl(0 0% 100% / 0.45)" }}
+                    className="pb-6 text-[15.5px] leading-relaxed"
+                    style={{ color: "hsl(28 6% 38%)" }}
                   >
                     {faq.answer}
                   </AccordionContent>
@@ -161,38 +145,27 @@ export const FAQSection = () => {
           </div>
 
           <div
-            className={`mt-10 transition-all duration-700 ${
+            className={`mt-12 transition-all duration-700 ${
               isVisible ? "opacity-100" : "opacity-0"
             }`}
             style={{ transitionDelay: "300ms" }}
           >
-            <p className="text-sm" style={{ color: "hsl(0 0% 100% / 0.3)" }}>
+            <p className="text-[15px]" style={{ color: "hsl(28 6% 38%)" }}>
               Still have questions?{" "}
               <a
                 href="/help"
-                className="transition-colors duration-150"
-                style={{ color: "hsl(261 75% 65%)" }}
-                onMouseEnter={(e) =>
-                  ((e.target as HTMLElement).style.color =
-                    "hsl(261 75% 80%)")
-                }
-                onMouseLeave={(e) =>
-                  ((e.target as HTMLElement).style.color =
-                    "hsl(261 75% 65%)")
-                }
+                className="cta-ghost inline-flex items-center gap-1 font-medium"
+                style={{ color: "hsl(14 59% 52%)" }}
               >
-                Talk to us →
+                Talk to us
+                <ArrowUpRight className="h-3.5 w-3.5" />
               </a>
             </p>
           </div>
         </div>
       </div>
 
-      {/* Bottom hairline */}
-      <div
-        className="absolute bottom-0 left-0 right-0 h-px"
-        style={{ background: "hsl(261 75% 50% / 0.18)" }}
-      />
+      <div className="absolute bottom-0 left-0 right-0 hairline" />
     </section>
   );
 };

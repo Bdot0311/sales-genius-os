@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export const FinalCTA = () => {
@@ -21,105 +21,89 @@ export const FinalCTA = () => {
   return (
     <section
       ref={ref}
-      className="relative py-40 md:py-52 overflow-hidden"
-      style={{ background: "hsl(0,0%,3%)" }}
+      className="relative overflow-hidden py-36 sm:py-52"
+      style={{ background: "hsl(34 33% 96%)" }}
       aria-labelledby="final-cta-heading"
     >
-      {/* Radial glow — strong purple */}
+      {/* Single warm sunrise wash at the base */}
       <div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] rounded-full pointer-events-none"
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[60%]"
         style={{
           background:
-            "radial-gradient(circle, hsl(261 75% 50% / 0.14) 0%, hsl(280 70% 55% / 0.06) 40%, transparent 65%)",
-          filter: "blur(60px)",
+            "radial-gradient(ellipse 70% 100% at 50% 100%, hsl(14 75% 75% / 0.45) 0%, hsl(30 75% 85% / 0.2) 40%, transparent 75%)",
         }}
         aria-hidden="true"
       />
 
-      {/* Top hairline — purple */}
-      <div
-        className="absolute top-0 left-0 right-0 h-px"
-        style={{ background: "hsl(261 75% 50% / 0.18)" }}
-      />
+      <div className="absolute top-0 left-0 right-0 hairline" />
 
-      <div className="container relative z-10 mx-auto px-6">
+      <div className="relative z-10 mx-auto max-w-[1120px] px-6 sm:px-8">
         <div
           className={`flex flex-col items-center text-center transition-all duration-700 ${
-            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
           }`}
         >
-          {/* Label */}
-          <p
-            className="text-[10px] uppercase tracking-[0.28em] mb-8 font-medium"
-            style={{ color: "hsl(261 75% 60%)" }}
-          >
-            Ready when you are
-          </p>
+          <div className="mb-10 flex items-center gap-3">
+            <span className="hairline w-10" />
+            <span className="eyebrow">Ready when you are</span>
+            <span className="hairline w-10" />
+          </div>
 
-          {/* Headline — Playfair Display */}
           <h2
             id="final-cta-heading"
-            className="font-display mb-6"
+            className="font-display mb-8 max-w-[14ch]"
             style={{
-              fontSize: "clamp(3rem, 8vw, 7rem)",
-              fontWeight: 800,
-              lineHeight: 1.04,
-              letterSpacing: "-0.02em",
-              color: "hsl(0 0% 96%)",
+              fontSize: "clamp(2.6rem, 7vw, 5.5rem)",
+              fontWeight: 400,
+              lineHeight: 1.03,
+              letterSpacing: "-0.028em",
+              color: "hsl(28 10% 14%)",
             }}
           >
-            <span className="block">Every day you wait,</span>
-            <span
-              className="block italic"
-              style={{
-                background:
-                  "linear-gradient(135deg, hsl(261 75% 72%) 0%, hsl(280 80% 68%) 50%, hsl(261 75% 60%) 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
-            >
+            Every day you wait,{" "}
+            <span className="italic" style={{ color: "hsl(14 59% 52%)", fontWeight: 500 }}>
               your competitor doesn't.
             </span>
           </h2>
 
-          {/* Sub */}
           <p
-            className={`text-lg font-light max-w-md mx-auto mb-12 transition-all duration-700 delay-100 ${
-              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            className={`mx-auto mb-12 max-w-md text-[17px] leading-[1.6] transition-all duration-700 delay-100 ${
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
             }`}
-            style={{ color: "hsl(0 0% 100% / 0.35)" }}
+            style={{ color: "hsl(28 6% 38%)" }}
           >
-            See who's worth emailing in under 2 minutes. No list. No guesswork.
+            See who's worth emailing in under two minutes. No list. No guesswork.
           </p>
 
-          {/* CTA button */}
           <div
-            className={`transition-all duration-700 delay-200 ${
-              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            className={`flex flex-col items-center gap-5 transition-all duration-700 delay-200 sm:flex-row sm:gap-6 ${
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
             }`}
           >
             <button
               onClick={() => navigate("/auth")}
-              className="cta-pill-glow inline-flex items-center gap-2 px-10 rounded-full text-sm font-semibold text-white group"
-              style={{
-                height: "56px",
-                background:
-                  "linear-gradient(135deg, hsl(261 75% 60%) 0%, hsl(261 75% 50%) 100%)",
-              }}
+              className="cta-pill-glow inline-flex h-14 items-center gap-2 rounded-full px-10 text-[15px] font-semibold group"
               aria-label="Start for free"
             >
               Start for free
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform duration-200" />
+              <ArrowUpRight className="h-4 w-4 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
             </button>
 
-            <p
-              className="mt-4 text-xs"
-              style={{ color: "hsl(0 0% 100% / 0.2)" }}
+            <a
+              href="/pricing"
+              className="cta-ghost inline-flex items-center gap-1.5 text-[15px] font-medium"
             >
-              No credit card required · Plans from $39/mo · Cancel anytime
-            </p>
+              See plans
+              <ArrowUpRight className="h-4 w-4" />
+            </a>
           </div>
+
+          <p
+            className="mt-6 font-mono text-[11px] uppercase tracking-[0.2em]"
+            style={{ color: "hsl(28 6% 48%)" }}
+          >
+            No credit card · Plans from $39/mo · Cancel anytime
+          </p>
         </div>
       </div>
     </section>

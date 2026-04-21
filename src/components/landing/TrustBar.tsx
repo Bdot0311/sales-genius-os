@@ -11,31 +11,30 @@ const items = [
 
 export const TrustBar = () => (
   <section
-    className="py-10"
+    className="py-14"
     style={{
-      background: "hsl(0,0%,2.5%)",
-      borderTop: "1px solid hsl(261 75% 50% / 0.1)",
-      borderBottom: "1px solid hsl(261 75% 50% / 0.1)",
+      background: "hsl(34 25% 93%)",
+      borderTop: "1px solid hsl(28 10% 86%)",
+      borderBottom: "1px solid hsl(28 10% 86%)",
     }}
     aria-label="Trust and security signals"
   >
-    <div className="container mx-auto px-6">
-      <p
-        className="text-center mb-6 text-[10px] uppercase tracking-[0.25em] font-medium"
-        style={{ color: "hsl(261 75% 60% / 0.5)" }}
-      >
-        Built with security and honesty in mind
-      </p>
-      <div className="flex flex-wrap justify-center items-center gap-x-8 gap-y-3">
+    <div className="mx-auto max-w-[1120px] px-6 sm:px-8">
+      <div className="mb-8 flex items-center justify-center gap-3">
+        <span className="hairline w-10" />
+        <span className="eyebrow-muted">Built with honesty & security</span>
+        <span className="hairline w-10" />
+      </div>
+      <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
         {items.map(({ Icon, label }) => (
           <div key={label} className="flex items-center gap-2">
             <Icon
-              className="w-3.5 h-3.5 shrink-0"
-              style={{ color: "hsl(261 75% 62%)" }}
+              className="h-3.5 w-3.5 shrink-0"
+              style={{ color: "hsl(14 59% 52%)" }}
             />
             <span
-              className="text-xs font-medium"
-              style={{ color: "hsl(0 0% 100% / 0.4)" }}
+              className="text-sm font-medium"
+              style={{ color: "hsl(28 8% 28%)" }}
             >
               {label}
             </span>

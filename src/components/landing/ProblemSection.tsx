@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 
 const lines = [
-  { text: "You spend Monday building a list.", dim: false },
-  { text: "Tuesday writing emails.", dim: false },
-  { text: "Wednesday realizing half are wrong-fit.", dim: true },
+  { text: "You spend Monday building a list.", tone: "ink" as const },
+  { text: "Tuesday writing emails.", tone: "muted" as const },
+  { text: "Wednesday realizing half are wrong-fit.", tone: "accent" as const },
 ];
 
 export const ProblemSection = () => {
@@ -24,57 +24,41 @@ export const ProblemSection = () => {
   return (
     <section
       ref={ref}
-      className="relative py-24 md:py-32 overflow-hidden"
-      style={{ background: "hsl(0,0%,3%)" }}
+      className="relative overflow-hidden py-24 sm:py-32"
+      style={{ background: "hsl(34 33% 96%)" }}
       aria-labelledby="problem-heading"
     >
       {/* Top hairline */}
-      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "hsl(261 75% 50% / 0.18)" }} />
+      <div className="absolute top-0 left-0 right-0 hairline" />
 
-      {/* Purple glow blob — upper left */}
-      <div
-        className="absolute top-0 left-0 w-[500px] h-[500px] pointer-events-none"
-        style={{
-          background: "radial-gradient(ellipse at top left, hsl(261 75% 55% / 0.08) 0%, transparent 65%)",
-        }}
-        aria-hidden="true"
-      />
-
-      <div className="container relative z-10 mx-auto px-6">
-        <div className="max-w-4xl mx-auto text-center">
-          {/* Section label */}
-          <p
-            className="text-[10px] font-medium uppercase tracking-[0.28em] mb-10"
-            style={{ color: "hsl(261 75% 60%)" }}
-          >
-            The Problem
-          </p>
+      <div className="relative z-10 mx-auto max-w-[1120px] px-6 sm:px-8">
+        <div className="mx-auto max-w-3xl text-center">
+          {/* Eyebrow with ornament */}
+          <div className="mb-10 flex items-center justify-center gap-3">
+            <span className="hairline w-8" />
+            <span className="eyebrow">The problem</span>
+            <span className="hairline w-8" />
+          </div>
 
           {/* Staggered headline lines */}
-          <h2 id="problem-heading" className="space-y-1 mb-12">
+          <h2 id="problem-heading" className="space-y-2">
             {lines.map((line, index) => (
               <span
                 key={index}
                 className={`block font-display transition-all duration-700 ${
-                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
                 }`}
                 style={{
-                  transitionDelay: `${index * 100}ms`,
-                  fontSize: "clamp(2rem, 5vw, 3.8rem)",
-                  fontWeight: 800,
+                  transitionDelay: `${index * 120}ms`,
+                  fontSize: "clamp(1.9rem, 4.6vw, 3.25rem)",
+                  fontWeight: 400,
                   lineHeight: 1.1,
-                  letterSpacing: "-0.02em",
-                  ...(index === 2
-                    ? {
-                        background:
-                          "linear-gradient(135deg, hsl(261 75% 72%) 0%, hsl(280 80% 68%) 100%)",
-                        WebkitBackgroundClip: "text",
-                        WebkitTextFillColor: "transparent",
-                        backgroundClip: "text",
-                      }
-                    : {
-                        color: index === 1 ? "hsl(0 0% 65%)" : "hsl(0 0% 90%)",
-                      }),
+                  letterSpacing: "-0.022em",
+                  fontStyle: line.tone === "accent" ? "italic" : "normal",
+                  color:
+                    line.tone === "accent" ? "hsl(14 59% 52%)" :
+                    line.tone === "muted"  ? "hsl(28 6% 52%)" :
+                                             "hsl(28 10% 14%)",
                 }}
               >
                 {line.text}
@@ -82,37 +66,38 @@ export const ProblemSection = () => {
             ))}
           </h2>
 
-          {/* Subtext */}
-          <p
-            className={`text-base font-light max-w-xl mx-auto leading-relaxed transition-all duration-700 ${
-              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-            }`}
-            style={{
-              transitionDelay: "400ms",
-              color: "hsl(0 0% 100% / 0.38)",
-            }}
-          >
-            The average outbound team spends 40% of their week on research.
-            SalesOS cuts that to under 20 minutes — and every contact has a
-            verified email ready to send.
-          </p>
-
-          {/* Divider */}
+          {/* Four-dot ornament */}
           <div
-            className={`mt-16 h-px mx-auto max-w-xs transition-all duration-700 ${
+            className={`mt-12 flex items-center justify-center transition-all duration-700 ${
               isVisible ? "opacity-100" : "opacity-0"
             }`}
-            style={{
-              transitionDelay: "500ms",
-              background: "linear-gradient(to right, transparent, hsl(261 75% 50% / 0.3), transparent)",
-            }}
+            style={{ transitionDelay: "380ms" }}
             aria-hidden="true"
-          />
+          >
+            <span className="dot-ornament">
+              <span /><span /><span /><span />
+            </span>
+          </div>
+
+          {/* Subtext */}
+          <p
+            className={`mx-auto mt-12 max-w-xl text-[17px] leading-[1.6] transition-all duration-700 ${
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
+            }`}
+            style={{
+              transitionDelay: "460ms",
+              color: "hsl(28 6% 38%)",
+            }}
+          >
+            The average outbound team spends 40% of its week on research. SalesOS
+            cuts that to under twenty minutes — and every contact arrives with a
+            verified email ready to send.
+          </p>
         </div>
       </div>
 
       {/* Bottom hairline */}
-      <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: "hsl(261 75% 50% / 0.18)" }} />
+      <div className="absolute bottom-0 left-0 right-0 hairline" />
     </section>
   );
 };

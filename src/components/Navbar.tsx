@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Menu, X, ArrowRight } from "lucide-react";
+import { Menu, X, ArrowUpRight } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 
@@ -65,108 +65,105 @@ export const Navbar = () => {
       }`}
       style={{
         top: 'env(safe-area-inset-top, 0px)',
-        background: isScrolled ? 'hsl(0 0% 3% / 0.92)' : 'transparent',
-        borderColor: isScrolled ? 'hsl(0 0% 100% / 0.07)' : 'transparent',
+        background: isScrolled ? 'hsl(34 33% 96% / 0.85)' : 'transparent',
+        borderColor: isScrolled ? 'hsl(28 10% 86%)' : 'transparent',
       }}
       role="navigation"
       aria-label="Main navigation"
     >
-      <div className="container mx-auto px-4 sm:px-6">
-        <div className="max-w-[1120px] mx-auto">
-          <div className="flex items-center justify-between h-14 sm:h-16">
+      <div className="mx-auto max-w-[1120px] px-5 sm:px-8">
+        <div className="flex items-center justify-between h-16 sm:h-18">
 
-            {/* Logo */}
-            <div
-              className="flex items-center gap-2 sm:gap-2.5 cursor-pointer flex-shrink-0"
-              onClick={() => navigate('/')}
-              role="link"
-              tabIndex={0}
-              onKeyDown={(e) => e.key === 'Enter' && navigate('/')}
-              aria-label="SalesOS home"
-            >
-              {whiteLabelSettings?.logo_url ? (
+          {/* Logo */}
+          <div
+            className="flex items-center gap-2 sm:gap-2.5 cursor-pointer flex-shrink-0"
+            onClick={() => navigate('/')}
+            role="link"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === 'Enter' && navigate('/')}
+            aria-label="SalesOS home"
+          >
+            {whiteLabelSettings?.logo_url ? (
+              <img
+                src={whiteLabelSettings.logo_url}
+                alt={whiteLabelSettings.company_name || "Logo"}
+                className="h-7 sm:h-8"
+              />
+            ) : (
+              <>
                 <img
-                  src={whiteLabelSettings.logo_url}
-                  alt={whiteLabelSettings.company_name || "Logo"}
-                  className="h-7 sm:h-8"
+                  src={LOGO_URL}
+                  alt="SalesOS Logo"
+                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-contain"
+                  width={32}
+                  height={32}
+                  loading="eager"
+                  fetchPriority="high"
                 />
-              ) : (
-                <>
-                  <img
-                    src={LOGO_URL}
-                    alt="SalesOS Logo"
-                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-contain"
-                    width={32}
-                    height={32}
-                    loading="eager"
-                    fetchPriority="high"
-                  />
-                  <span className="text-base sm:text-lg font-semibold whitespace-nowrap">
-                    <span className="text-foreground">{whiteLabelSettings?.company_name || "Sales"}</span>
-                    {!whiteLabelSettings?.company_name && (
-                      <span className="text-primary">OS</span>
-                    )}
+                <span className="text-base sm:text-lg font-semibold whitespace-nowrap tracking-tight">
+                  <span style={{ color: "hsl(28 10% 14%)" }}>
+                    {whiteLabelSettings?.company_name || "Sales"}
                   </span>
-                </>
-              )}
-            </div>
-
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center gap-0.5">
-              {navLinks.map((link) => (
-                <button
-                  key={link.label}
-                  onClick={() => handleNavigation(link.path)}
-                  className="px-3 lg:px-4 py-2 text-sm transition-colors rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  style={{ color: 'hsl(0 0% 100% / 0.45)' }}
-                  onMouseEnter={e => (e.currentTarget.style.color = 'hsl(0 0% 100% / 0.85)')}
-                  onMouseLeave={e => (e.currentTarget.style.color = 'hsl(0 0% 100% / 0.45)')}
-                >
-                  {link.label}
-                </button>
-              ))}
-            </div>
-
-            {/* CTA Buttons */}
-            <div className="flex items-center gap-3">
-              {/* De-emphasized Login */}
-              <button
-                className="hidden md:block text-sm transition-colors"
-                style={{ color: 'hsl(0 0% 100% / 0.4)' }}
-                onMouseEnter={e => (e.currentTarget.style.color = 'hsl(0 0% 100% / 0.75)')}
-                onMouseLeave={e => (e.currentTarget.style.color = 'hsl(0 0% 100% / 0.4)')}
-                onClick={() => navigate("/auth")}
-              >
-                Log in
-              </button>
-
-              {/* Primary CTA — pill button */}
-              <button
-                className="hidden md:inline-flex items-center gap-1.5 px-5 rounded-full text-sm font-semibold text-white cta-pill-glow"
-                style={{
-                  height: '38px',
-                  background: 'linear-gradient(135deg, hsl(261 75% 60%) 0%, hsl(261 75% 50%) 100%)',
-                }}
-                onClick={() => navigate("/auth")}
-              >
-                Sign up
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-
-              {/* Mobile menu button */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="md:hidden w-9 h-9"
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                aria-expanded={isMenuOpen}
-                aria-label={isMenuOpen ? "Close menu" : "Open menu"}
-              >
-                {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-              </Button>
-            </div>
-
+                  {!whiteLabelSettings?.company_name && (
+                    <span style={{ color: "hsl(14 59% 52%)" }}>OS</span>
+                  )}
+                </span>
+              </>
+            )}
           </div>
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-1">
+            {navLinks.map((link) => (
+              <button
+                key={link.label}
+                onClick={() => handleNavigation(link.path)}
+                className="rounded-md px-3.5 py-2 text-[14px] font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(14_59%_59%)]/60"
+                style={{ color: 'hsl(28 8% 30%)' }}
+                onMouseEnter={e => (e.currentTarget.style.color = 'hsl(14 59% 52%)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'hsl(28 8% 30%)')}
+              >
+                {link.label}
+              </button>
+            ))}
+          </div>
+
+          {/* CTA Buttons */}
+          <div className="flex items-center gap-4">
+            <button
+              className="hidden md:block text-[14px] font-medium transition-colors"
+              style={{ color: 'hsl(28 6% 38%)' }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'hsl(28 10% 14%)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'hsl(28 6% 38%)')}
+              onClick={() => navigate("/auth")}
+            >
+              Log in
+            </button>
+
+            {/* Primary CTA — coral pill */}
+            <button
+              className="hidden md:inline-flex items-center gap-1.5 rounded-full px-5 text-[14px] font-semibold cta-pill-glow"
+              style={{ height: '40px' }}
+              onClick={() => navigate("/auth")}
+            >
+              Sign up
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </button>
+
+            {/* Mobile menu button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden w-9 h-9"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              aria-expanded={isMenuOpen}
+              aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+              style={{ color: 'hsl(28 10% 14%)' }}
+            >
+              {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </Button>
+          </div>
+
         </div>
       </div>
 
@@ -177,32 +174,45 @@ export const Navbar = () => {
         }`}
         role="menu"
       >
-        <div className="bg-background/95 backdrop-blur-md border-b border-border/40">
-          <div className="container mx-auto px-4 py-3 space-y-1">
+        <div
+          className="backdrop-blur-md"
+          style={{
+            background: "hsl(34 33% 96% / 0.96)",
+            borderBottom: "1px solid hsl(28 10% 86%)",
+          }}
+        >
+          <div className="container mx-auto px-5 py-3 space-y-1">
             {navLinks.map((link) => (
               <button
                 key={link.label}
                 onClick={() => handleNavigation(link.path)}
-                className="w-full text-left px-4 py-3 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors text-base"
+                className="w-full rounded-lg px-4 py-3 text-left text-[16px] font-medium transition-colors"
+                style={{ color: "hsl(28 8% 26%)" }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "hsl(14 59% 52%)")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "hsl(28 8% 26%)")}
                 role="menuitem"
               >
                 {link.label}
               </button>
             ))}
-            <div className="pt-3 border-t border-border/40 mt-3 flex flex-col gap-2">
-              <Button
-                className="w-full bg-foreground text-background hover:bg-foreground/90 font-medium"
+            <div
+              className="pt-4 mt-2 flex flex-col gap-2"
+              style={{ borderTop: "1px solid hsl(28 10% 88%)" }}
+            >
+              <button
+                className="cta-pill-glow inline-flex h-12 items-center justify-center gap-2 rounded-full text-[15px] font-semibold"
                 onClick={() => { navigate("/auth"); setIsMenuOpen(false); }}
               >
                 Start free
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
+                <ArrowUpRight className="h-4 w-4" />
+              </button>
               <Button
                 variant="ghost"
-                className="w-full text-muted-foreground"
+                className="w-full font-medium"
+                style={{ color: "hsl(28 6% 38%)" }}
                 onClick={() => { navigate("/auth"); setIsMenuOpen(false); }}
               >
-                Login
+                Log in
               </Button>
             </div>
           </div>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ArrowUpRight } from "lucide-react";
 
 export const FounderNoteSection = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -20,134 +21,155 @@ export const FounderNoteSection = () => {
   return (
     <section
       ref={ref}
-      className="relative py-28 md:py-40 overflow-hidden"
-      style={{ background: "hsl(0,0%,3%)" }}
+      className="relative overflow-hidden py-28 sm:py-40"
+      style={{ background: "hsl(34 33% 96%)" }}
       aria-labelledby="founder-note-heading"
     >
-      {/* Top hairline */}
-      <div
-        className="absolute top-0 left-0 right-0 h-px"
-        style={{ background: "hsl(261 75% 50% / 0.18)" }}
-      />
+      <div className="absolute top-0 left-0 right-0 hairline" />
 
-      {/* Purple glow — center */}
+      {/* Soft warm wash */}
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse 60% 50% at 50% 50%, hsl(261 75% 55% / 0.07) 0%, transparent 70%)",
+            "radial-gradient(ellipse 60% 50% at 50% 50%, hsl(14 75% 82% / 0.25) 0%, transparent 70%)",
         }}
         aria-hidden="true"
       />
 
-      <div className="container relative z-10 mx-auto px-6">
-        <div className="max-w-3xl mx-auto">
+      <div className="relative z-10 mx-auto max-w-[1120px] px-6 sm:px-8">
+        <div className="mx-auto max-w-3xl">
+          {/* Eyebrow */}
+          <div
+            className={`mb-10 flex items-center gap-3 transition-all duration-700 ${
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+            }`}
+          >
+            <span className="eyebrow">A letter</span>
+            <span className="hairline w-16" />
+            <span className="eyebrow-muted">From the founder</span>
+          </div>
 
           {/* Giant opening quotation mark */}
           <div
-            className={`font-display leading-none mb-4 select-none transition-all duration-700 ${
-              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+            className={`select-none font-display transition-all duration-700 ${
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
             }`}
             style={{
-              fontSize: "clamp(5rem, 12vw, 10rem)",
-              fontWeight: 800,
+              fontSize: "clamp(4rem, 10vw, 8rem)",
+              fontWeight: 400,
               fontStyle: "italic",
-              color: "hsl(261 75% 55% / 0.4)",
-              lineHeight: 0.8,
+              color: "hsl(14 59% 59% / 0.6)",
+              lineHeight: 0.6,
+              marginBottom: "0.25rem",
             }}
             aria-hidden="true"
           >
             "
           </div>
 
-          {/* Opening line — display scale */}
+          {/* Opening line */}
           <p
             id="founder-note-heading"
-            className={`font-display italic mb-10 transition-all duration-700 delay-100 ${
-              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
+            className={`font-display mb-10 transition-all duration-700 delay-100 ${
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
             }`}
             style={{
-              fontSize: "clamp(1.6rem, 3.5vw, 2.6rem)",
-              fontWeight: 700,
-              lineHeight: 1.2,
-              letterSpacing: "-0.01em",
-              color: "hsl(0 0% 90%)",
+              fontSize: "clamp(1.6rem, 3.2vw, 2.4rem)",
+              fontWeight: 400,
+              lineHeight: 1.25,
+              letterSpacing: "-0.018em",
+              color: "hsl(28 10% 14%)",
             }}
           >
-            I was paying $500/month for Apollo and still spending three hours a day on LinkedIn.
+            <span className="italic">I was paying $500 a month for Apollo</span> and
+            still spending three hours a day on LinkedIn.
           </p>
 
           {/* Body */}
           <div
-            className={`space-y-5 mb-12 transition-all duration-700 delay-200 ${
-              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            className={`mb-14 space-y-6 transition-all duration-700 delay-200 ${
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
             }`}
           >
-            <p
-              className="text-base leading-relaxed"
-              style={{ color: "hsl(0 0% 100% / 0.5)" }}
-            >
-              The data wasn't the problem. The workflow was. I'd export a list, paste it into a spreadsheet, score it manually, write emails one at a time, and track replies in a separate inbox. Four tools. Six context switches. Most of it was just overhead.
+            <p className="text-[17px] leading-[1.7]" style={{ color: "hsl(28 8% 26%)" }}>
+              The data wasn't the problem. The workflow was. I'd export a list,
+              paste it into a spreadsheet, score it by hand, write emails one at a
+              time, and track replies in a separate inbox. Four tools. Six context
+              switches. Most of it was overhead.
             </p>
-            <p
-              className="text-base leading-relaxed"
-              style={{ color: "hsl(0 0% 100% / 0.5)" }}
-            >
-              SalesOS is what I wanted to exist — one place to describe who I want to reach, see who's actually worth emailing, and write something worth reading. Not magic. Just the workflow that should have existed years ago.
+            <p className="text-[17px] leading-[1.7]" style={{ color: "hsl(28 8% 26%)" }}>
+              SalesOS is what I wanted to exist — one place to describe who I
+              want to reach, see who's actually worth emailing, and write
+              something worth reading. Not magic. Just the workflow that should
+              have existed years ago.
             </p>
           </div>
 
-          {/* Signature */}
+          {/* Signature line */}
           <div
             className={`transition-all duration-700 delay-300 ${
-              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
             }`}
           >
             <div
-              className="h-px mb-6 w-12"
-              style={{ background: "hsl(261 75% 55% / 0.4)" }}
+              className="mb-6 h-px w-16"
+              style={{ background: "hsl(14 59% 52%)" }}
             />
+
+            {/* Hand-drawn-feel signature glyph (SVG) */}
+            <svg
+              width="140"
+              height="44"
+              viewBox="0 0 140 44"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+              className="mb-4"
+              style={{ color: "hsl(28 10% 14%)" }}
+            >
+              <path
+                d="M4 28 C 12 6, 22 36, 30 18 C 36 4, 44 34, 54 16 C 62 2, 70 30, 80 14 C 90 -2, 98 32, 108 12 C 116 0, 126 24, 136 10"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+              />
+              <path
+                d="M8 36 L 128 36"
+                stroke="currentColor"
+                strokeWidth="1"
+                strokeLinecap="round"
+                opacity="0.2"
+              />
+            </svg>
+
             <div className="flex items-center gap-3">
-              {/* Founder avatar — swap src for a real photo when ready */}
               <div
-                className="w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-sm font-bold text-white select-none"
-                style={{
-                  background:
-                    "linear-gradient(135deg, hsl(261 75% 55%), hsl(280 80% 65%))",
-                }}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white"
+                style={{ background: "hsl(14 59% 52%)" }}
                 aria-hidden="true"
               >
                 B
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <p
-                    className="text-sm font-medium"
-                    style={{ color: "hsl(0 0% 70%)" }}
-                  >
-                    Brandon, Founder of SalesOS
+                  <p className="text-sm font-medium" style={{ color: "hsl(28 10% 14%)" }}>
+                    Brandon — Founder of SalesOS
                   </p>
                   <a
                     href="https://www.linkedin.com/in/buildwitbrandon"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs transition-colors duration-200"
-                    style={{ color: "hsl(261 75% 55% / 0.55)" }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.color = "hsl(261 75% 72%)")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.color = "hsl(261 75% 55% / 0.55)")
-                    }
+                    className="inline-flex items-center gap-1 text-xs font-medium transition-colors"
+                    style={{ color: "hsl(14 59% 52%)" }}
                     aria-label="Brandon on LinkedIn"
                   >
-                    ↗ LinkedIn
+                    LinkedIn <ArrowUpRight className="h-3 w-3" />
                   </a>
                 </div>
-                <p
-                  className="text-xs mt-0.5"
-                  style={{ color: "hsl(0 0% 100% / 0.25)" }}
-                >
+                <p className="mt-0.5 font-mono text-[11px] uppercase tracking-wider" style={{ color: "hsl(28 6% 48%)" }}>
                   Built in NYC · Launched 2026
                 </p>
               </div>
@@ -156,45 +178,32 @@ export const FounderNoteSection = () => {
 
           {/* CTAs */}
           <div
-            className={`mt-10 flex items-center gap-6 transition-all duration-700 delay-[400ms] ${
+            className={`mt-12 flex flex-wrap items-center gap-x-8 gap-y-3 transition-all duration-700 delay-[400ms] ${
               isVisible ? "opacity-100" : "opacity-0"
             }`}
           >
             <button
               onClick={() => navigate("/auth")}
-              className="text-sm font-medium transition-colors duration-200"
-              style={{ color: "hsl(261 75% 65%)" }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.color = "hsl(261 75% 80%)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.color = "hsl(261 75% 65%)")
-              }
+              className="cta-ghost inline-flex items-center gap-1.5 text-[15px] font-medium"
             >
-              Try it free →
+              Try it free
+              <ArrowUpRight className="h-4 w-4" />
             </button>
             <button
               onClick={() => navigate("/pricing")}
-              className="text-sm transition-colors duration-200"
-              style={{ color: "hsl(0 0% 100% / 0.3)" }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.color = "hsl(0 0% 100% / 0.6)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.color = "hsl(0 0% 100% / 0.3)")
-              }
+              className="inline-flex items-center gap-1.5 text-[15px] transition-colors duration-200"
+              style={{ color: "hsl(28 6% 48%)" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "hsl(28 10% 14%)")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "hsl(28 6% 48%)")}
             >
-              View plans →
+              View plans
+              <ArrowUpRight className="h-4 w-4" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Bottom hairline */}
-      <div
-        className="absolute bottom-0 left-0 right-0 h-px"
-        style={{ background: "hsl(261 75% 50% / 0.18)" }}
-      />
+      <div className="absolute bottom-0 left-0 right-0 hairline" />
     </section>
   );
 };

@@ -1,86 +1,63 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense } from "react";
 import { IntegrationStrip } from "@/components/landing/IntegrationLogos";
 
 const DashboardMockup = lazy(() => import("@/components/landing/DashboardMockup"));
 
 export const ProductShowcase = () => {
-  const [hovered, setHovered] = useState(false);
-
   return (
     <section
-      className="relative overflow-hidden pb-4 sm:pb-0"
-      style={{ background: "hsl(0,0%,3%)" }}
+      className="relative overflow-hidden"
+      style={{ background: "hsl(34 33% 96%)" }}
       aria-label="Product preview"
     >
-      <div
-        className="absolute top-0 left-0 right-0 z-10 h-24 pointer-events-none"
-        style={{
-          background: "linear-gradient(to bottom, hsl(0,0%,3%), transparent)",
-        }}
-        aria-hidden="true"
-      />
+      <div className="mx-auto w-full max-w-[1120px] px-6 sm:px-8">
+        {/* Eyebrow row */}
+        <div className="flex items-center justify-center gap-3 pt-6 sm:pt-10">
+          <span className="hairline w-10" />
+          <span className="eyebrow-muted">The platform</span>
+          <span className="hairline w-10" />
+        </div>
 
-      <div className="container mx-auto px-5 sm:px-8 lg:px-12">
-        <p className="pt-6 mb-6 text-center text-xs uppercase tracking-[0.25em] text-white/25 sm:pt-8 sm:mb-8">
-          The platform
-        </p>
-
-        <div
-          className="relative mx-auto w-full max-w-6xl"
-          onMouseEnter={() => setHovered(true)}
-          onMouseLeave={() => setHovered(false)}
-        >
+        {/* Dashboard frame — warm-dark card with soft coral glow beneath */}
+        <div className="relative mx-auto mt-10 w-full max-w-5xl">
+          {/* Soft coral shadow below */}
           <div
-            className="absolute inset-x-6 top-6 bottom-0 pointer-events-none sm:inset-x-20 sm:top-8"
-            style={{
-              background:
-                "radial-gradient(ellipse at 50% 80%, hsl(261 75% 55% / 0.2) 0%, transparent 70%)",
-              filter: "blur(30px)",
-            }}
+            className="pointer-events-none absolute -bottom-10 left-6 right-6 h-24 rounded-[100%] blur-3xl"
+            style={{ background: "hsl(14 75% 70% / 0.35)" }}
             aria-hidden="true"
           />
 
           <div
-            className="relative overflow-hidden rounded-[24px] sm:rounded-2xl"
+            className="dark-frame relative overflow-hidden rounded-[24px] p-3 sm:p-4"
             style={{
-              border: "1px solid hsl(0 0% 100% / 0.08)",
+              border: "1px solid hsl(28 10% 22%)",
               boxShadow:
-                "0 0 0 1px hsl(261 75% 55% / 0.1), 0 40px 100px -20px hsl(0 0% 0% / 0.7), 0 0 80px -20px hsl(261 75% 55% / 0.15)",
-              transform: hovered
-                ? "perspective(1200px) rotateX(0deg) scale(1.005)"
-                : "perspective(1200px) rotateX(2deg) scale(1)",
-              transformOrigin: "center bottom",
-              transition: "transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)",
+                "0 1px 0 hsl(34 33% 100% / 0.06) inset, 0 30px 80px -30px hsl(28 10% 10% / 0.35), 0 10px 30px -10px hsl(14 59% 55% / 0.18)",
             }}
           >
-            <Suspense
-              fallback={
-                <div
-                  className="w-full bg-card/90"
-                  style={{ aspectRatio: "16/9" }}
-                />
-              }
-            >
-              <DashboardMockup />
-            </Suspense>
-
             <div
-              className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none sm:h-40"
-              style={{
-                background:
-                  "linear-gradient(to top, hsl(0,0%,3%) 0%, transparent 100%)",
-              }}
-              aria-hidden="true"
-            />
+              className="overflow-hidden rounded-[16px]"
+              style={{ background: "hsl(28 8% 10%)", border: "1px solid hsl(28 10% 18%)" }}
+            >
+              <Suspense
+                fallback={
+                  <div
+                    className="w-full"
+                    style={{ aspectRatio: "16/9", background: "hsl(28 8% 12%)" }}
+                  />
+                }
+              >
+                <DashboardMockup />
+              </Suspense>
+            </div>
           </div>
         </div>
 
-        {/* Integration strip — below the mockup. Also serves as the #integrations anchor for the navbar. */}
+        {/* Integration strip — keeps the #integrations anchor */}
         <IntegrationStrip
           id="integrations"
-          className="scroll-mt-24 pt-10 pb-14"
+          className="scroll-mt-24 pt-20 pb-20"
         />
-
       </div>
     </section>
   );
