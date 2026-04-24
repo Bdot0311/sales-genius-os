@@ -33,7 +33,7 @@ export const HeroSection = () => {
         style={{
           background:
             "radial-gradient(ellipse at center, hsl(261 75% 55% / 0.18) 0%, hsl(261 75% 55% / 0.06) 50%, transparent 70%)",
-          filter: "blur(40px)",
+          willChange: "transform",
         }}
         aria-hidden="true"
       />
@@ -43,8 +43,8 @@ export const HeroSection = () => {
         style={{
           background:
             "radial-gradient(ellipse at center, hsl(280 70% 60% / 0.14) 0%, hsl(280 70% 60% / 0.04) 50%, transparent 70%)",
-          filter: "blur(50px)",
           animationDelay: "6s",
+          willChange: "transform",
         }}
         aria-hidden="true"
       />

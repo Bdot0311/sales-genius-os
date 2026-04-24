@@ -132,18 +132,16 @@ const Index = () => {
             <HeroSection />
             <ProductShowcase />
 
-            {/* Below the fold - lazy loaded */}
-            <Suspense fallback={<SectionLoader />}>
-              <ProblemSection />
-              <HowItWorks />
-              <ModulesSection />
-              <BigStatSection />
-              <DifferentiationSection />
-              <FounderNoteSection />
-              <FAQSection />
-              <FinalCTA />
-              <TrustBar />
-            </Suspense>
+            {/* Below the fold - each section in its own Suspense so they paint independently as chunks arrive */}
+            <Suspense fallback={<SectionLoader />}><ProblemSection /></Suspense>
+            <Suspense fallback={<SectionLoader />}><HowItWorks /></Suspense>
+            <Suspense fallback={<SectionLoader />}><ModulesSection /></Suspense>
+            <Suspense fallback={<SectionLoader />}><BigStatSection /></Suspense>
+            <Suspense fallback={<SectionLoader />}><DifferentiationSection /></Suspense>
+            <Suspense fallback={<SectionLoader />}><FounderNoteSection /></Suspense>
+            <Suspense fallback={<SectionLoader />}><FAQSection /></Suspense>
+            <Suspense fallback={<SectionLoader />}><FinalCTA /></Suspense>
+            <Suspense fallback={<SectionLoader />}><TrustBar /></Suspense>
           </article>
         </main>
 
