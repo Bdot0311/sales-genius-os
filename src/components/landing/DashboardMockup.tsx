@@ -1,45 +1,14 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Search, Mail, BarChart3, TrendingUp, Target, MessageSquare, Brain } from "lucide-react";
 import logoSmall from "@/assets/salesos-logo-64.webp";
 
-// Animated counter that counts up once
-const AnimatedNumber = ({ value, suffix = "" }: { value: number; suffix?: string }) => {
-  const [count, setCount] = useState(0);
-  const ref = useRef<HTMLSpanElement>(null);
-  const started = useRef(false);
-
-  useEffect(() => {
-    if (started.current || !ref.current) return;
-    const el = ref.current;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !started.current) {
-          started.current = true;
-          observer.disconnect();
-          const duration = 1400;
-          const start = performance.now();
-          const step = (now: number) => {
-            const p = Math.min((now - start) / duration, 1);
-            const ease = 1 - Math.pow(1 - p, 3);
-            setCount(Math.floor(ease * value));
-            if (p < 1) requestAnimationFrame(step);
-          };
-          requestAnimationFrame(step);
-        }
-      },
-      { threshold: 0.3 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [value]);
-
-  return <span ref={ref}>{count}{suffix}</span>;
-};
+const StaticNumber = ({ value, suffix = "" }: { value: number; suffix?: string }) => (
+  <span>{value}{suffix}</span>
+);
 
 const DashboardMockup = () => {
   const [activeStep, setActiveStep] = useState(0);
   const [pipelineAnim, setPipelineAnim] = useState(false);
-  const [refreshTick, setRefreshTick] = useState(0);
 
   useEffect(() => {
     const timers = [
@@ -49,13 +18,6 @@ const DashboardMockup = () => {
       setTimeout(() => setPipelineAnim(true), 3000),
     ];
     return () => timers.forEach(clearTimeout);
-  }, []);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setRefreshTick(t => t + 1);
-    }, 5000);
-    return () => clearInterval(interval);
   }, []);
 
   const leads = [
@@ -102,7 +64,7 @@ const DashboardMockup = () => {
           </div>
           <div
             className="w-1.5 h-1.5 rounded-full bg-primary transition-opacity duration-300"
-            style={{ opacity: refreshTick % 2 === 0 ? 0.8 : 0.2 }}
+              style={{ opacity: 0.8 }}
             aria-hidden="true"
           />
         </div>
@@ -123,7 +85,7 @@ const DashboardMockup = () => {
             <div className="space-y-1.5">
               {leads.map((l, i) => (
                 <div
-                  key={`${i}-${refreshTick}`}
+                  key={i}
                   className="flex items-center justify-between px-2.5 py-1.5 rounded-md bg-muted/20 border border-border/10 transition-all duration-500"
                   style={{
                     opacity: activeStep >= 1 ? 1 : 0,
@@ -140,7 +102,7 @@ const DashboardMockup = () => {
                     </div>
                   </div>
                   <div className="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-semibold tabular-nums">
-                    <AnimatedNumber value={l.score} suffix="%" />
+                    <StaticNumber value={l.score} suffix="%" />
                   </div>
                 </div>
               ))}
@@ -231,7 +193,7 @@ const DashboardMockup = () => {
                 )}
                 <m.icon className={`w-3 h-3 mx-auto mb-1 relative ${m.glow ? "text-primary drop-shadow-[0_0_6px_hsl(261_75%_65%/0.5)]" : "text-primary"}`} />
                 <div className="text-[13px] font-bold text-foreground relative tabular-nums">
-                  <AnimatedNumber value={m.val} suffix={m.suf} />
+                  <StaticNumber value={m.val} suffix={m.suf} />
                 </div>
                 <div className="text-[9px] text-muted-foreground relative">{m.label}</div>
               </div>
