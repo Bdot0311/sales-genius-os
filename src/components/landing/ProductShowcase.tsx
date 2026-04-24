@@ -1,13 +1,34 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { IntegrationStrip } from "@/components/landing/IntegrationLogos";
 
 const DashboardMockup = lazy(() => import("@/components/landing/DashboardMockup"));
 
 export const ProductShowcase = () => {
   const [hovered, setHovered] = useState(false);
+  const [showMockup, setShowMockup] = useState(false);
+  const sectionRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const node = sectionRef.current;
+    if (!node) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShowMockup(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "180px 0px" }
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <section
+      ref={sectionRef}
       className="relative overflow-hidden pb-4 sm:pb-0"
       style={{ background: "hsl(0,0%,3%)" }}
       aria-label="Product preview"
@@ -35,7 +56,7 @@ export const ProductShowcase = () => {
             style={{
               background:
                 "radial-gradient(ellipse at 50% 80%, hsl(261 75% 55% / 0.2) 0%, transparent 70%)",
-              filter: "blur(30px)",
+                opacity: 0.75,
             }}
             aria-hidden="true"
           />
@@ -53,16 +74,23 @@ export const ProductShowcase = () => {
               transition: "transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)",
             }}
           >
-            <Suspense
-              fallback={
-                <div
-                  className="w-full bg-card/90"
-                  style={{ aspectRatio: "16/9" }}
-                />
-              }
-            >
-              <DashboardMockup />
-            </Suspense>
+            {showMockup ? (
+              <Suspense
+                fallback={
+                  <div
+                    className="w-full bg-card/90"
+                    style={{ aspectRatio: "16/9" }}
+                  />
+                }
+              >
+                <DashboardMockup />
+              </Suspense>
+            ) : (
+              <div
+                className="w-full bg-card/90"
+                style={{ aspectRatio: "16/9" }}
+              />
+            )}
 
             <div
               className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none sm:h-40"

@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { Navbar } from "@/components/Navbar";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { ProductShowcase } from "@/components/landing/ProductShowcase";
@@ -12,7 +12,6 @@ import {
   HowToSchema,
   ItemListSchema
 } from "@/components/seo";
-import { useSpotlightEffect } from "@/hooks/use-spotlight-effect";
 
 // Lazy load below-the-fold sections to reduce initial bundle size
 const HowItWorks = lazy(() => import("@/components/landing/HowItWorks").then(m => ({ default: m.HowItWorks })));
@@ -32,6 +31,35 @@ const SectionLoader = () => (
     <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
   </div>
 );
+
+const DeferredSection = ({ children }: { children: ReactNode }) => {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [shouldRender, setShouldRender] = useState(false);
+
+  useEffect(() => {
+    const node = containerRef.current;
+    if (!node || shouldRender) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShouldRender(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "320px 0px" }
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [shouldRender]);
+
+  return (
+    <div ref={containerRef}>
+      {shouldRender ? <Suspense fallback={<SectionLoader />}>{children}</Suspense> : <SectionLoader />}
+    </div>
+  );
+};
 
 // AEO: Define clear, structured content for AI answer engines
 const gettingStartedSteps = [
@@ -91,9 +119,6 @@ const keyFeatures = [
 ];
 
 const Index = () => {
-  // Enable cursor-following spotlight effect on cards
-  useSpotlightEffect();
-
   return (
     <>
       <SEOHead
@@ -132,23 +157,23 @@ const Index = () => {
             <HeroSection />
             <ProductShowcase />
 
-            {/* Below the fold - each section in its own Suspense so they paint independently as chunks arrive */}
-            <Suspense fallback={<SectionLoader />}><ProblemSection /></Suspense>
-            <Suspense fallback={<SectionLoader />}><HowItWorks /></Suspense>
-            <Suspense fallback={<SectionLoader />}><ModulesSection /></Suspense>
-            <Suspense fallback={<SectionLoader />}><BigStatSection /></Suspense>
-            <Suspense fallback={<SectionLoader />}><DifferentiationSection /></Suspense>
-            <Suspense fallback={<SectionLoader />}><FounderNoteSection /></Suspense>
-            <Suspense fallback={<SectionLoader />}><FAQSection /></Suspense>
-            <Suspense fallback={<SectionLoader />}><FinalCTA /></Suspense>
-            <Suspense fallback={<SectionLoader />}><TrustBar /></Suspense>
+            {/* Below the fold - only mount sections when they approach the viewport */}
+            <DeferredSection><ProblemSection /></DeferredSection>
+            <DeferredSection><HowItWorks /></DeferredSection>
+            <DeferredSection><ModulesSection /></DeferredSection>
+            <DeferredSection><BigStatSection /></DeferredSection>
+            <DeferredSection><DifferentiationSection /></DeferredSection>
+            <DeferredSection><FounderNoteSection /></DeferredSection>
+            <DeferredSection><FAQSection /></DeferredSection>
+            <DeferredSection><FinalCTA /></DeferredSection>
+            <DeferredSection><TrustBar /></DeferredSection>
           </article>
         </main>
 
         {/* Footer */}
-        <Suspense fallback={<SectionLoader />}>
+        <DeferredSection>
           <FooterSection />
-        </Suspense>
+        </DeferredSection>
       </div>
     </>
   );
