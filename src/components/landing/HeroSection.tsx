@@ -143,42 +143,6 @@ export const HeroSection = () => {
           Setup in 2 minutes
         </p>
 
-        {/* Founder byline */}
-        <div
-          className={`mb-10 flex items-center justify-center gap-2 transition-all duration-700 delay-[300ms] ${visible ? "opacity-100" : "opacity-0"}`}
-        >
-          <div
-            className="w-5 h-5 rounded-full shrink-0 flex items-center justify-center text-[9px] font-bold text-white select-none"
-            style={{
-              background:
-                "linear-gradient(135deg, hsl(261 75% 55%), hsl(280 80% 65%))",
-            }}
-            aria-hidden="true"
-          >
-            B
-          </div>
-          <span className="text-xs" style={{ color: "hsl(0 0% 100% / 0.25)" }}>
-            Built by Brandon, Founder · NYC
-          </span>
-          <a
-            href="https://www.linkedin.com/in/buildwitbrandon"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs transition-colors duration-200"
-            style={{ color: "hsl(261 75% 55% / 0.6)" }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.color = "hsl(261 75% 72%)")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.color = "hsl(261 75% 55% / 0.6)")
-            }
-            aria-label="Brandon on LinkedIn"
-          >
-            ↗ LinkedIn
-          </a>
-        </div>
-
-
       </div>
 
       <div
