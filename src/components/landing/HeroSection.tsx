@@ -1,15 +1,8 @@
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
 import { ArrowRight } from "lucide-react";
 
 export const HeroSection = () => {
   const navigate = useNavigate();
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const t = setTimeout(() => setVisible(true), 60);
-    return () => clearTimeout(t);
-  }, []);
 
   return (
     <section
@@ -62,9 +55,9 @@ export const HeroSection = () => {
 
       <div className="relative z-10 container mx-auto flex flex-col items-center px-5 text-center sm:px-6">
         <div
-          className={`mb-8 max-w-full transition-all duration-500 sm:mb-10 ${visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"}`}
+          className="mb-8 max-w-full sm:mb-10"
         >
-          <span className="inline-flex max-w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[11px] leading-tight text-white/60 backdrop-blur-sm sm:flex-nowrap sm:gap-2.5 sm:px-4 sm:text-xs">
+          <span className="inline-flex max-w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[11px] leading-tight text-white/60 sm:flex-nowrap sm:gap-2.5 sm:px-4 sm:text-xs">
             <span className="relative flex h-1.5 w-1.5 shrink-0">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-75" />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-violet-500" />
@@ -77,7 +70,7 @@ export const HeroSection = () => {
 
         <h1
           id="hero-heading"
-          className={`font-display mb-6 max-w-[11ch] text-balance transition-all duration-700 delay-75 sm:mb-8 sm:max-w-none ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"}`}
+          className="font-display mb-6 max-w-[11ch] text-balance sm:mb-8 sm:max-w-none"
           style={{
             fontSize: "clamp(3rem, 15vw, 7rem)",
             lineHeight: 0.96,
@@ -103,13 +96,13 @@ export const HeroSection = () => {
         </h1>
 
         <p
-          className={`mb-8 max-w-[22rem] text-base font-light leading-relaxed text-white/55 transition-all duration-700 delay-150 sm:mb-12 sm:max-w-xl sm:text-xl ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+          className="mb-8 max-w-[22rem] text-base font-light leading-relaxed text-white/55 sm:mb-12 sm:max-w-xl sm:text-xl"
         >
           SalesOS scores your best-fit prospects, enriches them with verified contact data, and drafts your first email — before you finish your coffee.
         </p>
 
         <div
-          className={`mb-8 flex w-full max-w-[20rem] flex-col items-center gap-3 transition-all duration-700 delay-200 sm:mb-8 sm:max-w-none sm:flex-row sm:justify-center sm:gap-4 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+          className="mb-8 flex w-full max-w-[20rem] flex-col items-center gap-3 sm:mb-8 sm:max-w-none sm:flex-row sm:justify-center sm:gap-4"
         >
           <button
             onClick={() => navigate("/auth")}
@@ -134,7 +127,7 @@ export const HeroSection = () => {
 
         {/* Trust line */}
         <p
-          className={`text-xs text-white/25 flex items-center justify-center gap-2.5 mb-4 transition-all duration-700 delay-[250ms] ${visible ? "opacity-100" : "opacity-0"}`}
+          className="text-xs text-white/25 flex items-center justify-center gap-2.5 mb-4"
         >
           No credit card required
           <span className="w-px h-3 bg-white/20 inline-block" />
@@ -146,7 +139,7 @@ export const HeroSection = () => {
       </div>
 
       <div
-        className={`absolute bottom-8 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-1.5 transition-all duration-700 delay-[400ms] sm:flex ${visible ? "opacity-100" : "opacity-0"}`}
+        className="absolute bottom-8 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-1.5 opacity-100 sm:flex"
         aria-hidden="true"
       >
         <span className="text-[10px] uppercase tracking-[0.2em] text-white/20">Scroll</span>
