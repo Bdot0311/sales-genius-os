@@ -11,15 +11,6 @@ export const Navbar = () => {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [whiteLabelSettings, setWhiteLabelSettings] = useState<any>(null);
-
-  // Defer white-label settings load to avoid blocking initial render
-  useEffect(() => {
-    const id = setTimeout(() => {
-      import("@/hooks/use-white-label").catch(() => {});
-    }, 3000);
-    return () => clearTimeout(id);
-  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -61,7 +52,7 @@ export const Navbar = () => {
   return (
     <nav
       className={`fixed left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled ? 'backdrop-blur-xl border-b' : ''
+        isScrolled ? 'border-b' : ''
       }`}
       style={{
         top: 'env(safe-area-inset-top, 0px)',
@@ -84,31 +75,21 @@ export const Navbar = () => {
               onKeyDown={(e) => e.key === 'Enter' && navigate('/')}
               aria-label="SalesOS home"
             >
-              {whiteLabelSettings?.logo_url ? (
+              <>
                 <img
-                  src={whiteLabelSettings.logo_url}
-                  alt={whiteLabelSettings.company_name || "Logo"}
-                  className="h-7 sm:h-8"
+                  src={LOGO_URL}
+                  alt="SalesOS Logo"
+                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-contain"
+                  width={32}
+                  height={32}
+                  loading="eager"
+                  fetchPriority="high"
                 />
-              ) : (
-                <>
-                  <img
-                    src={LOGO_URL}
-                    alt="SalesOS Logo"
-                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-contain"
-                    width={32}
-                    height={32}
-                    loading="eager"
-                    fetchPriority="high"
-                  />
-                  <span className="text-base sm:text-lg font-semibold whitespace-nowrap">
-                    <span className="text-foreground">{whiteLabelSettings?.company_name || "Sales"}</span>
-                    {!whiteLabelSettings?.company_name && (
-                      <span className="text-primary">OS</span>
-                    )}
-                  </span>
-                </>
-              )}
+                <span className="text-base sm:text-lg font-semibold whitespace-nowrap">
+                  <span className="text-foreground">Sales</span>
+                  <span className="text-primary">OS</span>
+                </span>
+              </>
             </div>
 
             {/* Desktop Navigation */}
@@ -177,7 +158,7 @@ export const Navbar = () => {
         }`}
         role="menu"
       >
-        <div className="bg-background/95 backdrop-blur-md border-b border-border/40">
+          <div className="bg-background/95 border-b border-border/40">
           <div className="container mx-auto px-4 py-3 space-y-1">
             {navLinks.map((link) => (
               <button
