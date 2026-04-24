@@ -73,10 +73,16 @@
     <!-- Preload LCP hero image for faster paint -->
     <link rel="preload" as="image" href="/salesos-logo-small.webp" type="image/webp" />
 
-    <!-- Premium display font for hero headlines -->
+    <!-- Premium display font for hero headlines — italic 800 only, non-blocking -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;0,900;1,700;1,800;1,900&display=swap" rel="stylesheet" />
+    <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,800;1,800&display=swap"
+      onload="this.onload=null;this.rel='stylesheet'"
+    />
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,800;1,800&display=swap" rel="stylesheet" /></noscript>
 
     <!-- Static JSON-LD for crawlers that don't execute JS -->
     <script type="application/ld+json">
