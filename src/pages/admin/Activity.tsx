@@ -224,7 +224,33 @@ const AdminActivity = () => {
             <RefreshCw className="h-4 w-4" />
             Refresh
           </Button>
-          <Button variant="outline" size="sm" className="gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={() => {
+              const rows = filteredActivities.map(a => ({
+                time: a.created_at,
+                user: a.user_email || '',
+                action: a.action,
+                entity_type: a.entity_type,
+                entity_id: a.entity_id || '',
+                ip: a.ip_address || '',
+              }));
+              const headers = Object.keys(rows[0] || { time: '', user: '', action: '', entity_type: '', entity_id: '', ip: '' });
+              const csv = [
+                headers.join(','),
+                ...rows.map(r => headers.map(h => JSON.stringify((r as any)[h] ?? '')).join(',')),
+              ].join('\n');
+              const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `activity-logs-${new Date().toISOString().slice(0, 10)}.csv`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+          >
             <Download className="h-4 w-4" />
             Export
           </Button>
