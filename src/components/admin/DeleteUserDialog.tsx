@@ -14,13 +14,16 @@ export const DeleteUserDialog = ({ open, onOpenChange, user, onDeleted }: Delete
   const deleteUser = async () => {
     if (!user) return;
     try {
-      const { error } = await supabase.rpc('admin_delete_user', { _user_id: user.user_id });
+      const { data, error } = await supabase.functions.invoke('admin-delete-user', {
+        body: { user_id: user.user_id },
+      });
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       toast.success('User deleted');
       onOpenChange(false);
       onDeleted();
-    } catch (error) {
-      toast.error('Failed to delete user');
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to delete user');
     }
   };
 
