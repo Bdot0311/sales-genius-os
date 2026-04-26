@@ -220,7 +220,7 @@ serve(async (req) => {
 
       // Sync to database (only if authenticated)
       if (userId) {
-        const leadsLimit = plan === 'free' ? 0 : plan === 'starter' ? 1000 : plan === 'growth' ? 2500 : plan === 'agency' ? 15000 : 5000;
+        const leadsLimit = (plan as string) === 'free' ? 0 : (plan as string) === 'starter' ? 1000 : (plan as string) === 'growth' ? 2500 : (plan as string) === 'agency' ? 15000 : 5000;
         
         // Get current subscription to preserve remaining credits if same billing cycle
         const { data: currentSub } = await supabaseClient
