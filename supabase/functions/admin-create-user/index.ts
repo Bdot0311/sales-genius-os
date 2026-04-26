@@ -64,13 +64,20 @@ serve(async (req) => {
     logStep("User created", { userId: newUser.user.id });
 
     // Profile and subscription will be created by triggers
-    // Update the subscription plan if needed
-    const leadsLimit = plan === 'growth' ? 1000 : plan === 'pro' ? 10000 : 400;
+    // Set proper limits and credits per plan (matches admin_update_subscription logic)
+    const planLimits: Record<string, number> = {
+      free: 0, starter: 1000, growth: 2500, pro: 5000, agency: 15000
+    };
+    const leadsLimit = planLimits[plan] ?? 0;
+    const credits = leadsLimit;
     await supabaseClient
       .from('subscriptions')
-      .update({ 
-        plan, 
+      .update({
+        plan,
         leads_limit: leadsLimit,
+        search_credits_base: credits,
+        search_credits_remaining: credits,
+        status: 'active',
         // Admins get unlimited access - set account to permanent active
         account_status: is_admin ? 'admin' : 'active',
       })
