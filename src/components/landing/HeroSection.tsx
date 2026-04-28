@@ -70,11 +70,11 @@ export const HeroSection = () => {
 
         <h1
           id="hero-heading"
-          className="font-display mb-6 max-w-[11ch] text-balance sm:mb-8 sm:max-w-none"
+          className="font-display mb-6 max-w-[14ch] text-balance sm:mb-8 sm:max-w-none"
           style={{
-            fontSize: "clamp(3rem, 15vw, 7rem)",
-            lineHeight: 0.96,
-            letterSpacing: "-0.03em",
+            fontSize: "clamp(2.25rem, 9vw, 7rem)",
+            lineHeight: 1.02,
+            letterSpacing: "-0.02em",
             fontWeight: 800,
           }}
         >
