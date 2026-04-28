@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ShieldCheck, Star, Lock } from "lucide-react";
 
 export const HeroSection = () => {
   const navigate = useNavigate();
@@ -135,6 +135,37 @@ export const HeroSection = () => {
           <span className="w-px h-3 bg-white/20 inline-block" />
           Setup in 2 minutes
         </p>
+
+        {/* Mobile trust signals — fills space between hero and product showcase */}
+        <div className="mt-8 w-full max-w-[22rem] sm:hidden">
+          <div className="grid grid-cols-3 gap-2">
+            <div className="flex flex-col items-center justify-center gap-1.5 rounded-xl border border-white/[0.06] bg-white/[0.02] px-2 py-3">
+              <div className="flex items-center gap-0.5" aria-hidden="true">
+                {[0,1,2,3,4].map((i) => (
+                  <Star key={i} className="h-2.5 w-2.5 fill-violet-400 text-violet-400" />
+                ))}
+              </div>
+              <span className="text-[10px] font-medium text-white/70">4.9 / 5</span>
+              <span className="text-[9px] text-white/35">G2 · Capterra</span>
+            </div>
+
+            <div className="flex flex-col items-center justify-center gap-1.5 rounded-xl border border-white/[0.06] bg-white/[0.02] px-2 py-3">
+              <ShieldCheck className="h-3.5 w-3.5 text-violet-400" aria-hidden="true" />
+              <span className="text-[10px] font-medium text-white/70">SOC 2</span>
+              <span className="text-[9px] text-white/35">Infrastructure</span>
+            </div>
+
+            <div className="flex flex-col items-center justify-center gap-1.5 rounded-xl border border-white/[0.06] bg-white/[0.02] px-2 py-3">
+              <Lock className="h-3.5 w-3.5 text-violet-400" aria-hidden="true" />
+              <span className="text-[10px] font-medium text-white/70">GDPR</span>
+              <span className="text-[9px] text-white/35">Ready</span>
+            </div>
+          </div>
+
+          <p className="mt-4 text-center text-[10px] uppercase tracking-[0.2em] text-white/30">
+            Trusted by founders & sales teams
+          </p>
+        </div>
 
       </div>
 
