@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { logSystemAlert } from "../_shared/alerts.ts";
 
 
 const corsHeaders = {
@@ -10,7 +11,7 @@ const corsHeaders = {
 
 // Price ID to plan mapping
 // Monthly = credits reset each cycle, Yearly = full annual pool granted upfront
-const PRICE_TO_PLAN: Record<string, { plan: 'starter' | 'growth' | 'pro', credits: number, dailyLimit: number, leadsLimit: number, isYearly: boolean }> = {
+const PRICE_TO_PLAN: Record<string, { plan: 'starter' | 'growth' | 'pro' | 'agency', credits: number, dailyLimit: number, leadsLimit: number, isYearly: boolean }> = {
   // Starter Monthly - 1,000 credits/month
   'price_1T8tywFTerosS6hi0fHQuybr': { plan: 'starter', credits: 1000, dailyLimit: 100, leadsLimit: 1000, isYearly: false },
   // Starter Yearly - 12,000 credits upfront (1,000 x 12)
@@ -23,6 +24,10 @@ const PRICE_TO_PLAN: Record<string, { plan: 'starter' | 'growth' | 'pro', credit
   'price_1T8tz0FTerosS6hiKJluR3kk': { plan: 'pro', credits: 5000, dailyLimit: 500, leadsLimit: 5000, isYearly: false },
   // Pro Yearly - 60,000 credits upfront
   'price_1T8tz0FTerosS6hiIHNG82Bh': { plan: 'pro', credits: 60000, dailyLimit: 500, leadsLimit: 5000, isYearly: true },
+  // Agency Monthly - 15,000 credits/month
+  'price_1TSXEzFTerosS6hiKJdDX95R': { plan: 'agency', credits: 15000, dailyLimit: 1500, leadsLimit: 15000, isYearly: false },
+  // Agency Yearly - 180,000 credits upfront
+  'price_1TSXF0FTerosS6hiAU2FlQli': { plan: 'agency', credits: 180000, dailyLimit: 1500, leadsLimit: 15000, isYearly: true },
   // Legacy prices (all monthly - updated to new limits)
   'price_1SmM2hFTerosS6hiiDXBDIxl': { plan: 'growth', credits: 2500, dailyLimit: 250, leadsLimit: 2500, isYearly: false },
   'price_1SS44wFTerosS6hiCkKQnnoD': { plan: 'growth', credits: 2500, dailyLimit: 250, leadsLimit: 2500, isYearly: false },
@@ -31,7 +36,7 @@ const PRICE_TO_PLAN: Record<string, { plan: 'starter' | 'growth' | 'pro', credit
 };
 
 // Product ID to plan mapping (fallback)
-const PRODUCT_TO_PLAN: Record<string, 'starter' | 'growth' | 'pro'> = {
+const PRODUCT_TO_PLAN: Record<string, 'starter' | 'growth' | 'pro' | 'agency'> = {
   // New product IDs
   'prod_U78FZoAWovU1rX': 'starter',
   'prod_U78FC92stOkRxS': 'starter',
@@ -39,6 +44,9 @@ const PRODUCT_TO_PLAN: Record<string, 'starter' | 'growth' | 'pro'> = {
   'prod_U78Fk0l7swAukt': 'growth',
   'prod_U78Fs2HpZzcZJc': 'pro',
   'prod_U78Fuo9Mg04kz9': 'pro',
+  // Agency
+  'prod_URQ5ib01VNZY9o': 'agency',
+  'prod_URQ5awS6V2AAXH': 'agency',
   // Legacy product IDs
   'prod_TjpiXbauY0T3RF': 'growth',
   'prod_TOrozUbuuN18RP': 'pro',
