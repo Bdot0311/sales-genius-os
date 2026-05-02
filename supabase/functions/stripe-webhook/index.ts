@@ -520,7 +520,7 @@ serve(async (req) => {
             // - Monthly Growth/Pro: rollover - ADD new credits to existing balance
             let newCredits = planDetails.credits;
             
-            if (!planDetails.isYearly && (planDetails.plan === 'growth' || planDetails.plan === 'pro')) {
+            if (!planDetails.isYearly && (planDetails.plan === 'growth' || planDetails.plan === 'pro' || planDetails.plan === 'agency')) {
               // Monthly Growth/Pro: rollover - add credits to existing balance
               const existingCredits = currentSub?.search_credits_remaining || 0;
               newCredits = existingCredits + planDetails.credits;

@@ -13,10 +13,12 @@ const planMap: Record<string, string> = {
   'price_1T8tywFTerosS6hi0fHQuybr': 'starter',
   'price_1T8tyyFTerosS6hiTsTXkWDa': 'growth',
   'price_1T8tz0FTerosS6hiKJluR3kk': 'pro',
+  'price_1TSXEzFTerosS6hiKJdDX95R': 'agency',
   // Yearly prices
   'price_1T8tyxFTerosS6hiSakB51fA': 'starter',
   'price_1T8tyzFTerosS6hiUyzpHnCK': 'growth',
   'price_1T8tz0FTerosS6hiIHNG82Bh': 'pro',
+  'price_1TSXF0FTerosS6hiAU2FlQli': 'agency',
   // Legacy prices
   'price_1SS44wFTerosS6hiCkKQnnoD': 'growth',
   'price_1SS456FTerosS6hisBSDPwo4': 'pro',
