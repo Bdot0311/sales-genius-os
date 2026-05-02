@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { logSystemAlert } from "../_shared/alerts.ts";
 
 
 const corsHeaders = {
@@ -10,7 +11,7 @@ const corsHeaders = {
 
 // Price ID to plan mapping
 // Monthly = credits reset each cycle, Yearly = full annual pool granted upfront
-const PRICE_TO_PLAN: Record<string, { plan: 'starter' | 'growth' | 'pro', credits: number, dailyLimit: number, leadsLimit: number, isYearly: boolean }> = {
+const PRICE_TO_PLAN: Record<string, { plan: 'starter' | 'growth' | 'pro' | 'agency', credits: number, dailyLimit: number, leadsLimit: number, isYearly: boolean }> = {
   // Starter Monthly - 1,000 credits/month
   'price_1T8tywFTerosS6hi0fHQuybr': { plan: 'starter', credits: 1000, dailyLimit: 100, leadsLimit: 1000, isYearly: false },
   // Starter Yearly - 12,000 credits upfront (1,000 x 12)
@@ -23,6 +24,10 @@ const PRICE_TO_PLAN: Record<string, { plan: 'starter' | 'growth' | 'pro', credit
   'price_1T8tz0FTerosS6hiKJluR3kk': { plan: 'pro', credits: 5000, dailyLimit: 500, leadsLimit: 5000, isYearly: false },
   // Pro Yearly - 60,000 credits upfront
   'price_1T8tz0FTerosS6hiIHNG82Bh': { plan: 'pro', credits: 60000, dailyLimit: 500, leadsLimit: 5000, isYearly: true },
+  // Agency Monthly - 15,000 credits/month
+  'price_1TSXEzFTerosS6hiKJdDX95R': { plan: 'agency', credits: 15000, dailyLimit: 1500, leadsLimit: 15000, isYearly: false },
+  // Agency Yearly - 180,000 credits upfront
+  'price_1TSXF0FTerosS6hiAU2FlQli': { plan: 'agency', credits: 180000, dailyLimit: 1500, leadsLimit: 15000, isYearly: true },
   // Legacy prices (all monthly - updated to new limits)
   'price_1SmM2hFTerosS6hiiDXBDIxl': { plan: 'growth', credits: 2500, dailyLimit: 250, leadsLimit: 2500, isYearly: false },
   'price_1SS44wFTerosS6hiCkKQnnoD': { plan: 'growth', credits: 2500, dailyLimit: 250, leadsLimit: 2500, isYearly: false },
@@ -31,7 +36,7 @@ const PRICE_TO_PLAN: Record<string, { plan: 'starter' | 'growth' | 'pro', credit
 };
 
 // Product ID to plan mapping (fallback)
-const PRODUCT_TO_PLAN: Record<string, 'starter' | 'growth' | 'pro'> = {
+const PRODUCT_TO_PLAN: Record<string, 'starter' | 'growth' | 'pro' | 'agency'> = {
   // New product IDs
   'prod_U78FZoAWovU1rX': 'starter',
   'prod_U78FC92stOkRxS': 'starter',
@@ -39,6 +44,9 @@ const PRODUCT_TO_PLAN: Record<string, 'starter' | 'growth' | 'pro'> = {
   'prod_U78Fk0l7swAukt': 'growth',
   'prod_U78Fs2HpZzcZJc': 'pro',
   'prod_U78Fuo9Mg04kz9': 'pro',
+  // Agency
+  'prod_URQ5ib01VNZY9o': 'agency',
+  'prod_URQ5awS6V2AAXH': 'agency',
   // Legacy product IDs
   'prod_TjpiXbauY0T3RF': 'growth',
   'prod_TOrozUbuuN18RP': 'pro',
@@ -85,15 +93,31 @@ serve(async (req) => {
   try {
     if (!stripeWebhookSecret) {
       console.error("STRIPE_WEBHOOK_SECRET is not configured — rejecting request");
+      await logSystemAlert({
+        category: "stripe_webhook_failure",
+        severity: "critical",
+        message: "STRIPE_WEBHOOK_SECRET not configured — webhook events cannot be verified",
+      });
       return new Response("Server misconfiguration: webhook secret not set", { status: 500 });
     }
     if (!signature) {
       console.error("Missing stripe-signature header — rejecting request");
+      await logSystemAlert({
+        category: "stripe_webhook_failure",
+        severity: "warning",
+        message: "Webhook request missing stripe-signature header",
+      });
       return new Response("Missing stripe-signature header", { status: 400 });
     }
     event = stripe.webhooks.constructEvent(body, signature, stripeWebhookSecret);
   } catch (err: any) {
     console.error("Webhook signature verification failed:", err.message);
+    await logSystemAlert({
+      category: "stripe_webhook_failure",
+      severity: "error",
+      message: `Stripe webhook signature verification failed: ${err.message}`,
+      details: { error: err.message },
+    });
     return new Response(`Webhook Error: ${err.message}`, { status: 400 });
   }
 
@@ -153,11 +177,27 @@ serve(async (req) => {
         } else if (productId && PRODUCT_TO_PLAN[productId]) {
           const planName = PRODUCT_TO_PLAN[productId];
           planDetails = PRICE_TO_PLAN[Object.keys(PRICE_TO_PLAN).find(k => PRICE_TO_PLAN[k].plan === planName) || ''] || planDetails;
+        } else {
+          // Unknown price/product — alert so we can wire it up before more sales come through
+          await logSystemAlert({
+            category: "stripe_plan_mismatch",
+            severity: "error",
+            message: `Unrecognized Stripe price/product on checkout: priceId=${priceId || 'none'} productId=${productId || 'none'}`,
+            details: { priceId, productId, customerEmail, subscriptionId },
+            related_entity: subscriptionId,
+          });
         }
         
         logStep("Determined plan", { plan: planDetails.plan, credits: planDetails.credits });
       } catch (err) {
         logStep("Error retrieving subscription, using default plan", { error: err });
+        await logSystemAlert({
+          category: "stripe_webhook_failure",
+          severity: "error",
+          message: "Failed to retrieve subscription details from Stripe in webhook handler",
+          details: { subscriptionId, error: String(err) },
+          related_entity: subscriptionId,
+        });
       }
     }
 
@@ -480,7 +520,7 @@ serve(async (req) => {
             // - Monthly Growth/Pro: rollover - ADD new credits to existing balance
             let newCredits = planDetails.credits;
             
-            if (!planDetails.isYearly && (planDetails.plan === 'growth' || planDetails.plan === 'pro')) {
+            if (!planDetails.isYearly && (planDetails.plan === 'growth' || planDetails.plan === 'pro' || planDetails.plan === 'agency')) {
               // Monthly Growth/Pro: rollover - add credits to existing balance
               const existingCredits = currentSub?.search_credits_remaining || 0;
               newCredits = existingCredits + planDetails.credits;

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.76.0';
+import { logSystemAlert } from "../_shared/alerts.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -202,6 +203,13 @@ serve(async (req) => {
       }
 
       if (currentSent >= (subscription.daily_email_limit || 10)) {
+        await logSystemAlert({
+          category: "outreach_send_limit",
+          severity: "warning",
+          message: `User hit daily email send limit (${subscription.daily_email_limit || 10})`,
+          details: { user_id: user.id, daily_email_limit: subscription.daily_email_limit, daily_emails_sent: currentSent },
+          user_id: user.id,
+        });
         return new Response(
           JSON.stringify({ error: `Daily email limit reached (${subscription.daily_email_limit || 10}/day). Adjust your limit in Outreach settings.` }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
