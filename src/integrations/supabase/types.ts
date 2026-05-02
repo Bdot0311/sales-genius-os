@@ -2103,6 +2103,48 @@ export type Database = {
         }
         Relationships: []
       }
+      system_alerts: {
+        Row: {
+          category: string
+          created_at: string
+          details: Json | null
+          id: string
+          message: string
+          related_entity: string | null
+          resolved: boolean
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          user_id: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          message: string
+          related_entity?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          user_id?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          message?: string
+          related_entity?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       system_events: {
         Row: {
           created_at: string
