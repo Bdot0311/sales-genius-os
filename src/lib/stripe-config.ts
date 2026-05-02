@@ -4,12 +4,12 @@ export const STRIPE_PRICE_IDS = {
   starter_monthly: 'price_1T8tywFTerosS6hi0fHQuybr',
   growth_monthly: 'price_1T8tyyFTerosS6hiTsTXkWDa',
   pro_monthly: 'price_1T8tz0FTerosS6hiKJluR3kk',
-  agency_monthly: 'price_agency_monthly_placeholder',   // Replace with real Stripe price ID
+  agency_monthly: 'price_1TSXEzFTerosS6hiKJdDX95R',
   // Base subscription plans - Yearly
   starter_yearly: 'price_1T8tyxFTerosS6hiSakB51fA',
   growth_yearly: 'price_1T8tyzFTerosS6hiUyzpHnCK',
   pro_yearly: 'price_1T8tz0FTerosS6hiIHNG82Bh',
-  agency_yearly: 'price_agency_yearly_placeholder',     // Replace with real Stripe price ID
+  agency_yearly: 'price_1TSXF0FTerosS6hiAU2FlQli',
   // Legacy price IDs (kept for backwards compatibility)
   starter: 'price_1T8THgFTerosS6hiyasgavsP',
   growth: 'price_1T8THhFTerosS6hicTGH2TUP',
@@ -26,6 +26,8 @@ export const STRIPE_PRODUCT_IDS = {
   growth_yearly: 'prod_U78Fk0l7swAukt',
   pro_monthly: 'prod_U78Fs2HpZzcZJc',
   pro_yearly: 'prod_U78Fuo9Mg04kz9',
+  agency_monthly: 'prod_URQ5ib01VNZY9o',
+  agency_yearly: 'prod_URQ5awS6V2AAXH',
   // Legacy
   starter: 'prod_U6gflsh1Zzoh3V',
   growth: 'prod_U6gfTND3QdfgcC',
