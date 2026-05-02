@@ -93,15 +93,31 @@ serve(async (req) => {
   try {
     if (!stripeWebhookSecret) {
       console.error("STRIPE_WEBHOOK_SECRET is not configured — rejecting request");
+      await logSystemAlert({
+        category: "stripe_webhook_failure",
+        severity: "critical",
+        message: "STRIPE_WEBHOOK_SECRET not configured — webhook events cannot be verified",
+      });
       return new Response("Server misconfiguration: webhook secret not set", { status: 500 });
     }
     if (!signature) {
       console.error("Missing stripe-signature header — rejecting request");
+      await logSystemAlert({
+        category: "stripe_webhook_failure",
+        severity: "warning",
+        message: "Webhook request missing stripe-signature header",
+      });
       return new Response("Missing stripe-signature header", { status: 400 });
     }
     event = stripe.webhooks.constructEvent(body, signature, stripeWebhookSecret);
   } catch (err: any) {
     console.error("Webhook signature verification failed:", err.message);
+    await logSystemAlert({
+      category: "stripe_webhook_failure",
+      severity: "error",
+      message: `Stripe webhook signature verification failed: ${err.message}`,
+      details: { error: err.message },
+    });
     return new Response(`Webhook Error: ${err.message}`, { status: 400 });
   }
 
@@ -161,11 +177,27 @@ serve(async (req) => {
         } else if (productId && PRODUCT_TO_PLAN[productId]) {
           const planName = PRODUCT_TO_PLAN[productId];
           planDetails = PRICE_TO_PLAN[Object.keys(PRICE_TO_PLAN).find(k => PRICE_TO_PLAN[k].plan === planName) || ''] || planDetails;
+        } else {
+          // Unknown price/product — alert so we can wire it up before more sales come through
+          await logSystemAlert({
+            category: "stripe_plan_mismatch",
+            severity: "error",
+            message: `Unrecognized Stripe price/product on checkout: priceId=${priceId || 'none'} productId=${productId || 'none'}`,
+            details: { priceId, productId, customerEmail, subscriptionId },
+            related_entity: subscriptionId,
+          });
         }
         
         logStep("Determined plan", { plan: planDetails.plan, credits: planDetails.credits });
       } catch (err) {
         logStep("Error retrieving subscription, using default plan", { error: err });
+        await logSystemAlert({
+          category: "stripe_webhook_failure",
+          severity: "error",
+          message: "Failed to retrieve subscription details from Stripe in webhook handler",
+          details: { subscriptionId, error: String(err) },
+          related_entity: subscriptionId,
+        });
       }
     }
 
