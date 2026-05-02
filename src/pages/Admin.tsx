@@ -14,6 +14,7 @@ import AdminActivity from "./admin/Activity";
 import AdminAnalytics from "./admin/Analytics";
 import AdminSecurity from "./admin/Security";
 import AdminSettings from "./admin/Settings";
+import AdminAlerts from "./admin/Alerts";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -72,6 +73,7 @@ const Admin = () => {
               <Route path="analytics" element={<AdminAnalytics />} />
               <Route path="security" element={<AdminSecurity />} />
               <Route path="settings" element={<AdminSettings />} />
+              <Route path="alerts" element={<AdminAlerts />} />
               <Route path="*" element={<Navigate to="/admin" replace />} />
             </Routes>
           </main>
