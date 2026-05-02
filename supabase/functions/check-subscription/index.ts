@@ -23,6 +23,9 @@ const PLAN_PRODUCTS: Record<string, { plan: string, credits: number, dailyLimit:
   'prod_U78FC92stOkRxS': { plan: 'starter', credits: 12000, dailyLimit: 100, isYearly: true },
   'prod_U78Fk0l7swAukt': { plan: 'growth', credits: 30000, dailyLimit: 250, isYearly: true },
   'prod_U78Fuo9Mg04kz9': { plan: 'pro', credits: 60000, dailyLimit: 500, isYearly: true },
+  // Agency
+  'prod_URQ5ib01VNZY9o': { plan: 'agency', credits: 15000, dailyLimit: 1500, isYearly: false },
+  'prod_URQ5awS6V2AAXH': { plan: 'agency', credits: 180000, dailyLimit: 1500, isYearly: true },
   // Legacy product IDs (monthly)
   'prod_U6gflsh1Zzoh3V': { plan: 'starter', credits: 1000, dailyLimit: 100 },
   'prod_U6gfTND3QdfgcC': { plan: 'growth', credits: 2500, dailyLimit: 250 },
@@ -204,7 +207,7 @@ serve(async (req) => {
         // Check if it's a base plan
         if (PLAN_PRODUCTS[productId as keyof typeof PLAN_PRODUCTS]) {
           const planInfo = PLAN_PRODUCTS[productId as keyof typeof PLAN_PRODUCTS];
-          plan = planInfo.plan as 'starter' | 'growth' | 'pro';
+          plan = planInfo.plan as 'starter' | 'growth' | 'pro' | 'agency';
           baseCredits = planInfo.credits;
           logStep('Detected base plan', { plan, baseCredits });
         }
