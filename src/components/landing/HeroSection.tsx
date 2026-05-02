@@ -28,10 +28,10 @@ export const HeroSection = () => {
         <div
           className={`transition-all duration-500 ${visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-1"}`}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <span className="eyebrow">01 / Sales OS</span>
-            <span className="hairline w-16 hidden sm:block" />
-            <span className="eyebrow-muted hidden sm:inline-flex">A new outbound workflow</span>
+            <span className="hairline w-10 sm:w-16" />
+            <span className="eyebrow-muted">For B2B sales teams</span>
           </div>
         </div>
 
@@ -45,55 +45,68 @@ export const HeroSection = () => {
                 visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
               }`}
               style={{
-                fontSize: "clamp(2.8rem, 7.4vw, 5.5rem)",
+                fontSize: "clamp(2.6rem, 6.8vw, 5rem)",
                 fontWeight: 400,
-                lineHeight: 1.02,
+                lineHeight: 1.04,
                 letterSpacing: "-0.025em",
                 color: "hsl(28 10% 14%)",
               }}
             >
-              Sales stops feeling
+              Find who to sell to.
               <br />
-              like <span className="italic" style={{ color: "hsl(14 59% 52%)", fontWeight: 500 }}>cold labor.</span>
+              <span className="italic" style={{ color: "hsl(14 59% 52%)", fontWeight: 500 }}>
+                Then actually sell to them.
+              </span>
             </h1>
 
             <p
-              className={`mt-8 max-w-[34rem] text-[17px] leading-[1.6] transition-all duration-700 delay-150 ${
+              className={`mt-7 max-w-[34rem] text-[17px] leading-[1.6] transition-all duration-700 delay-150 sm:text-[18px] ${
                 visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
               }`}
               style={{ color: "hsl(28 6% 38%)" }}
             >
-              Describe your buyer in plain English. SalesOS scores the best-fit
+              Describe your buyer in plain English. SalesOS scores best-fit
               prospects, verifies their business emails, and drafts a first-touch
-              message that reads like you wrote it — all before your coffee cools.
+              message that reads like you wrote it — so you book more meetings
+              before your coffee cools.
             </p>
 
             <div
-              className={`mt-10 flex flex-col items-start gap-5 transition-all duration-700 delay-200 sm:flex-row sm:items-center sm:gap-6 ${
+              className={`mt-9 flex w-full flex-col items-stretch gap-4 transition-all duration-700 delay-200 sm:w-auto sm:flex-row sm:items-center sm:gap-5 ${
                 visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
               }`}
             >
               <button
                 onClick={() => navigate("/auth")}
-                className="cta-pill-glow inline-flex h-[52px] items-center justify-center gap-2 rounded-full px-8 text-[15px] font-semibold group"
-                aria-label="Start for free"
+                className="cta-pill-glow inline-flex h-[56px] w-full items-center justify-center gap-2 rounded-full px-8 text-[16px] font-semibold group sm:w-auto"
+                aria-label="Find my first leads — start for free"
               >
-                Start for free
+                Find my first leads
                 <ArrowUpRight className="h-4 w-4 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
               </button>
 
               <a
                 href="/demo"
-                className="cta-ghost inline-flex items-center gap-1.5 text-[15px] font-medium"
+                className="cta-ghost inline-flex items-center justify-center gap-1.5 text-[15px] font-medium sm:justify-start"
               >
                 See how it works
                 <ArrowUpRight className="h-3.5 w-3.5" />
               </a>
             </div>
 
+            {/* Outcome microcopy */}
+            <p
+              className={`mt-3 text-[13px] font-medium transition-all duration-700 delay-[225ms] ${
+                visible ? "opacity-100" : "opacity-0"
+              }`}
+              style={{ color: "hsl(14 59% 52%)" }}
+            >
+              Your first leads in under 2 minutes — free, no credit card.
+            </p>
+
             {/* Trust row */}
             <div
-              className={`mt-10 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm transition-all duration-700 delay-[250ms] ${
+              className={`mt-7 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] sm:text-sm transition-all duration-700 delay-[250ms] ${
                 visible ? "opacity-100" : "opacity-0"
               }`}
               style={{ color: "hsl(28 6% 38%)" }}
@@ -102,7 +115,7 @@ export const HeroSection = () => {
               <span className="hairline inline-block h-3 w-px" style={{ background: "hsl(28 10% 78%)" }} />
               <span>30-day money-back</span>
               <span className="hairline inline-block h-3 w-px" style={{ background: "hsl(28 10% 78%)" }} />
-              <span>Setup in 2 minutes</span>
+              <span>Cancel anytime</span>
             </div>
           </div>
 
