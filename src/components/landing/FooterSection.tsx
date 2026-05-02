@@ -108,9 +108,14 @@ export const FooterSection = () => {
 
           {/* Bottom */}
           <div className="pt-8 border-t flex flex-col items-center gap-4" style={{ borderColor: "hsl(0 0% 100% / 0.07)" }}>
-            <a href="https://sellwithboost.com" target="_blank" rel="noopener noreferrer">
-              <img src="https://sellwithboost.com/badge/listing-dark.svg" alt="Listed on Sell With Boost" className="h-10 w-auto" width={160} height={40} loading="lazy" />
-            </a>
+            <div className="flex flex-wrap items-center justify-center gap-6">
+              <a href="https://sellwithboost.com" target="_blank" rel="noopener noreferrer">
+                <img src="https://sellwithboost.com/badge/listing-dark.svg" alt="Listed on Sell With Boost" className="h-10 w-auto" width={160} height={40} loading="lazy" />
+              </a>
+              <a href="https://landingboost.app/badges/top-1" target="_blank" rel="noopener noreferrer">
+                <img src="https://landingboost.app/badges/top1-dark.svg" alt="Top 1% Landing Page — Verified by LandingBoost" className="h-10 w-auto" width={200} height={40} loading="lazy" />
+              </a>
+            </div>
             <p className="text-sm text-muted-foreground/70 text-center">
               © {new Date().getFullYear()} BDØT Industries LLC. All rights reserved.
             </p>
