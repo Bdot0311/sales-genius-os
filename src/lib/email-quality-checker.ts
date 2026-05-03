@@ -19,11 +19,16 @@ export interface QualityCheckResult {
 }
 
 const WORD_LIMIT_MAP: Record<EmailTemplateType, number> = {
-  cold_introduction: OUTBOUND_KB.emailLimits.coldIntroMaxWords,
-  follow_up:         OUTBOUND_KB.emailLimits.followUpMaxWords,
-  meeting_request:   OUTBOUND_KB.emailLimits.meetingRequestMaxWords,
-  demo_invite:       OUTBOUND_KB.emailLimits.demoInviteMaxWords,
-  proposal:          OUTBOUND_KB.emailLimits.proposalMaxWords,
+  cold_introduction:              OUTBOUND_KB.emailLimits.coldIntroMaxWords,
+  follow_up:                      OUTBOUND_KB.emailLimits.followUpMaxWords,
+  meeting_request:                OUTBOUND_KB.emailLimits.meetingRequestMaxWords,
+  demo_invite:                    OUTBOUND_KB.emailLimits.demoInviteMaxWords,
+  proposal:                       OUTBOUND_KB.emailLimits.proposalMaxWords,
+  framework_4ts:                  OUTBOUND_KB.emailLimits.framework4tsMaxWords,
+  framework_elusive:              OUTBOUND_KB.emailLimits.frameworkElusiveMaxWords,
+  framework_proximity:            OUTBOUND_KB.emailLimits.frameworkProximityMaxWords,
+  framework_4ps_followup:         OUTBOUND_KB.emailLimits.framework4psMaxWords,
+  framework_4ps_elusive_followup: OUTBOUND_KB.emailLimits.framework4psElusiveMaxWords,
 };
 
 function countWords(text: string): number {

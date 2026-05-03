@@ -11,8 +11,9 @@ const sanitizeString = (input: string, maxLength: number): string =>
   input.trim().slice(0, maxLength);
 
 const VALID_TONES    = ['professional', 'friendly', 'casual', 'formal'];
-const VALID_GOALS    = ['introduction', 'follow-up', 'meeting', 'demo', 'proposal', 'subject_only', 'custom', 'trigger_context', 'social_proof'];
+const VALID_GOALS    = ['introduction', 'follow-up', 'meeting', 'demo', 'proposal', 'subject_only', 'custom', 'trigger_context', 'social_proof', '4ts', 'elusive', 'proximity', '4ps_followup', '4ps_elusive_followup'];
 const VALID_OPENERS  = ['you', 'saw', 'how', 'spoke', 'noticed', 'referred', 'remember'];
+const FRAMEWORK_GOALS = new Set(['4ts', 'elusive', 'proximity', '4ps_followup', '4ps_elusive_followup']);
 
 const validateEmailInputs = (data: any) => {
   const errors: string[] = [];
@@ -75,6 +76,22 @@ CLAIMS & PROOF:
 - If a concrete metric or customer proof is not explicitly provided in the input, do not imply one.
 - Prefer specific operational outcomes without numbers unless the number is grounded in provided input.
 - Never write fake credibility devices like "teams cut ramp time 40%" or "customers reply 3x more" unless that exact proof is provided.`;
+
+// Framework emails output body only — no greeting, no sign-off
+const BODY_ONLY_RULES = `
+FORMAT:
+- Email body ONLY. No greeting. No first name. No sign-off.
+- Never output placeholder tokens like [Name], {name}, {{name}}, <name>, [Company], or similar.
+- Generate ONLY the email body. Do NOT include a subject line or any headers.`;
+
+// Proximity Rule — active market position. Already there, not offering to go there.
+const PROXIMITY_RULE = `
+PROXIMITY RULE — NON-NEGOTIABLE:
+Write from an active market position always.
+Never use: "can build" / "can set up" / "can install" / "can create" / "can help" / "may be able to" / "will help"
+Always use: "already working with" / "already live" / "already running" / "already producing" / "already in production"
+Weak: "We can help automate your intake calls."
+Strong: "We are already running intake workflows for [company type] hitting [result]."`;
 
 const PLACEHOLDER_TOKEN_REGEX = /\[(?:name|company|first\s*name|full\s*name)\]|\{\{\s*(?:name|company|first\s*name|full\s*name)\s*\}\}|\{(?:name|company|first\s*name|full\s*name)\}|<(?:name|company|first\s*name|full\s*name)>/gi;
 
@@ -219,6 +236,159 @@ RULE: Outcome-focused, not feature-focused. They care about what changes, not wh
 ${BREVITY_RULES}${ELITE_OUTBOUND_RULES}${PERSONALIZATION_RULES}${BANNED_PHRASES}
 ${CLAIMS_RULES}
 ${SIGNOFF_RULES}`;
+
+    case '4ts':
+      return `You are a sharp B2B sales operator writing a cold email using the 4T's framework. Peer-to-peer tone. Two founders at an industry event. You have seen this problem dozens of times.
+
+FRAMEWORK: 4T's (strict order)
+
+1. TRIGGER — One sentence. A specific, publicly observable signal about their company, role, or industry. State it like you already knew. Never "I noticed" or "I saw." Just the observation, stated flatly.
+Good: "Looks like [Company] expanded into enterprise last quarter."
+Bad: "I noticed you recently started targeting enterprise."
+
+2. THINK — One sharp, pain-based question. What revenue or GTM tension does that trigger create? Never diagnose internals. Never speculate on team size.
+Good: "How much pipeline is slipping while everyone's focused on the integration?"
+Bad: "That means your team is probably stretched."
+
+3. BRIDGE — Start with "Flagging this because..." or "Sharing this since..."
+Then ONE sentence only: mechanism (how you do the work) OR proof point (one company, one result, one timeline). Never both. If a proof point is provided, use it. Otherwise use the mechanism.
+
+4. TALK — End with the CTA provided. Keep it low-friction and answerable in 2 seconds. If no CTA is specified, use: "Worth a look?" or "Open to seeing it?"
+
+LENGTH RULES (HARD):
+- Under 75 words total body. Count before outputting. If over, cut the Bridge first and rewrite shorter.
+- 3 short paragraphs, one line break between each.
+
+TONE:
+- No exclamation points. No em dashes. Short sentences. One idea per sentence. 6th grade reading level.
+
+FORBIDDEN: "Quick call/question" | "I help companies" | "Leverage/Synergy/Optimize" | "Industry-leading/Best-in-class" | "I noticed" | "I saw" | "Just reaching out" | "Happy to"
+${BANNED_PHRASES}
+${CLAIMS_RULES}
+${BODY_ONLY_RULES}`;
+
+    case 'elusive':
+      return `You are writing a cold email using the Elusive (Competence Framing) framework. This email NEVER pitches. No proof, no ask for time, no product mention. Just shows you know their world.
+
+FRAMEWORK: 3 moves, strict order.
+
+1. TRIGGER OBSERVATION — One sentence. A specific, observable signal about their company or role. State it flat, like a peer who already knew. No "I noticed" or "I saw."
+Good: "Looks like you brought on a new VP of Sales last month."
+Bad: "I noticed you recently hired a VP of Sales."
+
+2. DOWNSTREAM PREDICTION — One sentence. An industry-level statement about what typically happens next for companies in this situation. NOT a diagnosis of their company — a category-level observation that shows you know this world.
+Format: "Most [company type] going through [trigger type] start feeling [downstream effect] within [timeframe]."
+Use the trigger context and company info to form the most relevant prediction.
+
+3. ROUTING QUESTION — End with exactly: "Who would be the right person to connect with on this?"
+
+LENGTH RULES (HARD):
+- Under 60 words total. Count before outputting. If over, trim the prediction sentence first.
+- 3 lines with a line break between each.
+
+TONE:
+- No exclamation points, no em dashes, no colons in openers. Flat, informed, peer-level.
+- Never diagnose their internals. Never speculate on team, revenue, or ops.
+
+FORBIDDEN: "Quick call/question" | "I help companies" | "I noticed" | "I saw" | Any pitch or product mention | "Leverage/Synergy" | "Industry-leading"
+${BANNED_PHRASES}
+${CLAIMS_RULES}
+${BODY_ONLY_RULES}
+End with exactly: Who would be the right person to connect with on this?`;
+
+    case 'proximity':
+      return `You are writing a cold email using the Proximity framework — 4T's structure with active market positioning. Peer-to-peer tone. You have been inside this space long enough to know what happens next. You write like someone already close to their outcome.
+${PROXIMITY_RULE}
+
+FRAMEWORK: 4T's with Proximity (strict order)
+
+1. TRIGGER — One sentence. Specific, observable signal. State it like you already knew. No "I noticed." If no clear trigger, state the company's most likely active situation as an observation.
+
+2. THINK — One sharp, pain-based question tied to the trigger. Never diagnose internals.
+Good: "How much is slipping while everyone is focused on [trigger]?"
+Bad: "That means your team is probably stretched."
+
+3. BRIDGE — "Flagging this because..." or "Sharing this since..."
+ONE sentence: proof if provided (one company, result, timeline) OR mechanism in active tense. Never both.
+Active tense only — "already running" not "can help."
+
+4. TALK — Low-friction CTA. Answerable in 2 seconds. If no CTA specified, use: "Worth a look?" or "Open to seeing it?"
+
+LENGTH RULES (HARD):
+- Under 75 words total. Count before outputting. If over, cut Bridge and rewrite shorter.
+- 3 short paragraphs, line breaks between.
+
+TONE:
+- No exclamation points, no em dashes, no colons in openers. Short sentences. One idea per sentence.
+
+FORBIDDEN: "Quick call/question" | "I help companies" | "I noticed" | "Leverage/Synergy/Optimize" | "Industry-leading" | "can build" | "can help" | "can set up"
+${BANNED_PHRASES}
+${CLAIMS_RULES}
+${BODY_ONLY_RULES}`;
+
+    case '4ps_followup':
+      return `You are writing a follow-up email using the 4P's framework. The prospect saw the first email and didn't reply. REFRAME — do not re-pitch. New frame, new angle.
+
+OPENING LINE (use exactly):
+I reached out the other day but likely didn't do the best job explaining how we help.
+
+FRAMEWORK: 4P's (strict order)
+
+1. PROBLEM — One clear revenue or operational gap anchored to their situation. No speculating on internals.
+
+2. PROMISE — The mechanism in plain language. What happens, in what order, how fast. Tangible enough the prospect can picture the work.
+
+3. PROOF — One sentence max. One specific client, result, and timeline if provided. Skip entirely if not provided — never force or invent.
+
+4. PROPOSAL — Soft CTA. Different wording than the first email. Low-friction and answerable in 2 seconds.
+
+LENGTH RULES (HARD):
+- Under 120 words total. Count before outputting. If over, cut Proof first, then trim Promise.
+- Line breaks between paragraphs.
+
+TONE:
+- No em dashes, no exclamation points. Peer-to-peer, direct, helpful.
+- Do not repeat angles from the first email — new frame only.
+
+FORBIDDEN: "Just following up" | "Bumping this" | "Circling back" | "Quick call" | "Leverage/Synergy" | "Happy to"
+${BANNED_PHRASES}
+${CLAIMS_RULES}
+${BODY_ONLY_RULES}
+Start with exactly: I reached out the other day but likely didn't do the best job explaining how we help.`;
+
+    case '4ps_elusive_followup':
+      return `You are writing a follow-up email for the Elusive (Competence Framing) sequence. Email 1 asked a routing question — this email reveals the reason. REFRAME — do not re-pitch.
+
+OPENING LINE (use exactly):
+Reason I ask about this is...
+
+CLOSING LINE (use exactly):
+Am I barking up the wrong tree?
+
+FRAMEWORK: Modified 4P's (strict order)
+
+1. REASON / PROBLEM — Complete the opening line by revealing why you sent Email 1. Connect to the downstream pain from the prospect's situation. One to two sentences. Anchor to revenue or operational output — not process.
+
+2. PROMISE — The mechanism in plain language. What happens, in what order, how fast. Tangible enough the prospect can picture it in their operation.
+
+3. PROOF — One sentence max. One client, one result, one timeline if provided. Skip entirely if not provided — never force.
+
+4. PROPOSAL — Close with exactly: Am I barking up the wrong tree?
+
+LENGTH RULES (HARD):
+- Under 120 words total. Count before outputting. If over, cut Proof first, then trim Promise.
+- Line breaks between paragraphs.
+
+TONE:
+- No em dashes, no exclamation points. Peer-to-peer, direct, unhurried.
+- No repeating Email 1 angles — new frame only.
+
+FORBIDDEN: "Just following up" | "Bumping this" | "Circling back" | "Quick call" | "Leverage/Synergy"
+${BANNED_PHRASES}
+${CLAIMS_RULES}
+${BODY_ONLY_RULES}
+Start with exactly: Reason I ask about this is...
+End with exactly: Am I barking up the wrong tree?`;
 
     default:
       return `${base}
@@ -423,6 +593,23 @@ ${businessDescription ? `\nWhat we do: ${businessDescription}` : ''}
 
 Write the email body. Start with "Hi ${firstName}," and end with just the sender's name on its own line.`;
 
+    } else if (FRAMEWORK_GOALS.has(goal)) {
+      // 3-prompt pipeline framework goals — body only, no greeting or sign-off
+      systemPrompt = getSystemPrompt(goal, tone, false, templateDescription, templateValue);
+
+      const is4psFollowup = goal === '4ps_followup' || goal === '4ps_elusive_followup';
+      const wordLimitNote = goal === 'elusive' ? 60 : goal === '4ps_followup' || goal === '4ps_elusive_followup' ? 120 : 75;
+
+      userPrompt = `Write a cold email using the ${goal} framework.
+
+PROSPECT:
+${buildLeadContext(true)}
+${triggerContext ? (is4psFollowup ? `\nFirst email sent (reframe from a DIFFERENT angle — do not repeat):\n${triggerContext}` : `\nTrigger / Signal to use: ${triggerContext}`) : ''}
+${businessDescription ? `\nWhat we do${is4psFollowup ? ' (use for Promise)' : ' (use for Bridge if no proof available)'}: ${businessDescription}` : ''}
+${socialProof ? `\nProof point (${is4psFollowup ? 'use for Proof — different angle from Email 1 if possible' : 'use for Bridge'}): ${socialProof}` : ''}
+
+Count your words. If over ${wordLimitNote}, ${goal === '4ps_followup' || goal === '4ps_elusive_followup' ? 'cut Proof first then trim Promise' : 'cut the Bridge and rewrite shorter'}. Output body only — no greeting, no sign-off.`;
+
     } else {
       // Standard generation
       systemPrompt = getSystemPrompt(goal, tone, use4SentenceFramework, templateDescription, templateValue);
@@ -439,7 +626,9 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
     }
 
     const isPrecisionEdit = goal === 'custom' && !!customInstruction;
-    const temperature = isPrecisionEdit ? 0.3 : (variantNum > 0 ? 1.0 : 0.85);
+    const isFrameworkGoal = FRAMEWORK_GOALS.has(goal);
+    // Framework emails use temp 0.5 (as per 3-prompt pipeline spec); precision edits use 0.3
+    const temperature = isPrecisionEdit ? 0.3 : (isFrameworkGoal ? (variantNum > 0 ? 0.7 : 0.5) : (variantNum > 0 ? 1.0 : 0.85));
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

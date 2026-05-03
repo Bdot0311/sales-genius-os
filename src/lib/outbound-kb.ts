@@ -12,6 +12,7 @@ export const OUTBOUND_KB = {
     personalizedLiftMultiplier: 6,       // 6x lift for personalized vs. generic
     followUpReplyShare: 0.42,            // 42% of replies come from follow-ups
     email1ReplyShare: 0.58,              // 58% of replies from email 1
+    frameworkEliteReplyRate: 0.10,       // 10%+ positive reply rate (3-prompt pipeline, 10M+ emails validated)
   },
 
   emailLimits: {
@@ -25,6 +26,12 @@ export const OUTBOUND_KB = {
     subjectLineMaxWords: 7,
     maxLinksFirstTouch: 0,
     maxCtasPerEmail: 1,
+    // Framework-specific hard limits
+    framework4tsMaxWords: 75,            // 4T's Email 1 — cut Bridge first if over
+    frameworkElusiveMaxWords: 60,        // Elusive Email 1 — trim prediction first if over
+    frameworkProximityMaxWords: 75,      // Proximity Email 1 — cut Bridge first if over
+    framework4psMaxWords: 120,           // 4P's follow-up — cut Proof first, then trim Promise
+    framework4psElusiveMaxWords: 120,    // Modified 4P's (Elusive Email 2) — same rule
   },
 
   sequenceRules: {
@@ -57,13 +64,81 @@ export const OUTBOUND_KB = {
     'meeting_request',
     'demo_invite',
     'proposal',
+    // 3-prompt pipeline framework types
+    'framework_4ts',
+    'framework_elusive',
+    'framework_proximity',
+    'framework_4ps_followup',
+    'framework_4ps_elusive_followup',
   ] as const,
+
+  // ─── Three-Prompt Pipeline Frameworks ─────────────────────────────────────
+  // Source: 10M+ cold emails, 10% positive reply rate across client base.
+  // Architecture: Research prompt → Email 1 prompt → Email 2 prompt (connected columns).
+  // Each prompt uses the previous prompt's output. Email 2 always REFRAMES, never re-pitches.
+  emailFrameworks: {
+    system01_4ts: {
+      name: 'System 01 — The 4T\'s',
+      bestFor: 'New campaigns, fresh lists, straightforward B2B offers',
+      structure: ['Trigger', 'Think', 'Bridge', 'Talk'] as const,
+      wordLimitEmail1: 75,
+      wordLimitEmail2: 120,
+      bridgeRule: 'ONE sentence: mechanism OR proof — never both. Cut Bridge first if over limit.',
+      followUpFramework: '4P\'s',
+      followUpLockedOpen: 'I reached out the other day but likely didn\'t do the best job explaining how we help.',
+    },
+    system02_elusive: {
+      name: 'System 02 — Competence Framing (Elusive)',
+      bestFor: 'Saturated markets, sophisticated buyers who have seen every cold email angle',
+      structure: ['Trigger Observation', 'Downstream Prediction', 'Routing Question'] as const,
+      wordLimitEmail1: 60,
+      wordLimitEmail2: 120,
+      // Email 1 never pitches — shows you know their world, asks who to connect with
+      noPitchEmail1: true,
+      lockedCloseEmail1: 'Who would be the right person to connect with on this?',
+      followUpFramework: 'Modified 4P\'s',
+      followUpLockedOpen: 'Reason I ask about this is...',
+      followUpLockedClose: 'Am I barking up the wrong tree?',
+      downstreamPredictionFormat: 'Most [company type] going through [trigger type] start feeling [downstream effect] within [timeframe].',
+    },
+    system03_proximity: {
+      name: 'System 03 — Proximity',
+      bestFor: 'Strong proof points, competitive markets, high-ticket offers',
+      structure: ['Trigger', 'Think', 'Bridge (active position)', 'Talk'] as const,
+      wordLimitEmail1: 75,
+      wordLimitEmail2: 120,
+      followUpFramework: '4P\'s with Proximity',
+      followUpLockedOpen: 'I reached out the other day but likely did not do the best job explaining how this works.',
+    },
+  },
+
+  // Locked openers and closers — use these exactly. Never paraphrase.
+  lockedFollowUpLines: {
+    standard4ps:     'I reached out the other day but likely didn\'t do the best job explaining how we help.',
+    proximity4ps:    'I reached out the other day but likely did not do the best job explaining how this works.',
+    elusiveReveal:   'Reason I ask about this is...',
+    elusiveClose:    'Am I barking up the wrong tree?',
+  },
+
+  // Proximity Rule: write from an active market position. Already there, not offering to go there.
+  proximityActiveVocab: {
+    never: [
+      'can build', 'can set up', 'can install', 'can create',
+      'can help', 'may be able to', 'will help', 'we will build',
+      'we will set up', 'we would love to', 'we can run',
+    ] as const,
+    always: [
+      'already working with', 'already live', 'already running',
+      'already producing', 'already in production', 'already handling',
+    ] as const,
+  },
 
   deadPhrases: [
     "hope this finds you well",
     "hope this email finds you",
     "i'll keep this brief",
     "quick question",
+    "quick call",
     "just following up",
     "bumping this to the top",
     "circling back",
@@ -78,8 +153,10 @@ export const OUTBOUND_KB = {
     "cutting-edge",
     "synergy",
     "leverage",
+    "streamline",
     "i wanted to reach out",
     "touching base",
+    "touch base",
     "any update",
     "per my last email",
     "just checking in",
@@ -88,6 +165,12 @@ export const OUTBOUND_KB = {
     "i came across",
     "i saw on linkedin",
     "i hope this message finds you",
+    "just reaching out",
+    "i help companies",
+    "happy to",
+    "best-in-class",
+    "industry-leading",
+    "optimize",
   ],
 
   deadSubjectPhrases: [
