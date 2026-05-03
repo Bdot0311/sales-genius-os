@@ -163,16 +163,6 @@ export const HeroSection = () => {
 
       </div>
 
-      <div
-        className="absolute bottom-8 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-1.5 opacity-100 sm:flex"
-        aria-hidden="true"
-      >
-        <span className="text-[10px] uppercase tracking-[0.2em] text-white/20">Scroll</span>
-        <div
-          className="h-8 w-px bg-gradient-to-b from-white/20 to-transparent"
-          style={{ animation: "float 2s ease-in-out infinite" }}
-        />
-      </div>
     </section>
   );
 };
