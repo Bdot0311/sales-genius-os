@@ -136,27 +136,27 @@ export const HeroSection = () => {
           Setup in 2 minutes
         </p>
 
-        {/* Mobile trust signals — verifiable platform guarantees only */}
-        <div className="mt-8 w-full max-w-[22rem] sm:hidden">
-          <p className="mb-3 text-center text-[10px] uppercase tracking-[0.2em] text-white/30">
+        {/* Trust signals — verifiable platform guarantees only */}
+        <div className="mt-8 w-full max-w-[22rem] sm:max-w-3xl">
+          <p className="mb-3 text-center text-[10px] uppercase tracking-[0.2em] text-white/30 sm:mb-4">
             Built with security & honesty in mind
           </p>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5">
-              <MailCheck className="h-3.5 w-3.5 shrink-0 text-violet-400" aria-hidden="true" />
-              <span className="text-[11px] font-medium text-white/70 leading-tight">SMTP-verified emails</span>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+            <div className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 sm:px-4 sm:py-3">
+              <MailCheck className="h-3.5 w-3.5 shrink-0 text-violet-400 sm:h-4 sm:w-4" aria-hidden="true" />
+              <span className="text-[11px] font-medium text-white/70 leading-tight sm:text-xs">SMTP-verified emails</span>
             </div>
-            <div className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5">
-              <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-violet-400" aria-hidden="true" />
-              <span className="text-[11px] font-medium text-white/70 leading-tight">SOC 2 infrastructure</span>
+            <div className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 sm:px-4 sm:py-3">
+              <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-violet-400 sm:h-4 sm:w-4" aria-hidden="true" />
+              <span className="text-[11px] font-medium text-white/70 leading-tight sm:text-xs">SOC 2 infrastructure</span>
             </div>
-            <div className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5">
-              <Lock className="h-3.5 w-3.5 shrink-0 text-violet-400" aria-hidden="true" />
-              <span className="text-[11px] font-medium text-white/70 leading-tight">GDPR-ready & encrypted</span>
+            <div className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 sm:px-4 sm:py-3">
+              <Lock className="h-3.5 w-3.5 shrink-0 text-violet-400 sm:h-4 sm:w-4" aria-hidden="true" />
+              <span className="text-[11px] font-medium text-white/70 leading-tight sm:text-xs">GDPR-ready & encrypted</span>
             </div>
-            <div className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5">
-              <RotateCcw className="h-3.5 w-3.5 shrink-0 text-violet-400" aria-hidden="true" />
-              <span className="text-[11px] font-medium text-white/70 leading-tight">30-day money-back</span>
+            <div className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 sm:px-4 sm:py-3">
+              <RotateCcw className="h-3.5 w-3.5 shrink-0 text-violet-400 sm:h-4 sm:w-4" aria-hidden="true" />
+              <span className="text-[11px] font-medium text-white/70 leading-tight sm:text-xs">30-day money-back</span>
             </div>
           </div>
         </div>
