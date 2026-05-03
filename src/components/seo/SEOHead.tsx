@@ -196,8 +196,6 @@ export const SEOHead = ({
         <link key={img} rel="preload" as="image" href={img} />
       ))}
       
-      {/* DNS Prefetch for external resources */}
-      <link rel="preconnect" href="https://salesos.alephwavex.io" />
     </>
   );
 };
