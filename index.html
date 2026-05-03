@@ -62,9 +62,8 @@
     <!-- Verification -->
     <meta name="google-site-verification" content="eKoMLZR8fPmFLx7hsLBEuVSla6QSzAy9S6JK__ijJq8" />
     
-    <!-- DNS Prefetch and preconnect — only essential origins -->
+    <!-- DNS Prefetch only — badge image is below-the-fold and lazy-loaded -->
     <link rel="dns-prefetch" href="//sellwithboost.com" />
-    <link rel="preconnect" href="https://sellwithboost.com" crossorigin />
     
     <!-- Favicon — use local asset to avoid render-blocking external request -->
     <link rel="icon" type="image/x-icon" href="/salesos-logo-small.webp">
@@ -287,18 +286,42 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
 
-    <!-- Google tag (gtag.js) - loaded after main content to avoid render blocking -->
+    <!-- Google tag (gtag.js) — deferred until idle/interaction to minimize main-thread work -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-92ZVN964CE');
-      window.addEventListener('load', function() {
-        var s = document.createElement('script');
-        s.src = 'https://www.googletagmanager.com/gtag/js?id=G-92ZVN964CE';
-        s.async = true;
-        document.head.appendChild(s);
-      });
+      (function(){
+        var loaded = false;
+        function loadGtag(){
+          if (loaded) return;
+          loaded = true;
+          gtag('js', new Date());
+          gtag('config', 'G-92ZVN964CE');
+          var s = document.createElement('script');
+          s.src = 'https://www.googletagmanager.com/gtag/js?id=G-92ZVN964CE';
+          s.async = true;
+          document.head.appendChild(s);
+        }
+        var trigger = function(){ loadGtag(); cleanup(); };
+        function cleanup(){
+          window.removeEventListener('scroll', trigger);
+          window.removeEventListener('mousemove', trigger);
+          window.removeEventListener('touchstart', trigger);
+          window.removeEventListener('keydown', trigger);
+        }
+        window.addEventListener('scroll', trigger, { passive: true, once: true });
+        window.addEventListener('mousemove', trigger, { once: true });
+        window.addEventListener('touchstart', trigger, { passive: true, once: true });
+        window.addEventListener('keydown', trigger, { once: true });
+        // Fallback: load after 5s of idle so analytics still fire on bounce
+        setTimeout(function(){
+          if ('requestIdleCallback' in window) {
+            requestIdleCallback(loadGtag, { timeout: 2000 });
+          } else {
+            loadGtag();
+          }
+        }, 5000);
+      })();
     </script>
   </body>
 </html>
