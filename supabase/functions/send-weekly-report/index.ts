@@ -28,11 +28,20 @@ serve(async (req) => {
         const { data: newLeads } = await supabaseClient.from("leads").select("id").eq("user_id", user.user_id).gte("created_at", oneWeekAgo);
         const { data: sentEmails } = await supabaseClient.from("sent_emails").select("id, opened_at, replied_at").eq("user_id", user.user_id).gte("created_at", oneWeekAgo);
         const { data: deals } = await supabaseClient.from("deals").select("id, value").eq("user_id", user.user_id).gte("created_at", oneWeekAgo);
+        const { data: positiveReplies } = await supabaseClient.from("reply_analysis").select("id").eq("user_id", user.user_id).eq("intent_classification", "high_intent").gte("analyzed_at", oneWeekAgo);
+        const { data: meetingRequests } = await supabaseClient.from("reply_analysis").select("id").eq("user_id", user.user_id).contains("detected_signals", { has_meeting_request: true }).gte("analyzed_at", oneWeekAgo);
 
         const totalEmails = sentEmails?.length || 0;
         const openRate = totalEmails > 0 ? ((sentEmails!.filter(e => e.opened_at).length / totalEmails) * 100).toFixed(1) : '0';
         const replyRate = totalEmails > 0 ? ((sentEmails!.filter(e => e.replied_at).length / totalEmails) * 100).toFixed(1) : '0';
+        const positiveReplyRate = totalEmails > 0 ? (((positiveReplies?.length || 0) / totalEmails) * 100).toFixed(1) : '0';
+        const meetingRate = totalEmails > 0 ? (((meetingRequests?.length || 0) / totalEmails) * 100).toFixed(1) : '0';
         const pipelineValue = deals?.reduce((s, d) => s + (d.value || 0), 0) || 0;
+
+        // Color-code positive reply rate against 10% elite benchmark
+        const positiveRateNum = parseFloat(positiveReplyRate);
+        const positiveRateColor = positiveRateNum >= 10 ? '#10B981' : positiveRateNum >= 5 ? '#F59E0B' : '#EF4444';
+        const positiveRateLabel = positiveRateNum >= 10 ? 'ELITE' : positiveRateNum >= 5 ? 'GOOD' : 'NEEDS WORK';
 
         const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;margin:0;padding:0;background:#f9fafb;">
 <div style="max-width:600px;margin:0 auto;padding:20px;">
@@ -49,6 +58,11 @@ serve(async (req) => {
 <td style="text-align:center;background:#f3f4f6;border-radius:8px;"><div style="font-size:28px;font-weight:bold;color:#10B981;">${replyRate}%</div><div style="font-size:11px;color:#6b7280;">REPLY RATE</div></td>
 <td style="text-align:center;background:#f3f4f6;border-radius:8px;"><div style="font-size:28px;font-weight:bold;color:#10B981;">${deals?.length||0}</div><div style="font-size:11px;color:#6b7280;">NEW DEALS</div></td>
 <td style="text-align:center;background:#f3f4f6;border-radius:8px;"><div style="font-size:28px;font-weight:bold;color:#10B981;">$${pipelineValue.toLocaleString()}</div><div style="font-size:11px;color:#6b7280;">PIPELINE</div></td>
+</tr></table>
+<table width="100%" cellpadding="10" style="margin-top:10px;"><tr>
+<td style="text-align:center;background:#f3f4f6;border-radius:8px;"><div style="font-size:28px;font-weight:bold;color:${positiveRateColor};">${positiveReplyRate}%</div><div style="font-size:11px;color:#6b7280;">POSITIVE REPLY RATE</div><div style="font-size:9px;color:${positiveRateColor};font-weight:bold;">${positiveRateLabel} · target: 10%</div></td>
+<td style="text-align:center;background:#f3f4f6;border-radius:8px;"><div style="font-size:28px;font-weight:bold;color:#8B5CF6;">${meetingRequests?.length||0}</div><div style="font-size:11px;color:#6b7280;">MEETING REQUESTS</div><div style="font-size:9px;color:#9CA3AF;">${meetingRate}% of emails sent</div></td>
+<td style="text-align:center;background:#f3f4f6;border-radius:8px;"><div style="font-size:28px;font-weight:bold;color:#10B981;">${positiveReplies?.length||0}</div><div style="font-size:11px;color:#6b7280;">HIGH-INTENT REPLIES</div><div style="font-size:9px;color:#9CA3AF;">respond today</div></td>
 </tr></table>
 <p style="text-align:center;margin-top:30px;"><a href="https://salesos.alephwavex.io/analytics" style="background:#8B5CF6;color:white;padding:12px 30px;text-decoration:none;border-radius:6px;">View Full Analytics →</a></p>
 </div></div></body></html>`;

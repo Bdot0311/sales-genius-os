@@ -74,6 +74,8 @@ Analyze and respond with ONLY a JSON object (no markdown, no explanation):
 {
   "intent_score": <number 1-100, where 100 is highest buying intent>,
   "intent_classification": "<HIGH_INTENT|LOW_INTENT|NEUTRAL>",
+  "triage_category": "<positive|soft_no|hard_no|ooo|wrong_person|info_request>",
+  "priority": <1|2|3>,
   "detected_signals": {
     "has_question": <boolean - asking about features/pricing/demo>,
     "has_timing": <boolean - mentions timeline like Q2, next month, soon>,
@@ -89,7 +91,20 @@ Analyze and respond with ONLY a JSON object (no markdown, no explanation):
 Classification rules:
 - HIGH_INTENT (70-100): Questions about pricing/features, meeting requests, timeline mentions, comparisons with competitors
 - LOW_INTENT (1-40): "Thanks", "Interesting", auto-replies, "not now", unsubscribe requests
-- NEUTRAL (41-69): Vague interest, unclear signals, mixed messages`;
+- NEUTRAL (41-69): Vague interest, unclear signals, mixed messages
+
+Triage category rules:
+- positive: Interested, wants to proceed, asking buying questions, requesting demo or call
+- soft_no: Not right now, reach out later, timing issue, "try me in Q3"
+- hard_no: Not interested, remove me, unsubscribe, stop emailing
+- ooo: Out of office, automated response, vacation reply
+- wrong_person: Not the right contact, redirected to someone else, "try X instead"
+- info_request: Asking for more information, pricing, a deck, or case studies before deciding
+
+Priority rules:
+- 1 (act today): positive or info_request — respond same day
+- 2 (schedule follow-up): soft_no or wrong_person — add to follow-up queue
+- 3 (no action): hard_no or ooo — remove or wait`;
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -123,6 +138,8 @@ Classification rules:
       analysis = {
         intent_score: 50,
         intent_classification: 'NEUTRAL',
+        triage_category: 'soft_no',
+        priority: 2,
         detected_signals: {
           has_question: false,
           has_timing: false,
@@ -146,7 +163,11 @@ Classification rules:
         reply_content: replyContent,
         intent_score: analysis.intent_score,
         intent_classification: analysis.intent_classification.toLowerCase(),
-        detected_signals: analysis.detected_signals,
+        detected_signals: {
+          ...analysis.detected_signals,
+          triage_category: analysis.triage_category || 'soft_no',
+          priority: analysis.priority ?? 2,
+        },
         requires_human_action: analysis.requires_human_action,
         analyzed_at: new Date().toISOString(),
       })
@@ -161,6 +182,8 @@ Classification rules:
       success: true,
       analysis: {
         ...analysis,
+        triage_category: analysis.triage_category || 'soft_no',
+        priority: analysis.priority ?? 2,
         id: replyAnalysis?.id,
       },
     }), {

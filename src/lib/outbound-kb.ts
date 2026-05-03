@@ -13,6 +13,10 @@ export const OUTBOUND_KB = {
     followUpReplyShare: 0.42,            // 42% of replies come from follow-ups
     email1ReplyShare: 0.58,              // 58% of replies from email 1
     frameworkEliteReplyRate: 0.10,       // 10%+ positive reply rate (3-prompt pipeline, 10M+ emails validated)
+    positiveReplyRateElite: 0.10,        // 10% positive reply rate = elite ($1.5M agency benchmark)
+    positiveReplyRateGood: 0.05,         // 5% = good / top quartile
+    positiveReplyRateAvg: 0.02,          // 2% = industry average for positive replies
+    meetingRateTarget: 0.02,             // 2% emails-to-meeting-request = solid agency benchmark
   },
 
   emailLimits: {
@@ -71,6 +75,21 @@ export const OUTBOUND_KB = {
     'framework_4ps_followup',
     'framework_4ps_elusive_followup',
   ] as const,
+
+  // ─── Reply Triage Taxonomy ─────────────────────────────────────────────────
+  // 6-category system for prioritizing reply action at scale.
+  // Stored in reply_analysis.detected_signals JSONB as triage_category + priority.
+  replyTriage: {
+    categories: {
+      positive:     { label: 'Positive — interested, wants to proceed',         priority: 1, action: 'respond_today' },
+      info_request: { label: 'Info request — wants pricing, deck, case study',  priority: 1, action: 'respond_today' },
+      soft_no:      { label: 'Soft no — not now, reach out later',              priority: 2, action: 'schedule_followup' },
+      wrong_person: { label: 'Wrong person — redirected to another contact',    priority: 2, action: 'update_contact' },
+      hard_no:      { label: 'Hard no — not interested, remove request',        priority: 3, action: 'unsubscribe' },
+      ooo:          { label: 'Out of office — automated or vacation reply',      priority: 3, action: 'retry_after_return' },
+    },
+    // Priority 1 = act today, Priority 2 = schedule follow-up, Priority 3 = no immediate action
+  },
 
   // ─── Three-Prompt Pipeline Frameworks ─────────────────────────────────────
   // Source: 10M+ cold emails, 10% positive reply rate across client base.
