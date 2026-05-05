@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { Globe, CheckCircle, Loader2 } from "lucide-react";
 import { ICPScoreBreakdown } from "./ICPScoreBreakdown";
+import { IntentScoreBadge } from "./IntentScoreBadge";
 
 interface Lead {
   id: string;
@@ -16,6 +17,10 @@ interface Lead {
   source?: string;
   notes?: string;
   icp_score?: number;
+  intent_score?: number | null;
+  intent_label?: string | null;
+  intent_reasons?: string[] | null;
+  recommended_angle?: string | null;
   created_at: string;
   updated_at?: string;
   user_id?: string;
@@ -65,7 +70,8 @@ export const LeadsTableView = ({
             <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground/70 font-medium py-2.5 px-4">Contact</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground/70 font-medium py-2.5 px-4">Status</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground/70 font-medium py-2.5 px-4">Industry</TableHead>
-            <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground/70 font-medium py-2.5 px-4">Score</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground/70 font-medium py-2.5 px-4">ICP</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground/70 font-medium py-2.5 px-4">Intent</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground/70 font-medium py-2.5 px-4">Source</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground/70 font-medium py-2.5 px-4">Added</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground/70 font-medium py-2.5 px-4 w-32">Action</TableHead>
@@ -114,6 +120,9 @@ export const LeadsTableView = ({
                 <TableCell className="py-3 px-4">{lead.industry || "—"}</TableCell>
                 <TableCell className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
                   <ICPScoreBreakdown lead={lead} score={lead.icp_score} />
+                </TableCell>
+                <TableCell className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
+                  <IntentScoreBadge lead={lead} />
                 </TableCell>
                 <TableCell className="py-3 px-4"><span className="text-xs text-muted-foreground">{lead.source || "—"}</span></TableCell>
                 <TableCell className="py-3 px-4 text-xs text-muted-foreground">

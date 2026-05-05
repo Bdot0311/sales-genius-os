@@ -6,25 +6,68 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Deterministic hash for per-lead variation
-function hashString(str: string): number {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash |= 0;
-  }
-  return Math.abs(hash);
-}
+type IntentLabel = 'Cold' | 'Warm' | 'Hot' | 'Very Hot';
+type SignalType = 'lusha_contact' | 'lusha_company' | 'manual' | 'future_provider';
 
 interface ScoreResult {
   score: number;
-  icp_score: number;
   intent_score: number;
+  icp_score: number;
   enrichment_score: number;
+  intent_label: IntentLabel;
+  intent_reasons: string[];
+  recommended_angle: string;
+  signal_type: SignalType;
+  signal_date: string;
   reasoning: string;
   recommendations: string[];
   buying_signals: string[];
+}
+
+function parseEmployeeCount(str: string): number {
+  if (!str) return 0;
+  const s = str.replace(/,/g, '').toLowerCase();
+  const range = s.match(/(\d+)\s*[-–]\s*(\d+)/);
+  if (range) return parseInt(range[1]);
+  const single = s.match(/\d+/);
+  if (single) return parseInt(single[0]);
+  return 0;
+}
+
+function daysSince(dateStr?: string | null): number {
+  if (!dateStr) return Infinity;
+  return (Date.now() - new Date(dateStr).getTime()) / 86_400_000;
+}
+
+function getIntentLabel(score: number): IntentLabel {
+  if (score >= 85) return 'Very Hot';
+  if (score >= 65) return 'Hot';
+  if (score >= 40) return 'Warm';
+  return 'Cold';
+}
+
+// ─── Priority decision-maker titles ───────────────────────────────────────────
+const DM_TIER1 = /founder|co-?founder|ceo|chief executive/i;
+const DM_TIER2_SALES = /vp\s*(of\s*)?sales|head of (growth|sales|revenue|demand)|sales director|director of sales/i;
+const DM_TIER2_REV = /revenue operations|rev\s*ops|demand gen(eration)?|growth lead|sdr manager|head of sdr|head of sales dev/i;
+const DM_TIER3 = /\bvp\b|vice president|director|\bcto\b|\bcmo\b|\bcoo\b|\bcro\b|\bcfo\b|\bcio\b/i;
+const DM_TIER4 = /manager|team lead|\blead\b|principal/i;
+
+function getRecommendedAngle(jobTitle: string): string {
+  const jt = jobTitle || '';
+  if (DM_TIER1.test(jt)) {
+    return 'Position this as a way to create predictable pipeline without adding more manual sales work.';
+  }
+  if (DM_TIER2_SALES.test(jt)) {
+    return 'Position this as a way to help reps turn cold leads into booked calls faster.';
+  }
+  if (DM_TIER2_REV.test(jt)) {
+    return 'Position this as a cleaner system for tracking outbound, follow-ups, and pipeline movement.';
+  }
+  if (/demand gen|growth lead|head of growth|sdr/i.test(jt)) {
+    return 'Position this as a tool to help SDRs personalize outreach at scale without spending hours on research.';
+  }
+  return 'Use direct outreach because the contact data appears strong and complete.';
 }
 
 function scoreLead(data: {
@@ -32,241 +75,205 @@ function scoreLead(data: {
   contactName?: string;
   industry?: string;
   companySize?: string;
+  employeeCount?: string;
   jobTitle?: string;
   seniority?: string;
   contactEmail?: string;
   linkedinUrl?: string;
   companyWebsite?: string;
+  companyLinkedin?: string;
+  annualRevenue?: string;
   department?: string;
   technologies?: string[];
   notes?: string;
+  enrichedAt?: string | null;
 }): ScoreResult {
-  const seedStr = `${data.contactName || ''}|${data.companyName || ''}|${data.jobTitle || ''}`;
-  const seed = hashString(seedStr);
-  const variation = (seed % 11) - 5;
-
-  let icpScore = 40;
-  let intentScore = 35;
-  let enrichmentScore = 30;
   const reasons: string[] = [];
-  const recommendations: string[] = [];
   const buyingSignals: string[] = [];
 
-  // === ICP SCORING: Job Title / Seniority ===
-  const jobTitle = (data.jobTitle || '').toLowerCase();
-  const seniority = (data.seniority || '').toLowerCase();
-
-  if (jobTitle.includes('ceo') || jobTitle.includes('chief executive')) {
-    icpScore += 38;
-    reasons.push('CEO / Chief Executive - top decision maker');
-    buyingSignals.push('Key Decision Maker');
-  } else if (jobTitle.includes('founder') || jobTitle.includes('co-founder')) {
-    icpScore += 35;
-    reasons.push('Founder - ultimate authority');
-    buyingSignals.push('Key Decision Maker');
-  } else if (jobTitle.includes('owner') || jobTitle.includes('president')) {
-    icpScore += 32;
-    reasons.push('Owner/President - direct budget authority');
-    buyingSignals.push('Key Decision Maker');
-  } else if (jobTitle.includes('cto') || jobTitle.includes('chief technology')) {
-    icpScore += 30;
-    reasons.push('CTO - technology decision maker');
-    buyingSignals.push('Tech Buyer');
-  } else if (jobTitle.includes('cfo') || jobTitle.includes('chief financial')) {
-    icpScore += 28;
-    reasons.push('CFO - budget authority');
-    buyingSignals.push('Budget Authority');
-  } else if (jobTitle.includes('coo') || jobTitle.includes('cmo') || jobTitle.includes('cro') || jobTitle.includes('cio')) {
-    icpScore += 26;
-    reasons.push('C-suite leader');
-    buyingSignals.push('Decision Maker');
-  } else if (jobTitle.includes('vp') || jobTitle.includes('vice president')) {
-    icpScore += 22;
-    reasons.push('VP-level authority');
-    buyingSignals.push('Decision Maker');
-  } else if (jobTitle.includes('director')) {
-    icpScore += 18;
-    reasons.push('Director-level influence');
-    buyingSignals.push('Decision Maker');
-  } else if (jobTitle.includes('head of') || jobTitle.includes('head,')) {
-    icpScore += 16;
-    reasons.push('Department head');
-  } else if (jobTitle.includes('senior') && (jobTitle.includes('manager') || jobTitle.includes('lead'))) {
-    icpScore += 14;
-    reasons.push('Senior management');
-  } else if (jobTitle.includes('manager')) {
-    icpScore += 10;
-    reasons.push('Management level');
-  } else if (jobTitle.includes('lead') || jobTitle.includes('principal')) {
-    icpScore += 8;
-    reasons.push('Team lead / principal');
-  } else if (jobTitle.includes('senior')) {
-    icpScore += 6;
-    reasons.push('Senior individual contributor');
-  } else if (jobTitle.includes('specialist') || jobTitle.includes('analyst') || jobTitle.includes('coordinator')) {
-    icpScore += 2;
-    reasons.push('Individual contributor');
-  } else if (!jobTitle) {
-    reasons.push('No job title available');
-    recommendations.push('Add job title for better scoring');
-  } else {
-    icpScore += 3;
-    reasons.push(`Job title: ${data.jobTitle}`);
-  }
-
-  // Seniority fallback (if job title didn't match but seniority is set)
-  if (seniority && !jobTitle) {
-    if (['cxo', 'c-level', 'c-suite', 'executive'].includes(seniority)) {
-      icpScore += 20;
-    } else if (seniority === 'vp') {
-      icpScore += 15;
-    } else if (seniority === 'director') {
-      icpScore += 12;
-    } else if (seniority === 'manager') {
-      icpScore += 8;
-    } else if (seniority === 'senior') {
-      icpScore += 5;
-    }
-  }
-
-  // === INTENT SCORING: Revenue/Growth alignment ===
-  if (jobTitle.includes('revenue') || jobTitle.includes('growth') || jobTitle.includes('sales') || jobTitle.includes('business development')) {
-    intentScore += 15;
-    buyingSignals.push('Revenue Focus');
-  }
-  if (jobTitle.includes('marketing') || jobTitle.includes('demand gen') || jobTitle.includes('partnerships')) {
-    intentScore += 10;
-    buyingSignals.push('Marketing Leader');
-  }
-  if (jobTitle.includes('operations') || jobTitle.includes('strategy')) {
-    intentScore += 7;
-  }
-  if (jobTitle.includes('tech') || jobTitle.includes('it') || jobTitle.includes('engineer') || jobTitle.includes('developer') || jobTitle.includes('devops')) {
-    buyingSignals.push('Tech Buyer');
-  }
-  if (jobTitle.includes('finance') || jobTitle.includes('procurement')) {
-    buyingSignals.push('Budget Authority');
-  }
-
-  // === COMPANY SIZE SCORING ===
-  const companySize = (data.companySize || '').toString().toLowerCase();
-  if (companySize.includes('10001') || companySize.includes('5001')) {
-    icpScore += 6;
-    intentScore += 12;
-    buyingSignals.push('Enterprise');
-    reasons.push('Enterprise-scale company');
-  } else if (companySize.includes('1001') || companySize.includes('501')) {
-    icpScore += 10;
-    intentScore += 14;
-    buyingSignals.push('Mid-Market');
-    reasons.push('Mid-market company - strong budget potential');
-  } else if (companySize.includes('201') || companySize.includes('500')) {
-    icpScore += 12;
-    intentScore += 10;
-    buyingSignals.push('Mid-Market');
-    reasons.push('Growth-stage company');
-  } else if (companySize.includes('51') || companySize.includes('200')) {
-    icpScore += 8;
-    intentScore += 8;
-    reasons.push('SMB with growth potential');
-  } else if (companySize.includes('11') || companySize.includes('50')) {
-    icpScore += 4;
-    intentScore += 4;
-    reasons.push('Small business');
-  } else if (companySize.includes('1-10') || companySize.includes('micro')) {
-    icpScore += 2;
-    intentScore += 2;
-    reasons.push('Micro business');
-  } else if (!companySize) {
-    recommendations.push('Add company size for better scoring');
-  }
-
-  // === INDUSTRY SCORING ===
+  // ── 1. ICP Fit (0–30) ───────────────────────────────────────────────────────
   const industry = (data.industry || '').toLowerCase();
-  if (industry.includes('software') || industry.includes('technology') || industry.includes('information technology')) {
-    intentScore += 8;
-    buyingSignals.push('Tech Industry');
-    reasons.push('High-value tech industry');
-  } else if (industry.includes('financial') || industry.includes('banking') || industry.includes('insurance')) {
-    intentScore += 7;
-    reasons.push('Financial services - high deal value');
-  } else if (industry.includes('consulting') || industry.includes('marketing')) {
-    intentScore += 6;
-    reasons.push('Professional services');
-  } else if (industry.includes('health') || industry.includes('education')) {
-    intentScore += 4;
-    reasons.push(`${data.industry} sector`);
-  } else if (industry.includes('retail') || industry.includes('manufacturing')) {
-    intentScore += 3;
-    reasons.push(`${data.industry} sector`);
+  let industryPts = 0;
+  if (/software|technology|saas|information technology|internet|computer|tech/.test(industry)) {
+    industryPts = 20; buyingSignals.push('Tech Industry');
+  } else if (/financial|fintech|banking|insurance|investment|venture/.test(industry)) {
+    industryPts = 16; buyingSignals.push('Finance/FinTech');
+  } else if (/consulting|professional service|marketing|advertising|agency|staffing/.test(industry)) {
+    industryPts = 14;
+  } else if (/healthcare|medical|pharma|biotech|health/.test(industry)) {
+    industryPts = 10;
+  } else if (/education|legal|real estate|construction|manufacturing|retail/.test(industry)) {
+    industryPts = 6;
   } else if (industry) {
-    intentScore += 2;
-    reasons.push(`Industry: ${data.industry}`);
+    industryPts = 4;
   } else {
-    recommendations.push('Add industry for better scoring');
+    industryPts = 2;
   }
 
-  // === ENRICHMENT / DATA COMPLETENESS ===
+  const empCount = parseEmployeeCount(data.companySize || data.employeeCount || '');
+  let sizePts = 0;
+  let sizeLabel = '';
+  if (empCount >= 201 && empCount <= 1000) {
+    sizePts = 10; sizeLabel = `${empCount} employees (ideal size)`;
+    buyingSignals.push('Mid-Market');
+  } else if (empCount >= 1001 && empCount <= 5000) {
+    sizePts = 8; sizeLabel = `${empCount} employees`;
+    buyingSignals.push('Mid-Market');
+  } else if (empCount >= 5001) {
+    sizePts = 5; sizeLabel = `${empCount} employees (enterprise)`;
+    buyingSignals.push('Enterprise');
+  } else if (empCount >= 51) {
+    sizePts = 7; sizeLabel = `${empCount} employees`;
+  } else if (empCount >= 11) {
+    sizePts = 4; sizeLabel = `${empCount} employees`;
+  } else if (empCount >= 1) {
+    sizePts = 2; sizeLabel = `${empCount} employees (micro)`;
+  }
+
+  const icpFit = Math.min(30, industryPts + sizePts);
+  const icpDetail = [data.industry ? data.industry : 'unknown industry', sizeLabel].filter(Boolean).join(' · ');
+  reasons.push(`ICP Fit (${icpFit}/30): ${icpDetail || 'limited data'}`);
+
+  // ── 2. Contact Quality (0–20) ────────────────────────────────────────────────
   const email = data.contactEmail || '';
+  const personalDomains = /gmail\.|yahoo\.|hotmail\.|outlook\.|icloud\.|aol\.|protonmail\.|me\.com/i;
+  let contactPts = 0;
+  const contactDetails: string[] = [];
+
   if (email) {
-    enrichmentScore += 18;
-    if (!email.includes('gmail.') && !email.includes('yahoo.') && !email.includes('hotmail.') && !email.includes('outlook.')) {
-      enrichmentScore += 5;
+    if (!personalDomains.test(email)) {
+      contactPts += 8; contactDetails.push('Corporate email');
       buyingSignals.push('Corporate Email');
+    } else {
+      contactPts += 4; contactDetails.push('Personal email');
     }
     buyingSignals.push('Email Available');
+  }
+  if (data.contactEmail && data.notes?.includes('+1')) { /* phone from notes — skip */ }
+  if (data.linkedinUrl) {
+    contactPts += 4; contactDetails.push('LinkedIn');
+    buyingSignals.push('LinkedIn Available');
+  }
+  if (data.companyWebsite) {
+    contactPts += 4; contactDetails.push('Company website');
+  }
+  // phone — notes sometimes contain phone for enriched leads
+  if (data.notes?.match(/\+\d[\d\s\-()]{7,}/)) {
+    contactPts += 4; contactDetails.push('Phone number');
+  }
+
+  const contactQuality = Math.min(20, contactPts);
+  reasons.push(`Contact Quality (${contactQuality}/20): ${contactDetails.join(' · ') || 'limited contact data'}`);
+
+  // ── 3. Decision-Maker Fit (0–20) ─────────────────────────────────────────────
+  const jt = data.jobTitle || '';
+  let dmPts = 0;
+  let dmLabel = '';
+
+  if (DM_TIER1.test(jt)) {
+    dmPts = 20; dmLabel = `${jt} — top-tier decision maker`;
+    buyingSignals.push('Key Decision Maker');
+  } else if (DM_TIER2_SALES.test(jt)) {
+    dmPts = 17; dmLabel = `${jt} — revenue leader`;
+    buyingSignals.push('Revenue Leader');
+  } else if (DM_TIER2_REV.test(jt)) {
+    dmPts = 15; dmLabel = `${jt} — revenue operations`;
+    buyingSignals.push('Revenue Operations');
+  } else if (/head of growth|growth lead|demand gen|sdr manager/i.test(jt)) {
+    dmPts = 14; dmLabel = `${jt} — growth/demand leader`;
+  } else if (DM_TIER3.test(jt)) {
+    const isSalesAligned = /sales|revenue|growth|demand|marketing/i.test(jt);
+    dmPts = isSalesAligned ? 12 : 10;
+    dmLabel = `${jt}`;
+    buyingSignals.push('Decision Maker');
+  } else if (DM_TIER4.test(jt)) {
+    const isSalesAligned = /sales|revenue|growth|demand/i.test(jt);
+    dmPts = isSalesAligned ? 7 : 5;
+    dmLabel = `${jt}`;
+  } else if (data.seniority) {
+    const sen = data.seniority.toLowerCase();
+    if (['cxo', 'c-level', 'c-suite', 'executive'].includes(sen)) { dmPts = 10; dmLabel = `${data.seniority} seniority`; }
+    else if (sen === 'vp') { dmPts = 12; dmLabel = `VP seniority`; }
+    else if (sen === 'director') { dmPts = 10; dmLabel = `Director seniority`; }
+    else if (sen === 'manager') { dmPts = 5; dmLabel = `Manager seniority`; }
+    else if (sen === 'senior') { dmPts = 3; dmLabel = `Senior IC`; }
+    else { dmPts = 2; dmLabel = `${data.seniority}`; }
+  } else if (jt) {
+    dmPts = 3; dmLabel = jt;
   } else {
-    recommendations.push('Add email address for outreach');
-  }
-  if (data.linkedinUrl) enrichmentScore += 12;
-  if (data.companyWebsite) enrichmentScore += 10;
-  if (data.industry) enrichmentScore += 5;
-  if (data.companyName) enrichmentScore += 3;
-  if (data.contactName) enrichmentScore += 2;
-  if (data.seniority) enrichmentScore += 3;
-  if (data.department) enrichmentScore += 2;
-  if (data.technologies && data.technologies.length > 0) {
-    enrichmentScore += 5;
-    reasons.push(`${data.technologies.length} technologies tracked`);
+    dmPts = 1; dmLabel = 'No title available';
   }
 
-  // === APPLY PER-LEAD VARIATION ===
-  icpScore += variation;
-  intentScore += (seed % 7) - 3;
-  enrichmentScore += ((seed >> 3) % 5) - 2;
+  const decisionMakerFit = Math.min(20, dmPts);
+  reasons.push(`Decision-Maker (${decisionMakerFit}/20): ${dmLabel}`);
 
-  // Cap scores
-  icpScore = Math.max(5, Math.min(100, icpScore));
-  intentScore = Math.max(5, Math.min(100, intentScore));
-  enrichmentScore = Math.max(5, Math.min(100, enrichmentScore));
+  // ── 4. Company Fit (0–15) ────────────────────────────────────────────────────
+  let companyPts = 0;
+  const companyDetails: string[] = [];
+  if (data.companyWebsite) { companyPts += 5; companyDetails.push('Website'); }
+  if (data.companyLinkedin) { companyPts += 4; companyDetails.push('LinkedIn'); }
+  if (empCount > 0 || data.employeeCount) { companyPts += 3; companyDetails.push('Employee count'); }
+  if (data.annualRevenue) { companyPts += 2; companyDetails.push('Revenue data'); }
+  if (data.industry) { companyPts += 1; }
 
-  const overallScore = Math.round((icpScore * 0.4) + (intentScore * 0.3) + (enrichmentScore * 0.3));
+  const companyFit = Math.min(15, companyPts);
+  reasons.push(`Company Fit (${companyFit}/15): ${companyDetails.join(' · ') || 'limited company data'}`);
 
-  // Add general recommendations
-  if (overallScore >= 70) {
-    recommendations.push('High-priority lead - engage immediately');
-  } else if (overallScore >= 50) {
-    recommendations.push('Good prospect - add to outreach sequence');
+  // ── 5. Recency / Data Freshness (0–15) ───────────────────────────────────────
+  const age = daysSince(data.enrichedAt);
+  let recencyPts = 0;
+  let recencyLabel = '';
+
+  if (age <= 7) {
+    recencyPts = 15; recencyLabel = `Enriched ${Math.round(age)} day${age <= 1 ? '' : 's'} ago`;
+  } else if (age <= 30) {
+    recencyPts = 12; recencyLabel = `Enriched ${Math.round(age)} days ago`;
+  } else if (age <= 90) {
+    recencyPts = 8; recencyLabel = `Enriched ${Math.round(age)} days ago`;
+  } else if (age < Infinity) {
+    recencyPts = 4; recencyLabel = `Enriched ${Math.round(age / 30)} months ago`;
+  } else if (email && jt) {
+    recencyPts = 6; recencyLabel = 'Manual data — email + title present';
+  } else if (email) {
+    recencyPts = 4; recencyLabel = 'Manual data — email present';
   } else {
-    recommendations.push('Nurture lead - enrich data before outreach');
+    recencyPts = 2; recencyLabel = 'No enrichment — enrich for higher score';
   }
 
-  if (!data.linkedinUrl) {
-    recommendations.push('Add LinkedIn URL for better enrichment');
-  }
+  const recency = Math.min(15, recencyPts);
+  reasons.push(`Data Freshness (${recency}/15): ${recencyLabel}`);
+
+  // ── Final score ─────────────────────────────────────────────────────────────
+  const intentScore = Math.max(0, Math.min(100, icpFit + contactQuality + decisionMakerFit + companyFit + recency));
+  const label = getIntentLabel(intentScore);
+  const recommendedAngle = getRecommendedAngle(jt);
+  const signalType: SignalType = data.enrichedAt ? 'lusha_contact' : 'manual';
+  const signalDate = data.enrichedAt || new Date().toISOString();
+
+  // Legacy fields (backwards compat with callers that read these)
+  const legacyRecommendations: string[] = [];
+  if (intentScore >= 65) legacyRecommendations.push('High-intent lead — engage immediately');
+  else if (intentScore >= 40) legacyRecommendations.push('Warm lead — add to outreach sequence');
+  else legacyRecommendations.push('Cold lead — enrich data before outreach');
+  if (!email) legacyRecommendations.push('Add email address to unlock direct outreach');
+  if (!data.linkedinUrl) legacyRecommendations.push('Add LinkedIn URL for better enrichment');
 
   return {
-    score: Math.max(5, Math.min(100, overallScore)),
-    icp_score: icpScore,
+    score: intentScore,
     intent_score: intentScore,
-    enrichment_score: enrichmentScore,
-    reasoning: reasons.join(' · ') || 'Scored based on available data',
-    recommendations: recommendations.slice(0, 4),
+    icp_score: intentScore,
+    enrichment_score: contactQuality + companyFit,
+    intent_label: label,
+    intent_reasons: reasons,
+    recommended_angle: recommendedAngle,
+    signal_type: signalType,
+    signal_date: signalDate,
+    reasoning: reasons.join(' · '),
+    recommendations: legacyRecommendations.slice(0, 4),
     buying_signals: buyingSignals.length > 0 ? buyingSignals : ['Prospect'],
   };
 }
 
-// Input validation
 const validateInputs = (data: any) => {
   const errors: string[] = [];
   if (!data.companyName || typeof data.companyName !== 'string') {
@@ -286,8 +293,7 @@ serve(async (req) => {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -300,16 +306,13 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
     if (authError || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const body = await req.json();
 
-    // Support both formats: { leadId } for DB leads, or direct field data
     if (body.leadId) {
-      // Score an existing lead from DB
       const supabaseService = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -324,30 +327,41 @@ serve(async (req) => {
 
       if (leadError || !lead) {
         return new Response(JSON.stringify({ error: 'Lead not found' }), {
-          status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
       const result = scoreLead({
-        companyName: lead.company_name,
-        contactName: lead.contact_name,
-        industry: lead.industry,
-        companySize: lead.company_size || lead.employee_count,
-        jobTitle: lead.job_title,
-        seniority: lead.seniority,
-        contactEmail: lead.contact_email,
-        linkedinUrl: lead.linkedin_url,
-        companyWebsite: lead.company_website,
-        department: lead.department,
-        technologies: lead.technologies,
-        notes: lead.notes,
+        companyName:     lead.company_name,
+        contactName:     lead.contact_name,
+        industry:        lead.industry,
+        companySize:     lead.company_size,
+        employeeCount:   lead.employee_count,
+        jobTitle:        lead.job_title,
+        seniority:       lead.seniority,
+        contactEmail:    lead.contact_email,
+        linkedinUrl:     lead.linkedin_url,
+        companyWebsite:  lead.company_website,
+        companyLinkedin: lead.company_linkedin,
+        annualRevenue:   lead.annual_revenue,
+        department:      lead.department,
+        technologies:    lead.technologies,
+        notes:           lead.notes,
+        enrichedAt:      lead.enriched_at,
       });
 
-      // Update the lead's icp_score in the database
+      // Persist all intent fields
       await supabaseService
         .from('leads')
-        .update({ icp_score: result.score })
+        .update({
+          icp_score:          result.score,
+          intent_score:       result.intent_score,
+          intent_label:       result.intent_label,
+          intent_reasons:     result.intent_reasons,
+          recommended_angle:  result.recommended_angle,
+          signal_type:        result.signal_type,
+          signal_date:        result.signal_date,
+        })
         .eq('id', body.leadId)
         .eq('user_id', user.id);
 
@@ -356,28 +370,31 @@ serve(async (req) => {
       });
     }
 
-    // Direct field data (from AddLeadDialog)
+    // Direct field scoring (no DB persist)
     const validationErrors = validateInputs(body);
     if (validationErrors.length > 0) {
       return new Response(JSON.stringify({ error: validationErrors.join(', ') }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const result = scoreLead({
-      companyName: body.companyName,
-      contactName: body.contactName,
-      industry: body.industry,
-      companySize: body.companySize,
-      jobTitle: body.jobTitle || body.job_title,
-      seniority: body.seniority,
-      contactEmail: body.contactEmail || body.contact_email,
-      linkedinUrl: body.linkedinUrl || body.linkedin_url,
-      companyWebsite: body.companyWebsite || body.company_website,
-      department: body.department,
-      technologies: body.technologies,
-      notes: body.notes,
+      companyName:     body.companyName,
+      contactName:     body.contactName,
+      industry:        body.industry,
+      companySize:     body.companySize,
+      employeeCount:   body.employeeCount || body.employee_count,
+      jobTitle:        body.jobTitle || body.job_title,
+      seniority:       body.seniority,
+      contactEmail:    body.contactEmail || body.contact_email,
+      linkedinUrl:     body.linkedinUrl || body.linkedin_url,
+      companyWebsite:  body.companyWebsite || body.company_website,
+      companyLinkedin: body.companyLinkedin || body.company_linkedin,
+      annualRevenue:   body.annualRevenue || body.annual_revenue,
+      department:      body.department,
+      technologies:    body.technologies,
+      notes:           body.notes,
+      enrichedAt:      body.enrichedAt || body.enriched_at || null,
     });
 
     return new Response(JSON.stringify(result), {
@@ -389,18 +406,15 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         error: 'Lead scoring temporarily unavailable',
-        score: 50,
-        icp_score: 50,
-        intent_score: 50,
-        enrichment_score: 50,
+        score: 50, intent_score: 50, icp_score: 50, enrichment_score: 20,
+        intent_label: 'Warm', intent_reasons: ['Unable to score lead automatically'],
+        recommended_angle: 'Review lead manually before outreach.',
+        signal_type: 'manual', signal_date: new Date().toISOString(),
         reasoning: 'Unable to score lead automatically. Manual review recommended.',
         recommendations: ['Review lead manually', 'Add more information'],
         buying_signals: ['Prospect'],
       }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
