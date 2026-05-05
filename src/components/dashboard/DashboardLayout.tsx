@@ -56,7 +56,6 @@ const navSections = [
     label: "TOOLS",
     items: [
       { name: "Outreach", icon: Mail, href: "/dashboard/outreach" },
-      { name: "Sequences", icon: Zap, href: "/dashboard/sequences" },
       { name: "Calendar", icon: Calendar, href: "/dashboard/calendar" },
       { name: "Analytics", icon: BarChart3, href: "/dashboard/analytics" },
       { name: "Coach", icon: Mic, href: "/dashboard/coach" },
