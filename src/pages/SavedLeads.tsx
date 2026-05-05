@@ -8,14 +8,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { LeadAssignmentDialog } from "@/components/dashboard/LeadAssignmentDialog";
 import { LeadDetailSheet } from "@/components/dashboard/LeadDetailSheet";
-import { Search, Download, ArrowUpDown, Trash2, UserPlus, LayoutGrid, Table as TableIcon, ArrowLeft, CheckCircle, Sparkles, AlertCircle } from "lucide-react";
+import { Search, Download, ArrowUpDown, Trash2, UserPlus, LayoutGrid, Table as TableIcon, ArrowLeft, CheckCircle, Sparkles, AlertCircle, Filter } from "lucide-react";
+import { IntentScoreBadge } from "@/components/dashboard/IntentScoreBadge";
 import { Progress } from "@/components/ui/progress";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-type SortField = "created_at" | "icp_score" | "company_name" | "company_size";
+type SortField = "created_at" | "icp_score" | "intent_score" | "company_name" | "company_size";
 type SortOrder = "asc" | "desc";
 
 interface Lead {
@@ -37,6 +38,12 @@ interface Lead {
   company_website?: string;
   enrichment_status?: string;
   enriched_at?: string;
+  seniority?: string | null;
+  department?: string | null;
+  intent_score?: number | null;
+  intent_label?: string | null;
+  intent_reasons?: string[] | null;
+  recommended_angle?: string | null;
 }
 
 const getEnrichmentBadge = (lead: Lead) => {
@@ -72,6 +79,10 @@ const SavedLeads = () => {
   const [isEnriching, setIsEnriching] = useState(false);
   const [bulkEnriching, setBulkEnriching] = useState(false);
   const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0, succeeded: 0, failed: 0 });
+  const [filterIntentLabel, setFilterIntentLabel] = useState<string>("all");
+  const [filterIndustry, setFilterIndustry] = useState<string>("all");
+  const [filterCompanySize, setFilterCompanySize] = useState<string>("all");
+  const [filterSeniority, setFilterSeniority] = useState<string>("all");
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -117,13 +128,25 @@ const SavedLeads = () => {
     }
   };
 
+  const uniqueIndustries = Array.from(new Set(leads.map((l) => l.industry).filter(Boolean))) as string[];
+  const uniqueSeniorities = Array.from(new Set(leads.map((l) => l.seniority).filter(Boolean))) as string[];
+  const uniqueCompanySizes = Array.from(
+    new Set(leads.map((l) => l.company_size).filter(Boolean))
+  ) as string[];
+
   const filteredAndSortedLeads = leads
     .filter((lead) => {
-      const matchesSearch = 
-        lead.company_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        lead.contact_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (lead.contact_email?.toLowerCase().includes(searchQuery.toLowerCase()) || false);
-      return matchesSearch;
+      const q = searchQuery.toLowerCase();
+      const matchesSearch =
+        lead.company_name.toLowerCase().includes(q) ||
+        lead.contact_name.toLowerCase().includes(q) ||
+        (lead.contact_email?.toLowerCase().includes(q) ?? false);
+      if (!matchesSearch) return false;
+      if (filterIntentLabel !== "all" && lead.intent_label !== filterIntentLabel) return false;
+      if (filterIndustry !== "all" && lead.industry !== filterIndustry) return false;
+      if (filterCompanySize !== "all" && lead.company_size !== filterCompanySize) return false;
+      if (filterSeniority !== "all" && lead.seniority !== filterSeniority) return false;
+      return true;
     })
     .sort((a, b) => {
       let comparison = 0;
@@ -134,15 +157,19 @@ const SavedLeads = () => {
         case "icp_score":
           comparison = (a.icp_score || 0) - (b.icp_score || 0);
           break;
+        case "intent_score":
+          comparison = (a.intent_score || 0) - (b.intent_score || 0);
+          break;
         case "company_name":
           comparison = a.company_name.localeCompare(b.company_name);
           break;
-        case "company_size":
+        case "company_size": {
           const sizeOrder: Record<string, number> = {
-            "1-10": 1, "11-50": 2, "51-200": 3, "201-500": 4, "501-1000": 5, "1000+": 6
+            "1-10": 1, "11-50": 2, "51-200": 3, "201-500": 4, "501-1000": 5, "1000+": 6,
           };
           comparison = (sizeOrder[a.company_size || ""] || 0) - (sizeOrder[b.company_size || ""] || 0);
           break;
+        }
       }
       return sortOrder === "asc" ? comparison : -comparison;
     });
@@ -359,10 +386,67 @@ const SavedLeads = () => {
                 <SelectContent>
                   <SelectItem value="created_at">Date Added</SelectItem>
                   <SelectItem value="icp_score">ICP Score</SelectItem>
+                  <SelectItem value="intent_score">Intent Score</SelectItem>
                   <SelectItem value="company_name">Company Name</SelectItem>
                   <SelectItem value="company_size">Company Size</SelectItem>
                 </SelectContent>
               </Select>
+
+              <Select value={filterIntentLabel} onValueChange={setFilterIntentLabel}>
+                <SelectTrigger className="w-[140px]">
+                  <Filter className="w-3 h-3 mr-1 text-muted-foreground" />
+                  <SelectValue placeholder="Intent" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Intent</SelectItem>
+                  <SelectItem value="Very Hot">Very Hot</SelectItem>
+                  <SelectItem value="Hot">Hot</SelectItem>
+                  <SelectItem value="Warm">Warm</SelectItem>
+                  <SelectItem value="Cold">Cold</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {uniqueIndustries.length > 0 && (
+                <Select value={filterIndustry} onValueChange={setFilterIndustry}>
+                  <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="Industry" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Industries</SelectItem>
+                    {uniqueIndustries.map((ind) => (
+                      <SelectItem key={ind} value={ind}>{ind}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+
+              {uniqueCompanySizes.length > 0 && (
+                <Select value={filterCompanySize} onValueChange={setFilterCompanySize}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="Size" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Sizes</SelectItem>
+                    {uniqueCompanySizes.map((size) => (
+                      <SelectItem key={size} value={size}>{size}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+
+              {uniqueSeniorities.length > 0 && (
+                <Select value={filterSeniority} onValueChange={setFilterSeniority}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="Seniority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Seniority</SelectItem>
+                    {uniqueSeniorities.map((s) => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               
               <Button
                 variant="outline"
@@ -471,6 +555,7 @@ const SavedLeads = () => {
                       <th className="p-3 text-left text-sm font-medium">Industry</th>
                       <th className="p-3 text-left text-sm font-medium">Status</th>
                       <th className="p-3 text-left text-sm font-medium">ICP Score</th>
+                      <th className="p-3 text-left text-sm font-medium">Intent</th>
                       <th className="p-3 text-left text-sm font-medium">Source</th>
                       <th className="p-3 text-left text-sm font-medium">Added</th>
                     </tr>
@@ -509,6 +594,9 @@ const SavedLeads = () => {
                         </td>
                         <td className="p-3">
                           {getScoreBadge(lead.icp_score)}
+                        </td>
+                        <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                          <IntentScoreBadge lead={lead} />
                         </td>
                         <td className="p-3">
                           <div className="flex items-center gap-1">
@@ -554,6 +642,9 @@ const SavedLeads = () => {
                           <div className="flex items-center gap-3 flex-wrap">
                             <h3 className="font-semibold text-lg">{lead.contact_name}</h3>
                             {getScoreBadge(lead.icp_score)}
+                            <span onClick={(e) => e.stopPropagation()}>
+                              <IntentScoreBadge lead={lead} />
+                            </span>
                             {getEnrichmentBadge(lead)}
                           </div>
                           <p className="text-sm text-muted-foreground">{lead.company_name}</p>

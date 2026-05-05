@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { Building2, Mail, Phone, Globe, Linkedin, Briefcase, Users, DollarSign, Code, Calendar, Sparkles, Pencil, Save, X } from "lucide-react";
+import { Building2, Mail, Phone, Globe, Linkedin, Briefcase, Users, DollarSign, Code, Calendar, Sparkles, Pencil, Save, X, TrendingUp } from "lucide-react";
 import { ICPScoreBreakdown } from "./ICPScoreBreakdown";
+import { IntentScoreBadge } from "./IntentScoreBadge";
 import { format } from "date-fns";
 import { useState } from "react";
 
@@ -33,6 +34,12 @@ interface Lead {
   technologies: string[] | null;
   enriched_at: string | null;
   enrichment_status: string | null;
+  intent_score?: number | null;
+  intent_label?: string | null;
+  intent_reasons?: string[] | null;
+  recommended_angle?: string | null;
+  signal_type?: string | null;
+  signal_date?: string | null;
 }
 
 interface EnrichmentHistory {
@@ -205,10 +212,13 @@ export const LeadDetailSheet = ({
               <SheetTitle className="text-2xl">{lead.company_name}</SheetTitle>
               <p className="text-muted-foreground mt-1">{lead.contact_name}</p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               {getEnrichmentStatusBadge(lead.enrichment_status)}
               {lead.icp_score !== null && (
                 <ICPScoreBreakdown lead={lead} score={lead.icp_score} />
+              )}
+              {lead.intent_score != null && (
+                <IntentScoreBadge lead={lead} />
               )}
             </div>
           </div>
@@ -379,6 +389,36 @@ export const LeadDetailSheet = ({
               </div>
             </>
           ) : null}
+
+          {lead.intent_score != null && (
+            <>
+              <Separator />
+              <div>
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4" />Intent Score
+                </h3>
+                <div className="space-y-3">
+                  <IntentScoreBadge lead={lead} />
+                  {lead.intent_reasons && lead.intent_reasons.length > 0 && (
+                    <ul className="space-y-1 text-sm">
+                      {lead.intent_reasons.map((reason, idx) => (
+                        <li key={idx} className="flex items-start gap-2 text-muted-foreground">
+                          <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary/50 flex-shrink-0" />
+                          {reason}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {lead.recommended_angle && (
+                    <div className="rounded-lg bg-muted/40 border border-border/50 p-3">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Recommended Angle</p>
+                      <p className="text-sm">{lead.recommended_angle}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
 
           {enrichmentHistory.length > 0 && (
             <>
