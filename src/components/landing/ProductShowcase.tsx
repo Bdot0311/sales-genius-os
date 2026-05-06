@@ -1,33 +1,10 @@
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { IntegrationStrip } from "@/components/landing/IntegrationLogos";
-
-const DashboardMockup = lazy(() => import("@/components/landing/DashboardMockup"));
+import DashboardMockup from "@/components/landing/DashboardMockup";
 
 export const ProductShowcase = () => {
   const [hovered, setHovered] = useState(false);
-  const [showMockup, setShowMockup] = useState(false);
-  const sectionRef = useRef<HTMLElement | null>(null);
 
-  useEffect(() => {
-    const node = sectionRef.current;
-    if (!node) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setShowMockup(true);
-          observer.disconnect();
-        }
-      },
-      // Only mount the heavy mockup once it's actually approaching the viewport.
-      // Previously rootMargin was 180px which often mounted it at first paint
-      // on tall viewports, defeating the lazy import.
-      { rootMargin: "0px 0px" }
-    );
-
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
 
   return (
     <section
