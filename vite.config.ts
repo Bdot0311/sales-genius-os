@@ -107,19 +107,14 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       output: {
         manualChunks: {
+          // Only chunk vendors that are actually statically imported on the
+          // landing path. Radix dialog/popover/dropdown/select/tabs are only
+          // pulled in by dashboard/auth pages which are lazy — letting Vite
+          // bundle them into their owning route chunks avoids preloading
+          // ~74KB of unused JS on the marketing landing.
           'vendor-react': ['react', 'react-dom'],
           'vendor-router': ['react-router-dom'],
           'vendor-query': ['@tanstack/react-query'],
-          // Split Radix UI into smaller chunks so only what's needed loads
-          'vendor-ui-core': [
-            '@radix-ui/react-dialog',
-            '@radix-ui/react-popover',
-          ],
-          'vendor-ui-nav': [
-            '@radix-ui/react-dropdown-menu',
-            '@radix-ui/react-select',
-            '@radix-ui/react-tabs',
-          ],
         },
       },
     },
