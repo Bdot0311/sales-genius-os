@@ -25,41 +25,11 @@ const FinalCTA = lazy(() => import("@/components/landing/FinalCTA").then(m => ({
 const TrustBar = lazy(() => import("@/components/landing/TrustBar").then(m => ({ default: m.TrustBar })));
 const FooterSection = lazy(() => import("@/components/landing/FooterSection").then(m => ({ default: m.FooterSection })));
 
-// Minimal fallback for lazy sections
-const SectionLoader = () => (
-  <div className="py-16 flex items-center justify-center">
-    <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-  </div>
+// Render lazy sections with an invisible fallback so users never see a spinner
+// while scrolling. Chunks load in the background after initial paint.
+const DeferredSection = ({ children }: { children: ReactNode }) => (
+  <Suspense fallback={null}>{children}</Suspense>
 );
-
-const DeferredSection = ({ children }: { children: ReactNode }) => {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const [shouldRender, setShouldRender] = useState(false);
-
-  useEffect(() => {
-    const node = containerRef.current;
-    if (!node || shouldRender) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setShouldRender(true);
-          observer.disconnect();
-        }
-      },
-      { rootMargin: "120px 0px" }
-    );
-
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [shouldRender]);
-
-  return (
-    <div ref={containerRef}>
-      {shouldRender ? <Suspense fallback={<SectionLoader />}>{children}</Suspense> : <SectionLoader />}
-    </div>
-  );
-};
 
 // AEO: Define clear, structured content for AI answer engines
 const gettingStartedSteps = [
