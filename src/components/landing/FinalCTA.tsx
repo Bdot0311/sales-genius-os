@@ -53,7 +53,7 @@ export const FinalCTA = () => {
             className="text-[10px] uppercase tracking-[0.28em] mb-8 font-medium"
             style={{ color: "hsl(261 75% 60%)" }}
           >
-            Ready when you are
+            Your next pipeline starts here
           </p>
 
           {/* Headline — Playfair Display */}
@@ -68,7 +68,7 @@ export const FinalCTA = () => {
               color: "hsl(0 0% 96%)",
             }}
           >
-            <span className="block">Every day you wait,</span>
+            <span className="block">Stop researching.</span>
             <span
               className="block italic"
               style={{
@@ -79,7 +79,7 @@ export const FinalCTA = () => {
                 backgroundClip: "text",
               }}
             >
-              your competitor doesn't.
+              Start conversations.
             </span>
           </h2>
 
@@ -90,7 +90,7 @@ export const FinalCTA = () => {
             }`}
             style={{ color: "hsl(0 0% 100% / 0.35)" }}
           >
-            See who's worth emailing in under 2 minutes. No list. No guesswork.
+            Your first qualified prospect, verified email, and draft ready in under 2 minutes. Free to start.
           </p>
 
           {/* CTA button */}
@@ -107,9 +107,9 @@ export const FinalCTA = () => {
                 background:
                   "linear-gradient(135deg, hsl(261 75% 60%) 0%, hsl(261 75% 50%) 100%)",
               }}
-              aria-label="Start for free"
+              aria-label="Find my first leads free"
             >
-              Start for free
+              Find my first leads — free
               <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform duration-200" />
             </button>
 
@@ -117,7 +117,7 @@ export const FinalCTA = () => {
               className="mt-4 text-xs"
               style={{ color: "hsl(0 0% 100% / 0.2)" }}
             >
-              No credit card required · Plans from $39/mo · Cancel anytime
+              No credit card required · Cancel anytime · 30-day money-back
             </p>
           </div>
         </div>

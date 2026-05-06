@@ -93,7 +93,7 @@ export const FounderNoteSection = () => {
               className="text-base leading-relaxed"
               style={{ color: "hsl(0 0% 100% / 0.5)" }}
             >
-              SalesOS is what I wanted to exist — one place to describe who I want to reach, see who's actually worth emailing, and write something worth reading. Not magic. Just the workflow that should have existed years ago.
+              SalesOS is what I wanted to exist — one place to describe who I want to reach, see who's actually worth emailing, and send something worth reading. The whole workflow. No overhead. No tool-switching. Just more conversations with the right people.
             </p>
           </div>
 

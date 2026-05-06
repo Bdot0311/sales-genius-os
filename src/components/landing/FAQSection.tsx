@@ -24,9 +24,9 @@ const faqs = [
       "A contact list gives you 10,000 names. SalesOS gives you 50 that are actually worth emailing, ranked by fit, with a draft already written for each one. Volume without qualification is just noise.",
   },
   {
-    question: "What's the catch with the free plan?",
+    question: "How does the free plan work?",
     answer:
-      "No catch. The free plan lets you explore the full workflow with sample data. When you're ready to run live prospecting at volume, you upgrade. No auto-charge, no surprise fees.",
+      "The free plan lets you explore the full workflow with real sample data — no credit card, no auto-charge, no surprise fees. When you're ready to run live prospecting at volume, you upgrade. That's it.",
   },
   {
     question: "How does SalesOS verify email addresses?",

@@ -70,7 +70,7 @@ export const DifferentiationSection = () => {
             className="text-[10px] font-medium uppercase tracking-[0.28em] mb-8"
             style={{ color: "hsl(261 75% 60%)" }}
           >
-            Why not Apollo?
+            The difference
           </p>
 
           {/* Headline */}
@@ -147,14 +147,14 @@ export const DifferentiationSection = () => {
             <Button
               variant="outline"
               size="lg"
-              onClick={() => navigate("/pricing")}
+              onClick={() => navigate("/auth")}
               className="group"
             >
-              See how it stacks up
+              Start free — no card needed
               <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-0.5" />
             </Button>
             <p className="text-xs text-muted-foreground/50">
-              No credit card · Cancel anytime
+              Free plan available · Cancel anytime
             </p>
           </div>
         </div>

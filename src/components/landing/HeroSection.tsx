@@ -64,7 +64,7 @@ export const HeroSection = () => {
             </span>
             <span className="font-medium text-white/80">New</span>
             <span className="text-white/30">·</span>
-            <span>Signal-based lead scoring is live</span>
+            <span>Intent scoring now live — know who's ready before you email</span>
           </span>
         </div>
 
@@ -98,7 +98,7 @@ export const HeroSection = () => {
         <p
           className="mb-8 max-w-[22rem] text-base font-light leading-relaxed text-white/55 sm:mb-12 sm:max-w-xl sm:text-xl"
         >
-          SalesOS scores your best-fit prospects, enriches them with verified contact data, and drafts your first email — before you finish your coffee.
+          Describe your ideal customer once. Get ranked prospects with verified emails and a first-touch draft written for each one — ready to send in under 2 minutes.
         </p>
 
         <div
@@ -112,7 +112,7 @@ export const HeroSection = () => {
             }}
             aria-label="Start for free"
           >
-            Start for free
+            Find my first leads — free
             <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
           </button>
 
@@ -120,7 +120,7 @@ export const HeroSection = () => {
             href="/demo"
             className="inline-flex h-11 items-center justify-center gap-1.5 px-5 text-sm text-white/60 transition-colors duration-200 group hover:text-white/80 sm:h-[52px]"
           >
-            See how it works
+            Watch a 2-min demo
             <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
           </a>
         </div>
@@ -131,15 +131,15 @@ export const HeroSection = () => {
         >
           No credit card required
           <span className="w-px h-3 bg-white/20 inline-block" />
-          30-day money-back guarantee
+          Cancel anytime
           <span className="w-px h-3 bg-white/20 inline-block" />
-          Setup in 2 minutes
+          First leads in 2 minutes
         </p>
 
         {/* Trust signals — verifiable platform guarantees only */}
         <div className="mt-8 w-full max-w-[22rem] sm:max-w-3xl">
           <p className="mb-3 text-center text-[10px] uppercase tracking-[0.2em] text-white/30 sm:mb-4">
-            Built with security & honesty in mind
+            Built for serious outbound
           </p>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
             <div className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 sm:px-4 sm:py-3">

@@ -92,9 +92,9 @@ export const ProblemSection = () => {
               color: "hsl(0 0% 100% / 0.38)",
             }}
           >
-            The average outbound team spends 40% of their week on research.
-            SalesOS cuts that to under 20 minutes — and every contact has a
-            verified email ready to send.
+            The average outbound team burns 40% of their week on research before
+            a single email goes out. SalesOS takes that from 2+ hours to under
+            20 minutes — with every contact verified before it reaches you.
           </p>
 
           {/* Divider */}
