@@ -19,7 +19,10 @@ export const ProductShowcase = () => {
           observer.disconnect();
         }
       },
-      { rootMargin: "180px 0px" }
+      // Only mount the heavy mockup once it's actually approaching the viewport.
+      // Previously rootMargin was 180px which often mounted it at first paint
+      // on tall viewports, defeating the lazy import.
+      { rootMargin: "0px 0px" }
     );
 
     observer.observe(node);

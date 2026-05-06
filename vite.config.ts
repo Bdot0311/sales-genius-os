@@ -21,7 +21,11 @@ export default defineConfig(({ mode }) => ({
       },
       includeAssets: ["favicon.ico", "salesos-logo.webp", "salesos-logo-small.webp"],
       workbox: {
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,woff2}"],
+        // Only precache the app shell — JS/CSS/HTML and a couple critical icons.
+        // Images, webp assets, and fonts are runtime-cached on demand. This
+        // keeps the install payload small (was ~3.9 MB) so first visits are fast.
+        globPatterns: ["**/*.{js,css,html}", "favicon.ico", "salesos-logo-small.webp"],
+        maximumFileSizeToCacheInBytes: 2 * 1024 * 1024, // 2 MB cap per file
         navigateFallbackDenylist: [/^\/~oauth/],
         runtimeCaching: [
           {
@@ -30,6 +34,14 @@ export default defineConfig(({ mode }) => ({
             options: {
               cacheName: "supabase-api",
               expiration: { maxEntries: 50, maxAgeSeconds: 300 },
+            },
+          },
+          {
+            urlPattern: /\.(?:png|jpg|jpeg|svg|webp|avif|gif)$/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "images",
+              expiration: { maxEntries: 80, maxAgeSeconds: 2592000 },
             },
           },
           {
@@ -95,19 +107,14 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       output: {
         manualChunks: {
+          // Only chunk vendors that are actually statically imported on the
+          // landing path. Radix dialog/popover/dropdown/select/tabs are only
+          // pulled in by dashboard/auth pages which are lazy — letting Vite
+          // bundle them into their owning route chunks avoids preloading
+          // ~74KB of unused JS on the marketing landing.
           'vendor-react': ['react', 'react-dom'],
           'vendor-router': ['react-router-dom'],
           'vendor-query': ['@tanstack/react-query'],
-          // Split Radix UI into smaller chunks so only what's needed loads
-          'vendor-ui-core': [
-            '@radix-ui/react-dialog',
-            '@radix-ui/react-popover',
-          ],
-          'vendor-ui-nav': [
-            '@radix-ui/react-dropdown-menu',
-            '@radix-ui/react-select',
-            '@radix-ui/react-tabs',
-          ],
         },
       },
     },
