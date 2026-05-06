@@ -156,7 +156,7 @@ export const FounderNoteSection = () => {
 
           {/* CTAs */}
           <div
-            className={`mt-10 flex items-center gap-6 transition-all duration-700 delay-[400ms] ${
+            className={`mt-10 flex items-center gap-6 transition-all duration-700 [transition-delay:400ms] ${
               isVisible ? "opacity-100" : "opacity-0"
             }`}
           >
