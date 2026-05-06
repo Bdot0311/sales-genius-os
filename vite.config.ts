@@ -21,7 +21,11 @@ export default defineConfig(({ mode }) => ({
       },
       includeAssets: ["favicon.ico", "salesos-logo.webp", "salesos-logo-small.webp"],
       workbox: {
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,woff2}"],
+        // Only precache the app shell — JS/CSS/HTML and a couple critical icons.
+        // Images, webp assets, and fonts are runtime-cached on demand. This
+        // keeps the install payload small (was ~3.9 MB) so first visits are fast.
+        globPatterns: ["**/*.{js,css,html}", "favicon.ico", "salesos-logo-small.webp"],
+        maximumFileSizeToCacheInBytes: 2 * 1024 * 1024, // 2 MB cap per file
         navigateFallbackDenylist: [/^\/~oauth/],
         runtimeCaching: [
           {
@@ -30,6 +34,14 @@ export default defineConfig(({ mode }) => ({
             options: {
               cacheName: "supabase-api",
               expiration: { maxEntries: 50, maxAgeSeconds: 300 },
+            },
+          },
+          {
+            urlPattern: /\.(?:png|jpg|jpeg|svg|webp|avif|gif)$/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "images",
+              expiration: { maxEntries: 80, maxAgeSeconds: 2592000 },
             },
           },
           {
