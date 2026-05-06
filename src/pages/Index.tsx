@@ -47,7 +47,7 @@ const DeferredSection = ({ children }: { children: ReactNode }) => {
           observer.disconnect();
         }
       },
-      { rootMargin: "320px 0px" }
+      { rootMargin: "120px 0px" }
     );
 
     observer.observe(node);
