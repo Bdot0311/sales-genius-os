@@ -107,9 +107,9 @@ export const FinalCTA = () => {
                 background:
                   "linear-gradient(135deg, hsl(261 75% 60%) 0%, hsl(261 75% 50%) 100%)",
               }}
-              aria-label="Find my first leads free"
+              aria-label="Find your first leads free"
             >
-              Find my first leads — free
+              Find your first leads — free
               <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform duration-200" />
             </button>
 
