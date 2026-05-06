@@ -78,7 +78,7 @@ export const OrganizationSchema = ({
   name = "SalesOS",
   description = "SalesOS is a B2B lead discovery and outbound email platform. Describe your ideal customer in plain English, get ranked prospects with SMTP-verified emails, and send AI-drafted first-touch emails — all from one workflow.",
   url = BASE_URL,
-  logo = "https://storage.googleapis.com/gpt-engineer-file-uploads/ZFJK1zezovOpOdjy9TptFukIhhc2/uploads/1761024288225-image 2.png"
+  logo = "https://salesos.alephwavex.io/salesos-logo.webp"
 }: OrganizationSchemaProps) => {
   const schema = {
     "@context": "https://schema.org",
@@ -95,6 +95,11 @@ export const OrganizationSchema = ({
       "height": 512
     },
     "image": logo,
+    "sameAs": [
+      "https://twitter.com/salesos",
+      "https://www.linkedin.com/company/salesos",
+      "https://www.linkedin.com/in/buildwitbrandon"
+    ],
     "contactPoint": [
       {
         "@type": "ContactPoint",
@@ -154,11 +159,19 @@ export const SoftwareApplicationSchema = () => {
     "screenshot": "https://salesos.alephwavex.io/salesos-og.png",
     "offers": {
       "@type": "AggregateOffer",
-      "lowPrice": "39",
+      "lowPrice": "0",
       "highPrice": "179",
       "priceCurrency": "USD",
-      "offerCount": "3",
+      "offerCount": "4",
       "offers": [
+        {
+          "@type": "Offer",
+          "name": "Free Plan",
+          "price": "0",
+          "priceCurrency": "USD",
+          "availability": "https://schema.org/InStock",
+          "description": "Explore the workflow with sample data. No credit card required."
+        },
         {
           "@type": "Offer",
           "name": "Starter Plan",
@@ -238,7 +251,7 @@ export const ProductSchema = ({ name, description, price, priceCurrency = "USD" 
     "brand": {
       "@type": "Brand",
       "name": "SalesOS",
-      "logo": "https://storage.googleapis.com/gpt-engineer-file-uploads/ZFJK1zezovOpOdjy9TptFukIhhc2/uploads/1761024288225-image 2.png"
+      "logo": "https://salesos.alephwavex.io/salesos-logo.webp"
     },
     "offers": {
       "@type": "Offer",
@@ -265,7 +278,7 @@ export const WebSiteSchema = () => {
     "name": "SalesOS",
     "alternateName": "SalesOS - AI Sales Platform",
     "url": BASE_URL,
-    "description": "SalesOS is the leading AI-powered sales operating system. Generate leads, automate outreach, and close more deals.",
+    "description": "SalesOS is a B2B lead discovery and outbound email platform. Describe your ideal customer in plain English, get ranked prospects with SMTP-verified emails, and send AI-drafted first-touch emails from one workflow.",
     "publisher": {
       "@type": "Organization",
       "@id": `${BASE_URL}/#organization`
