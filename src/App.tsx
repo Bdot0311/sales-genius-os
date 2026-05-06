@@ -1,7 +1,19 @@
 import { Suspense, lazy, useState, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
+
+// Public marketing routes that should NOT trigger Supabase/auth/white-label loads
+const PUBLIC_LANDING_PREFIXES = [
+  "/", "/pricing", "/demo", "/api-docs", "/api-status", "/request-integration",
+  "/privacy", "/terms", "/security", "/help", "/install", "/unsubscribe",
+];
+const isPublicLandingPath = (pathname: string) => {
+  if (pathname === "/") return true;
+  return PUBLIC_LANDING_PREFIXES.some(
+    (p) => p !== "/" && (pathname === p || pathname.startsWith(p + "/")),
+  );
+};
 
 // Lazy load non-critical pages
 const Auth = lazy(() => import("./pages/Auth"));
@@ -59,22 +71,31 @@ const DeferredUIShell = ({ children }: { children: React.ReactNode }) => {
   const [Shell, setShell] = useState<React.ComponentType<{ children: React.ReactNode }> | null>(null);
 
   useEffect(() => {
-    // Use requestIdleCallback (or setTimeout fallback) to defer heavy imports
+    // Skip the heavy shell entirely on public marketing pages — no auth, no
+    // toasts, no white-label needed, so we avoid loading the Supabase client
+    // (~154KB) on first paint for landing visitors.
+    const isPublic = isPublicLandingPath(window.location.pathname);
+
     const load = () => {
-      Promise.all([
+      const baseImports: Promise<any>[] = [
         import("@/components/ui/tooltip"),
         import("@/components/ui/toaster"),
         import("@/components/ui/sonner"),
-        import("@/hooks/use-white-label"),
-      ]).then(([tooltipMod, toasterMod, sonnerMod, whiteLabelMod]) => {
-        const TooltipProvider = tooltipMod.TooltipProvider;
-        const Toaster = toasterMod.Toaster;
-        const SonnerToaster = sonnerMod.Toaster;
-        const useWhiteLabel = whiteLabelMod.useWhiteLabel;
+      ];
+      if (!isPublic) {
+        baseImports.push(import("@/hooks/use-white-label"));
+      }
 
-        // Create a combined shell component
+      Promise.all(baseImports).then((mods) => {
+        const TooltipProvider = mods[0].TooltipProvider;
+        const Toaster = mods[1].Toaster;
+        const SonnerToaster = mods[2].Toaster;
+        const useWhiteLabel = !isPublic ? mods[3].useWhiteLabel : null;
+
         const CombinedShell = ({ children }: { children: React.ReactNode }) => {
-          try { useWhiteLabel(); } catch (e) { console.error("WhiteLabel init error:", e); }
+          if (useWhiteLabel) {
+            try { useWhiteLabel(); } catch (e) { console.error("WhiteLabel init error:", e); }
+          }
           return (
             <TooltipProvider>
               <Toaster />
@@ -89,10 +110,12 @@ const DeferredUIShell = ({ children }: { children: React.ReactNode }) => {
       });
     };
 
+    // On public pages we delay even longer — first paint is the priority.
+    const delay = isPublic ? 1500 : 100;
     if ('requestIdleCallback' in window) {
-      (window as any).requestIdleCallback(load, { timeout: 2000 });
+      (window as any).requestIdleCallback(load, { timeout: isPublic ? 4000 : 2000 });
     } else {
-      setTimeout(load, 100);
+      setTimeout(load, delay);
     }
   }, []);
 
