@@ -86,9 +86,11 @@ export default defineConfig(({ mode }) => ({
     include: ["react", "react-dom"],
   },
   build: {
-    // Disable modulePreload to prevent eager downloading of lazy-loaded chunks
-    // (Stripe, Recharts, etc.) on the landing page
-    modulePreload: false,
+    // Enable modulePreload (default) so statically-imported entry chunks
+    // (vendor-react, vendor-router, vendor-query, vendor-ui-core) are fetched
+    // in parallel with the main entry instead of being chained.
+    // Lazy-loaded route chunks (Stripe, Recharts, dashboards) use dynamic
+    // import() and are NOT preloaded — they still load on demand.
     // Reduce unused JS by splitting vendor chunks
     rollupOptions: {
       output: {
