@@ -8,7 +8,6 @@ export const ProductShowcase = () => {
 
   return (
     <section
-      ref={sectionRef}
       className="relative overflow-hidden pb-4 sm:pb-0"
       style={{ background: "hsl(0,0%,3%)" }}
       aria-label="Product preview"
@@ -54,23 +53,7 @@ export const ProductShowcase = () => {
               transition: "transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)",
             }}
           >
-            {showMockup ? (
-              <Suspense
-                fallback={
-                  <div
-                    className="w-full bg-card/90"
-                    style={{ aspectRatio: "16/9" }}
-                  />
-                }
-              >
-                <DashboardMockup />
-              </Suspense>
-            ) : (
-              <div
-                className="w-full bg-card/90"
-                style={{ aspectRatio: "16/9" }}
-              />
-            )}
+            <DashboardMockup />
 
             <div
               className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none sm:h-40"
