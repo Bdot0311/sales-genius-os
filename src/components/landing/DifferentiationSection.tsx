@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
 const rows = [
@@ -24,7 +23,7 @@ const rows = [
 
 export const DifferentiationSection = () => {
   const [isVisible, setIsVisible] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLElement>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -34,7 +33,7 @@ export const DifferentiationSection = () => {
           setIsVisible(true);
         }
       },
-      { threshold: 0.2 }
+      { threshold: 0.15 }
     );
 
     if (ref.current) {
@@ -144,16 +143,17 @@ export const DifferentiationSection = () => {
             }`}
             style={{ transitionDelay: "500ms" }}
           >
-            <Button
-              variant="outline"
-              size="lg"
+            <button
               onClick={() => navigate("/auth")}
-              className="group"
+              className="inline-flex items-center gap-1.5 text-sm font-medium transition-colors duration-200 group"
+              style={{ color: "hsl(261 75% 65%)" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "hsl(261 75% 80%)")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "hsl(261 75% 65%)")}
             >
-              Start free — no card needed
-              <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-0.5" />
-            </Button>
-            <p className="text-xs text-muted-foreground/50">
+              Start free, no card needed
+              <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
+            </button>
+            <p className="text-xs" style={{ color: "hsl(0 0% 100% / 0.25)" }}>
               Free plan available · Cancel anytime
             </p>
           </div>

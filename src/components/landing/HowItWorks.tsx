@@ -127,7 +127,7 @@ export const HowItWorks = () => {
       (entries) => {
         if (entries[0].isIntersecting) setIsVisible(true);
       },
-      { threshold: 0.2 }
+      { threshold: 0.15 }
     );
     if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
@@ -209,11 +209,8 @@ export const HowItWorks = () => {
                   {step.number}
                 </span>
 
-                {/* Step content with purple left border */}
-                <div
-                  className="relative pl-6"
-                  style={{ borderLeft: "2px solid hsl(261 75% 55% / 0.5)" }}
-                >
+                {/* Step content */}
+                <div className="relative">
                   <p
                     className="font-mono text-xs tracking-widest mb-3 uppercase"
                     style={{ color: "hsl(261 75% 60%)" }}

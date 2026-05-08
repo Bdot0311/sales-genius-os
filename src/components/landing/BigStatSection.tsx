@@ -1,83 +1,107 @@
+import { useEffect, useRef, useState } from "react";
+
 export const BigStatSection = () => {
-  const stats = [
-    {
-      value: "< 2 min",
-      label: "From ICP to first lead",
-      sub: "No list-building required",
-    },
-    {
-      value: "10.7%",
-      label: "Reply rate on signal sequences",
-      sub: "vs 3.4% industry average",
-    },
-    {
-      value: "1 tool",
-      label: "Search, enrich, write, send",
-      sub: "Stop switching between 4 apps",
-    },
-  ];
+  const [isVisible, setIsVisible] = useState(false);
+  const ref = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setIsVisible(true); },
+      { threshold: 0.15 }
+    );
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <section
-      className="relative py-20 md:py-28"
+      ref={ref}
+      className="relative py-28 md:py-44 overflow-hidden"
       style={{
         background: "hsl(0,0%,3%)",
         borderTop: "1px solid hsl(261 75% 50% / 0.18)",
         borderBottom: "1px solid hsl(261 75% 50% / 0.18)",
       }}
     >
-      {/* Purple glow */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "radial-gradient(ellipse 60% 50% at 50% 50%, hsl(261 75% 55% / 0.09) 0%, transparent 70%)",
+            "radial-gradient(ellipse 55% 60% at 50% 50%, hsl(261 75% 55% / 0.1) 0%, transparent 70%)",
         }}
         aria-hidden="true"
       />
 
-      <div className="container mx-auto px-6 max-w-5xl relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-3">
-          {stats.map((stat, i) => (
-            <div
-              key={stat.label}
-              className="flex flex-col items-center md:items-start text-center md:text-left px-8 py-6"
-              style={{
-                borderRight:
-                  i < 2 ? "1px solid hsl(261 75% 50% / 0.12)" : undefined,
-              }}
-            >
-              {/* Big number — purple gradient */}
+      <div className="container mx-auto px-6 max-w-3xl relative z-10">
+        <div className="flex flex-col items-center text-center">
+
+          <p
+            className={`text-[10px] uppercase tracking-[0.28em] mb-10 font-medium transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+            style={{ color: "hsl(261 75% 55% / 0.6)" }}
+          >
+            The benchmark
+          </p>
+
+          <p
+            className={`font-display italic leading-none mb-8 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+            style={{
+              fontSize: "clamp(5.5rem, 20vw, 14rem)",
+              fontWeight: 800,
+              letterSpacing: "-0.03em",
+              color: "hsl(261 75% 65%)",
+              transitionDelay: "80ms",
+            }}
+          >
+            {"< 2 min"}
+          </p>
+
+          <p
+            className={`text-lg font-light max-w-xs mb-16 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+            style={{ color: "hsl(0 0% 100% / 0.4)", lineHeight: 1.6, transitionDelay: "160ms" }}
+          >
+            From ICP to first email sent. No tab-switching.
+          </p>
+
+          <div
+            className={`flex flex-col sm:flex-row items-center gap-6 sm:gap-12 transition-all duration-700 ${isVisible ? "opacity-100" : "opacity-0"}`}
+            style={{ transitionDelay: "280ms" }}
+          >
+            <div className="text-center">
               <span
-                className="font-display block mb-3"
-                style={{
-                  fontSize: "clamp(2.8rem, 5vw, 4.5rem)",
-                  fontWeight: 800,
-                  lineHeight: 1,
-                  letterSpacing: "-0.03em",
-                  background:
-                    "linear-gradient(135deg, hsl(0 0% 98%) 0%, hsl(261 75% 72%) 100%)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                }}
+                className="block font-display font-bold"
+                style={{ fontSize: "1.75rem", color: "hsl(0 0% 78%)", letterSpacing: "-0.02em" }}
               >
-                {stat.value}
+                10.7%
               </span>
               <span
-                className="block text-sm font-medium mb-1"
-                style={{ color: "hsl(0 0% 75%)" }}
+                className="block text-xs mt-1"
+                style={{ color: "hsl(0 0% 100% / 0.28)" }}
               >
-                {stat.label}
-              </span>
-              <span
-                className="block text-xs"
-                style={{ color: "hsl(261 75% 60% / 0.6)" }}
-              >
-                {stat.sub}
+                reply rate on signal sequences
               </span>
             </div>
-          ))}
+
+            <div
+              className="hidden sm:block w-px h-12"
+              style={{ background: "hsl(261 75% 50% / 0.18)" }}
+            />
+
+            <div className="text-center">
+              <span
+                className="block font-display font-bold"
+                style={{ fontSize: "1.75rem", color: "hsl(0 0% 78%)", letterSpacing: "-0.02em" }}
+              >
+                1 tool
+              </span>
+              <span
+                className="block text-xs mt-1"
+                style={{ color: "hsl(0 0% 100% / 0.28)" }}
+              >
+                instead of Apollo + Clay + Gmail + spreadsheet
+              </span>
+            </div>
+          </div>
+
         </div>
       </div>
     </section>
