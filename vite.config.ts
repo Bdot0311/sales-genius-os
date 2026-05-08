@@ -14,7 +14,12 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
     VitePWA({
-      registerType: "prompt",
+      // Self-destroying SW: any browser that previously installed our SW will
+      // receive an empty SW that unregisters itself and clears caches. This
+      // fixes blank-screen-on-revisit caused by stale precached index.html
+      // referencing hashed chunks that no longer exist after a deploy.
+      selfDestroying: true,
+      registerType: "autoUpdate",
       injectRegister: null,
       devOptions: {
         enabled: false,
