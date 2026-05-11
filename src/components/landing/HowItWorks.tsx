@@ -157,8 +157,7 @@ export const HowItWorks = () => {
         <div className="max-w-[720px] mx-auto text-center">
           {/* Section label */}
           <p
-            className="text-[10px] font-medium uppercase tracking-[0.28em] mb-6 text-center"
-            style={{ color: "hsl(261 75% 60%)" }}
+            className="text-[10px] uppercase tracking-[0.28em] mb-5 font-medium text-center text-purple-500"
           >
             How it works
           </p>

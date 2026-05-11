@@ -100,8 +100,7 @@ export const FAQSection = () => {
             }`}
           >
             <p
-              className="text-[10px] uppercase tracking-[0.28em] mb-5 font-medium"
-              style={{ color: "hsl(261 75% 60%)" }}
+              className="text-[10px] uppercase tracking-[0.28em] mb-5 font-medium text-center text-purple-500"
             >
               FAQ
             </p>

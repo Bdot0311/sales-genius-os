@@ -44,8 +44,7 @@ export const ProblemSection = () => {
         <div className="max-w-4xl mx-auto text-center">
           {/* Section label */}
           <p
-            className="text-[10px] font-medium uppercase tracking-[0.28em] mb-10"
-            style={{ color: "hsl(261 75% 60%)" }}
+            className="text-[10px] uppercase tracking-[0.28em] mb-5 font-medium text-center text-purple-500"
           >
             The Problem
           </p>
