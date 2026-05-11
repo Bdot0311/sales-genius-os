@@ -154,7 +154,7 @@ export const HowItWorks = () => {
       <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "hsl(261 75% 50% / 0.18)" }} />
 
       <div className="container relative z-10 mx-auto px-6">
-        <div className="max-w-[720px]">
+        <div className="max-w-[720px] mx-auto text-center">
           {/* Section label */}
           <p
             className="text-[10px] font-medium uppercase tracking-[0.28em] mb-6"
