@@ -154,10 +154,10 @@ export const HowItWorks = () => {
       <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "hsl(261 75% 50% / 0.18)" }} />
 
       <div className="container relative z-10 mx-auto px-6">
-        <div className="max-w-[720px]">
+        <div className="max-w-[720px] mx-auto text-center">
           {/* Section label */}
           <p
-            className="text-[10px] font-medium uppercase tracking-[0.28em] mb-6"
+            className="text-[10px] font-medium uppercase tracking-[0.28em] mb-6 text-center"
             style={{ color: "hsl(261 75% 60%)" }}
           >
             How it works
@@ -166,7 +166,7 @@ export const HowItWorks = () => {
           {/* Headline */}
           <h2
             id="how-it-works-heading"
-            className={`font-display max-w-xl mb-16 scroll-reveal ${isVisible ? "visible" : ""}`}
+            className={`font-display mb-16 scroll-reveal text-center ${isVisible ? "visible" : ""}`}
             style={{
               fontSize: "clamp(2.4rem, 5vw, 3.8rem)",
               fontWeight: 800,
@@ -210,21 +210,21 @@ export const HowItWorks = () => {
                 </span>
 
                 {/* Step content */}
-                <div className="relative">
+                <div className="relative text-center">
                   <p
-                    className="font-mono text-xs tracking-widest mb-3 uppercase"
+                    className="font-mono text-xs tracking-widest mb-3 uppercase text-center"
                     style={{ color: "hsl(261 75% 60%)" }}
                   >
                     {step.number}
                   </p>
                   <h3
-                    className="text-2xl font-semibold mb-3 leading-snug"
+                    className="text-2xl font-semibold mb-3 leading-snug text-center"
                     style={{ color: "hsl(0 0% 90%)" }}
                   >
                     {step.title}
                   </h3>
                   <p
-                    className="leading-relaxed max-w-lg"
+                    className="leading-relaxed max-w-lg mx-auto text-center"
                     style={{ color: "hsl(0 0% 100% / 0.45)" }}
                   >
                     {step.body}
@@ -237,7 +237,7 @@ export const HowItWorks = () => {
 
           {/* Bottom CTA */}
           <div
-            className={`pt-10 scroll-reveal ${isVisible ? "visible" : ""}`}
+            className={`pt-10 scroll-reveal text-center ${isVisible ? "visible" : ""}`}
             style={{ "--reveal-delay": "420ms" } as React.CSSProperties}
           >
             <button
