@@ -237,7 +237,7 @@ export const HowItWorks = () => {
 
           {/* Bottom CTA */}
           <div
-            className={`pt-10 scroll-reveal ${isVisible ? "visible" : ""}`}
+            className={`pt-10 scroll-reveal text-center ${isVisible ? "visible" : ""}`}
             style={{ "--reveal-delay": "420ms" } as React.CSSProperties}
           >
             <button
