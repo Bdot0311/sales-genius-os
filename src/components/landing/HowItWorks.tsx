@@ -210,21 +210,21 @@ export const HowItWorks = () => {
                 </span>
 
                 {/* Step content */}
-                <div className="relative">
+                <div className="relative text-center">
                   <p
-                    className="font-mono text-xs tracking-widest mb-3 uppercase"
+                    className="font-mono text-xs tracking-widest mb-3 uppercase text-center"
                     style={{ color: "hsl(261 75% 60%)" }}
                   >
                     {step.number}
                   </p>
                   <h3
-                    className="text-2xl font-semibold mb-3 leading-snug"
+                    className="text-2xl font-semibold mb-3 leading-snug text-center"
                     style={{ color: "hsl(0 0% 90%)" }}
                   >
                     {step.title}
                   </h3>
                   <p
-                    className="leading-relaxed max-w-lg"
+                    className="leading-relaxed max-w-lg mx-auto text-center"
                     style={{ color: "hsl(0 0% 100% / 0.45)" }}
                   >
                     {step.body}
