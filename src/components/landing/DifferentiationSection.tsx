@@ -66,8 +66,7 @@ export const DifferentiationSection = () => {
         <div className="max-w-3xl mx-auto">
           {/* Section label */}
           <p
-            className="text-[10px] font-medium uppercase tracking-[0.28em] mb-8"
-            style={{ color: "hsl(261 75% 60%)" }}
+            className="text-[10px] uppercase tracking-[0.28em] mb-5 font-medium text-center text-purple-500"
           >
             The difference
           </p>
