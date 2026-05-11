@@ -256,7 +256,7 @@ export const ModulesSection = () => {
           <div
             className={`mb-16 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
           >
-            <p className="text-[10px] uppercase tracking-[0.28em] mb-5 font-medium" style={{ color: "hsl(261 75% 60%)" }}>
+            <p className="text-[10px] uppercase tracking-[0.28em] mb-5 font-medium text-center text-purple-500">
               The Platform
             </p>
             <h2
