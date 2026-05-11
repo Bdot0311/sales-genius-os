@@ -166,7 +166,7 @@ export const HowItWorks = () => {
           {/* Headline */}
           <h2
             id="how-it-works-heading"
-            className={`font-display max-w-xl mb-16 scroll-reveal ${isVisible ? "visible" : ""}`}
+            className={`font-display mb-16 scroll-reveal text-center ${isVisible ? "visible" : ""}`}
             style={{
               fontSize: "clamp(2.4rem, 5vw, 3.8rem)",
               fontWeight: 800,
