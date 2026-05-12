@@ -43,6 +43,30 @@ const AdminUsers = () => {
   const [trialDialogOpen, setTrialDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserSubscription | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [resyncing, setResyncing] = useState(false);
+
+  const resyncStripe = async () => {
+    setResyncing(true);
+    const t = toast.loading('Resyncing Stripe subscriptions…');
+    try {
+      const { data, error } = await supabase.functions.invoke('resync-stripe-subscriptions');
+      if (error) throw error;
+      if (data?.success === false) throw new Error(data.error || 'Resync failed');
+      toast.success(
+        `Resync complete: ${data.updated} updated, ${data.created_users} created, ${data.scanned} scanned`,
+        { id: t }
+      );
+      if (data.errors?.length) {
+        console.warn('Resync errors:', data.errors);
+        toast.warning(`${data.errors.length} item(s) had issues — see console`);
+      }
+      loadSubscriptions();
+    } catch (e: any) {
+      toast.error(`Resync failed: ${e.message ?? e}`, { id: t });
+    } finally {
+      setResyncing(false);
+    }
+  };
 
   useEffect(() => {
     loadSubscriptions();
@@ -279,10 +303,20 @@ const AdminUsers = () => {
                 {filteredSubscriptions.length} of {subscriptions.length} users
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button onClick={loadSubscriptions} variant="outline" size="sm" className="border-border/50">
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Refresh
+              </Button>
+              <Button
+                onClick={resyncStripe}
+                variant="outline"
+                size="sm"
+                className="border-border/50"
+                disabled={resyncing}
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${resyncing ? 'animate-spin' : ''}`} />
+                {resyncing ? 'Resyncing…' : 'Resync Stripe'}
               </Button>
               <Button onClick={() => setCreateUserOpen(true)} size="sm">
                 <UserPlus className="h-4 w-4 mr-2" />
