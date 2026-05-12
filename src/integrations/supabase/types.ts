@@ -1999,6 +1999,7 @@ export type Database = {
           event_id: string
           event_type: string
           id: string
+          idempotency_key: string
           last_error: string | null
           max_attempts: number
           next_retry_at: string | null
@@ -2013,6 +2014,7 @@ export type Database = {
           event_id: string
           event_type: string
           id?: string
+          idempotency_key: string
           last_error?: string | null
           max_attempts?: number
           next_retry_at?: string | null
@@ -2027,6 +2029,7 @@ export type Database = {
           event_id?: string
           event_type?: string
           id?: string
+          idempotency_key?: string
           last_error?: string | null
           max_attempts?: number
           next_retry_at?: string | null
@@ -2051,6 +2054,8 @@ export type Database = {
           daily_searches_reset_at: string | null
           daily_searches_used: number
           id: string
+          last_stripe_event_at: string | null
+          last_stripe_event_id: string | null
           leads_limit: number
           plan: Database["public"]["Enums"]["subscription_plan"]
           search_credits_addon: number
@@ -2079,6 +2084,8 @@ export type Database = {
           daily_searches_reset_at?: string | null
           daily_searches_used?: number
           id?: string
+          last_stripe_event_at?: string | null
+          last_stripe_event_id?: string | null
           leads_limit?: number
           plan?: Database["public"]["Enums"]["subscription_plan"]
           search_credits_addon?: number
@@ -2107,6 +2114,8 @@ export type Database = {
           daily_searches_reset_at?: string | null
           daily_searches_used?: number
           id?: string
+          last_stripe_event_at?: string | null
+          last_stripe_event_id?: string | null
           leads_limit?: number
           plan?: Database["public"]["Enums"]["subscription_plan"]
           search_credits_addon?: number
@@ -2719,7 +2728,35 @@ export type Database = {
         }
         Returns: undefined
       }
+      apply_stripe_event_to_subscription: {
+        Args: {
+          _event_created_at: string
+          _event_id: string
+          _updates: Json
+          _user_id: string
+        }
+        Returns: {
+          applied: boolean
+          reason: string
+        }[]
+      }
       check_expiring_api_keys: { Args: never; Returns: undefined }
+      claim_stripe_webhook_event: {
+        Args: {
+          _event_id: string
+          _event_type: string
+          _idempotency_key?: string
+          _payload: Json
+        }
+        Returns: {
+          already_succeeded: boolean
+          attempts: number
+          claimed: boolean
+          in_progress: boolean
+          max_attempts: number
+          row_id: string
+        }[]
+      }
       cleanup_expired_cache: { Args: never; Returns: undefined }
       deduct_search_credits: {
         Args: { _amount: number; _description?: string }
