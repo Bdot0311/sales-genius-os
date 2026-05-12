@@ -1992,6 +1992,45 @@ export type Database = {
           },
         ]
       }
+      signup_diagnostics: {
+        Row: {
+          created_at: string
+          details: Json | null
+          email: string | null
+          id: string
+          message: string | null
+          source: string
+          sqlstate: string | null
+          stage: string
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          details?: Json | null
+          email?: string | null
+          id?: string
+          message?: string | null
+          source?: string
+          sqlstate?: string | null
+          stage: string
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: Json | null
+          email?: string | null
+          id?: string
+          message?: string | null
+          source?: string
+          sqlstate?: string | null
+          stage?: string
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       stripe_webhook_events: {
         Row: {
           attempts: number
@@ -2822,6 +2861,18 @@ export type Database = {
           _user_id?: string
         }
         Returns: string
+      }
+      log_signup_event: {
+        Args: {
+          _details?: Json
+          _email: string
+          _message: string
+          _source?: string
+          _stage: string
+          _status: string
+          _user_id: string
+        }
+        Returns: undefined
       }
       move_to_dlq: {
         Args: {

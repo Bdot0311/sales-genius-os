@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Settings, Activity, BarChart3, Lock, ArrowLeft, Bell, Webhook } from "lucide-react";
+import { LayoutDashboard, Users, Settings, Activity, BarChart3, Lock, ArrowLeft, Bell, Webhook, UserPlus } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ const menuItems = [
   { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
   { title: "Alerts", url: "/admin/alerts", icon: Bell },
   { title: "Webhooks", url: "/admin/webhooks", icon: Webhook },
+  { title: "Signup Logs", url: "/admin/signup-logs", icon: UserPlus },
   { title: "Security", url: "/admin/security", icon: Lock },
   { title: "Settings", url: "/admin/settings", icon: Settings },
 ];
