@@ -69,15 +69,15 @@ const DashboardMockup = () => {
           />
         </div>
 
-        <div className="relative grid grid-cols-2 gap-3 p-4">
+        <div className="relative grid grid-cols-1 gap-3 p-3 sm:grid-cols-2 sm:p-4">
           <div
-            className="col-span-2 rounded-lg border border-border/20 bg-background/60 p-3 transition-all duration-500"
+            className="rounded-lg border border-border/20 bg-background/60 p-3 transition-all duration-500 sm:col-span-2"
             style={{
               opacity: activeStep >= 1 ? 1 : 0,
               transform: activeStep >= 1 ? "translateY(0)" : "translateY(8px)",
             }}
           >
-            <div className="flex items-center gap-2 mb-2">
+              <div className="flex flex-wrap items-center gap-2 mb-2">
               <Search className="w-3.5 h-3.5 text-primary" />
               <span className="text-[11px] font-semibold text-foreground/80 uppercase tracking-wider">Lead Search</span>
               <div className="ml-auto text-[9px] text-muted-foreground/50 font-mono">847 results</div>
@@ -92,13 +92,13 @@ const DashboardMockup = () => {
                     transition: `opacity 0.3s ease ${i * 120}ms`,
                   }}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
                     <div className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center text-[9px] font-bold text-primary">
                       {l.name.charAt(0)}
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <span className="text-[11px] font-medium text-foreground">{l.name}</span>
-                      <span className="text-[10px] text-muted-foreground ml-1.5">{l.title}, {l.company}</span>
+                      <span className="ml-1.5 text-[10px] text-muted-foreground">{l.title}, {l.company}</span>
                     </div>
                   </div>
                   <div className="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-semibold tabular-nums">
@@ -116,7 +116,7 @@ const DashboardMockup = () => {
               transform: activeStep >= 2 ? "translateY(0)" : "translateY(8px)",
             }}
           >
-            <div className="flex items-center gap-2 mb-2">
+              <div className="flex flex-wrap items-center gap-2 mb-2">
               <Mail className="w-3.5 h-3.5 text-primary" />
               <span className="text-[11px] font-semibold text-foreground/80 uppercase tracking-wider">Sequence</span>
             </div>
@@ -145,7 +145,7 @@ const DashboardMockup = () => {
               transform: activeStep >= 3 ? "translateY(0)" : "translateY(8px)",
             }}
           >
-            <div className="flex items-center gap-2 mb-2">
+              <div className="flex flex-wrap items-center gap-2 mb-2">
               <BarChart3 className="w-3.5 h-3.5 text-primary" />
               <span className="text-[11px] font-semibold text-foreground/80 uppercase tracking-wider">Pipeline</span>
             </div>
@@ -169,7 +169,7 @@ const DashboardMockup = () => {
           </div>
 
           <div
-            className="col-span-2 grid grid-cols-4 gap-2 transition-all duration-500"
+            className="grid grid-cols-2 gap-2 transition-all duration-500 sm:col-span-2 sm:grid-cols-4"
             style={{
               opacity: activeStep >= 3 ? 1 : 0,
               transform: activeStep >= 3 ? "translateY(0)" : "translateY(6px)",
