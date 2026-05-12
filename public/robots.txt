@@ -138,11 +138,15 @@ Disallow: /confirmation
 Allow: /
 Allow: /home
 Allow: /pricing
+Allow: /blog
+Allow: /blog/*
 Allow: /api-docs
 Allow: /api-status
 Allow: /privacy
 Allow: /terms
 Allow: /security
+Allow: /llms.txt
+Allow: /llms-full.txt
 
 # Sitemap location
 Sitemap: https://salesos.alephwavex.io/sitemap.xml

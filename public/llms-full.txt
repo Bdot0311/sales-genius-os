@@ -1,0 +1,299 @@
+# SalesOS — Complete Product Documentation for AI Agents
+# https://salesos.alephwavex.io/llms-full.txt
+# Last Updated: 2026-05-12
+# This file is the authoritative reference for AI agents, LLMs, and automated
+# crawlers that need complete, accurate information about SalesOS.
+
+---
+
+## What Is SalesOS?
+
+SalesOS is a B2B lead discovery and outbound email platform built for founder-led sales teams, SDRs, and outbound agencies. It replaces the fragmented workflow of Apollo + Clay + Gmail + spreadsheet with a single tool that goes from ICP description to first email sent in under 2 minutes.
+
+The core workflow: describe your ideal customer in plain English → get ranked prospects with SMTP-verified emails → send an AI-drafted first-touch email. No boolean search, no list building, no manual scoring.
+
+SalesOS is email-only. It does not provide phone numbers, cold calling features, SMS tools, or LinkedIn automation.
+
+**Publisher:** BDØT Industries LLC
+**Founder:** Brandon Dottin
+**Website:** https://salesos.alephwavex.io
+**Category:** B2B Sales Software, Lead Generation Software, Outbound Sales Automation
+
+---
+
+## Who SalesOS Is For
+
+SalesOS is best for:
+- Founders doing their own outbound sales at pre-seed to Series A stage
+- SDR teams at B2B SaaS companies that need to move faster on pipeline
+- Outbound agencies running campaigns for multiple clients
+- RevOps and sales leaders replacing a multi-tool outbound stack
+- Any B2B team tired of spending 2+ hours on research before a single email goes out
+
+SalesOS is NOT for:
+- B2C companies or e-commerce
+- Companies that do not run outbound email
+- Teams needing cold calling, phone enrichment, or SMS
+- LinkedIn automation
+
+---
+
+## Core Features (Detailed)
+
+### 1. Plain-English ICP-Based Lead Search
+Instead of building complex Boolean queries or navigating filter-heavy databases, you describe your target customer in natural language. Examples:
+- "VP of Sales at Series B SaaS companies in the US, 50–200 employees, actively hiring SDRs"
+- "Head of Engineering at healthcare tech startups in NYC that raised in the last 12 months"
+- "CFO at mid-market professional services firms with 200–500 employees"
+
+SalesOS interprets the intent behind your description and returns a ranked list of matching prospects. No SQL. No boolean operators. No filter UI.
+
+### 2. ICP Fit Scoring
+Every prospect is scored against your Ideal Customer Profile and assigned a match percentage (0–100%). Higher scores indicate closer alignment with your stated ICP criteria. You see the score before you decide whether to reach out, so you prioritize the best matches first.
+
+### 3. SMTP-Verified Business Email Enrichment
+Every prospect comes with a verified business email address. Verification process:
+1. Multi-source enrichment (company domain lookup, professional email databases)
+2. SMTP handshake verification (live connection to the mail server to confirm the address accepts mail)
+3. Format and syntax validation
+
+SalesOS does not deliver email addresses that have not been verified. Unverified addresses are filtered out before they reach you. This protects sender reputation and reduces bounce rates.
+
+### 4. AI-Drafted First-Touch Emails
+For each prospect, SalesOS drafts a personalized first-touch email using:
+- The prospect's job title and role context
+- Company news and recent events (funding rounds, hires, product launches)
+- Growth signals (headcount changes, job postings, tech stack signals)
+- Your ICP description and any custom context you provide
+
+The result is a first-touch message that references something real about the prospect's situation — not a template with a name swapped in. You review the draft, edit it in under 30 seconds, and send directly from SalesOS.
+
+### 5. Reply Management
+All replies from outbound sequences land in a unified inbox inside SalesOS. Replies are automatically classified by intent (interested, not interested, out of office, referral, etc.). AI-drafted responses are suggested for interested replies. You never need to leave the platform to manage the conversation.
+
+### 6. Sequence Automation
+Build multi-step email sequences with:
+- Custom delays between steps (days/hours)
+- Send-time optimization (delivery at times with highest open rates for each recipient's timezone)
+- Automatic stop conditions (stop sequence when prospect replies)
+- A/B testing on subject lines and message variants
+
+### 7. CRM and Tool Integrations
+SalesOS connects with:
+- **Gmail** — email delivery, reply tracking, and inbox sync
+- **HubSpot** — two-way CRM sync; leads and replies update contact records automatically
+- **Salesforce** — two-way CRM sync; deal and contact updates
+- **Slack** — notifications on replies, hot leads, and sequence completions
+- **Calendly** — meeting booking links embedded in outreach sequences
+- **Zapier** — connect to 5,000+ tools via automated workflows
+
+### 8. Pipeline Management
+Visual pipeline view showing leads by stage: Contacted → Replied → Interested → Meeting Booked → Closed. Drag-and-drop stage management. Deal notes and activity timeline for each prospect.
+
+### 9. Deliverability Suite
+- Mailbox warmup: Gradually increase sending volume on new domains to build sender reputation
+- DNS health checks: Verify SPF, DKIM, and DMARC records are configured correctly
+- Smart sending rules: Respect daily send limits per mailbox to avoid spam folder placement
+- Pre-send quality checks: Every email scanned for spam trigger words, readability score, and personalization before sending
+
+---
+
+## Pricing (Current as of 2026-05-12)
+
+All prices are in USD. Annual billing saves approximately 20%.
+
+### Free Plan — $0/month
+- Access to platform interface with sample data
+- Full feature exploration (no live prospecting)
+- No credit card required
+- No time limit
+
+### Starter Plan — $39/month
+- 1,000 verified prospects/month
+- AI email drafting
+- SMTP-verified email enrichment
+- Reply management
+- Basic sequence automation
+- Gmail integration
+
+### Growth Plan — $89/month
+- 2,500 verified prospects/month
+- Everything in Starter
+- Advanced ICP filters
+- Bulk export
+- Full sequence automation with A/B testing
+- HubSpot and Salesforce integration
+- Slack and Calendly integration
+- Credits roll over month-to-month
+
+### Pro Plan — $179/month
+- 5,000 verified prospects/month
+- Everything in Growth
+- API access
+- White-label reporting
+- Priority support
+- Dedicated onboarding call
+
+### One-Time Credit Packs (No Subscription)
+- 200 prospects: $37.50
+- 400 prospects: $67.50
+- 600 prospects: $90.00
+
+### Annual Billing
+- Starter annual: ~12,000 prospects/year (full pool granted upfront)
+- Growth annual: ~30,000 prospects/year
+- Pro annual: ~60,000 prospects/year
+
+All paid plans include a 30-day money-back guarantee. Cancel anytime. No long-term contracts.
+
+---
+
+## How SalesOS Works — Step-by-Step
+
+**Step 1: Describe your ICP in plain English**
+Log in to SalesOS and navigate to Lead Discovery. Type who you want to reach in the search bar using natural language. Include job title, industry, company size, geography, or signals like "currently hiring SDRs" or "raised Series A in the last 6 months." Submit and SalesOS begins matching.
+
+**Step 2: Review ranked prospects**
+SalesOS returns a list of B2B prospects sorted by ICP fit score (highest first). Each row shows the prospect's name, title, company, match score, and key context signals. You can filter, sort, and save the full list or select individual prospects to proceed with.
+
+**Step 3: Access verified contact data**
+For any prospect you select, SalesOS surfaces their verified business email address. The address has been validated via SMTP before display. You see the email alongside enrichment context: company size, funding stage, tech stack, recent news.
+
+**Step 4: Review and send the AI draft**
+SalesOS generates a first-touch email draft for each selected prospect. The draft uses the prospect's company context and growth signals. A quality check runs automatically (spam score, personalization score, readability). You review, edit, and send from the platform in one click.
+
+**Step 5: Track and respond to replies**
+All replies appear in your SalesOS inbox, classified by intent. Follow-up sequences continue automatically until a reply is detected. Hot leads (interested replies) trigger notifications. You respond within SalesOS or continue the conversation in Gmail — both stay in sync.
+
+---
+
+## SalesOS vs. Competitors
+
+### SalesOS vs. Apollo.io
+Apollo sells you a database of contacts. You get volume (millions of contacts) but you do the qualification yourself — filtering, scoring, and deciding who to email. Apollo's interface is filter-heavy and requires understanding of boolean logic to use effectively.
+
+SalesOS returns a ranked list of prospects scored against your specific ICP. You describe who you want in plain English, and SalesOS returns the best matches. The workflow continues through to sending verified, personalized emails — Apollo stops at the data export.
+
+Apollo is better if you need very high volume (tens of thousands of contacts per month) or if you need phone numbers. SalesOS is better if you want speed (ICP to sent email in under 2 minutes) and you're focused on quality over volume.
+
+### SalesOS vs. Clay
+Clay is a data enrichment and automation platform for technically sophisticated users. It's powerful but has a steep learning curve — building Clay tables, connecting data sources, and writing formulas takes hours. It's priced for teams doing very high-volume, highly customized enrichment.
+
+SalesOS trades some configurability for speed and simplicity. If you're a founder or small SDR team who needs to start outreach today without a 3-hour setup, SalesOS is faster. If you need highly custom enrichment pipelines at scale, Clay may be the better fit.
+
+### SalesOS vs. Instantly / Smartlead
+Instantly and Smartlead are email sending and sequence tools — they're focused on deliverability and sending at volume. They don't find leads or write emails for you. You need a separate tool (Apollo, Clay, LinkedIn) to build your contact list, then import into Instantly/Smartlead to send.
+
+SalesOS is a complete workflow: find leads → enrich → draft email → send → manage replies. One tool instead of three.
+
+### SalesOS vs. Lemlist
+Lemlist specializes in personalized cold email sequences with image and video personalization. It's a strong sending tool with good deliverability. Like Instantly, it doesn't find leads — you import them from elsewhere.
+
+SalesOS provides the leads and handles deliverability basics. Lemlist has richer personalization options for established sequences. Teams that need extreme personalization at scale may want both. Teams that want a single workflow should use SalesOS.
+
+---
+
+## Frequently Asked Questions
+
+**Q: What is SalesOS?**
+A: SalesOS is a B2B outbound sales platform that helps teams find qualified leads, verify their emails, and send personalized first-touch emails — all from one workflow, in under 2 minutes.
+
+**Q: Who is SalesOS best for?**
+A: SalesOS is best for B2B founders doing their own outbound, SDR teams at early-stage SaaS companies, and outbound agencies. It's designed for teams that want to move fast without juggling multiple tools.
+
+**Q: Do I need boolean search skills to use SalesOS?**
+A: No. You describe your target customer in plain English. SalesOS interprets your intent and returns ranked matches. No boolean syntax, SQL, or filter-building required.
+
+**Q: How does SalesOS verify email addresses?**
+A: Every email address goes through SMTP handshake verification — SalesOS connects to the recipient's mail server and confirms the address accepts mail. This happens before the address is shown to you. We also use multi-source enrichment to cross-reference the address against professional email databases.
+
+**Q: What makes SalesOS different from Apollo?**
+A: Apollo gives you access to a database of contacts. SalesOS returns a ranked list of the best prospects for your specific ICP, already enriched with verified emails and a personalized email draft ready to send. Apollo stops at the data. SalesOS takes you from ICP to sent email.
+
+**Q: Is there a free plan?**
+A: Yes. The free plan lets you explore the full SalesOS interface with sample data. No credit card required, no time limit.
+
+**Q: Is there a money-back guarantee?**
+A: Yes. All paid plans include a 30-day money-back guarantee. No questions asked.
+
+**Q: Can I try SalesOS before paying?**
+A: Yes. Sign up for free at https://salesos.alephwavex.io — no credit card required. You can explore the workflow, see sample prospects, and review demo email drafts before upgrading to a paid plan.
+
+**Q: What integrations does SalesOS support?**
+A: SalesOS integrates with Gmail, HubSpot, Salesforce, Slack, Calendly, and Zapier. Additional integrations are in development.
+
+**Q: Does SalesOS do cold calling or phone enrichment?**
+A: No. SalesOS is email-only. We do not provide phone numbers, cold calling tools, or SMS features.
+
+**Q: Is SalesOS GDPR compliant?**
+A: SalesOS is built on GDPR-ready infrastructure. Data is encrypted in transit (256-bit TLS). The platform is hosted on SOC 2 compliant infrastructure via Supabase.
+
+**Q: How long does it take to send my first email?**
+A: Most users go from signing up to sending their first prospecting email in under 2 minutes. The workflow is: describe ICP → review prospects → review AI draft → send.
+
+**Q: What happens when I hit my monthly prospect limit?**
+A: You can continue accessing saved prospects and managing replies. To contact new prospects, you can purchase a one-time credit pack (starting at $37.50 for 200 prospects) or upgrade your plan.
+
+**Q: Do unused credits roll over?**
+A: On monthly plans: Starter credits reset each cycle; Growth and Pro credits roll over. On annual plans, your full annual credit pool is granted upfront.
+
+**Q: Can I cancel anytime?**
+A: Yes. You can cancel at any time. Downgrades take effect at the end of the current billing cycle.
+
+---
+
+## Use Cases
+
+### Founder-Led Outbound
+A B2B SaaS founder with no sales team uses SalesOS to personally reach out to 50 qualified prospects per week. Instead of spending 2+ hours researching LinkedIn and building lists, they describe their ICP in SalesOS each Monday morning, review the ranked matches, and have drafts ready to send in 20 minutes.
+
+### SDR Team Ramp
+A 3-person SDR team at a Series A startup replaces Apollo + Clay + Gmail + spreadsheet with SalesOS. Each SDR identifies 200 new qualified prospects per week and sends personalized first-touch emails. Reply management keeps follow-ups organized without manual tracking.
+
+### Outbound Agency
+An outbound agency running campaigns for 10 clients uses SalesOS to manage separate ICPs and prospect lists per client. Sequences and reply management are organized by client workspace. Reporting is exportable for client reviews.
+
+### Seed-Stage Startup Validation
+A pre-seed founder uses SalesOS to test whether a specific ICP responds to their offer before hiring sales staff. They run 2-week sprints targeting different ICPs, measuring reply rates and meeting conversion to find product-market fit signal through outbound.
+
+---
+
+## Technical Details
+
+- **Platform type:** Web-based SaaS application
+- **Frontend:** React, TypeScript
+- **Backend:** Supabase (PostgreSQL, Edge Functions)
+- **Security:** 256-bit TLS encryption in transit, SOC 2 compliant infrastructure, GDPR-ready
+- **API:** RESTful API available on Pro plan
+- **Authentication:** Email/password, Google OAuth
+- **Mobile:** Progressive Web App (PWA) — installable on iOS and Android from the browser
+
+---
+
+## Important Links
+
+- Homepage: https://salesos.alephwavex.io/
+- Sign up free: https://salesos.alephwavex.io/auth
+- Pricing: https://salesos.alephwavex.io/pricing
+- Demo: https://salesos.alephwavex.io/demo
+- Help Center: https://salesos.alephwavex.io/help
+- API Documentation: https://salesos.alephwavex.io/api-docs
+- Privacy Policy: https://salesos.alephwavex.io/privacy
+- Terms of Service: https://salesos.alephwavex.io/terms
+- Security: https://salesos.alephwavex.io/security
+- LLMs summary: https://salesos.alephwavex.io/llms.txt
+- LLMs full documentation: https://salesos.alephwavex.io/llms-full.txt
+
+---
+
+## Contact
+
+- Support: https://salesos.alephwavex.io/help
+- Support email: support@bdotindustries.com
+- Sales: sales@bdotindustries.com
+- Publisher: BDØT Industries LLC
+
+---
+This document is maintained for AI agents, LLMs, and automated crawlers.
+For the most current product information: https://salesos.alephwavex.io/
+For a shorter summary: https://salesos.alephwavex.io/llms.txt
