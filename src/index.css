@@ -57,9 +57,11 @@ All colors MUST be HSL. Using 8px spacing scale.
   }
 
   html, body {
-    overflow-x: clip;
+    overflow-x: hidden;
     max-width: 100vw;
     width: 100%;
+    min-height: 100%;
+    overscroll-behavior-x: none;
   }
 
   body {
@@ -73,11 +75,16 @@ All colors MUST be HSL. Using 8px spacing scale.
      keep media inside its container, and clamp huge headings. */
   *, *::before, *::after {
     min-width: 0;
+    box-sizing: border-box;
   }
 
   img, video, svg, canvas, iframe {
     max-width: 100%;
     height: auto;
+  }
+
+  button, input, textarea, select, a, p, li, h1, h2, h3, h4, h5, h6, span, div {
+    overflow-wrap: anywhere;
   }
 
   /* Wide tables get a horizontal scroll container automatically on mobile */
@@ -120,8 +127,8 @@ All colors MUST be HSL. Using 8px spacing scale.
   }
 
   /* CSS containment — paint only to avoid scroll glitches on mobile */
-  section {
-    contain: paint;
+  section, main, header, footer, nav, aside {
+    max-width: 100vw;
   }
 }
 
