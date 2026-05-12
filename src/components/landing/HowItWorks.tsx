@@ -27,50 +27,31 @@ const steps = [
     visual: (
       <div
         className="mt-5 rounded-xl overflow-hidden"
-        style={{
-          background: "hsl(261 75% 50% / 0.05)",
-          border: "1px solid hsl(261 75% 50% / 0.18)",
-        }}
+        style={{ background: "hsl(261 75% 50% / 0.05)", border: "1px solid hsl(261 75% 50% / 0.18)" }}
       >
         {[
-          { name: "Jordan Park",  role: "Head of Sales · Northline",  fit: 94 },
-          { name: "Rina Shah",    role: "VP Revenue · SignalFox",      fit: 88 },
-          { name: "Alex Müller",  role: "Dir. of Sales · GraphiteIQ", fit: 81 },
+          { name: "Jordan Park", role: "Head of Sales · Northline", fit: 94 },
+          { name: "Rina Shah", role: "VP Revenue · SignalFox", fit: 88 },
+          { name: "Alex Müller", role: "Dir. of Sales · GraphiteIQ", fit: 81 },
         ].map(({ name, role, fit }, i) => (
           <div
             key={name}
             className="flex items-center justify-between gap-4 px-4 py-3"
-            style={{
-              borderBottom: i < 2 ? "1px solid hsl(261 75% 50% / 0.1)" : undefined,
-            }}
+            style={{ borderBottom: i < 2 ? "1px solid hsl(261 75% 50% / 0.1)" : undefined }}
           >
             <div>
               <p className="text-sm font-semibold" style={{ color: "hsl(0 0% 88%)" }}>{name}</p>
               <p className="text-xs mt-0.5" style={{ color: "hsl(0 0% 100% / 0.35)" }}>{role}</p>
             </div>
             <div className="flex items-center gap-2.5 flex-shrink-0">
-              <div
-                className="h-1 w-14 rounded-full overflow-hidden"
-                style={{ background: "hsl(0 0% 100% / 0.08)" }}
-              >
-                <div
-                  className="h-full rounded-full"
-                  style={{
-                    width: `${fit}%`,
-                    background: "linear-gradient(to right, hsl(261 75% 55%), hsl(280 80% 65%))",
-                  }}
-                />
+              <div className="h-1 w-14 rounded-full overflow-hidden" style={{ background: "hsl(0 0% 100% / 0.08)" }}>
+                <div className="h-full rounded-full" style={{ width: `${fit}%`, background: "linear-gradient(to right, hsl(261 75% 55%), hsl(280 80% 65%))" }} />
               </div>
-              <span className="text-xs font-semibold" style={{ color: "hsl(261 75% 68%)" }}>
-                {fit}%
-              </span>
+              <span className="text-xs font-semibold" style={{ color: "hsl(261 75% 68%)" }}>{fit}%</span>
             </div>
           </div>
         ))}
-        <div
-          className="flex items-center gap-1.5 px-4 py-2.5"
-          style={{ borderTop: "1px solid hsl(261 75% 50% / 0.1)" }}
-        >
+        <div className="flex items-center gap-1.5 px-4 py-2.5" style={{ borderTop: "1px solid hsl(261 75% 50% / 0.1)" }}>
           <span style={{ color: "hsl(261 75% 62%)", fontSize: "10px" }}>✓</span>
           <span className="text-[10px]" style={{ color: "hsl(0 0% 100% / 0.22)" }}>
             Business emails verified via SMTP + multi-source enrichment
@@ -86,20 +67,13 @@ const steps = [
     visual: (
       <div
         className="mt-5 rounded-xl overflow-hidden"
-        style={{
-          background: "hsl(261 75% 50% / 0.05)",
-          border: "1px solid hsl(261 75% 50% / 0.18)",
-        }}
+        style={{ background: "hsl(261 75% 50% / 0.05)", border: "1px solid hsl(261 75% 50% / 0.18)" }}
       >
         <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: "1px solid hsl(261 75% 50% / 0.1)" }}>
           <span className="text-xs font-medium" style={{ color: "hsl(261 75% 60%)" }}>AI Draft</span>
           <span
             className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-            style={{
-              background: "hsl(261 75% 50% / 0.15)",
-              border: "1px solid hsl(261 75% 50% / 0.25)",
-              color: "hsl(261 75% 72%)",
-            }}
+            style={{ background: "hsl(261 75% 50% / 0.15)", border: "1px solid hsl(261 75% 50% / 0.25)", color: "hsl(261 75% 72%)" }}
           >
             Quality check passed
           </span>
@@ -124,9 +98,7 @@ export const HowItWorks = () => {
 
   useEffect(() => {
     const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) setIsVisible(true);
-      },
+      (entries) => { if (entries[0].isIntersecting) setIsVisible(true); },
       { threshold: 0.15 }
     );
     if (sectionRef.current) observer.observe(sectionRef.current);
@@ -141,37 +113,33 @@ export const HowItWorks = () => {
       style={{ background: "hsl(0,0%,3%)" }}
       aria-labelledby="how-it-works-heading"
     >
-      {/* Purple glow — right side */}
       <div
         className="absolute top-1/2 right-0 -translate-y-1/2 w-[500px] h-[600px] pointer-events-none"
-        style={{
-          background: "radial-gradient(ellipse at right, hsl(261 75% 55% / 0.07) 0%, transparent 65%)",
-        }}
+        style={{ background: "radial-gradient(ellipse at right, hsl(261 75% 55% / 0.07) 0%, transparent 65%)" }}
         aria-hidden="true"
       />
-
-      {/* Top hairline */}
       <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "hsl(261 75% 50% / 0.18)" }} />
 
       <div className="container relative z-10 mx-auto px-6">
         <div className="max-w-[720px] mx-auto text-center">
-          {/* Section label */}
+
           <p
-            className="text-[10px] uppercase tracking-[0.28em] mb-5 font-medium text-center text-purple-500"
+            className={`text-[10px] uppercase tracking-[0.28em] mb-6 font-medium transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+            style={{ color: "hsl(261 75% 60%)" }}
           >
             How it works
           </p>
 
-          {/* Headline */}
           <h2
             id="how-it-works-heading"
-            className={`font-display mb-16 scroll-reveal text-center ${isVisible ? "visible" : ""}`}
+            className={`font-display mb-16 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
             style={{
               fontSize: "clamp(2.4rem, 5vw, 3.8rem)",
               fontWeight: 800,
               lineHeight: 1.06,
               letterSpacing: "-0.02em",
               color: "hsl(0 0% 95%)",
+              transitionDelay: "80ms",
             }}
           >
             Three steps.
@@ -188,18 +156,16 @@ export const HowItWorks = () => {
             </span>
           </h2>
 
-          {/* Step list */}
           <div className="flex flex-col">
             {steps.map((step, index) => (
               <div
                 key={index}
-                className={`relative border-b py-10 scroll-reveal ${isVisible ? "visible" : ""}`}
+                className={`relative border-b py-10 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
                 style={{
-                  "--reveal-delay": `${index * 140}ms`,
                   borderColor: "hsl(261 75% 50% / 0.12)",
-                } as React.CSSProperties}
+                  transitionDelay: `${index * 120 + 160}ms`,
+                }}
               >
-                {/* Large faded background number */}
                 <span
                   className="absolute top-4 right-0 text-8xl font-bold leading-none select-none pointer-events-none"
                   style={{ color: "hsl(261 75% 50% / 0.06)" }}
@@ -208,24 +174,14 @@ export const HowItWorks = () => {
                   {step.number}
                 </span>
 
-                {/* Step content */}
                 <div className="relative text-center">
-                  <p
-                    className="font-mono text-xs tracking-widest mb-3 uppercase text-center"
-                    style={{ color: "hsl(261 75% 60%)" }}
-                  >
+                  <p className="font-mono text-xs tracking-widest mb-3 uppercase" style={{ color: "hsl(261 75% 60%)" }}>
                     {step.number}
                   </p>
-                  <h3
-                    className="text-2xl font-semibold mb-3 leading-snug text-center"
-                    style={{ color: "hsl(0 0% 90%)" }}
-                  >
+                  <h3 className="text-2xl font-semibold mb-3 leading-snug" style={{ color: "hsl(0 0% 90%)" }}>
                     {step.title}
                   </h3>
-                  <p
-                    className="leading-relaxed max-w-lg mx-auto text-center"
-                    style={{ color: "hsl(0 0% 100% / 0.45)" }}
-                  >
+                  <p className="leading-relaxed max-w-lg mx-auto" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
                     {step.body}
                   </p>
                   {step.visual}
@@ -234,21 +190,16 @@ export const HowItWorks = () => {
             ))}
           </div>
 
-          {/* Bottom CTA */}
           <div
-            className={`pt-10 scroll-reveal text-center ${isVisible ? "visible" : ""}`}
-            style={{ "--reveal-delay": "420ms" } as React.CSSProperties}
+            className={`pt-10 transition-all duration-700 ${isVisible ? "opacity-100" : "opacity-0"}`}
+            style={{ transitionDelay: "520ms" }}
           >
             <button
               onClick={() => navigate("/auth")}
               className="text-sm font-medium transition-colors duration-200 inline-flex items-center gap-1.5"
               style={{ color: "hsl(261 75% 65%)" }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.color = "hsl(261 75% 80%)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.color = "hsl(261 75% 65%)")
-              }
+              onMouseEnter={(e) => (e.currentTarget.style.color = "hsl(261 75% 80%)")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "hsl(261 75% 65%)")}
             >
               Try it with your own ICP →
             </button>
@@ -256,7 +207,6 @@ export const HowItWorks = () => {
         </div>
       </div>
 
-      {/* Bottom hairline */}
       <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: "hsl(261 75% 50% / 0.18)" }} />
     </section>
   );

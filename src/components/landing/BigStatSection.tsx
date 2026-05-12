@@ -25,10 +25,7 @@ export const BigStatSection = () => {
     >
       <div
         className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(ellipse 55% 60% at 50% 50%, hsl(261 75% 55% / 0.1) 0%, transparent 70%)",
-        }}
+        style={{ background: "radial-gradient(ellipse 55% 60% at 50% 50%, hsl(261 75% 55% / 0.1) 0%, transparent 70%)" }}
         aria-hidden="true"
       />
 
@@ -36,7 +33,8 @@ export const BigStatSection = () => {
         <div className="flex flex-col items-center text-center">
 
           <p
-            className={`text-[10px] uppercase tracking-[0.28em] mb-5 font-medium text-center text-purple-500 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+            className={`text-[10px] uppercase tracking-[0.28em] mb-10 font-medium transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+            style={{ color: "hsl(261 75% 55% / 0.6)" }}
           >
             The benchmark
           </p>
@@ -66,36 +64,21 @@ export const BigStatSection = () => {
             style={{ transitionDelay: "280ms" }}
           >
             <div className="text-center">
-              <span
-                className="block font-display font-bold"
-                style={{ fontSize: "1.75rem", color: "hsl(0 0% 78%)", letterSpacing: "-0.02em" }}
-              >
+              <span className="block font-display font-bold" style={{ fontSize: "1.75rem", color: "hsl(0 0% 78%)", letterSpacing: "-0.02em" }}>
                 10.7%
               </span>
-              <span
-                className="block text-xs mt-1"
-                style={{ color: "hsl(0 0% 100% / 0.28)" }}
-              >
+              <span className="block text-xs mt-1" style={{ color: "hsl(0 0% 100% / 0.28)" }}>
                 reply rate on signal sequences
               </span>
             </div>
 
-            <div
-              className="hidden sm:block w-px h-12"
-              style={{ background: "hsl(261 75% 50% / 0.18)" }}
-            />
+            <div className="hidden sm:block w-px h-12" style={{ background: "hsl(261 75% 50% / 0.18)" }} />
 
             <div className="text-center">
-              <span
-                className="block font-display font-bold"
-                style={{ fontSize: "1.75rem", color: "hsl(0 0% 78%)", letterSpacing: "-0.02em" }}
-              >
+              <span className="block font-display font-bold" style={{ fontSize: "1.75rem", color: "hsl(0 0% 78%)", letterSpacing: "-0.02em" }}>
                 1 tool
               </span>
-              <span
-                className="block text-xs mt-1"
-                style={{ color: "hsl(0 0% 100% / 0.28)" }}
-              >
+              <span className="block text-xs mt-1" style={{ color: "hsl(0 0% 100% / 0.28)" }}>
                 instead of Apollo + Clay + Gmail + spreadsheet
               </span>
             </div>
