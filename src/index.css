@@ -90,29 +90,21 @@ All colors MUST be HSL. Using 8px spacing scale.
     }
   }
 
-  /* Fluid headline scaling so large display text never overflows on small screens */
-  @media (max-width: 640px) {
-    h1 {
-      font-size: clamp(1.875rem, 8.5vw, 3rem);
-      line-height: 1.1;
+  /* Fluid headline scaling so large display text never overflows on small screens.
+     !important is required to win against Tailwind utility classes like text-5xl. */
+  @media (max-width: 480px) {
+    h1, .h1, [class*="text-6xl"], [class*="text-7xl"] {
+      font-size: clamp(1.875rem, 9vw, 2.75rem) !important;
+      line-height: 1.1 !important;
     }
-    h2 {
-      font-size: clamp(1.5rem, 6.5vw, 2.25rem);
-      line-height: 1.15;
-    }
-    h3 {
-      font-size: clamp(1.125rem, 5vw, 1.5rem);
-      line-height: 1.2;
+    h2, [class*="text-5xl"] {
+      font-size: clamp(1.5rem, 7vw, 2.25rem) !important;
+      line-height: 1.15 !important;
     }
     /* Long unbreakable strings (URLs, emails, code) wrap instead of pushing layout */
-    p, li, span, a, code, pre {
+    p, li, a, code, pre {
       overflow-wrap: anywhere;
       word-break: break-word;
-    }
-    /* Tighten default vertical breathing room so each landing section gets closer to one screen */
-    section {
-      padding-left: max(env(safe-area-inset-left), 1rem);
-      padding-right: max(env(safe-area-inset-right), 1rem);
     }
   }
 
