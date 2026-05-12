@@ -9,7 +9,7 @@ export const HeroSection = () => {
 
   return (
     <section
-      className="relative hero-fullscreen flex flex-col items-center justify-start overflow-hidden pt-[calc(env(safe-area-inset-top)+5.75rem)] pb-14 sm:justify-center sm:pt-[calc(env(safe-area-inset-top)+7rem)] sm:pb-20"
+      className="relative hero-fullscreen flex flex-col items-center justify-start overflow-hidden px-0 pt-[calc(env(safe-area-inset-top)+4.75rem)] pb-8 sm:justify-center sm:pt-[calc(env(safe-area-inset-top)+7rem)] sm:pb-20"
       aria-labelledby="hero-heading"
     >
       <div className="absolute inset-0 bg-[hsl(0,0%,3%)]" aria-hidden="true" />
@@ -25,7 +25,7 @@ export const HeroSection = () => {
 
       {/* Left orb — multi-keyframe float */}
       <motion.div
-        className="absolute bottom-[-80px] left-[-120px] h-[360px] w-[360px] rounded-full pointer-events-none sm:bottom-[-120px] sm:left-[-80px] sm:h-[600px] sm:w-[600px]"
+        className="absolute bottom-[-80px] left-[-120px] h-[280px] w-[280px] rounded-full pointer-events-none sm:bottom-[-120px] sm:left-[-80px] sm:h-[600px] sm:w-[600px]"
         style={{
           background: "radial-gradient(ellipse at center, hsl(261 75% 55% / 0.18) 0%, hsl(261 75% 55% / 0.06) 50%, transparent 70%)",
           willChange: "transform",
@@ -37,7 +37,7 @@ export const HeroSection = () => {
 
       {/* Right orb — offset timing */}
       <motion.div
-        className="absolute bottom-[-60px] right-[-110px] h-[320px] w-[320px] rounded-full pointer-events-none sm:bottom-[-100px] sm:right-[-100px] sm:h-[500px] sm:w-[500px]"
+        className="absolute bottom-[-60px] right-[-110px] h-[260px] w-[260px] rounded-full pointer-events-none sm:bottom-[-100px] sm:right-[-100px] sm:h-[500px] sm:w-[500px]"
         style={{
           background: "radial-gradient(ellipse at center, hsl(280 70% 60% / 0.14) 0%, hsl(280 70% 60% / 0.04) 50%, transparent 70%)",
           willChange: "transform",
@@ -48,18 +48,18 @@ export const HeroSection = () => {
       />
 
       <div
-        className="absolute top-0 left-1/2 h-[240px] w-[420px] -translate-x-1/2 pointer-events-none sm:h-[400px] sm:w-[800px]"
+        className="absolute top-0 left-1/2 h-[220px] w-full max-w-[420px] -translate-x-1/2 pointer-events-none sm:h-[400px] sm:max-w-[800px]"
         style={{ background: "radial-gradient(ellipse at center top, hsl(261 75% 55% / 0.08) 0%, transparent 65%)" }}
         aria-hidden="true"
       />
 
       <div className="noise-texture" aria-hidden="true" />
 
-      <div className="relative z-10 container mx-auto flex flex-col items-center px-5 text-center sm:px-6">
+      <div className="relative z-10 mx-auto flex w-full max-w-[38rem] flex-col items-center px-5 text-center sm:px-6">
 
         {/* Badge */}
         <motion.div
-          className="mb-8 max-w-full sm:mb-10"
+          className="mb-6 max-w-full sm:mb-10"
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease }}
@@ -78,8 +78,8 @@ export const HeroSection = () => {
         {/* H1 — two lines spring in with stagger */}
         <h1
           id="hero-heading"
-          className="font-display mb-6 max-w-[14ch] text-balance sm:mb-8 sm:max-w-none"
-          style={{ fontSize: "clamp(2.25rem, 9vw, 7rem)", lineHeight: 1.02, letterSpacing: "-0.02em", fontWeight: 800 }}
+          className="font-display mb-5 max-w-[13ch] text-balance sm:mb-8 sm:max-w-none"
+          style={{ fontSize: "clamp(2.05rem, 8.5vw, 7rem)", lineHeight: 1.02, letterSpacing: "0", fontWeight: 800 }}
         >
           <motion.span
             className="block text-white"
@@ -109,7 +109,7 @@ export const HeroSection = () => {
 
         {/* Subhead */}
         <motion.p
-          className="mb-8 max-w-[22rem] text-base font-light leading-relaxed text-white/55 sm:mb-12 sm:max-w-xl sm:text-xl"
+          className="mb-7 max-w-[22rem] text-base font-light leading-relaxed text-white/55 sm:mb-12 sm:max-w-xl sm:text-xl"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.65, ease, delay: 0.38 }}
@@ -119,7 +119,7 @@ export const HeroSection = () => {
 
         {/* CTAs */}
         <motion.div
-          className="mb-8 flex w-full max-w-[20rem] flex-col items-center gap-3 sm:mb-8 sm:max-w-none sm:flex-row sm:justify-center sm:gap-4"
+          className="mb-6 flex w-full max-w-[20rem] flex-col items-center gap-3 sm:mb-8 sm:max-w-none sm:flex-row sm:justify-center sm:gap-4"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, ease, delay: 0.5 }}
@@ -147,7 +147,7 @@ export const HeroSection = () => {
         </motion.div>
 
         <motion.p
-          className="text-xs text-white/25 flex items-center justify-center gap-2.5 mb-4"
+          className="mb-3 flex max-w-[21rem] flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-xs leading-tight text-white/25 sm:flex-nowrap"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.65 }}
