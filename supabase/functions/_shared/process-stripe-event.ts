@@ -52,6 +52,26 @@ async function findUserId(supabase: SupabaseClient, email: string): Promise<stri
   return null;
 }
 
+async function applyEvent(
+  supabase: SupabaseClient,
+  userId: string,
+  event: Stripe.Event,
+  updates: Record<string, unknown>,
+): Promise<{ applied: boolean; reason: string }> {
+  const eventCreatedAt = event.created
+    ? new Date(event.created * 1000).toISOString()
+    : new Date().toISOString();
+  const { data, error } = await supabase.rpc('apply_stripe_event_to_subscription', {
+    _user_id: userId,
+    _event_id: event.id,
+    _event_created_at: eventCreatedAt,
+    _updates: updates,
+  });
+  if (error) throw new Error(`apply_stripe_event_to_subscription failed: ${error.message}`);
+  const row = Array.isArray(data) ? data[0] : data;
+  return { applied: !!row?.applied, reason: row?.reason ?? 'unknown' };
+}
+
 export async function processStripeEvent(
   event: Stripe.Event,
   stripe: Stripe,
@@ -97,7 +117,6 @@ export async function processStripeEvent(
       userId = created.user.id;
       log("created user", { userId });
 
-      // welcome email (best-effort, do not fail event)
       try {
         const appUrl = "https://salesos.alephwavex.io";
         await supabase.rpc('enqueue_email', {
@@ -122,7 +141,7 @@ export async function processStripeEvent(
     }
 
     const periodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-    const { error: subErr } = await supabase.from('subscriptions').update({
+    const result = await applyEvent(supabase, userId, event, {
       plan: planDetails.plan,
       status: 'active',
       account_status: 'active',
@@ -134,9 +153,8 @@ export async function processStripeEvent(
       current_period_start: new Date().toISOString(),
       current_period_end: periodEnd,
       credits_reset_at: periodEnd,
-      updated_at: new Date().toISOString(),
-    }).eq('user_id', userId);
-    if (subErr) throw new Error(`subscription update failed: ${subErr.message}`);
+    });
+    log("checkout.session.completed apply", result);
     return;
   }
 
@@ -148,7 +166,7 @@ export async function processStripeEvent(
     const userId = await findUserId(supabase, customer.email);
     if (!userId) throw new Error(`user not found for ${customer.email}`);
     const planDetails = PRICE_TO_PLAN[priceId] || PRICE_TO_PLAN['price_1SmM2hFTerosS6hiiDXBDIxl'];
-    const { error } = await supabase.from('subscriptions').update({
+    const result = await applyEvent(supabase, userId, event, {
       plan: planDetails.plan,
       status: sub.status === 'active' ? 'active' : 'inactive',
       account_status: sub.status === 'active' ? 'active' : sub.status,
@@ -157,9 +175,8 @@ export async function processStripeEvent(
       leads_limit: planDetails.leadsLimit,
       current_period_start: new Date(sub.current_period_start * 1000).toISOString(),
       current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
-      updated_at: new Date().toISOString(),
-    }).eq('user_id', userId);
-    if (error) throw new Error(`subscription updated handler failed: ${error.message}`);
+    });
+    log("subscription.updated apply", result);
     return;
   }
 
@@ -175,21 +192,30 @@ export async function processStripeEvent(
     if (!userId) throw new Error(`user not found for ${customer.email}`);
     const planDetails = PRICE_TO_PLAN[priceId] || PRICE_TO_PLAN['price_1SmM2hFTerosS6hiiDXBDIxl'];
 
+    // Read current credits inside the same logical operation. The
+    // apply_stripe_event_to_subscription RPC will refuse to apply if this
+    // event has already been recorded (last_stripe_event_id == event.id),
+    // so duplicate invoice.paid events cannot double-add credits.
     const { data: cur } = await supabase.from('subscriptions')
-      .select('search_credits_remaining').eq('user_id', userId).single();
+      .select('search_credits_remaining, last_stripe_event_id').eq('user_id', userId).single();
+
+    if (cur?.last_stripe_event_id === event.id) {
+      log("invoice.paid duplicate, skipping credit rollover", { id: event.id });
+      return;
+    }
+
     let newCredits = planDetails.credits;
     if (!planDetails.isYearly && (planDetails.plan === 'growth' || planDetails.plan === 'pro' || planDetails.plan === 'agency')) {
       newCredits = (cur?.search_credits_remaining || 0) + planDetails.credits;
     }
-    const { error } = await supabase.from('subscriptions').update({
+    const result = await applyEvent(supabase, userId, event, {
       search_credits_remaining: newCredits,
       daily_searches_used: 0,
       credits_reset_at: new Date(sub.current_period_end * 1000).toISOString(),
       current_period_start: new Date(sub.current_period_start * 1000).toISOString(),
       current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
-      updated_at: new Date().toISOString(),
-    }).eq('user_id', userId);
-    if (error) throw new Error(`invoice.paid handler failed: ${error.message}`);
+    });
+    log("invoice.paid apply", result);
     return;
   }
 
@@ -199,10 +225,11 @@ export async function processStripeEvent(
     if (!customer.email) return;
     const userId = await findUserId(supabase, customer.email);
     if (!userId) return;
-    const { error } = await supabase.from('subscriptions').update({
-      status: 'cancelled', account_status: 'cancelled', updated_at: new Date().toISOString(),
-    }).eq('user_id', userId);
-    if (error) throw new Error(`subscription.deleted handler failed: ${error.message}`);
+    const result = await applyEvent(supabase, userId, event, {
+      status: 'cancelled',
+      account_status: 'cancelled',
+    });
+    log("subscription.deleted apply", result);
     return;
   }
 
