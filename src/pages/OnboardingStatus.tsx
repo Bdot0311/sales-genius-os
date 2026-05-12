@@ -106,8 +106,8 @@ const OnboardingStatus = () => {
 
   const overall: StepState =
     loading ? "loading"
+    : (emailState as string) === "error" || (planState as string) === "error" ? "error"
     : emailState === "ok" && planState === "ok" ? "ok"
-    : (emailState === "error" || planState === "error") ? "error"
     : "pending";
 
   return (
