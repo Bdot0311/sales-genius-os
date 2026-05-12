@@ -8,6 +8,7 @@ const footerLinks = {
     { label: "Integrations", href: "#integrations" },
   ],
   resources: [
+    { label: "Blog", href: "/blog" },
     { label: "Help Center", href: "/help" },
     { label: "API Docs", href: "/api-docs" },
     { label: "API Status", href: "/api-status" },

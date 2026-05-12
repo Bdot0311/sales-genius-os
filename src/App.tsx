@@ -6,7 +6,7 @@ import Index from "./pages/Index";
 // Public marketing routes that should NOT trigger Supabase/auth/white-label loads
 const PUBLIC_LANDING_PREFIXES = [
   "/", "/pricing", "/demo", "/api-docs", "/api-status", "/request-integration",
-  "/privacy", "/terms", "/security", "/help", "/install", "/unsubscribe",
+  "/privacy", "/terms", "/security", "/help", "/install", "/unsubscribe", "/blog",
 ];
 const isPublicLandingPath = (pathname: string) => {
   if (pathname === "/") return true;
@@ -51,6 +51,8 @@ const Sequences = lazy(() => import("./pages/Sequences"));
 const MessageBlocks = lazy(() => import("./pages/MessageBlocks"));
 const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const ClientPortal = lazy(() => import("./pages/ClientPortal"));
+const Blog = lazy(() => import("./pages/Blog"));
+const BlogPost = lazy(() => import("./pages/BlogPost"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -170,6 +172,8 @@ const App = () => (
             <Route path="/admin/*" element={<Admin />} />
             <Route path="/unsubscribe" element={<Unsubscribe />} />
             <Route path="/client-portal/:token" element={<ClientPortal />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:slug" element={<BlogPost />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

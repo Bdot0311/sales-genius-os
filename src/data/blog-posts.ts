@@ -1,0 +1,210 @@
+export interface BlogPost {
+  slug: string;
+  title: string;
+  description: string;
+  publishedAt: string;
+  readingTime: string;
+  category: string;
+  keywords: string[];
+  content: string;
+}
+
+export const blogPosts: BlogPost[] = [
+  {
+    slug: "how-to-find-b2b-leads-without-boolean-search",
+    title: "How to Find B2B Leads Without Boolean Search",
+    description: "You don't need to learn boolean syntax to build a qualified B2B lead list. Here's a faster method for founders and small SDR teams.",
+    publishedAt: "2026-05-12",
+    readingTime: "4 min read",
+    category: "Lead Generation",
+    keywords: ["find B2B leads", "B2B lead generation", "lead discovery", "outbound prospecting", "no boolean search"],
+    content: `
+You can find qualified B2B leads by describing your ideal customer in plain English — job title, industry, company size, and buying signals — and letting software match you to real prospects automatically. No boolean syntax required.
+
+## The Boolean Search Problem
+
+Most lead databases require you to build searches like: *(VP OR "Vice President") AND (Sales OR Revenue) AND ("Series B" OR "Series C") NOT (Consultant OR Freelance)*. Learning this takes time you don't have. Getting it right takes even longer. And it still produces raw lists that need manual qualification.
+
+For a founder doing their own outbound or a small SDR team without a dedicated ops function, this is a 2-hour tax before a single email goes out.
+
+## A Better Approach: Describe, Don't Filter
+
+Instead of building a query, describe who you want:
+
+> "VP of Sales at Series B SaaS companies in the US, 50–200 employees, actively hiring SDRs"
+
+Modern lead discovery tools (including SalesOS) parse natural language intent and return a ranked list of prospects scored against your description. You see match percentages, company context, and signals — not a raw dump of 5,000 unqualified names.
+
+## What to Include in Your Description
+
+A good plain-English ICP description has four components:
+
+**1. Job title and seniority**
+Be specific. "VP of Sales" is better than "sales leader." If you're open to Head of Sales or Director of Sales too, say so.
+
+**2. Company stage and size**
+"Series B SaaS, 50–200 employees" narrows to a specific buying window. Pre-seed companies can't afford you; enterprise companies have long sales cycles. Name the sweet spot.
+
+**3. Industry or vertical**
+"Healthcare tech," "B2B SaaS," "professional services," "fintech." Specificity reduces noise.
+
+**4. Buying signals (optional but powerful)**
+"Actively hiring SDRs" means they're building a sales team and need outreach infrastructure. "Raised funding in the last 6 months" means they have budget. "Recently expanded to new markets" means they're in growth mode. These signals filter for readiness.
+
+## What Happens After You Find Them
+
+A list is only useful if you can reach out. The next bottleneck is getting verified contact data and writing something worth reading. The workflow that actually moves fast:
+
+1. Describe ICP → get ranked prospects
+2. Check SMTP-verified emails for each prospect
+3. Review an AI-drafted first-touch email that uses their company context
+4. Edit, send, track
+
+Tools like SalesOS do all four steps in one workflow. The alternative is Apollo (for data) + manual qualification + Gmail + a separate sequence tool — four tools, 2+ hours of setup per campaign.
+
+## The Bottom Line
+
+Boolean search is a skill worth skipping. Describe who you want, let the software match you to real prospects, and spend your time writing and sending — not querying.
+
+If you want to try this approach: [SalesOS is free to start](https://salesos.alephwavex.io) — describe your ICP and see ranked matches before you commit to anything.
+    `.trim(),
+  },
+  {
+    slug: "what-is-icp-scoring",
+    title: "What Is ICP Scoring in Sales? (And Why It Replaces Manual Qualification)",
+    description: "ICP scoring assigns a fit percentage to each prospect based on how closely they match your Ideal Customer Profile. Here's how it works and why it matters for outbound sales.",
+    publishedAt: "2026-05-12",
+    readingTime: "4 min read",
+    category: "Sales Strategy",
+    keywords: ["ICP scoring", "ideal customer profile", "lead scoring", "outbound sales", "prospect qualification"],
+    content: `
+ICP scoring is the process of comparing each prospect against your Ideal Customer Profile (ICP) and assigning a match percentage. A score of 90% means the prospect closely matches the company type, role, and signals you care about. A score of 40% means they're a weak fit — worth deprioritizing.
+
+## Why Manual Qualification Doesn't Scale
+
+The traditional outbound workflow: export a list from Apollo, open each row in LinkedIn, read the profile, decide if they're worth emailing, move to a spreadsheet. Repeat 200 times. That's 2–4 hours of qualification before you send a single email.
+
+ICP scoring automates that judgment call. Instead of reading each profile manually, you define your ICP once and let software score every prospect against it automatically. The 90%+ scores go to the top of your list. The 40% scores get deprioritized or skipped.
+
+## What an ICP Score Is Based On
+
+A good ICP scoring model looks at:
+
+**Firmographic signals**
+- Company size (headcount, revenue range)
+- Industry or vertical
+- Funding stage (pre-seed, seed, Series A–C, growth)
+- Geography
+
+**Role signals**
+- Job title and function
+- Seniority level
+- Department size and reporting structure
+- Years in role
+
+**Behavioral and growth signals**
+- Recent job postings (indicator of growth, budget, and initiative)
+- Recent funding announcements
+- Headcount changes in the last 90 days
+- Tech stack (are they already using tools that complement yours?)
+
+**Negative signals (filters that reduce score)**
+- Too large (enterprise cycles you can't support)
+- Too small (can't afford your solution)
+- Wrong industry
+- Competitor customer (detected via tech stack or job postings)
+
+## How to Use ICP Scores in Practice
+
+With scored prospects, your outbound workflow changes:
+
+- **Score 85–100%**: Personalized outreach, reference specific signals, push to book a meeting
+- **Score 60–84%**: Standard personalized sequence, lighter research
+- **Score below 60%**: Skip or use a lighter-touch automated sequence
+- **Score below 40%**: Don't contact
+
+This focuses your writing time — and human attention — on the prospects most likely to convert.
+
+## ICP Scoring vs. Lead Scoring
+
+These are related but different:
+
+**ICP scoring** is about fit — does this prospect match the type of company and person you want to sell to? It's done before outreach begins.
+
+**Lead scoring** is about intent — has this prospect shown interest in your product (visited pricing page, opened 3 emails, attended a webinar)? It's done during or after outreach.
+
+You use ICP scoring to decide who to contact. You use lead scoring to decide who to prioritize follow-up on.
+
+## The Bottom Line
+
+Manual qualification is the most common time sink in outbound sales. ICP scoring eliminates it by automating the judgment call at scale. Instead of reading 200 LinkedIn profiles to find 20 good ones, you describe your ICP once and get a ranked list with scores already applied.
+
+SalesOS uses ICP scoring to rank every prospect returned from a plain-English search. [Try it free](https://salesos.alephwavex.io) — describe your ICP and see match scores on real prospects.
+    `.trim(),
+  },
+  {
+    slug: "apollo-alternative-for-founders",
+    title: "The Best Apollo Alternative for Founders Doing Their Own Outbound",
+    description: "Apollo is built for large SDR teams with ops support. If you're a founder doing outbound yourself, here's a faster alternative.",
+    publishedAt: "2026-05-12",
+    readingTime: "5 min read",
+    category: "Comparisons",
+    keywords: ["Apollo alternative", "Apollo.io alternative", "B2B prospecting tool", "founder outbound", "outbound sales software for startups"],
+    content: `
+The best Apollo alternative for founders doing their own outbound is a tool that handles the full workflow — finding leads, verifying emails, and drafting outreach — without requiring an ops function to set it up. SalesOS is built for exactly this use case.
+
+## Why Founders Stop Using Apollo
+
+Apollo is a powerful database. But it's built for SDR teams with a dedicated ops person who can configure boolean searches, build export workflows, set up sequences, and clean lists. As a founder doing your own outbound, you run into three problems:
+
+**1. Boolean search takes time to learn**
+Apollo's lead search relies on filters and boolean logic. Getting a precise query right takes 30–45 minutes, even for experienced users. That's time you don't have when you're also building product.
+
+**2. You get volume, not qualification**
+Apollo's default outputs are large contact lists. Qualifying them — deciding which 50 of the 2,000 exported contacts are actually worth emailing — is manual work that eats hours every week.
+
+**3. It stops at the data**
+Apollo exports contacts. It doesn't write emails. It doesn't verify deliverability at SMTP level. And its sequence tool is separate from the prospecting workflow. You end up with Apollo + a spreadsheet + Gmail, and it still takes 2+ hours per campaign to run.
+
+## What Founders Actually Need
+
+A founder doing outbound needs to move from "who should I email this week" to "emails sent" in under 30 minutes. That means:
+
+- **Fast prospect discovery**: Describe who you want, get a ranked list back — no filter-building
+- **Verified contact data**: Email addresses that will actually deliver, not just exist in a database
+- **Drafted outreach**: A first-touch email that references something real about the prospect, not a template
+- **Simple sending**: Send from the same tool, not a second app
+
+## How SalesOS Compares to Apollo for Founders
+
+| | Apollo | SalesOS |
+|---|---|---|
+| Search method | Boolean/filter UI | Plain English description |
+| Results | Raw contact list | Ranked by ICP fit score |
+| Email verification | Basic format validation | SMTP handshake verification |
+| Email drafting | Not included | AI-drafted per prospect |
+| Sending | Separate sequences module | Integrated workflow |
+| Setup time | 45–90 min per campaign | Under 5 min |
+| Best for | Large SDR teams with ops | Founders and small teams |
+| Price | $49–$99+/month | Free–$179/month |
+
+## When Apollo Is Still the Right Call
+
+Apollo wins if:
+- You need to contact tens of thousands of prospects per month
+- You need phone numbers for cold calling
+- You have a dedicated ops person who can configure and maintain workflows
+- You're already deeply integrated into Apollo's CRM features
+
+## The Bottom Line
+
+If you're a founder, first sales hire, or small SDR team without ops support, Apollo's power comes at a cost in time and complexity that makes it a poor fit. A tool designed around your workflow — describe ICP, get ranked prospects, send verified personalized emails — is a better match.
+
+[SalesOS is free to try](https://salesos.alephwavex.io) — no credit card, no setup. Describe your ICP and have your first email sent in under 2 minutes.
+    `.trim(),
+  },
+];
+
+export function getPostBySlug(slug: string): BlogPost | undefined {
+  return blogPosts.find((p) => p.slug === slug);
+}
