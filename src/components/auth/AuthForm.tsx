@@ -387,7 +387,7 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
               </Button>
 
               <p className="text-xs text-muted-foreground text-center leading-relaxed">
-                If you have not chosen a plan yet, you may be redirected to pricing during setup.
+                Free forever — no credit card required. Upgrade anytime to unlock lead generation.
               </p>
             </form>
           </TabsContent>
@@ -398,7 +398,7 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
           style={{ animationDelay: '0.5s', animationFillMode: 'both' }}
         >
           <p className="text-sm text-muted-foreground">
-            Need to choose a plan first?{" "}
+            Curious about paid plans?{" "}
             <a href="/pricing" className="text-primary hover:underline transition-colors duration-200">
               View pricing
             </a>
