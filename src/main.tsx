@@ -2,30 +2,21 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
-// Unregister service workers in preview/iframe contexts to prevent stale cache issues
-const isInIframe = (() => {
-  try {
-    return window.self !== window.top;
-  } catch (e) {
-    return true;
-  }
-})();
-
-const isPreviewHost =
-  window.location.hostname.includes("id-preview--") ||
-  window.location.hostname.includes("lovableproject.com");
-
-if (isPreviewHost || isInIframe) {
-  navigator.serviceWorker?.getRegistrations().then((registrations) => {
+// Remove legacy PWA caches on every boot. Some mobile browsers persisted an
+// old app shell that referenced deleted hashed chunks, producing a blank page.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.ready
+    .then((registration) => registration.update().catch(() => {}))
+    .catch(() => {});
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
     registrations.forEach((r) => r.unregister());
-  });
+  }).catch(() => {});
+}
+
+if (typeof caches !== 'undefined') {
+  caches.keys().then((keys) => {
+    keys.forEach((k) => caches.delete(k));
+  }).catch(() => {});
 }
 
 createRoot(document.getElementById("root")!).render(<App />);
-
-// Register service worker after page load to avoid render-blocking
-if (!isPreviewHost && !isInIframe && 'serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
-  });
-}

@@ -50,8 +50,7 @@ export const FinalCTA = () => {
         >
           {/* Label */}
           <p
-            className="text-[10px] uppercase tracking-[0.28em] mb-8 font-medium"
-            style={{ color: "hsl(261 75% 60%)" }}
+            className="text-[10px] uppercase tracking-[0.28em] mb-5 font-medium text-center text-purple-500"
           >
             Your next pipeline starts here
           </p>

@@ -36,8 +36,7 @@ export const BigStatSection = () => {
         <div className="flex flex-col items-center text-center">
 
           <p
-            className={`text-[10px] uppercase tracking-[0.28em] mb-10 font-medium transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-            style={{ color: "hsl(261 75% 55% / 0.6)" }}
+            className={`text-[10px] uppercase tracking-[0.28em] mb-5 font-medium text-center text-purple-500 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
           >
             The benchmark
           </p>
