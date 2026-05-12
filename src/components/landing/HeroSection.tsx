@@ -1,5 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
+import { motion } from "motion/react";
+
+const ease = [0.16, 1, 0.3, 1] as const;
 
 export const HeroSection = () => {
   const navigate = useNavigate();
@@ -20,22 +23,27 @@ export const HeroSection = () => {
         aria-hidden="true"
       />
 
-      <div
-        className="absolute bottom-[-80px] left-[-120px] h-[360px] w-[360px] rounded-full hero-orb pointer-events-none sm:bottom-[-120px] sm:left-[-80px] sm:h-[600px] sm:w-[600px]"
+      {/* Left orb — multi-keyframe float */}
+      <motion.div
+        className="absolute bottom-[-80px] left-[-120px] h-[360px] w-[360px] rounded-full pointer-events-none sm:bottom-[-120px] sm:left-[-80px] sm:h-[600px] sm:w-[600px]"
         style={{
           background: "radial-gradient(ellipse at center, hsl(261 75% 55% / 0.18) 0%, hsl(261 75% 55% / 0.06) 50%, transparent 70%)",
           willChange: "transform",
         }}
+        animate={{ y: [0, -28, 14, -8, 0], x: [0, 18, -20, 10, 0] }}
+        transition={{ duration: 24, repeat: Infinity, ease: "easeInOut" }}
         aria-hidden="true"
       />
 
-      <div
-        className="absolute bottom-[-60px] right-[-110px] h-[320px] w-[320px] rounded-full hero-orb pointer-events-none sm:bottom-[-100px] sm:right-[-100px] sm:h-[500px] sm:w-[500px]"
+      {/* Right orb — offset timing */}
+      <motion.div
+        className="absolute bottom-[-60px] right-[-110px] h-[320px] w-[320px] rounded-full pointer-events-none sm:bottom-[-100px] sm:right-[-100px] sm:h-[500px] sm:w-[500px]"
         style={{
           background: "radial-gradient(ellipse at center, hsl(280 70% 60% / 0.14) 0%, hsl(280 70% 60% / 0.04) 50%, transparent 70%)",
-          animationDelay: "6s",
           willChange: "transform",
         }}
+        animate={{ y: [0, 22, -18, 12, 0], x: [0, -16, 24, -8, 0] }}
+        transition={{ duration: 26, repeat: Infinity, ease: "easeInOut", delay: 7 }}
         aria-hidden="true"
       />
 
@@ -48,7 +56,14 @@ export const HeroSection = () => {
       <div className="noise-texture" aria-hidden="true" />
 
       <div className="relative z-10 container mx-auto flex flex-col items-center px-5 text-center sm:px-6">
-        <div className="mb-8 max-w-full sm:mb-10">
+
+        {/* Badge */}
+        <motion.div
+          className="mb-8 max-w-full sm:mb-10"
+          initial={{ opacity: 0, y: -12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease }}
+        >
           <span className="inline-flex max-w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[11px] leading-tight text-white/60 sm:flex-nowrap sm:gap-2.5 sm:px-4 sm:text-xs">
             <span className="relative flex h-1.5 w-1.5 shrink-0">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-75" />
@@ -58,15 +73,23 @@ export const HeroSection = () => {
             <span className="text-white/30">·</span>
             <span>Intent scoring now live — know who's ready before you email</span>
           </span>
-        </div>
+        </motion.div>
 
+        {/* H1 — two lines spring in with stagger */}
         <h1
           id="hero-heading"
           className="font-display mb-6 max-w-[14ch] text-balance sm:mb-8 sm:max-w-none"
           style={{ fontSize: "clamp(2.25rem, 9vw, 7rem)", lineHeight: 1.02, letterSpacing: "-0.02em", fontWeight: 800 }}
         >
-          <span className="block text-white">Find who to sell to.</span>
-          <span
+          <motion.span
+            className="block text-white"
+            initial={{ opacity: 0, y: 32 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 60, damping: 18, delay: 0.1 }}
+          >
+            Find who to sell to.
+          </motion.span>
+          <motion.span
             className="block font-display italic"
             style={{
               fontStyle: "italic",
@@ -76,42 +99,65 @@ export const HeroSection = () => {
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
             }}
+            initial={{ opacity: 0, y: 32 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 60, damping: 18, delay: 0.24 }}
           >
             Then actually sell to them.
-          </span>
+          </motion.span>
         </h1>
 
-        <p className="mb-8 max-w-[22rem] text-base font-light leading-relaxed text-white/55 sm:mb-12 sm:max-w-xl sm:text-xl">
+        {/* Subhead */}
+        <motion.p
+          className="mb-8 max-w-[22rem] text-base font-light leading-relaxed text-white/55 sm:mb-12 sm:max-w-xl sm:text-xl"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.65, ease, delay: 0.38 }}
+        >
           Describe your ideal customer once. Get ranked prospects with verified emails and a first-touch draft written for each one — ready to send in under 2 minutes.
-        </p>
+        </motion.p>
 
-        <div className="mb-8 flex w-full max-w-[20rem] flex-col items-center gap-3 sm:mb-8 sm:max-w-none sm:flex-row sm:justify-center sm:gap-4">
-          <button
+        {/* CTAs */}
+        <motion.div
+          className="mb-8 flex w-full max-w-[20rem] flex-col items-center gap-3 sm:mb-8 sm:max-w-none sm:flex-row sm:justify-center sm:gap-4"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55, ease, delay: 0.5 }}
+        >
+          <motion.button
             onClick={() => navigate("/auth")}
             className="cta-pill-glow inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-full px-8 text-sm font-semibold text-white group sm:w-auto"
             style={{ background: "linear-gradient(135deg, hsl(261 75% 60%) 0%, hsl(261 75% 50%) 100%)" }}
             aria-label="Start for free"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
             Find your first leads — free
             <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
-          </button>
+          </motion.button>
 
-          <a
+          <motion.a
             href="/demo"
-            className="inline-flex h-11 items-center justify-center gap-1.5 px-5 text-sm text-white/60 transition-colors duration-200 group hover:text-white/80 sm:h-[52px]"
+            className="inline-flex h-11 items-center justify-center gap-1.5 px-5 text-sm text-white/60 transition-colors duration-200 hover:text-white/80 sm:h-[52px]"
+            whileHover={{ x: 3 }}
           >
             Watch a 2-min demo
-            <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
-          </a>
-        </div>
+            <ArrowRight className="h-3.5 w-3.5 ml-0.5" />
+          </motion.a>
+        </motion.div>
 
-        <p className="text-xs text-white/25 flex items-center justify-center gap-2.5 mb-4">
+        <motion.p
+          className="text-xs text-white/25 flex items-center justify-center gap-2.5 mb-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.65 }}
+        >
           No credit card required
           <span className="w-px h-3 bg-white/20 inline-block" />
           Cancel anytime
           <span className="w-px h-3 bg-white/20 inline-block" />
           First leads in 2 minutes
-        </p>
+        </motion.p>
       </div>
     </section>
   );
