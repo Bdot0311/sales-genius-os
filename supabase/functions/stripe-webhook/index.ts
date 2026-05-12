@@ -2,624 +2,135 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { logSystemAlert } from "../_shared/alerts.ts";
-
+import { processStripeEvent } from "../_shared/process-stripe-event.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Price ID to plan mapping
-// Monthly = credits reset each cycle, Yearly = full annual pool granted upfront
-const PRICE_TO_PLAN: Record<string, { plan: 'starter' | 'growth' | 'pro' | 'agency', credits: number, dailyLimit: number, leadsLimit: number, isYearly: boolean }> = {
-  // Starter Monthly - 1,000 credits/month
-  'price_1T8tywFTerosS6hi0fHQuybr': { plan: 'starter', credits: 1000, dailyLimit: 100, leadsLimit: 1000, isYearly: false },
-  // Starter Yearly - 12,000 credits upfront (1,000 x 12)
-  'price_1T8tyxFTerosS6hiSakB51fA': { plan: 'starter', credits: 12000, dailyLimit: 100, leadsLimit: 1000, isYearly: true },
-  // Growth Monthly - 2,500 credits/month
-  'price_1T8tyyFTerosS6hiTsTXkWDa': { plan: 'growth', credits: 2500, dailyLimit: 250, leadsLimit: 2500, isYearly: false },
-  // Growth Yearly - 30,000 credits upfront
-  'price_1T8tyzFTerosS6hiUyzpHnCK': { plan: 'growth', credits: 30000, dailyLimit: 250, leadsLimit: 2500, isYearly: true },
-  // Pro Monthly - 5,000 credits/month
-  'price_1T8tz0FTerosS6hiKJluR3kk': { plan: 'pro', credits: 5000, dailyLimit: 500, leadsLimit: 5000, isYearly: false },
-  // Pro Yearly - 60,000 credits upfront
-  'price_1T8tz0FTerosS6hiIHNG82Bh': { plan: 'pro', credits: 60000, dailyLimit: 500, leadsLimit: 5000, isYearly: true },
-  // Agency Monthly - 15,000 credits/month
-  'price_1TSXEzFTerosS6hiKJdDX95R': { plan: 'agency', credits: 15000, dailyLimit: 1500, leadsLimit: 15000, isYearly: false },
-  // Agency Yearly - 180,000 credits upfront
-  'price_1TSXF0FTerosS6hiAU2FlQli': { plan: 'agency', credits: 180000, dailyLimit: 1500, leadsLimit: 15000, isYearly: true },
-  // Legacy prices (all monthly - updated to new limits)
-  'price_1SmM2hFTerosS6hiiDXBDIxl': { plan: 'growth', credits: 2500, dailyLimit: 250, leadsLimit: 2500, isYearly: false },
-  'price_1SS44wFTerosS6hiCkKQnnoD': { plan: 'growth', credits: 2500, dailyLimit: 250, leadsLimit: 2500, isYearly: false },
-  'price_1SS456FTerosS6hisBSDPwo4': { plan: 'pro', credits: 5000, dailyLimit: 500, leadsLimit: 5000, isYearly: false },
-  'price_1SS45HFTerosS6hiQtxsNVL4': { plan: 'pro', credits: 5000, dailyLimit: 500, leadsLimit: 5000, isYearly: false },
-};
+const log = (s: string, d?: unknown) => console.log(`[STRIPE-WEBHOOK] ${s}${d ? ' - ' + JSON.stringify(d) : ''}`);
 
-// Product ID to plan mapping (fallback)
-const PRODUCT_TO_PLAN: Record<string, 'starter' | 'growth' | 'pro' | 'agency'> = {
-  // New product IDs
-  'prod_U78FZoAWovU1rX': 'starter',
-  'prod_U78FC92stOkRxS': 'starter',
-  'prod_U78Ff02VQAzrLC': 'growth',
-  'prod_U78Fk0l7swAukt': 'growth',
-  'prod_U78Fs2HpZzcZJc': 'pro',
-  'prod_U78Fuo9Mg04kz9': 'pro',
-  // Agency
-  'prod_URQ5ib01VNZY9o': 'agency',
-  'prod_URQ5awS6V2AAXH': 'agency',
-  // Legacy product IDs
-  'prod_TjpiXbauY0T3RF': 'growth',
-  'prod_TOrozUbuuN18RP': 'pro',
-  'prod_TOrod7SaIV2D7s': 'pro',
-  'prod_U6gflsh1Zzoh3V': 'starter',
-  'prod_U6gfTND3QdfgcC': 'growth',
-  'prod_U6gfOj1Xgfd1vy': 'pro',
-};
-
-const generateTempPassword = () => {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%";
-  let password = "";
-  for (let i = 0; i < 12; i++) {
-    password += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return password;
-};
-
-const logStep = (step: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[STRIPE-WEBHOOK] ${step}${detailsStr}`);
-};
+// Exponential backoff: 1m, 5m, 15m, 1h, 6h, 24h
+const BACKOFF_MINUTES = [1, 5, 15, 60, 360, 1440];
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
   const stripeWebhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
-  
-  if (!stripeSecretKey) {
-    console.error("STRIPE_SECRET_KEY not set");
-    return new Response("Server configuration error", { status: 500 });
-  }
+  if (!stripeSecretKey) return new Response("Server configuration error", { status: 500 });
 
   const stripe = new Stripe(stripeSecretKey, { apiVersion: "2025-08-27.basil" });
-  
   const signature = req.headers.get("stripe-signature");
   const body = await req.text();
 
   let event: Stripe.Event;
-
   try {
     if (!stripeWebhookSecret) {
-      console.error("STRIPE_WEBHOOK_SECRET is not configured — rejecting request");
       await logSystemAlert({
-        category: "stripe_webhook_failure",
-        severity: "critical",
+        category: "stripe_webhook_failure", severity: "critical",
         message: "STRIPE_WEBHOOK_SECRET not configured — webhook events cannot be verified",
       });
-      return new Response("Server misconfiguration: webhook secret not set", { status: 500 });
+      return new Response("Server misconfiguration", { status: 500 });
     }
-    if (!signature) {
-      console.error("Missing stripe-signature header — rejecting request");
-      await logSystemAlert({
-        category: "stripe_webhook_failure",
-        severity: "warning",
-        message: "Webhook request missing stripe-signature header",
-      });
-      return new Response("Missing stripe-signature header", { status: 400 });
-    }
-    const cryptoProvider = Stripe.createSubtleCryptoProvider();
+    if (!signature) return new Response("Missing stripe-signature header", { status: 400 });
     event = await stripe.webhooks.constructEventAsync(
-      body,
-      signature,
-      stripeWebhookSecret,
-      undefined,
-      cryptoProvider
+      body, signature, stripeWebhookSecret, undefined, Stripe.createSubtleCryptoProvider()
     );
   } catch (err: any) {
-    console.error("Webhook signature verification failed:", err.message);
     await logSystemAlert({
-      category: "stripe_webhook_failure",
-      severity: "error",
+      category: "stripe_webhook_failure", severity: "error",
       message: `Stripe webhook signature verification failed: ${err.message}`,
       details: { error: err.message },
     });
     return new Response(`Webhook Error: ${err.message}`, { status: 400 });
   }
 
-  logStep("Received Stripe event", { type: event.type });
-
-  const supabaseAdmin = createClient(
+  const supabase = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    { auth: { persistSession: false } }
   );
 
-  // Handle checkout.session.completed - this is when subscription is created
-  if (event.type === "checkout.session.completed") {
-    const session = event.data.object as Stripe.Checkout.Session;
-    
-    logStep("Checkout session completed", { 
-      mode: session.mode, 
-      customerId: session.customer,
-      subscriptionId: session.subscription 
+  // Idempotency: if we've already succeeded this event, return early.
+  const { data: existing } = await supabase
+    .from('stripe_webhook_events')
+    .select('id, status, attempts, max_attempts')
+    .eq('event_id', event.id).maybeSingle();
+
+  if (existing?.status === 'succeeded') {
+    log("event already processed", { id: event.id });
+    return new Response(JSON.stringify({ received: true, duplicate: true }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  // Insert (or reset) the event row to pending.
+  const { data: row, error: upsertErr } = await supabase
+    .from('stripe_webhook_events')
+    .upsert({
+      event_id: event.id,
+      event_type: event.type,
+      payload: event as unknown as Record<string, unknown>,
+      status: 'pending',
+      last_error: null,
+      next_retry_at: null,
+    }, { onConflict: 'event_id' })
+    .select('id, attempts, max_attempts').single();
+
+  if (upsertErr || !row) {
+    log("failed to persist event row", { err: upsertErr });
+    // Still return 200 so Stripe won't pile up; alert ops.
+    await logSystemAlert({
+      category: "stripe_webhook_failure", severity: "critical",
+      message: `Failed to persist webhook event: ${upsertErr?.message}`,
+      details: { event_id: event.id, type: event.type },
+    });
+    return new Response(JSON.stringify({ received: true, persisted: false }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const attempts = (row.attempts ?? 0) + 1;
+  const maxAttempts = row.max_attempts ?? BACKOFF_MINUTES.length;
+
+  try {
+    await processStripeEvent(event, stripe, supabase);
+    await supabase.from('stripe_webhook_events').update({
+      status: 'succeeded', attempts, processed_at: new Date().toISOString(), last_error: null, next_retry_at: null,
+    }).eq('id', row.id);
+    return new Response(JSON.stringify({ received: true, processed: true }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (err: any) {
+    const errMsg = err?.message ?? String(err);
+    log("processing failed", { id: event.id, attempt: attempts, err: errMsg });
+
+    const isDead = attempts >= maxAttempts;
+    const nextDelayMin = BACKOFF_MINUTES[Math.min(attempts - 1, BACKOFF_MINUTES.length - 1)];
+    const nextRetryAt = isDead ? null : new Date(Date.now() + nextDelayMin * 60 * 1000).toISOString();
+
+    await supabase.from('stripe_webhook_events').update({
+      status: isDead ? 'dead_letter' : 'failed',
+      attempts,
+      last_error: errMsg.slice(0, 2000),
+      next_retry_at: nextRetryAt,
+    }).eq('id', row.id);
+
+    await logSystemAlert({
+      category: "stripe_webhook_failure",
+      severity: isDead ? "critical" : "warning",
+      message: isDead
+        ? `Stripe webhook event hit dead-letter after ${attempts} attempts`
+        : `Stripe webhook event failed (attempt ${attempts}/${maxAttempts}); will retry in ${nextDelayMin}m`,
+      details: { event_id: event.id, type: event.type, error: errMsg, next_retry_at: nextRetryAt },
+      related_entity: event.id,
     });
 
-    // Only process subscription checkouts
-    if (session.mode !== "subscription") {
-      logStep("Not a subscription checkout, skipping account creation");
-      return new Response(JSON.stringify({ received: true }), { 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      });
-    }
-
-    const customerEmail = session.customer_email || session.customer_details?.email;
-    const customerId = session.customer as string;
-    const subscriptionId = session.subscription as string;
-    
-    if (!customerEmail) {
-      console.error("No email found in checkout session");
-      return new Response(JSON.stringify({ error: "No email found" }), { 
-        headers: { ...corsHeaders, "Content-Type": "application/json" }, 
-        status: 400 
-      });
-    }
-
-    logStep("Processing new subscription", { email: customerEmail, customerId, subscriptionId });
-
-    // Get subscription details to determine plan
-    let planDetails = PRICE_TO_PLAN['price_1SmM2hFTerosS6hiiDXBDIxl']; // Default to growth
-    let priceId = '';
-    
-    if (subscriptionId) {
-      try {
-        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-        priceId = subscription.items.data[0]?.price?.id || '';
-        const productId = subscription.items.data[0]?.price?.product as string;
-        
-        logStep("Retrieved subscription details", { priceId, productId });
-        
-        if (priceId && PRICE_TO_PLAN[priceId]) {
-          planDetails = PRICE_TO_PLAN[priceId];
-        } else if (productId && PRODUCT_TO_PLAN[productId]) {
-          const planName = PRODUCT_TO_PLAN[productId];
-          planDetails = PRICE_TO_PLAN[Object.keys(PRICE_TO_PLAN).find(k => PRICE_TO_PLAN[k].plan === planName) || ''] || planDetails;
-        } else {
-          // Unknown price/product — alert so we can wire it up before more sales come through
-          await logSystemAlert({
-            category: "stripe_plan_mismatch",
-            severity: "error",
-            message: `Unrecognized Stripe price/product on checkout: priceId=${priceId || 'none'} productId=${productId || 'none'}`,
-            details: { priceId, productId, customerEmail, subscriptionId },
-            related_entity: subscriptionId,
-          });
-        }
-        
-        logStep("Determined plan", { plan: planDetails.plan, credits: planDetails.credits });
-      } catch (err) {
-        logStep("Error retrieving subscription, using default plan", { error: err });
-        await logSystemAlert({
-          category: "stripe_webhook_failure",
-          severity: "error",
-          message: "Failed to retrieve subscription details from Stripe in webhook handler",
-          details: { subscriptionId, error: String(err) },
-          related_entity: subscriptionId,
-        });
-      }
-    }
-
-    // Check if user already exists — look up by email in profiles table
-    // (listUsers() only returns 50 per page, so it misses users beyond page 1)
-    const { data: profileRow } = await supabaseAdmin
-      .from('profiles')
-      .select('id, email')
-      .ilike('email', customerEmail)
-      .maybeSingle();
-
-    let existingUser: { id: string } | null = profileRow ? { id: profileRow.id } : null;
-
-    // Fallback: paginate through auth.users in case the profile row is missing
-    if (!existingUser) {
-      for (let page = 1; page <= 20; page++) {
-        const { data: usersPage } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 200 });
-        const match = usersPage?.users?.find(u => u.email?.toLowerCase() === customerEmail.toLowerCase());
-        if (match) { existingUser = { id: match.id }; break; }
-        if (!usersPage?.users || usersPage.users.length < 200) break;
-      }
-    }
-
-    if (existingUser) {
-      logStep("User already exists, updating subscription", { userId: existingUser.id });
-      
-      // Update existing user's subscription
-      const { error: updateError } = await supabaseAdmin
-        .from('subscriptions')
-        .update({
-          plan: planDetails.plan,
-          status: 'active',
-          account_status: 'active',
-          stripe_customer_id: customerId,
-          stripe_subscription_id: subscriptionId,
-          search_credits_base: planDetails.credits,
-          search_credits_remaining: planDetails.credits,
-          leads_limit: planDetails.leadsLimit,
-          current_period_start: new Date().toISOString(),
-          current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          credits_reset_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', existingUser.id);
-
-      if (updateError) {
-        logStep("Error updating subscription", { error: updateError });
-      } else {
-        logStep("Subscription updated successfully for existing user");
-      }
-
-      return new Response(JSON.stringify({ received: true, message: "Subscription updated" }), { 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      });
-    }
-
-    // Generate temp password and create new user
-    const tempPassword = generateTempPassword();
-
-    try {
-      const { data: userData, error: userError } = await supabaseAdmin.auth.admin.createUser({
-        email: customerEmail,
-        password: tempPassword,
-        email_confirm: true,
-      });
-
-      if (userError) {
-        logStep("Error creating user", { error: userError });
-        throw userError;
-      }
-
-      logStep("User created successfully", { userId: userData.user?.id });
-
-      // Update the subscription that was auto-created by the trigger
-      if (userData.user?.id) {
-        const { error: subError } = await supabaseAdmin
-          .from('subscriptions')
-          .update({
-            plan: planDetails.plan,
-            status: 'active',
-            account_status: 'active',
-            stripe_customer_id: customerId,
-            stripe_subscription_id: subscriptionId,
-            search_credits_base: planDetails.credits,
-            search_credits_remaining: planDetails.credits,
-            leads_limit: planDetails.leadsLimit,
-            current_period_start: new Date().toISOString(),
-            current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-            credits_reset_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          })
-          .eq('user_id', userData.user.id);
-
-        if (subError) {
-          logStep("Error updating new user subscription", { error: subError });
-        } else {
-          logStep("New user subscription updated", { plan: planDetails.plan, credits: planDetails.credits });
-        }
-      }
-
-      // Send welcome email with credentials via Lovable email queue
-      const appUrl = "https://salesos.alephwavex.io";
-      const logoUrl = "https://ghgfjnepvxvxrncmskys.supabase.co/storage/v1/object/public/email-assets/salesos-logo.webp";
-      
-      const customerName = session.customer_details?.name || "there";
-      const planName = planDetails.plan.charAt(0).toUpperCase() + planDetails.plan.slice(1);
-
-      const welcomeHtml = `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Welcome to SalesOS</title>
-        </head>
-        <body style="margin: 0; padding: 0; background-color: #0a0a0a;">
-          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#0a0a0a" style="background-color: #0a0a0a;">
-            <tr>
-              <td align="center" bgcolor="#0a0a0a" style="background-color: #0a0a0a; padding: 40px 20px;">
-                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="540" bgcolor="#141414" style="max-width: 540px; background-color: #141414; border-radius: 16px; border: 1px solid #2a2a2a;">
-                  <tr>
-                    <td bgcolor="#9b6dff" align="center" style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); padding: 32px 40px; border-radius: 16px 16px 0 0;">
-                      <img src="${logoUrl}" alt="SalesOS" width="56" height="56" style="display: block; border-radius: 12px; margin-bottom: 16px;" />
-                      <h1 style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">Welcome to SalesOS ${planName}!</h1>
-                      <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: rgba(255,255,255,0.9); margin: 12px 0 0 0; font-size: 16px;">Your AI-powered sales operating system</p>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td bgcolor="#141414" style="background-color: #141414; padding: 40px 36px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-                      <h2 style="color: #ffffff; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Hey ${customerName}! 👋</h2>
-                      <p style="color: #a1a1aa; line-height: 1.7; margin: 0 0 28px 0; font-size: 16px;">
-                        You just joined thousands of sales professionals using SalesOS to find better leads, close more deals, and save hours every week.
-                      </p>
-                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#1a1a1a" style="background-color: #1a1a1a; border-radius: 12px; border: 1px solid #2a2a2a; margin-bottom: 20px;">
-                        <tr>
-                          <td bgcolor="#1a1a1a" style="background-color: #1a1a1a; padding: 20px;">
-                            <h3 style="color: #9b6dff; margin: 0 0 12px 0; font-size: 16px; font-weight: 600;">📊 Your ${planName} Plan Includes:</h3>
-                            <p style="color: #ffffff; margin: 0; font-size: 15px;">
-                              • <strong>${planDetails.credits.toLocaleString()}</strong> search credits/month<br>
-                              • Up to <strong>${planDetails.dailyLimit}</strong> searches/day<br>
-                              • Lead Intelligence Engine<br>
-                              • AI-powered enrichment & scoring
-                            </p>
-                          </td>
-                        </tr>
-                      </table>
-                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#1a1a1a" style="background-color: #1a1a1a; border-radius: 12px; border: 1px solid #2a2a2a; border-left: 4px solid #9b6dff; margin-bottom: 28px;">
-                        <tr>
-                          <td bgcolor="#1a1a1a" style="background-color: #1a1a1a; padding: 24px;">
-                            <h3 style="color: #9b6dff; margin: 0 0 16px 0; font-size: 16px; font-weight: 600;">🔐 Your Login Credentials</h3>
-                            <p style="color: #a1a1aa; padding: 8px 0; font-size: 15px;">
-                              <strong style="color: #ffffff;">Email:</strong> ${customerEmail}<br>
-                              <strong style="color: #ffffff;">Temporary Password:</strong>
-                              <code style="background: #333333; padding: 6px 12px; border-radius: 6px; color: #9b6dff; font-family: monospace; font-size: 16px;">${tempPassword}</code>
-                            </p>
-                          </td>
-                        </tr>
-                      </table>
-                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#1a1a1a" style="background-color: #1a1a1a; border-radius: 10px; border: 1px solid #333333; margin-bottom: 28px;">
-                        <tr>
-                          <td bgcolor="#1a1a1a" style="background-color: #1a1a1a; padding: 16px 20px;">
-                            <p style="color: #fbbf24; font-size: 14px; line-height: 1.6; margin: 0;">
-                              ⚠️ <strong>Security Notice:</strong> Please change your password after your first login for security.
-                            </p>
-                          </td>
-                        </tr>
-                      </table>
-                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#141414">
-                        <tr>
-                          <td bgcolor="#141414" align="center" style="background-color: #141414; padding: 8px 0 32px 0;">
-                            <a href="${appUrl}/auth" style="display: inline-block; background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); color: #ffffff; padding: 18px 48px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px;">
-                              Sign In to SalesOS →
-                            </a>
-                          </td>
-                        </tr>
-                      </table>
-                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#141414">
-                        <tr>
-                          <td bgcolor="#141414" style="background-color: #141414; padding: 8px 0 16px 0;">
-                            <div style="border-top: 1px solid #2a2a2a;"></div>
-                          </td>
-                        </tr>
-                      </table>
-                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#141414">
-                        <tr>
-                          <td bgcolor="#141414" align="center" style="background-color: #141414;">
-                            <p style="color: #52525b; font-size: 13px; margin: 0;">
-                              Need help? Contact <a href="mailto:support@bdotindustries.com" style="color: #9b6dff; text-decoration: none;">support@bdotindustries.com</a>
-                            </p>
-                          </td>
-                        </tr>
-                      </table>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td bgcolor="#0f0f0f" align="center" style="background-color: #0f0f0f; padding: 24px 36px; border-top: 1px solid #2a2a2a; border-radius: 0 0 16px 16px;">
-                      <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #52525b; font-size: 12px; margin: 0;">
-                        © ${new Date().getFullYear()} BDØT Industries LLC. All rights reserved.
-                      </p>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-          </table>
-        </body>
-        </html>
-      `;
-
-      const { error: emailError } = await supabaseAdmin.rpc('enqueue_email', {
-        queue_name: 'transactional_emails',
-        payload: {
-          message_id: crypto.randomUUID(),
-          to: customerEmail,
-          from: 'SalesOS <noreply@notify.bdotindustries.com>',
-          sender_domain: 'notify.bdotindustries.com',
-          subject: `Welcome to SalesOS ${planName} - Your Login Credentials 🔐`,
-          html: welcomeHtml,
-          text: `Welcome to SalesOS ${planName}! Email: ${customerEmail}, Temporary Password: ${tempPassword}. Sign in at ${appUrl}/auth. Please change your password after first login.`,
-          purpose: 'transactional',
-          label: 'stripe-welcome',
-          idempotency_key: `stripe-welcome-${userData.user?.id}-${Date.now()}`,
-          queued_at: new Date().toISOString(),
-        },
-      });
-
-      if (emailError) {
-        logStep("Error enqueuing welcome email", { error: emailError });
-      } else {
-        logStep("Welcome email enqueued successfully", { email: customerEmail });
-      }
-
-      return new Response(JSON.stringify({ 
-        received: true, 
-        message: "Account created successfully",
-        userId: userData.user?.id,
-        plan: planDetails.plan
-      }), { 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      });
-
-    } catch (error: any) {
-      logStep("Error in account creation", { error: error.message });
-      return new Response(JSON.stringify({ error: error.message }), { 
-        headers: { ...corsHeaders, "Content-Type": "application/json" }, 
-        status: 500 
-      });
-    }
+    // Always 200: we've persisted state and will retry ourselves.
+    return new Response(JSON.stringify({ received: true, processed: false, will_retry: !isDead }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
-
-  // Handle subscription updates (plan changes, renewals)
-  if (event.type === "customer.subscription.updated") {
-    const subscription = event.data.object as Stripe.Subscription;
-    const customerId = subscription.customer as string;
-    const priceId = subscription.items.data[0]?.price?.id || '';
-    
-    logStep("Subscription updated", { subscriptionId: subscription.id, priceId, status: subscription.status });
-    
-    // Get customer email to find user
-    try {
-      const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
-      const customerEmail = customer.email;
-      
-      if (customerEmail) {
-        // Find user by email
-        const { data: profile } = await supabaseAdmin
-          .from('profiles')
-          .select('id')
-          .eq('email', customerEmail)
-          .single();
-        
-        if (profile) {
-          const planDetails = PRICE_TO_PLAN[priceId] || PRICE_TO_PLAN['price_1SmM2hFTerosS6hiiDXBDIxl'];
-          
-          const { error: updateError } = await supabaseAdmin
-            .from('subscriptions')
-            .update({
-              plan: planDetails.plan,
-              status: subscription.status === 'active' ? 'active' : 'inactive',
-              account_status: subscription.status === 'active' ? 'active' : subscription.status,
-              stripe_subscription_id: subscription.id,
-              search_credits_base: planDetails.credits,
-              leads_limit: planDetails.leadsLimit,
-              current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-              current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-              updated_at: new Date().toISOString(),
-            })
-            .eq('user_id', profile.id);
-          
-          if (updateError) {
-            logStep("Error updating subscription on renewal", { error: updateError });
-          } else {
-            logStep("Subscription updated successfully", { userId: profile.id, plan: planDetails.plan });
-          }
-        }
-      }
-    } catch (err) {
-      logStep("Error processing subscription update", { error: err });
-    }
-  }
-
-  // Handle invoice paid (credits reset/add on billing cycle)
-  if (event.type === "invoice.paid") {
-    const invoice = event.data.object as Stripe.Invoice;
-    const customerId = invoice.customer as string;
-    const subscriptionId = invoice.subscription as string;
-    
-    logStep("Invoice paid", { invoiceId: invoice.id, customerId, subscriptionId });
-    
-    if (subscriptionId) {
-      try {
-        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-        const priceId = subscription.items.data[0]?.price?.id || '';
-        const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
-        const customerEmail = customer.email;
-        
-        if (customerEmail) {
-          const { data: profile } = await supabaseAdmin
-            .from('profiles')
-            .select('id')
-            .eq('email', customerEmail)
-            .single();
-          
-          if (profile) {
-            const planDetails = PRICE_TO_PLAN[priceId] || PRICE_TO_PLAN['price_1SmM2hFTerosS6hiiDXBDIxl'];
-            
-            // Get current credits for rollover calculation
-            const { data: currentSub } = await supabaseAdmin
-              .from('subscriptions')
-              .select('search_credits_remaining')
-              .eq('user_id', profile.id)
-              .single();
-            
-            // Credits logic:
-            // - Yearly plans: full annual pool granted upfront, reset to full pool on renewal
-            // - Monthly Starter: reset to 1000 each month (no rollover)
-            // - Monthly Growth/Pro: rollover - ADD new credits to existing balance
-            let newCredits = planDetails.credits;
-            
-            if (!planDetails.isYearly && (planDetails.plan === 'growth' || planDetails.plan === 'pro' || planDetails.plan === 'agency')) {
-              // Monthly Growth/Pro: rollover - add credits to existing balance
-              const existingCredits = currentSub?.search_credits_remaining || 0;
-              newCredits = existingCredits + planDetails.credits;
-              logStep("Monthly rollover: adding credits", { existing: existingCredits, adding: planDetails.credits, total: newCredits });
-            } else {
-              // Yearly (all plans): full pool upfront / reset on renewal
-              // Monthly Starter: reset to base
-              logStep("Setting credits", { isYearly: planDetails.isYearly, plan: planDetails.plan, credits: newCredits });
-            }
-            
-            const { error: updateError } = await supabaseAdmin
-              .from('subscriptions')
-              .update({
-                search_credits_remaining: newCredits,
-                daily_searches_used: 0,
-                credits_reset_at: new Date(subscription.current_period_end * 1000).toISOString(),
-                current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-                current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-                updated_at: new Date().toISOString(),
-              })
-              .eq('user_id', profile.id);
-            
-            if (updateError) {
-              logStep("Error resetting credits", { error: updateError });
-            } else {
-              logStep("Credits reset on new billing cycle", { userId: profile.id, credits: planDetails.credits });
-            }
-          }
-        }
-      } catch (err) {
-        logStep("Error processing invoice paid", { error: err });
-      }
-    }
-  }
-
-  // Handle subscription cancellation
-  if (event.type === "customer.subscription.deleted") {
-    const subscription = event.data.object as Stripe.Subscription;
-    const customerId = subscription.customer as string;
-    
-    logStep("Subscription cancelled", { subscriptionId: subscription.id });
-    
-    try {
-      const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
-      const customerEmail = customer.email;
-      
-      if (customerEmail) {
-        const { data: profile } = await supabaseAdmin
-          .from('profiles')
-          .select('id')
-          .eq('email', customerEmail)
-          .single();
-        
-        if (profile) {
-          const { error: updateError } = await supabaseAdmin
-            .from('subscriptions')
-            .update({
-              status: 'cancelled',
-              account_status: 'cancelled',
-              updated_at: new Date().toISOString(),
-            })
-            .eq('user_id', profile.id);
-          
-          if (updateError) {
-            logStep("Error updating cancelled subscription", { error: updateError });
-          } else {
-            logStep("Subscription marked as cancelled", { userId: profile.id });
-          }
-        }
-      }
-    } catch (err) {
-      logStep("Error processing subscription cancellation", { error: err });
-    }
-  }
-
-  return new Response(JSON.stringify({ received: true }), { 
-    headers: { ...corsHeaders, "Content-Type": "application/json" } 
-  });
 });
