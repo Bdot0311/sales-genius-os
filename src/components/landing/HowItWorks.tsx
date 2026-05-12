@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "motion/react";
+
+const ease = [0.16, 1, 0.3, 1] as const;
 
 const steps = [
   {
@@ -92,22 +94,10 @@ const steps = [
 ];
 
 export const HowItWorks = () => {
-  const [isVisible, setIsVisible] = useState(false);
-  const sectionRef = useRef<HTMLElement>(null);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => { if (entries[0].isIntersecting) setIsVisible(true); },
-      { threshold: 0.15 }
-    );
-    if (sectionRef.current) observer.observe(sectionRef.current);
-    return () => observer.disconnect();
-  }, []);
 
   return (
     <section
-      ref={sectionRef}
       id="how-it-works"
       className="relative py-24 md:py-32 overflow-hidden"
       style={{ background: "hsl(0,0%,3%)" }}
@@ -123,24 +113,31 @@ export const HowItWorks = () => {
       <div className="container relative z-10 mx-auto px-6">
         <div className="max-w-[720px] mx-auto text-center">
 
-          <p
-            className={`text-[10px] uppercase tracking-[0.28em] mb-6 font-medium transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+          <motion.p
+            className="text-[10px] uppercase tracking-[0.28em] mb-6 font-medium"
             style={{ color: "hsl(261 75% 60%)" }}
+            initial={{ opacity: 0, y: 14 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-10% 0px" }}
+            transition={{ duration: 0.6, ease }}
           >
             How it works
-          </p>
+          </motion.p>
 
-          <h2
+          <motion.h2
             id="how-it-works-heading"
-            className={`font-display mb-16 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+            className="font-display mb-16"
             style={{
               fontSize: "clamp(2.4rem, 5vw, 3.8rem)",
               fontWeight: 800,
               lineHeight: 1.06,
               letterSpacing: "-0.02em",
               color: "hsl(0 0% 95%)",
-              transitionDelay: "80ms",
             }}
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-10% 0px" }}
+            transition={{ type: "spring", stiffness: 60, damping: 18, delay: 0.08 }}
           >
             Three steps.
             <br />
@@ -154,16 +151,21 @@ export const HowItWorks = () => {
             >
               One workflow.
             </span>
-          </h2>
+          </motion.h2>
 
           <div className="flex flex-col">
             {steps.map((step, index) => (
-              <div
+              <motion.div
                 key={index}
-                className={`relative border-b py-10 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-                style={{
-                  borderColor: "hsl(261 75% 50% / 0.12)",
-                  transitionDelay: `${index * 120 + 160}ms`,
+                className="relative border-b py-10"
+                style={{ borderColor: "hsl(261 75% 50% / 0.12)" }}
+                initial={{ opacity: 0, y: 28 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-10% 0px" }}
+                transition={{
+                  duration: index === 0 ? 0.7 : index === 1 ? 0.65 : 0.6,
+                  ease,
+                  delay: index * 0.06,
                 }}
               >
                 <span
@@ -186,24 +188,27 @@ export const HowItWorks = () => {
                   </p>
                   {step.visual}
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
 
-          <div
-            className={`pt-10 transition-all duration-700 ${isVisible ? "opacity-100" : "opacity-0"}`}
-            style={{ transitionDelay: "520ms" }}
+          <motion.div
+            className="pt-10"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true, margin: "-10% 0px" }}
+            transition={{ duration: 0.6, delay: 0.3 }}
           >
-            <button
+            <motion.button
               onClick={() => navigate("/auth")}
-              className="text-sm font-medium transition-colors duration-200 inline-flex items-center gap-1.5"
+              className="text-sm font-medium inline-flex items-center gap-1.5"
               style={{ color: "hsl(261 75% 65%)" }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "hsl(261 75% 80%)")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "hsl(261 75% 65%)")}
+              whileHover={{ x: 3, color: "hsl(261 75% 80%)" }}
+              transition={{ type: "spring", stiffness: 400, damping: 20 }}
             >
               Try it with your own ICP →
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
         </div>
       </div>
 

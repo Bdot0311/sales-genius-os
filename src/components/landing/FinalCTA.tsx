@@ -1,61 +1,46 @@
-import { useEffect, useRef, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "motion/react";
+
+const ease = [0.16, 1, 0.3, 1] as const;
 
 export const FinalCTA = () => {
-  const [isVisible, setIsVisible] = useState(false);
-  const ref = useRef<HTMLElement>(null);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) setIsVisible(true);
-      },
-      { threshold: 0.2 }
-    );
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, []);
 
   return (
     <section
-      ref={ref}
       className="relative py-40 md:py-52 overflow-hidden"
       style={{ background: "hsl(0,0%,3%)" }}
       aria-labelledby="final-cta-heading"
     >
-      {/* Radial glow — strong purple */}
+      {/* Radial glow */}
       <div
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] rounded-full pointer-events-none"
         style={{
-          background:
-            "radial-gradient(circle, hsl(261 75% 50% / 0.14) 0%, hsl(280 70% 55% / 0.06) 40%, transparent 65%)",
+          background: "radial-gradient(circle, hsl(261 75% 50% / 0.14) 0%, hsl(280 70% 55% / 0.06) 40%, transparent 65%)",
           filter: "blur(60px)",
         }}
         aria-hidden="true"
       />
 
-      {/* Top hairline — purple */}
       <div
         className="absolute top-0 left-0 right-0 h-px"
         style={{ background: "hsl(261 75% 50% / 0.18)" }}
       />
 
       <div className="container relative z-10 mx-auto px-6">
-        <div
-          className={`flex flex-col items-center text-center transition-all duration-700 ${
-            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-          }`}
-        >
-          {/* Label */}
-          <p
+        <div className="flex flex-col items-center text-center">
+
+          <motion.p
             className="text-[10px] uppercase tracking-[0.28em] mb-5 font-medium text-center text-purple-500"
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-10% 0px" }}
+            transition={{ duration: 0.6, ease }}
           >
             Your next pipeline starts here
-          </p>
+          </motion.p>
 
-          {/* Headline — Playfair Display */}
           <h2
             id="final-cta-heading"
             className="font-display mb-6"
@@ -67,50 +52,63 @@ export const FinalCTA = () => {
               color: "hsl(0 0% 96%)",
             }}
           >
-            <span className="block">Stop researching.</span>
-            <span
+            <motion.span
+              className="block"
+              initial={{ opacity: 0, y: 32 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-10% 0px" }}
+              transition={{ type: "spring", stiffness: 60, damping: 18, delay: 0.06 }}
+            >
+              Stop researching.
+            </motion.span>
+            <motion.span
               className="block italic"
               style={{
-                background:
-                  "linear-gradient(135deg, hsl(261 75% 72%) 0%, hsl(280 80% 68%) 50%, hsl(261 75% 60%) 100%)",
+                background: "linear-gradient(135deg, hsl(261 75% 72%) 0%, hsl(280 80% 68%) 50%, hsl(261 75% 60%) 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
               }}
+              initial={{ opacity: 0, y: 32 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-10% 0px" }}
+              transition={{ type: "spring", stiffness: 60, damping: 18, delay: 0.18 }}
             >
               Start conversations.
-            </span>
+            </motion.span>
           </h2>
 
-          {/* Sub */}
-          <p
-            className={`text-lg font-light max-w-md mx-auto mb-12 transition-all duration-700 delay-100 ${
-              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-            }`}
+          <motion.p
+            className="text-lg font-light max-w-md mx-auto mb-12"
             style={{ color: "hsl(0 0% 100% / 0.35)" }}
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-10% 0px" }}
+            transition={{ duration: 0.55, ease, delay: 0.3 }}
           >
             Your first qualified prospect, verified email, and draft ready in under 2 minutes. Free to start.
-          </p>
+          </motion.p>
 
-          {/* CTA button */}
-          <div
-            className={`transition-all duration-700 delay-200 ${
-              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-            }`}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-10% 0px" }}
+            transition={{ duration: 0.5, ease, delay: 0.42 }}
           >
-            <button
+            <motion.button
               onClick={() => navigate("/auth")}
-              className="cta-pill-glow inline-flex items-center gap-2 px-10 rounded-full text-sm font-semibold text-white group"
+              className="cta-pill-glow inline-flex items-center gap-2 px-10 rounded-full text-sm font-semibold text-white"
               style={{
                 height: "56px",
-                background:
-                  "linear-gradient(135deg, hsl(261 75% 60%) 0%, hsl(261 75% 50%) 100%)",
+                background: "linear-gradient(135deg, hsl(261 75% 60%) 0%, hsl(261 75% 50%) 100%)",
               }}
               aria-label="Find your first leads free"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
               Find your first leads — free
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform duration-200" />
-            </button>
+              <ArrowRight className="w-4 h-4" />
+            </motion.button>
 
             <p
               className="mt-4 text-xs"
@@ -118,7 +116,7 @@ export const FinalCTA = () => {
             >
               No credit card required · Cancel anytime · 30-day money-back
             </p>
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>
