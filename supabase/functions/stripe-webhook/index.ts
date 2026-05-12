@@ -208,9 +208,25 @@ serve(async (req) => {
       }
     }
 
-    // Check if user already exists
-    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
-    const existingUser = existingUsers?.users?.find(u => u.email === customerEmail);
+    // Check if user already exists — look up by email in profiles table
+    // (listUsers() only returns 50 per page, so it misses users beyond page 1)
+    const { data: profileRow } = await supabaseAdmin
+      .from('profiles')
+      .select('id, email')
+      .ilike('email', customerEmail)
+      .maybeSingle();
+
+    let existingUser: { id: string } | null = profileRow ? { id: profileRow.id } : null;
+
+    // Fallback: paginate through auth.users in case the profile row is missing
+    if (!existingUser) {
+      for (let page = 1; page <= 20; page++) {
+        const { data: usersPage } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 200 });
+        const match = usersPage?.users?.find(u => u.email?.toLowerCase() === customerEmail.toLowerCase());
+        if (match) { existingUser = { id: match.id }; break; }
+        if (!usersPage?.users || usersPage.users.length < 200) break;
+      }
+    }
 
     if (existingUser) {
       logStep("User already exists, updating subscription", { userId: existingUser.id });
