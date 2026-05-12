@@ -54,6 +54,7 @@ const ClientPortal = lazy(() => import("./pages/ClientPortal"));
 const Blog = lazy(() => import("./pages/Blog"));
 const BlogPost = lazy(() => import("./pages/BlogPost"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const OnboardingStatus = lazy(() => import("./pages/OnboardingStatus"));
 
 const queryClient = new QueryClient();
 
