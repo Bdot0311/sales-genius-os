@@ -248,8 +248,8 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
             style={{ animationDelay: '0.3s', animationFillMode: 'both' }}
           >
             {mode === "signin" 
-              ? "Sign in to your account"
-              : "Create your account to explore the workflow and continue setup"
+              ? "Sign in to your account — no subscription required"
+              : "Create your free account. Upgrade only when you're ready."
             }
           </p>
         </div>
