@@ -854,12 +854,11 @@ All colors MUST be HSL. Using 8px spacing scale.
 /* Full-viewport hero section */
 .hero-fullscreen {
   min-height: 100svh;
-  min-height: 100vh;
 }
 
 @media (max-width: 640px) {
   .hero-fullscreen {
-    min-height: calc(100svh + 4rem);
+    min-height: 100svh;
   }
 }
 
