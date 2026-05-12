@@ -1,0 +1,1 @@
+DROP TRIGGER IF EXISTS audit_profiles ON public.profiles;
