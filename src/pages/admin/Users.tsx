@@ -303,10 +303,20 @@ const AdminUsers = () => {
                 {filteredSubscriptions.length} of {subscriptions.length} users
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button onClick={loadSubscriptions} variant="outline" size="sm" className="border-border/50">
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Refresh
+              </Button>
+              <Button
+                onClick={resyncStripe}
+                variant="outline"
+                size="sm"
+                className="border-border/50"
+                disabled={resyncing}
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${resyncing ? 'animate-spin' : ''}`} />
+                {resyncing ? 'Resyncing…' : 'Resync Stripe'}
               </Button>
               <Button onClick={() => setCreateUserOpen(true)} size="sm">
                 <UserPlus className="h-4 w-4 mr-2" />
