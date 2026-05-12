@@ -85,6 +85,7 @@ export const OrganizationSchema = ({
     "@type": "Organization",
     "@id": `${BASE_URL}/#organization`,
     "name": name,
+    "legalName": "BDØT Industries LLC",
     "alternateName": ["Sales OS", "SalesOS Platform"],
     "description": description,
     "url": url,
@@ -122,8 +123,9 @@ export const OrganizationSchema = ({
     },
     "founder": {
       "@type": "Person",
-      "name": "Brandon",
-      "url": "https://www.linkedin.com/in/buildwitbrandon"
+      "name": "Brandon Dottin",
+      "url": "https://www.linkedin.com/in/buildwitbrandon",
+      "jobTitle": "Founder & CEO"
     },
     "foundingDate": "2026",
     "knowsAbout": [
