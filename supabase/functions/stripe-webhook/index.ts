@@ -53,38 +53,21 @@ serve(async (req) => {
     { auth: { persistSession: false } }
   );
 
-  // Idempotency: if we've already succeeded this event, return early.
-  const { data: existing } = await supabase
-    .from('stripe_webhook_events')
-    .select('id, status, attempts, max_attempts')
-    .eq('event_id', event.id).maybeSingle();
+  // Atomic claim: prevents concurrent deliveries of the same event from
+  // double-processing. The DB function inserts (or locks) the row and only
+  // returns claimed=true to one caller.
+  const { data: claimRows, error: claimErr } = await supabase.rpc('claim_stripe_webhook_event', {
+    _event_id: event.id,
+    _event_type: event.type,
+    _payload: event as unknown as Record<string, unknown>,
+    _idempotency_key: event.id,
+  });
 
-  if (existing?.status === 'succeeded') {
-    log("event already processed", { id: event.id });
-    return new Response(JSON.stringify({ received: true, duplicate: true }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
-  // Insert (or reset) the event row to pending.
-  const { data: row, error: upsertErr } = await supabase
-    .from('stripe_webhook_events')
-    .upsert({
-      event_id: event.id,
-      event_type: event.type,
-      payload: event as unknown as Record<string, unknown>,
-      status: 'pending',
-      last_error: null,
-      next_retry_at: null,
-    }, { onConflict: 'event_id' })
-    .select('id, attempts, max_attempts').single();
-
-  if (upsertErr || !row) {
-    log("failed to persist event row", { err: upsertErr });
-    // Still return 200 so Stripe won't pile up; alert ops.
+  if (claimErr || !claimRows || claimRows.length === 0) {
+    log("failed to claim event row", { err: claimErr });
     await logSystemAlert({
       category: "stripe_webhook_failure", severity: "critical",
-      message: `Failed to persist webhook event: ${upsertErr?.message}`,
+      message: `Failed to claim webhook event: ${claimErr?.message}`,
       details: { event_id: event.id, type: event.type },
     });
     return new Response(JSON.stringify({ received: true, persisted: false }), {
@@ -92,8 +75,28 @@ serve(async (req) => {
     });
   }
 
-  const attempts = (row.attempts ?? 0) + 1;
-  const maxAttempts = row.max_attempts ?? BACKOFF_MINUTES.length;
+  const claim = claimRows[0] as {
+    row_id: string; attempts: number; max_attempts: number;
+    claimed: boolean; already_succeeded: boolean; in_progress: boolean;
+  };
+
+  if (claim.already_succeeded) {
+    log("event already processed (idempotent)", { id: event.id });
+    return new Response(JSON.stringify({ received: true, duplicate: true }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  if (claim.in_progress) {
+    log("event already in progress on another worker", { id: event.id });
+    return new Response(JSON.stringify({ received: true, in_progress: true }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const row = { id: claim.row_id };
+  const attempts = claim.attempts;
+  const maxAttempts = claim.max_attempts ?? BACKOFF_MINUTES.length;
 
   try {
     await processStripeEvent(event, stripe, supabase);
