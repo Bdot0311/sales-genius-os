@@ -77,6 +77,7 @@ const Admin = () => {
               <Route path="settings" element={<AdminSettings />} />
               <Route path="alerts" element={<AdminAlerts />} />
               <Route path="webhooks" element={<AdminWebhooks />} />
+              <Route path="signup-logs" element={<AdminSignupLogs />} />
               <Route path="*" element={<Navigate to="/admin" replace />} />
             </Routes>
           </main>
