@@ -125,7 +125,7 @@ const Pipeline = () => {
           </>
         }
       />
-      <div className="px-6 py-6 space-y-6 max-w-[1400px] mx-auto">
+      <div className="px-4 py-4 space-y-6 max-w-[1400px] mx-auto sm:px-6 sm:py-6">
         {isFreeTier && <SampleDataBanner />}
 
         {!features.automatedStageProgression && (
@@ -145,8 +145,8 @@ const Pipeline = () => {
 
         <AddDealDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} onDealAdded={loadDeals} />
 
-        <div className="overflow-x-auto pb-6">
-          <div className="flex gap-6 min-w-max">
+        <div className="pb-6 sm:overflow-x-auto">
+          <div className="flex min-w-0 flex-col gap-4 sm:min-w-max sm:flex-row sm:gap-6">
             {stages.map((stage) => (
               <PipelineColumn
                 key={stage.key}
