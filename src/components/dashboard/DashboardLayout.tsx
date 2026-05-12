@@ -307,7 +307,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       </aside>
 
       {/* Main content */}
-      <div className={`transition-all duration-300 ${sidebarCollapsed ? "lg:ml-[4.5rem]" : "lg:ml-64"}`}>
+      <div className={`min-w-0 overflow-x-hidden transition-all duration-300 ${sidebarCollapsed ? "lg:ml-[4.5rem]" : "lg:ml-64"}`}>
         {/* Top bar */}
         <header className="h-12 sticky top-0 z-30 bg-background/80 backdrop-blur border-b border-border/60 flex items-center px-2 sm:px-6 gap-1">
           <Button
@@ -327,7 +327,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </Button>
           <div className="flex-1 min-w-0" />
           
-          <div className="flex items-center gap-1 sm:gap-3 flex-shrink-0 overflow-x-auto max-w-[calc(100%-3rem)]">
+          <div className="flex min-w-0 flex-shrink items-center gap-1 overflow-x-auto sm:gap-3">
             {/* Admin Badge - icon only on mobile */}
             {isAdmin && (
               <Badge variant="default" className="flex items-center gap-1 bg-primary text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 flex-shrink-0">
@@ -412,7 +412,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </header>
 
         {/* Page content */}
-        <main className="p-3 sm:p-6">{children}</main>
+        <main className="min-w-0 overflow-x-hidden p-0">{children}</main>
       </div>
     </div>
   );

@@ -18,7 +18,7 @@ export function PageHeader({ title, description, breadcrumbs, actions }: PageHea
   const navigate = useNavigate();
   return (
     <div className="border-b border-border/60 bg-background/80 backdrop-blur-sm">
-      <div className="px-6 pt-4 pb-4">
+      <div className="px-3 pt-4 pb-4 sm:px-6">
         {breadcrumbs && breadcrumbs.length > 0 && (
           <div className="flex items-center gap-1 mb-2">
             {breadcrumbs.map((crumb, i) => (
@@ -38,14 +38,14 @@ export function PageHeader({ title, description, breadcrumbs, actions }: PageHea
             ))}
           </div>
         )}
-        <div className="flex items-start justify-between gap-4">
-          <div>
+        <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+          <div className="min-w-0">
             <h1 className="text-lg font-semibold">{title}</h1>
             {description && (
               <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
             )}
           </div>
-          {actions && <div className="flex items-center gap-2 flex-shrink-0">{actions}</div>}
+          {actions && <div className="flex flex-wrap items-center gap-2 sm:flex-shrink-0">{actions}</div>}
         </div>
       </div>
     </div>
