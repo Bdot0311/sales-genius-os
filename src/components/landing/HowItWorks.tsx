@@ -1,7 +1,5 @@
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "motion/react";
-
-const ease = [0.16, 1, 0.3, 1] as const;
 
 const steps = [
   {
@@ -29,15 +27,12 @@ const steps = [
     visual: (
       <div
         className="mt-5 rounded-xl overflow-hidden"
-        style={{
-          background: "hsl(261 75% 50% / 0.05)",
-          border: "1px solid hsl(261 75% 50% / 0.18)",
-        }}
+        style={{ background: "hsl(261 75% 50% / 0.05)", border: "1px solid hsl(261 75% 50% / 0.18)" }}
       >
         {[
-          { name: "Jordan Park",  role: "Head of Sales · Northline",  fit: 94 },
-          { name: "Rina Shah",    role: "VP Revenue · SignalFox",      fit: 88 },
-          { name: "Alex Müller",  role: "Dir. of Sales · GraphiteIQ", fit: 81 },
+          { name: "Jordan Park", role: "Head of Sales · Northline", fit: 94 },
+          { name: "Rina Shah", role: "VP Revenue · SignalFox", fit: 88 },
+          { name: "Alex Müller", role: "Dir. of Sales · GraphiteIQ", fit: 81 },
         ].map(({ name, role, fit }, i) => (
           <div
             key={name}
@@ -50,10 +45,7 @@ const steps = [
             </div>
             <div className="flex items-center gap-2.5 flex-shrink-0">
               <div className="h-1 w-14 rounded-full overflow-hidden" style={{ background: "hsl(0 0% 100% / 0.08)" }}>
-                <div
-                  className="h-full rounded-full"
-                  style={{ width: `${fit}%`, background: "linear-gradient(to right, hsl(261 75% 55%), hsl(280 80% 65%))" }}
-                />
+                <div className="h-full rounded-full" style={{ width: `${fit}%`, background: "linear-gradient(to right, hsl(261 75% 55%), hsl(280 80% 65%))" }} />
               </div>
               <span className="text-xs font-semibold" style={{ color: "hsl(261 75% 68%)" }}>{fit}%</span>
             </div>
@@ -75,20 +67,13 @@ const steps = [
     visual: (
       <div
         className="mt-5 rounded-xl overflow-hidden"
-        style={{
-          background: "hsl(261 75% 50% / 0.05)",
-          border: "1px solid hsl(261 75% 50% / 0.18)",
-        }}
+        style={{ background: "hsl(261 75% 50% / 0.05)", border: "1px solid hsl(261 75% 50% / 0.18)" }}
       >
         <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: "1px solid hsl(261 75% 50% / 0.1)" }}>
           <span className="text-xs font-medium" style={{ color: "hsl(261 75% 60%)" }}>AI Draft</span>
           <span
             className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-            style={{
-              background: "hsl(261 75% 50% / 0.15)",
-              border: "1px solid hsl(261 75% 50% / 0.25)",
-              color: "hsl(261 75% 72%)",
-            }}
+            style={{ background: "hsl(261 75% 50% / 0.15)", border: "1px solid hsl(261 75% 50% / 0.25)", color: "hsl(261 75% 72%)" }}
           >
             Quality check passed
           </span>
@@ -107,10 +92,22 @@ const steps = [
 ];
 
 export const HowItWorks = () => {
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => { if (entries[0].isIntersecting) setIsVisible(true); },
+      { threshold: 0.15 }
+    );
+    if (sectionRef.current) observer.observe(sectionRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <section
+      ref={sectionRef}
       id="how-it-works"
       className="relative py-24 md:py-32 overflow-hidden"
       style={{ background: "hsl(0,0%,3%)" }}
@@ -126,31 +123,24 @@ export const HowItWorks = () => {
       <div className="container relative z-10 mx-auto px-6">
         <div className="max-w-[720px] mx-auto text-center">
 
-          <motion.p
-            className="text-[10px] uppercase tracking-[0.28em] mb-6 font-medium"
+          <p
+            className={`text-[10px] uppercase tracking-[0.28em] mb-6 font-medium transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
             style={{ color: "hsl(261 75% 60%)" }}
-            initial={{ opacity: 0, y: 10 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-10% 0px" }}
-            transition={{ duration: 0.5, ease }}
           >
             How it works
-          </motion.p>
+          </p>
 
-          <motion.h2
+          <h2
             id="how-it-works-heading"
-            className="font-display mb-16"
+            className={`font-display mb-16 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
             style={{
               fontSize: "clamp(2.4rem, 5vw, 3.8rem)",
               fontWeight: 800,
               lineHeight: 1.06,
               letterSpacing: "-0.02em",
               color: "hsl(0 0% 95%)",
+              transitionDelay: "80ms",
             }}
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-10% 0px" }}
-            transition={{ duration: 0.7, ease, delay: 0.08 }}
           >
             Three steps.
             <br />
@@ -164,18 +154,17 @@ export const HowItWorks = () => {
             >
               One workflow.
             </span>
-          </motion.h2>
+          </h2>
 
           <div className="flex flex-col">
             {steps.map((step, index) => (
-              <motion.div
+              <div
                 key={index}
-                className="relative border-b py-10"
-                style={{ borderColor: "hsl(261 75% 50% / 0.12)" }}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-8% 0px" }}
-                transition={{ duration: 0.7, ease, delay: index * 0.1 }}
+                className={`relative border-b py-10 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+                style={{
+                  borderColor: "hsl(261 75% 50% / 0.12)",
+                  transitionDelay: `${index * 120 + 160}ms`,
+                }}
               >
                 <span
                   className="absolute top-4 right-0 text-8xl font-bold leading-none select-none pointer-events-none"
@@ -197,16 +186,13 @@ export const HowItWorks = () => {
                   </p>
                   {step.visual}
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
 
-          <motion.div
-            className="pt-10 text-center"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true, margin: "-10% 0px" }}
-            transition={{ duration: 0.6, ease, delay: 0.2 }}
+          <div
+            className={`pt-10 transition-all duration-700 ${isVisible ? "opacity-100" : "opacity-0"}`}
+            style={{ transitionDelay: "520ms" }}
           >
             <button
               onClick={() => navigate("/auth")}
@@ -217,7 +203,7 @@ export const HowItWorks = () => {
             >
               Try it with your own ICP →
             </button>
-          </motion.div>
+          </div>
         </div>
       </div>
 

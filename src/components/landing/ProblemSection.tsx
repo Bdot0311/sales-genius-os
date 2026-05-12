@@ -1,6 +1,4 @@
-import { motion } from "motion/react";
-
-const ease = [0.16, 1, 0.3, 1] as const;
+import { useEffect, useRef, useState } from "react";
 
 const lines = [
   { text: "You spend Monday building a list.", color: "hsl(0 0% 90%)" },
@@ -9,8 +7,21 @@ const lines = [
 ];
 
 export const ProblemSection = () => {
+  const [isVisible, setIsVisible] = useState(false);
+  const ref = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setIsVisible(true); },
+      { threshold: 0.15 }
+    );
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <section
+      ref={ref}
       className="relative py-24 md:py-32 overflow-hidden"
       style={{ background: "hsl(0,0%,3%)" }}
       aria-labelledby="problem-heading"
@@ -19,68 +30,54 @@ export const ProblemSection = () => {
 
       <div
         className="absolute top-0 left-0 w-[500px] h-[500px] pointer-events-none"
-        style={{
-          background: "radial-gradient(ellipse at top left, hsl(261 75% 55% / 0.08) 0%, transparent 65%)",
-        }}
+        style={{ background: "radial-gradient(ellipse at top left, hsl(261 75% 55% / 0.08) 0%, transparent 65%)" }}
         aria-hidden="true"
       />
 
       <div className="container relative z-10 mx-auto px-6">
         <div className="max-w-4xl mx-auto text-center">
 
-          <motion.p
-            className="text-[10px] uppercase tracking-[0.28em] mb-10 font-medium"
+          <p
+            className={`text-[10px] uppercase tracking-[0.28em] mb-10 font-medium transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
             style={{ color: "hsl(261 75% 60%)" }}
-            initial={{ opacity: 0, y: 10 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-10% 0px" }}
-            transition={{ duration: 0.5, ease }}
           >
             The Problem
-          </motion.p>
+          </p>
 
           <h2 id="problem-heading" className="space-y-1 mb-12">
             {lines.map((line, index) => (
-              <motion.span
+              <span
                 key={index}
-                className="block font-display"
+                className={`block font-display transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
                 style={{
+                  transitionDelay: `${index * 110}ms`,
                   fontSize: "clamp(2rem, 5vw, 3.8rem)",
                   fontWeight: 800,
                   lineHeight: 1.1,
                   letterSpacing: "-0.02em",
                   color: line.color,
                 }}
-                initial={{ opacity: 0, x: -16 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true, margin: "-10% 0px" }}
-                transition={{ duration: 0.65, ease, delay: index * 0.12 }}
               >
                 {line.text}
-              </motion.span>
+              </span>
             ))}
           </h2>
 
-          <motion.p
-            className="text-base font-light max-w-xl mx-auto leading-relaxed"
-            style={{ color: "hsl(0 0% 100% / 0.38)" }}
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-10% 0px" }}
-            transition={{ duration: 0.7, ease, delay: 0.4 }}
+          <p
+            className={`text-base font-light max-w-xl mx-auto leading-relaxed transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+            style={{ transitionDelay: "400ms", color: "hsl(0 0% 100% / 0.38)" }}
           >
             The average outbound team burns 40% of their week on research before
             a single email goes out. SalesOS takes that from 2+ hours to under
             20 minutes — with every contact verified before it reaches you.
-          </motion.p>
+          </p>
 
-          <motion.div
-            className="mt-16 h-px mx-auto max-w-xs"
-            style={{ background: "linear-gradient(to right, transparent, hsl(261 75% 50% / 0.3), transparent)" }}
-            initial={{ opacity: 0, scaleX: 0 }}
-            whileInView={{ opacity: 1, scaleX: 1 }}
-            viewport={{ once: true, margin: "-10% 0px" }}
-            transition={{ duration: 0.8, ease, delay: 0.5 }}
+          <div
+            className={`mt-16 h-px mx-auto max-w-xs transition-all duration-700 ${isVisible ? "opacity-100" : "opacity-0"}`}
+            style={{
+              transitionDelay: "500ms",
+              background: "linear-gradient(to right, transparent, hsl(261 75% 50% / 0.3), transparent)",
+            }}
             aria-hidden="true"
           />
         </div>
