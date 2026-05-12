@@ -24,7 +24,7 @@ interface PipelineColumnProps {
 
 export const PipelineColumn = ({ title, deals, totalValue, color, onMoveDeal, stages }: PipelineColumnProps) => {
   return (
-    <div className="flex-shrink-0 w-80">
+    <div className="w-full flex-shrink-0 sm:w-80">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="font-semibold">{title}</h3>
@@ -42,7 +42,7 @@ export const PipelineColumn = ({ title, deals, totalValue, color, onMoveDeal, st
             className="p-4 bg-card border-border hover:border-primary/50 transition-all duration-300 cursor-pointer group"
           >
             <div className="flex items-start justify-between mb-2">
-              <div className="flex-1">
+              <div className="min-w-0 flex-1">
                 <h4 className="font-medium mb-1">{deal.title}</h4>
                 <p className="text-sm text-muted-foreground">{deal.company_name}</p>
               </div>
