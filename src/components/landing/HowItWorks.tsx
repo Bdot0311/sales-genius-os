@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "motion/react";
+
+const ease = [0.16, 1, 0.3, 1] as const;
 
 const steps = [
   {
@@ -40,37 +42,24 @@ const steps = [
           <div
             key={name}
             className="flex items-center justify-between gap-4 px-4 py-3"
-            style={{
-              borderBottom: i < 2 ? "1px solid hsl(261 75% 50% / 0.1)" : undefined,
-            }}
+            style={{ borderBottom: i < 2 ? "1px solid hsl(261 75% 50% / 0.1)" : undefined }}
           >
             <div>
               <p className="text-sm font-semibold" style={{ color: "hsl(0 0% 88%)" }}>{name}</p>
               <p className="text-xs mt-0.5" style={{ color: "hsl(0 0% 100% / 0.35)" }}>{role}</p>
             </div>
             <div className="flex items-center gap-2.5 flex-shrink-0">
-              <div
-                className="h-1 w-14 rounded-full overflow-hidden"
-                style={{ background: "hsl(0 0% 100% / 0.08)" }}
-              >
+              <div className="h-1 w-14 rounded-full overflow-hidden" style={{ background: "hsl(0 0% 100% / 0.08)" }}>
                 <div
                   className="h-full rounded-full"
-                  style={{
-                    width: `${fit}%`,
-                    background: "linear-gradient(to right, hsl(261 75% 55%), hsl(280 80% 65%))",
-                  }}
+                  style={{ width: `${fit}%`, background: "linear-gradient(to right, hsl(261 75% 55%), hsl(280 80% 65%))" }}
                 />
               </div>
-              <span className="text-xs font-semibold" style={{ color: "hsl(261 75% 68%)" }}>
-                {fit}%
-              </span>
+              <span className="text-xs font-semibold" style={{ color: "hsl(261 75% 68%)" }}>{fit}%</span>
             </div>
           </div>
         ))}
-        <div
-          className="flex items-center gap-1.5 px-4 py-2.5"
-          style={{ borderTop: "1px solid hsl(261 75% 50% / 0.1)" }}
-        >
+        <div className="flex items-center gap-1.5 px-4 py-2.5" style={{ borderTop: "1px solid hsl(261 75% 50% / 0.1)" }}>
           <span style={{ color: "hsl(261 75% 62%)", fontSize: "10px" }}>✓</span>
           <span className="text-[10px]" style={{ color: "hsl(0 0% 100% / 0.22)" }}>
             Business emails verified via SMTP + multi-source enrichment
@@ -118,54 +107,39 @@ const steps = [
 ];
 
 export const HowItWorks = () => {
-  const [isVisible, setIsVisible] = useState(false);
-  const sectionRef = useRef<HTMLElement>(null);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) setIsVisible(true);
-      },
-      { threshold: 0.15 }
-    );
-    if (sectionRef.current) observer.observe(sectionRef.current);
-    return () => observer.disconnect();
-  }, []);
 
   return (
     <section
-      ref={sectionRef}
       id="how-it-works"
       className="relative py-24 md:py-32 overflow-hidden"
       style={{ background: "hsl(0,0%,3%)" }}
       aria-labelledby="how-it-works-heading"
     >
-      {/* Purple glow — right side */}
       <div
         className="absolute top-1/2 right-0 -translate-y-1/2 w-[500px] h-[600px] pointer-events-none"
-        style={{
-          background: "radial-gradient(ellipse at right, hsl(261 75% 55% / 0.07) 0%, transparent 65%)",
-        }}
+        style={{ background: "radial-gradient(ellipse at right, hsl(261 75% 55% / 0.07) 0%, transparent 65%)" }}
         aria-hidden="true"
       />
-
-      {/* Top hairline */}
       <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "hsl(261 75% 50% / 0.18)" }} />
 
       <div className="container relative z-10 mx-auto px-6">
         <div className="max-w-[720px] mx-auto text-center">
-          {/* Section label */}
-          <p
-            className="text-[10px] uppercase tracking-[0.28em] mb-5 font-medium text-center text-purple-500"
+
+          <motion.p
+            className="text-[10px] uppercase tracking-[0.28em] mb-6 font-medium"
+            style={{ color: "hsl(261 75% 60%)" }}
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-10% 0px" }}
+            transition={{ duration: 0.5, ease }}
           >
             How it works
-          </p>
+          </motion.p>
 
-          {/* Headline */}
-          <h2
+          <motion.h2
             id="how-it-works-heading"
-            className={`font-display mb-16 scroll-reveal text-center ${isVisible ? "visible" : ""}`}
+            className="font-display mb-16"
             style={{
               fontSize: "clamp(2.4rem, 5vw, 3.8rem)",
               fontWeight: 800,
@@ -173,6 +147,10 @@ export const HowItWorks = () => {
               letterSpacing: "-0.02em",
               color: "hsl(0 0% 95%)",
             }}
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-10% 0px" }}
+            transition={{ duration: 0.7, ease, delay: 0.08 }}
           >
             Three steps.
             <br />
@@ -186,20 +164,19 @@ export const HowItWorks = () => {
             >
               One workflow.
             </span>
-          </h2>
+          </motion.h2>
 
-          {/* Step list */}
           <div className="flex flex-col">
             {steps.map((step, index) => (
-              <div
+              <motion.div
                 key={index}
-                className={`relative border-b py-10 scroll-reveal ${isVisible ? "visible" : ""}`}
-                style={{
-                  "--reveal-delay": `${index * 140}ms`,
-                  borderColor: "hsl(261 75% 50% / 0.12)",
-                } as React.CSSProperties}
+                className="relative border-b py-10"
+                style={{ borderColor: "hsl(261 75% 50% / 0.12)" }}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-8% 0px" }}
+                transition={{ duration: 0.7, ease, delay: index * 0.1 }}
               >
-                {/* Large faded background number */}
                 <span
                   className="absolute top-4 right-0 text-8xl font-bold leading-none select-none pointer-events-none"
                   style={{ color: "hsl(261 75% 50% / 0.06)" }}
@@ -208,55 +185,42 @@ export const HowItWorks = () => {
                   {step.number}
                 </span>
 
-                {/* Step content */}
                 <div className="relative text-center">
-                  <p
-                    className="font-mono text-xs tracking-widest mb-3 uppercase text-center"
-                    style={{ color: "hsl(261 75% 60%)" }}
-                  >
+                  <p className="font-mono text-xs tracking-widest mb-3 uppercase" style={{ color: "hsl(261 75% 60%)" }}>
                     {step.number}
                   </p>
-                  <h3
-                    className="text-2xl font-semibold mb-3 leading-snug text-center"
-                    style={{ color: "hsl(0 0% 90%)" }}
-                  >
+                  <h3 className="text-2xl font-semibold mb-3 leading-snug" style={{ color: "hsl(0 0% 90%)" }}>
                     {step.title}
                   </h3>
-                  <p
-                    className="leading-relaxed max-w-lg mx-auto text-center"
-                    style={{ color: "hsl(0 0% 100% / 0.45)" }}
-                  >
+                  <p className="leading-relaxed max-w-lg mx-auto" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
                     {step.body}
                   </p>
                   {step.visual}
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
 
-          {/* Bottom CTA */}
-          <div
-            className={`pt-10 scroll-reveal text-center ${isVisible ? "visible" : ""}`}
-            style={{ "--reveal-delay": "420ms" } as React.CSSProperties}
+          <motion.div
+            className="pt-10 text-center"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true, margin: "-10% 0px" }}
+            transition={{ duration: 0.6, ease, delay: 0.2 }}
           >
             <button
               onClick={() => navigate("/auth")}
               className="text-sm font-medium transition-colors duration-200 inline-flex items-center gap-1.5"
               style={{ color: "hsl(261 75% 65%)" }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.color = "hsl(261 75% 80%)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.color = "hsl(261 75% 65%)")
-              }
+              onMouseEnter={(e) => (e.currentTarget.style.color = "hsl(261 75% 80%)")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "hsl(261 75% 65%)")}
             >
               Try it with your own ICP →
             </button>
-          </div>
+          </motion.div>
         </div>
       </div>
 
-      {/* Bottom hairline */}
       <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: "hsl(261 75% 50% / 0.18)" }} />
     </section>
   );

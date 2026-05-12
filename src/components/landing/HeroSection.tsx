@@ -1,5 +1,18 @@
 import { useNavigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
+import { motion } from "motion/react";
+
+const ease = [0.16, 1, 0.3, 1] as const;
+
+const container = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.09, delayChildren: 0.1 } },
+};
+
+const item = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.7, ease } },
+};
 
 export const HeroSection = () => {
   const navigate = useNavigate();
@@ -21,24 +34,25 @@ export const HeroSection = () => {
         aria-hidden="true"
       />
 
-      <div
-        className="absolute bottom-[-80px] left-[-120px] h-[360px] w-[360px] rounded-full hero-orb pointer-events-none sm:bottom-[-120px] sm:left-[-80px] sm:h-[600px] sm:w-[600px]"
+      <motion.div
+        className="absolute bottom-[-80px] left-[-120px] h-[360px] w-[360px] rounded-full pointer-events-none sm:bottom-[-120px] sm:left-[-80px] sm:h-[600px] sm:w-[600px]"
         style={{
           background:
             "radial-gradient(ellipse at center, hsl(261 75% 55% / 0.18) 0%, hsl(261 75% 55% / 0.06) 50%, transparent 70%)",
-          willChange: "transform",
         }}
+        animate={{ y: [0, -28, 14, -8, 0], x: [0, 18, -20, 10, 0] }}
+        transition={{ duration: 22, ease: "easeInOut", repeat: Infinity, repeatType: "loop" }}
         aria-hidden="true"
       />
 
-      <div
-        className="absolute bottom-[-60px] right-[-110px] h-[320px] w-[320px] rounded-full hero-orb pointer-events-none sm:bottom-[-100px] sm:right-[-100px] sm:h-[500px] sm:w-[500px]"
+      <motion.div
+        className="absolute bottom-[-60px] right-[-110px] h-[320px] w-[320px] rounded-full pointer-events-none sm:bottom-[-100px] sm:right-[-100px] sm:h-[500px] sm:w-[500px]"
         style={{
           background:
             "radial-gradient(ellipse at center, hsl(280 70% 60% / 0.14) 0%, hsl(280 70% 60% / 0.04) 50%, transparent 70%)",
-          animationDelay: "6s",
-          willChange: "transform",
         }}
+        animate={{ y: [0, 22, -18, 12, 0], x: [0, -16, 22, -10, 0] }}
+        transition={{ duration: 26, ease: "easeInOut", repeat: Infinity, repeatType: "loop", delay: 4 }}
         aria-hidden="true"
       />
 
@@ -53,10 +67,13 @@ export const HeroSection = () => {
 
       <div className="noise-texture" aria-hidden="true" />
 
-      <div className="relative z-10 container mx-auto flex flex-col items-center px-5 text-center sm:px-6">
-        <div
-          className="mb-8 max-w-full sm:mb-10"
-        >
+      <motion.div
+        className="relative z-10 container mx-auto flex flex-col items-center px-5 text-center sm:px-6"
+        variants={container}
+        initial="hidden"
+        animate="show"
+      >
+        <motion.div className="mb-8 max-w-full sm:mb-10" variants={item}>
           <span className="inline-flex max-w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[11px] leading-tight text-white/60 sm:flex-nowrap sm:gap-2.5 sm:px-4 sm:text-xs">
             <span className="relative flex h-1.5 w-1.5 shrink-0">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-75" />
@@ -66,9 +83,9 @@ export const HeroSection = () => {
             <span className="text-white/30">·</span>
             <span>Intent scoring now live — know who's ready before you email</span>
           </span>
-        </div>
+        </motion.div>
 
-        <h1
+        <motion.h1
           id="hero-heading"
           className="font-display mb-6 max-w-[14ch] text-balance sm:mb-8 sm:max-w-none"
           style={{
@@ -77,6 +94,7 @@ export const HeroSection = () => {
             letterSpacing: "-0.02em",
             fontWeight: 800,
           }}
+          variants={item}
         >
           <span className="block text-white">Find who to sell to.</span>
           <span
@@ -93,28 +111,33 @@ export const HeroSection = () => {
           >
             Then actually sell to them.
           </span>
-        </h1>
+        </motion.h1>
 
-        <p
+        <motion.p
           className="mb-8 max-w-[22rem] text-base font-light leading-relaxed text-white/55 sm:mb-12 sm:max-w-xl sm:text-xl"
+          variants={item}
         >
           Describe your ideal customer once. Get ranked prospects with verified emails and a first-touch draft written for each one — ready to send in under 2 minutes.
-        </p>
+        </motion.p>
 
-        <div
+        <motion.div
           className="mb-8 flex w-full max-w-[20rem] flex-col items-center gap-3 sm:mb-8 sm:max-w-none sm:flex-row sm:justify-center sm:gap-4"
+          variants={item}
         >
-          <button
+          <motion.button
             onClick={() => navigate("/auth")}
             className="cta-pill-glow inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-full px-8 text-sm font-semibold text-white group sm:w-auto"
             style={{
               background: "linear-gradient(135deg, hsl(261 75% 60%) 0%, hsl(261 75% 50%) 100%)",
             }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            transition={{ duration: 0.15 }}
             aria-label="Start for free"
           >
             Find your first leads — free
             <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
-          </button>
+          </motion.button>
 
           <a
             href="/demo"
@@ -123,22 +146,19 @@ export const HeroSection = () => {
             Watch a 2-min demo
             <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
           </a>
-        </div>
+        </motion.div>
 
-        {/* Trust line */}
-        <p
+        <motion.p
           className="text-xs text-white/25 flex items-center justify-center gap-2.5 mb-4"
+          variants={item}
         >
           No credit card required
           <span className="w-px h-3 bg-white/20 inline-block" />
           Cancel anytime
           <span className="w-px h-3 bg-white/20 inline-block" />
           First leads in 2 minutes
-        </p>
-
-
-      </div>
-
+        </motion.p>
+      </motion.div>
     </section>
   );
 };
