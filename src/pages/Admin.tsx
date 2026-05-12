@@ -16,6 +16,7 @@ import AdminSecurity from "./admin/Security";
 import AdminSettings from "./admin/Settings";
 import AdminAlerts from "./admin/Alerts";
 import AdminWebhooks from "./admin/Webhooks";
+import AdminSignupLogs from "./admin/SignupLogs";
 
 const Admin = () => {
   const navigate = useNavigate();
