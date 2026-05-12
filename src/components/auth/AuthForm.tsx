@@ -72,21 +72,22 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
       });
 
       if (signInError) {
-        // If user doesn't exist, check if they have a subscription
         if (signInError.message.includes("Invalid login credentials")) {
-          // Check Stripe for subscription
-          const { data: sessionData } = await supabase.auth.getSession();
-          
           toast({
-            title: "No account found",
-            description: "Please purchase a subscription first to create an account.",
+            title: "Sign in failed",
+            description:
+              "That email and password don't match an account. If you just signed up, please verify your email first, or use \"Forgot Password\" to reset it.",
             variant: "destructive",
           });
-          
-          // Redirect to pricing after a short delay
-          setTimeout(() => {
-            window.location.href = "/pricing";
-          }, 2000);
+          return;
+        }
+        if (signInError.message.toLowerCase().includes("email not confirmed")) {
+          toast({
+            title: "Verify your email",
+            description:
+              "Please click the verification link we sent to your inbox before signing in.",
+            variant: "destructive",
+          });
           return;
         }
         throw signInError;
