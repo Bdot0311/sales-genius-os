@@ -54,6 +54,7 @@ const ClientPortal = lazy(() => import("./pages/ClientPortal"));
 const Blog = lazy(() => import("./pages/Blog"));
 const BlogPost = lazy(() => import("./pages/BlogPost"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const OnboardingStatus = lazy(() => import("./pages/OnboardingStatus"));
 
 const queryClient = new QueryClient();
 
@@ -169,6 +170,8 @@ const App = () => (
             <Route path="/dashboard/deliverability" element={<Deliverability />} />
             <Route path="/integrations" element={<DashboardIntegrations />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/onboarding-status" element={<OnboardingStatus />} />
+            <Route path="/dashboard/onboarding-status" element={<OnboardingStatus />} />
             <Route path="/admin/*" element={<Admin />} />
             <Route path="/unsubscribe" element={<Unsubscribe />} />
             <Route path="/client-portal/:token" element={<ClientPortal />} />
