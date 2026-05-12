@@ -216,7 +216,7 @@ const Auth = () => {
 
   // Default: show sign in / sign up form
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-4 sm:p-6 relative">
+    <div className="min-h-screen w-full flex items-center justify-center px-4 pt-16 pb-8 sm:p-6 relative">
       <AnimatedBackground />
 
       <Button
