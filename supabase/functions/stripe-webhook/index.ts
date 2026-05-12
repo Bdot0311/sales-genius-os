@@ -109,7 +109,14 @@ serve(async (req) => {
       });
       return new Response("Missing stripe-signature header", { status: 400 });
     }
-    event = stripe.webhooks.constructEvent(body, signature, stripeWebhookSecret);
+    const cryptoProvider = Stripe.createSubtleCryptoProvider();
+    event = await stripe.webhooks.constructEventAsync(
+      body,
+      signature,
+      stripeWebhookSecret,
+      undefined,
+      cryptoProvider
+    );
   } catch (err: any) {
     console.error("Webhook signature verification failed:", err.message);
     await logSystemAlert({
