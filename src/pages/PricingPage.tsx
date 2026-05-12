@@ -54,9 +54,9 @@ const PricingPage = () => {
   return (
     <>
       <SEOHead
-        title="SalesOS Pricing - Choose the Right Outbound Plan"
-        description="Choose the SalesOS plan that fits your outbound workflow. Starter from $39/month, Growth from $89/month, and Pro from $179/month."
-        keywords="SalesOS pricing, outbound sales software pricing, lead generation pricing, B2B prospecting pricing, sales outreach software cost"
+        title="SalesOS Pricing — Outbound Plans for Founders & SDR Teams"
+        description="SalesOS plans from $0 to $179/month. Find B2B leads, verify emails, and draft outreach without the tool sprawl. No credit card to start."
+        keywords="SalesOS pricing, outbound sales software pricing, lead generation pricing, B2B prospecting tool cost, Apollo alternative pricing, cold email tool pricing"
         ogImage="https://salesos.alephwavex.io/salesos-og.png"
       />
       <BreadcrumbSchema items={[

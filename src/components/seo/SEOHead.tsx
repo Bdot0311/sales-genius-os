@@ -169,9 +169,6 @@ export const SEOHead = ({
         <meta name="twitter:data1" content={readingTime.text} />
       )}
       
-      {/* LinkedIn specific */}
-      <meta property="linkedin:owner" content="salesos" />
-      
       {/* Additional SEO */}
       <meta name="theme-color" content="#8B5CF6" />
       <meta name="mobile-web-app-capable" content="yes" />
