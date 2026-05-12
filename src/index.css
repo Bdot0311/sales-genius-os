@@ -57,7 +57,8 @@ All colors MUST be HSL. Using 8px spacing scale.
   }
 
   html, body {
-    overflow-x: hidden;
+    overflow-x: clip;
+    max-width: 100vw;
     width: 100%;
   }
 
@@ -65,6 +66,54 @@ All colors MUST be HSL. Using 8px spacing scale.
     @apply bg-background text-foreground;
     /* Reduce layout recalculations for the body */
     text-rendering: optimizeSpeed;
+  }
+
+  /* Mobile-fit safety net:
+     Prevent flex/grid children from forcing parent overflow,
+     keep media inside its container, and clamp huge headings. */
+  *, *::before, *::after {
+    min-width: 0;
+  }
+
+  img, video, svg, canvas, iframe {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Wide tables get a horizontal scroll container automatically on mobile */
+  @media (max-width: 768px) {
+    table {
+      display: block;
+      max-width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+
+  /* Fluid headline scaling so large display text never overflows on small screens */
+  @media (max-width: 640px) {
+    h1 {
+      font-size: clamp(1.875rem, 8.5vw, 3rem);
+      line-height: 1.1;
+    }
+    h2 {
+      font-size: clamp(1.5rem, 6.5vw, 2.25rem);
+      line-height: 1.15;
+    }
+    h3 {
+      font-size: clamp(1.125rem, 5vw, 1.5rem);
+      line-height: 1.2;
+    }
+    /* Long unbreakable strings (URLs, emails, code) wrap instead of pushing layout */
+    p, li, span, a, code, pre {
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    /* Tighten default vertical breathing room so each landing section gets closer to one screen */
+    section {
+      padding-left: max(env(safe-area-inset-left), 1rem);
+      padding-right: max(env(safe-area-inset-right), 1rem);
+    }
   }
 
   #root {
