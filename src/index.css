@@ -99,8 +99,8 @@ All colors MUST be HSL. Using 8px spacing scale.
     .container {
       width: 100%;
       max-width: 100%;
-      padding-left: 1rem !important;
-      padding-right: 1rem !important;
+      padding-left: max(2rem, env(safe-area-inset-left, 0px)) !important;
+      padding-right: max(2rem, env(safe-area-inset-right, 0px)) !important;
     }
 
     .min-w-max {
@@ -121,8 +121,8 @@ All colors MUST be HSL. Using 8px spacing scale.
     }
 
     .px-6 {
-      padding-left: 1rem !important;
-      padding-right: 1rem !important;
+      padding-left: max(2rem, env(safe-area-inset-left, 0px)) !important;
+      padding-right: max(2rem, env(safe-area-inset-right, 0px)) !important;
     }
 
     .py-24,
@@ -173,6 +173,23 @@ All colors MUST be HSL. Using 8px spacing scale.
     p, li, a, code, pre {
       overflow-wrap: anywhere;
       word-break: break-word;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .dashboard-topbar {
+      padding-left: max(2rem, env(safe-area-inset-left, 0px)) !important;
+      padding-right: max(2rem, env(safe-area-inset-right, 0px)) !important;
+    }
+
+    .dashboard-page-gutters > :where(div, section, article):not([class*="border-b"]) {
+      padding-left: max(2rem, env(safe-area-inset-left, 0px)) !important;
+      padding-right: max(2rem, env(safe-area-inset-right, 0px)) !important;
+    }
+
+    .dashboard-page-gutters > :where([class*="border-b"]) > div {
+      padding-left: max(2rem, env(safe-area-inset-left, 0px)) !important;
+      padding-right: max(2rem, env(safe-area-inset-right, 0px)) !important;
     }
   }
 
