@@ -223,7 +223,7 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
 
   return (
     <div className="w-full max-w-md animate-fade-in">
-      <div className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl p-6 shadow-2xl shadow-primary/5 sm:p-8">
+      <div className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl p-5 shadow-2xl shadow-primary/5 sm:p-8">
         {/* Logo with staggered animation */}
         <div className="text-center mb-8">
           <div 
