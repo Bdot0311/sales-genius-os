@@ -216,14 +216,14 @@ const Auth = () => {
 
   // Default: show sign in / sign up form
   return (
-    <div className="min-h-screen w-full flex items-center justify-center px-8 pt-20 pb-8 sm:p-6 relative">
+    <div className="min-h-screen w-full flex items-center justify-center px-[var(--mobile-page-gutter)] pt-20 pb-8 sm:p-6 relative">
       <AnimatedBackground />
 
       <Button
         variant="ghost"
         size="sm"
         asChild
-        className="absolute top-[calc(1.25rem+env(safe-area-inset-top,0px))] left-[calc(2rem+env(safe-area-inset-left,0px))] z-20 text-muted-foreground hover:text-foreground"
+        className="absolute top-[calc(1.25rem+env(safe-area-inset-top,0px))] left-[calc(var(--mobile-page-gutter)+env(safe-area-inset-left,0px))] z-20 text-muted-foreground hover:text-foreground"
       >
         <Link to="/">
           <ArrowLeft className="mr-2 h-4 w-4" />
