@@ -309,7 +309,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       {/* Main content */}
       <div className={`min-w-0 overflow-x-hidden transition-all duration-300 ${sidebarCollapsed ? "lg:ml-[4.5rem]" : "lg:ml-64"}`}>
         {/* Top bar */}
-        <header className="h-12 sticky top-0 z-30 bg-background/80 backdrop-blur border-b border-border/60 flex items-center px-2 sm:px-6 gap-1">
+        <header className="dashboard-topbar h-12 sticky top-0 z-30 bg-background/80 backdrop-blur border-b border-border/60 flex items-center px-8 sm:px-6 gap-1">
           <Button
             variant="ghost"
             size="icon"
@@ -412,7 +412,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </header>
 
         {/* Page content */}
-        <main className="min-w-0 overflow-x-hidden p-0">{children}</main>
+        <main className="dashboard-page-gutters min-w-0 overflow-x-hidden p-0">{children}</main>
       </div>
     </div>
   );
