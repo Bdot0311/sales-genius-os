@@ -1830,8 +1830,8 @@ For logos, use HTML:
             )}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold">Email Configuration</h2>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                  <h2 className="text-lg sm:text-xl font-semibold">Email Configuration</h2>
                   <div className="flex items-center gap-2">
                     <EmailTemplateManager
                       currentTemplate={{
