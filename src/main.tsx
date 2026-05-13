@@ -2,20 +2,25 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
-// Remove legacy PWA caches on every boot. Some mobile browsers persisted an
-// old app shell that referenced deleted hashed chunks, producing a blank page.
+// Clean up legacy PWA caches/SWs, but preserve our push notification SW
+// (registered at /push-sw.js with scope /push-sw/).
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.ready
-    .then((registration) => registration.update().catch(() => {}))
-    .catch(() => {});
   navigator.serviceWorker.getRegistrations().then((registrations) => {
-    registrations.forEach((r) => r.unregister());
+    registrations.forEach((r) => {
+      const scriptUrl = r.active?.scriptURL || r.installing?.scriptURL || r.waiting?.scriptURL || '';
+      if (!scriptUrl.includes('/push-sw.js')) {
+        r.unregister();
+      }
+    });
   }).catch(() => {});
 }
 
 if (typeof caches !== 'undefined') {
   caches.keys().then((keys) => {
-    keys.forEach((k) => caches.delete(k));
+    keys.forEach((k) => {
+      // Don't nuke push-related caches if any
+      if (!k.includes('push')) caches.delete(k);
+    });
   }).catch(() => {});
 }
 
