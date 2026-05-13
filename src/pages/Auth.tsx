@@ -216,14 +216,14 @@ const Auth = () => {
 
   // Default: show sign in / sign up form
   return (
-    <div className="min-h-screen w-full flex items-center justify-center px-4 pt-16 pb-8 sm:p-6 relative">
+    <div className="min-h-screen w-full flex items-center justify-center px-[var(--mobile-page-gutter)] pt-20 pb-8 sm:p-6 relative">
       <AnimatedBackground />
 
       <Button
         variant="ghost"
         size="sm"
         asChild
-        className="absolute top-[calc(1rem+env(safe-area-inset-top,0px))] left-[calc(1rem+env(safe-area-inset-left,0px))] z-20 text-muted-foreground hover:text-foreground"
+        className="absolute top-[calc(1.25rem+env(safe-area-inset-top,0px))] left-[calc(var(--mobile-page-gutter)+env(safe-area-inset-left,0px))] z-20 text-muted-foreground hover:text-foreground"
       >
         <Link to="/">
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -232,7 +232,7 @@ const Auth = () => {
       </Button>
 
       <div className="relative z-10 w-full max-w-md mx-auto space-y-4">
-        <div className="text-center px-4 space-y-2">
+        <div className="text-center px-0 space-y-2">
           <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
             Already have access? Sign in below. New here? You can explore the workflow first, then choose the plan that fits your outbound needs.
           </p>
