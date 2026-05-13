@@ -34,6 +34,7 @@ import { WebhookReplayTab } from "@/components/settings/WebhookReplayTab";
 import { GraphQLPlayground } from "@/components/settings/GraphQLPlayground";
 import { CreditsUsageTab } from "@/components/settings/CreditsUsageTab";
 import { ChangePasswordCard } from "@/components/settings/ChangePasswordCard";
+import NotificationsTab from "@/components/settings/NotificationsTab";
 
 const Settings = () => {
   const { subscription, loading: subLoading } = useSubscription();
@@ -271,6 +272,10 @@ const Settings = () => {
                 <TabsTrigger value="referral" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
                   <Gift className="h-4 w-4" />
                   Referral
+                </TabsTrigger>
+                <TabsTrigger value="notifications" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                  <Bell className="h-4 w-4" />
+                  Notifications
                 </TabsTrigger>
                 {subscription?.plan === 'pro' && (
                   <>
