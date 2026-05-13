@@ -115,7 +115,7 @@ const Inbox = () => {
     <DashboardLayout>
       <div className="space-y-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Inbox</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Inbox</h1>
           <p className="text-muted-foreground">Unified reply inbox for all your outreach</p>
         </div>
 
