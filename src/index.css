@@ -149,16 +149,25 @@ All colors MUST be HSL. Using 8px spacing scale.
     }
   }
 
-  /* Fluid headline scaling so large display text never overflows on small screens.
-     !important is required to win against Tailwind utility classes like text-5xl. */
+  /* Clamp ONLY explicitly oversized display text on small screens.
+     Do NOT touch bare h1/h2 — page titles already use sane Tailwind sizes
+     (text-2xl/3xl) and overriding them makes them look gigantic on mobile. */
   @media (max-width: 480px) {
-    h1, .h1, [class*="text-6xl"], [class*="text-7xl"] {
-      font-size: clamp(1.875rem, 9vw, 2.75rem) !important;
+    [class*="text-7xl"] {
+      font-size: clamp(2rem, 10vw, 3rem) !important;
+      line-height: 1.05 !important;
+    }
+    [class*="text-6xl"] {
+      font-size: clamp(1.875rem, 9vw, 2.5rem) !important;
       line-height: 1.1 !important;
     }
-    h2, [class*="text-5xl"] {
-      font-size: clamp(1.5rem, 7vw, 2.25rem) !important;
+    [class*="text-5xl"] {
+      font-size: clamp(1.5rem, 7.5vw, 2.125rem) !important;
       line-height: 1.15 !important;
+    }
+    [class*="text-4xl"] {
+      font-size: clamp(1.375rem, 6.5vw, 1.875rem) !important;
+      line-height: 1.2 !important;
     }
     /* Long unbreakable strings (URLs, emails, code) wrap instead of pushing layout */
     p, li, a, code, pre {
