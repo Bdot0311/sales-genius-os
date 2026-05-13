@@ -733,6 +733,10 @@ const Settings = () => {
             )}
           </TabsContent>
 
+          <TabsContent value="notifications" className="space-y-6">
+            <NotificationsTab />
+          </TabsContent>
+
           <TabsContent value="referral" className="space-y-6">
             {(() => {
               const planKey = (subscription?.plan || 'free') as keyof typeof PLAN_FEATURES;
