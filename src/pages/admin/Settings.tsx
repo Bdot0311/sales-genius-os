@@ -523,10 +523,10 @@ const AdminSettings = () => {
                     featureFlags.map((flag) => (
                       <TableRow key={flag.id}>
                         <TableCell>
-                          <div>
-                            <p className="font-medium">{flag.name}</p>
+                          <div className="min-w-[160px]">
+                            <p className="font-medium break-words">{flag.name}</p>
                             {flag.description && (
-                              <p className="text-xs text-muted-foreground">{flag.description}</p>
+                              <p className="text-xs text-muted-foreground break-words">{flag.description}</p>
                             )}
                           </div>
                         </TableCell>
