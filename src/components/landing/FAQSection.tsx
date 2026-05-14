@@ -117,7 +117,15 @@ export const FAQSection = () => {
             >
               Questions we actually
               <br />
-              <span className="italic" style={{ color: "hsl(0 0% 55%)" }}>
+              <span
+                className="italic"
+                style={{
+                  background: "linear-gradient(135deg, hsl(261 75% 72%) 0%, hsl(280 80% 68%) 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
                 get asked.
               </span>
             </h2>
