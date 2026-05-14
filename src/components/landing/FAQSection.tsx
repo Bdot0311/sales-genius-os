@@ -106,7 +106,7 @@ export const FAQSection = () => {
             </p>
             <h2
               id="faq-heading"
-              className="font-display"
+              className="font-display text-center text-5xl"
               style={{
                 fontSize: "clamp(2rem, 4vw, 3.2rem)",
                 fontWeight: 800,

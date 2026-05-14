@@ -33,7 +33,7 @@ const Blog = () => {
               Blog
             </p>
             <h1
-              className="font-display mb-4"
+              className="font-display text-center text-5xl mb-4"
               style={{
                 fontSize: "clamp(2rem, 5vw, 3.5rem)",
                 fontWeight: 800,

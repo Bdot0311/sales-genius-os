@@ -261,7 +261,7 @@ export const ModulesSection = () => {
             </p>
             <h2
               id="modules-heading"
-              className="font-display"
+              className="font-display text-center text-5xl"
               style={{ fontSize: "clamp(2.4rem, 5vw, 4rem)", fontWeight: 800, lineHeight: 1.05, letterSpacing: "-0.02em", color: "hsl(0 0% 96%)" }}
             >
               Everything you need
