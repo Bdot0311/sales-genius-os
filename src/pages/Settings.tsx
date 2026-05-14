@@ -13,6 +13,7 @@ import { STRIPE_PRICE_IDS } from "@/lib/stripe-config";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
+import { SEOHead } from "@/components/seo/SEOHead";
 import { toast } from "sonner";
 import { CreditCard, TrendingUp, Check, RefreshCw, User, Save, Loader2, Palette, Activity, Bell, Key, GitBranch, Code2, Webhook, FileText, RotateCcw, Users, History, FileSearch, Globe, Coins, ExternalLink, Settings2, Copy, Gift, MapPin, Shield, AlertTriangle } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
