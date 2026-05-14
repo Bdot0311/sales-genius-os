@@ -200,7 +200,7 @@ const BlogPost = () => {
       <div className="min-h-screen" style={{ background: "hsl(0,0%,3%)" }}>
         <Navbar />
 
-        <main className="container mx-auto px-6 py-20 max-w-2xl">
+        <main className="container mx-auto px-6 py-20 max-w-3xl">
           {/* Back */}
           <Link
             to="/blog"
