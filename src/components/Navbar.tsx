@@ -46,6 +46,7 @@ export const Navbar = () => {
     { label: "Features", path: "#features" },
     { label: "Pricing", path: "/pricing" },
     { label: "Integrations", path: "#integrations" },
+    { label: "Blog", path: "/blog" },
     { label: "Help", path: "/help" },
   ];
 
