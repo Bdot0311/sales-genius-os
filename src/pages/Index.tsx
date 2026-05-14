@@ -23,6 +23,8 @@ const FounderNoteSection = lazy(() => import("@/components/landing/FounderNoteSe
 const FAQSection = lazy(() => import("@/components/landing/FAQSection").then(m => ({ default: m.FAQSection })));
 const FinalCTA = lazy(() => import("@/components/landing/FinalCTA").then(m => ({ default: m.FinalCTA })));
 const TrustBar = lazy(() => import("@/components/landing/TrustBar").then(m => ({ default: m.TrustBar })));
+const BlogStrip = lazy(() => import("@/components/landing/BlogStrip").then(m => ({ default: m.BlogStrip })));
+const ExitIntentModal = lazy(() => import("@/components/landing/ExitIntentModal").then(m => ({ default: m.ExitIntentModal })));
 const FooterSection = lazy(() => import("@/components/landing/FooterSection").then(m => ({ default: m.FooterSection })));
 
 // Render lazy sections with an invisible fallback so users never see a spinner
@@ -135,6 +137,7 @@ const Index = () => {
             <DeferredSection><DifferentiationSection /></DeferredSection>
             <DeferredSection><FounderNoteSection /></DeferredSection>
             <DeferredSection><FAQSection /></DeferredSection>
+            <DeferredSection><BlogStrip /></DeferredSection>
             <DeferredSection><FinalCTA /></DeferredSection>
             <DeferredSection><TrustBar /></DeferredSection>
           </article>
@@ -143,6 +146,11 @@ const Index = () => {
         {/* Footer */}
         <DeferredSection>
           <FooterSection />
+        </DeferredSection>
+
+        {/* Exit-intent recovery */}
+        <DeferredSection>
+          <ExitIntentModal />
         </DeferredSection>
       </div>
     </>
