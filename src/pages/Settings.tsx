@@ -242,6 +242,11 @@ const Settings = () => {
 
   return (
     <DashboardLayout>
+      <SEOHead
+        title="Account Settings"
+        description="Manage your SalesOS profile, billing, integrations, and team preferences."
+        noIndex
+      />
       <PageHeader title="Settings" description="Account, preferences, and billing" />
       <div className="px-6 py-6 space-y-6 max-w-[1400px] mx-auto">
         <Tabs defaultValue="profile" className="space-y-6">
