@@ -10,6 +10,7 @@ import { Footer } from "@/components/Footer";
 import { ArrowLeft, Send, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { SEOHead } from "@/components/seo/SEOHead";
 
 const RequestIntegration = () => {
   const navigate = useNavigate();
