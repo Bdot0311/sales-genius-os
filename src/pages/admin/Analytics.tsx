@@ -29,6 +29,14 @@ const AdminAnalytics = () => {
 
   useEffect(() => {
     loadAllData();
+
+    const channel = supabase
+      .channel('admin-analytics-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'subscriptions' }, loadAllData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, loadAllData)
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   const loadAllData = async () => {

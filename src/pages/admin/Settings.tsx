@@ -53,6 +53,14 @@ const AdminSettings = () => {
 
   useEffect(() => {
     loadData();
+
+    const channel = supabase
+      .channel('admin-settings-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'admin_settings' }, loadData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'feature_flags' }, loadData)
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   const loadData = async () => {
