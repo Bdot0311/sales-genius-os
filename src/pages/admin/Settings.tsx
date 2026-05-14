@@ -53,6 +53,14 @@ const AdminSettings = () => {
 
   useEffect(() => {
     loadData();
+
+    const channel = supabase
+      .channel('admin-settings-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'admin_settings' }, loadData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'feature_flags' }, loadData)
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   const loadData = async () => {
@@ -300,6 +308,18 @@ const AdminSettings = () => {
                 <Switch
                   checked={getSettingValue("signup_enabled") !== false}
                   onCheckedChange={(checked) => updateSetting("signup_enabled", checked)}
+                  disabled={saving}
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div>
+                  <Label className="text-base">PWA Push Notifications</Label>
+                  <p className="text-sm text-muted-foreground">Allow the app to request push notification permission from users</p>
+                </div>
+                <Switch
+                  checked={getSettingValue("pwa_notifications_enabled") === true}
+                  onCheckedChange={(checked) => updateSetting("pwa_notifications_enabled", checked)}
                   disabled={saving}
                 />
               </div>

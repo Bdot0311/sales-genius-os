@@ -2,7 +2,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Shield, Clock, Lock, Unlock, Trash2, Globe } from "lucide-react";
+import { Shield, Clock, Lock, Unlock, Trash2, Globe, KeyRound } from "lucide-react";
 import type { UserSubscription } from "@/pages/admin/Users";
 
 interface UserTableProps {
@@ -15,6 +15,7 @@ interface UserTableProps {
   onToggleAdmin: (userId: string, isAdmin: boolean) => void;
   onSetTrial: (user: UserSubscription) => void;
   onDeleteUser: (user: UserSubscription) => void;
+  onResetPassword: (user: UserSubscription) => void;
 }
 
 const getPlanBadgeClass = (plan: string) => {
@@ -43,7 +44,7 @@ const getAccountBadge = (userId: string, accountStatus: string, trialEndDate: st
 
 export const UserTable = ({
   subscriptions, loading, isUserAdmin,
-  onUpdateSubscription, onLockUser, onUnlockUser, onToggleAdmin, onSetTrial, onDeleteUser
+  onUpdateSubscription, onLockUser, onUnlockUser, onToggleAdmin, onSetTrial, onDeleteUser, onResetPassword
 }: UserTableProps) => {
   return (
     <div className="overflow-x-auto">
@@ -155,6 +156,13 @@ export const UserTable = ({
                         title="Set Trial"
                       >
                         <Clock className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="sm" variant="ghost" className="h-7 w-7 p-0 text-blue-400 hover:text-blue-300"
+                        onClick={() => onResetPassword(sub)}
+                        title="Send Password Reset Email"
+                      >
+                        <KeyRound className="h-3.5 w-3.5" />
                       </Button>
                       {sub.account_status === 'locked' ? (
                         <Button
