@@ -44,7 +44,7 @@ export const DifferentiationSection = () => {
         <div className="max-w-3xl mx-auto">
 
           <motion.p
-            className="text-[10px] uppercase tracking-[0.28em] mb-5 font-medium text-center text-purple-500"
+            className="font-serif italic font-thin text-base text-center text-purple-500 mb-5"
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-10% 0px" }}
