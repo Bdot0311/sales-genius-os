@@ -27,7 +27,7 @@ export const ProblemSection = () => {
         <div className="max-w-4xl mx-auto text-center">
 
           <motion.p
-            className="text-[10px] uppercase tracking-[0.28em] mb-10 font-medium"
+            className="font-display italic leading-none mb-8 text-purple-500 text-9xl font-bold shadow-2xl"
             style={{ color: "hsl(261 75% 60%)" }}
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
