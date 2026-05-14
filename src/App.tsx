@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 const PUBLIC_LANDING_PREFIXES = [
   "/", "/pricing", "/demo", "/api-docs", "/api-status", "/request-integration",
   "/privacy", "/terms", "/security", "/help", "/install", "/unsubscribe", "/blog",
+  "/sales-operations-software", "/apollo-alternative",
 ];
 const isPublicLandingPath = (pathname: string) => {
   if (pathname === "/") return true;
@@ -32,6 +33,8 @@ const SequenceDetail = lazy(() => import("./pages/SequenceDetail"));
 const DashboardIntegrations = lazy(() => import("./pages/DashboardIntegrations"));
 const PricingPage = lazy(() => import("./pages/PricingPage"));
 const DemoPage = lazy(() => import("./pages/DemoPage"));
+const SalesOperationsSoftware = lazy(() => import("./pages/SalesOperationsSoftware"));
+const ApolloAlternative = lazy(() => import("./pages/ApolloAlternative"));
 const ApiDocs = lazy(() => import("./pages/ApiDocs"));
 const ApiStatus = lazy(() => import("./pages/ApiStatus"));
 const RequestIntegration = lazy(() => import("./pages/RequestIntegration"));
@@ -138,6 +141,8 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/sales-operations-software" element={<SalesOperationsSoftware />} />
+            <Route path="/apollo-alternative" element={<ApolloAlternative />} />
             <Route path="/demo" element={<DemoPage />} />
             <Route path="/api-docs" element={<ApiDocs />} />
             <Route path="/api-status" element={<ApiStatus />} />
