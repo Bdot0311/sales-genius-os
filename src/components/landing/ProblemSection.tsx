@@ -1,9 +1,14 @@
 import { motion } from "motion/react";
 
-const lines = [
+const lines: Array<{
+  text: string;
+  color?: string;
+  gradient?: boolean;
+  italic?: boolean;
+}> = [
   { text: "You spend Monday building a list.", color: "hsl(0 0% 90%)" },
   { text: "Tuesday writing emails.", color: "hsl(0 0% 65%)" },
-  { text: "Wednesday realizing half are wrong-fit.", color: "hsl(261 75% 68%)" },
+  { text: "Wednesday realizing half are wrong-fit.", gradient: true, italic: true },
 ];
 
 const ease = [0.16, 1, 0.3, 1] as const;
@@ -40,13 +45,21 @@ export const ProblemSection = () => {
             {lines.map((line, index) => (
               <motion.span
                 key={index}
-                className="block font-display"
+                className={`block font-display${line.italic ? " italic" : ""}`}
                 style={{
                   fontSize: "clamp(2rem, 5vw, 3.8rem)",
                   fontWeight: 800,
                   lineHeight: 1.1,
                   letterSpacing: "-0.02em",
-                  color: line.color,
+                  ...(line.gradient
+                    ? {
+                        background:
+                          "linear-gradient(135deg, hsl(261 75% 72%) 0%, hsl(280 80% 68%) 50%, hsl(261 75% 60%) 100%)",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent",
+                        backgroundClip: "text",
+                      }
+                    : { color: line.color }),
                 }}
                 initial={{ opacity: 0, y: 28 }}
                 whileInView={{ opacity: 1, y: 0 }}
