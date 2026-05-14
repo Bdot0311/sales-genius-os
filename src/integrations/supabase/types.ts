@@ -420,6 +420,84 @@ export type Database = {
         }
         Relationships: []
       }
+      blog_posts: {
+        Row: {
+          category: string
+          content: string
+          created_at: string
+          description: string
+          id: string
+          keywords: string[]
+          published_at: string
+          reading_time: string
+          slug: string
+          source: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          content: string
+          created_at?: string
+          description: string
+          id?: string
+          keywords?: string[]
+          published_at?: string
+          reading_time?: string
+          slug: string
+          source?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          content?: string
+          created_at?: string
+          description?: string
+          id?: string
+          keywords?: string[]
+          published_at?: string
+          reading_time?: string
+          slug?: string
+          source?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      blog_topic_queue: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          keywords: string[]
+          priority: number
+          target_keyword: string
+          topic_brief: string
+          used_at: string | null
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          id?: string
+          keywords?: string[]
+          priority?: number
+          target_keyword: string
+          topic_brief: string
+          used_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          keywords?: string[]
+          priority?: number
+          target_keyword?: string
+          topic_brief?: string
+          used_at?: string | null
+        }
+        Relationships: []
+      }
       coaching_conversations: {
         Row: {
           created_at: string
