@@ -175,7 +175,7 @@ const PricingPage = () => {
             style={{ background: "hsl(0 0% 2.5%)" }}
           >
             <div className="container mx-auto px-5 sm:px-6 relative z-10">
-              <p className="mb-3 text-center text-[10px] uppercase tracking-[0.25em] text-white/30">
+              <p className="mb-3 text-center text-[10px] uppercase tracking-[0.25em] text-white/70">
                 Why teams pick SalesOS
               </p>
               <h2 className="text-center text-2xl sm:text-3xl font-semibold mb-10 sm:mb-12">
@@ -240,7 +240,7 @@ const PricingPage = () => {
             style={{ borderColor: "hsl(0 0% 100% / 0.06)" }}
           >
             <div className="container mx-auto px-5 sm:px-6">
-              <p className="mb-5 text-center text-[10px] uppercase tracking-[0.25em] text-white/30">
+              <p className="mb-5 text-center text-[10px] uppercase tracking-[0.25em] text-white/70">
                 Learn more about SalesOS
               </p>
               <nav aria-label="Related pages">
