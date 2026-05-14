@@ -165,9 +165,10 @@ const AdminUsers = () => {
 
   const sendResetPasswordEmail = async (user: UserSubscription) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await supabase.functions.invoke('admin-send-reset-email', {
-        body: { email: user.email, targetUserId: user.user_id },
+      // Use the existing reset-password function with the admin's auth token.
+      // The function detects admin callers and bypasses the rate limiter.
+      const res = await supabase.functions.invoke('reset-password', {
+        body: { email: user.email },
       });
       if (res.error) throw res.error;
       toast.success(`Password reset email sent to ${user.email}`);
