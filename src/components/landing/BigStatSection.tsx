@@ -22,7 +22,7 @@ export const BigStatSection = () => {
         <div className="flex flex-col items-center text-center">
 
           <motion.p
-            className="font-display italic leading-none mb-8 text-purple-500 text-9xl font-bold shadow-2xl"
+            className="font-display italic leading-none mb-8 text-purple-500 shadow-2xl text-base font-serif font-thin"
             style={{ color: "hsl(261 75% 55% / 0.6)" }}
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
