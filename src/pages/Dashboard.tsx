@@ -10,6 +10,7 @@ import { TrendingUp, Users, DollarSign, Calendar, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { SAMPLE_STATS } from "@/lib/sample-data";
+import { SEOHead } from "@/components/seo/SEOHead";
 
 const Dashboard = () => {
   const { currentPlan, loading: planLoading } = usePlanFeatures();
