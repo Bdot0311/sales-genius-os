@@ -226,7 +226,7 @@ const BlogPost = () => {
               {post.category} · {post.readingTime}
             </p>
             <h1
-              className="font-display mb-6"
+              className="font-display text-center text-5xl mb-6"
               style={{
                 fontSize: "clamp(1.75rem, 4vw, 3rem)",
                 fontWeight: 800,
