@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { SEOHead, BreadcrumbSchema } from "@/components/seo";
-import { blogPosts } from "@/data/blog-posts";
+import { useAllBlogPosts } from "@/hooks/useBlogPosts";
 import { lazy, Suspense } from "react";
 
 const FooterSection = lazy(() =>
@@ -9,6 +9,7 @@ const FooterSection = lazy(() =>
 );
 
 const Blog = () => {
+  const { posts } = useAllBlogPosts();
   return (
     <>
       <SEOHead
@@ -50,9 +51,7 @@ const Blog = () => {
 
           {/* Post list */}
           <div className="flex flex-col gap-0">
-            {[...blogPosts]
-              .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
-              .map((post) => (
+            {posts.map((post) => (
               <article
                 key={post.slug}
                 className="py-10"
