@@ -13,6 +13,7 @@ import { STRIPE_PRICE_IDS } from "@/lib/stripe-config";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
+import { SEOHead } from "@/components/seo/SEOHead";
 import { toast } from "sonner";
 import { CreditCard, TrendingUp, Check, RefreshCw, User, Save, Loader2, Palette, Activity, Bell, Key, GitBranch, Code2, Webhook, FileText, RotateCcw, Users, History, FileSearch, Globe, Coins, ExternalLink, Settings2, Copy, Gift, MapPin, Shield, AlertTriangle } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
@@ -241,6 +242,11 @@ const Settings = () => {
 
   return (
     <DashboardLayout>
+      <SEOHead
+        title="Account Settings"
+        description="Manage your SalesOS profile, billing, integrations, and team preferences."
+        noIndex
+      />
       <PageHeader title="Settings" description="Account, preferences, and billing" />
       <div className="px-6 py-6 space-y-6 max-w-[1400px] mx-auto">
         <Tabs defaultValue="profile" className="space-y-6">

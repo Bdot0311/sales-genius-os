@@ -10,6 +10,7 @@ import { TrendingUp, Users, DollarSign, Calendar, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { SAMPLE_STATS } from "@/lib/sample-data";
+import { SEOHead } from "@/components/seo/SEOHead";
 
 const Dashboard = () => {
   const { currentPlan, loading: planLoading } = usePlanFeatures();
@@ -105,6 +106,11 @@ const Dashboard = () => {
 
   return (
     <DashboardLayout>
+      <SEOHead
+        title="Dashboard"
+        description="Track prospects, pipeline activity, and outreach performance from your SalesOS dashboard."
+        noIndex
+      />
       <div className="px-6 py-6 space-y-6 max-w-[1400px] mx-auto">
         <DashboardTour isOpen={showTour} onClose={() => setShowTour(false)} />
         {showChecklist && (
