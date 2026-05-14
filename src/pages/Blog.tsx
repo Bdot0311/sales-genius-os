@@ -50,14 +50,19 @@ const Blog = () => {
 
           {/* Post list */}
           <div className="flex flex-col gap-0">
-            {blogPosts.map((post, i) => (
+            {[...blogPosts]
+              .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
+              .map((post) => (
               <article
                 key={post.slug}
                 className="py-10"
                 style={{ borderTop: "1px solid hsl(261 75% 50% / 0.12)" }}
               >
                 <p className="text-[10px] uppercase tracking-widest mb-3 font-medium" style={{ color: "hsl(261 75% 55%)" }}>
-                  {post.category} · {post.readingTime}
+                  <time dateTime={post.publishedAt}>
+                    {new Date(post.publishedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                  </time>
+                  {" · "}{post.category} · {post.readingTime}
                 </p>
                 <h2 className="text-xl font-semibold mb-2 leading-snug" style={{ color: "hsl(0 0% 90%)" }}>
                   <Link
