@@ -114,8 +114,7 @@ export const HowItWorks = () => {
         <div className="max-w-[720px] mx-auto text-center">
 
           <motion.p
-            className="text-[10px] uppercase tracking-[0.28em] mb-6 font-medium"
-            style={{ color: "hsl(261 75% 60%)" }}
+            className="text-[10px] uppercase tracking-[0.28em] mb-6 font-medium text-center text-purple-500"
             initial={{ opacity: 0, y: 14 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-10% 0px" }}
