@@ -1,5 +1,5 @@
 import { Navbar } from "@/components/Navbar";
-import { SEOHead, BreadcrumbSchema, FAQSchema, ComparisonSchema } from "@/components/seo";
+import { SEOHead, BreadcrumbSchema, FAQSchema } from "@/components/seo";
 import { Link } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { Check, X } from "lucide-react";
@@ -53,14 +53,6 @@ const ApolloAlternative = () => {
         { name: "Apollo Alternative", url: "https://salesos.alephwavex.io/apollo-alternative" }
       ]} />
       <FAQSchema faqs={faqs} />
-      <ComparisonSchema
-        name="SalesOS vs Apollo"
-        description="Side-by-side comparison of SalesOS and Apollo for B2B outbound teams."
-        items={[
-          { name: "SalesOS", description: "Plain-English ICP search, SMTP-verified emails, AI drafting, and reply inbox in one platform from $0." },
-          { name: "Apollo", description: "Filter-based prospecting database with separate add-ons for engagement and AI." }
-        ]}
-      />
 
       <div className="min-h-screen text-foreground overflow-x-hidden" style={{ background: "hsl(0 0% 3%)" }}>
         <Navbar />
