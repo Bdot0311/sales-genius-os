@@ -189,12 +189,12 @@ const AdminUsers = () => {
 
   const sendResetPasswordEmail = async (user: UserSubscription) => {
     try {
-      // Use the existing reset-password function with the admin's auth token.
-      // The function detects admin callers and bypasses the rate limiter.
-      const res = await supabase.functions.invoke('reset-password', {
-        body: { email: user.email },
+      // Use Supabase's native resetPasswordForEmail — triggers auth-email-hook
+      // which sends the branded RecoveryEmail template immediately (no queue).
+      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+        redirectTo: 'https://salesos.alephwavex.io/auth?type=recovery',
       });
-      if (res.error) throw res.error;
+      if (error) throw error;
       toast.success(`Password reset email sent to ${user.email}`);
     } catch (error: any) {
       console.error('Failed to send reset email:', error);
