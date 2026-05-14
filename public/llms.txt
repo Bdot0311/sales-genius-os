@@ -58,16 +58,19 @@ All paid plans include a 30-day money-back guarantee. Cancel anytime.
 
 Sign up for free at https://salesos.alephwavex.io — no credit card required.
 
-## Important Pages
+## Pages
 
-- Homepage: https://salesos.alephwavex.io/
-- Demo: https://salesos.alephwavex.io/demo
-- Pricing: https://salesos.alephwavex.io/pricing
-- API Documentation: https://salesos.alephwavex.io/api-docs
-- Help Center: https://salesos.alephwavex.io/help
-- Privacy Policy: https://salesos.alephwavex.io/privacy
-- Terms of Service: https://salesos.alephwavex.io/terms
-- Security: https://salesos.alephwavex.io/security
+- [Home](/): B2B lead discovery and outbound email platform overview.
+- [Pricing](/pricing): Subscription plans, one-time credit packs, and annual billing options.
+- [Demo](/demo): Interactive walkthrough of the lead-to-email workflow.
+- [Help Center](/help): Documentation, guides, and support articles.
+- [API Documentation](/api-docs): RESTful API reference for Pro plan users.
+- [API Status](/api-status): Real-time system status and uptime monitoring.
+- [Privacy Policy](/privacy): Data handling, GDPR compliance, and user rights.
+- [Terms of Service](/terms): Acceptable use, billing terms, and legal agreements.
+- [Security](/security): Encryption, SOC 2 compliance, and infrastructure details.
+- [Blog](/blog): Articles on outbound sales, lead generation, and product updates.
+- [Install](/install): Progressive Web App (PWA) installation guide for iOS and Android.
 
 ## Integrations
 
