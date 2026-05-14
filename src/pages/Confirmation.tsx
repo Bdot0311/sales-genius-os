@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { CheckCircle, ArrowRight, Sparkles, Users, BarChart, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { SEOHead } from "@/components/seo/SEOHead";
 
 const Confirmation = () => {
   const navigate = useNavigate();
