@@ -145,7 +145,19 @@ const ApolloAlternative = () => {
             </div>
           </section>
 
-          <Suspense fallback={<SectionLoader />}>
+          <section className="py-12 border-t border-border/40">
+            <div className="container mx-auto px-4 max-w-3xl text-center">
+              <p className="text-sm text-muted-foreground mb-3">Comparing more than just Apollo?</p>
+              <a
+                href="/blog/apollo-vs-instantly-vs-salesloft"
+                className="inline-flex items-center gap-2 text-base font-semibold text-primary hover:underline"
+              >
+                Read: Apollo vs Instantly vs Salesloft — which one to actually use →
+              </a>
+            </div>
+          </section>
+
+
             <FooterSection />
           </Suspense>
         </main>
