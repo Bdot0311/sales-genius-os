@@ -303,6 +303,18 @@ const AdminSettings = () => {
                   disabled={saving}
                 />
               </div>
+
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div>
+                  <Label className="text-base">PWA Push Notifications</Label>
+                  <p className="text-sm text-muted-foreground">Allow the app to request push notification permission from users</p>
+                </div>
+                <Switch
+                  checked={getSettingValue("pwa_notifications_enabled") === true}
+                  onCheckedChange={(checked) => updateSetting("pwa_notifications_enabled", checked)}
+                  disabled={saving}
+                />
+              </div>
             </div>
           </TabsContent>
 

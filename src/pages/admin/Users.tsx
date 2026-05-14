@@ -163,6 +163,20 @@ const AdminUsers = () => {
     }
   };
 
+  const sendResetPasswordEmail = async (user: UserSubscription) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await supabase.functions.invoke('admin-send-reset-email', {
+        body: { email: user.email, targetUserId: user.user_id },
+      });
+      if (res.error) throw res.error;
+      toast.success(`Password reset email sent to ${user.email}`);
+    } catch (error: any) {
+      console.error('Failed to send reset email:', error);
+      toast.error(error?.message || 'Failed to send reset email');
+    }
+  };
+
   const toggleAdminStatus = async (userId: string, currentlyAdmin: boolean) => {
     try {
       if (currentlyAdmin) {
@@ -311,6 +325,7 @@ const AdminUsers = () => {
             onToggleAdmin={toggleAdminStatus}
             onSetTrial={(user) => { setSelectedUser(user); setTrialDialogOpen(true); }}
             onDeleteUser={(user) => { setSelectedUser(user); setDeleteUserOpen(true); }}
+            onResetPassword={sendResetPasswordEmail}
           />
         </CardContent>
       </Card>
