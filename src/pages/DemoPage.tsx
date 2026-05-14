@@ -768,7 +768,7 @@ const ResultsChapter = ({ active }: { active: boolean }) => {
         <div className="text-center mb-14">
           <SectionLabel num="05" label="What you get" visible={active} />
           <h2
-            className="font-display"
+            className="font-display text-center text-5xl"
             style={{
               fontSize: "clamp(2.4rem, 5vw, 4rem)",
               fontWeight: 800,
