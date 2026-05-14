@@ -48,7 +48,7 @@ function renderMarkdown(content: string): JSX.Element[] {
         tableLines.push(lines[i]);
         i++;
       }
-      const rows = tableLines.filter(l => !l.match(/^\|[-| ]+\|$/));
+      const rows = tableLines.filter(l => !l.match(/^\|[\s\-:|]+\|$/));
       elements.push(
         <div key={key++} className="overflow-x-auto my-8">
           <table className="w-full text-sm border-collapse" style={{ tableLayout: "auto" }}>
