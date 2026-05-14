@@ -38,23 +38,47 @@ serve(async (req) => {
 
   try {
     // Get client IP for rate limiting
-    const clientIP = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
-                     req.headers.get("cf-connecting-ip") || 
+    const clientIP = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+                     req.headers.get("cf-connecting-ip") ||
                      "unknown";
-    
+
     const userAgent = req.headers.get("user-agent") || null;
-    
+
     // Create admin client for logging
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
+
+    // Check if this is an admin-initiated reset (bypasses rate limiting)
+    let isAdminRequest = false;
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader) {
+      try {
+        const callerClient = createClient(
+          Deno.env.get("SUPABASE_URL") ?? "",
+          Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+          { global: { headers: { Authorization: authHeader } } }
+        );
+        const { data: { user: caller } } = await callerClient.auth.getUser();
+        if (caller) {
+          const { data: roleData } = await supabaseAdmin
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", caller.id)
+            .eq("role", "admin")
+            .maybeSingle();
+          isAdminRequest = !!roleData;
+        }
+      } catch (_) { /* not an admin call, continue normally */ }
+    }
+
+    );
     
-    // Check rate limit - return generic success to prevent enumeration
-    if (!checkRateLimit(clientIP)) {
+    // Admin requests bypass rate limiting; normal requests are rate-limited
+    if (!isAdminRequest && !checkRateLimit(clientIP)) {
       console.log("Rate limit exceeded for password reset, IP:", clientIP);
-      
-      // Log security event for rate limit hit
+
       await supabaseAdmin.rpc('log_security_event', {
         _event_type: 'password_reset_rate_limit',
         _severity: 'warning',
@@ -62,7 +86,7 @@ serve(async (req) => {
         _user_agent: userAgent,
         _details: { reason: 'Rate limit exceeded for password reset' }
       });
-      
+
       // Return success to prevent email enumeration
       return new Response(
         JSON.stringify({ success: true }),
