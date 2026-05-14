@@ -1,7 +1,7 @@
 import { useParams, Link, Navigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { SEOHead, BreadcrumbSchema, ArticleSchema } from "@/components/seo";
-import { getPostBySlug } from "@/data/blog-posts";
+import { useBlogPost } from "@/hooks/useBlogPosts";
 import { lazy, Suspense } from "react";
 import { ArrowLeft } from "lucide-react";
 
