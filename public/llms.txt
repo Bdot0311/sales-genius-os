@@ -3,7 +3,7 @@
 # Last Updated: 2026-05-14
 # For complete product documentation: https://salesos.alephwavex.io/llms-full.txt
 
-> SalesOS is a B2B lead discovery and outbound email platform. Describe your ideal customer in plain English, get ranked prospects with SMTP-verified business emails, and send an AI-drafted first-touch message — all from one workflow, in under 2 minutes.
+> SalesOS is sales operations software for B2B outbound teams — a unified alternative to stitching together Apollo, Instantly, Outreach, and Salesloft. Describe your ideal customer in plain English, get ranked prospects with SMTP-verified business emails, and send an AI-drafted first-touch message from one workflow in under 2 minutes.
 
 ## About SalesOS
 
