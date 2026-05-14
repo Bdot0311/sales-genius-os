@@ -49,10 +49,10 @@ export const HelpCategoryCard = ({ category }: HelpCategoryCardProps) => {
               {category.description}
             </p>
             <div className="flex items-center justify-between mt-4">
-              <span className="text-xs text-white/40">
+              <span className="text-xs text-white/75">
                 {articleCount} article{articleCount !== 1 ? "s" : ""}
               </span>
-              <ChevronRight className="h-4 w-4 text-white/40 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+              <ChevronRight className="h-4 w-4 text-white/75 group-hover:text-primary group-hover:translate-x-1 transition-all" />
             </div>
           </div>
         </div>

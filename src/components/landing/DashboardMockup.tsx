@@ -80,7 +80,7 @@ const DashboardMockup = () => {
               <div className="flex flex-wrap items-center gap-2 mb-2">
               <Search className="w-3.5 h-3.5 text-primary" />
               <span className="text-[11px] font-semibold text-foreground/80 uppercase tracking-wider">Lead Search</span>
-              <div className="ml-auto text-[9px] text-muted-foreground/50 font-mono">847 results</div>
+              <div className="ml-auto text-[9px] text-muted-foreground font-mono">847 results</div>
             </div>
             <div className="space-y-1.5">
               {leads.map((l, i) => (

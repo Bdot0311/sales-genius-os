@@ -70,7 +70,7 @@ export const HeroSection = () => {
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-violet-500" />
             </span>
             <span className="font-medium text-white/80">New</span>
-            <span className="text-white/30">·</span>
+            <span className="text-white/70">·</span>
             <span>Intent scoring now live — know who's ready before you email</span>
           </span>
         </motion.div>

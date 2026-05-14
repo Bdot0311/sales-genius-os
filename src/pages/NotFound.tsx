@@ -97,7 +97,7 @@ const NotFound = () => {
             className="border-t pt-8"
             style={{ borderColor: "hsl(0 0% 100% / 0.08)" }}
           >
-            <p className="mb-5 text-[10px] uppercase tracking-[0.25em] text-white/30">
+            <p className="mb-5 text-[10px] uppercase tracking-[0.25em] text-white/70">
               Popular pages
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -111,7 +111,7 @@ const NotFound = () => {
                     border: "1px solid hsl(0 0% 100% / 0.06)",
                   }}
                 >
-                  <page.icon className="h-5 w-5 text-white/40 group-hover:text-primary mt-0.5 transition-colors" />
+                  <page.icon className="h-5 w-5 text-white/75 group-hover:text-primary mt-0.5 transition-colors" />
                   <div>
                     <div className="font-medium text-white group-hover:text-primary transition-colors">
                       {page.name}

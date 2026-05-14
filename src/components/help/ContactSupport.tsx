@@ -13,7 +13,7 @@ export const ContactSupport = () => {
     <section className="py-16 sm:py-20" style={{ background: "hsl(0 0% 2.5%)" }}>
       <div className="container mx-auto px-5 sm:px-6">
         <div className="text-center mb-10 sm:mb-12">
-          <p className="mb-3 text-[10px] uppercase tracking-[0.25em] text-white/30">
+          <p className="mb-3 text-[10px] uppercase tracking-[0.25em] text-white/70">
             Support
           </p>
           <h2 className="font-display text-3xl sm:text-4xl mb-3 text-white">
@@ -43,7 +43,7 @@ export const ContactSupport = () => {
             >
               support@bdotindustries.com
             </a>
-            <div className="flex items-center justify-center gap-1 mt-3 text-xs text-white/40">
+            <div className="flex items-center justify-center gap-1 mt-3 text-xs text-white/75">
               <Clock className="h-3 w-3" />
               Response within 24 hours
             </div>

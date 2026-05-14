@@ -135,7 +135,7 @@ const HelpCenter = () => {
           canonicalUrl={`https://salesos.alephwavex.io/help/category/${category}`}
         />
         <main className="flex-1 pt-28 sm:pt-32 pb-16 container mx-auto px-5 sm:px-6">
-          <nav className="flex items-center gap-2 text-sm text-white/40 mb-6">
+          <nav className="flex items-center gap-2 text-sm text-white/75 mb-6">
             <Link to="/help" className="hover:text-white transition-colors">
               Help Center
             </Link>
@@ -171,7 +171,7 @@ const HelpCenter = () => {
                 >
                   <div className="flex items-center justify-between gap-4">
                     <h3 className="font-medium text-white">{article.title}</h3>
-                    <div className="flex items-center text-xs text-white/40 shrink-0">
+                    <div className="flex items-center text-xs text-white/75 shrink-0">
                       <Clock className="h-3 w-3 mr-1" />
                       {article.readTime} min
                     </div>
@@ -234,7 +234,7 @@ const HelpCenter = () => {
                       <Badge variant="secondary" className="bg-primary/15 text-primary border-primary/20">
                         {getCategoryInfo(article.category)?.title}
                       </Badge>
-                      <span className="text-xs text-white/40">
+                      <span className="text-xs text-white/75">
                         {article.readTime} min read
                       </span>
                     </div>
@@ -395,7 +395,7 @@ const HelpCenter = () => {
         {/* Categories */}
         <section className="py-12 md:py-16">
           <div className="container mx-auto px-5 sm:px-6">
-            <p className="mb-3 text-center text-[10px] uppercase tracking-[0.25em] text-white/30">
+            <p className="mb-3 text-center text-[10px] uppercase tracking-[0.25em] text-white/70">
               Documentation
             </p>
             <h2 className="text-center text-2xl sm:text-3xl font-semibold mb-10 sm:mb-12">
@@ -415,7 +415,7 @@ const HelpCenter = () => {
           style={{ background: "hsl(0 0% 2.5%)" }}
         >
           <div className="container mx-auto px-5 sm:px-6">
-            <p className="mb-3 text-center text-[10px] uppercase tracking-[0.25em] text-white/30">
+            <p className="mb-3 text-center text-[10px] uppercase tracking-[0.25em] text-white/70">
               Most read
             </p>
             <h2 className="text-center text-2xl sm:text-3xl font-semibold mb-10">
@@ -472,7 +472,7 @@ const HelpCenter = () => {
           style={{ borderColor: "hsl(0 0% 100% / 0.06)" }}
         >
           <div className="container mx-auto px-5 sm:px-6">
-            <p className="mb-5 text-center text-[10px] uppercase tracking-[0.25em] text-white/30">
+            <p className="mb-5 text-center text-[10px] uppercase tracking-[0.25em] text-white/70">
               Explore SalesOS
             </p>
             <nav aria-label="Related pages">
