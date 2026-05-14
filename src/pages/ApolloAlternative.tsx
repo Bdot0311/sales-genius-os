@@ -157,7 +157,7 @@ const ApolloAlternative = () => {
             </div>
           </section>
 
-
+          <Suspense fallback={<SectionLoader />}>
             <FooterSection />
           </Suspense>
         </main>
