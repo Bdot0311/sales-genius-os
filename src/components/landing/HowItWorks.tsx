@@ -114,7 +114,7 @@ export const HowItWorks = () => {
         <div className="max-w-[720px] mx-auto text-center">
 
           <motion.p
-            className="text-[10px] uppercase tracking-[0.28em] mb-6 font-medium text-center text-purple-500"
+            className="font-serif italic font-thin text-base text-center text-purple-500 mb-6"
             initial={{ opacity: 0, y: 14 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-10% 0px" }}

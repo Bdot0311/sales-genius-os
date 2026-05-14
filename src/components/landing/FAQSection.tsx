@@ -100,7 +100,7 @@ export const FAQSection = () => {
             }`}
           >
             <p
-              className="text-[10px] uppercase tracking-[0.28em] mb-5 font-medium text-center text-purple-500"
+              className="font-serif italic font-thin text-base text-center text-purple-500 mb-5"
             >
               FAQ
             </p>
