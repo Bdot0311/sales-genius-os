@@ -1,7 +1,7 @@
 import { useParams, Link, Navigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { SEOHead, BreadcrumbSchema, ArticleSchema } from "@/components/seo";
-import { getPostBySlug } from "@/data/blog-posts";
+import { useBlogPost } from "@/hooks/useBlogPosts";
 import { lazy, Suspense } from "react";
 import { ArrowLeft } from "lucide-react";
 
@@ -166,9 +166,16 @@ function renderInline(text: string): React.ReactNode {
 
 const BlogPost = () => {
   const { slug } = useParams<{ slug: string }>();
-  const post = slug ? getPostBySlug(slug) : undefined;
+  const post = useBlogPost(slug);
 
-  if (!post) return <Navigate to="/blog" replace />;
+  if (post === undefined) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "hsl(0,0%,3%)" }}>
+        <p className="text-sm" style={{ color: "hsl(0 0% 100% / 0.4)" }}>Loading…</p>
+      </div>
+    );
+  }
+  if (post === null) return <Navigate to="/blog" replace />;
 
   const canonicalUrl = `https://salesos.alephwavex.io/blog/${post.slug}`;
 
