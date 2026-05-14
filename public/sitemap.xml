@@ -51,6 +51,14 @@
     <priority>0.7</priority>
   </url>
 
+  <!-- Blog: Apollo vs Instantly vs Salesloft (long-tail "alternative" cluster) -->
+  <url>
+    <loc>https://salesos.alephwavex.io/blog/apollo-vs-instantly-vs-salesloft</loc>
+    <lastmod>2026-05-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
   <!-- Demo Page -->
   <url>
     <loc>https://salesos.alephwavex.io/demo</loc>
