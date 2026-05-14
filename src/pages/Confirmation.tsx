@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { CheckCircle, ArrowRight, Sparkles, Users, BarChart, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { SEOHead } from "@/components/seo/SEOHead";
 
 const Confirmation = () => {
   const navigate = useNavigate();
@@ -185,6 +186,11 @@ const Confirmation = () => {
 
   return (
     <div className="min-h-screen bg-gradient-hero">
+      <SEOHead
+        title="Subscription confirmed"
+        description="Your SalesOS subscription is confirmed. Jump into your dashboard to start finding and contacting qualified leads."
+        noIndex
+      />
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden opacity-30 -z-10">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-glow-pulse" />

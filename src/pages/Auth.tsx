@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { SEOHead } from "@/components/seo/SEOHead";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -217,6 +218,11 @@ const Auth = () => {
   // Default: show sign in / sign up form
   return (
     <div className="min-h-screen w-full flex items-center justify-center px-[var(--mobile-page-gutter)] pt-20 pb-8 sm:p-6 relative">
+      <SEOHead
+        title="Sign in or create your account"
+        description="Sign in to SalesOS or create an account to start finding qualified B2B leads with AI-drafted outreach."
+        noIndex
+      />
       <AnimatedBackground />
 
       <Button

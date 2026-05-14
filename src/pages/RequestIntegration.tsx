@@ -10,6 +10,7 @@ import { Footer } from "@/components/Footer";
 import { ArrowLeft, Send, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { SEOHead } from "@/components/seo/SEOHead";
 
 const RequestIntegration = () => {
   const navigate = useNavigate();
@@ -76,6 +77,10 @@ const RequestIntegration = () => {
       className="min-h-screen flex flex-col overflow-x-hidden"
       style={{ background: "hsl(0 0% 3%)" }}
     >
+      <SEOHead
+        title="Request a new integration"
+        description="Tell us which tool you'd like SalesOS to integrate with. We prioritize integrations based on customer demand."
+      />
       <Navbar />
       <div className="flex-1 container mx-auto px-5 sm:px-6 pt-[calc(env(safe-area-inset-top)+6.5rem)] pb-12 max-w-3xl">
         <div className="mb-6">
