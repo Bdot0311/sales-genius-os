@@ -51,30 +51,36 @@ function renderMarkdown(content: string): JSX.Element[] {
       const rows = tableLines.filter(l => !l.match(/^\|[-| ]+\|$/));
       elements.push(
         <div key={key++} className="overflow-x-auto my-8">
-          <table className="w-full text-sm border-collapse">
-            {rows.map((row, ri) => {
-              const cells = row.split("|").filter((_, ci) => ci > 0 && ci < row.split("|").length - 1);
-              const Tag = ri === 0 ? "th" : "td";
-              return (
-                <tr key={ri} style={{ borderBottom: "1px solid hsl(261 75% 50% / 0.12)" }}>
-                  {cells.map((cell, ci) => (
-                    <Tag
-                      key={ci}
-                      className="py-3 px-4 text-left"
-                      style={{
-                        color: ri === 0 ? "hsl(261 75% 65%)" : "hsl(0 0% 100% / 0.6)",
-                        fontWeight: ri === 0 ? 600 : 400,
-                        fontSize: ri === 0 ? "11px" : "14px",
-                        textTransform: ri === 0 ? "uppercase" : "none",
-                        letterSpacing: ri === 0 ? "0.06em" : "0",
-                      }}
-                    >
-                      {cell.trim()}
-                    </Tag>
-                  ))}
-                </tr>
-              );
-            })}
+          <table className="w-full text-sm border-collapse" style={{ tableLayout: "auto" }}>
+            <tbody>
+              {rows.map((row, ri) => {
+                const cells = row.split("|").filter((_, ci) => ci > 0 && ci < row.split("|").length - 1);
+                const Tag = ri === 0 ? "th" : "td";
+                return (
+                  <tr key={ri} style={{ borderBottom: "1px solid hsl(261 75% 50% / 0.12)" }}>
+                    {cells.map((cell, ci) => (
+                      <Tag
+                        key={ci}
+                        className="py-3 px-4 text-left align-top"
+                        style={{
+                          color: ri === 0 ? "hsl(261 75% 65%)" : "hsl(0 0% 100% / 0.7)",
+                          fontWeight: ri === 0 ? 600 : 400,
+                          fontSize: ri === 0 ? "11px" : "14px",
+                          textTransform: ri === 0 ? "uppercase" : "none",
+                          letterSpacing: ri === 0 ? "0.06em" : "0",
+                          wordBreak: "normal",
+                          overflowWrap: "break-word",
+                          hyphens: "none",
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        {renderInline(cell.trim())}
+                      </Tag>
+                    ))}
+                  </tr>
+                );
+              })}
+            </tbody>
           </table>
         </div>
       );
@@ -194,7 +200,7 @@ const BlogPost = () => {
       <div className="min-h-screen" style={{ background: "hsl(0,0%,3%)" }}>
         <Navbar />
 
-        <main className="container mx-auto px-6 py-20 max-w-2xl">
+        <main className="container mx-auto px-6 py-20 max-w-3xl">
           {/* Back */}
           <Link
             to="/blog"
