@@ -108,10 +108,48 @@
   </url>
 
   <url>
-    <loc>https://salesos.alephwavex.io/terms</loc>
-    <lastmod>2026-05-12</lastmod>
-    <changefreq>yearly</changefreq>
+    <loc>https://salesos.alephwavex.io/request-integration</loc>
+    <lastmod>2026-05-14</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>
+
+  <!-- Help Categories -->
+  <url><loc>https://salesos.alephwavex.io/help/category/getting-started</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://salesos.alephwavex.io/help/category/account</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://salesos.alephwavex.io/help/category/features</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://salesos.alephwavex.io/help/category/integrations</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://salesos.alephwavex.io/help/category/troubleshooting</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://salesos.alephwavex.io/help/category/api</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+
+  <!-- Help Articles -->
+  <url><loc>https://salesos.alephwavex.io/help/article/create-first-lead</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://salesos.alephwavex.io/help/article/import-leads-csv</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://salesos.alephwavex.io/help/article/setup-pipeline-stages</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://salesos.alephwavex.io/help/article/configure-email-integration</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://salesos.alephwavex.io/help/article/understanding-dashboard</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://salesos.alephwavex.io/help/article/upgrade-downgrade-plan</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://salesos.alephwavex.io/help/article/managing-team-members</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://salesos.alephwavex.io/help/article/understanding-prospect-usage</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://salesos.alephwavex.io/help/article/cancel-subscription</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://salesos.alephwavex.io/help/article/update-payment-info</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://salesos.alephwavex.io/help/article/ai-email-generation</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://salesos.alephwavex.io/help/article/workflow-automations</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://salesos.alephwavex.io/help/article/lead-scoring-explained</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://salesos.alephwavex.io/help/article/calendar-sync-setup</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://salesos.alephwavex.io/help/article/analytics-reporting</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://salesos.alephwavex.io/help/article/connect-hubspot-salesforce</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://salesos.alephwavex.io/help/article/zapier-workflows</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://salesos.alephwavex.io/help/article/google-calendar-integration</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://salesos.alephwavex.io/help/article/email-provider-setup</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://salesos.alephwavex.io/help/article/email-not-sending</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://salesos.alephwavex.io/help/article/lead-import-errors</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://salesos.alephwavex.io/help/article/api-authentication-issues</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://salesos.alephwavex.io/help/article/webhook-delivery-failures</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://salesos.alephwavex.io/help/article/rate-limit-exceeded</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://salesos.alephwavex.io/help/article/api-documentation</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://salesos.alephwavex.io/help/article/api-status-monitoring</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://salesos.alephwavex.io/help/article/webhook-signature-verification</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://salesos.alephwavex.io/help/article/rate-limits-best-practices</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
 
 </urlset>
