@@ -412,7 +412,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </header>
 
         {/* Page content */}
-        <main className="dashboard-page-gutters min-w-0 overflow-x-hidden p-0">{children}</main>
+        <main className="dashboard-page-gutters min-w-0 overflow-x-hidden px-4 sm:px-6 lg:px-8 py-4 sm:py-6">{children}</main>
       </div>
     </div>
   );
