@@ -540,8 +540,8 @@ const SavedLeads = () => {
                 )}
               </div>
             ) : viewMode === "table" ? (
-              <div className="border rounded-lg overflow-hidden">
-                <table className="w-full">
+              <div className="border rounded-lg overflow-x-auto">
+                <table className="w-full min-w-[900px]">
                   <thead className="bg-muted/50">
                     <tr>
                       <th className="p-3 text-left">
