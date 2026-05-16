@@ -85,8 +85,12 @@ All colors MUST be HSL. Using 8px spacing scale.
     height: auto;
   }
 
-  button, input, textarea, select, a, p, li, h1, h2, h3, h4, h5, h6, span, div {
-    overflow-wrap: anywhere;
+  /* Only break long unbreakable strings (URLs, emails, code) — never break
+     normal words mid-character, which causes vertical letter-stacking in
+     narrow table columns and flex children. */
+  a, code, pre {
+    overflow-wrap: break-word;
+    word-break: break-word;
   }
 
   /* Wide tables get a horizontal scroll container automatically on mobile */
