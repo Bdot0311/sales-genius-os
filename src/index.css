@@ -176,8 +176,8 @@ All colors MUST be HSL. Using 8px spacing scale.
       line-height: 1.2 !important;
     }
     /* Long unbreakable strings (URLs, emails, code) wrap instead of pushing layout */
-    p, li, a, code, pre {
-      overflow-wrap: anywhere;
+    a, code, pre {
+      overflow-wrap: break-word;
       word-break: break-word;
     }
   }
