@@ -16,7 +16,6 @@ import {
 // Lazy load below-the-fold sections to reduce initial bundle size
 const HowItWorks = lazy(() => import("@/components/landing/HowItWorks").then(m => ({ default: m.HowItWorks })));
 const ProblemSection = lazy(() => import("@/components/landing/ProblemSection").then(m => ({ default: m.ProblemSection })));
-const TestimonialsSection = lazy(() => import("@/components/landing/TestimonialsSection").then(m => ({ default: m.TestimonialsSection })));
 const ModulesSection = lazy(() => import("@/components/landing/ModulesSection").then(m => ({ default: m.ModulesSection })));
 const BigStatSection = lazy(() => import("@/components/landing/BigStatSection").then(m => ({ default: m.BigStatSection })));
 const DifferentiationSection = lazy(() => import("@/components/landing/DifferentiationSection").then(m => ({ default: m.DifferentiationSection })));
@@ -132,7 +131,6 @@ const Index = () => {
 
             {/* Below the fold - only mount sections when they approach the viewport */}
             <DeferredSection><ProblemSection /></DeferredSection>
-            <DeferredSection><TestimonialsSection /></DeferredSection>
             <DeferredSection><HowItWorks /></DeferredSection>
             <DeferredSection><ModulesSection /></DeferredSection>
             <DeferredSection><BigStatSection /></DeferredSection>
