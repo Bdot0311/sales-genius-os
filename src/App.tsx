@@ -73,8 +73,10 @@ const DeferredUIShell = ({ children }: { children: React.ReactNode }) => {
         const useWhiteLabel = whiteLabelMod.useWhiteLabel;
 
         // Create a combined shell component
+        // useWhiteLabel must be called unconditionally (Rules of Hooks) —
+        // never inside try/catch. Errors surface via the hook's own error state.
         const CombinedShell = ({ children }: { children: React.ReactNode }) => {
-          try { useWhiteLabel(); } catch (e) { console.error("WhiteLabel init error:", e); }
+          useWhiteLabel();
           return (
             <TooltipProvider>
               <Toaster />

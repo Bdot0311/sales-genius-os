@@ -57,7 +57,7 @@ export const FooterSection = () => {
               <span className="dot-ornament" aria-hidden="true">
                 <span /><span /><span /><span />
               </span>
-              <span className="font-mono text-[11px] uppercase tracking-wider" style={{ color: "hsl(28 6% 48%)" }}>
+              <span className="font-mono text-[11px] uppercase tracking-wider" style={{ color: "hsl(28 6% 32%)" }}>
                 Built in NYC
               </span>
             </div>
@@ -65,7 +65,7 @@ export const FooterSection = () => {
 
           {/* Product */}
           <div>
-            <h4 className="eyebrow-muted mb-5">Product</h4>
+            <h3 className="eyebrow-muted mb-5">Product</h3>
             <ul className="space-y-3">
               {footerLinks.product.map((link) => (
                 <li key={link.label}>
@@ -97,7 +97,7 @@ export const FooterSection = () => {
 
           {/* Resources */}
           <div>
-            <h4 className="eyebrow-muted mb-5">Resources</h4>
+            <h3 className="eyebrow-muted mb-5">Resources</h3>
             <ul className="space-y-3">
               {footerLinks.resources.map((link) => (
                 <li key={link.label}>
@@ -117,7 +117,7 @@ export const FooterSection = () => {
 
           {/* Legal */}
           <div>
-            <h4 className="eyebrow-muted mb-5">Legal</h4>
+            <h3 className="eyebrow-muted mb-5">Legal</h3>
             <ul className="space-y-3">
               {footerLinks.legal.map((link) => (
                 <li key={link.label}>
