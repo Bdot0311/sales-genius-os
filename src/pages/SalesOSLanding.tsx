@@ -123,7 +123,7 @@ const Hero = () => (
       transition={{ delay: 0.5, duration: 0.6 }}
       className="mt-8 text-white/60 max-w-md text-base leading-[1.5]"
     >
-      SalesOS is the premier pipeline platform for the current era. It leverages powerful AI
+      SalesOS is the premier AI sales platform for the current era. It leverages powerful AI
       to find, prioritize, and close your highest-value deals with total clarity.
     </motion.p>
     <motion.div
@@ -173,28 +173,28 @@ const MacOSMenuBar = () => (
 // ── Section 4 — Pipeline mockup ──────────────────────────────────────────
 
 const deals = [
-  { sender: 'Acme Corp',    subject: 'Enterprise License',   preview: 'Your team shipped 23 issues this week...',              time: '9:41 AM',   unread: true,  active: true  },
-  { sender: 'Sophia Chen',  subject: 'Re: Q3 roadmap review',preview: 'Thanks for sending the deck over. I had a few thoughts...', time: '8:12 AM',   unread: true,  active: false },
-  { sender: 'Figma',        subject: 'Marcus commented on your file',   preview: 'Love the new direction on the landing hero.',  time: 'Yesterday', unread: false, active: false },
-  { sender: 'Stripe',       subject: 'Payout of $12,480.00 sent',       preview: 'Your payout is on its way to your bank...',    time: 'Yesterday', unread: false, active: false },
-  { sender: 'Vercel',       subject: 'Deployment ready for salesos-web',preview: 'Preview is live at salesos-web-g3f.vercel.app',time: 'Mon',       unread: false, active: false },
-  { sender: 'GitHub',       subject: '[salesos/core] PR #482 approved', preview: 'david-lim approved your pull request.',        time: 'Mon',       unread: false, active: false },
+  { company: 'Acme Corp',    title: 'Enterprise License',   preview: 'Ready to review contract terms and finalize the deal...',  time: '9:41 AM',   unread: true,  active: true,  value: '$84K',   stage: 'Proposal'    },
+  { company: 'TechFlow Inc', title: 'Platform Expansion',   preview: 'Following up on the proposal we discussed last week...',   time: '8:12 AM',   unread: true,  active: false, value: '$120K',  stage: 'Negotiation' },
+  { company: 'Quantum Labs', title: 'Annual SaaS Contract', preview: 'Thanks for the demo. Ready to move forward with this...',  time: 'Yesterday', unread: false, active: false, value: '$36K',   stage: 'Demo'        },
+  { company: 'DataVault',    title: 'Series B Partnership', preview: 'Under internal review by our procurement team right now.', time: 'Yesterday', unread: false, active: false, value: '$250K',  stage: 'Discovery'   },
+  { company: 'NeuralCore',   title: 'Pilot Program',        preview: 'Pilot setup confirmed for next Monday at 10 AM PST...',    time: 'Mon',       unread: false, active: false, value: '$18K',   stage: 'Trial'       },
+  { company: 'CloudScale',   title: 'Migration Deal',       preview: 'david-lim approved the migration proposal terms.',         time: 'Mon',       unread: false, active: false, value: '$67.5K', stage: 'Closing'     },
 ];
 
 const sidebarNav = [
-  { icon: Inbox,    label: 'Inbox',   count: 12, active: true  },
-  { icon: Star,     label: 'Starred', count: 3,  active: false },
-  { icon: Send,     label: 'Sent',              active: false },
-  { icon: FileText, label: 'Drafts',  count: 2,  active: false },
-  { icon: Archive,  label: 'Archive',            active: false },
-  { icon: Trash2,   label: 'Trash',              active: false },
+  { icon: Inbox,    label: 'All Deals',   count: 12, active: true  },
+  { icon: Star,     label: 'Hot',         count: 3,  active: false },
+  { icon: Send,     label: 'Active',                 active: false },
+  { icon: FileText, label: 'Proposals',   count: 2,  active: false },
+  { icon: Archive,  label: 'Closed Won',             active: false },
+  { icon: Trash2,   label: 'Closed Lost',            active: false },
 ];
 
 const sidebarLabels = [
-  { label: 'Work',     color: '#00d2ff' },
-  { label: 'Personal', color: '#A4F4FD' },
-  { label: 'Travel',   color: '#f59e0b' },
-  { label: 'Finance',  color: '#10b981' },
+  { label: 'Enterprise', color: '#00d2ff' },
+  { label: 'SaaS',       color: '#A4F4FD' },
+  { label: 'SMB',        color: '#f59e0b' },
+  { label: 'Partnership',color: '#10b981' },
 ];
 
 const PipelineMockup = () => (
@@ -213,18 +213,18 @@ const PipelineMockup = () => (
           <span className="w-3 h-3 rounded-full" style={{ background: '#febc2e' }} />
           <span className="w-3 h-3 rounded-full" style={{ background: '#28c840' }} />
         </div>
-        <span className="text-xs text-white/50">SalesOS — Inbox</span>
+        <span className="text-xs text-white/50">SalesOS — All Deals</span>
         <div className="w-14" />
       </div>
 
-      {/* 12-col body grid */}
+      {/* 12-col body */}
       <div className="grid h-[520px]" style={{ gridTemplateColumns: 'repeat(12, minmax(0, 1fr))' }}>
 
         {/* Sidebar — col 1–3 */}
         <div className="col-span-3 border-r border-white/10 bg-black/30 p-4 flex flex-col gap-3 overflow-hidden">
           <button className="flex items-center gap-1.5 rounded-lg bg-white text-black text-xs font-semibold px-3 py-2 w-full">
             <Sparkles className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">Compose with SalesOS</span>
+            <span className="truncate">Prospect with SalesOS</span>
           </button>
           <div className="flex flex-col gap-0.5 mt-1">
             {sidebarNav.map(({ icon: Icon, label, count, active }) => (
@@ -243,7 +243,7 @@ const PipelineMockup = () => (
             ))}
           </div>
           <div className="mt-3 pt-3 border-t border-white/10">
-            <p className="text-[9px] uppercase tracking-widest text-white/30 mb-2">Labels</p>
+            <p className="text-[9px] uppercase tracking-widest text-white/30 mb-2">Segments</p>
             {sidebarLabels.map(({ label, color }) => (
               <div key={label} className="flex items-center gap-2 py-1 text-xs text-white/50 cursor-default">
                 <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
@@ -253,36 +253,38 @@ const PipelineMockup = () => (
           </div>
         </div>
 
-        {/* Message list — col 4–7 */}
+        {/* Deal list — col 4–7 */}
         <div className="col-span-4 border-r border-white/10 flex flex-col overflow-hidden">
           <div className="flex items-center gap-2 px-3 py-2 border-b border-white/10 bg-black/10 shrink-0">
             <Search className="w-3 h-3 text-white/30 shrink-0" />
-            <span className="text-xs text-white/30">Search mail</span>
+            <span className="text-xs text-white/30">Search deals</span>
           </div>
           <div className="flex-1 overflow-y-auto">
-            {deals.map((msg, i) => (
+            {deals.map((deal, i) => (
               <div
                 key={i}
                 className={`px-3 py-2.5 border-b border-white/[0.06] cursor-default transition-colors ${
-                  msg.active ? 'bg-white/[0.06]' : 'hover:bg-white/[0.03]'
+                  deal.active ? 'bg-white/[0.06]' : 'hover:bg-white/[0.03]'
                 }`}
               >
                 <div className="flex items-start justify-between gap-1">
-                  <span className={`text-xs truncate ${msg.unread ? 'font-semibold text-white' : 'font-medium text-white/70'}`}>
-                    {msg.sender}
+                  <span className={`text-xs truncate ${deal.unread ? 'font-semibold text-white' : 'font-medium text-white/70'}`}>
+                    {deal.company}
                   </span>
-                  <span className="text-[10px] text-white/40 shrink-0">{msg.time}</span>
+                  <span className="text-[10px] text-white/40 shrink-0">{deal.time}</span>
                 </div>
-                <div className="text-[11px] text-white/70 truncate mt-0.5">{msg.subject}</div>
-                <div className="text-[10px] text-white/40 truncate mt-0.5">{msg.preview}</div>
+                <div className="text-[11px] text-white/70 truncate mt-0.5">{deal.title}</div>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-[10px] text-white/40 truncate flex-1">{deal.preview}</span>
+                  <span className="text-[9px] text-white/30 shrink-0 font-medium">{deal.value}</span>
+                </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Reader — col 8–12 */}
+        {/* Deal reader — col 8–12 */}
         <div className="col-span-5 flex flex-col overflow-hidden">
-          {/* Toolbar */}
           <div className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-black/10 shrink-0">
             <div className="flex items-center gap-1">
               {([Reply, Forward, Archive, Trash2] as const).map((Icon, i) => (
@@ -296,54 +298,50 @@ const PipelineMockup = () => (
             </button>
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            <h3 className="text-sm font-semibold text-white">Weekly product digest</h3>
+            <h3 className="text-sm font-semibold text-white">Enterprise License — Acme Corp</h3>
 
-            {/* Sender row */}
             <div className="flex items-center gap-2">
               <div
                 className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
                 style={{ background: 'linear-gradient(135deg, #00d2ff, #0B2551)' }}
               >
-                L
+                A
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-xs font-medium text-white/90">Linear</div>
-                <div className="text-[10px] text-white/40">to me · 9:41 AM</div>
+                <div className="text-xs font-medium text-white/90">Acme Corp</div>
+                <div className="text-[10px] text-white/40">Sarah Chen · $84,000 · 9:41 AM</div>
               </div>
-              <span className="text-[9px] px-1.5 py-0.5 rounded-full border border-white/10 text-white/50 shrink-0">Work</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded-full border border-white/10 text-white/50 shrink-0">Proposal</span>
             </div>
 
-            {/* AI summary */}
             <div className="liquid-glass rounded-lg p-3">
               <div className="flex items-center gap-1.5 mb-2">
                 <Sparkles className="w-3.5 h-3.5 shrink-0" style={{ color: '#A4F4FD' }} />
                 <span className="text-[11px] font-semibold text-white/80">Summary by SalesOS</span>
               </div>
               <p className="text-[11px] text-white/60 leading-[1.5]">
-                Your team closed 23 issues, merged 14 PRs, and shipped 2 features. Top contributor:
-                Marcus. No action needed.
+                High-intent buyer. Budget confirmed at $84K. Legal review in progress. Decision expected
+                Friday. Recommend: send final contract today.
               </p>
             </div>
 
-            {/* Body */}
             <div className="space-y-3 text-xs text-white/70 leading-[1.6]">
               <p>Hi team,</p>
               <p>
-                Here is your weekly digest of everything happening across your projects. This was a strong
-                week with significant progress on the Q3 roadmap.
+                Following our product demo last week, we've completed our internal evaluation and the team
+                is fully aligned on moving forward with the enterprise license.
               </p>
               <p>
-                Twenty-three issues were closed, fourteen pull requests were merged, and two customer-facing
-                features went out. The velocity trend continues to climb.
+                The legal team has reviewed the initial contract and has a few minor redlines they'll send
+                over by end of day. We're targeting signature by Friday.
               </p>
-              <p>Let me know if you would like a deeper breakdown by project or contributor.</p>
-              <p className="text-white/50">— The Linear team</p>
+              <p>Looking forward to getting this finalized and moving to onboarding next week.</p>
+              <p className="text-white/50">— Sarah Chen, VP Engineering, Acme Corp</p>
             </div>
 
-            {/* Attachment */}
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/10 bg-white/[0.03] w-fit">
               <Paperclip className="w-3 h-3 text-white/40 shrink-0" />
-              <span className="text-[11px] text-white/50">digest-may-6.pdf</span>
+              <span className="text-[11px] text-white/50">contract-v2-final.pdf</span>
             </div>
           </div>
         </div>
@@ -353,16 +351,16 @@ const PipelineMockup = () => (
   </section>
 );
 
-// ── Section 5 — Feature Triage ───────────────────────────────────────────
+// ── Section 5 — Feature: Pipeline ────────────────────────────────────────
 
 const triage = [
-  { label: 'Priority', count: 4,  color: '#ffffff', items: ['Sophia Chen — Q3 review',    'David Lim — contract signoff']   },
-  { label: 'Follow-up',count: 7,  color: '#e5e5e5', items: ['Marcus — design review',      'Figma — comment thread']         },
-  { label: 'Updates',  count: 18, color: '#a3a3a3', items: ['Vercel — deploy ready',       'GitHub — PR #482 merged']        },
-  { label: 'Archived', count: 13, color: '#525252', items: ['Stripe payout · Newsletter · Receipts']                        },
+  { label: 'Hot',       count: 4,  color: '#ffffff', items: ['Acme Corp — $84K contract',    'TechFlow — $120K expansion']   },
+  { label: 'Follow-up', count: 7,  color: '#e5e5e5', items: ['Quantum Labs — proposal sent', 'DataVault — demo scheduled']   },
+  { label: 'Nurture',   count: 4,  color: '#a3a3a3', items: ['NeuralCore — pilot active',    'CloudScale — migration quote']  },
+  { label: 'Cold',      count: 3,  color: '#525252', items: ['Stale deals · Inactive leads']                                 },
 ];
 
-const FeatureTriage = () => (
+const FeaturePipeline = () => (
   <section className="max-w-6xl mx-auto px-6 py-20 md:py-28">
     <div className="grid md:grid-cols-2 gap-10 md:gap-16 items-start">
       <motion.div
@@ -371,16 +369,16 @@ const FeatureTriage = () => (
         viewport={{ once: true }}
         transition={{ duration: 0.7 }}
       >
-        <SectionEyebrow label="Triage" tag="AI-native" />
+        <SectionEyebrow label="Pipeline" tag="AI-native" />
         <h2 className="mt-5 text-3xl md:text-5xl font-semibold tracking-tight leading-[1.02]">
-          Clear your inbox<br />in a single pass.
+          Close every deal<br />in a single pass.
         </h2>
         <p className="mt-6 text-white/60 text-base leading-[1.6] max-w-md">
-          SalesOS reads every message, understands intent, and routes the noise away from the
-          signal. Focus on what moves your day forward — the rest handles itself.
+          SalesOS reads every deal signal, understands buyer intent, and routes your attention
+          to the highest-value opportunities. Focus on closing — the rest handles itself.
         </p>
         <div className="mt-8 flex flex-wrap gap-2">
-          {['Auto-categorize', 'Snooze for later', 'Silent newsletters', 'One-tap unsubscribe'].map((chip) => (
+          {['Auto-prioritize', 'Deal scoring', 'Stale alerts', 'One-tap follow-up'].map((chip) => (
             <span
               key={chip}
               className="text-xs text-white/70 px-3 py-1.5 rounded-full border border-white/10 bg-white/[0.03]"
@@ -398,7 +396,7 @@ const FeatureTriage = () => (
         transition={{ duration: 0.7, delay: 0.1 }}
         className="liquid-glass rounded-2xl p-5"
       >
-        <p className="text-xs text-white/40 mb-4">Today · 42 messages triaged</p>
+        <p className="text-xs text-white/40 mb-4">Today · 18 deals analyzed</p>
         <div className="flex flex-col gap-3">
           {triage.map(({ label, count, color, items }) => (
             <div key={label} className="liquid-glass rounded-lg p-3">
@@ -425,7 +423,7 @@ const logos = ['Linear', 'Vercel', 'Figma', 'Stripe', 'Ramp', 'Notion', 'Loom', 
 const LogoCloud = () => (
   <section className="max-w-6xl mx-auto px-6 py-16 md:py-20">
     <p className="text-center text-xs uppercase tracking-widest text-white/40">
-      Trusted by the world's most thoughtful teams
+      Trusted by the world's most ambitious revenue teams
     </p>
     <div className="mt-10 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-6">
       {logos.map((logo, i) => (
@@ -450,19 +448,19 @@ const LogoCloud = () => (
 
 const testimonials = [
   {
-    quote: 'SalesOS gave our leadership team four hours of their week back. It reads like email from the future.',
+    quote: 'SalesOS gave our AEs three hours of prime selling time back each week. The AI pipeline prioritization alone paid for itself in the first month.',
     name: 'Parker Wilf',
     role: 'Group Product Manager',
     company: 'MERCURY',
   },
   {
-    quote: "The command palette alone has changed how I process messages. I can't imagine going back to a traditional client.",
+    quote: "The deal scoring engine transformed how we manage pipeline. I can't imagine going back to manual CRM updates and gut-feel forecasting.",
     name: 'Andrew von Rosenbach',
     role: 'Senior Engineering Program Manager',
     company: 'COHERE',
   },
   {
-    quote: 'Triage that actually understands context. Our team stopped dreading Monday morning inboxes.',
+    quote: 'Pipeline intelligence that actually understands deal context. Our team stopped losing deals to silent churn and forgotten follow-ups.',
     name: 'Mathies Christensen',
     role: 'Engineering Manager',
     company: 'LUNAR',
@@ -499,39 +497,39 @@ const plans = [
   {
     tier: 'Free',
     price: { monthly: 'Free', yearly: 'Free' },
-    desc: 'For creators taking their first steps with Forma.',
+    desc: 'For individual reps just getting started with AI-powered prospecting.',
     features: [
-      'Up to 3 projects in the cloud',
-      'Image export up to 1080p',
-      'Basic editing tools',
-      'Free templates and icons',
+      'Up to 100 verified leads per month',
+      'Basic email finder',
+      'Chrome extension included',
+      '1 active pipeline view',
       'Access via web and mobile app',
     ],
     pro: false,
   },
   {
     tier: 'Standard',
-    price: { monthly: '$9,99/m', yearly: '$99,99/y' },
-    desc: 'For freelancers and small teams who need more freedom and flexibility.',
+    price: { monthly: '$9/m', yearly: '$89/y' },
+    desc: 'For growing sales teams who need pipeline intelligence at scale.',
     features: [
-      'Up to 50 projects in the cloud',
-      'Export up to 4K',
-      'Advanced editing toolkit',
-      'Team collaboration (up to 5 members)',
-      'Access to premium template library',
+      '2,000 verified leads per month',
+      'SMTP-verified business emails',
+      'Advanced ICP filters',
+      'Team workspace (up to 5 seats)',
+      'AI deal scoring + buyer signals',
     ],
     pro: false,
   },
   {
     tier: 'Pro',
-    price: { monthly: '$19,99/m', yearly: '$199,99/y' },
-    desc: 'For studios, agencies, and professional creators working with brands.',
+    price: { monthly: '$29/m', yearly: '$289/y' },
+    desc: 'For revenue orgs and agencies closing enterprise deals at scale.',
     features: [
-      'Unlimited projects',
-      'Export up to 8K + animations',
-      'AI-powered content generation tools',
+      'Unlimited leads and exports',
+      'Highest-confidence verification',
+      'AI pipeline automation',
       'Unlimited team members',
-      'Brand customization',
+      'Full CRM integrations',
     ],
     pro: true,
   },
@@ -616,11 +614,11 @@ const FinalCTA = () => (
       />
       <div className="relative z-10">
         <h2 className="text-4xl md:text-6xl font-semibold tracking-tight leading-[1.02]">
-          Close the tabs.<br />Open your day.
+          Close the tabs.<br />Open your pipeline.
         </h2>
         <p className="mt-6 text-white/60 max-w-md mx-auto text-sm leading-[1.6]">
-          Join thousands of builders, founders, and operators who treat email like a tool
-          — not an obligation.
+          Join thousands of AEs, founders, and revenue operators who treat sales like a system
+          — not a grind.
         </p>
         <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
           <AppleButton label="Download SalesOS" />
@@ -634,18 +632,14 @@ const FinalCTA = () => (
   </section>
 );
 
-// ── Root export ──────────────────────────────────────────────────────────
+// ── Root ─────────────────────────────────────────────────────────────────
 
 export default function SalesOSLanding() {
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-[#0c0c0c] text-white selection:bg-brand/30">
-      {/* Full-screen background video */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <video
-          autoPlay
-          loop
-          muted
-          playsInline
+          autoPlay loop muted playsInline
           className="w-full h-full object-cover pointer-events-none"
           style={{ height: '100%' }}
           src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260508_064122_c4750c0e-7476-4b44-94a2-a85a65c63bf2.mp4"
@@ -661,7 +655,7 @@ export default function SalesOSLanding() {
       <Hero />
       <MacOSMenuBar />
       <PipelineMockup />
-      <FeatureTriage />
+      <FeaturePipeline />
       <LogoCloud />
       <Testimonials />
       <Pricing />
