@@ -183,56 +183,58 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <DeferredUIShell>
       <BrowserRouter>
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/pricing" element={<PricingPage />} />
-            <Route path="/sales-operations-software" element={<SalesOperationsSoftware />} />
-            <Route path="/apollo-alternative" element={<ApolloAlternative />} />
-            <Route path="/demo" element={<DemoPage />} />
-            <Route path="/api-docs" element={<ApiDocs />} />
-            <Route path="/api-status" element={<ApiStatus />} />
-            <Route path="/request-integration" element={<RequestIntegration />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/security" element={<Security />} />
-            <Route path="/confirmation" element={<Confirmation />} />
-            <Route path="/help" element={<HelpCenter />} />
-            <Route path="/help/category/:category" element={<HelpCenter />} />
-            <Route path="/help/article/:slug" element={<HelpCenter />} />
-            <Route path="/install" element={<Install />} />
-            <Route path="/checkout" element={<Checkout />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/dashboard/leads" element={<Leads />} />
-            <Route path="/dashboard/leads/saved" element={<SavedLeads />} />
-            <Route path="/dashboard/coach" element={<Coach />} />
-            <Route path="/dashboard/coach/live" element={<LiveCoaching />} />
-            <Route path="/dashboard/coach/playbooks" element={<Playbooks />} />
-            <Route path="/dashboard/pipeline" element={<Pipeline />} />
-            <Route path="/dashboard/outreach" element={<Outreach />} />
-            <Route path="/dashboard/calendar" element={<Calendar />} />
-            <Route path="/dashboard/analytics" element={<Analytics />} />
-            <Route path="/dashboard/automations" element={<Automations />} />
-            <Route path="/dashboard/sequences/:id" element={<SequenceDetail />} />
-            <Route path="/dashboard/sequences" element={<Sequences />} />
-            <Route path="/dashboard/message-blocks" element={<MessageBlocks />} />
-            <Route path="/dashboard/icp" element={<ICP />} />
-            <Route path="/dashboard/inbox" element={<Inbox />} />
-            <Route path="/dashboard/deliverability" element={<Deliverability />} />
-            <Route path="/integrations" element={<DashboardIntegrations />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/onboarding-status" element={<OnboardingStatus />} />
-            <Route path="/dashboard/onboarding-status" element={<OnboardingStatus />} />
-            <Route path="/admin/*" element={<Admin />} />
-            <Route path="/unsubscribe" element={<Unsubscribe />} />
-            <Route path="/client-portal/:token" element={<ClientPortal />} />
-            <Route path="/blog" element={<Blog />} />
-            <Route path="/blog/:slug" element={<BlogPost />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
+        <ChunkErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/pricing" element={<PricingPage />} />
+              <Route path="/sales-operations-software" element={<SalesOperationsSoftware />} />
+              <Route path="/apollo-alternative" element={<ApolloAlternative />} />
+              <Route path="/demo" element={<DemoPage />} />
+              <Route path="/api-docs" element={<ApiDocs />} />
+              <Route path="/api-status" element={<ApiStatus />} />
+              <Route path="/request-integration" element={<RequestIntegration />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/security" element={<Security />} />
+              <Route path="/confirmation" element={<Confirmation />} />
+              <Route path="/help" element={<HelpCenter />} />
+              <Route path="/help/category/:category" element={<HelpCenter />} />
+              <Route path="/help/article/:slug" element={<HelpCenter />} />
+              <Route path="/install" element={<Install />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/dashboard/leads" element={<Leads />} />
+              <Route path="/dashboard/leads/saved" element={<SavedLeads />} />
+              <Route path="/dashboard/coach" element={<Coach />} />
+              <Route path="/dashboard/coach/live" element={<LiveCoaching />} />
+              <Route path="/dashboard/coach/playbooks" element={<Playbooks />} />
+              <Route path="/dashboard/pipeline" element={<Pipeline />} />
+              <Route path="/dashboard/outreach" element={<Outreach />} />
+              <Route path="/dashboard/calendar" element={<Calendar />} />
+              <Route path="/dashboard/analytics" element={<Analytics />} />
+              <Route path="/dashboard/automations" element={<Automations />} />
+              <Route path="/dashboard/sequences/:id" element={<SequenceDetail />} />
+              <Route path="/dashboard/sequences" element={<Sequences />} />
+              <Route path="/dashboard/message-blocks" element={<MessageBlocks />} />
+              <Route path="/dashboard/icp" element={<ICP />} />
+              <Route path="/dashboard/inbox" element={<Inbox />} />
+              <Route path="/dashboard/deliverability" element={<Deliverability />} />
+              <Route path="/integrations" element={<DashboardIntegrations />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/onboarding-status" element={<OnboardingStatus />} />
+              <Route path="/dashboard/onboarding-status" element={<OnboardingStatus />} />
+              <Route path="/admin/*" element={<Admin />} />
+              <Route path="/unsubscribe" element={<Unsubscribe />} />
+              <Route path="/client-portal/:token" element={<ClientPortal />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/blog/:slug" element={<BlogPost />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+        </ChunkErrorBoundary>
       </BrowserRouter>
     </DeferredUIShell>
   </QueryClientProvider>
