@@ -78,7 +78,7 @@ export const ProblemSection = () => {
 
           <motion.p
             className="text-base font-light max-w-xl mx-auto leading-relaxed"
-            style={{ color: "hsl(0 0% 100% / 0.38)" }}
+            style={{ color: "hsl(0 0% 100% / 0.45)" }}
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-10% 0px" }}

@@ -13,9 +13,9 @@ export const TrustBar = () => (
   <section
     className="py-10"
     style={{
-      background: "hsl(0,0%,2.5%)",
-      borderTop: "1px solid hsl(261 75% 50% / 0.1)",
-      borderBottom: "1px solid hsl(261 75% 50% / 0.1)",
+      background: "hsl(261 75% 2%)",
+      borderTop: "1px solid hsl(261 75% 50% / 0.18)",
+      borderBottom: "1px solid hsl(261 75% 50% / 0.18)",
     }}
     aria-label="Trust and security signals"
   >

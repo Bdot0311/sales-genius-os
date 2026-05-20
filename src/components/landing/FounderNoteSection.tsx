@@ -68,7 +68,7 @@ export const FounderNoteSection = () => {
             }`}
             style={{
               fontSize: "clamp(1.6rem, 3.5vw, 2.6rem)",
-              fontWeight: 700,
+              fontWeight: 800,
               lineHeight: 1.2,
               letterSpacing: "-0.01em",
               color: "hsl(0 0% 90%)",
@@ -85,13 +85,13 @@ export const FounderNoteSection = () => {
           >
             <p
               className="text-base leading-relaxed"
-              style={{ color: "hsl(0 0% 100% / 0.5)" }}
+              style={{ color: "hsl(0 0% 100% / 0.45)" }}
             >
               The data wasn't the problem. The workflow was. I'd export a list, paste it into a spreadsheet, score it manually, write emails one at a time, and track replies in a separate inbox. Four tools. Six context switches. Most of it was just overhead.
             </p>
             <p
               className="text-base leading-relaxed"
-              style={{ color: "hsl(0 0% 100% / 0.5)" }}
+              style={{ color: "hsl(0 0% 100% / 0.45)" }}
             >
               SalesOS is what I wanted to exist — one place to describe who I want to reach, see who's actually worth emailing, and send something worth reading. The whole workflow. No overhead. No tool-switching. Just more conversations with the right people.
             </p>
