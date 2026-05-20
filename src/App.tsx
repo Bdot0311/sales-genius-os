@@ -1,4 +1,4 @@
-import { Suspense, lazy, useState, useEffect } from "react";
+import { Component, Suspense, lazy, useState, useEffect, type ErrorInfo, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
@@ -68,13 +68,60 @@ const PageLoader = () => (
   </div>
 );
 
+const CHUNK_RELOAD_KEY = "__chunk_reload_attempt__";
+const isChunkLoadError = (error: unknown) =>
+  /Importing a module script failed|Failed to fetch dynamically imported module|error loading dynamically imported module|ChunkLoadError/i.test(
+    String(error instanceof Error ? error.message : error)
+  );
+
+class ChunkErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: unknown, errorInfo: ErrorInfo) {
+    if (!isChunkLoadError(error)) {
+      console.error("App render error:", error, errorInfo);
+      return;
+    }
+
+    try {
+      if (sessionStorage.getItem(CHUNK_RELOAD_KEY)) return;
+      sessionStorage.setItem(CHUNK_RELOAD_KEY, "1");
+    } catch {}
+    window.location.reload();
+  }
+
+  render() {
+    if (!this.state.hasError) return this.props.children;
+
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-background px-6 text-foreground">
+        <div className="max-w-md space-y-4 text-center">
+          <h1 className="text-2xl font-semibold">Refresh required</h1>
+          <p className="text-muted-foreground">A new version is available. Refresh to continue.</p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            Refresh
+          </button>
+        </div>
+      </main>
+    );
+  }
+}
+
 /**
  * Deferred UI shell — loads TooltipProvider, Toasters, and WhiteLabelProvider
  * AFTER the first paint to reduce Total Blocking Time on the landing page.
  */
-const DeferredUIShell = ({ children }: { children: React.ReactNode }) => {
+const DeferredUIShell = ({ children }: { children: ReactNode }) => {
   const [ready, setReady] = useState(false);
-  const [Shell, setShell] = useState<React.ComponentType<{ children: React.ReactNode }> | null>(null);
+  const [Shell, setShell] = useState<React.ComponentType<{ children: ReactNode }> | null>(null);
 
   useEffect(() => {
     // Skip the heavy shell entirely on public marketing pages — no auth, no
@@ -98,7 +145,7 @@ const DeferredUIShell = ({ children }: { children: React.ReactNode }) => {
         const SonnerToaster = mods[2].Toaster;
         const useWhiteLabel = !isPublic ? mods[3].useWhiteLabel : null;
 
-        const CombinedShell = ({ children }: { children: React.ReactNode }) => {
+        const CombinedShell = ({ children }: { children: ReactNode }) => {
           if (useWhiteLabel) {
             try { useWhiteLabel(); } catch (e) { console.error("WhiteLabel init error:", e); }
           }
