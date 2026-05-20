@@ -15,7 +15,7 @@ export const ProductShowcase = () => {
       <div
         className="absolute top-0 left-0 right-0 z-10 h-24 pointer-events-none"
         style={{
-          background: "linear-gradient(to bottom, hsl(0,0%,3%), transparent)",
+          background: "linear-gradient(to bottom, hsl(261 75% 2%), transparent)",
         }}
         aria-hidden="true"
       />
@@ -59,7 +59,7 @@ export const ProductShowcase = () => {
               className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none sm:h-40"
               style={{
                 background:
-                  "linear-gradient(to top, hsl(0,0%,3%) 0%, transparent 100%)",
+                  "linear-gradient(to top, hsl(261 75% 2%) 0%, transparent 100%)",
               }}
               aria-hidden="true"
             />

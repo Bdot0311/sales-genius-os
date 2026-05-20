@@ -12,39 +12,39 @@ All colors MUST be HSL. Using 8px spacing scale.
   :root {
     --mobile-page-gutter: clamp(2rem, 10vw, 3rem);
 
-    --background: 224 13% 6%;
-    --foreground: 220 9% 97%;
+    --background: 261 75% 2%;
+    --foreground: 0 0% 95%;
 
-    --card: 224 11% 9%;
-    --card-foreground: 220 9% 97%;
+    --card: 261 75% 4%;
+    --card-foreground: 0 0% 95%;
 
-    --popover: 224 11% 10%;
-    --popover-foreground: 220 9% 97%;
+    --popover: 261 75% 5%;
+    --popover-foreground: 0 0% 95%;
 
     --primary: 261 75% 63%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 224 10% 13%;
-    --secondary-foreground: 220 9% 90%;
+    --secondary: 261 75% 8%;
+    --secondary-foreground: 0 0% 90%;
 
-    --muted: 224 10% 12%;
-    --muted-foreground: 220 8% 52%;
+    --muted: 261 75% 6%;
+    --muted-foreground: 261 15% 55%;
 
-    --accent: 224 10% 14%;
-    --accent-foreground: 220 9% 97%;
+    --accent: 261 75% 8%;
+    --accent-foreground: 0 0% 95%;
 
     --destructive: 0 84% 58%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 224 10% 15%;
-    --input: 224 10% 13%;
+    --border: 261 75% 45%;
+    --input: 261 75% 7%;
     --ring: 261 75% 63%;
 
     --radius: 0.5rem;
 
     --gradient-primary: linear-gradient(135deg, hsl(261, 75%, 63%), hsl(280, 70%, 58%));
     --gradient-secondary: linear-gradient(135deg, hsl(261, 75%, 63%), hsl(320, 70%, 58%));
-    --gradient-hero: linear-gradient(180deg, hsl(224, 13%, 6%) 0%, hsl(261, 20%, 9%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(261, 75%, 2%) 0%, hsl(261, 75%, 4%) 100%);
 
     --shadow-glow: 0 0 30px hsl(261 75% 63% / 0.2);
     --shadow-card: 0 4px 24px hsl(0 0% 0% / 0.4);
