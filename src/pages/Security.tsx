@@ -19,7 +19,7 @@ const Security = () => {
       
       <div
         className="min-h-screen text-foreground overflow-x-hidden"
-        style={{ background: "hsl(0 0% 3%)" }}
+        style={{ background: "hsl(261 75% 2%)" }}
       >
         <Navbar />
         <main className="container mx-auto px-5 sm:px-6 pt-[calc(env(safe-area-inset-top)+6.5rem)] pb-20">
@@ -172,8 +172,8 @@ const Security = () => {
               <aside
                 className="rounded-2xl p-8 mt-12"
                 style={{
-                  background: "hsl(0 0% 100% / 0.03)",
-                  border: "1px solid hsl(0 0% 100% / 0.08)",
+                  background: "hsl(261 75% 50% / 0.04)",
+                  border: "1px solid hsl(261 75% 50% / 0.14)",
                 }}
               >
                 <h2 className="text-2xl font-semibold mb-4">Responsible disclosure</h2>
@@ -206,7 +206,7 @@ const Security = () => {
               <nav
                 aria-labelledby="related-links"
                 className="mt-12 pt-8 border-t"
-                style={{ borderColor: "hsl(0 0% 100% / 0.08)" }}
+                style={{ borderColor: "hsl(261 75% 50% / 0.18)" }}
               >
                 <h2 id="related-links" className="text-xl font-semibold mb-4">Related pages</h2>
                 <ul className="grid sm:grid-cols-2 gap-3">

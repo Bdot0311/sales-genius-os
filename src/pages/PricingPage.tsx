@@ -67,7 +67,7 @@ const PricingPage = () => {
 
       <div
         className="min-h-screen text-foreground overflow-x-hidden"
-        style={{ background: "hsl(0 0% 3%)" }}
+        style={{ background: "hsl(261 75% 2%)" }}
       >
         <Navbar />
         <main>
@@ -150,8 +150,8 @@ const PricingPage = () => {
             <div
               className="max-w-3xl mx-auto rounded-2xl p-6 sm:p-7 text-center"
               style={{
-                background: "hsl(0 0% 100% / 0.03)",
-                border: "1px solid hsl(0 0% 100% / 0.08)",
+                background: "hsl(261 75% 50% / 0.05)",
+                border: "1px solid hsl(261 75% 50% / 0.15)",
               }}
             >
               <h2 className="text-xl sm:text-2xl font-semibold mb-2">
@@ -172,13 +172,21 @@ const PricingPage = () => {
           {/* Value Props — dark canvas */}
           <section
             className="relative overflow-hidden py-16 sm:py-20"
-            style={{ background: "hsl(0 0% 2.5%)" }}
+            style={{ background: "hsl(261 75% 2%)" }}
           >
             <div className="container mx-auto px-5 sm:px-6 relative z-10">
-              <p className="mb-3 text-center text-[10px] uppercase tracking-[0.25em] text-white/70">
+              <p className="font-serif italic font-thin text-base text-center text-purple-500 mb-5">
                 Why teams pick SalesOS
               </p>
-              <h2 className="text-center text-2xl sm:text-3xl font-semibold mb-10 sm:mb-12">
+              <h2
+                className="font-display text-center mb-10 sm:mb-12"
+                style={{
+                  fontSize: "clamp(1.8rem, 4vw, 2.8rem)",
+                  fontWeight: 800,
+                  letterSpacing: "-0.02em",
+                  color: "hsl(0 0% 95%)",
+                }}
+              >
                 Everything you need for modern outbound
               </h2>
               <div className="grid gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-4">
@@ -187,15 +195,18 @@ const PricingPage = () => {
                     key={prop.title}
                     className="group relative rounded-2xl p-6 transition-colors duration-300"
                     style={{
-                      background: "hsl(0 0% 100% / 0.025)",
-                      border: "1px solid hsl(0 0% 100% / 0.06)",
+                      background: "hsl(261 75% 50% / 0.04)",
+                      border: "1px solid hsl(261 75% 50% / 0.14)",
                     }}
                   >
-                    <div className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-primary/10 text-primary mb-4 ring-1 ring-primary/20">
+                    <div
+                      className="inline-flex items-center justify-center w-11 h-11 rounded-xl mb-4"
+                      style={{ background: "hsl(261 75% 55% / 0.12)", color: "hsl(261 75% 65%)" }}
+                    >
                       <prop.icon className="w-5 h-5" />
                     </div>
-                    <h3 className="font-semibold mb-2">{prop.title}</h3>
-                    <p className="text-sm text-white/55 leading-relaxed">
+                    <h3 className="font-semibold mb-2" style={{ color: "hsl(0 0% 90%)" }}>{prop.title}</h3>
+                    <p className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
                       {prop.description}
                     </p>
                   </div>
@@ -206,7 +217,15 @@ const PricingPage = () => {
 
           {/* All plans include */}
           <section className="py-16 sm:py-20 container mx-auto px-5 sm:px-6">
-            <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-10">
+            <h2
+              className="font-display text-center mb-10"
+              style={{
+                fontSize: "clamp(1.8rem, 4vw, 2.8rem)",
+                fontWeight: 800,
+                letterSpacing: "-0.02em",
+                color: "hsl(0 0% 95%)",
+              }}
+            >
               All plans include
             </h2>
             <div className="max-w-3xl mx-auto">
@@ -224,8 +243,11 @@ const PricingPage = () => {
                   "Help center access",
                 ].map((feature) => (
                   <li key={feature} className="flex items-start gap-3 text-sm">
-                    <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 ring-1 ring-primary/25">
-                      <Check className="w-3 h-3 text-primary" />
+                    <span
+                      className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full"
+                      style={{ background: "hsl(261 75% 55% / 0.12)", color: "hsl(261 75% 65%)" }}
+                    >
+                      <Check className="w-3 h-3" />
                     </span>
                     <span className="text-white/75">{feature}</span>
                   </li>
@@ -237,7 +259,7 @@ const PricingPage = () => {
           {/* Related pages */}
           <section
             className="py-12 border-t"
-            style={{ borderColor: "hsl(0 0% 100% / 0.06)" }}
+            style={{ borderColor: "hsl(261 75% 50% / 0.18)" }}
           >
             <div className="container mx-auto px-5 sm:px-6">
               <p className="mb-5 text-center text-[10px] uppercase tracking-[0.25em] text-white/70">

@@ -65,7 +65,7 @@ const Unsubscribe = () => {
   return (
     <div
       className="relative flex min-h-screen flex-col items-center justify-center px-4 overflow-hidden"
-      style={{ background: "hsl(0 0% 3%)" }}
+      style={{ background: "hsl(261 75% 2%)" }}
     >
       {/* Dot grid */}
       <div
@@ -99,8 +99,8 @@ const Unsubscribe = () => {
       <div
         className="relative z-10 w-full max-w-md rounded-2xl p-8 backdrop-blur-sm"
         style={{
-          background: "hsl(0 0% 100% / 0.025)",
-          border: "1px solid hsl(0 0% 100% / 0.06)",
+          background: "hsl(261 75% 50% / 0.04)",
+          border: "1px solid hsl(261 75% 50% / 0.14)",
         }}
       >
         <div className="mb-6 flex flex-col items-center text-center">

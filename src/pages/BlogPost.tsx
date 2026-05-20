@@ -170,7 +170,7 @@ const BlogPost = () => {
 
   if (post === undefined) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "hsl(0,0%,3%)" }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "hsl(261 75% 2%)" }}>
         <p className="text-sm" style={{ color: "hsl(0 0% 100% / 0.4)" }}>Loading…</p>
       </div>
     );
@@ -204,7 +204,7 @@ const BlogPost = () => {
         { name: post.title, url: canonicalUrl },
       ]} />
 
-      <div className="min-h-screen" style={{ background: "hsl(0,0%,3%)" }}>
+      <div className="min-h-screen" style={{ background: "hsl(261 75% 2%)" }}>
         <Navbar />
 
         <main className="container mx-auto px-6 py-20 max-w-3xl">
@@ -212,7 +212,7 @@ const BlogPost = () => {
           <Link
             to="/blog"
             className="inline-flex items-center gap-1.5 text-sm mb-12 transition-colors duration-150"
-            style={{ color: "hsl(0 0% 100% / 0.35)" }}
+            style={{ color: "hsl(0 0% 100% / 0.45)" }}
             onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.65)")}
             onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.35)")}
           >
