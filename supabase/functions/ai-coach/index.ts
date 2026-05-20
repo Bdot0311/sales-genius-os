@@ -19,70 +19,77 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Get auth token and fetch personalized user data
+    // Require authentication — fail fast if missing/invalid
     const authHeader = req.headers.get('Authorization');
-    let userProfile = null;
-    let recentDeals: any[] = [];
-    let recentLeads: any[] = [];
-    let recentActivities: any[] = [];
-    let subscriptionInfo = null;
-    let userId: string | null = null;
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Authentication required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    if (authHeader) {
-      const token = authHeader.replace('Bearer ', '');
-      const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-      
-      if (user && !userError) {
-        userId = user.id;
-        
-        // Fetch user profile
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .maybeSingle();
-        userProfile = profile;
-
-        // Fetch subscription info
-        const { data: subscription } = await supabase
-          .from('subscriptions')
-          .select('plan, status')
-          .eq('user_id', user.id)
-          .maybeSingle();
-        subscriptionInfo = subscription;
-
-        // Fetch recent deals with stages
-        const { data: deals } = await supabase
-          .from('deals')
-          .select('title, company_name, value, stage, probability, expected_close_date, created_at')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(10);
-        recentDeals = deals || [];
-
-        // Fetch recent leads with status
-        const { data: leads } = await supabase
-          .from('leads')
-          .select('company_name, contact_name, industry, lead_status, icp_score, created_at, last_contacted_at')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(15);
-        recentLeads = leads || [];
-
-        // Fetch recent activities
-        const { data: activities } = await supabase
-          .from('activities')
-          .select('type, subject, due_date, completed, created_at')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(10);
-        recentActivities = activities || [];
-      }
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid authentication token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
+
+    const userId: string = user.id;
+    let userProfile: any = null;
+    let recentDeals: any[] = [];
+    let recentLeads: any[] = [];
+    let recentActivities: any[] = [];
+    let subscriptionInfo: any = null;
+
+    // Fetch user profile
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .maybeSingle();
+    userProfile = profile;
+
+    // Fetch subscription info
+    const { data: subscription } = await supabase
+      .from('subscriptions')
+      .select('plan, status')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    subscriptionInfo = subscription;
+
+    // Fetch recent deals with stages
+    const { data: deals } = await supabase
+      .from('deals')
+      .select('title, company_name, value, stage, probability, expected_close_date, created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(10);
+    recentDeals = deals || [];
+
+    // Fetch recent leads with status
+    const { data: leads } = await supabase
+      .from('leads')
+      .select('company_name, contact_name, industry, lead_status, icp_score, created_at, last_contacted_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(15);
+    recentLeads = leads || [];
+
+    // Fetch recent activities
+    const { data: activities } = await supabase
+      .from('activities')
+      .select('type, subject, due_date, completed, created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(10);
+    recentActivities = activities || [];
 
     // Build rich context from user's sales data
     const dealsByStage = recentDeals.reduce((acc: Record<string, number>, deal) => {

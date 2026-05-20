@@ -16,6 +16,29 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Require authentication. Accept either an authenticated end-user JWT or
+    // a service-role token (used by internal cron callers).
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Authentication required' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const bearer = authHeader.replace('Bearer ', '');
+    const isServiceRole = bearer === supabaseKey;
+    let authedUserId: string | null = null;
+    if (!isServiceRole) {
+      const { data: { user }, error: authErr } = await supabase.auth.getUser(bearer);
+      if (authErr || !user) {
+        return new Response(JSON.stringify({ error: 'Invalid authentication token' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      authedUserId = user.id;
+    }
+
     const { enrollmentId } = await req.json();
 
     if (!enrollmentId) {
@@ -26,15 +49,21 @@ serve(async (req) => {
     }
 
     // Get enrollment details
-    const { data: enrollment, error: enrollmentError } = await supabase
+    let enrollmentQuery = supabase
       .from('sequence_enrollments')
       .select(`
         *,
         sequence:email_sequences(*),
         lead:leads(*)
       `)
-      .eq('id', enrollmentId)
-      .single();
+      .eq('id', enrollmentId);
+
+    // Non-service-role callers can only touch their own enrollments
+    if (authedUserId) {
+      enrollmentQuery = enrollmentQuery.eq('user_id', authedUserId);
+    }
+
+    const { data: enrollment, error: enrollmentError } = await enrollmentQuery.single();
 
     if (enrollmentError || !enrollment) {
       return new Response(JSON.stringify({ error: 'Enrollment not found' }), {
