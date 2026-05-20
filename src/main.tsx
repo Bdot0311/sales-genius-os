@@ -2,6 +2,33 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
+// Self-heal stale chunk references after a redeploy. When a dynamic import
+// fails because the hashed chunk URL no longer exists, force a one-shot
+// reload so the browser fetches the fresh index.html + new chunk hashes.
+const CHUNK_RELOAD_KEY = "__chunk_reload_attempt__";
+const isChunkLoadError = (msg: string) =>
+  /Importing a module script failed|Failed to fetch dynamically imported module|error loading dynamically imported module|ChunkLoadError/i.test(
+    msg
+  );
+const tryReload = () => {
+  try {
+    if (sessionStorage.getItem(CHUNK_RELOAD_KEY)) return;
+    sessionStorage.setItem(CHUNK_RELOAD_KEY, "1");
+  } catch {}
+  location.reload();
+};
+window.addEventListener("error", (e) => {
+  if (e?.message && isChunkLoadError(e.message)) tryReload();
+});
+window.addEventListener("unhandledrejection", (e) => {
+  const msg = String((e as PromiseRejectionEvent)?.reason?.message || (e as PromiseRejectionEvent)?.reason || "");
+  if (isChunkLoadError(msg)) tryReload();
+});
+// Clear the guard on a successful load so future stale-chunk errors can recover.
+window.addEventListener("load", () => {
+  try { sessionStorage.removeItem(CHUNK_RELOAD_KEY); } catch {}
+});
+
 // Clean up legacy PWA caches/SWs, but preserve our push notification SW
 // (registered at /push-sw.js with scope /push-sw/).
 if ('serviceWorker' in navigator) {
