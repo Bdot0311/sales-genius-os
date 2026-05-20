@@ -95,8 +95,16 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
 
       // After successful sign in, check if user is admin (skip subscription check for admins)
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (session) {
+        // Record login in history (fire-and-forget)
+        supabase.rpc('record_user_login', {
+          p_user_id: session.user.id,
+          p_user_email: session.user.email ?? '',
+          p_login_method: 'password',
+          p_status: 'success',
+        }).catch(() => {/* non-critical */});
+
         // First check if user is an admin
         const { data: adminCheck } = await supabase
           .from('user_roles')
