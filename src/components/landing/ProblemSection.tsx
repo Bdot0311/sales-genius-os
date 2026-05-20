@@ -53,7 +53,7 @@ export const ProblemSection = () => {
                   letterSpacing: "-0.02em",
                   ...(line.gradient
                     ? {
-                        backgroundImage: "linear-gradient(to right, #091020 0%, #0B2551 12.5%, #A4F4FD 32.5%, #00d2ff 50%, #0B2551 67.5%, #091020 87.5%, #091020 100%)",
+                        backgroundImage: "linear-gradient(to right, #050010 0%, #1a0060 12.5%, #9d72e8 32.5%, #c068e8 50%, #1a0060 67.5%, #050010 87.5%, #050010 100%)",
                         backgroundSize: "200% auto",
                         WebkitBackgroundClip: "text",
                         WebkitTextFillColor: "transparent",
