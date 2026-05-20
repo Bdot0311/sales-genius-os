@@ -51,6 +51,18 @@ export const Navbar = () => {
   ];
 
   return (
+    <>
+      {/* Global SVG noise filter — referenced as url(#c3-noise) by animate-shiny headings */}
+      <svg style={{ position: "absolute", width: 0, height: 0 }} aria-hidden="true">
+        <defs>
+          <filter id="c3-noise">
+            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves={2} stitchTiles="stitch" />
+            <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.35 0" />
+            <feComposite in2="SourceGraphic" operator="in" result="noise" />
+            <feBlend in="SourceGraphic" in2="noise" mode="multiply" />
+          </filter>
+        </defs>
+      </svg>
     <nav
       className={`fixed left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled ? 'border-b' : ''
@@ -191,5 +203,6 @@ export const Navbar = () => {
         </div>
       </div>
     </nav>
+    </>
   );
 };
