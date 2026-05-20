@@ -118,12 +118,14 @@ export const FAQSection = () => {
               Questions we actually
               <br />
               <span
-                className="italic"
+                className="italic animate-shiny"
                 style={{
-                  background: "linear-gradient(135deg, hsl(261 75% 72%) 0%, hsl(280 80% 68%) 100%)",
+                  backgroundImage: "linear-gradient(to right, #050010 0%, #1a0060 12.5%, #9d72e8 32.5%, #c068e8 50%, #1a0060 67.5%, #050010 87.5%, #050010 100%)",
+                  backgroundSize: "200% auto",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
+                  filter: "url(#c3-noise)",
                 }}
               >
                 get asked.
@@ -144,7 +146,7 @@ export const FAQSection = () => {
                   key={index}
                   value={`item-${index}`}
                   className="border-b"
-                  style={{ borderColor: "hsl(0 0% 100% / 0.07)" }}
+                  style={{ borderColor: "hsl(261 75% 50% / 0.18)" }}
                 >
                   <AccordionTrigger
                     className="text-left py-5 hover:no-underline transition-colors duration-200 group"

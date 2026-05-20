@@ -50,7 +50,7 @@ export const BigStatSection = () => {
 
           <motion.p
             className="text-lg font-light max-w-xs mb-16"
-            style={{ color: "hsl(0 0% 100% / 0.4)", lineHeight: 1.6 }}
+            style={{ color: "hsl(0 0% 100% / 0.45)", lineHeight: 1.6 }}
             initial={{ opacity: 0, y: 14 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-10% 0px" }}
