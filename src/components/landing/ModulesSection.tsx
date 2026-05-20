@@ -238,7 +238,7 @@ export const ModulesSection = () => {
       ref={sectionRef}
       id="features"
       className="relative py-24 md:py-36 overflow-hidden"
-      style={{ background: "hsl(0,0%,3%)" }}
+      style={{ background: "hsl(261 75% 2%)" }}
       aria-labelledby="modules-heading"
     >
       {/* Purple centre glow */}

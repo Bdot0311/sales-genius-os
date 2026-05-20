@@ -7,7 +7,7 @@ export const BigStatSection = () => {
     <section
       className="relative py-28 md:py-44 overflow-hidden"
       style={{
-        background: "hsl(0,0%,3%)",
+        background: "hsl(261 75% 2%)",
         borderTop: "1px solid hsl(261 75% 50% / 0.18)",
         borderBottom: "1px solid hsl(261 75% 50% / 0.18)",
       }}

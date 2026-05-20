@@ -17,7 +17,7 @@ export const ProblemSection = () => {
   return (
     <section
       className="relative py-24 md:py-32 overflow-hidden"
-      style={{ background: "hsl(0,0%,3%)" }}
+      style={{ background: "hsl(261 75% 2%)" }}
       aria-labelledby="problem-heading"
     >
       <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "hsl(261 75% 50% / 0.18)" }} />

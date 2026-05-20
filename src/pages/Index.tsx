@@ -2,16 +2,7 @@ import { lazy, Suspense, type ReactNode } from "react";
 import { Navbar } from "@/components/Navbar";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { ProductShowcase } from "@/components/landing/ProductShowcase";
-import {
-  SEOHead,
-  OrganizationSchema,
-  SoftwareApplicationSchema,
-  WebSiteSchema,
-  ServiceSchema,
-  SpeakableSchema,
-  HowToSchema,
-  ItemListSchema
-} from "@/components/seo";
+import { SEOHead } from "@/components/seo";
 
 const HowItWorks = lazy(() => import("@/components/landing/HowItWorks").then(m => ({ default: m.HowItWorks })));
 const ProblemSection = lazy(() => import("@/components/landing/ProblemSection").then(m => ({ default: m.ProblemSection })));
@@ -30,38 +21,6 @@ const DeferredSection = ({ children }: { children: ReactNode }) => (
   <Suspense fallback={null}>{children}</Suspense>
 );
 
-const gettingStartedSteps = [
-  {
-    name: "Describe your ideal customer in plain English",
-    text: "Type who you want to reach — job title, industry, company size, location, or hiring signals. No boolean search, no filters. SalesOS interprets natural language."
-  },
-  {
-    name: "Review prospects ranked by ICP fit",
-    text: "SalesOS returns a ranked list of B2B prospects scored against your ICP. Each entry includes company context, growth signals, and an ICP match percentage."
-  },
-  {
-    name: "Get SMTP-verified business emails",
-    text: "Every prospect comes enriched with a verified business email — validated via SMTP handshake and multi-source enrichment before it reaches you."
-  },
-  {
-    name: "Send an AI-drafted first-touch email",
-    text: "SalesOS drafts a personalized first-touch email using the prospect's role, company news, and growth signals. Edit it in under 30 seconds and send directly from the platform."
-  },
-  {
-    name: "Track replies and manage follow-up",
-    text: "Replies, sequences, and follow-up tasks stay organized in one place. Connect to HubSpot, Salesforce, or Gmail to keep your CRM in sync automatically."
-  }
-];
-
-const keyFeatures = [
-  { name: "Plain-English ICP-based lead search", description: "Describe your target customer in plain English — title, industry, company size, location. No boolean syntax required.", position: 1 },
-  { name: "ICP fit scoring", description: "Every prospect is scored against your Ideal Customer Profile so you know who to email first.", position: 2 },
-  { name: "SMTP-verified business email enrichment", description: "Business emails are verified via SMTP handshake before delivery, reducing bounce rates and protecting sender reputation.", position: 3 },
-  { name: "AI-drafted first-touch emails", description: "SalesOS writes a personalized first-touch email for each prospect using their company context and growth signals.", position: 4 },
-  { name: "Reply management and sequence automation", description: "Manage replies, follow-ups, and multi-step email sequences from one unified workflow.", position: 5 },
-  { name: "CRM and tool integrations", description: "Connect with Gmail, HubSpot, Salesforce, Slack, Calendly, and Zapier. Leads and replies sync automatically.", position: 6 }
-];
-
 const Index = () => {
   return (
     <>
@@ -72,20 +31,7 @@ const Index = () => {
         ogImage="https://salesos.alephwavex.io/salesos-og.png"
       />
 
-      <OrganizationSchema />
-      <SoftwareApplicationSchema />
-      <WebSiteSchema />
-      <ServiceSchema />
-      <SpeakableSchema cssSelectors={["h1", "h2", "h3", "#hero-heading", "#how-it-works-heading", "#faq-heading", "#founder-note-heading"]} />
-      <HowToSchema
-        name="How to Get Started with SalesOS"
-        description="Learn how to preview the SalesOS workflow, identify qualified leads, and move toward live outreach in 5 clear steps."
-        steps={gettingStartedSteps}
-        totalTime="PT5M"
-      />
-      <ItemListSchema name="SalesOS Key Features" items={keyFeatures} />
-
-      {/* Aura: hidden SVG noise filter used by headline gradient */}
+      {/* Hidden SVG noise filter referenced by headline gradient text */}
       <svg style={{ position: 'absolute', width: 0, height: 0 }} aria-hidden="true">
         <defs>
           <filter id="c3-noise">
@@ -97,7 +43,7 @@ const Index = () => {
         </defs>
       </svg>
 
-      {/* Aura: fixed cinematic video background */}
+      {/* Fixed cinematic video background with purple tint */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none" aria-hidden="true">
         <video
           autoPlay
@@ -112,10 +58,14 @@ const Index = () => {
             type="video/mp4"
           />
         </video>
-        <div className="absolute inset-0 bg-black/65" />
+        {/* Purple-tinted dark overlay */}
+        <div
+          className="absolute inset-0"
+          style={{ background: 'linear-gradient(to bottom, hsl(261 75% 5% / 0.85), hsl(261 75% 3% / 0.92))' }}
+        />
       </div>
 
-      {/* Aura: desktop vertical guide lines */}
+      {/* Desktop vertical guide lines */}
       <div className="hidden lg:block fixed inset-y-0 left-1/2 w-px -translate-x-[36rem] bg-white/[0.04] pointer-events-none z-0" aria-hidden="true" />
       <div className="hidden lg:block fixed inset-y-0 left-1/2 w-px translate-x-[36rem] bg-white/[0.04] pointer-events-none z-0" aria-hidden="true" />
 
