@@ -17,6 +17,10 @@ const tryReload = () => {
   } catch {}
   location.reload();
 };
+window.addEventListener("vite:preloadError", (e) => {
+  e.preventDefault();
+  tryReload();
+});
 window.addEventListener("error", (e) => {
   if (e?.message && isChunkLoadError(e.message)) tryReload();
 });
