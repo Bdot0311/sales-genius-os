@@ -75,7 +75,7 @@ const RequestIntegration = () => {
   return (
     <div
       className="min-h-screen flex flex-col overflow-x-hidden"
-      style={{ background: "hsl(0 0% 3%)" }}
+      style={{ background: "hsl(261 75% 2%)" }}
     >
       <SEOHead
         title="Request a new integration"

@@ -18,7 +18,7 @@ const Terms = () => {
       
       <div
         className="min-h-screen text-foreground overflow-x-hidden"
-        style={{ background: "hsl(0 0% 3%)" }}
+        style={{ background: "hsl(261 75% 2%)" }}
       >
         <Navbar />
         <main className="container mx-auto px-5 sm:px-6 pt-[calc(env(safe-area-inset-top)+6.5rem)] pb-20 max-w-4xl">
@@ -174,7 +174,7 @@ const Terms = () => {
               <nav
                 aria-labelledby="related-links"
                 className="mt-12 pt-8 border-t"
-                style={{ borderColor: "hsl(0 0% 100% / 0.08)" }}
+                style={{ borderColor: "hsl(261 75% 50% / 0.18)" }}
               >
                 <h2 id="related-links" className="text-xl font-semibold mb-4">Related Pages</h2>
                 <ul className="grid sm:grid-cols-2 gap-3">

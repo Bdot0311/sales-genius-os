@@ -10,7 +10,7 @@ const FooterSection = lazy(() =>
 
 const SectionLoader = () => (
   <div className="py-16 flex items-center justify-center">
-    <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+    <div className="w-6 h-6 rounded-full border-2 animate-spin" style={{ borderColor: "hsl(261 75% 50% / 0.3)", borderTopColor: "hsl(261 75% 65%)" }} />
   </div>
 );
 
@@ -34,10 +34,12 @@ const compareRows: { feature: string; salesos: string | boolean; apollo: string 
 ];
 
 const renderCell = (v: string | boolean) => {
-  if (v === true) return <Check className="w-5 h-5 text-primary mx-auto" />;
-  if (v === false) return <X className="w-5 h-5 text-muted-foreground/50 mx-auto" />;
-  return <span className="text-sm">{v}</span>;
+  if (v === true) return <Check className="w-5 h-5 mx-auto" style={{ color: "hsl(261 75% 65%)" }} />;
+  if (v === false) return <X className="w-5 h-5 mx-auto" style={{ color: "hsl(0 0% 100% / 0.2)" }} />;
+  return <span className="text-sm" style={{ color: "hsl(0 0% 100% / 0.6)" }}>{v}</span>;
 };
+
+const divider = { borderTop: "1px solid hsl(261 75% 50% / 0.18)" } as const;
 
 const ApolloAlternative = () => {
   return (
@@ -54,47 +56,94 @@ const ApolloAlternative = () => {
       ]} />
       <FAQSchema faqs={faqs} />
 
-      <div className="min-h-screen text-foreground overflow-x-hidden" style={{ background: "hsl(0 0% 3%)" }}>
+      <div className="min-h-screen overflow-x-hidden" style={{ background: "hsl(261 75% 2%)" }}>
         <Navbar />
         <main>
-          <section className="relative overflow-hidden pt-[calc(env(safe-area-inset-top)+6.5rem)] pb-10 sm:pt-[calc(env(safe-area-inset-top)+7rem)] sm:pb-14" aria-labelledby="apollo-heading">
-            <div className="container mx-auto px-4 max-w-5xl text-center">
-              <p className="inline-block text-xs uppercase tracking-[0.2em] text-primary/80 mb-4">Apollo Alternative</p>
-              <h1 id="apollo-heading" className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight mb-6">
+          {/* Hero */}
+          <section
+            className="relative overflow-hidden pt-[calc(env(safe-area-inset-top)+6.5rem)] pb-16 sm:pt-[calc(env(safe-area-inset-top)+7rem)]"
+            aria-labelledby="apollo-heading"
+          >
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{ background: "radial-gradient(ellipse 70% 60% at 50% 0%, hsl(261 75% 55% / 0.08) 0%, transparent 65%)" }}
+              aria-hidden="true"
+            />
+            <div className="container mx-auto px-5 sm:px-6 max-w-4xl text-center relative z-10">
+              <p className="font-serif italic font-thin text-base text-purple-500 mb-5">
+                Apollo Alternative
+              </p>
+              <h1
+                id="apollo-heading"
+                className="font-display mb-6"
+                style={{
+                  fontSize: "clamp(2.2rem, 5vw, 3.8rem)",
+                  fontWeight: 800,
+                  lineHeight: 1.06,
+                  letterSpacing: "-0.02em",
+                  color: "hsl(0 0% 95%)",
+                }}
+              >
                 The Apollo alternative built for founders, not SDR armies.
               </h1>
-              <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-                Plain-English lead search, SMTP-verified emails, ICP scoring, and AI-drafted outreach in a single workflow — from $0. No boolean filters, no five-tool stack.
+              <p
+                className="text-lg font-light max-w-2xl mx-auto mb-10"
+                style={{ color: "hsl(0 0% 100% / 0.45)" }}
+              >
+                Plain-English lead search, SMTP-verified emails, ICP scoring, and AI-drafted outreach in one workflow — from $0. No boolean filters, no five-tool stack.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Link to="/auth" className="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-primary text-primary-foreground font-medium hover:opacity-90 transition">
+                <Link
+                  to="/auth"
+                  className="inline-flex items-center justify-center px-7 py-3 rounded-full font-semibold text-sm text-white transition-opacity hover:opacity-90"
+                  style={{ background: "linear-gradient(135deg, hsl(261 75% 60%), hsl(261 75% 50%))" }}
+                >
                   Try SalesOS free
                 </Link>
-                <Link to="/pricing" className="inline-flex items-center justify-center px-6 py-3 rounded-lg border border-border text-foreground font-medium hover:bg-muted/40 transition">
+                <Link
+                  to="/pricing"
+                  className="inline-flex items-center justify-center px-7 py-3 rounded-full text-sm font-medium transition-colors"
+                  style={{ border: "1px solid hsl(261 75% 50% / 0.3)", color: "hsl(0 0% 80%)" }}
+                  onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "hsl(261 75% 50% / 0.5)")}
+                  onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "hsl(261 75% 50% / 0.3)")}
+                >
                   Compare pricing
                 </Link>
               </div>
             </div>
           </section>
 
-          <section className="py-16 sm:py-20 border-t border-border/40" aria-labelledby="table-heading">
-            <div className="container mx-auto px-4 max-w-4xl">
-              <h2 id="table-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-8 text-center">
+          {/* Comparison table */}
+          <section className="py-16 sm:py-20" style={divider} aria-labelledby="table-heading">
+            <div className="container mx-auto px-5 sm:px-6 max-w-4xl">
+              <h2
+                id="table-heading"
+                className="font-display text-center mb-10"
+                style={{
+                  fontSize: "clamp(1.8rem, 4vw, 2.8rem)",
+                  fontWeight: 800,
+                  letterSpacing: "-0.02em",
+                  color: "hsl(0 0% 95%)",
+                }}
+              >
                 SalesOS vs Apollo
               </h2>
-              <div className="overflow-x-auto rounded-xl border border-border/60">
+              <div
+                className="overflow-x-auto rounded-xl"
+                style={{ border: "1px solid hsl(261 75% 50% / 0.2)" }}
+              >
                 <table className="w-full text-left">
-                  <thead className="bg-card/60">
+                  <thead style={{ background: "hsl(261 75% 50% / 0.06)" }}>
                     <tr>
-                      <th className="p-4 font-medium">Feature</th>
-                      <th className="p-4 font-medium text-center">SalesOS</th>
-                      <th className="p-4 font-medium text-center">Apollo</th>
+                      <th className="p-4 text-sm font-semibold" style={{ color: "hsl(0 0% 85%)" }}>Feature</th>
+                      <th className="p-4 text-sm font-semibold text-center" style={{ color: "hsl(261 75% 65%)" }}>SalesOS</th>
+                      <th className="p-4 text-sm font-semibold text-center" style={{ color: "hsl(0 0% 55%)" }}>Apollo</th>
                     </tr>
                   </thead>
                   <tbody>
                     {compareRows.map((row) => (
-                      <tr key={row.feature} className="border-t border-border/40">
-                        <td className="p-4">{row.feature}</td>
+                      <tr key={row.feature} style={{ borderTop: "1px solid hsl(261 75% 50% / 0.1)" }}>
+                        <td className="p-4 text-sm" style={{ color: "hsl(0 0% 80%)" }}>{row.feature}</td>
                         <td className="p-4 text-center">{renderCell(row.salesos)}</td>
                         <td className="p-4 text-center">{renderCell(row.apollo)}</td>
                       </tr>
@@ -102,18 +151,28 @@ const ApolloAlternative = () => {
                   </tbody>
                 </table>
               </div>
-              <p className="text-xs text-muted-foreground mt-4 text-center">
+              <p className="text-xs mt-4 text-center" style={{ color: "hsl(0 0% 100% / 0.25)" }}>
                 Apollo pricing and feature availability change. Verify on Apollo's site before deciding.
               </p>
             </div>
           </section>
 
-          <section className="py-16 sm:py-20 border-t border-border/40" aria-labelledby="who-heading">
-            <div className="container mx-auto px-4 max-w-3xl">
-              <h2 id="who-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-6 text-center">
+          {/* Who switches */}
+          <section className="py-16 sm:py-20" style={divider} aria-labelledby="who-heading">
+            <div className="container mx-auto px-5 sm:px-6 max-w-3xl">
+              <h2
+                id="who-heading"
+                className="font-display text-center mb-8"
+                style={{
+                  fontSize: "clamp(1.8rem, 4vw, 2.8rem)",
+                  fontWeight: 800,
+                  letterSpacing: "-0.02em",
+                  color: "hsl(0 0% 95%)",
+                }}
+              >
                 Who switches to SalesOS
               </h2>
-              <ul className="space-y-3">
+              <ul className="space-y-4">
                 {[
                   "Founders running outbound themselves who don't want to learn boolean search",
                   "Lean sales teams paying for Apollo plus a separate sequencer plus a separate inbox tool",
@@ -121,36 +180,54 @@ const ApolloAlternative = () => {
                   "Operators who want one bill, one data model, and one workflow",
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-3">
-                    <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                    <span className="text-foreground">{item}</span>
+                    <Check className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: "hsl(261 75% 65%)" }} />
+                    <span className="text-base" style={{ color: "hsl(0 0% 100% / 0.7)" }}>{item}</span>
                   </li>
                 ))}
               </ul>
             </div>
           </section>
 
-          <section className="py-16 sm:py-20 border-t border-border/40" aria-labelledby="faq-heading">
-            <div className="container mx-auto px-4 max-w-3xl">
-              <h2 id="faq-heading" className="text-3xl sm:text-4xl font-bold tracking-tight mb-8 text-center">
+          {/* FAQ */}
+          <section className="py-16 sm:py-20" style={divider} aria-labelledby="faq-heading">
+            <div className="container mx-auto px-5 sm:px-6 max-w-3xl">
+              <h2
+                id="faq-heading"
+                className="font-display text-center mb-10"
+                style={{
+                  fontSize: "clamp(1.8rem, 4vw, 2.8rem)",
+                  fontWeight: 800,
+                  letterSpacing: "-0.02em",
+                  color: "hsl(0 0% 95%)",
+                }}
+              >
                 Apollo alternative FAQ
               </h2>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {faqs.map((f) => (
-                  <details key={f.question} className="p-5 rounded-lg border border-border/60 bg-card/40">
-                    <summary className="font-medium cursor-pointer">{f.question}</summary>
-                    <p className="mt-3 text-sm text-muted-foreground">{f.answer}</p>
+                  <details
+                    key={f.question}
+                    className="p-5 rounded-xl"
+                    style={{ background: "hsl(261 75% 50% / 0.04)", border: "1px solid hsl(261 75% 50% / 0.14)" }}
+                  >
+                    <summary className="font-medium cursor-pointer" style={{ color: "hsl(0 0% 88%)" }}>{f.question}</summary>
+                    <p className="mt-3 text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.45)" }}>{f.answer}</p>
                   </details>
                 ))}
               </div>
             </div>
           </section>
 
-          <section className="py-12 border-t border-border/40">
-            <div className="container mx-auto px-4 max-w-3xl text-center">
-              <p className="text-sm text-muted-foreground mb-3">Comparing more than just Apollo?</p>
+          {/* Related */}
+          <section className="py-12" style={divider}>
+            <div className="container mx-auto px-5 sm:px-6 max-w-3xl text-center">
+              <p className="text-sm mb-3" style={{ color: "hsl(0 0% 100% / 0.35)" }}>Comparing more than just Apollo?</p>
               <a
                 href="/blog/apollo-vs-instantly-vs-salesloft"
-                className="inline-flex items-center gap-2 text-base font-semibold text-primary hover:underline"
+                className="inline-flex items-center gap-2 text-base font-semibold transition-colors"
+                style={{ color: "hsl(261 75% 65%)" }}
+                onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 80%)")}
+                onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")}
               >
                 Read: Apollo vs Instantly vs Salesloft — which one to actually use →
               </a>

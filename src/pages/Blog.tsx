@@ -23,7 +23,7 @@ const Blog = () => {
         { name: "Blog", url: "https://salesos.alephwavex.io/blog" },
       ]} />
 
-      <div className="min-h-screen" style={{ background: "hsl(0,0%,3%)" }}>
+      <div className="min-h-screen" style={{ background: "hsl(261 75% 2%)" }}>
         <Navbar />
 
         <main className="container mx-auto px-6 py-24 max-w-3xl">

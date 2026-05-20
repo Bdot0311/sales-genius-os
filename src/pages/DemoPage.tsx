@@ -157,7 +157,7 @@ const MeltContainer = ({
         style={{
           ...viewportStyle,
           overflow: "hidden",
-          background: "hsl(0,0%,3%)",
+          background: "hsl(261 75% 2%)",
         }}
       >
         {/* Dot grid */}
@@ -305,8 +305,8 @@ const GlassCard = ({
   <div
     className={`relative rounded-2xl overflow-hidden ${className}`}
     style={{
-      background: "hsl(0 0% 6% / 0.9)",
-      border: `1px solid ${active ? "hsl(261 75% 50% / 0.22)" : "hsl(0 0% 100% / 0.07)"}`,
+      background: "hsl(261 75% 4% / 0.9)",
+      border: `1px solid ${active ? "hsl(261 75% 50% / 0.22)" : "hsl(261 75% 50% / 0.12)"}`,
       boxShadow: active
         ? "0 0 40px hsl(261 75% 55% / 0.1), 0 24px 80px rgba(0,0,0,0.5)"
         : "0 16px 60px rgba(0,0,0,0.35)",
@@ -910,7 +910,7 @@ export default function DemoPage() {
   }, []);
 
   return (
-    <div style={{ background: "hsl(0,0%,3%)" }} className="text-white">
+    <div style={{ background: "hsl(261 75% 2%)" }} className="text-white">
       <SEOHead
         title="See SalesOS in Action | Product Demo"
         description="Watch how SalesOS takes you from ICP to ranked prospects with verified emails and AI-drafted outreach — in under 2 minutes."
@@ -920,7 +920,7 @@ export default function DemoPage() {
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
       <section
         className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden"
-        style={{ background: "hsl(0,0%,3%)" }}
+        style={{ background: "hsl(261 75% 2%)" }}
       >
         {/* Dot grid — identical to landing */}
         <div

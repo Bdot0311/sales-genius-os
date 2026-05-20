@@ -197,7 +197,7 @@ const ApiStatus = () => {
       />
       <div
         className="min-h-screen flex flex-col overflow-x-hidden"
-        style={{ background: "hsl(0 0% 3%)" }}
+        style={{ background: "hsl(261 75% 2%)" }}
       >
         <Navbar />
       <div className="flex-1 container mx-auto px-5 sm:px-6 pt-[calc(env(safe-area-inset-top)+6.5rem)] pb-12 max-w-6xl">

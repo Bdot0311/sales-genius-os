@@ -28,7 +28,7 @@ const NotFound = () => {
       
       <div
         className="relative flex min-h-screen flex-col items-center justify-center px-4 overflow-hidden"
-        style={{ background: "hsl(0 0% 3%)" }}
+        style={{ background: "hsl(261 75% 2%)" }}
       >
         {/* Dot grid */}
         <div
@@ -54,10 +54,15 @@ const NotFound = () => {
           {/* 404 Hero */}
           <div className="mb-10">
             <h1
-              className="font-display text-8xl sm:text-9xl mb-4 bg-clip-text text-transparent"
+              className="font-display text-8xl sm:text-9xl mb-4 animate-shiny"
               style={{
-                backgroundImage:
-                  "linear-gradient(135deg, hsl(261 75% 72%) 0%, hsl(280 70% 70%) 100%)",
+                fontWeight: 800,
+                backgroundImage: "linear-gradient(to right, #050010 0%, #1a0060 12.5%, #9d72e8 32.5%, #c068e8 50%, #1a0060 67.5%, #050010 87.5%, #050010 100%)",
+                backgroundSize: "200% auto",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+                filter: "url(#c3-noise)",
               }}
             >
               404
@@ -95,7 +100,7 @@ const NotFound = () => {
           {/* Popular Pages */}
           <div
             className="border-t pt-8"
-            style={{ borderColor: "hsl(0 0% 100% / 0.08)" }}
+            style={{ borderColor: "hsl(261 75% 50% / 0.18)" }}
           >
             <p className="mb-5 text-[10px] uppercase tracking-[0.25em] text-white/70">
               Popular pages
@@ -107,13 +112,13 @@ const NotFound = () => {
                   to={page.path}
                   className="flex items-start gap-3 p-4 rounded-xl transition-all text-left group"
                   style={{
-                    background: "hsl(0 0% 100% / 0.025)",
-                    border: "1px solid hsl(0 0% 100% / 0.06)",
+                    background: "hsl(261 75% 50% / 0.04)",
+                    border: "1px solid hsl(261 75% 50% / 0.14)",
                   }}
                 >
-                  <page.icon className="h-5 w-5 text-white/75 group-hover:text-primary mt-0.5 transition-colors" />
+                  <page.icon className="h-5 w-5 mt-0.5 transition-colors" style={{ color: "hsl(0 0% 100% / 0.5)" }} />
                   <div>
-                    <div className="font-medium text-white group-hover:text-primary transition-colors">
+                    <div className="font-medium text-white transition-colors">
                       {page.name}
                     </div>
                     <div className="text-sm text-white/55">

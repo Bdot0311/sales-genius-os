@@ -49,7 +49,7 @@ const SectionLoader = () => (
 const HelpCanvas = ({ children }: { children: React.ReactNode }) => (
   <div
     className="min-h-screen text-foreground overflow-x-hidden flex flex-col"
-    style={{ background: "hsl(0 0% 3%)" }}
+    style={{ background: "hsl(261 75% 2%)" }}
   >
     <Navbar />
     {children}
@@ -165,8 +165,8 @@ const HelpCenter = () => {
                 <Card
                   className="p-4 sm:p-5 transition-colors"
                   style={{
-                    background: "hsl(0 0% 100% / 0.025)",
-                    border: "1px solid hsl(0 0% 100% / 0.06)",
+                    background: "hsl(261 75% 50% / 0.04)",
+                    border: "1px solid hsl(261 75% 50% / 0.14)",
                   }}
                 >
                   <div className="flex items-center justify-between gap-4">
@@ -226,8 +226,8 @@ const HelpCenter = () => {
                   <Card
                     className="p-4 sm:p-5 transition-colors"
                     style={{
-                      background: "hsl(0 0% 100% / 0.025)",
-                      border: "1px solid hsl(0 0% 100% / 0.06)",
+                      background: "hsl(261 75% 50% / 0.04)",
+                      border: "1px solid hsl(261 75% 50% / 0.14)",
                     }}
                   >
                     <div className="flex items-center gap-2 mb-2">
@@ -357,7 +357,7 @@ const HelpCenter = () => {
         {/* Quick Links */}
         <section
           className="py-8 border-t"
-          style={{ borderColor: "hsl(0 0% 100% / 0.06)" }}
+          style={{ borderColor: "hsl(261 75% 50% / 0.18)" }}
         >
           <div className="container mx-auto px-5 sm:px-6">
             <div className="flex flex-wrap justify-center gap-3">
@@ -412,7 +412,7 @@ const HelpCenter = () => {
         {/* Popular Articles */}
         <section
           className="py-14 md:py-20"
-          style={{ background: "hsl(0 0% 2.5%)" }}
+          style={{ background: "hsl(261 75% 2%)" }}
         >
           <div className="container mx-auto px-5 sm:px-6">
             <p className="mb-3 text-center text-[10px] uppercase tracking-[0.25em] text-white/70">
@@ -429,8 +429,8 @@ const HelpCenter = () => {
                     value={`item-${index}`}
                     className="rounded-xl px-5 sm:px-6"
                     style={{
-                      background: "hsl(0 0% 100% / 0.025)",
-                      border: "1px solid hsl(0 0% 100% / 0.06)",
+                      background: "hsl(261 75% 50% / 0.04)",
+                      border: "1px solid hsl(261 75% 50% / 0.14)",
                     }}
                   >
                     <AccordionTrigger className="hover:no-underline py-4 text-left">
@@ -469,7 +469,7 @@ const HelpCenter = () => {
         {/* Related Links for SEO */}
         <section
           className="py-12 border-t"
-          style={{ borderColor: "hsl(0 0% 100% / 0.06)" }}
+          style={{ borderColor: "hsl(261 75% 50% / 0.18)" }}
         >
           <div className="container mx-auto px-5 sm:px-6">
             <p className="mb-5 text-center text-[10px] uppercase tracking-[0.25em] text-white/70">
