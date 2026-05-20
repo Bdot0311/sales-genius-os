@@ -21,7 +21,7 @@ export const FounderNoteSection = () => {
     <section
       ref={ref}
       className="relative py-28 md:py-40 overflow-hidden"
-      style={{ background: "hsl(0,0%,3%)" }}
+      style={{ background: "hsl(261 75% 2%)" }}
       aria-labelledby="founder-note-heading"
     >
       {/* Top hairline */}

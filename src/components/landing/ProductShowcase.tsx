@@ -9,7 +9,7 @@ export const ProductShowcase = () => {
   return (
     <section
       className="relative overflow-hidden pb-4 sm:pb-0"
-      style={{ background: "hsl(0,0%,3%)" }}
+      style={{ background: "hsl(261 75% 2%)" }}
       aria-label="Product preview"
     >
       <div

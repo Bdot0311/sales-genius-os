@@ -12,7 +12,7 @@ export const HeroSection = () => {
       className="relative hero-fullscreen flex flex-col items-center justify-start overflow-hidden px-0 pt-[calc(env(safe-area-inset-top)+4.75rem)] pb-8 sm:justify-center sm:pt-[calc(env(safe-area-inset-top)+7rem)] sm:pb-20"
       aria-labelledby="hero-heading"
     >
-      <div className="absolute inset-0 bg-black/55" aria-hidden="true" />
+      <div className="absolute inset-0 bg-[hsl(261,75%,3%)]/60" aria-hidden="true" />
 
       <div
         className="absolute inset-0 pointer-events-none"

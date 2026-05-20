@@ -41,6 +41,9 @@ export default defineConfig(({ mode }) => ({
           'vendor-react': ['react', 'react-dom'],
           'vendor-router': ['react-router-dom'],
           'vendor-query': ['@tanstack/react-query'],
+          // motion is used by both sync (HeroSection) and many lazy chunks —
+          // isolate it so Rollup never duplicates or mis-orders its initialisation
+          'vendor-motion': ['motion'],
         },
       },
     },
