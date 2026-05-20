@@ -69,6 +69,7 @@ const PageLoader = () => (
 );
 
 const CHUNK_RELOAD_KEY = "__chunk_reload_attempt__";
+const CHUNK_RELOAD_WINDOW_MS = 30_000;
 const isChunkLoadError = (error: unknown) =>
   /Importing a module script failed|Failed to fetch dynamically imported module|error loading dynamically imported module|ChunkLoadError/i.test(
     String(error instanceof Error ? error.message : error)
@@ -88,8 +89,9 @@ class ChunkErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
     }
 
     try {
-      if (sessionStorage.getItem(CHUNK_RELOAD_KEY)) return;
-      sessionStorage.setItem(CHUNK_RELOAD_KEY, "1");
+      const lastReload = Number(sessionStorage.getItem(CHUNK_RELOAD_KEY) || 0);
+      if (Date.now() - lastReload < CHUNK_RELOAD_WINDOW_MS) return;
+      sessionStorage.setItem(CHUNK_RELOAD_KEY, String(Date.now()));
     } catch {}
     window.location.reload();
   }
