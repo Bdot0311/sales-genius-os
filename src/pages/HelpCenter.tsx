@@ -197,20 +197,20 @@ const HelpCenter = () => {
         <main className="flex-1 pt-28 sm:pt-32 pb-16 container mx-auto px-5 sm:px-6">
           <button
             onClick={() => window.history.back()}
-            className=”inline-flex items-center gap-1.5 mb-6 text-sm transition-colors”
-            style={{ color: “hsl(0 0% 100% / 0.45)” }}
-            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = “hsl(0 0% 80%)”)}
-            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = “hsl(0 0% 100% / 0.45)”)}
+            className="inline-flex items-center gap-1.5 mb-6 text-sm transition-colors"
+            style={{ color: "hsl(0 0% 100% / 0.45)" }}
+            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 80%)")}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.45)")}
           >
-            <ArrowLeft className=”h-4 w-4” />
+            <ArrowLeft className="h-4 w-4" />
             Back to help center
           </button>
 
-          <h1 className=”font-display text-2xl sm:text-3xl mb-2” style={{ fontWeight: 800, letterSpacing: “-0.02em”, color: “hsl(0 0% 92%)” }}>
+          <h1 className="font-display text-2xl sm:text-3xl mb-2" style={{ fontWeight: 800, letterSpacing: "-0.02em", color: "hsl(0 0% 92%)" }}>
             Search results
           </h1>
-          <p className=”mb-8” style={{ color: “hsl(0 0% 100% / 0.55)” }}>
-            {results.length} result{results.length !== 1 ? “s” : “”} for “{searchQuery}”
+          <p className="mb-8" style={{ color: "hsl(0 0% 100% / 0.55)" }}>
+            {results.length} result{results.length !== 1 ? "s" : ""} for "{searchQuery}"
           </p>
 
           {results.length > 0 ? (
