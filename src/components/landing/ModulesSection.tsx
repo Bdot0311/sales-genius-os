@@ -383,7 +383,7 @@ export const ModulesSection = () => {
               <div
                 className="rounded-2xl overflow-hidden relative"
                 style={{
-                  background: "hsl(0,0%,5%)",
+                  background: "hsl(261 75% 3%)",
                   border: "1px solid hsl(261 75% 50% / 0.2)",
                   boxShadow: "0 0 60px hsl(261 75% 50% / 0.1), 0 24px 60px rgba(0,0,0,0.4)",
                   minHeight: "400px",

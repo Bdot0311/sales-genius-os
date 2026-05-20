@@ -5,12 +5,12 @@ import { Link } from "react-router-dom";
 
 export const ContactSupport = () => {
   const cardStyle = {
-    background: "hsl(0 0% 100% / 0.025)",
-    border: "1px solid hsl(0 0% 100% / 0.06)",
+    background: "hsl(261 75% 50% / 0.04)",
+    border: "1px solid hsl(261 75% 50% / 0.14)",
   } as const;
 
   return (
-    <section className="py-16 sm:py-20" style={{ background: "hsl(0 0% 2.5%)" }}>
+    <section className="py-16 sm:py-20" style={{ background: "hsl(261 75% 2%)" }}>
       <div className="container mx-auto px-5 sm:px-6">
         <div className="text-center mb-10 sm:mb-12">
           <p className="mb-3 text-[10px] uppercase tracking-[0.25em] text-white/70">
@@ -99,8 +99,8 @@ export const ContactSupport = () => {
         <div
           className="text-center mt-10 sm:mt-12 p-6 rounded-2xl max-w-2xl mx-auto"
           style={{
-            background: "hsl(0 0% 100% / 0.025)",
-            border: "1px solid hsl(0 0% 100% / 0.06)",
+            background: "hsl(261 75% 50% / 0.04)",
+            border: "1px solid hsl(261 75% 50% / 0.14)",
           }}
         >
           <p className="text-sm text-white/55">

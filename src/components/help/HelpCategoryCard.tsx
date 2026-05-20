@@ -33,8 +33,8 @@ export const HelpCategoryCard = ({ category }: HelpCategoryCardProps) => {
       <Card
         className="p-6 h-full transition-all duration-300 group cursor-pointer hover:border-primary/40"
         style={{
-          background: "hsl(0 0% 100% / 0.025)",
-          border: "1px solid hsl(0 0% 100% / 0.06)",
+          background: "hsl(261 75% 50% / 0.04)",
+          border: "1px solid hsl(261 75% 50% / 0.14)",
         }}
       >
         <div className="flex items-start gap-4">

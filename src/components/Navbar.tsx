@@ -57,8 +57,8 @@ export const Navbar = () => {
       }`}
       style={{
         top: 'env(safe-area-inset-top, 0px)',
-        background: isScrolled ? 'hsl(0 0% 3% / 0.92)' : 'transparent',
-        borderColor: isScrolled ? 'hsl(0 0% 100% / 0.07)' : 'transparent',
+        background: isScrolled ? 'hsl(261 75% 2% / 0.92)' : 'transparent',
+        borderColor: isScrolled ? 'hsl(261 75% 50% / 0.18)' : 'transparent',
       }}
       role="navigation"
       aria-label="Main navigation"
