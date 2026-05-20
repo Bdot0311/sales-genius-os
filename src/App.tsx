@@ -1,4 +1,4 @@
-import { Component, Suspense, lazy, useState, useEffect, type ErrorInfo, type ReactNode } from "react";
+import { Component, Suspense, lazy, useState, useEffect, type ComponentType, type ErrorInfo, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
@@ -121,7 +121,7 @@ class ChunkErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
  */
 const DeferredUIShell = ({ children }: { children: ReactNode }) => {
   const [ready, setReady] = useState(false);
-  const [Shell, setShell] = useState<React.ComponentType<{ children: ReactNode }> | null>(null);
+  const [Shell, setShell] = useState<ComponentType<{ children: ReactNode }> | null>(null);
 
   useEffect(() => {
     // Skip the heavy shell entirely on public marketing pages — no auth, no
