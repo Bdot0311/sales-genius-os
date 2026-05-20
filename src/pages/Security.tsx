@@ -3,10 +3,15 @@ import { Footer } from "@/components/Footer";
 import { Shield, Lock, Eye, Server, FileCheck, AlertTriangle } from "lucide-react";
 import { SEOHead, BreadcrumbSchema } from "@/components/seo";
 
+const iconWrap = {
+  background: "hsl(261 75% 50% / 0.1)",
+  border: "1px solid hsl(261 75% 50% / 0.2)",
+} as const;
+
 const Security = () => {
   return (
     <>
-      <SEOHead 
+      <SEOHead
         title="Security Practices & Data Protection - Enterprise Grade | SalesOS"
         description="Learn about SalesOS security practices. Enterprise-grade data protection with encryption, SOC 2 compliance, GDPR/CCPA compliance, and 24/7 monitoring."
         keywords="SalesOS security, data encryption, SOC 2, GDPR compliance, enterprise security, data protection"
@@ -16,188 +21,171 @@ const Security = () => {
         { name: "Home", url: "https://salesos.alephwavex.io" },
         { name: "Security", url: "https://salesos.alephwavex.io/security" }
       ]} />
-      
-      <div
-        className="min-h-screen text-foreground overflow-x-hidden"
-        style={{ background: "hsl(261 75% 2%)" }}
-      >
+
+      <div className="min-h-screen overflow-x-hidden" style={{ background: "hsl(261 75% 2%)" }}>
         <Navbar />
-        <main className="container mx-auto px-5 sm:px-6 pt-[calc(env(safe-area-inset-top)+6.5rem)] pb-20">
-          <article className="max-w-4xl mx-auto">
-            <header className="mb-12">
-              <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-medium text-white/70 backdrop-blur-sm sm:text-xs">
+
+        <main>
+          {/* Hero */}
+          <section
+            className="relative overflow-hidden pt-[calc(env(safe-area-inset-top)+6.5rem)] pb-14 sm:pt-[calc(env(safe-area-inset-top)+7rem)] sm:pb-20"
+            aria-labelledby="security-heading"
+          >
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                backgroundImage: "radial-gradient(circle, hsl(0 0% 100% / 0.06) 1px, transparent 1px)",
+                backgroundSize: "32px 32px",
+              }}
+              aria-hidden="true"
+            />
+            <div
+              className="absolute top-[-120px] left-[-100px] h-[420px] w-[420px] rounded-full hero-orb pointer-events-none sm:h-[560px] sm:w-[560px]"
+              style={{
+                background: "radial-gradient(ellipse at center, hsl(261 75% 55% / 0.16) 0%, hsl(261 75% 55% / 0.04) 50%, transparent 70%)",
+                filter: "blur(40px)",
+              }}
+              aria-hidden="true"
+            />
+            <div
+              className="absolute top-[-80px] right-[-120px] h-[380px] w-[380px] rounded-full hero-orb pointer-events-none sm:h-[500px] sm:w-[500px]"
+              style={{
+                background: "radial-gradient(ellipse at center, hsl(280 70% 60% / 0.12) 0%, transparent 70%)",
+                filter: "blur(50px)",
+                animationDelay: "6s",
+              }}
+              aria-hidden="true"
+            />
+            <div className="noise-texture" aria-hidden="true" />
+
+            <div className="relative z-10 container mx-auto px-5 sm:px-6 max-w-4xl">
+              <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-medium text-white/70 backdrop-blur-sm sm:text-xs">
                 <span className="h-1.5 w-1.5 rounded-full bg-violet-400" />
-                Trust & Security
+                Trust &amp; Security
               </span>
-              <h1 className="font-display text-4xl sm:text-5xl mb-4">
+              <h1
+                id="security-heading"
+                className="font-display text-4xl sm:text-5xl mb-4"
+                style={{ fontWeight: 800, letterSpacing: "-0.02em", color: "hsl(0 0% 95%)" }}
+              >
                 Security at{" "}
                 <span
-                  className="bg-clip-text text-transparent"
+                  className="font-display italic animate-shiny"
                   style={{
-                    backgroundImage:
-                      "linear-gradient(135deg, hsl(261 75% 72%) 0%, hsl(280 70% 70%) 100%)",
+                    backgroundImage: "linear-gradient(to right, #050010 0%, #1a0060 12.5%, #9d72e8 32.5%, #c068e8 50%, #1a0060 67.5%, #050010 87.5%, #050010 100%)",
+                    backgroundSize: "200% auto",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                    filter: "url(#c3-noise)",
                   }}
                 >
                   SalesOS
                 </span>
               </h1>
-              <p className="text-lg text-white/60 max-w-2xl">
+              <p className="text-lg max-w-2xl" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
                 Your data security is our top priority. We implement industry-leading security practices to protect your information.
               </p>
-            </header>
-            
+            </div>
+          </section>
+
+          {/* Content */}
+          <article className="container mx-auto px-5 sm:px-6 pb-20 max-w-4xl">
             <div className="space-y-12">
-              <section className="space-y-6" aria-labelledby="encryption">
-                <div className="flex items-start gap-4">
-                  <div className="p-3 bg-primary/10 rounded-xl ring-1 ring-primary/20 shrink-0" aria-hidden="true">
-                    <Lock className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <h2 id="encryption" className="text-2xl font-semibold mb-3">Data Encryption</h2>
-                    <p className="text-white/60 mb-4">
-                      All data transmitted to and from SalesOS is encrypted using industry-standard TLS 1.3 protocol. Data at rest is encrypted using AES-256 encryption.
-                    </p>
-                    <ul className="list-disc pl-6 space-y-2 text-white/60 marker:text-primary/50">
-                      <li>End-to-end encryption for sensitive data</li>
-                      <li>Encrypted backups and disaster recovery</li>
-                      <li>Secure key management practices</li>
-                    </ul>
-                  </div>
-                </div>
-              </section>
 
-              <section className="space-y-6" aria-labelledby="auth-access">
-                <div className="flex items-start gap-4">
-                  <div className="p-3 bg-primary/10 rounded-xl ring-1 ring-primary/20 shrink-0" aria-hidden="true">
-                    <Shield className="w-6 h-6 text-primary" />
+              {[
+                {
+                  Icon: Lock,
+                  id: "encryption",
+                  title: "Data Encryption",
+                  body: "All data transmitted to and from SalesOS is encrypted using industry-standard TLS 1.3 protocol. Data at rest is encrypted using AES-256 encryption.",
+                  items: ["End-to-end encryption for sensitive data", "Encrypted backups and disaster recovery", "Secure key management practices"],
+                },
+                {
+                  Icon: Shield,
+                  id: "auth-access",
+                  title: "Authentication & Access Control",
+                  body: "We implement robust authentication mechanisms to ensure only authorized users can access your data.",
+                  items: ["Secure password hashing using bcrypt", "Multi-factor authentication (MFA) support", "OAuth 2.0 integration for third-party services", "Role-based access control (RBAC)", "Session management with secure tokens"],
+                },
+                {
+                  Icon: Server,
+                  id: "infrastructure",
+                  title: "Infrastructure Security",
+                  body: "Our infrastructure is built on secure, enterprise-grade cloud services with multiple layers of protection.",
+                  items: ["Regular security audits and penetration testing", "Automated vulnerability scanning", "DDoS protection and rate limiting", "Isolated database environments", "24/7 infrastructure monitoring"],
+                },
+                {
+                  Icon: Eye,
+                  id: "privacy-protection",
+                  title: "Privacy & Data Protection",
+                  body: "We are committed to protecting your privacy and maintaining GDPR and CCPA compliance.",
+                  items: ["Data minimization — we only collect what we need", "Right to access, export, and delete your data", "Regular privacy impact assessments", "Transparent data processing practices", "No selling of personal information to third parties"],
+                },
+                {
+                  Icon: FileCheck,
+                  id: "compliance",
+                  title: "Compliance & Certifications",
+                  body: "We adhere to industry standards and maintain compliance with major regulations.",
+                  items: ["GDPR (General Data Protection Regulation) compliant", "CCPA (California Consumer Privacy Act) compliant", "SOC 2 Type II in progress", "Regular third-party security assessments"],
+                },
+                {
+                  Icon: AlertTriangle,
+                  id: "incident-response",
+                  title: "Incident Response",
+                  body: "We have a comprehensive incident response plan to quickly address any security concerns.",
+                  items: ["24/7 security monitoring and alerting", "Defined incident response procedures", "Transparent breach notification policy", "Regular security drills and training"],
+                },
+              ].map(({ Icon, id, title, body, items }) => (
+                <section key={id} className="space-y-4" aria-labelledby={id}>
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 rounded-xl shrink-0" style={iconWrap}>
+                      <Icon className="w-6 h-6" style={{ color: "hsl(261 75% 65%)" }} />
+                    </div>
+                    <div>
+                      <h2 id={id} className="text-2xl font-semibold mb-3" style={{ color: "hsl(0 0% 90%)", letterSpacing: "-0.01em" }}>
+                        {title}
+                      </h2>
+                      <p className="mb-4" style={{ color: "hsl(0 0% 100% / 0.6)" }}>{body}</p>
+                      <ul className="space-y-2">
+                        {items.map((item) => (
+                          <li key={item} className="flex items-start gap-2 text-sm" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
+                            <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: "hsl(261 75% 55% / 0.6)" }} />
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
-                  <div>
-                    <h2 id="auth-access" className="text-2xl font-semibold mb-3">Authentication & Access Control</h2>
-                    <p className="text-white/60 mb-4">
-                      We implement robust authentication mechanisms to ensure only authorized users can access your data.
-                    </p>
-                    <ul className="list-disc pl-6 space-y-2 text-white/60 marker:text-primary/50">
-                      <li>Secure password hashing using bcrypt</li>
-                      <li>Multi-factor authentication (MFA) support</li>
-                      <li>OAuth 2.0 integration for third-party services</li>
-                      <li>Role-based access control (RBAC)</li>
-                      <li>Session management with secure tokens</li>
-                    </ul>
-                  </div>
-                </div>
-              </section>
-
-              <section className="space-y-6" aria-labelledby="infrastructure">
-                <div className="flex items-start gap-4">
-                  <div className="p-3 bg-primary/10 rounded-xl ring-1 ring-primary/20 shrink-0" aria-hidden="true">
-                    <Server className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <h2 id="infrastructure" className="text-2xl font-semibold mb-3">Infrastructure Security</h2>
-                    <p className="text-white/60 mb-4">
-                      Our infrastructure is built on secure, enterprise-grade cloud services with multiple layers of protection.
-                    </p>
-                    <ul className="list-disc pl-6 space-y-2 text-white/60 marker:text-primary/50">
-                      <li>Regular security audits and penetration testing</li>
-                      <li>Automated vulnerability scanning</li>
-                      <li>DDoS protection and rate limiting</li>
-                      <li>Isolated database environments</li>
-                      <li>24/7 infrastructure monitoring</li>
-                    </ul>
-                  </div>
-                </div>
-              </section>
-
-              <section className="space-y-6" aria-labelledby="privacy-protection">
-                <div className="flex items-start gap-4">
-                  <div className="p-3 bg-primary/10 rounded-xl ring-1 ring-primary/20 shrink-0" aria-hidden="true">
-                    <Eye className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <h2 id="privacy-protection" className="text-2xl font-semibold mb-3">Privacy & Data Protection</h2>
-                    <p className="text-white/60 mb-4">
-                      We are committed to protecting your privacy and maintaining GDPR and CCPA compliance.
-                    </p>
-                    <ul className="list-disc pl-6 space-y-2 text-white/60 marker:text-primary/50">
-                      <li>Data minimization - we only collect what we need</li>
-                      <li>Right to access, export, and delete your data</li>
-                      <li>Regular privacy impact assessments</li>
-                      <li>Transparent data processing practices</li>
-                      <li>No selling of personal information to third parties</li>
-                    </ul>
-                  </div>
-                </div>
-              </section>
-
-              <section className="space-y-6" aria-labelledby="compliance">
-                <div className="flex items-start gap-4">
-                  <div className="p-3 bg-primary/10 rounded-xl ring-1 ring-primary/20 shrink-0" aria-hidden="true">
-                    <FileCheck className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <h2 id="compliance" className="text-2xl font-semibold mb-3">Compliance & Certifications</h2>
-                    <p className="text-white/60 mb-4">
-                      We adhere to industry standards and maintain compliance with major regulations.
-                    </p>
-                    <ul className="list-disc pl-6 space-y-2 text-white/60 marker:text-primary/50">
-                      <li>GDPR (General Data Protection Regulation) compliant</li>
-                      <li>CCPA (California Consumer Privacy Act) compliant</li>
-                      <li>SOC 2 Type II in progress</li>
-                      <li>Regular third-party security assessments</li>
-                    </ul>
-                  </div>
-                </div>
-              </section>
-
-              <section className="space-y-6" aria-labelledby="incident-response">
-                <div className="flex items-start gap-4">
-                  <div className="p-3 bg-primary/10 rounded-xl ring-1 ring-primary/20 shrink-0" aria-hidden="true">
-                    <AlertTriangle className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <h2 id="incident-response" className="text-2xl font-semibold mb-3">Incident Response</h2>
-                    <p className="text-white/60 mb-4">
-                      We have a comprehensive incident response plan to quickly address any security concerns.
-                    </p>
-                    <ul className="list-disc pl-6 space-y-2 text-white/60 marker:text-primary/50">
-                      <li>24/7 security monitoring and alerting</li>
-                      <li>Defined incident response procedures</li>
-                      <li>Transparent breach notification policy</li>
-                      <li>Regular security drills and training</li>
-                    </ul>
-                  </div>
-                </div>
-              </section>
+                </section>
+              ))}
 
               <aside
                 className="rounded-2xl p-8 mt-12"
-                style={{
-                  background: "hsl(261 75% 50% / 0.04)",
-                  border: "1px solid hsl(261 75% 50% / 0.14)",
-                }}
+                style={{ background: "hsl(261 75% 50% / 0.04)", border: "1px solid hsl(261 75% 50% / 0.14)" }}
               >
-                <h2 className="text-2xl font-semibold mb-4">Responsible disclosure</h2>
-                <p className="text-white/60 mb-4">
+                <h2 className="text-2xl font-semibold mb-4" style={{ color: "hsl(0 0% 90%)" }}>Responsible disclosure</h2>
+                <p className="mb-4" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
                   If you discover a security vulnerability, we encourage responsible disclosure. Please report security issues to:
                 </p>
-                <address className="not-italic mb-4">
-                  <strong className="text-white/80">Email:</strong>{" "}
-                  <a href="mailto:support@bdotindustries.com" className="text-primary hover:underline">
+                <address className="not-italic mb-4" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
+                  <strong style={{ color: "hsl(0 0% 85%)" }}>Email:</strong>{" "}
+                  <a href="mailto:support@bdotindustries.com" className="hover:underline" style={{ color: "hsl(261 75% 65%)" }}>
                     support@bdotindustries.com
                   </a>
                 </address>
-                <p className="text-sm text-white/55">
+                <p className="text-sm" style={{ color: "hsl(0 0% 100% / 0.55)" }}>
                   We take all security reports seriously and will respond promptly to valid concerns. Please do not publicly disclose issues until we have had a chance to address them.
                 </p>
               </aside>
 
               <section className="mt-12" aria-labelledby="security-questions">
-                <h2 id="security-questions" className="text-2xl font-semibold mb-4">Questions?</h2>
-                <address className="not-italic text-white/60">
+                <h2 id="security-questions" className="text-2xl font-semibold mb-4" style={{ color: "hsl(0 0% 90%)" }}>Questions?</h2>
+                <address className="not-italic" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
                   For security-related questions, visit our{" "}
-                  <a href="/help" className="text-primary hover:underline">Help Center</a>{" "}
+                  <a href="/help" className="hover:underline" style={{ color: "hsl(261 75% 65%)" }}>Help Center</a>{" "}
                   or contact us at:{" "}
-                  <a href="mailto:support@bdotindustries.com" className="text-primary hover:underline">
+                  <a href="mailto:support@bdotindustries.com" className="hover:underline" style={{ color: "hsl(261 75% 65%)" }}>
                     support@bdotindustries.com
                   </a>
                 </address>
@@ -205,32 +193,30 @@ const Security = () => {
 
               <nav
                 aria-labelledby="related-links"
-                className="mt-12 pt-8 border-t"
-                style={{ borderColor: "hsl(261 75% 50% / 0.18)" }}
+                className="mt-12 pt-8"
+                style={{ borderTop: "1px solid hsl(261 75% 50% / 0.18)" }}
               >
-                <h2 id="related-links" className="text-xl font-semibold mb-4">Related pages</h2>
-                <ul className="grid sm:grid-cols-2 gap-3">
-                  <li>
-                    <a href="/privacy" className="text-primary hover:underline">Privacy Policy</a>
-                    <span className="text-white/55"> – Data protection details</span>
-                  </li>
-                  <li>
-                    <a href="/terms" className="text-primary hover:underline">Terms of Service</a>
-                    <span className="text-white/55"> – User agreement</span>
-                  </li>
-                  <li>
-                    <a href="/api-docs" className="text-primary hover:underline">API Documentation</a>
-                    <span className="text-white/55"> – Developer integration guide</span>
-                  </li>
-                  <li>
-                    <a href="/api-status" className="text-primary hover:underline">System Status</a>
-                    <span className="text-white/55"> – Real-time uptime monitoring</span>
-                  </li>
+                <p id="related-links" className="text-[10px] uppercase tracking-[0.25em] mb-4" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
+                  Related pages
+                </p>
+                <ul className="grid sm:grid-cols-2 gap-3 text-sm">
+                  {[
+                    { href: "/privacy", label: "Privacy Policy", sub: "Data protection details" },
+                    { href: "/terms", label: "Terms of Service", sub: "User agreement" },
+                    { href: "/api-docs", label: "API Documentation", sub: "Developer integration guide" },
+                    { href: "/api-status", label: "System Status", sub: "Real-time uptime monitoring" },
+                  ].map(({ href, label, sub }) => (
+                    <li key={href}>
+                      <a href={href} className="hover:underline font-medium" style={{ color: "hsl(261 75% 65%)" }}>{label}</a>
+                      <span style={{ color: "hsl(0 0% 100% / 0.55)" }}> – {sub}</span>
+                    </li>
+                  ))}
                 </ul>
               </nav>
             </div>
           </article>
         </main>
+
         <Footer />
       </div>
     </>
