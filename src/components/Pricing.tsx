@@ -1,23 +1,14 @@
 import { useState, useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Check, X, HelpCircle, Coins, Zap } from "lucide-react";
+import { Check, X, HelpCircle, Coins, Zap, ArrowRight } from "lucide-react";
 import { STRIPE_PRICE_IDS } from "@/lib/stripe-config";
 import { useSearchCredits } from "@/hooks/use-search-credits";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { QuickBuyCreditsDialog } from "@/components/dashboard/QuickBuyCreditsDialog";
 
-type BillingInterval = 'monthly' | 'yearly';
+type BillingInterval = "monthly" | "yearly";
 
 interface PaidPlan {
-  key: 'starter' | 'growth' | 'pro' | 'agency';
+  key: "starter" | "growth" | "pro" | "agency";
   name: string;
   monthlyPrice: number;
   yearlyPrice: number;
@@ -34,7 +25,7 @@ interface PaidPlan {
 }
 
 interface FreePlan {
-  key: 'free';
+  key: "free";
   name: string;
   price: string;
   period: string;
@@ -47,7 +38,7 @@ interface FreePlan {
 type Plan = FreePlan | PaidPlan;
 
 const freePlan: FreePlan = {
-  key: 'free',
+  key: "free",
   name: "Explore",
   price: "$0",
   period: "",
@@ -65,7 +56,7 @@ const freePlan: FreePlan = {
 
 const paidPlans: PaidPlan[] = [
   {
-    key: 'starter',
+    key: "starter",
     name: "Starter",
     monthlyPrice: 39,
     yearlyPrice: 31,
@@ -87,7 +78,7 @@ const paidPlans: PaidPlan[] = [
     yearlyPriceId: STRIPE_PRICE_IDS.starter_yearly,
   },
   {
-    key: 'growth',
+    key: "growth",
     name: "Growth",
     monthlyPrice: 89,
     yearlyPrice: 71,
@@ -110,7 +101,7 @@ const paidPlans: PaidPlan[] = [
     yearlyPriceId: STRIPE_PRICE_IDS.growth_yearly,
   },
   {
-    key: 'pro',
+    key: "pro",
     name: "Pro",
     monthlyPrice: 179,
     yearlyPrice: 143,
@@ -132,7 +123,7 @@ const paidPlans: PaidPlan[] = [
     yearlyPriceId: STRIPE_PRICE_IDS.pro_yearly,
   },
   {
-    key: 'agency',
+    key: "agency",
     name: "Agency",
     monthlyPrice: 249,
     yearlyPrice: 199,
@@ -156,8 +147,6 @@ const paidPlans: PaidPlan[] = [
   },
 ];
 
-
-// Feature comparison table data
 const comparisonCategories = [
   {
     name: "Verified Prospects",
@@ -168,7 +157,7 @@ const comparisonCategories = [
       { name: "Verified email data", free: "—", starter: true, growth: true, pro: true, agency: true },
       { name: "Advanced prospect filters", free: false, starter: false, growth: true, pro: true, agency: true },
       { name: "Bulk prospect export", free: false, starter: false, growth: true, pro: true, agency: true },
-    ]
+    ],
   },
   {
     name: "ICP & Lead Intelligence",
@@ -176,7 +165,7 @@ const comparisonCategories = [
       { name: "ICP Builder", free: false, starter: "3 profiles", growth: "10 profiles", pro: "Unlimited", agency: "Unlimited" },
       { name: "ICP match scoring", free: false, starter: true, growth: true, pro: true, agency: true },
       { name: "ICP lookalike discovery", free: false, starter: false, growth: true, pro: true, agency: true },
-    ]
+    ],
   },
   {
     name: "Outreach & Campaigns",
@@ -188,8 +177,7 @@ const comparisonCategories = [
       { name: "AI personalized outreach", free: false, starter: false, growth: true, pro: true, agency: true },
       { name: "Sequence branching", free: false, starter: false, growth: false, pro: true, agency: true },
       { name: "Sequence A/B testing", free: false, starter: false, growth: false, pro: true, agency: true },
-      { name: "Advanced automation features", free: false, starter: false, growth: false, pro: true, agency: true },
-    ]
+    ],
   },
   {
     name: "Reply Inbox & Deliverability",
@@ -200,7 +188,7 @@ const comparisonCategories = [
       { name: "Deliverability dashboard", free: false, starter: false, growth: true, pro: true, agency: true },
       { name: "Mailbox warmup tracker", free: false, starter: false, growth: true, pro: true, agency: true },
       { name: "DNS health checker", free: false, starter: false, growth: true, pro: true, agency: true },
-    ]
+    ],
   },
   {
     name: "Pipeline & Analytics",
@@ -208,8 +196,7 @@ const comparisonCategories = [
       { name: "Visual pipeline", free: "View only", starter: true, growth: true, pro: true, agency: true },
       { name: "CRM integrations", free: false, starter: false, growth: false, pro: true, agency: true },
       { name: "Team collaboration access", free: false, starter: false, growth: false, pro: true, agency: true },
-      { name: "High-priority data processing", free: false, starter: false, growth: false, pro: true, agency: true },
-    ]
+    ],
   },
   {
     name: "Agency Features",
@@ -219,7 +206,7 @@ const comparisonCategories = [
       { name: "Client portal sharing", free: false, starter: false, growth: false, pro: false, agency: true },
       { name: "Referral & reseller program", free: false, starter: false, growth: false, pro: false, agency: true },
       { name: "Priority API access", free: false, starter: false, growth: false, pro: false, agency: true },
-    ]
+    ],
   },
   {
     name: "Support",
@@ -229,316 +216,312 @@ const comparisonCategories = [
       { name: "Priority support", free: false, starter: false, growth: true, pro: true, agency: true },
       { name: "Premium support", free: false, starter: false, growth: false, pro: true, agency: true },
       { name: "Dedicated account manager", free: false, starter: false, growth: false, pro: false, agency: true },
-    ]
+    ],
   },
 ];
 
 const creditFAQs = [
-  {
-    question: "What are verified prospects?",
-    answer: "Verified prospects are contacts with confirmed, up-to-date data including verified email addresses, job titles, and company information. Each prospect you contact counts toward your plan limits."
-  },
-  {
-    question: "Are you charging for searches?",
-    answer: "No. Searches throughout the platform are completely free. Your plan limit only applies when you access verified prospect data."
-  },
-  {
-    question: "What happens when I reach my limit?",
-    answer: "You'll see a message letting you know you've reached your prospect limit. You can still access all your saved prospects, pipeline, and campaign features. Purchase a one-time credit pack or upgrade your plan to continue."
-  },
-  {
-    question: "What about daily limits?",
-    answer: "Each plan has a daily limit to ensure fair usage: Starter (100/day), Growth (250/day), Pro (500/day), Agency (1,500/day). If exceeded, you'll see a message asking you to try again tomorrow."
-  },
-  {
-    question: "Can I purchase more verified prospects?",
-    answer: "Yes. Purchase one-time credit packs anytime from your account settings or the pricing page. Choose from packs of 200, 400, or 600 prospects. No recurring commitment, just pay once."
-  },
-  {
-    question: "Is there a free plan?",
-    answer: "Yes. The Explore option lets you preview the SalesOS interface, including dashboards, pipeline view, and analytics. Access to verified prospecting and outbound workflows requires a paid plan."
-  },
-  {
-    question: "Do you offer yearly billing?",
-    answer: "Yes! Save ~20% with annual billing. With yearly plans, your full annual credit pool is granted upfront: Starter gets 12,000, Growth gets 30,000, and Pro gets 60,000 prospects. Monthly plans reset each billing cycle, with Growth and Pro credits rolling over."
-  },
-  {
-    question: "Do unused credits roll over?",
-    answer: "On monthly plans, Starter credits reset each cycle while Growth and Pro credits roll over to the next month. On yearly plans, you receive your full annual pool upfront to use throughout the year."
-  },
-  {
-    question: "Can I upgrade, downgrade, or cancel anytime?",
-    answer: "Yes. Upgrades happen instantly with your new allocation. Downgrades and cancellations apply at the end of your billing cycle."
-  },
-  {
-    question: "Is there a money-back guarantee?",
-    answer: "Yes, we offer a 30-day money-back guarantee on all paid plans. If you're not satisfied, contact support for a full refund."
-  },
+  { question: "What are verified prospects?", answer: "Verified prospects are contacts with confirmed, up-to-date data including verified email addresses, job titles, and company information. Each prospect you contact counts toward your plan limits." },
+  { question: "Are you charging for searches?", answer: "No. Searches throughout the platform are completely free. Your plan limit only applies when you access verified prospect data." },
+  { question: "What happens when I reach my limit?", answer: "You'll see a message letting you know you've reached your prospect limit. You can still access all your saved prospects, pipeline, and campaign features. Purchase a one-time credit pack or upgrade your plan to continue." },
+  { question: "What about daily limits?", answer: "Each plan has a daily limit to ensure fair usage: Starter (100/day), Growth (250/day), Pro (500/day), Agency (1,500/day). If exceeded, you'll see a message asking you to try again tomorrow." },
+  { question: "Can I purchase more verified prospects?", answer: "Yes. Purchase one-time credit packs anytime from your account settings or the pricing page. Choose from packs of 200, 400, or 600 prospects. No recurring commitment, just pay once." },
+  { question: "Is there a free plan?", answer: "Yes. The Explore option lets you preview the SalesOS interface, including dashboards, pipeline view, and analytics. Access to verified prospecting and outbound workflows requires a paid plan." },
+  { question: "Do you offer yearly billing?", answer: "Yes! Save ~20% with annual billing. With yearly plans, your full annual credit pool is granted upfront: Starter gets 12,000, Growth gets 30,000, and Pro gets 60,000 prospects. Monthly plans reset each billing cycle." },
+  { question: "Do unused credits roll over?", answer: "On monthly plans, Starter credits reset each cycle while Growth and Pro credits roll over to the next month. On yearly plans, you receive your full annual pool upfront." },
+  { question: "Can I upgrade, downgrade, or cancel anytime?", answer: "Yes. Upgrades happen instantly with your new allocation. Downgrades and cancellations apply at the end of your billing cycle." },
+  { question: "Is there a money-back guarantee?", answer: "Yes, we offer a 30-day money-back guarantee on all paid plans. If you're not satisfied, contact support for a full refund." },
 ];
 
-// Helper to render feature value in comparison table
 const renderFeatureValue = (value: boolean | string) => {
-  if (typeof value === 'boolean') {
+  if (typeof value === "boolean") {
     return value ? (
-      <Check className="w-5 h-5 text-primary mx-auto" />
+      <Check className="w-4 h-4 mx-auto" style={{ color: "hsl(261 75% 65%)" }} />
     ) : (
-      <X className="w-5 h-5 text-muted-foreground/40 mx-auto" />
+      <X className="w-4 h-4 mx-auto" style={{ color: "hsl(0 0% 100% / 0.2)" }} />
     );
   }
-  return <span className="text-sm font-medium">{value}</span>;
+  return <span className="text-sm font-medium" style={{ color: "hsl(0 0% 100% / 0.7)" }}>{value}</span>;
 };
 
-const isPaidPlan = (plan: Plan): plan is PaidPlan => plan.key !== 'free';
+const isPaidPlan = (plan: Plan): plan is PaidPlan => plan.key !== "free";
+
+// Design tokens
+const card = { background: "hsl(261 75% 50% / 0.04)", border: "1px solid hsl(261 75% 50% / 0.14)" } as const;
+const hairline = "hsl(261 75% 50% / 0.18)";
+const mutedText = "hsl(0 0% 100% / 0.45)";
+const accentPurple = "hsl(261 75% 65%)";
 
 export const Pricing = () => {
   const { credits } = useSearchCredits();
   const [topupDialogOpen, setTopupDialogOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
-  const [billingInterval, setBillingInterval] = useState<BillingInterval>('monthly');
+  const [billingInterval, setBillingInterval] = useState<BillingInterval>("monthly");
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
   const sectionRef = useRef<HTMLElement>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          setIsVisible(true);
-        }
-      },
+      (entries) => { if (entries[0].isIntersecting) setIsVisible(true); },
       { threshold: 0.1 }
     );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
+    if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
   }, []);
 
   const handleCheckout = async (plan: Plan) => {
     if (!isPaidPlan(plan)) {
-      navigate(plan.ctaRoute || '/auth');
+      navigate(plan.ctaRoute || "/auth");
       return;
     }
-
     navigate(`/checkout?plan=${plan.key}&interval=${billingInterval}`);
   };
-
 
   const allPlans: Plan[] = [freePlan, ...paidPlans];
 
   return (
-    <section 
+    <section
       ref={sectionRef}
-      id="pricing" 
-      className="relative pt-4 md:pt-6 pb-16 md:pb-24 lg:pb-32 overflow-hidden"
+      id="pricing"
+      className="relative pt-4 md:pt-6 pb-20 md:pb-32 overflow-hidden"
+      style={{ background: "hsl(261 75% 2%)" }}
     >
-      {/* Unified background - matching hero */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div 
-          className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[700px] aurora-ambient"
-          style={{
-            background: 'radial-gradient(ellipse at center, hsl(261 75% 50% / 0.08) 0%, transparent 60%)',
-          }}
-          aria-hidden="true"
-        />
-      </div>
-      
+      {/* Ambient glow */}
+      <div
+        className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[600px] pointer-events-none"
+        style={{ background: "radial-gradient(ellipse at center, hsl(261 75% 50% / 0.07) 0%, transparent 60%)", filter: "blur(60px)" }}
+        aria-hidden="true"
+      />
+
       <div className="container relative z-10 mx-auto px-4 sm:px-6">
+
         {/* Billing Toggle */}
-        <div className={`flex justify-center mb-8 md:mb-10 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '50ms' } as React.CSSProperties}>
-          <div className="inline-flex items-center gap-1 p-1 rounded-full bg-muted/60 border border-border/30">
-            <button
-              onClick={() => setBillingInterval('monthly')}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                billingInterval === 'monthly'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Monthly
-            </button>
-            <button
-              onClick={() => setBillingInterval('yearly')}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${
-                billingInterval === 'yearly'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Yearly
-              <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">
-                Save 20%
-              </span>
-            </button>
+        <div className="flex justify-center mb-10 md:mb-12">
+          <div
+            className="inline-flex items-center gap-1 p-1 rounded-full"
+            style={{ background: "hsl(261 75% 50% / 0.08)", border: "1px solid hsl(261 75% 50% / 0.2)" }}
+          >
+            {(["monthly", "yearly"] as BillingInterval[]).map((interval) => (
+              <button
+                key={interval}
+                onClick={() => setBillingInterval(interval)}
+                className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-medium transition-all duration-200"
+                style={
+                  billingInterval === interval
+                    ? { background: "hsl(261 75% 50% / 0.25)", color: "hsl(0 0% 95%)", border: "1px solid hsl(261 75% 50% / 0.35)" }
+                    : { color: "hsl(0 0% 100% / 0.45)", border: "1px solid transparent" }
+                }
+              >
+                {interval === "monthly" ? "Monthly" : "Yearly"}
+                {interval === "yearly" && (
+                  <span
+                    className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                    style={{ background: "hsl(261 75% 55% / 0.2)", color: accentPurple, border: "1px solid hsl(261 75% 50% / 0.25)" }}
+                  >
+                    Save 20%
+                  </span>
+                )}
+              </button>
+            ))}
           </div>
         </div>
 
         {/* Plan Cards */}
-        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-5 max-w-[1400px] mx-auto mb-16 md:mb-20 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '100ms' } as React.CSSProperties}>
-          {allPlans.map((plan, index) => {
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-5 max-w-[1400px] mx-auto mb-20 md:mb-24">
+          {allPlans.map((plan) => {
             const paid = isPaidPlan(plan);
+            const isHighlighted = paid && plan.highlighted;
             const displayPrice = paid
-              ? billingInterval === 'yearly' ? `$${plan.yearlyPrice}` : `$${plan.monthlyPrice}`
+              ? billingInterval === "yearly" ? `$${plan.yearlyPrice}` : `$${plan.monthlyPrice}`
               : plan.price;
-            const period = paid ? '/mo' : plan.period;
-            const billingNote = paid && billingInterval === 'yearly'
+            const period = paid ? "/mo" : plan.period;
+            const billingNote = paid && billingInterval === "yearly"
               ? `$${plan.yearlyTotal.toLocaleString()} billed annually`
               : null;
 
             return (
-              <div 
+              <div
                 key={plan.key}
-                className={`group relative p-6 sm:p-8 rounded-2xl border transition-all duration-300 card-hover-lift ${
-                  paid && plan.highlighted 
-                    ? 'bg-primary text-primary-foreground border-primary scale-[1.02] shadow-xl shadow-primary/20' 
-                    : plan.key === 'free'
-                      ? 'bg-muted/30 border-border/20 hover:border-primary/30'
-                      : 'bg-card border-border/30 hover:border-primary/50'
-                }`}
-                style={{ '--reveal-delay': `${(index + 1) * 80}ms` } as React.CSSProperties}
+                className="relative flex flex-col rounded-2xl p-6 sm:p-7 transition-all duration-300"
+                style={
+                  isHighlighted
+                    ? {
+                        background: "linear-gradient(160deg, hsl(261 75% 22% / 0.7) 0%, hsl(261 75% 12% / 0.8) 100%)",
+                        border: "1px solid hsl(261 75% 55% / 0.45)",
+                        boxShadow: "0 0 40px hsl(261 75% 50% / 0.12)",
+                      }
+                    : plan.key === "free"
+                    ? { background: "transparent", border: "1px solid hsl(261 75% 50% / 0.1)" }
+                    : card
+                }
               >
-                {/* Spotlight effect for non-highlighted cards */}
-                {!(paid && plan.highlighted) && (
-                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none spotlight-card" />
+                {isHighlighted && (
+                  <div
+                    className="absolute -top-px left-1/2 -translate-x-1/2 h-px w-3/4 rounded-full"
+                    style={{ background: "linear-gradient(90deg, transparent, hsl(261 75% 65% / 0.8), transparent)" }}
+                    aria-hidden="true"
+                  />
                 )}
-                
-                {paid && plan.highlighted && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-foreground text-background text-xs font-medium">
+                {isHighlighted && (
+                  <div
+                    className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-semibold"
+                    style={{ background: "hsl(261 75% 55%)", color: "white" }}
+                  >
                     Most popular
                   </div>
                 )}
-                
-                <div className="relative z-10 mb-6">
-                  <h3 className="text-xl font-semibold mb-2">{plan.name}</h3>
+
+                {/* Plan name & price */}
+                <div className="mb-5">
+                  <p
+                    className="text-[10px] uppercase tracking-[0.22em] font-medium mb-3"
+                    style={{ color: isHighlighted ? "hsl(261 75% 75%)" : "hsl(261 75% 60% / 0.7)" }}
+                  >
+                    {plan.name}
+                  </p>
                   <div className="flex items-baseline gap-1 mb-1">
-                    <span className="text-4xl font-bold">{displayPrice}</span>
-                    <span className={paid && plan.highlighted ? 'text-primary-foreground/70' : 'text-muted-foreground'}>
-                      {period}
+                    <span
+                      className="text-4xl font-bold font-display"
+                      style={{ color: isHighlighted ? "hsl(0 0% 98%)" : "hsl(0 0% 92%)", letterSpacing: "-0.02em" }}
+                    >
+                      {displayPrice}
                     </span>
+                    <span className="text-sm" style={{ color: mutedText }}>{period}</span>
                   </div>
                   {billingNote && (
-                    <p className={`text-xs mb-1 ${paid && plan.highlighted ? 'text-primary-foreground/60' : 'text-muted-foreground/70'}`}>
-                      {billingNote}
-                    </p>
+                    <p className="text-xs mb-2" style={{ color: "hsl(0 0% 100% / 0.3)" }}>{billingNote}</p>
                   )}
-                  <p className={`text-sm ${paid && plan.highlighted ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
+                  <p className="text-sm leading-relaxed" style={{ color: isHighlighted ? "hsl(0 0% 100% / 0.6)" : mutedText }}>
                     {plan.description}
                   </p>
                 </div>
 
-                {/* Value propositions for paid plans */}
+                {/* Prospect volume callout */}
                 {paid && (
-                  <div className={`relative z-10 mb-4 p-3 rounded-lg ${
-                    plan.highlighted ? 'bg-primary-foreground/10' : 'bg-primary/5'
-                  }`}>
-                    <p className={`text-sm font-medium ${plan.highlighted ? 'text-primary-foreground' : 'text-foreground'}`}>
-                      {billingInterval === 'yearly'
-                        ? `Contact up to ${plan.yearlyProspects.toLocaleString()} verified prospects per year`
-                        : `Contact up to ${plan.monthlyProspects.toLocaleString()} verified prospects per month`}
+                  <div
+                    className="rounded-xl px-4 py-3 mb-5"
+                    style={{
+                      background: isHighlighted ? "hsl(261 75% 55% / 0.15)" : "hsl(261 75% 50% / 0.07)",
+                      border: `1px solid ${isHighlighted ? "hsl(261 75% 55% / 0.3)" : "hsl(261 75% 50% / 0.14)"}`,
+                    }}
+                  >
+                    <p className="text-sm font-medium" style={{ color: isHighlighted ? "hsl(0 0% 95%)" : "hsl(0 0% 88%)" }}>
+                      {billingInterval === "yearly"
+                        ? `${plan.yearlyProspects.toLocaleString()} prospects/year`
+                        : `${plan.monthlyProspects.toLocaleString()} prospects/month`}
                     </p>
-                    <p className={`text-xs mt-1 ${plan.highlighted ? 'text-primary-foreground/60' : 'text-muted-foreground/80'}`}>
-                      {plan.dailyLimit}
-                    </p>
+                    <p className="text-xs mt-0.5" style={{ color: "hsl(0 0% 100% / 0.35)" }}>{plan.dailyLimit}</p>
                   </div>
                 )}
 
-                <ul className="relative z-10 space-y-3 mb-8">
+                {/* Features */}
+                <ul className="space-y-2.5 mb-8 flex-1">
                   {plan.features.map((feature, i) => (
-                    <li key={i} className="flex items-start gap-3">
-                      <Check className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
-                        paid && plan.highlighted ? 'text-primary-foreground' : 'text-primary'
-                      }`} />
-                      <span className={`text-sm ${
-                        paid && plan.highlighted ? 'text-primary-foreground/90' : 'text-muted-foreground'
-                      }`}>
+                    <li key={i} className="flex items-start gap-2.5">
+                      <Check
+                        className="w-4 h-4 flex-shrink-0 mt-0.5"
+                        style={{ color: isHighlighted ? "hsl(261 75% 80%)" : accentPurple }}
+                      />
+                      <span className="text-sm leading-relaxed" style={{ color: isHighlighted ? "hsl(0 0% 100% / 0.8)" : "hsl(0 0% 100% / 0.6)" }}>
                         {feature}
                       </span>
                     </li>
                   ))}
                 </ul>
 
-                <Button 
-                  className={`relative z-10 w-full h-12 font-semibold rounded-xl ${
-                    plan.key === 'free'
-                      ? 'bg-muted text-foreground hover:bg-muted/80 border border-border'
-                      : paid && plan.highlighted 
-                        ? 'bg-foreground text-background hover:bg-foreground/90' 
-                        : 'bg-primary text-primary-foreground hover:bg-primary/90'
-                  }`}
+                {/* CTA */}
+                <button
                   onClick={() => handleCheckout(plan)}
+                  className="w-full h-11 rounded-full text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 group"
+                  style={
+                    isHighlighted
+                      ? { background: "linear-gradient(135deg, hsl(261 75% 60%), hsl(261 75% 50%))", color: "white" }
+                      : plan.key === "free"
+                      ? { background: "transparent", color: "hsl(0 0% 100% / 0.5)", border: "1px solid hsl(261 75% 50% / 0.2)" }
+                      : { background: "hsl(261 75% 50% / 0.15)", color: "hsl(261 75% 75%)", border: "1px solid hsl(261 75% 50% / 0.3)" }
+                  }
+                  onMouseEnter={(e) => {
+                    if (!isHighlighted && plan.key !== "free") {
+                      (e.currentTarget as HTMLElement).style.background = "hsl(261 75% 50% / 0.25)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isHighlighted && plan.key !== "free") {
+                      (e.currentTarget as HTMLElement).style.background = "hsl(261 75% 50% / 0.15)";
+                    }
+                  }}
                 >
-                  {plan.key === 'free' ? 'Explore the product' : 'Choose this plan'}
-                </Button>
+                  {plan.key === "free" ? "Explore the product" : "Choose this plan"}
+                  <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
+                </button>
               </div>
             );
           })}
         </div>
 
         {/* Feature Comparison Table */}
-        <div className={`max-w-7xl mx-auto mb-16 md:mb-20 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '200ms' } as React.CSSProperties}>
-          <div className="text-center mb-8 md:mb-10">
-            <h2 className="text-xl sm:text-2xl font-semibold mb-2">Compare plans</h2>
-            <p className="text-sm sm:text-base text-muted-foreground">See what's included in each plan</p>
+        <div className="max-w-7xl mx-auto mb-20 md:mb-24">
+          <div className="text-center mb-10">
+            <p className="font-serif italic font-thin text-base text-purple-500 mb-3">Compare plans</p>
+            <h2
+              className="font-display"
+              style={{ fontSize: "clamp(1.6rem, 3vw, 2.2rem)", fontWeight: 800, letterSpacing: "-0.02em", color: "hsl(0 0% 95%)" }}
+            >
+              Everything side by side
+            </h2>
           </div>
-          
-          {/* Horizontal scroll hint on mobile */}
+
           <div className="lg:hidden text-center mb-3">
-            <p className="text-xs text-muted-foreground">← Scroll to compare →</p>
+            <p className="text-xs" style={{ color: "hsl(0 0% 100% / 0.3)" }}>← Scroll to compare →</p>
           </div>
-          
-           <div className="overflow-x-auto -mx-6 px-6 pb-4 scrollbar-hide">
+
+          <div
+            className="overflow-x-auto rounded-2xl"
+            style={{ border: "1px solid hsl(261 75% 50% / 0.18)" }}
+          >
             <table className="w-full border-collapse min-w-[680px]">
-              {/* Header */}
               <thead>
-                <tr className="border-b border-border/30">
-                  <th className="text-left py-3 sm:py-4 px-3 sm:px-4 font-medium text-muted-foreground text-sm min-w-[140px] sm:min-w-[180px]">Features</th>
-                  <th className="text-center py-3 sm:py-4 px-2 sm:px-3 min-w-[80px] sm:min-w-[100px]">
-                    <div className="font-semibold text-sm sm:text-base">Explore</div>
-                    <div className="text-xs sm:text-sm text-muted-foreground">$0</div>
-                  </th>
-                  <th className="text-center py-3 sm:py-4 px-2 sm:px-3 min-w-[80px] sm:min-w-[100px]">
-                    <div className="font-semibold text-sm sm:text-base">Starter</div>
-                    <div className="text-xs sm:text-sm text-muted-foreground">$39/mo</div>
-                  </th>
-                  <th className="text-center py-3 sm:py-4 px-2 sm:px-3 bg-primary/5 rounded-t-lg min-w-[80px] sm:min-w-[100px]">
-                    <div className="font-semibold text-primary text-sm sm:text-base">Growth</div>
-                    <div className="text-xs sm:text-sm text-muted-foreground">$89/mo</div>
-                  </th>
-                  <th className="text-center py-3 sm:py-4 px-2 sm:px-3 min-w-[80px] sm:min-w-[100px]">
-                    <div className="font-semibold text-sm sm:text-base">Pro</div>
-                    <div className="text-xs sm:text-sm text-muted-foreground">$179/mo</div>
-                  </th>
-                  <th className="text-center py-3 sm:py-4 px-2 sm:px-3 min-w-[80px] sm:min-w-[100px] bg-amber-500/5 rounded-t-lg">
-                    <div className="font-semibold text-sm sm:text-base text-amber-500">Agency</div>
-                    <div className="text-xs sm:text-sm text-muted-foreground">$249/mo</div>
-                  </th>
+                <tr style={{ background: "hsl(261 75% 50% / 0.06)", borderBottom: `1px solid ${hairline}` }}>
+                  <th className="text-left py-4 px-4 sm:px-5 text-xs font-semibold uppercase tracking-wider min-w-[160px] sm:min-w-[200px]" style={{ color: "hsl(0 0% 100% / 0.4)" }}>Feature</th>
+                  {["Explore\n$0", "Starter\n$39/mo", "Growth\n$89/mo", "Pro\n$179/mo", "Agency\n$249/mo"].map((label, i) => {
+                    const isGrowth = i === 2;
+                    const [name, price] = label.split("\n");
+                    return (
+                      <th
+                        key={name}
+                        className="text-center py-4 px-3 min-w-[90px] sm:min-w-[110px]"
+                        style={isGrowth ? { background: "hsl(261 75% 50% / 0.08)" } : {}}
+                      >
+                        <div className="text-sm font-semibold" style={{ color: isGrowth ? accentPurple : "hsl(0 0% 90%)" }}>{name}</div>
+                        <div className="text-xs mt-0.5" style={{ color: mutedText }}>{price}</div>
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody>
                 {comparisonCategories.map((category, catIndex) => (
                   <>
-                    {/* Category Header */}
-                    <tr key={`cat-${catIndex}`} className="border-b border-border/20">
-                      <td colSpan={6} className="py-3 sm:py-4 px-3 sm:px-4">
-                        <div className="flex items-center gap-2 font-semibold text-foreground text-sm sm:text-base">
-                          <Coins className="w-4 h-4 text-primary flex-shrink-0" />
+                    <tr key={`cat-${catIndex}`} style={{ borderBottom: `1px solid ${hairline}`, borderTop: catIndex > 0 ? `1px solid ${hairline}` : undefined }}>
+                      <td colSpan={6} className="py-3 px-4 sm:px-5">
+                        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider" style={{ color: accentPurple }}>
+                          <Coins className="w-3.5 h-3.5 flex-shrink-0" />
                           {category.name}
                         </div>
                       </td>
                     </tr>
-                    {/* Feature Rows */}
                     {category.features.map((feature, featureIndex) => (
                       <tr
                         key={`feature-${catIndex}-${featureIndex}`}
-                        className="border-b border-border/10 hover:bg-muted/30 transition-colors"
+                        style={{ borderBottom: `1px solid hsl(261 75% 50% / 0.08)` }}
                       >
-                        <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-xs sm:text-sm text-muted-foreground">{feature.name}</td>
-                        <td className="py-2.5 sm:py-3 px-2 sm:px-3 text-center">{renderFeatureValue(feature.free)}</td>
-                        <td className="py-2.5 sm:py-3 px-2 sm:px-3 text-center">{renderFeatureValue(feature.starter)}</td>
-                        <td className="py-2.5 sm:py-3 px-2 sm:px-3 text-center bg-primary/5">{renderFeatureValue(feature.growth)}</td>
-                        <td className="py-2.5 sm:py-3 px-2 sm:px-3 text-center">{renderFeatureValue(feature.pro)}</td>
-                        <td className="py-2.5 sm:py-3 px-2 sm:px-3 text-center bg-amber-500/5">{renderFeatureValue(feature.agency)}</td>
+                        <td className="py-3 px-4 sm:px-5 text-xs sm:text-sm" style={{ color: "hsl(0 0% 100% / 0.55)" }}>{feature.name}</td>
+                        <td className="py-3 px-2 sm:px-3 text-center">{renderFeatureValue(feature.free)}</td>
+                        <td className="py-3 px-2 sm:px-3 text-center">{renderFeatureValue(feature.starter)}</td>
+                        <td className="py-3 px-2 sm:px-3 text-center" style={{ background: "hsl(261 75% 50% / 0.05)" }}>{renderFeatureValue(feature.growth)}</td>
+                        <td className="py-3 px-2 sm:px-3 text-center">{renderFeatureValue(feature.pro)}</td>
+                        <td className="py-3 px-2 sm:px-3 text-center">{renderFeatureValue(feature.agency)}</td>
                       </tr>
                     ))}
                   </>
@@ -548,59 +531,64 @@ export const Pricing = () => {
           </div>
         </div>
 
-        {/* Add-ons Section */}
-        <div className={`max-w-2xl mx-auto mb-16 md:mb-20 scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '300ms' } as React.CSSProperties}>
-          <div className="text-center mb-6 sm:mb-8">
-            <h3 className="text-lg sm:text-xl font-semibold mb-2">Need more verified prospects?</h3>
-            <p className="text-muted-foreground text-sm mb-6">
+        {/* Add-ons */}
+        <div className="max-w-2xl mx-auto mb-20 md:mb-24 text-center">
+          <div
+            className="rounded-2xl p-8"
+            style={{ background: "hsl(261 75% 50% / 0.04)", border: "1px solid hsl(261 75% 50% / 0.14)" }}
+          >
+            <Zap className="w-6 h-6 mx-auto mb-4" style={{ color: accentPurple }} />
+            <h3 className="font-display text-xl sm:text-2xl font-bold mb-2" style={{ color: "hsl(0 0% 92%)", letterSpacing: "-0.01em" }}>
+              Need more verified prospects?
+            </h3>
+            <p className="text-sm leading-relaxed mb-6" style={{ color: mutedText }}>
               Purchase one-time credit packs — no commitments, no plan changes.
             </p>
-
-            <div className="group relative inline-block">
-              <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none spotlight-card" />
-              <Button 
-                onClick={() => setTopupDialogOpen(true)}
-                className="relative z-10 gap-2"
-                size="lg"
-              >
-                <Zap className="w-4 h-4" />
-                Buy credits
-              </Button>
-            </div>
+            <button
+              onClick={() => setTopupDialogOpen(true)}
+              className="inline-flex items-center gap-2 px-7 py-3 rounded-full text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              style={{ background: "linear-gradient(135deg, hsl(261 75% 60%), hsl(261 75% 50%))" }}
+            >
+              <Zap className="w-4 h-4" />
+              Buy credit pack
+            </button>
           </div>
         </div>
 
-        <QuickBuyCreditsDialog 
-          open={topupDialogOpen} 
-          onOpenChange={setTopupDialogOpen} 
-        />
+        <QuickBuyCreditsDialog open={topupDialogOpen} onOpenChange={setTopupDialogOpen} />
 
-        {/* Pricing & Credits FAQ */}
-        <div className={`max-w-3xl mx-auto scroll-reveal ${isVisible ? 'visible' : ''}`} style={{ '--reveal-delay': '400ms' } as React.CSSProperties}>
-          <div className="text-center mb-6 sm:mb-8">
-            <div className="inline-flex items-center gap-2 text-muted-foreground mb-2">
-              <HelpCircle className="w-5 h-5" />
-              <span className="text-sm font-medium">FAQs</span>
-            </div>
-            <h3 className="text-xl sm:text-2xl font-semibold">Pricing & plans</h3>
+        {/* FAQ */}
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-10">
+            <p className="font-serif italic font-thin text-base text-purple-500 mb-3">Have questions?</p>
+            <h2
+              className="font-display"
+              style={{ fontSize: "clamp(1.6rem, 3vw, 2.2rem)", fontWeight: 800, letterSpacing: "-0.02em", color: "hsl(0 0% 95%)" }}
+            >
+              Pricing & plans
+            </h2>
           </div>
 
-          <Accordion type="single" collapsible className="w-full space-y-2 sm:space-y-3">
+          <div className="space-y-3">
             {creditFAQs.map((faq, index) => (
-              <AccordionItem 
-                key={index} 
-                value={`item-${index}`}
-                className="border border-border/30 rounded-xl px-4 sm:px-6 bg-card/40 data-[state=open]:bg-card/60 transition-colors"
+              <details
+                key={index}
+                className="rounded-xl p-5 group"
+                style={{ background: "hsl(261 75% 50% / 0.04)", border: "1px solid hsl(261 75% 50% / 0.14)" }}
               >
-                <AccordionTrigger className="text-left hover:no-underline py-3 sm:py-4">
-                  <span className="font-medium text-sm sm:text-base">{faq.question}</span>
-                </AccordionTrigger>
-                <AccordionContent className="pb-3 sm:pb-4 text-muted-foreground leading-relaxed text-sm">
+                <summary
+                  className="font-medium cursor-pointer list-none flex items-center justify-between gap-3 text-sm sm:text-base"
+                  style={{ color: "hsl(0 0% 88%)" }}
+                >
+                  {faq.question}
+                  <HelpCircle className="w-4 h-4 flex-shrink-0" style={{ color: "hsl(261 75% 55% / 0.6)" }} />
+                </summary>
+                <p className="mt-3 text-sm leading-relaxed" style={{ color: mutedText }}>
                   {faq.answer}
-                </AccordionContent>
-              </AccordionItem>
+                </p>
+              </details>
             ))}
-          </Accordion>
+          </div>
         </div>
       </div>
     </section>

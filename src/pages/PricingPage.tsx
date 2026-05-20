@@ -154,7 +154,7 @@ const PricingPage = () => {
                 border: "1px solid hsl(261 75% 50% / 0.15)",
               }}
             >
-              <h2 className="text-xl sm:text-2xl font-semibold mb-2">
+              <h2 className="font-display text-xl sm:text-2xl font-bold mb-2" style={{ color: "hsl(0 0% 92%)", letterSpacing: "-0.01em" }}>
                 Why buy now?
               </h2>
               <p className="text-white/55 leading-relaxed text-sm sm:text-base">

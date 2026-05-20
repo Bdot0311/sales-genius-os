@@ -15,14 +15,7 @@ import {
   getCategoryInfo,
 } from "@/components/help";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import {
   Book,
   FileText,
@@ -355,39 +348,40 @@ const HelpCenter = () => {
         </section>
 
         {/* Quick Links */}
-        <section
-          className="py-8 border-t"
-          style={{ borderColor: "hsl(261 75% 50% / 0.18)" }}
-        >
+        <section className="py-8" style={{ borderTop: "1px solid hsl(261 75% 50% / 0.18)" }}>
           <div className="container mx-auto px-5 sm:px-6">
             <div className="flex flex-wrap justify-center gap-3">
-              <Link to="/api-docs">
-                <Button
-                  variant="outline"
-                  className="gap-2 rounded-full border-white/10 bg-white/5 hover:bg-white/10 text-white/80"
-                >
-                  <Book className="h-4 w-4" />
-                  API Documentation
-                </Button>
-              </Link>
-              <Link to="/api-status">
-                <Button
-                  variant="outline"
-                  className="gap-2 rounded-full border-white/10 bg-white/5 hover:bg-white/10 text-white/80"
-                >
-                  <Activity className="h-4 w-4" />
-                  System Status
-                </Button>
-              </Link>
-              <a href="mailto:support@bdotindustries.com">
-                <Button
-                  variant="outline"
-                  className="gap-2 rounded-full border-white/10 bg-white/5 hover:bg-white/10 text-white/80"
-                >
-                  <FileText className="h-4 w-4" />
-                  Contact Support
-                </Button>
-              </a>
+              {[
+                { to: "/api-docs", label: "API Documentation", Icon: Book, isLink: true },
+                { to: "/api-status", label: "System Status", Icon: Activity, isLink: true },
+                { to: "mailto:support@bdotindustries.com", label: "Contact Support", Icon: FileText, isLink: false },
+              ].map(({ to, label, Icon, isLink }) => (
+                isLink ? (
+                  <Link
+                    key={label}
+                    to={to}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-colors"
+                    style={{ background: "hsl(261 75% 50% / 0.08)", border: "1px solid hsl(261 75% 50% / 0.2)", color: "hsl(0 0% 100% / 0.7)" }}
+                    onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "hsl(261 75% 50% / 0.4)")}
+                    onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "hsl(261 75% 50% / 0.2)")}
+                  >
+                    <Icon className="h-4 w-4" style={{ color: "hsl(261 75% 65%)" }} />
+                    {label}
+                  </Link>
+                ) : (
+                  <a
+                    key={label}
+                    href={to}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-colors"
+                    style={{ background: "hsl(261 75% 50% / 0.08)", border: "1px solid hsl(261 75% 50% / 0.2)", color: "hsl(0 0% 100% / 0.7)" }}
+                    onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "hsl(261 75% 50% / 0.4)")}
+                    onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "hsl(261 75% 50% / 0.2)")}
+                  >
+                    <Icon className="h-4 w-4" style={{ color: "hsl(261 75% 65%)" }} />
+                    {label}
+                  </a>
+                )
+              ))}
             </div>
           </div>
         </section>
@@ -421,45 +415,43 @@ const HelpCenter = () => {
             <h2 className="font-display text-center mb-10" style={{ fontSize: "clamp(1.6rem, 3.5vw, 2.4rem)", fontWeight: 800, letterSpacing: "-0.02em", color: "hsl(0 0% 95%)" }}>
               Popular articles
             </h2>
-            <div className="max-w-3xl mx-auto">
-              <Accordion type="single" collapsible className="space-y-3">
-                {popularArticles.map((article, index) => (
-                  <AccordionItem
-                    key={article.id}
-                    value={`item-${index}`}
-                    className="rounded-xl px-5 sm:px-6"
-                    style={{
-                      background: "hsl(261 75% 50% / 0.04)",
-                      border: "1px solid hsl(261 75% 50% / 0.14)",
-                    }}
-                  >
-                    <AccordionTrigger className="hover:no-underline py-4 text-left">
-                      <div className="flex items-center gap-3">
-                        <span className="font-medium text-white">
-                          {article.title}
-                        </span>
-                        <Badge
-                          variant="outline"
-                          className="text-xs border-white/10 bg-white/5 text-white/60"
-                        >
-                          {getCategoryInfo(article.category)?.title}
-                        </Badge>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="text-white/60 pb-4">
-                      <p className="mb-3">{article.description}</p>
-                      <Link to={`/help/article/${article.slug}`}>
-                        <Button
-                          variant="link"
-                          className="p-0 h-auto text-primary"
-                        >
-                          Read full article →
-                        </Button>
-                      </Link>
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
+            <div className="max-w-3xl mx-auto space-y-3">
+              {popularArticles.map((article) => (
+                <details
+                  key={article.id}
+                  className="rounded-xl px-5 sm:px-6"
+                  style={{ background: "hsl(261 75% 50% / 0.04)", border: "1px solid hsl(261 75% 50% / 0.14)" }}
+                >
+                  <summary className="flex items-center justify-between gap-3 py-4 cursor-pointer list-none">
+                    <div className="flex items-center gap-3">
+                      <span className="font-medium text-sm sm:text-base" style={{ color: "hsl(0 0% 90%)" }}>
+                        {article.title}
+                      </span>
+                      <span
+                        className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full flex-shrink-0"
+                        style={{ background: "hsl(261 75% 50% / 0.12)", border: "1px solid hsl(261 75% 50% / 0.2)", color: "hsl(261 75% 65%)" }}
+                      >
+                        {getCategoryInfo(article.category)?.title}
+                      </span>
+                    </div>
+                    <ChevronRight className="h-4 w-4 flex-shrink-0 transition-transform duration-200" style={{ color: "hsl(261 75% 55% / 0.6)" }} />
+                  </summary>
+                  <div className="pb-4" style={{ borderTop: "1px solid hsl(261 75% 50% / 0.1)" }}>
+                    <p className="pt-3 text-sm leading-relaxed mb-3" style={{ color: "hsl(0 0% 100% / 0.55)" }}>
+                      {article.description}
+                    </p>
+                    <Link
+                      to={`/help/article/${article.slug}`}
+                      className="text-sm font-medium transition-colors"
+                      style={{ color: "hsl(261 75% 65%)" }}
+                      onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 80%)")}
+                      onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")}
+                    >
+                      Read full article →
+                    </Link>
+                  </div>
+                </details>
+              ))}
             </div>
           </div>
         </section>
