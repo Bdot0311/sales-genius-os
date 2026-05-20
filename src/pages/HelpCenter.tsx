@@ -395,10 +395,10 @@ const HelpCenter = () => {
         {/* Categories */}
         <section className="py-12 md:py-16">
           <div className="container mx-auto px-5 sm:px-6">
-            <p className="mb-3 text-center text-[10px] uppercase tracking-[0.25em] text-white/70">
+            <p className="font-serif italic font-thin text-base text-center text-purple-500 mb-3">
               Documentation
             </p>
-            <h2 className="text-center text-2xl sm:text-3xl font-semibold mb-10 sm:mb-12">
+            <h2 className="font-display text-center mb-10 sm:mb-12" style={{ fontSize: "clamp(1.6rem, 3.5vw, 2.4rem)", fontWeight: 800, letterSpacing: "-0.02em", color: "hsl(0 0% 95%)" }}>
               Browse by category
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 max-w-[1120px] mx-auto">
@@ -415,10 +415,10 @@ const HelpCenter = () => {
           style={{ background: "hsl(261 75% 2%)" }}
         >
           <div className="container mx-auto px-5 sm:px-6">
-            <p className="mb-3 text-center text-[10px] uppercase tracking-[0.25em] text-white/70">
+            <p className="font-serif italic font-thin text-base text-center text-purple-500 mb-3">
               Most read
             </p>
-            <h2 className="text-center text-2xl sm:text-3xl font-semibold mb-10">
+            <h2 className="font-display text-center mb-10" style={{ fontSize: "clamp(1.6rem, 3.5vw, 2.4rem)", fontWeight: 800, letterSpacing: "-0.02em", color: "hsl(0 0% 95%)" }}>
               Popular articles
             </h2>
             <div className="max-w-3xl mx-auto">

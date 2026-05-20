@@ -79,8 +79,8 @@ export const HelpSearch = ({ onSearch, placeholder = "Search for help articles..
             onChange={(e) => setQuery(e.target.value)}
             className="pl-12 pr-12 h-14 text-base sm:text-lg rounded-full focus:border-primary"
             style={{
-              background: "hsl(0 0% 100% / 0.04)",
-              border: "1px solid hsl(0 0% 100% / 0.08)",
+              background: "hsl(261 75% 50% / 0.06)",
+              border: "1px solid hsl(261 75% 50% / 0.2)",
               color: "hsl(0 0% 100% / 0.9)",
             }}
           />
@@ -106,15 +106,15 @@ export const HelpSearch = ({ onSearch, placeholder = "Search for help articles..
         <div
           className="absolute top-full left-0 right-0 mt-2 rounded-2xl shadow-2xl z-50 overflow-hidden backdrop-blur-xl"
           style={{
-            background: "hsl(0 0% 6% / 0.97)",
-            border: "1px solid hsl(0 0% 100% / 0.08)",
+            background: "hsl(261 75% 3% / 0.97)",
+            border: "1px solid hsl(261 75% 50% / 0.2)",
           }}
         >
           {results.map((article) => (
             <button
               key={article.id}
               className="w-full px-4 py-3 text-left hover:bg-white/5 transition-colors border-b last:border-0"
-              style={{ borderColor: "hsl(0 0% 100% / 0.06)" }}
+              style={{ borderColor: "hsl(261 75% 50% / 0.14)" }}
               onClick={() => handleSelectArticle(article.slug)}
             >
               <div className="flex items-center justify-between gap-3">
@@ -143,8 +143,8 @@ export const HelpSearch = ({ onSearch, placeholder = "Search for help articles..
         <div
           className="absolute top-full left-0 right-0 mt-2 rounded-2xl shadow-2xl z-50 p-4 text-center backdrop-blur-xl"
           style={{
-            background: "hsl(0 0% 6% / 0.97)",
-            border: "1px solid hsl(0 0% 100% / 0.08)",
+            background: "hsl(261 75% 3% / 0.97)",
+            border: "1px solid hsl(261 75% 50% / 0.2)",
           }}
         >
           <p className="text-white/70">No articles found for "{query}"</p>

@@ -33,12 +33,17 @@ export const BigStatSection = () => {
 
           {/* Focal stat — spring entrance */}
           <motion.p
-            className="font-display italic leading-none mb-8"
+            className="font-display italic leading-none mb-8 animate-shiny"
             style={{
               fontSize: "clamp(5.5rem, 20vw, 14rem)",
               fontWeight: 800,
               letterSpacing: "-0.03em",
-              color: "hsl(261 75% 65%)",
+              backgroundImage: "linear-gradient(to right, #050010 0%, #1a0060 12.5%, #9d72e8 32.5%, #c068e8 50%, #1a0060 67.5%, #050010 87.5%, #050010 100%)",
+              backgroundSize: "200% auto",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+              filter: "url(#c3-noise)",
             }}
             initial={{ opacity: 0, y: 60, scale: 0.92 }}
             whileInView={{ opacity: 1, y: 0, scale: 1 }}
