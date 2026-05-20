@@ -1,5 +1,147 @@
-import SalesOSLanding from './SalesOSLanding';
+import { lazy, Suspense, type ReactNode } from "react";
+import { Navbar } from "@/components/Navbar";
+import { HeroSection } from "@/components/landing/HeroSection";
+import { ProductShowcase } from "@/components/landing/ProductShowcase";
+import {
+  SEOHead,
+  OrganizationSchema,
+  SoftwareApplicationSchema,
+  WebSiteSchema,
+  ServiceSchema,
+  SpeakableSchema,
+  HowToSchema,
+  ItemListSchema
+} from "@/components/seo";
 
-export default function Index() {
-  return <SalesOSLanding />;
-}
+const HowItWorks = lazy(() => import("@/components/landing/HowItWorks").then(m => ({ default: m.HowItWorks })));
+const ProblemSection = lazy(() => import("@/components/landing/ProblemSection").then(m => ({ default: m.ProblemSection })));
+const ModulesSection = lazy(() => import("@/components/landing/ModulesSection").then(m => ({ default: m.ModulesSection })));
+const BigStatSection = lazy(() => import("@/components/landing/BigStatSection").then(m => ({ default: m.BigStatSection })));
+const DifferentiationSection = lazy(() => import("@/components/landing/DifferentiationSection").then(m => ({ default: m.DifferentiationSection })));
+const FounderNoteSection = lazy(() => import("@/components/landing/FounderNoteSection").then(m => ({ default: m.FounderNoteSection })));
+const FAQSection = lazy(() => import("@/components/landing/FAQSection").then(m => ({ default: m.FAQSection })));
+const FinalCTA = lazy(() => import("@/components/landing/FinalCTA").then(m => ({ default: m.FinalCTA })));
+const TrustBar = lazy(() => import("@/components/landing/TrustBar").then(m => ({ default: m.TrustBar })));
+const BlogStrip = lazy(() => import("@/components/landing/BlogStrip").then(m => ({ default: m.BlogStrip })));
+const ExitIntentModal = lazy(() => import("@/components/landing/ExitIntentModal").then(m => ({ default: m.ExitIntentModal })));
+const FooterSection = lazy(() => import("@/components/landing/FooterSection").then(m => ({ default: m.FooterSection })));
+
+const DeferredSection = ({ children }: { children: ReactNode }) => (
+  <Suspense fallback={null}>{children}</Suspense>
+);
+
+const gettingStartedSteps = [
+  {
+    name: "Describe your ideal customer in plain English",
+    text: "Type who you want to reach — job title, industry, company size, location, or hiring signals. No boolean search, no filters. SalesOS interprets natural language."
+  },
+  {
+    name: "Review prospects ranked by ICP fit",
+    text: "SalesOS returns a ranked list of B2B prospects scored against your ICP. Each entry includes company context, growth signals, and an ICP match percentage."
+  },
+  {
+    name: "Get SMTP-verified business emails",
+    text: "Every prospect comes enriched with a verified business email — validated via SMTP handshake and multi-source enrichment before it reaches you."
+  },
+  {
+    name: "Send an AI-drafted first-touch email",
+    text: "SalesOS drafts a personalized first-touch email using the prospect's role, company news, and growth signals. Edit it in under 30 seconds and send directly from the platform."
+  },
+  {
+    name: "Track replies and manage follow-up",
+    text: "Replies, sequences, and follow-up tasks stay organized in one place. Connect to HubSpot, Salesforce, or Gmail to keep your CRM in sync automatically."
+  }
+];
+
+const keyFeatures = [
+  { name: "Plain-English ICP-based lead search", description: "Describe your target customer in plain English — title, industry, company size, location. No boolean syntax required.", position: 1 },
+  { name: "ICP fit scoring", description: "Every prospect is scored against your Ideal Customer Profile so you know who to email first.", position: 2 },
+  { name: "SMTP-verified business email enrichment", description: "Business emails are verified via SMTP handshake before delivery, reducing bounce rates and protecting sender reputation.", position: 3 },
+  { name: "AI-drafted first-touch emails", description: "SalesOS writes a personalized first-touch email for each prospect using their company context and growth signals.", position: 4 },
+  { name: "Reply management and sequence automation", description: "Manage replies, follow-ups, and multi-step email sequences from one unified workflow.", position: 5 },
+  { name: "CRM and tool integrations", description: "Connect with Gmail, HubSpot, Salesforce, Slack, Calendly, and Zapier. Leads and replies sync automatically.", position: 6 }
+];
+
+const Index = () => {
+  return (
+    <>
+      <SEOHead
+        title="SalesOS — Find Who to Sell To. Then Actually Sell to Them."
+        description="Describe your ideal customer in plain English. SalesOS returns ranked B2B prospects with SMTP-verified emails and an AI-drafted first-touch message — in under 2 minutes."
+        keywords="B2B lead generation, lead discovery, outbound email software, ICP scoring, SMTP verified emails, plain English lead search, B2B prospecting, AI email drafting, email enrichment, outbound sales automation, find B2B leads, lead scoring software, B2B email outreach"
+        ogImage="https://salesos.alephwavex.io/salesos-og.png"
+      />
+
+      <OrganizationSchema />
+      <SoftwareApplicationSchema />
+      <WebSiteSchema />
+      <ServiceSchema />
+      <SpeakableSchema cssSelectors={["h1", "h2", "h3", "#hero-heading", "#how-it-works-heading", "#faq-heading", "#founder-note-heading"]} />
+      <HowToSchema
+        name="How to Get Started with SalesOS"
+        description="Learn how to preview the SalesOS workflow, identify qualified leads, and move toward live outreach in 5 clear steps."
+        steps={gettingStartedSteps}
+        totalTime="PT5M"
+      />
+      <ItemListSchema name="SalesOS Key Features" items={keyFeatures} />
+
+      {/* Aura: hidden SVG noise filter used by headline gradient */}
+      <svg style={{ position: 'absolute', width: 0, height: 0 }} aria-hidden="true">
+        <defs>
+          <filter id="c3-noise">
+            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves={2} stitchTiles="stitch" />
+            <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.35 0" />
+            <feComposite in2="SourceGraphic" operator="in" result="noise" />
+            <feBlend in="SourceGraphic" in2="noise" mode="multiply" />
+          </filter>
+        </defs>
+      </svg>
+
+      {/* Aura: fixed cinematic video background */}
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none" aria-hidden="true">
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="absolute inset-0 w-full object-cover"
+          style={{ height: '100%' }}
+        >
+          <source
+            src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260508_064122_c4750c0e-7476-4b44-94a2-a85a65c63bf2.mp4"
+            type="video/mp4"
+          />
+        </video>
+        <div className="absolute inset-0 bg-black/65" />
+      </div>
+
+      {/* Aura: desktop vertical guide lines */}
+      <div className="hidden lg:block fixed inset-y-0 left-1/2 w-px -translate-x-[36rem] bg-white/[0.04] pointer-events-none z-0" aria-hidden="true" />
+      <div className="hidden lg:block fixed inset-y-0 left-1/2 w-px translate-x-[36rem] bg-white/[0.04] pointer-events-none z-0" aria-hidden="true" />
+
+      <div className="min-h-screen bg-transparent text-foreground overflow-x-hidden">
+        <Navbar />
+        <main itemScope itemType="https://schema.org/WebPage">
+          <article>
+            <HeroSection />
+            <ProductShowcase />
+            <DeferredSection><ProblemSection /></DeferredSection>
+            <DeferredSection><HowItWorks /></DeferredSection>
+            <DeferredSection><ModulesSection /></DeferredSection>
+            <DeferredSection><BigStatSection /></DeferredSection>
+            <DeferredSection><DifferentiationSection /></DeferredSection>
+            <DeferredSection><FounderNoteSection /></DeferredSection>
+            <DeferredSection><FAQSection /></DeferredSection>
+            <DeferredSection><BlogStrip /></DeferredSection>
+            <DeferredSection><FinalCTA /></DeferredSection>
+            <DeferredSection><TrustBar /></DeferredSection>
+          </article>
+        </main>
+        <DeferredSection><FooterSection /></DeferredSection>
+        <DeferredSection><ExitIntentModal /></DeferredSection>
+      </div>
+    </>
+  );
+};
+
+export default Index;

@@ -12,7 +12,7 @@ export const HeroSection = () => {
       className="relative hero-fullscreen flex flex-col items-center justify-start overflow-hidden px-0 pt-[calc(env(safe-area-inset-top)+4.75rem)] pb-8 sm:justify-center sm:pt-[calc(env(safe-area-inset-top)+7rem)] sm:pb-20"
       aria-labelledby="hero-heading"
     >
-      <div className="absolute inset-0 bg-[hsl(0,0%,3%)]" aria-hidden="true" />
+      <div className="absolute inset-0 bg-black/55" aria-hidden="true" />
 
       <div
         className="absolute inset-0 pointer-events-none"
@@ -90,14 +90,16 @@ export const HeroSection = () => {
             Find who to sell to.
           </motion.span>
           <motion.span
-            className="block font-display italic"
+            className="block font-display italic animate-shiny"
             style={{
               fontStyle: "italic",
               fontWeight: 800,
-              background: "linear-gradient(135deg, hsl(261 75% 72%) 0%, hsl(280 80% 68%) 50%, hsl(261 75% 60%) 100%)",
+              backgroundImage: "linear-gradient(to right, #091020 0%, #0B2551 12.5%, #A4F4FD 32.5%, #00d2ff 50%, #0B2551 67.5%, #091020 87.5%, #091020 100%)",
+              backgroundSize: "200% auto",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
+              filter: "url(#c3-noise)",
             }}
             initial={{ opacity: 0, y: 32 }}
             animate={{ opacity: 1, y: 0 }}
