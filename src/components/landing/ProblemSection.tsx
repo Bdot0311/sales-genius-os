@@ -45,7 +45,7 @@ export const ProblemSection = () => {
             {lines.map((line, index) => (
               <motion.span
                 key={index}
-                className={`block font-display${line.italic ? " italic" : ""}`}
+                className={`block font-display${line.italic ? " italic" : ""}${line.gradient ? " animate-shiny" : ""}`}
                 style={{
                   fontSize: "clamp(2rem, 5vw, 3.8rem)",
                   fontWeight: 800,
@@ -53,11 +53,12 @@ export const ProblemSection = () => {
                   letterSpacing: "-0.02em",
                   ...(line.gradient
                     ? {
-                        background:
-                          "linear-gradient(135deg, hsl(261 75% 72%) 0%, hsl(280 80% 68%) 50%, hsl(261 75% 60%) 100%)",
+                        backgroundImage: "linear-gradient(to right, #091020 0%, #0B2551 12.5%, #A4F4FD 32.5%, #00d2ff 50%, #0B2551 67.5%, #091020 87.5%, #091020 100%)",
+                        backgroundSize: "200% auto",
                         WebkitBackgroundClip: "text",
                         WebkitTextFillColor: "transparent",
                         backgroundClip: "text",
+                        filter: "url(#c3-noise)",
                       }
                     : { color: line.color }),
                 }}
