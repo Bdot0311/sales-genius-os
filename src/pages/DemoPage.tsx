@@ -53,14 +53,17 @@ const useGlobalStyles = () => {
   }, []);
 };
 
-// ─── Gradient text helper (matches landing page gradient system) ──────────────
+// ─── Gradient text helper ─────────────────────────────────────────────────────
 const GradText = ({ children }: { children: React.ReactNode }) => (
   <span
+    className="font-display italic animate-shiny"
     style={{
-      background: "linear-gradient(135deg, hsl(261 75% 72%) 0%, hsl(280 80% 68%) 50%, hsl(261 75% 60%) 100%)",
+      backgroundImage: "linear-gradient(to right, #050010 0%, #1a0060 12.5%, #9d72e8 32.5%, #c068e8 50%, #1a0060 67.5%, #050010 87.5%, #050010 100%)",
+      backgroundSize: "200% auto",
       WebkitBackgroundClip: "text",
       WebkitTextFillColor: "transparent",
       backgroundClip: "text",
+      filter: "url(#c3-noise)",
     }}
   >
     {children}
@@ -978,7 +981,7 @@ export default function DemoPage() {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75" style={{ background: "hsl(261 75% 65%)" }} />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full" style={{ background: "hsl(261 75% 55%)" }} />
               </span>
-              <span className="font-medium" style={{ color: "hsl(0 0% 100% / 0.8)" }}>Product walkthrough</span>
+              <span className="font-medium" style={{ color: "hsl(0 0% 100% / 0.8)" }}>Interactive walkthrough</span>
             </span>
           </div>
 
@@ -994,12 +997,17 @@ export default function DemoPage() {
             }}
           >
             <span className="block text-white">From idea</span>
-            <span className="block italic font-display" style={{
-              background: "linear-gradient(135deg, hsl(261 75% 72%) 0%, hsl(280 80% 68%) 50%, hsl(261 75% 60%) 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-            }}>
+            <span
+              className="block font-display italic animate-shiny"
+              style={{
+                backgroundImage: "linear-gradient(to right, #050010 0%, #1a0060 12.5%, #9d72e8 32.5%, #c068e8 50%, #1a0060 67.5%, #050010 87.5%, #050010 100%)",
+                backgroundSize: "200% auto",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+                filter: "url(#c3-noise)",
+              }}
+            >
               to pipeline.
             </span>
           </h1>
@@ -1008,7 +1016,7 @@ export default function DemoPage() {
             className={`mb-10 max-w-[22rem] text-base font-light leading-relaxed transition-all duration-700 delay-150 sm:max-w-xl sm:text-xl ${heroVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
             style={{ color: "hsl(0 0% 100% / 0.45)" }}
           >
-            Four steps. One session. Scroll to watch how SalesOS takes you from a targeting idea to personalized outreach.
+            Four steps. One session. Scroll to see how SalesOS takes you from a targeting idea to personalized outreach.
           </p>
 
           <div
