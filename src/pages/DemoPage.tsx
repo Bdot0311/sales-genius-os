@@ -76,7 +76,7 @@ const norm = (v: number, lo: number, hi: number) =>
   Math.max(0, Math.min(1, (v - lo) / (hi - lo)));
 
 // ─── VideoPlayer ──────────────────────────────────────────────────────────────
-const CHAPTER_DURATION = 10_000; // ms per chapter
+const CHAPTER_DURATION = 6_000; // ms per chapter
 const FADE_FRAC        = 0.14;   // fraction of chapter used for fade-in / fade-out
 
 const chapterMeta = [
@@ -204,7 +204,7 @@ const VideoPlayer = ({ chapters }: { chapters: Array<(active: boolean) => React.
               <Play className="w-7 h-7 text-white translate-x-0.5" fill="white" />
             </div>
             <span className="text-sm font-medium" style={{ color: "hsl(0 0% 100% / 0.5)" }}>
-              {status === "ended" ? "Watch again" : "Play walkthrough · 1 min"}
+              {status === "ended" ? "Watch again" : "Play walkthrough · 36 sec"}
             </span>
           </div>
         </div>
