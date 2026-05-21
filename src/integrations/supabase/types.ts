@@ -1560,7 +1560,10 @@ export type Database = {
           email_signature: string | null
           full_name: string | null
           id: string
+          include_compliance_footer: boolean | null
+          include_unsubscribe: boolean | null
           last_sign_in_at: string | null
+          physical_address: string | null
           signup_source: string | null
           social_proof: string | null
           updated_at: string
@@ -1573,7 +1576,10 @@ export type Database = {
           email_signature?: string | null
           full_name?: string | null
           id: string
+          include_compliance_footer?: boolean | null
+          include_unsubscribe?: boolean | null
           last_sign_in_at?: string | null
+          physical_address?: string | null
           signup_source?: string | null
           social_proof?: string | null
           updated_at?: string
@@ -1586,7 +1592,10 @@ export type Database = {
           email_signature?: string | null
           full_name?: string | null
           id?: string
+          include_compliance_footer?: boolean | null
+          include_unsubscribe?: boolean | null
           last_sign_in_at?: string | null
+          physical_address?: string | null
           signup_source?: string | null
           social_proof?: string | null
           updated_at?: string
@@ -3009,8 +3018,10 @@ export type Database = {
       }
       record_user_login: {
         Args: {
+          p_ip_address?: string
           p_login_method?: string
           p_status?: string
+          p_user_agent?: string
           p_user_email: string
           p_user_id: string
         }
