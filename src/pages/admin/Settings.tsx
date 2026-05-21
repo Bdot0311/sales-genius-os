@@ -342,6 +342,14 @@ const AdminSettings = () => {
 
           {/* Billing Settings */}
           <TabsContent value="billing" className="space-y-4">
+            <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+              <Info className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-500" />
+              <p>
+                <span className="font-medium">For reference only</span> — plan limits and trial periods below are stored as reference values.
+                Actual enforcement is configured in <span className="font-medium">Stripe</span> (products, prices, and entitlements).
+                Changes here will not affect billing behaviour until your backend reads these values explicitly.
+              </p>
+            </div>
             <div className="grid gap-4">
               <div className="p-4 border rounded-lg space-y-3">
                 <Label htmlFor="trial-days">Default Trial Period (days)</Label>
@@ -445,7 +453,7 @@ const AdminSettings = () => {
                   id="email-name"
                   placeholder="SalesOS"
                   value={(getSettingValue("email_from_name") as string) || ""}
-                  onChange={(e) => updateSetting("email_from_name", e.target.value)}
+                  onChange={(e) => debouncedUpdateSetting("email_from_name", e.target.value)}
                   disabled={saving}
                 />
               </div>
