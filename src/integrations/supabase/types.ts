@@ -1560,6 +1560,7 @@ export type Database = {
           email_signature: string | null
           full_name: string | null
           id: string
+          last_sign_in_at: string | null
           signup_source: string | null
           social_proof: string | null
           updated_at: string
@@ -1572,6 +1573,7 @@ export type Database = {
           email_signature?: string | null
           full_name?: string | null
           id: string
+          last_sign_in_at?: string | null
           signup_source?: string | null
           social_proof?: string | null
           updated_at?: string
@@ -1584,6 +1586,7 @@ export type Database = {
           email_signature?: string | null
           full_name?: string | null
           id?: string
+          last_sign_in_at?: string | null
           signup_source?: string | null
           social_proof?: string | null
           updated_at?: string
@@ -2838,9 +2841,11 @@ export type Database = {
         Args: never
         Returns: {
           account_status: string
+          created_at: string
           current_period_end: string
           email: string
           full_name: string
+          last_sign_in_at: string
           leads_limit: number
           plan: Database["public"]["Enums"]["subscription_plan"]
           signup_source: string
@@ -3001,6 +3006,15 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      record_user_login: {
+        Args: {
+          p_login_method?: string
+          p_status?: string
+          p_user_email: string
+          p_user_id: string
+        }
+        Returns: undefined
       }
     }
     Enums: {
