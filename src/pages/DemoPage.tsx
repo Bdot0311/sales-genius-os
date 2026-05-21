@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Play, Pause } from "lucide-react";
 import { SEOHead } from "@/components/seo";
 
 // ─── Keyframes ────────────────────────────────────────────────────────────────
@@ -75,157 +75,223 @@ const easeOut3 = (t: number) => 1 - Math.pow(1 - t, 3);
 const norm = (v: number, lo: number, hi: number) =>
   Math.max(0, Math.min(1, (v - lo) / (hi - lo)));
 
-// ─── MeltContainer ────────────────────────────────────────────────────────────
-// Three-phase fixed pinning using getBoundingClientRect() — immune to ancestor
-// overflow:hidden because position:fixed escapes all containing blocks.
-// before  → position:absolute top:0    (scroll budget not yet reached)
-// active  → position:fixed   top:0     (locked to viewport, GPU-composited)
-// after   → position:absolute bottom:0 (anchored to bottom of scroll space)
-// Progress = -rect.top / (outerHeight - viewportHeight), always 0→1.
-const MELT_FADE = 0.05;
+// ─── VideoPlayer ──────────────────────────────────────────────────────────────
+const CHAPTER_DURATION = 10_000; // ms per chapter
+const FADE_FRAC        = 0.14;   // fraction of chapter used for fade-in / fade-out
 
-const MeltContainer = ({
-  chapters,
-}: {
-  chapters: Array<{
-    render: (active: boolean) => React.ReactNode;
-    glowPos: string;
-  }>;
-}) => {
-  const outerRef = useRef<HTMLDivElement>(null);
-  const rafRef   = useRef<number>(0);
-  const N = chapters.length;
+const chapterMeta = [
+  { name: "Search",       glowPos: "18% 50%" },
+  { name: "Leads",        glowPos: "82% 50%" },
+  { name: "Outreach",     glowPos: "22% 50%" },
+  { name: "Pipeline",     glowPos: "50% 28%" },
+  { name: "What you get", glowPos: "50% 50%" },
+  { name: "Start free",   glowPos: "50% 60%" },
+];
 
-  type Phase = "before" | "active" | "after";
-  const [phase, setPhase]       = useState<Phase>("before");
-  const [progress, setProgress] = useState(0);
+const VideoPlayer = ({ chapters }: { chapters: Array<(active: boolean) => React.ReactNode> }) => {
+  const N     = chapters.length;
+  const TOTAL = N * CHAPTER_DURATION;
 
+  type Status = "idle" | "playing" | "paused" | "ended";
+  const [status,  setStatus]  = useState<Status>("idle");
+  const [elapsed, setElapsed] = useState(0);
+  const startRef = useRef(0);
+  const rafRef   = useRef(0);
+  const barRef   = useRef<HTMLDivElement>(null);
+
+  const progress    = elapsed / TOTAL;
+  const chapterIdx  = Math.min(Math.floor(elapsed / CHAPTER_DURATION), N - 1);
+  const fmt = (ms: number) => { const s = Math.floor(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
+
+  const doPlay = () => {
+    startRef.current = performance.now() - (status === "ended" ? 0 : elapsed);
+    if (status === "ended") setElapsed(0);
+    setStatus("playing");
+  };
+  const doPause = () => setStatus("paused");
+
+  const seek = (newElapsed: number) => {
+    setElapsed(newElapsed);
+    startRef.current = performance.now() - newElapsed;
+    if (status !== "playing") setStatus("paused");
+  };
+
+  const seekByBar = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = barRef.current!.getBoundingClientRect();
+    seek(Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)) * TOTAL);
+  };
+
+  // RAF loop
   useEffect(() => {
-    const update = () => {
-      const outer = outerRef.current;
-      if (!outer) return;
-      const rect = outer.getBoundingClientRect();
-      const scrollable = outer.offsetHeight - window.innerHeight;
-      if (scrollable <= 0) return;
+    if (status !== "playing") { cancelAnimationFrame(rafRef.current); return; }
+    const tick = () => {
+      const e = performance.now() - startRef.current;
+      if (e >= TOTAL) { setElapsed(TOTAL); setStatus("ended"); return; }
+      setElapsed(e);
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [status, TOTAL]);
 
-      if (rect.top > 0) {
-        setPhase("before");
-        setProgress(0);
-      } else if (rect.bottom <= window.innerHeight) {
-        setPhase("after");
-        setProgress(1);
-      } else {
-        setPhase("active");
-        setProgress(Math.max(0, Math.min(1, -rect.top / scrollable)));
+  // Space bar
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code === "Space" && (e.target as HTMLElement)?.tagName !== "INPUT") {
+        e.preventDefault();
+        status === "playing" ? doPause() : doPlay();
       }
     };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [status, elapsed]);
 
-    const onScroll = () => {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = requestAnimationFrame(update);
-    };
+  const getOpacity = (i: number) => {
+    if (status === "idle") return i === 0 ? 1 : 0;
+    const s = i * CHAPTER_DURATION, e = (i + 1) * CHAPTER_DURATION;
+    const fin = s + FADE_FRAC * CHAPTER_DURATION, fout = e - FADE_FRAC * CHAPTER_DURATION;
+    if (elapsed <= s) return 0;
+    if (elapsed < fin)  return easeOut3((elapsed - s)    / (FADE_FRAC * CHAPTER_DURATION));
+    if (elapsed < fout) return 1;
+    if (elapsed < e)    return 1 - easeOut3((elapsed - fout) / (FADE_FRAC * CHAPTER_DURATION));
+    return 0;
+  };
 
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", update);
-    update();
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", update);
-      cancelAnimationFrame(rafRef.current);
-    };
-  }, []);
-
-  const boundaries = Array.from({ length: N - 1 }, (_, i) => (i + 1) / N);
-
-  const getFadeIn = (i: number) =>
-    i === 0 ? 1 : easeOut3(norm(progress, boundaries[i - 1] - MELT_FADE, boundaries[i - 1] + MELT_FADE));
-  const getFadeOut = (i: number) =>
-    i === N - 1 ? 0 : easeOut3(norm(progress, boundaries[i] - MELT_FADE, boundaries[i] + MELT_FADE));
-
-  const activeIdx = boundaries.reduce((acc, b) => (progress >= b - MELT_FADE ? acc + 1 : acc), 0);
-
-  const viewportStyle: React.CSSProperties =
-    phase === "active"
-      ? { position: "fixed",    top: 0, left: 0, right: 0, height: "100vh" }
-      : phase === "after"
-      ? { position: "absolute", bottom: 0, left: 0, right: 0, height: "100vh" }
-      : { position: "absolute", top: 0,    left: 0, right: 0, height: "100vh" };
+  const isPlaying = status === "playing";
+  const isIdle    = status === "idle";
 
   return (
-    <div
-      ref={outerRef}
-      style={{ height: `${N * 120}vh`, position: "relative" }}
-    >
-      <div
-        style={{
-          ...viewportStyle,
-          overflow: "hidden",
-          background: "hsl(261 75% 2%)",
-        }}
-      >
-        {/* Dot grid */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage: "radial-gradient(circle, hsl(0 0% 100% / 0.045) 1px, transparent 1px)",
-            backgroundSize: "32px 32px",
-          }}
-          aria-hidden="true"
-        />
+    <div className="relative overflow-hidden" style={{ height: "100vh", background: "hsl(261 75% 2%)" }}>
+      {/* Dot grid */}
+      <div className="absolute inset-0 pointer-events-none" aria-hidden="true"
+        style={{ backgroundImage: "radial-gradient(circle, hsl(0 0% 100% / 0.045) 1px, transparent 1px)", backgroundSize: "32px 32px" }} />
 
-        {chapters.map(({ render, glowPos }, i) => {
-          const fadeIn  = getFadeIn(i);
-          const fadeOut = getFadeOut(i);
-          const opacity = Math.max(0, Math.min(1, fadeIn - fadeOut));
-          const ty      = (1 - fadeIn) * 60 - fadeOut * 60;
-          const scale   = 0.93 + opacity * 0.07;
-          const blur    = (1 - opacity) * 12;
-          const active  = opacity > 0.45;
+      {/* Chapter layers */}
+      {chapters.map((render, i) => {
+        const op     = getOpacity(i);
+        const active = op > 0.45;
+        const ty     = (1 - Math.min(op * 2, 1)) * 50;
+        const blur   = (1 - Math.min(op * 1.5, 1)) * 10;
+        return (
+          <div key={i} aria-hidden={!active}
+            style={{ position: "absolute", inset: 0, opacity: op,
+              transform: `translateY(${ty.toFixed(1)}px)`,
+              filter: blur > 0.5 ? `blur(${blur.toFixed(1)}px)` : "none",
+              willChange: "opacity, transform, filter",
+              pointerEvents: active ? "auto" : "none" }}
+          >
+            <div className="absolute inset-0 pointer-events-none" aria-hidden="true"
+              style={{ background: `radial-gradient(ellipse 55% 55% at ${chapterMeta[i]?.glowPos ?? "50% 50%"}, hsl(261 75% 55% / 0.15), transparent 65%)`,
+                filter: "blur(24px)", opacity: op * 0.95 }} />
+            {render(active)}
+          </div>
+        );
+      })}
 
-          return (
-            <div
-              key={i}
-              aria-hidden={!active}
-              style={{
-                position: "absolute",
-                inset: 0,
-                opacity,
-                transform: `translateY(${ty.toFixed(1)}px) scale(${scale.toFixed(3)})`,
-                filter: blur > 0.5 ? `blur(${blur.toFixed(1)}px)` : "none",
-                willChange: "opacity, transform, filter",
-                pointerEvents: active ? "auto" : "none",
-              }}
-            >
-              <div
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                  background: `radial-gradient(ellipse 55% 55% at ${glowPos}, hsl(261 75% 55% / 0.15), transparent 65%)`,
-                  filter: "blur(24px)",
-                  opacity: Math.max(0, opacity * 0.95),
-                }}
-                aria-hidden="true"
-              />
-              {render(active)}
-            </div>
-          );
-        })}
-
-        {/* Dot indicator */}
-        <div
-          className="absolute bottom-7 left-1/2 -translate-x-1/2 flex items-center gap-2.5 z-20"
-          aria-hidden="true"
+      {/* Idle / ended: big centred play button */}
+      {(isIdle || status === "ended") && (
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center cursor-pointer"
+          onClick={doPlay} role="button" aria-label={status === "ended" ? "Watch again" : "Play walkthrough"}
         >
-          {chapters.map((_, i) => (
-            <div
-              key={i}
-              className="rounded-full transition-all duration-500"
-              style={{
-                width:  activeIdx === i ? "20px" : "5px",
-                height: "5px",
-                background: activeIdx === i ? "hsl(261 75% 65%)" : "hsl(0 0% 100% / 0.18)",
-              }}
+          <div className="absolute inset-0 pointer-events-none" aria-hidden="true"
+            style={{ background: "radial-gradient(ellipse at center, transparent 30%, hsl(261 75% 2% / 0.55) 100%)" }} />
+          <div className="relative z-10 flex flex-col items-center gap-4">
+            <div className="flex items-center justify-center rounded-full" style={{
+              width: 76, height: 76,
+              background: "linear-gradient(135deg, hsl(261 75% 62%), hsl(261 75% 50%))",
+              boxShadow: "0 0 0 14px hsl(261 75% 55% / 0.12), 0 0 0 28px hsl(261 75% 55% / 0.05)",
+            }}>
+              <Play className="w-7 h-7 text-white translate-x-0.5" fill="white" />
+            </div>
+            <span className="text-sm font-medium" style={{ color: "hsl(0 0% 100% / 0.5)" }}>
+              {status === "ended" ? "Watch again" : "Play walkthrough · 1 min"}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Paused: small resume button */}
+      {status === "paused" && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center cursor-pointer"
+          onClick={doPlay} role="button" aria-label="Resume">
+          <div className="flex items-center justify-center rounded-full" style={{
+            width: 60, height: 60,
+            background: "hsl(261 75% 8% / 0.88)",
+            border: "1px solid hsl(261 75% 50% / 0.28)",
+            backdropFilter: "blur(14px)",
+          }}>
+            <Play className="w-5 h-5 translate-x-px" style={{ color: "hsl(261 75% 72%)" }} fill="hsl(261 75% 72%)" />
+          </div>
+        </div>
+      )}
+
+      {/* Controls — hidden while idle */}
+      <div className="absolute bottom-0 left-0 right-0 z-30"
+        style={{ background: "linear-gradient(to top, hsl(261 75% 2% / 0.96) 0%, transparent 100%)",
+          padding: "28px 20px 20px", opacity: isIdle ? 0 : 1, transition: "opacity 0.3s",
+          pointerEvents: isIdle ? "none" : "auto" }}
+      >
+        {/* Chapter name + time */}
+        <div className="flex items-center justify-between mb-2.5 px-1">
+          <span className="text-xs font-medium tracking-wide" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
+            {chapterMeta[chapterIdx]?.name}
+          </span>
+          <span className="font-mono text-[11px]" style={{ color: "hsl(0 0% 100% / 0.28)" }}>
+            {fmt(elapsed)} / {fmt(TOTAL)}
+          </span>
+        </div>
+
+        {/* Scrub bar */}
+        <div ref={barRef} className="relative h-1 rounded-full cursor-pointer group mb-4"
+          style={{ background: "hsl(0 0% 100% / 0.1)" }} onClick={seekByBar}
+          role="slider" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress * 100)}
+        >
+          <div className="absolute left-0 top-0 h-full rounded-full pointer-events-none" style={{
+            width: `${progress * 100}%`,
+            background: "linear-gradient(to right, hsl(261 75% 60%), hsl(280 70% 65%))",
+            transition: isPlaying ? "none" : "width 0.12s",
+          }} />
+          {/* Chapter tick markers */}
+          {Array.from({ length: N - 1 }, (_, i) => (
+            <button key={i}
+              className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full transition-transform hover:scale-[1.6]"
+              style={{ left: `${((i + 1) / N) * 100}%`,
+                background: elapsed >= (i + 1) * CHAPTER_DURATION ? "hsl(261 75% 65%)" : "hsl(0 0% 100% / 0.2)",
+                border: "2px solid hsl(261 75% 2%)" }}
+              onClick={(e) => { e.stopPropagation(); seek((i + 1) * CHAPTER_DURATION); }}
+              aria-label={`Chapter ${i + 2}: ${chapterMeta[i + 1]?.name}`}
             />
           ))}
+          {/* Hover thumb */}
+          <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+            style={{ left: `${progress * 100}%`, background: "white", boxShadow: "0 0 8px hsl(261 75% 55% / 0.6)" }}
+            aria-hidden="true" />
+        </div>
+
+        {/* Play/pause + chapter pills */}
+        <div className="flex items-center gap-3">
+          <button className="flex items-center justify-center rounded-full flex-shrink-0 transition-colors"
+            style={{ width: 36, height: 36, background: "hsl(261 75% 50% / 0.1)", border: "1px solid hsl(261 75% 50% / 0.18)" }}
+            onClick={isPlaying ? doPause : doPlay} aria-label={isPlaying ? "Pause" : "Play"}
+          >
+            {isPlaying
+              ? <Pause className="w-3.5 h-3.5" style={{ color: "hsl(261 75% 68%)" }} />
+              : <Play  className="w-3.5 h-3.5 translate-x-px" style={{ color: "hsl(261 75% 68%)" }} fill="hsl(261 75% 68%)" />
+            }
+          </button>
+          <div className="flex items-center gap-1.5 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+            {chapterMeta.map((c, i) => (
+              <button key={i}
+                className="flex-shrink-0 px-3 py-1 rounded-full text-[10px] font-medium transition-all duration-200"
+                style={{ background: chapterIdx === i ? "hsl(261 75% 50% / 0.16)" : "transparent",
+                  border: `1px solid ${chapterIdx === i ? "hsl(261 75% 50% / 0.28)" : "transparent"}`,
+                  color: chapterIdx === i ? "hsl(261 75% 72%)" : "hsl(0 0% 100% / 0.28)" }}
+                onClick={() => seek(i * CHAPTER_DURATION)}
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -854,12 +920,14 @@ const CTAChapter = ({ active }: { active: boolean }) => {
         >
           <span className="block">Ready to run your</span>
           <span
-            className="block italic"
+            className="block font-display italic animate-shiny"
             style={{
-              background: "linear-gradient(135deg, hsl(261 75% 72%) 0%, hsl(280 80% 68%) 50%, hsl(261 75% 60%) 100%)",
+              backgroundImage: "linear-gradient(to right, #050010 0%, #1a0060 12.5%, #9d72e8 32.5%, #c068e8 50%, #1a0060 67.5%, #050010 87.5%, #050010 100%)",
+              backgroundSize: "200% auto",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
+              filter: "url(#c3-noise)",
             }}
           >
             first search?
@@ -1023,7 +1091,7 @@ export default function DemoPage() {
             className={`flex flex-col items-center gap-2 transition-all duration-700 delay-200 ${heroVisible ? "opacity-100" : "opacity-0"}`}
             style={{ color: "hsl(0 0% 100% / 0.22)" }}
           >
-            <span className="text-sm">Scroll to explore</span>
+            <span className="text-sm">Play below to begin</span>
             <svg width="14" height="22" viewBox="0 0 14 22" fill="none" aria-hidden="true"
               style={{ animation: "chevron-bounce 1.8s ease-in-out infinite" }}>
               <path d="M7 1 L7 17 M3 13 L7 17 L11 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -1035,14 +1103,14 @@ export default function DemoPage() {
       {/* Top hairline — matches landing section separator */}
       <div style={{ background: "hsl(261 75% 50% / 0.18)", height: "1px" }} />
 
-      {/* ── Melt chapters ──────────────────────────────────────────────────── */}
-      <MeltContainer chapters={[
-        { render: (active) => <SearchChapter   active={active} />, glowPos: "18% 50%" },
-        { render: (active) => <LeadsChapter    active={active} />, glowPos: "82% 50%" },
-        { render: (active) => <OutreachChapter active={active} />, glowPos: "22% 50%" },
-        { render: (active) => <PipelineChapter active={active} />, glowPos: "50% 28%" },
-        { render: (active) => <ResultsChapter  active={active} />, glowPos: "50% 50%" },
-        { render: (active) => <CTAChapter      active={active} />, glowPos: "50% 60%" },
+      {/* ── Video player ───────────────────────────────────────────────────── */}
+      <VideoPlayer chapters={[
+        (active) => <SearchChapter   active={active} />,
+        (active) => <LeadsChapter    active={active} />,
+        (active) => <OutreachChapter active={active} />,
+        (active) => <PipelineChapter active={active} />,
+        (active) => <ResultsChapter  active={active} />,
+        (active) => <CTAChapter      active={active} />,
       ]} />
     </div>
   );
