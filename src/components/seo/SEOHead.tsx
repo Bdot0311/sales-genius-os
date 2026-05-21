@@ -87,8 +87,15 @@ export const SEOHead = ({
     "revenue operations software"
   ].join(', ');
 
-  const robotsContent = shouldIndex 
-    ? "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" 
+  // Noindex when served from a preview/staging domain (e.g. sales-genius-os.lovable.app)
+  // so Google doesn't mark those URLs as "Alternate pages with proper canonical tag"
+  const onNonCanonicalDomain = typeof window !== 'undefined' &&
+    window.location.hostname !== 'salesos.alephwavex.io' &&
+    window.location.hostname !== 'localhost' &&
+    !window.location.hostname.startsWith('127.');
+
+  const robotsContent = (shouldIndex && !onNonCanonicalDomain)
+    ? "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
     : "noindex, nofollow";
   
   // Normalize author(s) to array

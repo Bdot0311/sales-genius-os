@@ -2,7 +2,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Shield, Clock, Lock, Unlock, Trash2, Globe, KeyRound } from "lucide-react";
+import { Shield, Clock, Lock, Unlock, Trash2, KeyRound } from "lucide-react";
+import { format, formatDistanceToNow } from "date-fns";
 import type { UserSubscription } from "@/pages/admin/Users";
 
 interface UserTableProps {
@@ -52,19 +53,18 @@ export const UserTable = ({
         <TableHeader>
           <TableRow className="border-border/50 hover:bg-transparent">
             <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">User</TableHead>
-            <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Source</TableHead>
             <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Plan</TableHead>
-            <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</TableHead>
             <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Account</TableHead>
+            <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Joined</TableHead>
+            <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Last Login</TableHead>
             <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Leads</TableHead>
-            <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Period End</TableHead>
             <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {loading ? (
             <TableRow>
-             <TableCell colSpan={8} className="text-center py-12">
+             <TableCell colSpan={7} className="text-center py-12">
                 <div className="flex items-center justify-center gap-2">
                   <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary border-t-transparent" />
                   <span className="text-muted-foreground">Loading users...</span>
@@ -73,7 +73,7 @@ export const UserTable = ({
             </TableRow>
           ) : subscriptions.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
+              <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
                 No users found
               </TableCell>
             </TableRow>
@@ -90,20 +90,13 @@ export const UserTable = ({
                       <div className="min-w-0">
                         <p className="font-medium text-sm truncate">{sub.full_name || 'No name'}</p>
                         <p className="text-xs text-muted-foreground truncate">{sub.email}</p>
+                        {sub.signup_source && (
+                          <p className="text-[10px] text-muted-foreground/50 truncate mt-0.5" title={sub.signup_source}>
+                            via {sub.signup_source}
+                          </p>
+                        )}
                       </div>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    {sub.signup_source ? (
-                      <div className="flex items-center gap-1.5">
-                        <Globe className="h-3 w-3 text-muted-foreground shrink-0" />
-                        <span className="text-xs text-muted-foreground truncate max-w-[120px]" title={sub.signup_source}>
-                          {sub.signup_source}
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="text-xs text-muted-foreground/50">—</span>
-                    )}
                   </TableCell>
                   <TableCell>
                     <Select
@@ -123,22 +116,29 @@ export const UserTable = ({
                     </Select>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={sub.status === 'active' ? 'default' : 'secondary'} className="text-xs">
-                      {sub.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
                     {getAccountBadge(sub.user_id, sub.account_status, sub.trial_end_date, admin)}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground tabular-nums whitespace-nowrap">
+                    {sub.created_at
+                      ? <span title={format(new Date(sub.created_at), 'PPpp')}>{format(new Date(sub.created_at), 'MMM d, yyyy')}</span>
+                      : <span className="text-muted-foreground/40">—</span>}
+                  </TableCell>
+                  <TableCell className="text-sm tabular-nums whitespace-nowrap">
+                    {sub.last_sign_in_at ? (
+                      <span
+                        className="text-emerald-400"
+                        title={format(new Date(sub.last_sign_in_at), 'PPpp')}
+                      >
+                        {formatDistanceToNow(new Date(sub.last_sign_in_at), { addSuffix: true })}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground/40 text-xs">Never recorded</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-sm tabular-nums">
                     {(admin || sub.account_status === 'admin' || sub.leads_limit >= 99999)
                       ? <span className="text-xs text-primary font-medium">Unlimited</span>
                       : sub.leads_limit.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground tabular-nums">
-                    {!sub.stripe_customer_id && (admin || sub.account_status === 'admin')
-                      ? <span className="text-xs text-muted-foreground">No billing</span>
-                      : new Date(sub.current_period_end).toLocaleDateString()}
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-0.5 justify-end opacity-60 group-hover:opacity-100 transition-opacity">
