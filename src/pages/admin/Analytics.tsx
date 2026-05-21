@@ -82,6 +82,7 @@ const AdminAnalytics = () => {
           { name: 'Starter', value: planCounts['starter'] || 0, color: 'hsl(var(--chart-5))' },
           { name: 'Growth', value: planCounts['growth'] || 0, color: 'hsl(var(--chart-1))' },
           { name: 'Pro', value: planCounts['pro'] || 0, color: 'hsl(var(--chart-2))' },
+          { name: 'Agency', value: planCounts['agency'] || 0, color: 'hsl(261 75% 60%)' },
         ]);
       }
     } catch (error) {
@@ -89,28 +90,29 @@ const AdminAnalytics = () => {
     }
   };
 
-  // Generate growth data from real subscriptions
+  // Generate growth data from real subscriptions (deterministic — no Math.random)
   const generateGrowthData = () => {
     const months = ['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const baseUsers = Math.max(stats.totalUsers - 50, 10);
-    
+    const newUsersPerMonth = Math.round(stats.totalUsers / 6);
+
     return months.map((month, index) => ({
       month,
       users: Math.round(baseUsers + (stats.totalUsers - baseUsers) * (index / 5)),
-      newUsers: Math.round((stats.totalUsers / 6) * (0.8 + Math.random() * 0.4)),
+      newUsers: newUsersPerMonth,
     }));
   };
 
-  // Generate revenue data from real stats
+  // Generate revenue data from real stats (deterministic — no Math.random)
   const generateRevenueData = () => {
     const months = ['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const currentMRR = stats.monthlyRevenue;
-    
+
     return months.map((month, index) => {
       const factor = 0.5 + (index * 0.1);
       return {
         month,
-        revenue: Math.round(currentMRR * factor * (1 + Math.random() * 0.1)),
+        revenue: Math.round(currentMRR * factor),
         mrr: Math.round(currentMRR * factor * 0.9),
       };
     });
@@ -120,7 +122,7 @@ const AdminAnalytics = () => {
   const revenueData = generateRevenueData();
 
   // Calculate real revenue breakdown
-  const planPrices = { free: 0, starter: 39, growth: 89, pro: 179 };
+  const planPrices = { free: 0, starter: 39, growth: 89, pro: 179, agency: 249 };
   const revenueBreakdown = planDistribution.map(plan => ({
     ...plan,
     revenue: plan.value * (planPrices[plan.name.toLowerCase() as keyof typeof planPrices] || 0),

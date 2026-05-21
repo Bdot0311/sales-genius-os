@@ -158,7 +158,7 @@ const AdminActivity = () => {
     setSystemEvents((data || []).map(e => ({
       id: e.id,
       event_type: e.event_type,
-      description: e.severity,
+      description: e.event_type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
       severity: e.severity,
       created_at: e.created_at,
     })));

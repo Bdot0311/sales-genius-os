@@ -43,7 +43,7 @@ serve(async (req) => {
       .eq("user_id", user.id)
       .single();
 
-    if (!subscription || (subscription.plan !== "pro" && subscription.plan !== "elite")) {
+    if (!subscription || (subscription.plan !== "pro" && subscription.plan !== "elite" && subscription.plan !== "agency")) {
       throw new Error("API key generation is only available for Pro plan users");
     }
     logStep("Pro plan verified");

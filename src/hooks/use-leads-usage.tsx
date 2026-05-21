@@ -31,7 +31,9 @@ export const useLeadsUsage = () => {
           leadsCount: Number(usageData.leads_count),
           leadsLimit: usageData.leads_limit,
           plan: plan as 'free' | 'starter' | 'growth' | 'pro',
-          percentageUsed: (Number(usageData.leads_count) / usageData.leads_limit) * 100,
+          percentageUsed: usageData.leads_limit > 0
+            ? (Number(usageData.leads_count) / usageData.leads_limit) * 100
+            : 0,
         });
       }
     } catch (error) {

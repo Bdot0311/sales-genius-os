@@ -238,13 +238,21 @@ const Inbox = () => {
                       className="min-h-[100px] text-sm"
                     />
                     <div className="flex gap-2">
-                      <Button size="sm" className="flex-1" onClick={() => toast.success("Reply sent (demo)")}>
-                        <Send className="w-3.5 h-3.5 mr-2" />Send Draft
+                      <Button
+                        size="sm"
+                        className="flex-1"
+                        disabled
+                        onClick={() => toast.info("Direct reply sending is coming soon. Copy the draft and send from your email client.")}
+                      >
+                        <Send className="w-3.5 h-3.5 mr-2" />Send Reply (Coming Soon)
                       </Button>
                       <Button size="sm" variant="outline" onClick={() => dismissThread.mutate(selected.id)}>
                         <Archive className="w-3.5 h-3.5 mr-2" />Dismiss
                       </Button>
                     </div>
+                    <p className="text-xs text-muted-foreground">
+                      Direct sending not yet connected — copy the draft above and send from your email client.
+                    </p>
                   </div>
                 </div>
               ) : (

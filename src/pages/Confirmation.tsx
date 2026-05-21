@@ -84,7 +84,8 @@ const Confirmation = () => {
       const planPrices: Record<string, number> = {
         starter: 39,
         growth: 89,
-        pro: 179
+        pro: 179,
+        agency: 249
       };
 
       // Track purchase conversion in Google Analytics
@@ -110,7 +111,8 @@ const Confirmation = () => {
       const planPricesStr: Record<string, string> = {
         starter: "$39",
         growth: "$89",
-        pro: "$179"
+        pro: "$179",
+        agency: "$249"
       };
 
       supabase.functions.invoke('send-subscription-confirmation', {
