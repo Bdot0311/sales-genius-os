@@ -112,8 +112,8 @@ export function useExternalLeads() {
       // Check for credit-related errors
       if (errorMessage.includes('credits') || errorMessage.includes('402') || errorMessage.includes('Payment') || errorMessage.includes('exhausted')) {
         toast({
-          title: 'Lusha Credits Exhausted',
-          description: 'Your Lusha search credits have been used up. Contact support or add more credits to continue searching.',
+          title: 'Search Credits Exhausted',
+          description: 'Your SalesOS search credits have been used up. Contact support or add more credits to continue searching.',
           variant: 'destructive',
           duration: 10000,
         });
@@ -214,7 +214,7 @@ export function useExternalLeads() {
             linkedin_url: lead.linkedin_url,
             country: lead.country,
             lead_status: 'active',
-            source: 'Lusha',
+            source: 'SalesOS',
           })
           .select('id')
           .single();
@@ -253,7 +253,7 @@ export function useExternalLeads() {
           job_title: lead.job_title,
           linkedin_url: lead.linkedin_url,
           company_website: lead.company_domain ? `https://${lead.company_domain}` : undefined,
-          source: 'Lusha',
+          source: 'SalesOS',
           lead_status: 'active',
           icp_score: lead.scores.overall_score,
           enrichment_status: 'enriched',
