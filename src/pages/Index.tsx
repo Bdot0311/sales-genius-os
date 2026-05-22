@@ -8,6 +8,7 @@ const HowItWorks = lazy(() => import("@/components/landing/HowItWorks").then(m =
 const ProblemSection = lazy(() => import("@/components/landing/ProblemSection").then(m => ({ default: m.ProblemSection })));
 const ModulesSection = lazy(() => import("@/components/landing/ModulesSection").then(m => ({ default: m.ModulesSection })));
 const BigStatSection = lazy(() => import("@/components/landing/BigStatSection").then(m => ({ default: m.BigStatSection })));
+const AISdrSection = lazy(() => import("@/components/landing/AISdrSection").then(m => ({ default: m.AISdrSection })));
 const DifferentiationSection = lazy(() => import("@/components/landing/DifferentiationSection").then(m => ({ default: m.DifferentiationSection })));
 const FounderNoteSection = lazy(() => import("@/components/landing/FounderNoteSection").then(m => ({ default: m.FounderNoteSection })));
 const FAQSection = lazy(() => import("@/components/landing/FAQSection").then(m => ({ default: m.FAQSection })));
@@ -66,6 +67,7 @@ const Index = () => {
             <DeferredSection><ProblemSection /></DeferredSection>
             <DeferredSection><HowItWorks /></DeferredSection>
             <DeferredSection><ModulesSection /></DeferredSection>
+            <DeferredSection><AISdrSection /></DeferredSection>
             <DeferredSection><BigStatSection /></DeferredSection>
             <DeferredSection><DifferentiationSection /></DeferredSection>
             <DeferredSection><FounderNoteSection /></DeferredSection>

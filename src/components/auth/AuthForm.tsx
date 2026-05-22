@@ -98,15 +98,12 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
 
       if (session) {
         // Record login in history (fire-and-forget)
-        (supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<unknown>)(
-          'record_user_login',
-          {
-            p_user_id: session.user.id,
-            p_user_email: session.user.email ?? '',
-            p_login_method: 'password',
-            p_status: 'success',
-          }
-        ).catch(() => {/* non-critical */});
+        void supabase.rpc('record_user_login', {
+          p_user_id: session.user.id,
+          p_user_email: session.user.email ?? '',
+          p_login_method: 'password',
+          p_status: 'success',
+        }).then(null, () => {/* non-critical */});
 
         // First check if user is an admin
         const { data: adminCheck } = await supabase
