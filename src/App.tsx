@@ -58,6 +58,7 @@ const Blog = lazy(() => import("./pages/Blog"));
 const BlogPost = lazy(() => import("./pages/BlogPost"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const OnboardingStatus = lazy(() => import("./pages/OnboardingStatus"));
+const Agent = lazy(() => import("./pages/Agent"));
 
 const queryClient = new QueryClient();
 
@@ -225,6 +226,7 @@ const App = () => (
               <Route path="/settings" element={<Settings />} />
               <Route path="/onboarding-status" element={<OnboardingStatus />} />
               <Route path="/dashboard/onboarding-status" element={<OnboardingStatus />} />
+              <Route path="/dashboard/agent" element={<Agent />} />
               <Route path="/admin/*" element={<Admin />} />
               <Route path="/unsubscribe" element={<Unsubscribe />} />
               <Route path="/client-portal/:token" element={<ClientPortal />} />
