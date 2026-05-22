@@ -141,9 +141,9 @@ const HelpCenter = () => {
           <button
             onClick={() => window.history.back()}
             className="inline-flex items-center gap-1.5 mb-6 text-sm transition-colors"
-            style={{ color: "hsl(0 0% 100% / 0.45)" }}
+            style={{ color: "hsl(0 0% 100% / 0.7)" }}
             onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 80%)")}
-            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.45)")}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.7)")}
           >
             <ArrowLeft className="h-4 w-4" />
             Back to help center
@@ -165,7 +165,7 @@ const HelpCenter = () => {
                 >
                   <div className="flex items-center justify-between gap-4">
                     <h3 className="font-medium" style={{ color: "hsl(0 0% 92%)" }}>{article.title}</h3>
-                    <div className="flex items-center text-xs shrink-0" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
+                    <div className="flex items-center text-xs shrink-0" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
                       <Clock className="h-3 w-3 mr-1" />
                       {article.readTime} min
                     </div>
@@ -198,9 +198,9 @@ const HelpCenter = () => {
           <button
             onClick={() => window.history.back()}
             className="inline-flex items-center gap-1.5 mb-6 text-sm transition-colors"
-            style={{ color: "hsl(0 0% 100% / 0.45)" }}
+            style={{ color: "hsl(0 0% 100% / 0.7)" }}
             onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 80%)")}
-            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.45)")}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.7)")}
           >
             <ArrowLeft className="h-4 w-4" />
             Back to help center
@@ -230,7 +230,7 @@ const HelpCenter = () => {
                       >
                         {getCategoryInfo(article.category)?.title}
                       </span>
-                      <span className="text-xs" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
+                      <span className="text-xs" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
                         {article.readTime} min read
                       </span>
                     </div>
@@ -247,7 +247,7 @@ const HelpCenter = () => {
               <p className="mb-4" style={{ color: "hsl(0 0% 100% / 0.55)" }}>
                 No articles found for your search.
               </p>
-              <p className="text-sm" style={{ color: "hsl(0 0% 100% / 0.4)" }}>
+              <p className="text-sm" style={{ color: "hsl(0 0% 100% / 0.65)" }}>
                 Try different keywords or{" "}
                 <a
                   href="mailto:support@bdotindustries.com"

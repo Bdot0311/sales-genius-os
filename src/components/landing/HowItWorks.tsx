@@ -43,7 +43,7 @@ const steps = [
           >
             <div>
               <p className="text-sm font-semibold" style={{ color: "hsl(0 0% 88%)" }}>{name}</p>
-              <p className="text-xs mt-0.5" style={{ color: "hsl(0 0% 100% / 0.35)" }}>{role}</p>
+              <p className="text-xs mt-0.5" style={{ color: "hsl(0 0% 100% / 0.6)" }}>{role}</p>
             </div>
             <div className="flex items-center gap-2.5 flex-shrink-0">
               <div className="h-1 w-14 rounded-full overflow-hidden" style={{ background: "hsl(0 0% 100% / 0.08)" }}>
@@ -185,7 +185,7 @@ export const HowItWorks = () => {
                   <h3 className="text-2xl font-semibold mb-3 leading-snug" style={{ color: "hsl(0 0% 90%)" }}>
                     {step.title}
                   </h3>
-                  <p className="leading-relaxed max-w-lg mx-auto" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
+                  <p className="leading-relaxed max-w-lg mx-auto" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
                     {step.body}
                   </p>
                   {step.visual}

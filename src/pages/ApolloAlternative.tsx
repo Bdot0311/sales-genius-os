@@ -88,7 +88,7 @@ const ApolloAlternative = () => {
               </h1>
               <p
                 className="text-lg font-light max-w-2xl mx-auto mb-10"
-                style={{ color: "hsl(0 0% 100% / 0.45)" }}
+                style={{ color: "hsl(0 0% 100% / 0.7)" }}
               >
                 Plain-English lead search, SMTP-verified emails, ICP scoring, and AI-drafted outreach in one workflow — from $0. No boolean filters, no five-tool stack.
               </p>
@@ -211,7 +211,7 @@ const ApolloAlternative = () => {
                     style={{ background: "hsl(261 75% 50% / 0.04)", border: "1px solid hsl(261 75% 50% / 0.14)" }}
                   >
                     <summary className="font-medium cursor-pointer" style={{ color: "hsl(0 0% 88%)" }}>{f.question}</summary>
-                    <p className="mt-3 text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.45)" }}>{f.answer}</p>
+                    <p className="mt-3 text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.7)" }}>{f.answer}</p>
                   </details>
                 ))}
               </div>
@@ -221,7 +221,7 @@ const ApolloAlternative = () => {
           {/* Related */}
           <section className="py-12" style={divider}>
             <div className="container mx-auto px-5 sm:px-6 max-w-3xl text-center">
-              <p className="text-sm mb-3" style={{ color: "hsl(0 0% 100% / 0.35)" }}>Comparing more than just Apollo?</p>
+              <p className="text-sm mb-3" style={{ color: "hsl(0 0% 100% / 0.6)" }}>Comparing more than just Apollo?</p>
               <a
                 href="/blog/apollo-vs-instantly-vs-salesloft"
                 className="inline-flex items-center gap-2 text-base font-semibold transition-colors"

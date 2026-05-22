@@ -170,7 +170,7 @@ export const HelpArticle = ({ article }: HelpArticleProps) => {
   return (
     <article className="max-w-4xl mx-auto">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 text-sm mb-6" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
+      <nav className="flex items-center gap-2 text-sm mb-6" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
         <Link to="/help" className="transition-colors hover:text-white">Help Center</Link>
         <ChevronRight className="h-4 w-4" style={{ color: "hsl(261 75% 50% / 0.4)" }} />
         <Link to={`/help/category/${article.category}`} className="transition-colors hover:text-white">
@@ -184,9 +184,9 @@ export const HelpArticle = ({ article }: HelpArticleProps) => {
       <button
         onClick={() => navigate(-1)}
         className="inline-flex items-center gap-2 mb-6 text-sm transition-colors"
-        style={{ color: "hsl(0 0% 100% / 0.45)" }}
+        style={{ color: "hsl(0 0% 100% / 0.7)" }}
         onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 80%)")}
-        onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.45)")}
+        onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.7)")}
       >
         <ArrowLeft className="h-4 w-4" />
         Back
@@ -201,7 +201,7 @@ export const HelpArticle = ({ article }: HelpArticleProps) => {
           >
             {categoryInfo?.title}
           </span>
-          <div className="flex items-center text-sm" style={{ color: "hsl(0 0% 100% / 0.4)" }}>
+          <div className="flex items-center text-sm" style={{ color: "hsl(0 0% 100% / 0.65)" }}>
             <Clock className="h-3.5 w-3.5 mr-1" />
             {article.readTime} min read
           </div>
@@ -278,7 +278,7 @@ export const HelpArticle = ({ article }: HelpArticleProps) => {
                   onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "hsl(261 75% 50% / 0.14)")}
                 >
                   <h4 className="font-medium text-sm mb-1" style={{ color: "hsl(0 0% 90%)" }}>{related.title}</h4>
-                  <p className="text-xs leading-relaxed line-clamp-2" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
+                  <p className="text-xs leading-relaxed line-clamp-2" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
                     {related.description}
                   </p>
                 </div>

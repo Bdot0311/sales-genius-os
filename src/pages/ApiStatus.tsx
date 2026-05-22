@@ -184,9 +184,9 @@ const ApiStatus = () => {
               <button
                 onClick={() => navigate(-1)}
                 className="inline-flex items-center gap-1.5 mb-6 text-sm transition-colors"
-                style={{ color: "hsl(0 0% 100% / 0.45)" }}
+                style={{ color: "hsl(0 0% 100% / 0.7)" }}
                 onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 80%)")}
-                onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.45)")}
+                onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.7)")}
               >
                 <ArrowLeft className="w-4 h-4" />
                 Back
@@ -254,14 +254,14 @@ const ApiStatus = () => {
                   <p className="font-semibold" style={{ color: "hsl(0 0% 92%)" }}>
                     {overallStatus === "operational" ? "All Systems Operational" : overallStatus === "down" ? "System Outage" : "Degraded Performance"}
                   </p>
-                  <p className="text-xs mt-0.5" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
+                  <p className="text-xs mt-0.5" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
                     Last updated: {new Date().toLocaleString()}
                   </p>
                 </div>
               </div>
               <div className="text-right">
                 <p className="text-2xl font-bold" style={{ color: "hsl(142 70% 60%)" }}>{uptimeStats.last30Days}%</p>
-                <p className="text-xs" style={{ color: "hsl(0 0% 100% / 0.45)" }}>30-day uptime</p>
+                <p className="text-xs" style={{ color: "hsl(0 0% 100% / 0.7)" }}>30-day uptime</p>
               </div>
             </div>
 
@@ -287,7 +287,7 @@ const ApiStatus = () => {
             <div className="rounded-2xl overflow-hidden" style={cardStyle}>
               <div className="px-5 sm:px-6 py-4" style={{ borderBottom: "1px solid hsl(261 75% 50% / 0.14)" }}>
                 <h2 className="font-semibold" style={{ color: "hsl(0 0% 90%)" }}>Service Status</h2>
-                <p className="text-sm mt-0.5" style={{ color: "hsl(0 0% 100% / 0.45)" }}>Current status of all API services</p>
+                <p className="text-sm mt-0.5" style={{ color: "hsl(0 0% 100% / 0.7)" }}>Current status of all API services</p>
               </div>
               <div className="divide-y" style={{ borderColor: "hsl(261 75% 50% / 0.1)" }}>
                 {services.map((service) => (
@@ -299,7 +299,7 @@ const ApiStatus = () => {
                       <StatusIcon status={service.status} />
                       <div className="flex-1">
                         <h3 className="font-medium text-sm" style={{ color: "hsl(0 0% 90%)" }}>{service.name}</h3>
-                        <div className="flex items-center gap-4 text-xs mt-1" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
+                        <div className="flex items-center gap-4 text-xs mt-1" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
                           <span className="flex items-center gap-1">
                             <Activity className="w-3 h-3" />
                             {service.uptime}% uptime
@@ -321,13 +321,13 @@ const ApiStatus = () => {
             <div className="rounded-2xl overflow-hidden" style={cardStyle}>
               <div className="px-5 sm:px-6 py-4" style={{ borderBottom: "1px solid hsl(261 75% 50% / 0.14)" }}>
                 <h2 className="font-semibold" style={{ color: "hsl(0 0% 90%)" }}>Incident History</h2>
-                <p className="text-sm mt-0.5" style={{ color: "hsl(0 0% 100% / 0.45)" }}>Recent and ongoing incidents</p>
+                <p className="text-sm mt-0.5" style={{ color: "hsl(0 0% 100% / 0.7)" }}>Recent and ongoing incidents</p>
               </div>
               <div className="px-5 sm:px-6 py-5">
                 {incidents.length === 0 ? (
                   <div className="text-center py-8">
                     <CheckCircle className="w-10 h-10 mx-auto mb-3 opacity-30" style={{ color: "hsl(142 70% 55%)" }} />
-                    <p style={{ color: "hsl(0 0% 100% / 0.45)" }}>No incidents in the last 90 days</p>
+                    <p style={{ color: "hsl(0 0% 100% / 0.7)" }}>No incidents in the last 90 days</p>
                   </div>
                 ) : (
                   <div className="space-y-6">
@@ -338,7 +338,7 @@ const ApiStatus = () => {
                           <IncidentStatusPill status={incident.status} />
                         </div>
                         <h3 className="font-semibold mb-1" style={{ color: "hsl(0 0% 90%)" }}>{incident.title}</h3>
-                        <p className="text-xs mb-4" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
+                        <p className="text-xs mb-4" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
                           {incident.created_at.toLocaleString()}
                           {incident.resolved_at && <> — Resolved {incident.resolved_at.toLocaleString()}</>}
                         </p>
@@ -346,7 +346,7 @@ const ApiStatus = () => {
                           {incident.updates.map((update, i) => (
                             <div key={i} className="pl-4" style={{ borderLeft: "2px solid hsl(261 75% 50% / 0.25)" }}>
                               <p className="text-sm" style={{ color: "hsl(0 0% 100% / 0.6)" }}>{update.message}</p>
-                              <p className="text-xs mt-1" style={{ color: "hsl(0 0% 100% / 0.35)" }}>
+                              <p className="text-xs mt-1" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
                                 {update.timestamp.toLocaleString()}
                               </p>
                             </div>
@@ -362,7 +362,7 @@ const ApiStatus = () => {
             {/* Subscribe */}
             <div className="rounded-2xl p-5 sm:p-6" style={cardStyle}>
               <h2 className="font-semibold mb-2" style={{ color: "hsl(0 0% 90%)" }}>Subscribe to Updates</h2>
-              <p className="text-sm mb-4" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
+              <p className="text-sm mb-4" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
                 Subscribe to webhook notifications or RSS feed for real-time status updates
               </p>
               <div
@@ -375,7 +375,7 @@ const ApiStatus = () => {
 
             {/* Related */}
             <div className="pt-4" style={{ borderTop: "1px solid hsl(261 75% 50% / 0.18)" }}>
-              <p className="text-[10px] uppercase tracking-[0.25em] mb-4" style={{ color: "hsl(0 0% 100% / 0.45)" }}>Related resources</p>
+              <p className="text-[10px] uppercase tracking-[0.25em] mb-4" style={{ color: "hsl(0 0% 100% / 0.7)" }}>Related resources</p>
               <ul className="grid sm:grid-cols-2 gap-3 text-sm">
                 {[
                   { href: "/api-docs", label: "API Documentation", sub: "Complete integration guide" },

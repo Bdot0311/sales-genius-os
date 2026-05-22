@@ -53,7 +53,7 @@ export const HelpCategoryCard = ({ category }: HelpCategoryCardProps) => {
               {category.description}
             </p>
             <div className="flex items-center justify-between mt-4">
-              <span className="text-xs" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
+              <span className="text-xs" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
                 {articleCount} article{articleCount !== 1 ? "s" : ""}
               </span>
               <ChevronRight

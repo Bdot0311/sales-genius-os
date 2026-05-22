@@ -249,7 +249,7 @@ const isPaidPlan = (plan: Plan): plan is PaidPlan => plan.key !== "free";
 // Design tokens
 const card = { background: "hsl(261 75% 50% / 0.04)", border: "1px solid hsl(261 75% 50% / 0.14)" } as const;
 const hairline = "hsl(261 75% 50% / 0.18)";
-const mutedText = "hsl(0 0% 100% / 0.45)";
+const mutedText = "hsl(0 0% 100% / 0.7)";
 const accentPurple = "hsl(261 75% 65%)";
 
 export const Pricing = () => {
@@ -310,7 +310,7 @@ export const Pricing = () => {
                 style={
                   billingInterval === interval
                     ? { background: "hsl(261 75% 50% / 0.25)", color: "hsl(0 0% 95%)", border: "1px solid hsl(261 75% 50% / 0.35)" }
-                    : { color: "hsl(0 0% 100% / 0.45)", border: "1px solid transparent" }
+                    : { color: "hsl(0 0% 100% / 0.7)", border: "1px solid transparent" }
                 }
               >
                 {interval === "monthly" ? "Monthly" : "Yearly"}
@@ -411,7 +411,7 @@ export const Pricing = () => {
                         ? `${plan.yearlyProspects.toLocaleString()} prospects/year`
                         : `${plan.monthlyProspects.toLocaleString()} prospects/month`}
                     </p>
-                    <p className="text-xs mt-0.5" style={{ color: "hsl(0 0% 100% / 0.35)" }}>{plan.dailyLimit}</p>
+                    <p className="text-xs mt-0.5" style={{ color: "hsl(0 0% 100% / 0.6)" }}>{plan.dailyLimit}</p>
                   </div>
                 )}
 
@@ -483,7 +483,7 @@ export const Pricing = () => {
             <table className="w-full border-collapse min-w-[680px]">
               <thead>
                 <tr style={{ background: "hsl(261 75% 50% / 0.06)", borderBottom: `1px solid ${hairline}` }}>
-                  <th className="text-left py-4 px-4 sm:px-5 text-xs font-semibold uppercase tracking-wider min-w-[160px] sm:min-w-[200px]" style={{ color: "hsl(0 0% 100% / 0.4)" }}>Feature</th>
+                  <th className="text-left py-4 px-4 sm:px-5 text-xs font-semibold uppercase tracking-wider min-w-[160px] sm:min-w-[200px]" style={{ color: "hsl(0 0% 100% / 0.65)" }}>Feature</th>
                   {["Explore\n$0", "Starter\n$39/mo", "Growth\n$89/mo", "Pro\n$179/mo", "Agency\n$249/mo"].map((label, i) => {
                     const isGrowth = i === 2;
                     const [name, price] = label.split("\n");

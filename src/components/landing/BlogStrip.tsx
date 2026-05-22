@@ -108,7 +108,7 @@ export const BlogStrip = () => {
                 </h3>
                 <p
                   className="mb-6 flex-1 text-sm leading-relaxed"
-                  style={{ color: "hsl(0 0% 100% / 0.45)" }}
+                  style={{ color: "hsl(0 0% 100% / 0.7)" }}
                 >
                   {post.blurb}
                 </p>

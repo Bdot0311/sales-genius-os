@@ -89,7 +89,7 @@ const Blog = () => {
                   No fluff.
                 </span>
               </h1>
-              <p className="text-base sm:text-lg max-w-xl mx-auto" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
+              <p className="text-base sm:text-lg max-w-xl mx-auto" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
                 Guides on B2B lead generation, ICP scoring, and cold email for founders and lean sales teams.
               </p>
             </div>
@@ -119,7 +119,7 @@ const Blog = () => {
                       {post.title}
                     </Link>
                   </h2>
-                  <p className="text-sm leading-relaxed mb-4 max-w-xl" style={{ color: "hsl(0 0% 100% / 0.42)" }}>
+                  <p className="text-sm leading-relaxed mb-4 max-w-xl" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
                     {post.description}
                   </p>
                   <Link

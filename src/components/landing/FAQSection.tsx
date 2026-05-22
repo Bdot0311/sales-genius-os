@@ -160,7 +160,7 @@ export const FAQSection = () => {
                   </AccordionTrigger>
                   <AccordionContent
                     className="pb-5 text-sm leading-relaxed"
-                    style={{ color: "hsl(0 0% 100% / 0.45)" }}
+                    style={{ color: "hsl(0 0% 100% / 0.7)" }}
                   >
                     {faq.answer}
                   </AccordionContent>

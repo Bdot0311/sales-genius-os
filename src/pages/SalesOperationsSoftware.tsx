@@ -80,7 +80,7 @@ const SalesOperationsSoftware = () => {
               </h1>
               <p
                 className="text-lg font-light max-w-2xl mx-auto mb-10"
-                style={{ color: "hsl(0 0% 100% / 0.45)" }}
+                style={{ color: "hsl(0 0% 100% / 0.7)" }}
               >
                 SalesOS replaces the prospecting tool, the enrichment tool, the sequencer, and the reply inbox — so revenue teams ship outbound in minutes, not weeks.
               </p>
@@ -120,7 +120,7 @@ const SalesOperationsSoftware = () => {
               >
                 Why sales ops teams are consolidating
               </h2>
-              <p className="text-center max-w-2xl mx-auto mb-12" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
+              <p className="text-center max-w-2xl mx-auto mb-12" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
                 The average B2B outbound stack runs 5–7 tools. Each has its own seat fee, its own data model, and its own broken hand-off. SalesOS replaces the core four with one platform.
               </p>
               <div className="grid sm:grid-cols-2 gap-5">
@@ -132,7 +132,7 @@ const SalesOperationsSoftware = () => {
                   >
                     <f.icon className="w-6 h-6 mb-3" style={{ color: "hsl(261 75% 65%)" }} />
                     <h3 className="text-base font-semibold mb-2" style={{ color: "hsl(0 0% 90%)" }}>{f.title}</h3>
-                    <p className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.45)" }}>{f.description}</p>
+                    <p className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.7)" }}>{f.description}</p>
                   </div>
                 ))}
               </div>
@@ -205,7 +205,7 @@ const SalesOperationsSoftware = () => {
                     style={{ background: "hsl(261 75% 50% / 0.04)", border: "1px solid hsl(261 75% 50% / 0.14)" }}
                   >
                     <summary className="font-medium cursor-pointer" style={{ color: "hsl(0 0% 88%)" }}>{f.question}</summary>
-                    <p className="mt-3 text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.45)" }}>{f.answer}</p>
+                    <p className="mt-3 text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.7)" }}>{f.answer}</p>
                   </details>
                 ))}
               </div>
@@ -215,7 +215,7 @@ const SalesOperationsSoftware = () => {
           {/* Related */}
           <section className="py-12" style={divider}>
             <div className="container mx-auto px-5 sm:px-6 max-w-3xl text-center">
-              <p className="text-sm mb-3" style={{ color: "hsl(0 0% 100% / 0.35)" }}>Picking between outbound tools?</p>
+              <p className="text-sm mb-3" style={{ color: "hsl(0 0% 100% / 0.6)" }}>Picking between outbound tools?</p>
               <a
                 href="/blog/apollo-vs-instantly-vs-salesloft"
                 className="inline-flex items-center gap-2 text-base font-semibold transition-colors"
