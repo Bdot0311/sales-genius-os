@@ -82,7 +82,7 @@ export const FinalCTA = () => {
 
           <motion.p
             className="text-lg font-light max-w-md mx-auto mb-12"
-            style={{ color: "hsl(0 0% 100% / 0.45)" }}
+            style={{ color: "hsl(0 0% 100% / 0.7)" }}
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-10% 0px" }}

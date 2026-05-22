@@ -196,7 +196,7 @@ const Security = () => {
                 className="mt-12 pt-8"
                 style={{ borderTop: "1px solid hsl(261 75% 50% / 0.18)" }}
               >
-                <p id="related-links" className="text-[10px] uppercase tracking-[0.25em] mb-4" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
+                <p id="related-links" className="text-[10px] uppercase tracking-[0.25em] mb-4" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
                   Related pages
                 </p>
                 <ul className="grid sm:grid-cols-2 gap-3 text-sm">

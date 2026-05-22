@@ -35,7 +35,7 @@ export const TrustBar = () => (
             />
             <span
               className="text-xs font-medium"
-              style={{ color: "hsl(0 0% 100% / 0.4)" }}
+              style={{ color: "hsl(0 0% 100% / 0.65)" }}
             >
               {label}
             </span>

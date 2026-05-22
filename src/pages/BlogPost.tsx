@@ -171,7 +171,7 @@ const BlogPost = () => {
   if (post === undefined) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: "hsl(261 75% 2%)" }}>
-        <p className="text-sm" style={{ color: "hsl(0 0% 100% / 0.4)" }}>Loading…</p>
+        <p className="text-sm" style={{ color: "hsl(0 0% 100% / 0.65)" }}>Loading…</p>
       </div>
     );
   }
@@ -212,9 +212,9 @@ const BlogPost = () => {
           <Link
             to="/blog"
             className="inline-flex items-center gap-1.5 text-sm mb-12 transition-colors duration-150"
-            style={{ color: "hsl(0 0% 100% / 0.45)" }}
+            style={{ color: "hsl(0 0% 100% / 0.7)" }}
             onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.65)")}
-            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.35)")}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.6)")}
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             All articles
@@ -237,7 +237,7 @@ const BlogPost = () => {
             >
               {post.title}
             </h1>
-            <p className="text-lg font-light leading-relaxed mb-6" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
+            <p className="text-lg font-light leading-relaxed mb-6" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
               {post.description}
             </p>
             <div className="h-px" style={{ background: "hsl(261 75% 50% / 0.2)" }} />

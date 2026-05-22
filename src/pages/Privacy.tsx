@@ -78,7 +78,7 @@ const Privacy = () => {
           <div className="container mx-auto px-5 sm:px-6 pb-20 max-w-4xl">
             <article className="space-y-10" style={{ color: bodyColor }}>
 
-              <p className="text-sm" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
+              <p className="text-sm" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
                 <strong style={{ color: "hsl(0 0% 80%)" }}>Last Updated:</strong>{" "}
                 <time dateTime="2025-01">January 2025</time>
               </p>
@@ -240,7 +240,7 @@ const Privacy = () => {
                 className="pt-8"
                 style={{ borderTop: "1px solid hsl(261 75% 50% / 0.18)" }}
               >
-                <p id="related-links" className="text-[10px] uppercase tracking-[0.25em] mb-4" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
+                <p id="related-links" className="text-[10px] uppercase tracking-[0.25em] mb-4" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
                   Related pages
                 </p>
                 <ul className="grid sm:grid-cols-2 gap-3 text-sm">

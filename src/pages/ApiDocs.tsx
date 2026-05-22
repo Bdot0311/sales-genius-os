@@ -213,7 +213,7 @@ function CodeTabs({ tabs, id }: { tabs: { label: string; value: string }[]; id: 
         <button
           onClick={copy}
           className="ml-auto p-1.5 rounded transition-colors"
-          style={{ color: copiedId === id ? "hsl(142 70% 60%)" : "hsl(0 0% 100% / 0.4)" }}
+          style={{ color: copiedId === id ? "hsl(142 70% 60%)" : "hsl(0 0% 100% / 0.65)" }}
           title="Copy"
         >
           {copiedId === id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
@@ -258,7 +258,7 @@ function EndpointCard({ endpoint, copiedCode, onCopy }: { endpoint: Endpoint; co
       <div className="px-5 sm:px-6 py-5 space-y-5">
         {endpoint.params && (
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
+            <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
               Query Parameters
             </p>
             <div className="rounded-xl overflow-hidden" style={{ border: "1px solid hsl(261 75% 50% / 0.14)" }}>
@@ -288,7 +288,7 @@ function EndpointCard({ endpoint, copiedCode, onCopy }: { endpoint: Endpoint; co
 
         {endpoint.bodyExample && (
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
+            <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
               Request Body
             </p>
             <pre className="p-3 rounded-xl text-xs overflow-x-auto" style={codeBlockStyle}>
@@ -298,7 +298,7 @@ function EndpointCard({ endpoint, copiedCode, onCopy }: { endpoint: Endpoint; co
         )}
 
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider mb-2 flex items-center gap-2" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
+          <p className="text-xs font-semibold uppercase tracking-wider mb-2 flex items-center gap-2" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
             Response
             <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: "hsl(261 75% 50% / 0.1)", color: "hsl(261 75% 65%)" }}>
               {endpoint.responseStatus}
@@ -310,7 +310,7 @@ function EndpointCard({ endpoint, copiedCode, onCopy }: { endpoint: Endpoint; co
         </div>
 
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
+          <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
             Code Examples
           </p>
           <CodeTabs
@@ -394,9 +394,9 @@ const ApiDocs = () => {
               <button
                 onClick={() => navigate(-1)}
                 className="inline-flex items-center gap-1.5 mb-6 text-sm transition-colors"
-                style={{ color: "hsl(0 0% 100% / 0.45)" }}
+                style={{ color: "hsl(0 0% 100% / 0.7)" }}
                 onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 80%)")}
-                onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.45)")}
+                onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.7)")}
               >
                 <ArrowLeft className="w-4 h-4" />
                 Back
@@ -462,22 +462,22 @@ const ApiDocs = () => {
             <div className="rounded-2xl overflow-hidden" style={cardStyle}>
               <div className="px-5 sm:px-6 py-4" style={{ borderBottom: "1px solid hsl(261 75% 50% / 0.12)" }}>
                 <h2 className="font-semibold" style={{ color: "hsl(0 0% 90%)" }}>Getting Started</h2>
-                <p className="text-sm mt-0.5" style={{ color: "hsl(0 0% 100% / 0.45)" }}>Authentication, base URL, and rate limits</p>
+                <p className="text-sm mt-0.5" style={{ color: "hsl(0 0% 100% / 0.7)" }}>Authentication, base URL, and rate limits</p>
               </div>
               <div className="px-5 sm:px-6 py-5 space-y-5">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "hsl(0 0% 100% / 0.45)" }}>Base URL</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "hsl(0 0% 100% / 0.7)" }}>Base URL</p>
                   <div className="px-3 py-2 rounded-xl font-mono text-sm break-all" style={codeBlockStyle}>{BASE_URL_TEMPLATE}</div>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "hsl(0 0% 100% / 0.45)" }}>Authentication</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "hsl(0 0% 100% / 0.7)" }}>Authentication</p>
                   <p className="text-sm mb-3" style={{ color: "hsl(0 0% 100% / 0.55)" }}>
                     Include your API key in the <InlineCode>X-API-Key</InlineCode> header. Generate API keys from <strong style={{ color: "hsl(0 0% 80%)" }}>Settings → API Keys</strong> (Pro plan).
                   </p>
                   <div className="px-3 py-2 rounded-xl font-mono text-sm" style={codeBlockStyle}>X-API-Key: sk_your_api_key_here</div>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "hsl(0 0% 100% / 0.45)" }}>Rate Limits</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "hsl(0 0% 100% / 0.7)" }}>Rate Limits</p>
                   <p className="text-sm mb-2" style={{ color: "hsl(0 0% 100% / 0.55)" }}>Rate limits are configured per API key. Check response headers:</p>
                   <ul className="space-y-1.5">
                     {[["X-RateLimit-Remaining", "Requests remaining in window"], ["X-RateLimit-Reset", "ISO timestamp when the limit resets"]].map(([h, d]) => (
@@ -489,7 +489,7 @@ const ApiDocs = () => {
                   </ul>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "hsl(0 0% 100% / 0.45)" }}>Data Scoping</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "hsl(0 0% 100% / 0.7)" }}>Data Scoping</p>
                   <p className="text-sm" style={{ color: "hsl(0 0% 100% / 0.55)" }}>
                     All requests are scoped to the API key owner's account. You can only access your own data.
                   </p>
@@ -513,7 +513,7 @@ const ApiDocs = () => {
             <div className="rounded-2xl overflow-hidden" style={cardStyle}>
               <div className="px-5 sm:px-6 py-4" style={{ borderBottom: "1px solid hsl(261 75% 50% / 0.12)" }}>
                 <h2 className="font-semibold" style={{ color: "hsl(0 0% 90%)" }}>Webhook Signature Verification</h2>
-                <p className="text-sm mt-0.5" style={{ color: "hsl(0 0% 100% / 0.45)" }}>Securely verify incoming webhook deliveries from SalesOS</p>
+                <p className="text-sm mt-0.5" style={{ color: "hsl(0 0% 100% / 0.7)" }}>Securely verify incoming webhook deliveries from SalesOS</p>
               </div>
               <div className="px-5 sm:px-6 py-5">
                 <p className="text-sm mb-4" style={{ color: "hsl(0 0% 100% / 0.55)" }}>
@@ -531,7 +531,7 @@ const ApiDocs = () => {
             <div className="rounded-2xl overflow-hidden" style={cardStyle}>
               <div className="px-5 sm:px-6 py-4" style={{ borderBottom: "1px solid hsl(261 75% 50% / 0.12)" }}>
                 <h2 className="font-semibold" style={{ color: "hsl(0 0% 90%)" }}>Third-Party Integration Quick Start</h2>
-                <p className="text-sm mt-0.5" style={{ color: "hsl(0 0% 100% / 0.45)" }}>Connect SalesOS with popular automation tools</p>
+                <p className="text-sm mt-0.5" style={{ color: "hsl(0 0% 100% / 0.7)" }}>Connect SalesOS with popular automation tools</p>
               </div>
               <div className="px-5 sm:px-6 py-5 space-y-4">
                 {[
@@ -559,7 +559,7 @@ const ApiDocs = () => {
 
             {/* Related */}
             <div className="pt-4" style={{ borderTop: "1px solid hsl(261 75% 50% / 0.18)" }}>
-              <p className="text-[10px] uppercase tracking-[0.25em] mb-4" style={{ color: "hsl(0 0% 100% / 0.45)" }}>Related resources</p>
+              <p className="text-[10px] uppercase tracking-[0.25em] mb-4" style={{ color: "hsl(0 0% 100% / 0.7)" }}>Related resources</p>
               <ul className="grid sm:grid-cols-2 gap-3 text-sm">
                 {[
                   { href: "/security", label: "Security Practices", sub: "Enterprise-grade data protection" },

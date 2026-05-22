@@ -17,7 +17,7 @@ export const ContactSupport = () => {
     <section className="py-16 sm:py-20" style={{ background: "hsl(261 75% 2%)" }}>
       <div className="container mx-auto px-5 sm:px-6">
         <div className="text-center mb-10 sm:mb-12">
-          <p className="mb-3 text-[10px] uppercase tracking-[0.25em]" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
+          <p className="mb-3 text-[10px] uppercase tracking-[0.25em]" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
             Support
           </p>
           <h2 className="font-display text-3xl sm:text-4xl mb-3" style={{ fontWeight: 800, letterSpacing: "-0.02em", color: "hsl(0 0% 92%)" }}>
@@ -50,7 +50,7 @@ export const ContactSupport = () => {
             >
               support@bdotindustries.com
             </a>
-            <div className="flex items-center justify-center gap-1 mt-3 text-xs" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
+            <div className="flex items-center justify-center gap-1 mt-3 text-xs" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
               <Clock className="h-3 w-3" />
               Response within 24 hours
             </div>

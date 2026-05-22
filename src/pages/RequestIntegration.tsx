@@ -63,9 +63,9 @@ const RequestIntegration = () => {
         <button
           onClick={() => navigate(-1)}
           className="inline-flex items-center gap-1.5 mb-8 text-sm transition-colors"
-          style={{ color: "hsl(0 0% 100% / 0.45)" }}
+          style={{ color: "hsl(0 0% 100% / 0.7)" }}
           onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 80%)")}
-          onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.45)")}
+          onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.7)")}
         >
           <ArrowLeft className="w-4 h-4" />
           Back
@@ -103,7 +103,7 @@ const RequestIntegration = () => {
 
           <div className="rounded-2xl p-6 sm:p-7" style={cardStyle}>
             <h2 className="font-semibold mb-1" style={{ color: "hsl(0 0% 90%)" }}>Integration Request Form</h2>
-            <p className="text-sm mb-6" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
+            <p className="text-sm mb-6" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
               Fill out the form below and we'll review your request within 48 hours.
             </p>
 
@@ -153,7 +153,7 @@ const RequestIntegration = () => {
                   onFocus={(e) => (e.target.style.borderColor = "hsl(261 75% 50% / 0.5)")}
                   onBlur={(e) => (e.target.style.borderColor = "hsl(261 75% 50% / 0.2)")}
                 />
-                <p className="text-xs" style={{ color: "hsl(0 0% 100% / 0.4)" }}>
+                <p className="text-xs" style={{ color: "hsl(0 0% 100% / 0.65)" }}>
                   Which tool or platform would you like to integrate?
                 </p>
               </div>
@@ -203,7 +203,7 @@ const RequestIntegration = () => {
                 </button>
               </div>
 
-              <p className="text-xs" style={{ color: "hsl(0 0% 100% / 0.4)" }}>
+              <p className="text-xs" style={{ color: "hsl(0 0% 100% / 0.65)" }}>
                 By submitting this form, you agree to be contacted regarding your integration request.
                 We'll never share your information with third parties.
               </p>

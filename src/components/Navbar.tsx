@@ -112,9 +112,9 @@ export const Navbar = () => {
                   key={link.label}
                   onClick={() => handleNavigation(link.path)}
                   className="px-3 lg:px-4 py-2 text-sm transition-colors rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  style={{ color: 'hsl(0 0% 100% / 0.45)' }}
+                  style={{ color: 'hsl(0 0% 100% / 0.7)' }}
                   onMouseEnter={e => (e.currentTarget.style.color = 'hsl(0 0% 100% / 0.85)')}
-                  onMouseLeave={e => (e.currentTarget.style.color = 'hsl(0 0% 100% / 0.45)')}
+                  onMouseLeave={e => (e.currentTarget.style.color = 'hsl(0 0% 100% / 0.7)')}
                 >
                   {link.label}
                 </button>
@@ -126,9 +126,9 @@ export const Navbar = () => {
               {/* De-emphasized Login */}
               <button
                 className="hidden md:block text-sm transition-colors"
-                style={{ color: 'hsl(0 0% 100% / 0.4)' }}
+                style={{ color: 'hsl(0 0% 100% / 0.65)' }}
                 onMouseEnter={e => (e.currentTarget.style.color = 'hsl(0 0% 100% / 0.75)')}
-                onMouseLeave={e => (e.currentTarget.style.color = 'hsl(0 0% 100% / 0.4)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'hsl(0 0% 100% / 0.65)')}
                 onClick={() => navigate("/auth")}
               >
                 Log in

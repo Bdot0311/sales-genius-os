@@ -211,7 +211,7 @@ const PricingPage = () => {
                       <prop.icon className="w-5 h-5" />
                     </div>
                     <h3 className="font-semibold mb-2" style={{ color: "hsl(0 0% 90%)" }}>{prop.title}</h3>
-                    <p className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
+                    <p className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
                       {prop.description}
                     </p>
                   </div>

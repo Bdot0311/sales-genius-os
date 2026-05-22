@@ -24,7 +24,7 @@ const LeadDiscoveryPreview = () => (
           style={{ background: "hsl(0 0% 100% / 0.04)", border: "1px solid hsl(0 0% 100% / 0.07)" }}
         >
           <p className="text-base font-bold" style={{ color: "hsl(261 75% 68%)" }}>{val}</p>
-          <p className="text-[10px] mt-0.5" style={{ color: "hsl(0 0% 100% / 0.35)" }}>{lbl}</p>
+          <p className="text-[10px] mt-0.5" style={{ color: "hsl(0 0% 100% / 0.6)" }}>{lbl}</p>
         </div>
       ))}
     </div>
@@ -41,7 +41,7 @@ const LeadDiscoveryPreview = () => (
       >
         <div>
           <p className="text-sm font-medium" style={{ color: "hsl(0 0% 88%)" }}>{name}</p>
-          <p className="text-[11px] mt-0.5" style={{ color: "hsl(0 0% 100% / 0.35)" }}>{role}</p>
+          <p className="text-[11px] mt-0.5" style={{ color: "hsl(0 0% 100% / 0.6)" }}>{role}</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <div className="h-1 w-12 rounded-full overflow-hidden" style={{ background: "hsl(0 0% 100% / 0.08)" }}>
@@ -116,7 +116,7 @@ const ReplyPreview = () => (
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium" style={{ color: "hsl(0 0% 88%)" }}>{name}</p>
-          <p className="text-xs truncate mt-0.5" style={{ color: "hsl(0 0% 100% / 0.35)" }}>{last}</p>
+          <p className="text-xs truncate mt-0.5" style={{ color: "hsl(0 0% 100% / 0.6)" }}>{last}</p>
         </div>
         <span
           className="text-[10px] px-2 py-0.5 rounded-full flex-shrink-0 font-medium"
@@ -166,7 +166,7 @@ const PipelinePreview = () => {
             style={{ background: "hsl(261 75% 50% / 0.08)", border: "1px solid hsl(261 75% 50% / 0.18)" }}
           >
             <p className="text-base font-bold" style={{ color: "hsl(261 75% 68%)" }}>{val}</p>
-            <p className="text-[10px] mt-0.5" style={{ color: "hsl(0 0% 100% / 0.35)" }}>{lbl}</p>
+            <p className="text-[10px] mt-0.5" style={{ color: "hsl(0 0% 100% / 0.6)" }}>{lbl}</p>
           </div>
         ))}
       </div>
@@ -332,7 +332,7 @@ export const ModulesSection = () => {
                           className="overflow-hidden transition-all duration-500"
                           style={{ maxHeight: isActive ? "80px" : "0px", opacity: isActive ? 1 : 0 }}
                         >
-                          <p className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
+                          <p className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
                             {mod.description}
                           </p>
                         </div>

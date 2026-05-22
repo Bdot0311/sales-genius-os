@@ -233,7 +233,7 @@ const VideoPlayer = ({ chapters }: { chapters: Array<(active: boolean) => React.
       >
         {/* Chapter name + time */}
         <div className="flex items-center justify-between mb-2.5 px-1">
-          <span className="text-xs font-medium tracking-wide" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
+          <span className="text-xs font-medium tracking-wide" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
             {chapterMeta[chapterIdx]?.name}
           </span>
           <span className="font-mono text-[11px]" style={{ color: "hsl(0 0% 100% / 0.28)" }}>
@@ -436,7 +436,7 @@ const SearchChapter = ({ active }: { active: boolean }) => (
         <p
           className="text-base md:text-lg leading-relaxed max-w-sm"
           style={{
-            color: "hsl(0 0% 100% / 0.42)",
+            color: "hsl(0 0% 100% / 0.7)",
             animation: active ? "word-rise 0.5s cubic-bezier(0.22,1,0.36,1) 0.18s both" : "none",
             opacity: active ? undefined : 0,
           }}
@@ -621,7 +621,7 @@ const LeadsChapter = ({ active }: { active: boolean }) => (
         <p
           className="text-base md:text-lg leading-relaxed max-w-sm"
           style={{
-            color: "hsl(0 0% 100% / 0.42)",
+            color: "hsl(0 0% 100% / 0.7)",
             animation: active ? "word-rise 0.5s cubic-bezier(0.22,1,0.36,1) 0.18s both" : "none",
             opacity: active ? undefined : 0,
           }}
@@ -682,7 +682,7 @@ const OutreachChapter = ({ active }: { active: boolean }) => {
           <p
             className="text-base md:text-lg leading-relaxed max-w-sm"
             style={{
-              color: "hsl(0 0% 100% / 0.42)",
+              color: "hsl(0 0% 100% / 0.7)",
               animation: active ? "word-rise 0.5s cubic-bezier(0.22,1,0.36,1) 0.18s both" : "none",
               opacity: active ? undefined : 0,
             }}
@@ -776,7 +776,7 @@ const PipelineChapter = ({ active }: { active: boolean }) => {
           <p
             className="text-base md:text-lg leading-relaxed max-w-lg mx-auto"
             style={{
-              color: "hsl(0 0% 100% / 0.42)",
+              color: "hsl(0 0% 100% / 0.7)",
               animation: active ? "word-rise 0.5s cubic-bezier(0.22,1,0.36,1) 0.18s both" : "none",
               opacity: active ? undefined : 0,
             }}
@@ -870,7 +870,7 @@ const ResultsChapter = ({ active }: { active: boolean }) => {
               >
                 {heading}
               </div>
-              <div className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
+              <div className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
                 {body}
               </div>
             </div>
@@ -936,7 +936,7 @@ const CTAChapter = ({ active }: { active: boolean }) => {
         <p
           className="text-lg font-light mb-12"
           style={{
-            color: "hsl(0 0% 100% / 0.35)",
+            color: "hsl(0 0% 100% / 0.6)",
             animation: active ? "word-rise 0.5s cubic-bezier(0.22,1,0.36,1) 0.16s both" : "none",
             opacity: active ? undefined : 0,
           }}
@@ -1082,7 +1082,7 @@ export default function DemoPage() {
 
           <p
             className={`mb-10 max-w-[22rem] text-base font-light leading-relaxed transition-all duration-700 delay-150 sm:max-w-xl sm:text-xl ${heroVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-            style={{ color: "hsl(0 0% 100% / 0.45)" }}
+            style={{ color: "hsl(0 0% 100% / 0.7)" }}
           >
             Four steps. One session. Scroll to see how SalesOS takes you from a targeting idea to personalized outreach.
           </p>
