@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Check, X, HelpCircle, Coins, Zap, ArrowRight } from "lucide-react";
+import { Check, X, HelpCircle, Coins, Zap, ArrowRight, Bot } from "lucide-react";
 import { STRIPE_PRICE_IDS } from "@/lib/stripe-config";
 import { useSearchCredits } from "@/hooks/use-search-credits";
 import { useNavigate } from "react-router-dom";
@@ -73,6 +73,7 @@ const paidPlans: PaidPlan[] = [
       "AI email generator",
       "Sequence templates",
       "Standard support",
+      "AI SDR Agent: not included",
     ],
     monthlyPriceId: STRIPE_PRICE_IDS.starter_monthly,
     yearlyPriceId: STRIPE_PRICE_IDS.starter_yearly,
@@ -95,6 +96,7 @@ const paidPlans: PaidPlan[] = [
       "ICP lookalike discovery",
       "AI personalized outreach",
       "Priority support",
+      "🤖 Growth Agent — 10 AI SDR replies/day",
     ],
     highlighted: true,
     monthlyPriceId: STRIPE_PRICE_IDS.growth_monthly,
@@ -118,6 +120,7 @@ const paidPlans: PaidPlan[] = [
       "CRM integrations",
       "Team collaboration",
       "Premium support",
+      "🤖 Pro Agent — 50 AI SDR replies/day + objections + meetings",
     ],
     monthlyPriceId: STRIPE_PRICE_IDS.pro_monthly,
     yearlyPriceId: STRIPE_PRICE_IDS.pro_yearly,
@@ -141,6 +144,7 @@ const paidPlans: PaidPlan[] = [
       "Referral & reseller program",
       "Priority API access",
       "Dedicated account support",
+      "🤖 Elite Agent — 200 AI SDR replies/day, fully autonomous",
     ],
     monthlyPriceId: STRIPE_PRICE_IDS.agency_monthly,
     yearlyPriceId: STRIPE_PRICE_IDS.agency_yearly,
@@ -209,6 +213,18 @@ const comparisonCategories = [
     ],
   },
   {
+    name: "AI SDR Agent",
+    features: [
+      { name: "Agent tier", free: "—", starter: "—", growth: "Growth", pro: "Pro", agency: "Elite" },
+      { name: "Daily autonomous replies", free: "—", starter: "—", growth: "10/day", pro: "50/day", agency: "200/day" },
+      { name: "Minimum reply delay", free: "—", starter: "—", growth: "30 min", pro: "10 min", agency: "5 min" },
+      { name: "Reply to interested prospects", free: false, starter: false, growth: true, pro: true, agency: true },
+      { name: "Deliverability check on replies", free: false, starter: false, growth: true, pro: true, agency: true },
+      { name: "Auto handle objections", free: false, starter: false, growth: false, pro: true, agency: true },
+      { name: "Auto book meetings (Calendly)", free: false, starter: false, growth: false, pro: true, agency: true },
+    ],
+  },
+  {
     name: "Support",
     features: [
       { name: "Help center access", free: true, starter: true, growth: true, pro: true, agency: true },
@@ -231,6 +247,9 @@ const creditFAQs = [
   { question: "Do unused credits roll over?", answer: "On monthly plans, Starter credits reset each cycle while Growth and Pro credits roll over to the next month. On yearly plans, you receive your full annual pool upfront." },
   { question: "Can I upgrade, downgrade, or cancel anytime?", answer: "Yes. Upgrades happen instantly with your new allocation. Downgrades and cancellations apply at the end of your billing cycle." },
   { question: "Is there a money-back guarantee?", answer: "Yes, we offer a 30-day money-back guarantee on all paid plans. If you're not satisfied, contact support for a full refund." },
+  { question: "What is the AI SDR Agent?", answer: "The AI SDR Agent is an autonomous sales rep built into SalesOS. It monitors your Gmail threads, classifies prospect replies (interested, objection, meeting request, etc.), and automatically sends replies in your voice. Available on Growth, Pro, and Agency plans with increasing daily reply limits and capabilities." },
+  { question: "What's the difference between Growth, Pro, and Elite Agent?", answer: "Growth Agent (10 replies/day) auto-replies to interested prospects only. Pro Agent (50 replies/day) adds objection handling and automatic meeting booking via Calendly. Elite Agent on Agency (200 replies/day) is the full package — fully autonomous with all capabilities and the shortest reply delay (5 min)." },
+  { question: "Does the AI SDR Agent pass a spam/deliverability check?", answer: "Yes. Every reply the agent generates is scanned for spam trigger words before it's sent. If a reply fails the check, it's blocked and logged — your sender reputation is never put at risk by the agent." },
 ];
 
 const renderFeatureValue = (value: boolean | string) => {
@@ -327,6 +346,46 @@ export const Pricing = () => {
           </div>
         </div>
 
+        {/* AI SDR callout banner */}
+        <div
+          className="max-w-[1400px] mx-auto mb-8 flex items-center gap-4 px-5 py-4 rounded-2xl"
+          style={{
+            background: "linear-gradient(135deg, hsl(261 75% 50% / 0.12) 0%, hsl(280 80% 50% / 0.08) 100%)",
+            border: "1px solid hsl(261 75% 55% / 0.3)",
+          }}
+        >
+          <div
+            className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center"
+            style={{ background: "hsl(261 75% 50% / 0.2)" }}
+          >
+            <Bot className="w-5 h-5" style={{ color: accentPurple }} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold" style={{ color: "hsl(0 0% 92%)" }}>
+              NEW — AI SDR Agent included on Growth, Pro & Agency
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: "hsl(0 0% 100% / 0.5)" }}>
+              Your AI sales rep monitors Gmail threads, classifies replies, handles objections, and books meetings — autonomously.
+            </p>
+          </div>
+          <div className="hidden sm:flex gap-2 flex-shrink-0">
+            {[
+              { label: "Growth", sub: "10/day" },
+              { label: "Pro", sub: "50/day" },
+              { label: "Elite", sub: "200/day" },
+            ].map((t) => (
+              <div
+                key={t.label}
+                className="text-center px-3 py-1.5 rounded-lg"
+                style={{ background: "hsl(261 75% 50% / 0.1)", border: "1px solid hsl(261 75% 50% / 0.2)" }}
+              >
+                <p className="text-xs font-semibold" style={{ color: accentPurple }}>{t.label}</p>
+                <p className="text-[10px]" style={{ color: "hsl(0 0% 100% / 0.45)" }}>{t.sub}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Plan Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-5 max-w-[1400px] mx-auto mb-20 md:mb-24">
           {allPlans.map((plan) => {
@@ -417,17 +476,46 @@ export const Pricing = () => {
 
                 {/* Features */}
                 <ul className="space-y-2.5 mb-8 flex-1">
-                  {plan.features.map((feature, i) => (
-                    <li key={i} className="flex items-start gap-2.5">
-                      <Check
-                        className="w-4 h-4 flex-shrink-0 mt-0.5"
-                        style={{ color: isHighlighted ? "hsl(261 75% 80%)" : accentPurple }}
-                      />
-                      <span className="text-sm leading-relaxed" style={{ color: isHighlighted ? "hsl(0 0% 100% / 0.8)" : "hsl(0 0% 100% / 0.6)" }}>
-                        {feature}
-                      </span>
-                    </li>
-                  ))}
+                  {plan.features.map((feature, i) => {
+                    const isAgentLine = feature.startsWith("🤖");
+                    const isLockedAgent = feature === "AI SDR Agent: not included";
+                    if (isLockedAgent) {
+                      return (
+                        <li key={i} className="flex items-center gap-2 mt-1 pt-2.5" style={{ borderTop: "1px solid hsl(261 75% 50% / 0.12)" }}>
+                          <X className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "hsl(0 0% 100% / 0.2)" }} />
+                          <span className="text-xs" style={{ color: "hsl(0 0% 100% / 0.3)" }}>AI SDR Agent not included</span>
+                        </li>
+                      );
+                    }
+                    if (isAgentLine) {
+                      return (
+                        <li
+                          key={i}
+                          className="flex items-center gap-2 px-3 py-2 rounded-lg mt-1"
+                          style={{
+                            background: isHighlighted ? "hsl(261 75% 55% / 0.2)" : "hsl(261 75% 50% / 0.1)",
+                            border: `1px solid ${isHighlighted ? "hsl(261 75% 55% / 0.35)" : "hsl(261 75% 50% / 0.2)"}`,
+                          }}
+                        >
+                          <Bot className="w-3.5 h-3.5 flex-shrink-0" style={{ color: accentPurple }} />
+                          <span className="text-xs font-medium leading-snug" style={{ color: isHighlighted ? "hsl(261 75% 85%)" : accentPurple }}>
+                            {feature.replace("🤖 ", "")}
+                          </span>
+                        </li>
+                      );
+                    }
+                    return (
+                      <li key={i} className="flex items-start gap-2.5">
+                        <Check
+                          className="w-4 h-4 flex-shrink-0 mt-0.5"
+                          style={{ color: isHighlighted ? "hsl(261 75% 80%)" : accentPurple }}
+                        />
+                        <span className="text-sm leading-relaxed" style={{ color: isHighlighted ? "hsl(0 0% 100% / 0.8)" : "hsl(0 0% 100% / 0.6)" }}>
+                          {feature}
+                        </span>
+                      </li>
+                    );
+                  })}
                 </ul>
 
                 {/* CTA */}
