@@ -9,15 +9,47 @@ const corsHeaders = {
 
 // SalesOS specific product and price IDs
 const SALESOS_PRODUCT_IDS = [
-  'prod_TOropirqoOz7Ed', // growth
-  'prod_TOrozUbuuN18RP', // pro
-  'prod_TOrod7SaIV2D7s', // pro (legacy)
+  // Current product IDs
+  'prod_U78FZoAWovU1rX', // starter monthly
+  'prod_U78FC92stOkRxS', // starter yearly
+  'prod_U78Ff02VQAzrLC', // growth monthly
+  'prod_U78Fk0l7swAukt', // growth yearly
+  'prod_U78Fs2HpZzcZJc', // pro monthly
+  'prod_U78Fuo9Mg04kz9', // pro yearly
+  'prod_URQ5ib01VNZY9o', // agency monthly
+  'prod_URQ5awS6V2AAXH', // agency yearly
+  // Legacy product IDs
+  'prod_U6gflsh1Zzoh3V', // starter legacy
+  'prod_U6gfTND3QdfgcC', // growth legacy
+  'prod_U6gfOj1Xgfd1vy', // pro legacy
+  // Very old product IDs (kept for historical revenue)
+  'prod_TOropirqoOz7Ed',
+  'prod_TOrozUbuuN18RP',
+  'prod_TOrod7SaIV2D7s',
 ];
 
 const SALESOS_PRICE_IDS = [
-  'price_1SS44wFTerosS6hiCkKQnnoD', // growth
-  'price_1SS456FTerosS6hisBSDPwo4', // pro
-  'price_1SS45HFTerosS6hiQtxsNVL4', // pro (legacy)
+  // Current monthly prices
+  'price_1T8tywFTerosS6hi0fHQuybr', // starter monthly
+  'price_1T8tyyFTerosS6hiTsTXkWDa', // growth monthly
+  'price_1T8tz0FTerosS6hiKJluR3kk', // pro monthly
+  'price_1TSXEzFTerosS6hiKJdDX95R', // agency monthly
+  // Current yearly prices
+  'price_1T8tyxFTerosS6hiSakB51fA', // starter yearly
+  'price_1T8tyzFTerosS6hiUyzpHnCK', // growth yearly
+  'price_1T8tz0FTerosS6hiIHNG82Bh', // pro yearly
+  'price_1TSXF0FTerosS6hiAU2FlQli', // agency yearly
+  // Legacy prices
+  'price_1T8THgFTerosS6hiyasgavsP', // starter legacy
+  'price_1T8THhFTerosS6hicTGH2TUP', // growth legacy
+  'price_1T8THiFTerosS6hi9Vf6Ydsh', // pro legacy
+  // Add-on prices
+  'price_1T8THkFTerosS6hinP7QhH4f', // addon200
+  'price_1T8THlFTerosS6hiAGh5Xdh0', // addon500
+  // Very old price IDs (kept for historical revenue)
+  'price_1SS44wFTerosS6hiCkKQnnoD',
+  'price_1SS456FTerosS6hisBSDPwo4',
+  'price_1SS45HFTerosS6hiQtxsNVL4',
 ];
 
 const logStep = (step: string, details?: any) => {
