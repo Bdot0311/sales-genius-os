@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,53 +18,47 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Loader2, Mail, Save, Trash2, CheckCircle2, ExternalLink } from "lucide-react";
+import { Loader2, Mail, Save, Trash2, CheckCircle2, ExternalLink, AlertCircle, ShieldCheck } from "lucide-react";
 import type { AgentConfig } from "@/pages/Agent";
 
 interface SettingsTabProps {
   config: AgentConfig | null;
   userId: string | null;
   gmailConnected: boolean;
+  agentTier: string | null;
+  planMaxDailyReplies: number;
   onSaved: (config: AgentConfig) => void;
   onDataReset: () => Promise<void>;
 }
+
+const TIER_LABELS: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  growth: { label: "Growth Agent", color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/30" },
+  pro:    { label: "Pro Agent",    color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/30" },
+  elite:  { label: "Elite Agent",  color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/30" },
+};
 
 export function SettingsTab({
   config,
   userId,
   gmailConnected,
+  agentTier,
+  planMaxDailyReplies,
   onSaved,
   onDataReset,
 }: SettingsTabProps) {
+  const navigate = useNavigate();
   const [maxDailyReplies, setMaxDailyReplies] = useState<number>(
-    config?.max_daily_auto_replies ?? 20
+    config?.max_daily_auto_replies ?? planMaxDailyReplies
   );
   const [replyDelay, setReplyDelay] = useState<number>(
     config?.reply_delay_minutes ?? 15
   );
   const [savingLimits, setSavingLimits] = useState(false);
-  const [connectingGmail, setConnectingGmail] = useState(false);
   const [resetting, setResetting] = useState(false);
 
-  const handleConnectGmail = async () => {
-    setConnectingGmail(true);
-    try {
-      const redirectUri =
-        window.location.origin + "/settings?tab=integrations";
-      const { data, error } = await supabase.functions.invoke(
-        "google-oauth-init",
-        { body: { redirectUri } }
-      );
-      if (error) throw error;
-      const oauthUrl = (data as { url?: string } | null)?.url;
-      if (!oauthUrl) throw new Error("No OAuth URL returned");
-      window.location.href = oauthUrl;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error";
-      toast.error(`Gmail connect failed: ${message}`);
-      setConnectingGmail(false);
-    }
-  };
+  const tierInfo = agentTier ? TIER_LABELS[agentTier] : null;
+  // Cap input to plan maximum
+  const effectiveMax = Math.min(planMaxDailyReplies || 200, 200);
 
   const handleSaveLimits = async () => {
     if (!userId) {
@@ -72,7 +67,7 @@ export function SettingsTab({
     }
     setSavingLimits(true);
     try {
-      const clampedMax = Math.min(100, Math.max(1, maxDailyReplies));
+      const clampedMax = Math.min(effectiveMax, Math.max(1, maxDailyReplies));
       const clampedDelay = Math.min(120, Math.max(5, replyDelay));
 
       const payload: Record<string, unknown> = {
@@ -123,7 +118,19 @@ export function SettingsTab({
 
   return (
     <div className="space-y-5 max-w-3xl">
-      {/* Connected email */}
+
+      {/* Plan tier badge */}
+      {tierInfo && (
+        <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border ${tierInfo.bg} ${tierInfo.border}`}>
+          <ShieldCheck className={`w-4 h-4 ${tierInfo.color}`} />
+          <span className={`text-sm font-semibold ${tierInfo.color}`}>{tierInfo.label}</span>
+          <span className="text-xs text-muted-foreground ml-1">
+            · up to {planMaxDailyReplies} auto-replies/day
+          </span>
+        </div>
+      )}
+
+      {/* Connected email — status only, managed from Integrations */}
       <Card className="border-border/60 bg-card/60">
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold">
@@ -131,68 +138,54 @@ export function SettingsTab({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {gmailConnected ? (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-green-500/10">
-                  <Mail className="w-5 h-5 text-green-400" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium">Gmail</p>
-                    <Badge
-                      variant="outline"
-                      className="bg-green-500/15 text-green-400 border-green-500/30 text-xs px-1.5 py-0"
-                    >
-                      <CheckCircle2 className="w-3 h-3 mr-1" />
-                      Connected
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Your Gmail account is connected and the agent can read/send emails
-                  </p>
-                </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-lg ${gmailConnected ? "bg-green-500/10" : "bg-muted/50"}`}>
+                <Mail className={`w-5 h-5 ${gmailConnected ? "text-green-400" : "text-muted-foreground"}`} />
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  (window.location.href = "/settings?tab=integrations")
-                }
-                className="gap-1.5 flex-shrink-0"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                Manage
-              </Button>
-            </div>
-          ) : (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-muted/50">
-                  <Mail className="w-5 h-5 text-muted-foreground" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Gmail not connected</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Connect Gmail so the agent can monitor and reply to prospect threads
-                  </p>
-                </div>
-              </div>
-              <Button
-                onClick={handleConnectGmail}
-                disabled={connectingGmail}
-                size="sm"
-                className="gap-2 flex-shrink-0"
-              >
-                {connectingGmail ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+              <div>
+                {gmailConnected ? (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium">Gmail</p>
+                      <Badge
+                        variant="outline"
+                        className="bg-green-500/15 text-green-400 border-green-500/30 text-xs px-1.5 py-0"
+                      >
+                        <CheckCircle2 className="w-3 h-3 mr-1" />
+                        Connected
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      The agent is monitoring your Gmail threads and can send replies
+                    </p>
+                  </>
                 ) : (
-                  <Mail className="w-4 h-4" />
+                  <>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-muted-foreground">Gmail not connected</p>
+                      <Badge variant="outline" className="text-xs px-1.5 py-0">
+                        <AlertCircle className="w-3 h-3 mr-1" />
+                        Required
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Connect Gmail in Integrations so the agent can monitor your threads
+                    </p>
+                  </>
                 )}
-                {connectingGmail ? "Connecting…" : "Connect Gmail"}
-              </Button>
+              </div>
             </div>
-          )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/integrations")}
+              className="gap-1.5 flex-shrink-0"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              {gmailConnected ? "Manage" : "Connect"}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -206,20 +199,25 @@ export function SettingsTab({
             <div className="space-y-1.5">
               <Label htmlFor="max-daily-replies">
                 Max daily auto-replies{" "}
-                <span className="text-muted-foreground font-normal">(1–100)</span>
+                <span className="text-muted-foreground font-normal">(1–{effectiveMax})</span>
               </Label>
               <Input
                 id="max-daily-replies"
                 type="number"
                 min={1}
-                max={100}
+                max={effectiveMax}
                 value={maxDailyReplies}
                 onChange={(e) =>
                   setMaxDailyReplies(
-                    Math.min(100, Math.max(1, parseInt(e.target.value, 10) || 1))
+                    Math.min(effectiveMax, Math.max(1, parseInt(e.target.value, 10) || 1))
                   )
                 }
               />
+              {planMaxDailyReplies > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Your plan allows up to {planMaxDailyReplies}/day
+                </p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="reply-delay">
@@ -240,6 +238,9 @@ export function SettingsTab({
                   )
                 }
               />
+              <p className="text-xs text-muted-foreground">
+                Adds a human-like delay before each auto-reply is sent
+              </p>
             </div>
           </div>
           <div className="flex justify-end">

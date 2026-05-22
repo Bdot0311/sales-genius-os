@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -17,8 +18,11 @@ import {
   Activity,
   Clock,
   AlertCircle,
+  Lock,
+  Zap,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { useSubscription } from "@/hooks/use-subscription";
 import { OverviewTab } from "@/components/agent/OverviewTab";
 import { InboxTab } from "@/components/agent/InboxTab";
 import { ConfigTab } from "@/components/agent/ConfigTab";
@@ -61,6 +65,8 @@ interface AgentStats {
 }
 
 const Agent = () => {
+  const navigate = useNavigate();
+  const { subscription, loading: subLoading } = useSubscription();
   const [config, setConfig] = useState<AgentConfig | null>(null);
   const [actions, setActions] = useState<AgentAction[]>([]);
   const [stats, setStats] = useState<AgentStats>({
@@ -240,6 +246,50 @@ const Agent = () => {
     },
   ];
 
+  const agentTier = (subscription?.features as any)?.aiAgentTier ?? null;
+  const planMaxDailyReplies = (subscription?.features as any)?.agentMaxDailyReplies ?? 0;
+  const hasAgent = !!agentTier;
+
+  // Upgrade wall for free / starter
+  if (!subLoading && !hasAgent) {
+    return (
+      <DashboardLayout>
+        <PageHeader
+          title="AI Sales Agent"
+          description="Autonomous email reply management and prospect engagement"
+        />
+        <div className="mt-12 flex flex-col items-center text-center max-w-lg mx-auto gap-6">
+          <div className="p-4 rounded-full bg-primary/10">
+            <Lock className="w-8 h-8 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold mb-2">AI SDR requires Growth or higher</h2>
+            <p className="text-sm text-muted-foreground">
+              The AI Sales Agent is available on <strong>Growth</strong>, <strong>Pro</strong>, and <strong>Agency</strong> plans.
+              Upgrade to put a fully autonomous SDR to work on your inbox.
+            </p>
+          </div>
+          <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-3 text-left">
+            {[
+              { tier: "Growth", desc: "Monitor inbox, reply to interested prospects, 10 replies/day" },
+              { tier: "Pro", desc: "Objection handling, meeting booking, 50 replies/day, deliverability check" },
+              { tier: "Elite", desc: "All features, 200 replies/day, priority processing — Agency plan" },
+            ].map((t) => (
+              <div key={t.tier} className="p-4 rounded-xl border border-border/60 bg-card/60">
+                <p className="text-sm font-semibold mb-1">{t.tier} Agent</p>
+                <p className="text-xs text-muted-foreground">{t.desc}</p>
+              </div>
+            ))}
+          </div>
+          <Button onClick={() => navigate("/pricing")} className="gap-2">
+            <Zap className="w-4 h-4" />
+            Upgrade to unlock AI SDR
+          </Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <PageHeader
@@ -397,6 +447,8 @@ const Agent = () => {
               config={config}
               userId={userId}
               gmailConnected={gmailConnected}
+              agentTier={agentTier}
+              planMaxDailyReplies={planMaxDailyReplies}
               onSaved={setConfig}
               onDataReset={loadData}
             />

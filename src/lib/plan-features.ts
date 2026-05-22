@@ -84,6 +84,14 @@ export const PLAN_FEATURES = {
     
     // AI Recommendations
     recommendationLevel: 'none',
+
+    // AI SDR Agent
+    aiAgentTier: null as null,
+    agentMaxDailyReplies: 0,
+    agentMinDelayMinutes: 60,
+    agentDeliverabilityCheck: false,
+    agentAutoHandleObjections: false,
+    agentAutoBookMeetings: false,
   },
 
   starter: {
@@ -168,6 +176,14 @@ export const PLAN_FEATURES = {
     
     // AI Recommendations
     recommendationLevel: 'basic',
+
+    // AI SDR Agent
+    aiAgentTier: null as null,
+    agentMaxDailyReplies: 0,
+    agentMinDelayMinutes: 60,
+    agentDeliverabilityCheck: false,
+    agentAutoHandleObjections: false,
+    agentAutoBookMeetings: false,
   },
 
   growth: {
@@ -252,8 +268,16 @@ export const PLAN_FEATURES = {
     
     // AI Recommendations
     recommendationLevel: 'general',
+
+    // AI SDR Agent — Growth tier: monitor + reply to interested only, deliverability check
+    aiAgentTier: 'growth' as 'growth',
+    agentMaxDailyReplies: 10,
+    agentMinDelayMinutes: 30,
+    agentDeliverabilityCheck: true,
+    agentAutoHandleObjections: false,
+    agentAutoBookMeetings: false,
   },
-  
+
   agency: {
     name: 'Agency',
     price: 249,
@@ -345,6 +369,14 @@ export const PLAN_FEATURES = {
     agencyReporting: true,
     referralProgram: true,
     priorityAPIAccess: true,
+
+    // AI SDR Agent — Elite tier: all features, highest limits, priority
+    aiAgentTier: 'elite' as 'elite',
+    agentMaxDailyReplies: 200,
+    agentMinDelayMinutes: 5,
+    agentDeliverabilityCheck: true,
+    agentAutoHandleObjections: true,
+    agentAutoBookMeetings: true,
   },
 
   pro: {
@@ -438,6 +470,14 @@ export const PLAN_FEATURES = {
     agencyReporting: false,
     referralProgram: false,
     priorityAPIAccess: false,
+
+    // AI SDR Agent — Pro tier: full features, high limits
+    aiAgentTier: 'pro' as 'pro',
+    agentMaxDailyReplies: 50,
+    agentMinDelayMinutes: 10,
+    agentDeliverabilityCheck: true,
+    agentAutoHandleObjections: true,
+    agentAutoBookMeetings: true,
   },
 } as const;
 

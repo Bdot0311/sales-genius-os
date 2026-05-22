@@ -27,6 +27,18 @@ async function callGemini(prompt: string, systemPrompt: string): Promise<string>
   return data.choices[0].message.content;
 }
 
+const SPAM_TRIGGERS = [
+  "free", "guarantee", "winner", "congratulations", "act now", "limited time",
+  "click here", "earn money", "make money", "risk free", "special promotion",
+  "no obligation", "100%", "$$$", "discount", "cash bonus",
+];
+
+function deliverabilityCheck(subject: string, body: string): { ok: boolean; hits: string[] } {
+  const text = `${subject} ${body}`.toLowerCase();
+  const hits = SPAM_TRIGGERS.filter((w) => text.includes(w));
+  return { ok: hits.length === 0, hits };
+}
+
 interface Reply {
   sentEmailId: string;
   gmailMessageId: string;
@@ -279,6 +291,22 @@ Output ONLY the reply body. No subject line. No greeting like "Hi [name]". No si
 
           const generatedReply = await callGemini(replyPrompt, replySystemPrompt);
 
+          const delivCheck = deliverabilityCheck(`Re: ${reply.subject}`, generatedReply);
+          if (!delivCheck.ok) {
+            await adminClient.from("agent_actions").insert({
+              user_id: user.id,
+              sent_email_id: reply.sentEmailId,
+              action_type: "skipped",
+              status: "skipped",
+              prospect_email: reply.fromEmail,
+              subject: reply.subject,
+              classification: "interested",
+              metadata: { reason: "deliverability_block", spam_triggers: delivCheck.hits },
+            });
+            skipped++;
+            continue;
+          }
+
           if (googleIntegrationId) {
             await adminClient.functions.invoke("send-email", {
               body: {
@@ -327,6 +355,22 @@ Write a 2-3 sentence reply that acknowledges their concern, provides a brief val
 Output ONLY the reply body. No subject line or signature.`;
 
           const generatedReply = await callGemini(objectionPrompt, objectionSystemPrompt);
+
+          const delivCheck = deliverabilityCheck(`Re: ${reply.subject}`, generatedReply);
+          if (!delivCheck.ok) {
+            await adminClient.from("agent_actions").insert({
+              user_id: user.id,
+              sent_email_id: reply.sentEmailId,
+              action_type: "skipped",
+              status: "skipped",
+              prospect_email: reply.fromEmail,
+              subject: reply.subject,
+              classification: "objection",
+              metadata: { reason: "deliverability_block", spam_triggers: delivCheck.hits },
+            });
+            skipped++;
+            continue;
+          }
 
           if (googleIntegrationId) {
             await adminClient.functions.invoke("send-email", {
