@@ -7,7 +7,7 @@ const steps = [
   {
     number: "01",
     title: "Describe your customer once.",
-    body: "Type who you want in plain English — title, industry, company size, location, hiring signals. No filters. No boolean. Just intent.",
+    body: "Type who you want in plain English: title, industry, company size, location, growth signals. No boolean. No filter menus.",
     visual: (
       <div
         className="mt-5 rounded-md px-4 py-3 font-mono text-sm leading-relaxed"
@@ -25,7 +25,7 @@ const steps = [
   {
     number: "02",
     title: "Review who's actually worth emailing.",
-    body: "Your prospects come back ranked by ICP fit with verified business emails. You see match score, company context, and open job signals — before you write a single word.",
+    body: "Prospects come back ranked by ICP fit, with verified business emails and match scores attached. Company context, open roles, and hiring signals before you write a word.",
     visual: (
       <div
         className="mt-5 rounded-xl overflow-hidden"
@@ -65,7 +65,7 @@ const steps = [
   {
     number: "03",
     title: "Send something worth reading.",
-    body: "SalesOS drafts a first-touch email from the prospect's actual context — company news, role, growth signals. Edit it in 30 seconds and ship.",
+    body: "SalesOS builds a first-touch email from the prospect's real context: their company news, open roles, and recent growth signals. Edit in 30 seconds.",
     visual: (
       <div
         className="mt-5 rounded-xl overflow-hidden"

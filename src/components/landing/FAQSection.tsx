@@ -11,12 +11,12 @@ const faqs = [
   {
     question: "Do I need boolean search or SQL to use this?",
     answer:
-      "No. You type who you want in plain English — like 'VP of Sales at NYC SaaS companies with 50–200 employees.' SalesOS handles the rest.",
+      "No. You type who you want in plain English, like 'VP of Sales at NYC SaaS companies with 50–200 employees.' SalesOS handles the rest.",
   },
   {
     question: "What happens after I find a lead?",
     answer:
-      "SalesOS enriches the contact with a verified business email, scores them by ICP fit, and drafts a first-touch email using their company context. You review, edit, and send — from the same screen.",
+      "SalesOS enriches the contact with a verified business email, scores them by ICP fit, and drafts a first-touch email using their company context. You review, edit, and send from the same screen.",
   },
   {
     question: "How is this different from just buying a contact list?",
@@ -26,22 +26,22 @@ const faqs = [
   {
     question: "How does the free plan work?",
     answer:
-      "The free plan lets you explore the full workflow with real sample data — no credit card, no auto-charge, no surprise fees. When you're ready to run live prospecting at volume, you upgrade. That's it.",
+      "The free plan lets you explore the full workflow with real sample data. No credit card, no auto-charge, no surprise fees. When you're ready to run live prospecting at volume, you upgrade.",
   },
   {
     question: "How does SalesOS verify email addresses?",
     answer:
-      "Every business email goes through SMTP handshake verification plus multi-source enrichment before it reaches you. We don't deliver addresses we haven't verified — bounced emails hurt your sender reputation, so we treat accuracy as non-negotiable.",
+      "Every business email goes through SMTP handshake verification plus multi-source enrichment before it reaches you. We don't deliver addresses we haven't confirmed. Bounced emails hurt your sender reputation, and we treat accuracy as non-negotiable.",
   },
   {
     question: "Is SalesOS only for email outreach?",
     answer:
-      "Yes — SalesOS is built exclusively around email. We score your leads, enrich their verified business email, and help you write a first-touch message worth reading. We don't do cold calling, phone numbers, or SMS.",
+      "Yes. SalesOS is built around email outreach. We score your leads, enrich their verified business email, and help you write a first-touch message worth reading. No cold calling, no phone numbers, no SMS.",
   },
   {
     question: "How does the AI email drafting work?",
     answer:
-      "SalesOS pulls the prospect's role, company context, and growth signals — things like recent hires or funding — and uses that to write a first-touch email that references something real. You see the draft, edit it in seconds, and send. It's not a template with a name swapped in.",
+      "SalesOS pulls the prospect's role, company context, and growth signals (recent hires, funding, open roles) and uses that to write a first-touch email that references something real. You see the draft, edit it in seconds, and send. It's not a template with a name swapped in.",
   },
   {
     question: "Can I connect SalesOS to my existing tools?",

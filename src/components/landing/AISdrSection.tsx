@@ -135,12 +135,12 @@ const capabilities = [
   {
     icon: "📬",
     title: "Monitors your inbox",
-    desc: "Reads every reply from active prospects across Gmail threads — 24/7.",
+    desc: "Reads every reply from active prospects across Gmail threads, around the clock.",
   },
   {
     icon: "🧠",
     title: "Classifies intent",
-    desc: "Interest, objection, meeting request, unsubscribe — always knows what's what.",
+    desc: "Interest, objection, meeting request, unsubscribe. Always knows what's what.",
   },
   {
     icon: "✍️",
@@ -155,7 +155,7 @@ const capabilities = [
   {
     icon: "🛡️",
     title: "Handles objections",
-    desc: "Responds to common objections using playbooks you define — no drift.",
+    desc: "Responds to common objections using playbooks you define. No hallucinations, no drift.",
   },
   {
     icon: "⚙️",
@@ -220,7 +220,7 @@ export const AISdrSection = () => {
                   style={{ background: "hsl(142 70% 50%)" }}
                 />
                 <span className="text-xs font-semibold tracking-wide" style={{ color: "hsl(261 75% 70%)" }}>
-                  NEW — AI SDR
+                  NEW · AI SDR
                 </span>
               </div>
 
@@ -259,7 +259,7 @@ export const AISdrSection = () => {
                 className={`text-base leading-relaxed mb-8 max-w-[480px] transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
                 style={{ color: "hsl(0 0% 100% / 0.65)", transitionDelay: "160ms" }}
               >
-                Connect your Gmail and SalesOS watches every active thread. It classifies replies, handles objections, sends Calendly links when prospects ask for calls, and auto-replies — all in your voice, on your schedule.
+                Connect your Gmail and SalesOS watches every active thread. It classifies replies, handles objections, sends Calendly links when prospects ask for calls, and auto-replies in your voice, on your schedule.
               </p>
 
               {/* Capability grid */}

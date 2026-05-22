@@ -74,7 +74,7 @@ export const FounderNoteSection = () => {
               color: "hsl(0 0% 90%)",
             }}
           >
-            I was paying $500/month for Apollo and still spending three hours a day on LinkedIn.
+            I was paying $500/month for Apollo and still spending three hours a day finding people to email.
           </p>
 
           {/* Body */}
@@ -87,13 +87,13 @@ export const FounderNoteSection = () => {
               className="text-base leading-relaxed"
               style={{ color: "hsl(0 0% 100% / 0.7)" }}
             >
-              The data wasn't the problem. The workflow was. I'd export a list, paste it into a spreadsheet, score it manually, write emails one at a time, and track replies in a separate inbox. Four tools. Six context switches. Most of it was just overhead.
+              The data was fine. But I was living across five tabs. Export from Apollo, paste into a sheet, figure out who to prioritize, write a different email for each one, then chase replies in my inbox while forgetting which follow-up was next. It was a part-time job on top of the actual job.
             </p>
             <p
               className="text-base leading-relaxed"
               style={{ color: "hsl(0 0% 100% / 0.7)" }}
             >
-              SalesOS is what I wanted to exist — one place to describe who I want to reach, see who's actually worth emailing, and send something worth reading. The whole workflow. No overhead. No tool-switching. Just more conversations with the right people.
+              I built SalesOS because no single tool did all of it. Describe who you want, see who fits, draft the email, track the thread. That's the whole job. That's the whole product.
             </p>
           </div>
 

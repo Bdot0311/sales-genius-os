@@ -61,7 +61,7 @@ export const BigStatSection = () => {
             viewport={{ once: true, margin: "-10% 0px" }}
             transition={{ duration: 0.55, ease, delay: 0.2 }}
           >
-            From ICP to first email sent. No tab-switching.
+            ICP to sent email. One tool, one workflow.
           </motion.p>
 
           {/* Supporting stats — staggered */}
@@ -86,7 +86,7 @@ export const BigStatSection = () => {
                 10.7%
               </span>
               <span className="block text-xs mt-1" style={{ color: "hsl(0 0% 100% / 0.28)" }}>
-                reply rate on signal sequences
+                avg reply rate on intent-triggered outreach
               </span>
             </motion.div>
 

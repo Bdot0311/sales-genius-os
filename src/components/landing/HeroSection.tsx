@@ -71,7 +71,7 @@ export const HeroSection = () => {
             </span>
             <span className="font-medium text-white/80">New</span>
             <span className="text-white/70">·</span>
-            <span>Intent scoring now live — know who's ready before you email</span>
+            <span>AI SDR now live · see who's ready to buy before you reach out</span>
           </span>
         </motion.div>
 
@@ -105,7 +105,7 @@ export const HeroSection = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: "spring", stiffness: 60, damping: 18, delay: 0.24 }}
           >
-            Then actually sell to them.
+            Then close them.
           </motion.span>
         </h1>
 
@@ -116,7 +116,7 @@ export const HeroSection = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.65, ease, delay: 0.38 }}
         >
-          Describe your ideal customer once. Get ranked prospects with verified emails and a first-touch draft written for each one — ready to send in under 2 minutes.
+          Type who you want in plain English. Get ranked prospects, verified emails, and a personalized first draft for each. Ready to send in under 2 minutes.
         </motion.p>
 
         {/* CTAs */}
@@ -134,7 +134,7 @@ export const HeroSection = () => {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            Find your first leads — free
+            Find your first leads free
             <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
           </motion.button>
 

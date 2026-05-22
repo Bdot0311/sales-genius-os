@@ -38,7 +38,7 @@ export const FinalCTA = () => {
             viewport={{ once: true, margin: "-10% 0px" }}
             transition={{ duration: 0.6, ease }}
           >
-            Your next pipeline starts here
+            Ready when you are
           </motion.p>
 
           <h2
@@ -59,7 +59,7 @@ export const FinalCTA = () => {
               viewport={{ once: true, margin: "-10% 0px" }}
               transition={{ type: "spring", stiffness: 60, damping: 18, delay: 0.06 }}
             >
-              Stop researching.
+              Your next 10 prospects
             </motion.span>
             <motion.span
               className="block italic animate-shiny"
@@ -76,7 +76,7 @@ export const FinalCTA = () => {
               viewport={{ once: true, margin: "-10% 0px" }}
               transition={{ type: "spring", stiffness: 60, damping: 18, delay: 0.18 }}
             >
-              Start conversations.
+              in the next 10 minutes.
             </motion.span>
           </h2>
 
@@ -88,7 +88,7 @@ export const FinalCTA = () => {
             viewport={{ once: true, margin: "-10% 0px" }}
             transition={{ duration: 0.55, ease, delay: 0.3 }}
           >
-            Your first qualified prospect, verified email, and draft ready in under 2 minutes. Free to start.
+            Verified contacts, ICP scoring, and a personalized first draft. All in one place. Free to start.
           </motion.p>
 
           <motion.div
@@ -108,7 +108,7 @@ export const FinalCTA = () => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              Find your first leads — free
+              Find your first leads free
               <ArrowRight className="w-4 h-4" />
             </motion.button>
 

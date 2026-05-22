@@ -75,7 +75,7 @@ const OutreachPreview = () => (
           Hey Jordan — saw Northline is scaling the sales team in NYC. That usually means more pressure to build pipeline fast.
         </p>
         <p className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.65)" }}>
-          SalesOS helps teams like yours find better-fit leads and move into outreach in one session — no list building, no copy-paste.
+          SalesOS helps teams like yours find better-fit leads and move into outreach in one session. No list-building, no copy-paste.
         </p>
       </div>
       {/* Quality bar */}
@@ -189,7 +189,7 @@ const modules = [
     number: "02",
     title: "Outreach Studio",
     tagline: "Context-aware email drafts you actually want to send.",
-    description: "Each email is built from real company context — news, growth signals, open roles. Quality-checked before you hit send.",
+    description: "Each email is built from real company context: news, growth signals, open roles. Quality-checked before you hit send.",
   },
   {
     number: "03",
@@ -201,7 +201,7 @@ const modules = [
     number: "04",
     title: "Pipeline & Analytics",
     tagline: "See what's moving. Know what to push.",
-    description: "Understand where email threads are progressing, where outreach stalls, and what to prioritize next — not 40-tab dashboards.",
+    description: "Understand where threads are progressing and where outreach stalls. One dashboard, not forty tabs.",
   },
 ];
 
