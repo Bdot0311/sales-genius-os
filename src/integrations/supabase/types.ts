@@ -98,6 +98,122 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_actions: {
+        Row: {
+          action_type: string
+          classification: string | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          prospect_email: string | null
+          reply_content: string | null
+          sent_email_id: string | null
+          status: string | null
+          subject: string | null
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          classification?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          prospect_email?: string | null
+          reply_content?: string | null
+          sent_email_id?: string | null
+          status?: string | null
+          subject?: string | null
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          classification?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          prospect_email?: string | null
+          reply_content?: string | null
+          sent_email_id?: string | null
+          status?: string | null
+          subject?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_actions_sent_email_id_fkey"
+            columns: ["sent_email_id"]
+            isOneToOne: false
+            referencedRelation: "sent_emails"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_configs: {
+        Row: {
+          agent_name: string | null
+          calendly_url: string | null
+          can_book_meetings: boolean | null
+          can_handle_objections: boolean | null
+          can_reply_interested: boolean | null
+          company_context: string | null
+          created_at: string | null
+          enabled: boolean | null
+          id: string
+          max_daily_auto_replies: number | null
+          objection_responses: Json | null
+          persona: string | null
+          reply_delay_minutes: number | null
+          signature: string | null
+          tone: string | null
+          updated_at: string | null
+          user_id: string
+          value_props: Json | null
+        }
+        Insert: {
+          agent_name?: string | null
+          calendly_url?: string | null
+          can_book_meetings?: boolean | null
+          can_handle_objections?: boolean | null
+          can_reply_interested?: boolean | null
+          company_context?: string | null
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          max_daily_auto_replies?: number | null
+          objection_responses?: Json | null
+          persona?: string | null
+          reply_delay_minutes?: number | null
+          signature?: string | null
+          tone?: string | null
+          updated_at?: string | null
+          user_id: string
+          value_props?: Json | null
+        }
+        Update: {
+          agent_name?: string | null
+          calendly_url?: string | null
+          can_book_meetings?: boolean | null
+          can_handle_objections?: boolean | null
+          can_reply_interested?: boolean | null
+          company_context?: string | null
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          max_daily_auto_replies?: number | null
+          objection_responses?: Json | null
+          persona?: string | null
+          reply_delay_minutes?: number | null
+          signature?: string | null
+          tone?: string | null
+          updated_at?: string | null
+          user_id?: string
+          value_props?: Json | null
+        }
+        Relationships: []
+      }
       alert_rules: {
         Row: {
           comparison_operator: string
@@ -1675,6 +1791,7 @@ export type Database = {
       }
       reply_analysis: {
         Row: {
+          agent_reply_sent_at: string | null
           analyzed_at: string
           created_at: string
           detected_signals: Json | null
@@ -1682,12 +1799,15 @@ export type Database = {
           intent_classification: string | null
           intent_score: number | null
           lead_id: string | null
+          processed_by_agent: boolean | null
           reply_content: string | null
           requires_human_action: boolean
           sent_email_id: string | null
+          triage_category: string | null
           user_id: string
         }
         Insert: {
+          agent_reply_sent_at?: string | null
           analyzed_at?: string
           created_at?: string
           detected_signals?: Json | null
@@ -1695,12 +1815,15 @@ export type Database = {
           intent_classification?: string | null
           intent_score?: number | null
           lead_id?: string | null
+          processed_by_agent?: boolean | null
           reply_content?: string | null
           requires_human_action?: boolean
           sent_email_id?: string | null
+          triage_category?: string | null
           user_id: string
         }
         Update: {
+          agent_reply_sent_at?: string | null
           analyzed_at?: string
           created_at?: string
           detected_signals?: Json | null
@@ -1708,9 +1831,11 @@ export type Database = {
           intent_classification?: string | null
           intent_score?: number | null
           lead_id?: string | null
+          processed_by_agent?: boolean | null
           reply_content?: string | null
           requires_human_action?: boolean
           sent_email_id?: string | null
+          triage_category?: string | null
           user_id?: string
         }
         Relationships: [
@@ -1887,6 +2012,8 @@ export type Database = {
       }
       sent_emails: {
         Row: {
+          agent_last_synced_at: string | null
+          agent_thread_status: string | null
           body_html: string | null
           body_text: string | null
           clicked_at: string | null
@@ -1910,6 +2037,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          agent_last_synced_at?: string | null
+          agent_thread_status?: string | null
           body_html?: string | null
           body_text?: string | null
           clicked_at?: string | null
@@ -1933,6 +2062,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          agent_last_synced_at?: string | null
+          agent_thread_status?: string | null
           body_html?: string | null
           body_text?: string | null
           clicked_at?: string | null
