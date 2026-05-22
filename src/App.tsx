@@ -118,54 +118,50 @@ class ChunkErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
 }
 
 /**
- * Deferred UI shell — loads TooltipProvider, Toasters, and WhiteLabelProvider
- * AFTER the first paint to reduce Total Blocking Time on the landing page.
+ * Deferred UI shell — loads Toasters and WhiteLabel side-effects AFTER the
+ * first paint to reduce Total Blocking Time on the landing page.
+ *
+ * IMPORTANT: children are ALWAYS rendered at the same structural position
+ * (direct children of the fragment). Previously the shell wrapped children in
+ * a TooltipProvider, which caused React to unmount + remount the entire tree
+ * ~100 ms after mount — producing the visible "auto-refresh" glitch.
+ * Toasters render as portals appended to document.body, so they work fine as
+ * siblings. Each component that needs tooltip context already carries its own
+ * local <TooltipProvider>.
  */
 const DeferredUIShell = ({ children }: { children: ReactNode }) => {
-  const [ready, setReady] = useState(false);
-  const [Shell, setShell] = useState<ComponentType<{ children: ReactNode }> | null>(null);
+  const [SideEffects, setSideEffects] = useState<ComponentType | null>(null);
 
   useEffect(() => {
-    // Skip the heavy shell entirely on public marketing pages — no auth, no
-    // toasts, no white-label needed, so we avoid loading the Supabase client
-    // (~154KB) on first paint for landing visitors.
     const isPublic = isPublicLandingPath(window.location.pathname);
 
     const load = () => {
-      const baseImports: Promise<any>[] = [
-        import("@/components/ui/tooltip"),
+      const imports: Promise<any>[] = [
         import("@/components/ui/toaster"),
         import("@/components/ui/sonner"),
       ];
       if (!isPublic) {
-        baseImports.push(import("@/hooks/use-white-label"));
+        imports.push(import("@/hooks/use-white-label"));
       }
 
-      Promise.all(baseImports).then((mods) => {
-        const TooltipProvider = mods[0].TooltipProvider;
-        const Toaster = mods[1].Toaster;
-        const SonnerToaster = mods[2].Toaster;
-        const useWhiteLabel = !isPublic ? mods[3].useWhiteLabel : null;
+      Promise.all(imports).then((mods) => {
+        const Toaster = mods[0].Toaster;
+        const SonnerToaster = mods[1].Toaster;
+        const useWhiteLabel = !isPublic ? mods[2]?.useWhiteLabel : null;
 
-        const CombinedShell = ({ children }: { children: ReactNode }) => {
+        // Stable component rendered once — provides toasts + white-label CSS vars.
+        // Never wraps children so the children tree is never remounted.
+        const Providers = () => {
           if (useWhiteLabel) {
             try { useWhiteLabel(); } catch (e) { console.error("WhiteLabel init error:", e); }
           }
-          return (
-            <TooltipProvider>
-              <Toaster />
-              <SonnerToaster />
-              {children}
-            </TooltipProvider>
-          );
+          return <><Toaster /><SonnerToaster /></>;
         };
 
-        setShell(() => CombinedShell);
-        setReady(true);
+        setSideEffects(() => Providers);
       });
     };
 
-    // On public pages we delay even longer — first paint is the priority.
     const delay = isPublic ? 1500 : 100;
     if ('requestIdleCallback' in window) {
       (window as any).requestIdleCallback(load, { timeout: isPublic ? 4000 : 2000 });
@@ -174,11 +170,13 @@ const DeferredUIShell = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  if (!ready || !Shell) {
-    return <>{children}</>;
-  }
-
-  return <Shell>{children}</Shell>;
+  // Children are always at the same tree level — no structural change ever.
+  return (
+    <>
+      {children}
+      {SideEffects && <SideEffects />}
+    </>
+  );
 };
 
 const App = () => (
