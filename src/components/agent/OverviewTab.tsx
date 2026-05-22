@@ -1,4 +1,4 @@
-import { Mail, Calendar, XCircle, X, RefreshCw, AlertTriangle, Sync, Brain, CheckCircle2, XCircle as XCircleIcon } from "lucide-react";
+import { Mail, Calendar, XCircle, X, RefreshCw, AlertTriangle, Brain, CheckCircle2, XCircle as XCircleIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDistanceToNow } from "date-fns";
@@ -30,7 +30,7 @@ const ACTION_ICONS: Record<string, { icon: React.ReactNode; label: string }> = {
   closed_thread: { icon: <X className="w-4 h-4 text-gray-400" />, label: "Thread Closed" },
   skipped: { icon: <RefreshCw className="w-4 h-4 text-yellow-400" />, label: "Skipped" },
   error: { icon: <AlertTriangle className="w-4 h-4 text-red-500" />, label: "Error" },
-  sync: { icon: <RefreshCw className="w-4 h-4 text-purple-400" />, label: "Sync" },
+  sync: { icon: <RefreshCw className="w-4 h-4 text-purple-400" />, label: "Synced" },
   classify: { icon: <Brain className="w-4 h-4 text-indigo-400" />, label: "Classified" },
 };
 
