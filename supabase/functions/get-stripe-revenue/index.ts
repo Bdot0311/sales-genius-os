@@ -102,19 +102,13 @@ serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: '2025-08-27.basil' });
 
-    // Get current month's start date
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthStartTimestamp = Math.floor(monthStart.getTime() / 1000);
-
-    // Fetch invoices for SalesOS products only
+    // Fetch invoices for SalesOS products only (total all-time revenue)
     let totalRevenue = 0;
-    let monthlyRevenue = 0;
     let hasMore = true;
     let startingAfter: string | undefined;
 
-    logStep('Fetching invoices for SalesOS products only', { productIds: SALESOS_PRODUCT_IDS });
-    
+    logStep('Fetching paid invoices for all-time total revenue');
+
     while (hasMore) {
       const invoices: Stripe.ApiList<Stripe.Invoice> = await stripe.invoices.list({
         limit: 100,
@@ -124,16 +118,15 @@ serve(async (req) => {
       });
 
       for (const invoice of invoices.data) {
-        // Check if invoice contains SalesOS products
         let isSalesOSInvoice = false;
-        
+
         if (invoice.lines?.data) {
           for (const lineItem of invoice.lines.data) {
             const priceId = lineItem.price?.id;
-            const productId = typeof lineItem.price?.product === 'string' 
-              ? lineItem.price.product 
+            const productId = typeof lineItem.price?.product === 'string'
+              ? lineItem.price.product
               : lineItem.price?.product?.id;
-            
+
             if (SALESOS_PRICE_IDS.includes(priceId || '') || SALESOS_PRODUCT_IDS.includes(productId || '')) {
               isSalesOSInvoice = true;
               break;
@@ -143,12 +136,6 @@ serve(async (req) => {
 
         if (isSalesOSInvoice && invoice.amount_paid > 0) {
           totalRevenue += invoice.amount_paid;
-          
-          // Check if invoice is from current month
-          const invoiceDate = new Date((invoice.created || 0) * 1000);
-          if (invoiceDate >= monthStart) {
-            monthlyRevenue += invoice.amount_paid;
-          }
         }
       }
 
@@ -157,45 +144,51 @@ serve(async (req) => {
         startingAfter = invoices.data[invoices.data.length - 1].id;
       }
     }
-    
-    logStep('Revenue calculated from invoices', { 
-      totalRevenue: totalRevenue / 100, 
-      monthlyRevenue: monthlyRevenue / 100 
-    });
 
-    // Get active subscriptions for SalesOS products only
+    logStep('Total revenue from invoices', { totalRevenue: totalRevenue / 100 });
+
+    // MRR = sum of active subscription amounts normalized to monthly.
+    // This reflects new subscriptions immediately without waiting for invoices.
     let activeSubscriptions = 0;
+    let monthlyRevenue = 0;
     hasMore = true;
     startingAfter = undefined;
 
-    logStep('Fetching active subscriptions for SalesOS products');
-    
+    logStep('Fetching active subscriptions for MRR and subscription count');
+
     while (hasMore) {
       const subscriptions: Stripe.ApiList<Stripe.Subscription> = await stripe.subscriptions.list({
         limit: 100,
         status: 'active',
         starting_after: startingAfter,
-        expand: ['data.items.data'],
+        expand: ['data.items.data.price'],
       });
 
       for (const subscription of subscriptions.data) {
-        // Check if subscription is for SalesOS products
         let isSalesOSSub = false;
-        
+        let subMonthlyAmount = 0;
+
         for (const item of subscription.items.data) {
           const priceId = item.price?.id;
-          const productId = typeof item.price?.product === 'string' 
-            ? item.price.product 
+          const productId = typeof item.price?.product === 'string'
+            ? item.price.product
             : item.price?.product?.id;
-          
+
           if (SALESOS_PRICE_IDS.includes(priceId || '') || SALESOS_PRODUCT_IDS.includes(productId || '')) {
             isSalesOSSub = true;
-            break;
+            const amount = item.price.unit_amount ?? 0;
+            const interval = item.price.recurring?.interval;
+            const intervalCount = item.price.recurring?.interval_count ?? 1;
+            const normalizedMonthly = interval === 'year'
+              ? Math.round(amount / 12)
+              : Math.round(amount / intervalCount);
+            subMonthlyAmount += normalizedMonthly;
           }
         }
-        
+
         if (isSalesOSSub) {
           activeSubscriptions++;
+          monthlyRevenue += subMonthlyAmount;
         }
       }
 
@@ -204,8 +197,8 @@ serve(async (req) => {
         startingAfter = subscriptions.data[subscriptions.data.length - 1].id;
       }
     }
-    
-    logStep('Active subscriptions counted', { activeSubscriptions });
+
+    logStep('MRR from active subscriptions', { activeSubscriptions, monthlyRevenue: monthlyRevenue / 100 });
 
     // Get unique customers with SalesOS subscriptions
     let salesOSCustomerIds = new Set<string>();
