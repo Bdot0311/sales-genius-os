@@ -78,6 +78,11 @@ serve(async (req) => {
           return { deliveryId: delivery.id, success: false, reason: "Webhook inactive" };
         }
 
+        if (!isValidWebhookUrl(webhook.url)) {
+          logStep("Blocked invalid webhook URL", { deliveryId: delivery.id, url: webhook.url });
+          return { deliveryId: delivery.id, success: false, reason: "Invalid webhook URL blocked for security" };
+        }
+
         try {
           // Create HMAC signature
           const encoder = new TextEncoder();
