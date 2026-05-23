@@ -3075,6 +3075,8 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_maintenance_message: { Args: never; Returns: string }
+      get_maintenance_status: { Args: never; Returns: boolean }
       get_user_leads_usage: {
         Args: never
         Returns: {
