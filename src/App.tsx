@@ -198,6 +198,7 @@ const MaintenancePage = ({ message }: { message: string }) => (
 
 // Wraps app-only routes (dashboard, settings, etc.) — not landing or admin.
 // Reads maintenance status via a security-definer RPC so any user can query it.
+// Fails open: if the RPC doesn't exist yet (migration not run), lets users through.
 const MaintenanceGuard = ({ children }: { children: ReactNode }) => {
   const [state, setState] = useState<{ loading: boolean; active: boolean; message: string; isAdmin: boolean }>({
     loading: true, active: false, message: "We're performing scheduled maintenance. We'll be back shortly.", isAdmin: false,
@@ -206,20 +207,24 @@ const MaintenanceGuard = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [{ data: user }, { data: active }, { data: msg }, { data: roles }] = await Promise.all([
-        supabase.auth.getUser(),
-        supabase.rpc('get_maintenance_status'),
-        supabase.rpc('get_maintenance_message'),
-        supabase.from('user_roles').select('role').eq('role', 'admin').limit(1),
-      ]);
-      if (cancelled) return;
-      const isAdmin = !!(roles?.length);
-      setState({
-        loading: false,
-        active: active === true,
-        message: typeof msg === 'string' ? msg.replace(/^"|"$/g, '') : "We're performing scheduled maintenance.",
-        isAdmin,
-      });
+      try {
+        const [{ data: active }, { data: msg }, { data: roles }] = await Promise.all([
+          supabase.rpc('get_maintenance_status'),
+          supabase.rpc('get_maintenance_message'),
+          supabase.from('user_roles').select('role').eq('role', 'admin').limit(1),
+        ]);
+        if (cancelled) return;
+        const isAdmin = !!(roles?.length);
+        setState({
+          loading: false,
+          active: active === true,
+          message: typeof msg === 'string' ? msg.replace(/^"|"$/g, '') : "We're performing scheduled maintenance.",
+          isAdmin,
+        });
+      } catch {
+        // Migration not run yet or network error — fail open (don't block users)
+        if (!cancelled) setState(s => ({ ...s, loading: false }));
+      }
     })();
     return () => { cancelled = true; };
   }, []);
