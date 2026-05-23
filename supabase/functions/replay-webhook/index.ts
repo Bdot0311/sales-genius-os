@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { createHmac } from "https://deno.land/std@0.168.0/node/crypto.ts";
+import { isValidWebhookUrl } from "../_shared/webhook-url.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -64,6 +65,16 @@ serve(async (req) => {
           webhookId: webhook.id,
           event: delivery.event,
         });
+
+        if (!isValidWebhookUrl(webhook.url)) {
+          logStep('Blocked invalid webhook URL', { deliveryId: delivery.id, url: webhook.url });
+          replayResults.push({
+            originalDeliveryId: delivery.id,
+            success: false,
+            error: 'Invalid webhook URL blocked for security',
+          });
+          continue;
+        }
 
         // Generate signature
         const signature = createHmac('sha256', webhook.secret)

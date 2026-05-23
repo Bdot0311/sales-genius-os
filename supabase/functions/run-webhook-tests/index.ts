@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { isValidWebhookUrl } from "../_shared/webhook-url.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -75,6 +76,19 @@ serve(async (req) => {
     const results = await Promise.all(
       tests.map(async (test) => {
         try {
+          if (!isValidWebhookUrl(webhook.url)) {
+            const testResult = {
+              error: "Invalid webhook URL blocked for security",
+              passed: false,
+              timestamp: new Date().toISOString(),
+            };
+            await supabaseClient
+              .from("webhook_tests")
+              .update({ test_result: testResult, passed: false, last_run_at: new Date().toISOString() })
+              .eq("id", test.id);
+            return { testId: test.id, testName: test.test_name, passed: false, result: testResult };
+          }
+
           const startTime = Date.now();
 
           // Create HMAC signature if required

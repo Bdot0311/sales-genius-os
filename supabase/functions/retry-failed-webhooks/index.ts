@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { isValidWebhookUrl } from "../_shared/webhook-url.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,9 +20,20 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
+    // Restrict to service-role / cron invocations only.
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    if (!token || !serviceKey || token !== serviceKey) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      serviceKey,
       { auth: { persistSession: false } }
     );
 
@@ -64,6 +76,11 @@ serve(async (req) => {
         if (!webhook || !webhook.is_active) {
           logStep("Webhook inactive or not found", { deliveryId: delivery.id });
           return { deliveryId: delivery.id, success: false, reason: "Webhook inactive" };
+        }
+
+        if (!isValidWebhookUrl(webhook.url)) {
+          logStep("Blocked invalid webhook URL", { deliveryId: delivery.id, url: webhook.url });
+          return { deliveryId: delivery.id, success: false, reason: "Invalid webhook URL blocked for security" };
         }
 
         try {

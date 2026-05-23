@@ -34,13 +34,26 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
+    // Require service-role bearer token — this is an internal-only endpoint.
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    if (!token || !serviceKey || token !== serviceKey) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      serviceKey,
       { auth: { persistSession: false } }
     );
 
     const { event_type, severity, user_id, user_email, ip_address, details }: SecurityAlertRequest = await req.json();
+
+
 
     if (!event_type || !severity) {
       return new Response(JSON.stringify({ error: "event_type and severity are required" }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 });
