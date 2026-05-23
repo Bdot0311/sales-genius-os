@@ -941,6 +941,10 @@ const Outreach = () => {
       const template = EMAIL_TEMPLATES.find(t => t.value === selectedTemplate);
       const goal = template?.goal || "introduction";
 
+      // Resolve sender name up front so it can be passed to the edge function
+      const resolvedSender = await resolveSenderName();
+      if (resolvedSender && !senderProfileName.trim()) setSenderProfileName(resolvedSender);
+
       // If no subject line, generate one tailored to the template goal
       let finalSubjectLine = subjectLine;
       if (!finalSubjectLine) {
@@ -955,6 +959,7 @@ const Outreach = () => {
             triggerContext,
             openerWord: openerWord === "auto" ? "" : openerWord,
             businessDescription,
+            senderName: resolvedSender,
           },
         });
         if (subjectError) throw subjectError;
@@ -975,15 +980,13 @@ const Outreach = () => {
           openerWord: openerWord === "auto" ? "" : openerWord,
           businessDescription,
           use4SentenceFramework,
+          senderName: resolvedSender,
+          senderCompany: resolvedSender ? businessDescription?.split(/[\n.]/)[0]?.trim() : "",
         },
       });
 
       if (error) throw error;
-      const senderName = await resolveSenderName();
-      const emailBody = appendSenderLine(sanitizeGeneratedEmailBody(data.email), senderName);
-      if (senderName && !senderProfileName.trim()) {
-        setSenderProfileName(senderName);
-      }
+      const emailBody = appendSenderLine(sanitizeGeneratedEmailBody(data.email), resolvedSender);
       setGeneratedEmail(emailBody);
       toast({
         title: "Email generated",
