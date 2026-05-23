@@ -185,7 +185,7 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
     try {
       const { data, error } = await supabase
         .from('integrations')
-        .select('*')
+        .select('id, integration_id, connected_email, is_active, updated_at')
         .eq('is_active', true)
         .in('integration_id', ['external_provider']);
 
