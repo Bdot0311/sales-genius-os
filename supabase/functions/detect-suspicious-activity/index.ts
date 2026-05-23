@@ -29,6 +29,10 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+  const unauth = requireServiceRole(req);
+  if (unauth) return unauth;
+
+
 
   try {
     logStep("Function started");
