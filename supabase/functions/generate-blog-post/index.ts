@@ -30,6 +30,16 @@ Deno.serve(async (req: Request) => {
   const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
+  // Restrict to service-role callers (pg_cron / internal). Reject anonymous and end-user JWTs.
+  const authHeader = req.headers.get("Authorization") || "";
+  const bearer = authHeader.replace("Bearer ", "");
+  if (!bearer || bearer !== SERVICE_ROLE) {
+    return new Response(
+      JSON.stringify({ success: false, error: "Unauthorized" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
   if (!LOVABLE_API_KEY) {
     return new Response(
       JSON.stringify({ success: false, error: "LOVABLE_API_KEY missing" }),

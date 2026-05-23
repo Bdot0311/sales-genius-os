@@ -8,6 +8,7 @@ const HowItWorks = lazy(() => import("@/components/landing/HowItWorks").then(m =
 const ProblemSection = lazy(() => import("@/components/landing/ProblemSection").then(m => ({ default: m.ProblemSection })));
 const ModulesSection = lazy(() => import("@/components/landing/ModulesSection").then(m => ({ default: m.ModulesSection })));
 const BigStatSection = lazy(() => import("@/components/landing/BigStatSection").then(m => ({ default: m.BigStatSection })));
+const AISdrSection = lazy(() => import("@/components/landing/AISdrSection").then(m => ({ default: m.AISdrSection })));
 const DifferentiationSection = lazy(() => import("@/components/landing/DifferentiationSection").then(m => ({ default: m.DifferentiationSection })));
 const FounderNoteSection = lazy(() => import("@/components/landing/FounderNoteSection").then(m => ({ default: m.FounderNoteSection })));
 const FAQSection = lazy(() => import("@/components/landing/FAQSection").then(m => ({ default: m.FAQSection })));
@@ -30,18 +31,6 @@ const Index = () => {
         keywords="B2B lead generation, lead discovery, outbound email software, ICP scoring, SMTP verified emails, plain English lead search, B2B prospecting, AI email drafting, email enrichment, outbound sales automation, find B2B leads, lead scoring software, B2B email outreach"
         ogImage="https://salesos.alephwavex.io/salesos-og.png"
       />
-
-      {/* Hidden SVG noise filter referenced by headline gradient text */}
-      <svg style={{ position: 'absolute', width: 0, height: 0 }} aria-hidden="true">
-        <defs>
-          <filter id="c3-noise">
-            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves={2} stitchTiles="stitch" />
-            <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.35 0" />
-            <feComposite in2="SourceGraphic" operator="in" result="noise" />
-            <feBlend in="SourceGraphic" in2="noise" mode="multiply" />
-          </filter>
-        </defs>
-      </svg>
 
       {/* Fixed cinematic video background with purple tint */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none" aria-hidden="true">
@@ -78,6 +67,7 @@ const Index = () => {
             <DeferredSection><ProblemSection /></DeferredSection>
             <DeferredSection><HowItWorks /></DeferredSection>
             <DeferredSection><ModulesSection /></DeferredSection>
+            <DeferredSection><AISdrSection /></DeferredSection>
             <DeferredSection><BigStatSection /></DeferredSection>
             <DeferredSection><DifferentiationSection /></DeferredSection>
             <DeferredSection><FounderNoteSection /></DeferredSection>

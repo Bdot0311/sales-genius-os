@@ -119,13 +119,18 @@ const PricingPage = () => {
                 <h1
                   id="pricing-heading"
                   className="font-display mb-5 text-4xl leading-[1.05] sm:text-5xl md:text-6xl"
+                  style={{ color: "hsl(0 0% 95%)", fontWeight: 800, letterSpacing: "-0.02em" }}
                 >
                   Pick the plan that fits your{" "}
                   <span
-                    className="bg-clip-text text-transparent"
+                    className="font-display italic animate-shiny"
                     style={{
-                      backgroundImage:
-                        "linear-gradient(135deg, hsl(261 75% 72%) 0%, hsl(280 70% 70%) 100%)",
+                      backgroundImage: "linear-gradient(to right, #050010 0%, #1a0060 12.5%, #9d72e8 32.5%, #c068e8 50%, #1a0060 67.5%, #050010 87.5%, #050010 100%)",
+                      backgroundSize: "200% auto",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
+                      filter: "url(#c3-noise)",
                     }}
                   >
                     outbound motion
@@ -154,7 +159,7 @@ const PricingPage = () => {
                 border: "1px solid hsl(261 75% 50% / 0.15)",
               }}
             >
-              <h2 className="text-xl sm:text-2xl font-semibold mb-2">
+              <h2 className="font-display text-xl sm:text-2xl font-bold mb-2" style={{ color: "hsl(0 0% 92%)", letterSpacing: "-0.01em" }}>
                 Why buy now?
               </h2>
               <p className="text-white/55 leading-relaxed text-sm sm:text-base">
@@ -206,7 +211,7 @@ const PricingPage = () => {
                       <prop.icon className="w-5 h-5" />
                     </div>
                     <h3 className="font-semibold mb-2" style={{ color: "hsl(0 0% 90%)" }}>{prop.title}</h3>
-                    <p className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
+                    <p className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
                       {prop.description}
                     </p>
                   </div>

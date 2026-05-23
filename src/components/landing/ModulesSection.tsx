@@ -24,7 +24,7 @@ const LeadDiscoveryPreview = () => (
           style={{ background: "hsl(0 0% 100% / 0.04)", border: "1px solid hsl(0 0% 100% / 0.07)" }}
         >
           <p className="text-base font-bold" style={{ color: "hsl(261 75% 68%)" }}>{val}</p>
-          <p className="text-[10px] mt-0.5" style={{ color: "hsl(0 0% 100% / 0.35)" }}>{lbl}</p>
+          <p className="text-[10px] mt-0.5" style={{ color: "hsl(0 0% 100% / 0.6)" }}>{lbl}</p>
         </div>
       ))}
     </div>
@@ -41,7 +41,7 @@ const LeadDiscoveryPreview = () => (
       >
         <div>
           <p className="text-sm font-medium" style={{ color: "hsl(0 0% 88%)" }}>{name}</p>
-          <p className="text-[11px] mt-0.5" style={{ color: "hsl(0 0% 100% / 0.35)" }}>{role}</p>
+          <p className="text-[11px] mt-0.5" style={{ color: "hsl(0 0% 100% / 0.6)" }}>{role}</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <div className="h-1 w-12 rounded-full overflow-hidden" style={{ background: "hsl(0 0% 100% / 0.08)" }}>
@@ -75,7 +75,7 @@ const OutreachPreview = () => (
           Hey Jordan — saw Northline is scaling the sales team in NYC. That usually means more pressure to build pipeline fast.
         </p>
         <p className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.65)" }}>
-          SalesOS helps teams like yours find better-fit leads and move into outreach in one session — no list building, no copy-paste.
+          SalesOS helps teams like yours find better-fit leads and move into outreach in one session. No list-building, no copy-paste.
         </p>
       </div>
       {/* Quality bar */}
@@ -116,7 +116,7 @@ const ReplyPreview = () => (
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium" style={{ color: "hsl(0 0% 88%)" }}>{name}</p>
-          <p className="text-xs truncate mt-0.5" style={{ color: "hsl(0 0% 100% / 0.35)" }}>{last}</p>
+          <p className="text-xs truncate mt-0.5" style={{ color: "hsl(0 0% 100% / 0.6)" }}>{last}</p>
         </div>
         <span
           className="text-[10px] px-2 py-0.5 rounded-full flex-shrink-0 font-medium"
@@ -166,7 +166,7 @@ const PipelinePreview = () => {
             style={{ background: "hsl(261 75% 50% / 0.08)", border: "1px solid hsl(261 75% 50% / 0.18)" }}
           >
             <p className="text-base font-bold" style={{ color: "hsl(261 75% 68%)" }}>{val}</p>
-            <p className="text-[10px] mt-0.5" style={{ color: "hsl(0 0% 100% / 0.35)" }}>{lbl}</p>
+            <p className="text-[10px] mt-0.5" style={{ color: "hsl(0 0% 100% / 0.6)" }}>{lbl}</p>
           </div>
         ))}
       </div>
@@ -189,7 +189,7 @@ const modules = [
     number: "02",
     title: "Outreach Studio",
     tagline: "Context-aware email drafts you actually want to send.",
-    description: "Each email is built from real company context — news, growth signals, open roles. Quality-checked before you hit send.",
+    description: "Each email is built from real company context: news, growth signals, open roles. Quality-checked before you hit send.",
   },
   {
     number: "03",
@@ -201,7 +201,7 @@ const modules = [
     number: "04",
     title: "Pipeline & Analytics",
     tagline: "See what's moving. Know what to push.",
-    description: "Understand where email threads are progressing, where outreach stalls, and what to prioritize next — not 40-tab dashboards.",
+    description: "Understand where threads are progressing and where outreach stalls. One dashboard, not forty tabs.",
   },
 ];
 
@@ -332,7 +332,7 @@ export const ModulesSection = () => {
                           className="overflow-hidden transition-all duration-500"
                           style={{ maxHeight: isActive ? "80px" : "0px", opacity: isActive ? 1 : 0 }}
                         >
-                          <p className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
+                          <p className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
                             {mod.description}
                           </p>
                         </div>

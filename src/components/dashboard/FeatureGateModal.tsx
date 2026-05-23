@@ -52,7 +52,7 @@ export const FeatureGateModal = ({ open, onOpenChange, feature, currentPlan }: F
               <>
                 <div className="flex items-center gap-2 text-sm">
                   <TrendingUp className="w-4 h-4 text-primary" />
-                  <span>400 verified prospects per month</span>
+                  <span>1,000 verified prospects per month</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <TrendingUp className="w-4 h-4 text-primary" />
@@ -68,7 +68,7 @@ export const FeatureGateModal = ({ open, onOpenChange, feature, currentPlan }: F
               <>
                 <div className="flex items-center gap-2 text-sm">
                   <TrendingUp className="w-4 h-4 text-primary" />
-                  <span>1,200 verified prospects per month</span>
+                  <span>2,500 verified prospects per month</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <TrendingUp className="w-4 h-4 text-primary" />
@@ -84,7 +84,7 @@ export const FeatureGateModal = ({ open, onOpenChange, feature, currentPlan }: F
               <>
                 <div className="flex items-center gap-2 text-sm">
                   <TrendingUp className="w-4 h-4 text-primary" />
-                  <span>3,000 verified prospects per month</span>
+                  <span>5,000 verified prospects per month</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <TrendingUp className="w-4 h-4 text-primary" />

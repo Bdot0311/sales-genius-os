@@ -97,14 +97,14 @@ export const IntegrationStrip = ({
               style={
                 {
                   "--brand-color": color,
-                  color: "hsl(0 0% 100% / 0.45)",
+                  color: "hsl(0 0% 100% / 0.7)",
                 } as React.CSSProperties
               }
               onMouseEnter={(e) => {
                 e.currentTarget.style.color = color;
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.color = "hsl(0 0% 100% / 0.45)";
+                e.currentTarget.style.color = "hsl(0 0% 100% / 0.7)";
               }}
             >
               <Logo className="h-5 w-5 sm:h-6 sm:w-6 transition-transform duration-300 group-hover:scale-110" />

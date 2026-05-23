@@ -14,15 +14,6 @@ import {
   searchArticles,
   getCategoryInfo,
 } from "@/components/help";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import {
   Book,
   FileText,
@@ -38,7 +29,7 @@ const FooterSection = lazy(() =>
 
 const SectionLoader = () => (
   <div className="py-16 flex items-center justify-center">
-    <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+    <div className="w-6 h-6 border-2 rounded-full animate-spin" style={{ borderColor: "hsl(261 75% 50% / 0.3)", borderTopColor: "hsl(261 75% 65%)" }} />
   </div>
 );
 
@@ -48,7 +39,7 @@ const SectionLoader = () => (
  */
 const HelpCanvas = ({ children }: { children: React.ReactNode }) => (
   <div
-    className="min-h-screen text-foreground overflow-x-hidden flex flex-col"
+    className="min-h-screen overflow-x-hidden flex flex-col"
     style={{ background: "hsl(261 75% 2%)" }}
   >
     <Navbar />
@@ -75,13 +66,15 @@ const HelpCenter = () => {
               <h1 className="font-display text-3xl sm:text-4xl mb-4">
                 Article not found
               </h1>
-              <p className="text-white/55 mb-6">
+              <p className="mb-6" style={{ color: "hsl(0 0% 100% / 0.55)" }}>
                 The article you're looking for doesn't exist.
               </p>
-              <Link to="/help">
-                <Button className="rounded-full">
-                  Back to help center
-                </Button>
+              <Link
+                to="/help"
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                style={{ background: "linear-gradient(135deg, hsl(261 75% 60%), hsl(261 75% 50%))" }}
+              >
+                Back to help center
               </Link>
             </div>
           </main>
@@ -116,10 +109,12 @@ const HelpCenter = () => {
               <h1 className="font-display text-3xl sm:text-4xl mb-4">
                 Category not found
               </h1>
-              <Link to="/help">
-                <Button className="rounded-full">
-                  Back to help center
-                </Button>
+              <Link
+                to="/help"
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                style={{ background: "linear-gradient(135deg, hsl(261 75% 60%), hsl(261 75% 50%))" }}
+              >
+                Back to help center
               </Link>
             </div>
           </main>
@@ -143,18 +138,18 @@ const HelpCenter = () => {
             <span className="text-white/80">{categoryInfo.title}</span>
           </nav>
 
-          <Link to="/help">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="mb-6 text-white/55 hover:text-white hover:bg-white/5"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to help center
-            </Button>
-          </Link>
+          <button
+            onClick={() => window.history.back()}
+            className="inline-flex items-center gap-1.5 mb-6 text-sm transition-colors"
+            style={{ color: "hsl(0 0% 100% / 0.7)" }}
+            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 80%)")}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.7)")}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to help center
+          </button>
 
-          <h1 className="font-display text-3xl sm:text-4xl mb-2">
+          <h1 className="font-display text-3xl sm:text-4xl mb-2" style={{ fontWeight: 800, letterSpacing: "-0.02em", color: "hsl(0 0% 92%)" }}>
             {categoryInfo.title}
           </h1>
           <p className="text-white/55 mb-8">{categoryInfo.description}</p>
@@ -162,24 +157,23 @@ const HelpCenter = () => {
           <div className="grid gap-3">
             {articles.map((article) => (
               <Link key={article.id} to={`/help/article/${article.slug}`}>
-                <Card
-                  className="p-4 sm:p-5 transition-colors"
-                  style={{
-                    background: "hsl(261 75% 50% / 0.04)",
-                    border: "1px solid hsl(261 75% 50% / 0.14)",
-                  }}
+                <div
+                  className="p-4 sm:p-5 rounded-xl transition-all duration-200"
+                  style={{ background: "hsl(261 75% 50% / 0.04)", border: "1px solid hsl(261 75% 50% / 0.14)" }}
+                  onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "hsl(261 75% 50% / 0.3)")}
+                  onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "hsl(261 75% 50% / 0.14)")}
                 >
                   <div className="flex items-center justify-between gap-4">
-                    <h3 className="font-medium text-white">{article.title}</h3>
-                    <div className="flex items-center text-xs text-white/75 shrink-0">
+                    <h3 className="font-medium" style={{ color: "hsl(0 0% 92%)" }}>{article.title}</h3>
+                    <div className="flex items-center text-xs shrink-0" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
                       <Clock className="h-3 w-3 mr-1" />
                       {article.readTime} min
                     </div>
                   </div>
-                  <p className="text-sm text-white/55 mt-1">
+                  <p className="text-sm mt-1" style={{ color: "hsl(0 0% 100% / 0.55)" }}>
                     {article.description}
                   </p>
-                </Card>
+                </div>
               </Link>
             ))}
           </div>
@@ -201,61 +195,64 @@ const HelpCenter = () => {
           canonicalUrl="https://salesos.alephwavex.io/help"
         />
         <main className="flex-1 pt-28 sm:pt-32 pb-16 container mx-auto px-5 sm:px-6">
-          <Link to="/help">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="mb-6 text-white/55 hover:text-white hover:bg-white/5"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to help center
-            </Button>
-          </Link>
+          <button
+            onClick={() => window.history.back()}
+            className="inline-flex items-center gap-1.5 mb-6 text-sm transition-colors"
+            style={{ color: "hsl(0 0% 100% / 0.7)" }}
+            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 80%)")}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.7)")}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to help center
+          </button>
 
-          <h1 className="font-display text-2xl sm:text-3xl mb-2">
+          <h1 className="font-display text-2xl sm:text-3xl mb-2" style={{ fontWeight: 800, letterSpacing: "-0.02em", color: "hsl(0 0% 92%)" }}>
             Search results
           </h1>
-          <p className="text-white/55 mb-8">
-            {results.length} result{results.length !== 1 ? "s" : ""} for “{searchQuery}”
+          <p className="mb-8" style={{ color: "hsl(0 0% 100% / 0.55)" }}>
+            {results.length} result{results.length !== 1 ? "s" : ""} for "{searchQuery}"
           </p>
 
           {results.length > 0 ? (
             <div className="grid gap-3">
               {results.map((article) => (
                 <Link key={article.id} to={`/help/article/${article.slug}`}>
-                  <Card
-                    className="p-4 sm:p-5 transition-colors"
-                    style={{
-                      background: "hsl(261 75% 50% / 0.04)",
-                      border: "1px solid hsl(261 75% 50% / 0.14)",
-                    }}
+                  <div
+                    className="p-4 sm:p-5 rounded-xl transition-all duration-200"
+                    style={{ background: "hsl(261 75% 50% / 0.04)", border: "1px solid hsl(261 75% 50% / 0.14)" }}
+                    onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "hsl(261 75% 50% / 0.3)")}
+                    onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "hsl(261 75% 50% / 0.14)")}
                   >
                     <div className="flex items-center gap-2 mb-2">
-                      <Badge variant="secondary" className="bg-primary/15 text-primary border-primary/20">
+                      <span
+                        className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full"
+                        style={{ background: "hsl(261 75% 50% / 0.12)", border: "1px solid hsl(261 75% 50% / 0.2)", color: "hsl(261 75% 65%)" }}
+                      >
                         {getCategoryInfo(article.category)?.title}
-                      </Badge>
-                      <span className="text-xs text-white/75">
+                      </span>
+                      <span className="text-xs" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
                         {article.readTime} min read
                       </span>
                     </div>
-                    <h3 className="font-medium text-white">{article.title}</h3>
-                    <p className="text-sm text-white/55 mt-1">
+                    <h3 className="font-medium" style={{ color: "hsl(0 0% 92%)" }}>{article.title}</h3>
+                    <p className="text-sm mt-1" style={{ color: "hsl(0 0% 100% / 0.55)" }}>
                       {article.description}
                     </p>
-                  </Card>
+                  </div>
                 </Link>
               ))}
             </div>
           ) : (
             <div className="text-center py-12">
-              <p className="text-white/55 mb-4">
+              <p className="mb-4" style={{ color: "hsl(0 0% 100% / 0.55)" }}>
                 No articles found for your search.
               </p>
-              <p className="text-sm text-white/45">
+              <p className="text-sm" style={{ color: "hsl(0 0% 100% / 0.65)" }}>
                 Try different keywords or{" "}
                 <a
                   href="mailto:support@bdotindustries.com"
-                  className="text-primary hover:underline"
+                  className="hover:underline"
+                  style={{ color: "hsl(261 75% 65%)" }}
                 >
                   contact support
                 </a>
@@ -334,13 +331,18 @@ const HelpCenter = () => {
               <h1
                 id="help-heading"
                 className="font-display mb-5 text-4xl leading-[1.05] sm:text-5xl md:text-6xl"
+                style={{ color: "hsl(0 0% 95%)", fontWeight: 800, letterSpacing: "-0.02em" }}
               >
                 How can we{" "}
                 <span
-                  className="bg-clip-text text-transparent"
+                  className="font-display italic animate-shiny"
                   style={{
-                    backgroundImage:
-                      "linear-gradient(135deg, hsl(261 75% 72%) 0%, hsl(280 70% 70%) 100%)",
+                    backgroundImage: "linear-gradient(to right, #050010 0%, #1a0060 12.5%, #9d72e8 32.5%, #c068e8 50%, #1a0060 67.5%, #050010 87.5%, #050010 100%)",
+                    backgroundSize: "200% auto",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                    filter: "url(#c3-noise)",
                   }}
                 >
                   help you?
@@ -355,39 +357,40 @@ const HelpCenter = () => {
         </section>
 
         {/* Quick Links */}
-        <section
-          className="py-8 border-t"
-          style={{ borderColor: "hsl(261 75% 50% / 0.18)" }}
-        >
+        <section className="py-8" style={{ borderTop: "1px solid hsl(261 75% 50% / 0.18)" }}>
           <div className="container mx-auto px-5 sm:px-6">
             <div className="flex flex-wrap justify-center gap-3">
-              <Link to="/api-docs">
-                <Button
-                  variant="outline"
-                  className="gap-2 rounded-full border-white/10 bg-white/5 hover:bg-white/10 text-white/80"
-                >
-                  <Book className="h-4 w-4" />
-                  API Documentation
-                </Button>
-              </Link>
-              <Link to="/api-status">
-                <Button
-                  variant="outline"
-                  className="gap-2 rounded-full border-white/10 bg-white/5 hover:bg-white/10 text-white/80"
-                >
-                  <Activity className="h-4 w-4" />
-                  System Status
-                </Button>
-              </Link>
-              <a href="mailto:support@bdotindustries.com">
-                <Button
-                  variant="outline"
-                  className="gap-2 rounded-full border-white/10 bg-white/5 hover:bg-white/10 text-white/80"
-                >
-                  <FileText className="h-4 w-4" />
-                  Contact Support
-                </Button>
-              </a>
+              {[
+                { to: "/api-docs", label: "API Documentation", Icon: Book, isLink: true },
+                { to: "/api-status", label: "System Status", Icon: Activity, isLink: true },
+                { to: "mailto:support@bdotindustries.com", label: "Contact Support", Icon: FileText, isLink: false },
+              ].map(({ to, label, Icon, isLink }) => (
+                isLink ? (
+                  <Link
+                    key={label}
+                    to={to}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-colors"
+                    style={{ background: "hsl(261 75% 50% / 0.08)", border: "1px solid hsl(261 75% 50% / 0.2)", color: "hsl(0 0% 100% / 0.7)" }}
+                    onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "hsl(261 75% 50% / 0.4)")}
+                    onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "hsl(261 75% 50% / 0.2)")}
+                  >
+                    <Icon className="h-4 w-4" style={{ color: "hsl(261 75% 65%)" }} />
+                    {label}
+                  </Link>
+                ) : (
+                  <a
+                    key={label}
+                    href={to}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-colors"
+                    style={{ background: "hsl(261 75% 50% / 0.08)", border: "1px solid hsl(261 75% 50% / 0.2)", color: "hsl(0 0% 100% / 0.7)" }}
+                    onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "hsl(261 75% 50% / 0.4)")}
+                    onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "hsl(261 75% 50% / 0.2)")}
+                  >
+                    <Icon className="h-4 w-4" style={{ color: "hsl(261 75% 65%)" }} />
+                    {label}
+                  </a>
+                )
+              ))}
             </div>
           </div>
         </section>
@@ -395,10 +398,10 @@ const HelpCenter = () => {
         {/* Categories */}
         <section className="py-12 md:py-16">
           <div className="container mx-auto px-5 sm:px-6">
-            <p className="mb-3 text-center text-[10px] uppercase tracking-[0.25em] text-white/70">
+            <p className="font-serif italic font-thin text-base text-center text-purple-500 mb-3">
               Documentation
             </p>
-            <h2 className="text-center text-2xl sm:text-3xl font-semibold mb-10 sm:mb-12">
+            <h2 className="font-display text-center mb-10 sm:mb-12" style={{ fontSize: "clamp(1.6rem, 3.5vw, 2.4rem)", fontWeight: 800, letterSpacing: "-0.02em", color: "hsl(0 0% 95%)" }}>
               Browse by category
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 max-w-[1120px] mx-auto">
@@ -415,51 +418,49 @@ const HelpCenter = () => {
           style={{ background: "hsl(261 75% 2%)" }}
         >
           <div className="container mx-auto px-5 sm:px-6">
-            <p className="mb-3 text-center text-[10px] uppercase tracking-[0.25em] text-white/70">
+            <p className="font-serif italic font-thin text-base text-center text-purple-500 mb-3">
               Most read
             </p>
-            <h2 className="text-center text-2xl sm:text-3xl font-semibold mb-10">
+            <h2 className="font-display text-center mb-10" style={{ fontSize: "clamp(1.6rem, 3.5vw, 2.4rem)", fontWeight: 800, letterSpacing: "-0.02em", color: "hsl(0 0% 95%)" }}>
               Popular articles
             </h2>
-            <div className="max-w-3xl mx-auto">
-              <Accordion type="single" collapsible className="space-y-3">
-                {popularArticles.map((article, index) => (
-                  <AccordionItem
-                    key={article.id}
-                    value={`item-${index}`}
-                    className="rounded-xl px-5 sm:px-6"
-                    style={{
-                      background: "hsl(261 75% 50% / 0.04)",
-                      border: "1px solid hsl(261 75% 50% / 0.14)",
-                    }}
-                  >
-                    <AccordionTrigger className="hover:no-underline py-4 text-left">
-                      <div className="flex items-center gap-3">
-                        <span className="font-medium text-white">
-                          {article.title}
-                        </span>
-                        <Badge
-                          variant="outline"
-                          className="text-xs border-white/10 bg-white/5 text-white/60"
-                        >
-                          {getCategoryInfo(article.category)?.title}
-                        </Badge>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="text-white/60 pb-4">
-                      <p className="mb-3">{article.description}</p>
-                      <Link to={`/help/article/${article.slug}`}>
-                        <Button
-                          variant="link"
-                          className="p-0 h-auto text-primary"
-                        >
-                          Read full article →
-                        </Button>
-                      </Link>
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
+            <div className="max-w-3xl mx-auto space-y-3">
+              {popularArticles.map((article) => (
+                <details
+                  key={article.id}
+                  className="rounded-xl px-5 sm:px-6"
+                  style={{ background: "hsl(261 75% 50% / 0.04)", border: "1px solid hsl(261 75% 50% / 0.14)" }}
+                >
+                  <summary className="flex items-center justify-between gap-3 py-4 cursor-pointer list-none">
+                    <div className="flex items-center gap-3">
+                      <span className="font-medium text-sm sm:text-base" style={{ color: "hsl(0 0% 90%)" }}>
+                        {article.title}
+                      </span>
+                      <span
+                        className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full flex-shrink-0"
+                        style={{ background: "hsl(261 75% 50% / 0.12)", border: "1px solid hsl(261 75% 50% / 0.2)", color: "hsl(261 75% 65%)" }}
+                      >
+                        {getCategoryInfo(article.category)?.title}
+                      </span>
+                    </div>
+                    <ChevronRight className="h-4 w-4 flex-shrink-0 transition-transform duration-200" style={{ color: "hsl(261 75% 55% / 0.6)" }} />
+                  </summary>
+                  <div className="pb-4" style={{ borderTop: "1px solid hsl(261 75% 50% / 0.1)" }}>
+                    <p className="pt-3 text-sm leading-relaxed mb-3" style={{ color: "hsl(0 0% 100% / 0.55)" }}>
+                      {article.description}
+                    </p>
+                    <Link
+                      to={`/help/article/${article.slug}`}
+                      className="text-sm font-medium transition-colors"
+                      style={{ color: "hsl(261 75% 65%)" }}
+                      onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 80%)")}
+                      onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")}
+                    >
+                      Read full article →
+                    </Link>
+                  </div>
+                </details>
+              ))}
             </div>
           </div>
         </section>

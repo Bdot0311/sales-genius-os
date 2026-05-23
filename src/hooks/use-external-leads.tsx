@@ -112,8 +112,8 @@ export function useExternalLeads() {
       // Check for credit-related errors
       if (errorMessage.includes('credits') || errorMessage.includes('402') || errorMessage.includes('Payment') || errorMessage.includes('exhausted')) {
         toast({
-          title: 'Data Provider Credits Exhausted',
-          description: 'Your external data provider credits have been used up. Contact support or add more credits to continue searching.',
+          title: 'Search Credits Exhausted',
+          description: 'Your SalesOS search credits have been used up. Contact support or add more credits to continue searching.',
           variant: 'destructive',
           duration: 10000,
         });
@@ -214,7 +214,7 @@ export function useExternalLeads() {
             linkedin_url: lead.linkedin_url,
             country: lead.country,
             lead_status: 'active',
-            source: 'People Data Labs',
+            source: 'SalesOS',
           })
           .select('id')
           .single();
@@ -253,7 +253,7 @@ export function useExternalLeads() {
           job_title: lead.job_title,
           linkedin_url: lead.linkedin_url,
           company_website: lead.company_domain ? `https://${lead.company_domain}` : undefined,
-          source: 'People Data Labs',
+          source: 'SalesOS',
           lead_status: 'active',
           icp_score: lead.scores.overall_score,
           enrichment_status: 'enriched',
@@ -269,7 +269,7 @@ export function useExternalLeads() {
         user_id: userId,
         lead_id: savedLead.id,
         fields_enriched: ['company_name', 'contact_name', 'contact_email', 'industry', 'company_size', 'job_title', 'linkedin_url', 'icp_score'],
-        source: 'People Data Labs',
+        source: 'Lusha',
         status: 'success',
       });
 

@@ -199,6 +199,10 @@ const Settings = () => {
   ];
 
   const handleCheckout = async (paymentLink: string) => {
+    if (!paymentLink) {
+      toast.info("Contact us to upgrade to Agency — email sales@alephwave.io");
+      return;
+    }
     window.open(paymentLink, '_blank');
   };
 
@@ -283,7 +287,7 @@ const Settings = () => {
                   <Bell className="h-4 w-4" />
                   Notifications
                 </TabsTrigger>
-                {subscription?.plan === 'pro' && (
+                {(subscription?.plan === 'pro' || subscription?.plan === 'agency') && (
                   <>
                     <TabsTrigger value="white-label" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
                       <Palette className="h-4 w-4" />
@@ -306,8 +310,8 @@ const Settings = () => {
                 </TabsList>
               </div>
 
-              {/* Second row of tabs (Pro only) */}
-              {subscription?.plan === 'pro' && (
+              {/* Second row of tabs (Pro and Agency) */}
+              {(subscription?.plan === 'pro' || subscription?.plan === 'agency') && (
                 <div className="flex justify-center">
                   <TabsList className="h-auto inline-flex flex-wrap justify-center gap-2 bg-transparent p-0">
                   <TabsTrigger value="api-versions" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
@@ -882,7 +886,7 @@ const Settings = () => {
             })()}
           </TabsContent>
 
-          {subscription?.plan === 'pro' && (
+          {(subscription?.plan === 'pro' || subscription?.plan === 'agency') && (
             <>
               <TabsContent value="white-label">
                 <WhiteLabelTab />

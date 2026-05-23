@@ -99,13 +99,14 @@ export const DifferentiationSection = () => {
             {rows.map((row, index) => (
               <motion.div
                 key={index}
-                className="flex items-center gap-6 py-5 border-b border-border/10"
+                className="flex items-center gap-6 py-5 border-b"
+                style={{ borderColor: "hsl(261 75% 50% / 0.14)" }}
                 variants={{
                   hidden: { opacity: 0, y: 16 },
                   show: { opacity: 1, y: 0, transition: { duration: 0.55, ease } },
                 }}
               >
-                <span className="flex-1 text-sm text-muted-foreground/40 line-through leading-relaxed">
+                <span className="flex-1 text-sm line-through leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.22)" }}>
                   {row.legacy}
                 </span>
 

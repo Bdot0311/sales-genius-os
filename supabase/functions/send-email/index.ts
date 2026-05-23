@@ -250,8 +250,16 @@ serve(async (req) => {
       // DNS check failed non-fatally — proceed with send
     }
 
-    // Generate unsubscribe token
-    const unsubToken = btoa(to + ':' + Date.now()).replace(/=/g, '');
+    // Generate cryptographically random unsubscribe token and persist it
+    const unsubToken = crypto.randomUUID() + crypto.randomUUID().replace(/-/g, '');
+    try {
+      await supabase.from('email_unsubscribe_tokens').upsert(
+        { email: to.toLowerCase().trim(), token: unsubToken, used_at: null },
+        { onConflict: 'email' }
+      );
+    } catch (e) {
+      console.error('Failed to persist unsubscribe token', e);
+    }
 
     // Send email based on integration type
     if (integrationId === 'google' || !integrationId) {

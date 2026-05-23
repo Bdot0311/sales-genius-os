@@ -27,6 +27,8 @@ export interface UserSubscription {
   current_period_end: string;
   trial_end_date: string | null;
   signup_source: string | null;
+  created_at: string | null;
+  last_sign_in_at: string | null;
 }
 
 export interface UserRole {

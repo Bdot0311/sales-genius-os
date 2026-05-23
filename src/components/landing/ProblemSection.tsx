@@ -6,9 +6,9 @@ const lines: Array<{
   gradient?: boolean;
   italic?: boolean;
 }> = [
-  { text: "You spend Monday building a list.", color: "hsl(0 0% 90%)" },
-  { text: "Tuesday writing emails.", color: "hsl(0 0% 65%)" },
-  { text: "Wednesday realizing half are wrong-fit.", gradient: true, italic: true },
+  { text: "Export 500 contacts from Apollo.", color: "hsl(0 0% 90%)" },
+  { text: "Score them. Draft emails one by one.", color: "hsl(0 0% 65%)" },
+  { text: "Send 50. Get 3 replies. Start over.", gradient: true, italic: true },
 ];
 
 const ease = [0.16, 1, 0.3, 1] as const;
@@ -78,15 +78,15 @@ export const ProblemSection = () => {
 
           <motion.p
             className="text-base font-light max-w-xl mx-auto leading-relaxed"
-            style={{ color: "hsl(0 0% 100% / 0.45)" }}
+            style={{ color: "hsl(0 0% 100% / 0.7)" }}
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-10% 0px" }}
             transition={{ duration: 0.55, ease, delay: 0.38 }}
           >
-            The average outbound team burns 40% of their week on research before
-            a single email goes out. SalesOS takes that from 2+ hours to under
-            20 minutes — with every contact verified before it reaches you.
+            Most outbound teams spend more time building lists than running calls.
+            SalesOS cuts the research from 2+ hours to under 20 minutes, with every
+            contact verified before it ever reaches your queue.
           </motion.p>
 
           <motion.div

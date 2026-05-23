@@ -126,10 +126,15 @@ export const AdminDashboard = () => {
 
   if (!stats) return null;
 
-  // Use Stripe data for revenue if available, otherwise fall back to database
-  const displayRevenue = stripeData ? stripeData.total_revenue : stats.total_revenue;
-  const displayMonthlyRevenue = stripeData ? stripeData.monthly_revenue : stats.monthly_revenue;
-  const displayActiveSubscriptions = stripeData ? stripeData.active_subscriptions : stats.active_subscriptions;
+  // DB is authoritative for subscription counts (populated by webhook on every payment).
+  // Only use Stripe values for revenue — and only when Stripe returns non-zero (i.e.
+  // the edge function matched at least one subscription). If Stripe returns 0 it means
+  // the price-ID filter missed the account's subscriptions, so fall back to DB to avoid
+  // showing incorrect zeros.
+  const displayActiveSubscriptions = stats.active_subscriptions;
+  const stripeRevenueAvailable = stripeData != null && (stripeData.total_revenue > 0 || stripeData.monthly_revenue > 0);
+  const displayRevenue = stripeRevenueAvailable ? stripeData!.total_revenue : stats.total_revenue;
+  const displayMonthlyRevenue = stripeRevenueAvailable ? stripeData!.monthly_revenue : stats.monthly_revenue;
 
   const statCards = [
     {
@@ -143,7 +148,7 @@ export const AdminDashboard = () => {
       title: "Active Subscriptions",
       value: displayActiveSubscriptions,
       icon: UserCheck,
-      description: stripeData ? "From Stripe (real-time)" : "Paying customers",
+      description: "Paying customers",
       color: "text-green-500",
     },
     {
@@ -164,14 +169,14 @@ export const AdminDashboard = () => {
       title: "Monthly Revenue",
       value: `$${displayMonthlyRevenue.toLocaleString()}`,
       icon: DollarSign,
-      description: stripeData ? "From Stripe (real-time)" : "Current month MRR",
+      description: stripeRevenueAvailable ? "From Stripe (real-time)" : "Current month MRR",
       color: "text-green-600",
     },
     {
       title: "Total Revenue",
       value: `$${displayRevenue.toLocaleString()}`,
       icon: TrendingUp,
-      description: stripeData ? "From Stripe (real-time)" : "All-time revenue",
+      description: stripeRevenueAvailable ? "From Stripe (real-time)" : "All-time revenue",
       color: "text-purple-500",
     },
   ];

@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { TrendingUp, Users, DollarSign, Target, Loader2, Download, FileText, Sparkles, ArrowRight, Share2, FileDown } from "lucide-react";
+import { TrendingUp, Users, DollarSign, Target, Loader2, Download, FileText, Sparkles, ArrowRight, Share2, FileDown, Info } from "lucide-react";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
 import { FeatureHighlight } from "@/components/dashboard/FeatureHighlight";
@@ -37,7 +37,8 @@ const Analytics = () => {
           { stage: "Qualified", count: deals.filter(d => d.stage === "qualified").length },
           { stage: "Proposal", count: deals.filter(d => d.stage === "proposal").length },
           { stage: "Negotiation", count: deals.filter(d => d.stage === "negotiation").length },
-          { stage: "Closed", count: deals.filter(d => d.stage === "closed").length },
+          { stage: "Closed Won", count: deals.filter(d => d.stage === "closed-won").length },
+          { stage: "Closed Lost", count: deals.filter(d => d.stage === "closed-lost").length },
         ]);
         const monthCounts: Record<string, number> = {};
         leads.forEach(lead => {
@@ -54,6 +55,9 @@ const Analytics = () => {
         }
         setLeadsOverTime(timeData);
       }
+    } catch (err) {
+      console.error('Analytics load error:', err);
+      toast.error('Failed to load analytics data');
     } finally {
       setLoading(false);
     }
@@ -99,12 +103,7 @@ const Analytics = () => {
   };
 
   const handleShareClientPortal = () => {
-    const url = "https://salesos.alephwavex.io/client-portal/demo-token-123";
-    navigator.clipboard.writeText(url).then(() => {
-      toast.success("Client portal link copied to clipboard!");
-    }).catch(() => {
-      toast.error("Failed to copy link. Please try again.");
-    });
+    toast.info("Client portal feature is coming soon. You'll be notified when it's ready.");
   };
 
   const handleCustomReport = () => {
@@ -116,16 +115,33 @@ const Analytics = () => {
   };
 
   const handleExportPDF = () => {
-    // Generate a simple text-based "PDF" as a blob download for now
-    const reportContent = `SalesOS Campaign Report\nGenerated: ${new Date().toLocaleDateString()}\n\nThis is your agency-branded campaign performance report.\nFull PDF export with charts coming soon.`;
-    const blob = new Blob([reportContent], { type: 'text/plain' });
+    const date = new Date().toISOString().split('T')[0];
+    const csvRows = [
+      ['SalesOS Agency Report', `Generated: ${new Date().toLocaleDateString()}`],
+      [''],
+      ['--- Summary ---'],
+      ['Metric', 'Value'],
+      ['Total Leads', stats.totalLeads.toString()],
+      ['Total Deals', stats.totalDeals.toString()],
+      ['Pipeline Value', `$${stats.totalValue.toLocaleString()}`],
+      ['Avg Deal Size', `$${Math.round(stats.avgDealSize).toLocaleString()}`],
+      [''],
+      ['--- Deals by Stage ---'],
+      ['Stage', 'Deal Count'],
+      ...dealsByStage.map(d => [d.stage, d.count.toString()]),
+      [''],
+      ['--- Leads Over Time ---'],
+      ['Month', 'Leads'],
+      ...leadsOverTime.map(d => [d.month, d.leads.toString()]),
+    ];
+    const blob = new Blob([csvRows.map(row => row.join(',')).join('\n')], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'salesos-report.txt';
+    a.download = `salesos-agency-report-${date}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success('Report downloaded');
+    toast.success('Agency report downloaded');
   };
 
   return (
@@ -147,7 +163,7 @@ const Analytics = () => {
             </Button>
             {currentPlan === 'agency' && (
               <Button variant="outline" onClick={handleShareClientPortal}>
-                <Share2 className="w-4 h-4 mr-2" />Share Client Portal
+                <Info className="w-4 h-4 mr-2" />Share Client Portal
               </Button>
             )}
             {currentPlan === 'agency' && (

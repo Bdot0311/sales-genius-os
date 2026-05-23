@@ -45,12 +45,24 @@ export const Navbar = () => {
   const navLinks = [
     { label: "Features", path: "#features" },
     { label: "Pricing", path: "/pricing" },
-    { label: "Integrations", path: "#integrations" },
+    { label: "Integrations", path: "/pricing" },
     { label: "Blog", path: "/blog" },
     { label: "Help", path: "/help" },
   ];
 
   return (
+    <>
+      {/* Global SVG noise filter — referenced as url(#c3-noise) by animate-shiny headings */}
+      <svg style={{ position: "absolute", width: 0, height: 0 }} aria-hidden="true">
+        <defs>
+          <filter id="c3-noise">
+            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves={2} stitchTiles="stitch" />
+            <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.35 0" />
+            <feComposite in2="SourceGraphic" operator="in" result="noise" />
+            <feBlend in="SourceGraphic" in2="noise" mode="multiply" />
+          </filter>
+        </defs>
+      </svg>
     <nav
       className={`fixed left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled ? 'border-b' : ''
@@ -100,9 +112,9 @@ export const Navbar = () => {
                   key={link.label}
                   onClick={() => handleNavigation(link.path)}
                   className="px-3 lg:px-4 py-2 text-sm transition-colors rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  style={{ color: 'hsl(0 0% 100% / 0.45)' }}
+                  style={{ color: 'hsl(0 0% 100% / 0.7)' }}
                   onMouseEnter={e => (e.currentTarget.style.color = 'hsl(0 0% 100% / 0.85)')}
-                  onMouseLeave={e => (e.currentTarget.style.color = 'hsl(0 0% 100% / 0.45)')}
+                  onMouseLeave={e => (e.currentTarget.style.color = 'hsl(0 0% 100% / 0.7)')}
                 >
                   {link.label}
                 </button>
@@ -114,9 +126,9 @@ export const Navbar = () => {
               {/* De-emphasized Login */}
               <button
                 className="hidden md:block text-sm transition-colors"
-                style={{ color: 'hsl(0 0% 100% / 0.4)' }}
+                style={{ color: 'hsl(0 0% 100% / 0.65)' }}
                 onMouseEnter={e => (e.currentTarget.style.color = 'hsl(0 0% 100% / 0.75)')}
-                onMouseLeave={e => (e.currentTarget.style.color = 'hsl(0 0% 100% / 0.4)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'hsl(0 0% 100% / 0.65)')}
                 onClick={() => navigate("/auth")}
               >
                 Log in
@@ -191,5 +203,6 @@ export const Navbar = () => {
         </div>
       </div>
     </nav>
+    </>
   );
 };

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -13,8 +13,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Settings, CreditCard, Key, Mail, Flag, Plus, Pencil, Trash2, Loader2, Save } from "lucide-react";
+import { Settings, CreditCard, Key, Mail, Flag, Plus, Pencil, Trash2, Loader2, Save, Info } from "lucide-react";
 import type { Json } from "@/integrations/supabase/types";
+
+function debounce<T extends (...args: any[]) => any>(fn: T, ms: number): T {
+  let timer: ReturnType<typeof setTimeout>;
+  return ((...args: any[]) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), ms);
+  }) as T;
+}
 
 interface AdminSetting {
   id: string;
@@ -119,6 +127,12 @@ const AdminSettings = () => {
       setSaving(false);
     }
   };
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const debouncedUpdateSetting = useCallback(
+    debounce((key: string, value: Json) => updateSetting(key, value), 800),
+    [updateSetting]
+  );
 
   const toggleFeatureFlag = async (flag: FeatureFlag) => {
     try {
@@ -295,7 +309,7 @@ const AdminSettings = () => {
                   id="maintenance-message"
                   placeholder="We're currently performing scheduled maintenance..."
                   value={(getSettingValue("maintenance_message") as string) || ""}
-                  onChange={(e) => updateSetting("maintenance_message", e.target.value)}
+                  onChange={(e) => debouncedUpdateSetting("maintenance_message", e.target.value)}
                   disabled={saving}
                 />
               </div>
@@ -328,6 +342,14 @@ const AdminSettings = () => {
 
           {/* Billing Settings */}
           <TabsContent value="billing" className="space-y-4">
+            <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+              <Info className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-500" />
+              <p>
+                <span className="font-medium">For reference only</span> — plan limits and trial periods below are stored as reference values.
+                Actual enforcement is configured in <span className="font-medium">Stripe</span> (products, prices, and entitlements).
+                Changes here will not affect billing behaviour until your backend reads these values explicitly.
+              </p>
+            </div>
             <div className="grid gap-4">
               <div className="p-4 border rounded-lg space-y-3">
                 <Label htmlFor="trial-days">Default Trial Period (days)</Label>
@@ -337,7 +359,7 @@ const AdminSettings = () => {
                   min={1}
                   max={365}
                   value={(getSettingValue("default_trial_days") as number) || 14}
-                  onChange={(e) => updateSetting("default_trial_days", parseInt(e.target.value) || 14)}
+                  onChange={(e) => debouncedUpdateSetting("default_trial_days", parseInt(e.target.value) || 14)}
                   disabled={saving}
                 />
               </div>
@@ -349,7 +371,7 @@ const AdminSettings = () => {
                   type="number"
                   min={100}
                   value={(getSettingValue("max_leads_growth") as number) || 1000}
-                  onChange={(e) => updateSetting("max_leads_growth", parseInt(e.target.value) || 1000)}
+                  onChange={(e) => debouncedUpdateSetting("max_leads_growth", parseInt(e.target.value) || 1000)}
                   disabled={saving}
                 />
               </div>
@@ -361,7 +383,7 @@ const AdminSettings = () => {
                   type="number"
                   min={100}
                   value={(getSettingValue("max_leads_pro") as number) || 10000}
-                  onChange={(e) => updateSetting("max_leads_pro", parseInt(e.target.value) || 10000)}
+                  onChange={(e) => debouncedUpdateSetting("max_leads_pro", parseInt(e.target.value) || 10000)}
                   disabled={saving}
                 />
               </div>
@@ -378,7 +400,7 @@ const AdminSettings = () => {
                   type="number"
                   min={1}
                   value={(getSettingValue("default_rate_limit_minute") as number) || 60}
-                  onChange={(e) => updateSetting("default_rate_limit_minute", parseInt(e.target.value) || 60)}
+                  onChange={(e) => debouncedUpdateSetting("default_rate_limit_minute", parseInt(e.target.value) || 60)}
                   disabled={saving}
                 />
               </div>
@@ -390,7 +412,7 @@ const AdminSettings = () => {
                   type="number"
                   min={1}
                   value={(getSettingValue("default_rate_limit_day") as number) || 10000}
-                  onChange={(e) => updateSetting("default_rate_limit_day", parseInt(e.target.value) || 10000)}
+                  onChange={(e) => debouncedUpdateSetting("default_rate_limit_day", parseInt(e.target.value) || 10000)}
                   disabled={saving}
                 />
               </div>
@@ -403,7 +425,7 @@ const AdminSettings = () => {
                   min={1}
                   max={10}
                   value={(getSettingValue("max_webhook_retries") as number) || 5}
-                  onChange={(e) => updateSetting("max_webhook_retries", parseInt(e.target.value) || 5)}
+                  onChange={(e) => debouncedUpdateSetting("max_webhook_retries", parseInt(e.target.value) || 5)}
                   disabled={saving}
                 />
               </div>
@@ -420,7 +442,7 @@ const AdminSettings = () => {
                   type="email"
                   placeholder="noreply@salesos.io"
                   value={(getSettingValue("email_from_address") as string) || ""}
-                  onChange={(e) => updateSetting("email_from_address", e.target.value)}
+                  onChange={(e) => debouncedUpdateSetting("email_from_address", e.target.value)}
                   disabled={saving}
                 />
               </div>
@@ -431,7 +453,7 @@ const AdminSettings = () => {
                   id="email-name"
                   placeholder="SalesOS"
                   value={(getSettingValue("email_from_name") as string) || ""}
-                  onChange={(e) => updateSetting("email_from_name", e.target.value)}
+                  onChange={(e) => debouncedUpdateSetting("email_from_name", e.target.value)}
                   disabled={saving}
                 />
               </div>

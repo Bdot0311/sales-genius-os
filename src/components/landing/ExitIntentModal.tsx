@@ -107,7 +107,7 @@ export const ExitIntentModal = () => {
                     "linear-gradient(135deg, hsl(261 75% 60%) 0%, hsl(261 75% 50%) 100%)",
                 }}
               >
-                Watch the 60-second demo
+                See how it works
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </button>
               <button

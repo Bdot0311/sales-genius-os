@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { AddLeadDialog } from "@/components/dashboard/AddLeadDialog";
 import { OnboardingChecklist } from "@/components/dashboard/OnboardingChecklist";
@@ -14,6 +15,7 @@ import { SEOHead } from "@/components/seo/SEOHead";
 
 const Dashboard = () => {
   const { currentPlan, loading: planLoading } = usePlanFeatures();
+  const navigate = useNavigate();
   const isFreeTier = currentPlan === 'free';
   const [showChecklist, setShowChecklist] = useState(true);
   const [showTour, setShowTour] = useState(false);
@@ -156,7 +158,7 @@ const Dashboard = () => {
               ].map((action) => (
                 <button
                   key={action.label}
-                  onClick={() => window.location.href = action.href}
+                  onClick={() => navigate(action.href)}
                   className="flex items-start gap-3 p-4 rounded-lg border border-border/60 bg-card hover:bg-accent/50 hover:border-primary/30 transition-all text-left group"
                 >
                   <div className="p-1.5 rounded-md bg-primary/10 group-hover:bg-primary/20 transition-colors flex-shrink-0">
@@ -186,7 +188,7 @@ const Dashboard = () => {
                   : 'Add your first lead to get AI-powered insights and coaching.'}
             </p>
             <button
-              onClick={() => window.location.href = '/dashboard/coach'}
+              onClick={() => navigate('/dashboard/coach')}
               className="mt-4 text-xs text-primary hover:text-primary/80 font-medium flex items-center gap-1 transition-colors"
             >
               Open AI Coach →
