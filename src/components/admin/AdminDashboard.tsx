@@ -39,8 +39,9 @@ export const AdminDashboard = () => {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'subscriptions' },
         () => {
-          console.log('Subscription data changed, refreshing stats...');
+          console.log('Subscription data changed, refreshing stats and MRR...');
           loadStats();
+          loadStripeRevenue();
         }
       )
       .on(
