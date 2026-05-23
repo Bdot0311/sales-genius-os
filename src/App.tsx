@@ -181,20 +181,37 @@ const DeferredUIShell = ({ children }: { children: ReactNode }) => {
   );
 };
 
-const MaintenancePage = ({ message }: { message: string }) => (
-  <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground px-6 text-center">
-    <div className="max-w-md space-y-4">
-      <div className="w-16 h-16 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center">
-        <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l5.654-4.654m5.292-5.292l4.654-5.654a2.548 2.548 0 013.586 3.586l-5.653 4.655M16.124 6.88l-4.655 5.653" />
-        </svg>
+const MaintenancePage = ({ message }: { message: string }) => {
+  const handleAdminSignIn = async () => {
+    // Sign out any current session so the admin gets a clean login
+    await supabase.auth.signOut();
+    window.location.href = "/auth";
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground px-6 text-center">
+      <div className="max-w-md space-y-4">
+        <div className="w-16 h-16 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l5.654-4.654m5.292-5.292l4.654-5.654a2.548 2.548 0 013.586 3.586l-5.653 4.655M16.124 6.88l-4.655 5.653" />
+          </svg>
+        </div>
+        <h1 className="text-2xl font-bold tracking-tight">Under Maintenance</h1>
+        <p className="text-muted-foreground">{message}</p>
+        <p className="text-xs text-muted-foreground/60">
+          Admin?{" "}
+          <button
+            type="button"
+            onClick={handleAdminSignIn}
+            className="underline hover:text-muted-foreground cursor-pointer"
+          >
+            Sign in here.
+          </button>
+        </p>
       </div>
-      <h1 className="text-2xl font-bold tracking-tight">Under Maintenance</h1>
-      <p className="text-muted-foreground">{message}</p>
-      <p className="text-xs text-muted-foreground/60">Admin? <a href="/auth" className="underline">Sign in here.</a></p>
     </div>
-  </div>
-);
+  );
+};
 
 // Wraps app-only routes (dashboard, settings, etc.) — not landing or admin.
 // Reads maintenance status via a security-definer RPC so any user can query it.
@@ -208,10 +225,15 @@ const MaintenanceGuard = ({ children }: { children: ReactNode }) => {
     let cancelled = false;
     (async () => {
       try {
+        // Get the current authenticated user first so we check THEIR role
+        const { data: { user } } = await supabase.auth.getUser();
+
         const [{ data: active }, { data: msg }, { data: roles }] = await Promise.all([
           supabase.rpc('get_maintenance_status'),
           supabase.rpc('get_maintenance_message'),
-          supabase.from('user_roles').select('role').eq('role', 'admin').limit(1),
+          user
+            ? supabase.from('user_roles').select('role').eq('user_id', user.id).eq('role', 'admin').limit(1)
+            : Promise.resolve({ data: [] }),
         ]);
         if (cancelled) return;
         const isAdmin = !!(roles?.length);
