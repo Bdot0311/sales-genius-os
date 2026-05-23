@@ -299,10 +299,13 @@ const Outreach = () => {
   }, []);
 
   const loadDueFollowUps = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
     const now = new Date().toISOString();
     const { data } = await supabase
       .from("activities")
       .select("id, subject, lead_id, due_date")
+      .eq("user_id", user.id)
       .eq("type", "follow_up")
       .eq("completed", false)
       .lte("due_date", now)
@@ -317,11 +320,14 @@ const Outreach = () => {
   };
 
   const loadDailyEmailLimit = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
     const { data } = await supabase
       .from('subscriptions')
       .select('daily_email_limit, daily_emails_sent, daily_emails_reset_at')
+      .eq('user_id', user.id)
       .eq('status', 'active')
-      .single();
+      .maybeSingle();
     if (data) {
       const now = new Date();
       const resetAt = data.daily_emails_reset_at ? new Date(data.daily_emails_reset_at) : new Date(0);
@@ -333,10 +339,13 @@ const Outreach = () => {
 
   const saveDailyLimit = async (newLimit: number) => {
     if (newLimit < 1) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
     setIsSavingLimit(true);
     const { error } = await supabase
       .from('subscriptions')
       .update({ daily_email_limit: newLimit } as any)
+      .eq('user_id', user.id)
       .eq('status', 'active');
     setIsSavingLimit(false);
     if (!error) {
@@ -346,9 +355,12 @@ const Outreach = () => {
   };
 
   const loadConnectedAccounts = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
     const { data } = await supabase
       .from('integrations')
       .select('id, connected_email')
+      .eq('user_id', user.id)
       .eq('integration_id', 'google')
       .eq('is_active', true);
     
@@ -406,16 +418,20 @@ const Outreach = () => {
   }, [activeTab, isGenerating, isSending, selectedLead, generatedEmail, isSavingDraft, subjectLine]);
 
   const loadCounts = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
     const [sentResult, draftsResult] = await Promise.all([
-      supabase.from('sent_emails').select('id', { count: 'exact', head: true }),
-      supabase.from('email_drafts').select('id', { count: 'exact', head: true }),
+      supabase.from('sent_emails').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+      supabase.from('email_drafts').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
     ]);
     setSentCount(sentResult.count || 0);
     setDraftsCount(draftsResult.count || 0);
   };
 
   const loadLeads = async () => {
-    const { data } = await supabase.from("leads").select("*");
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data } = await supabase.from("leads").select("*").eq("user_id", user.id);
     if (data) setLeads(data);
   };
 
