@@ -990,9 +990,15 @@ const Outreach = () => {
         description: "AI created a personalized sales email designed to book meetings",
       });
     } catch (error: any) {
+      // FunctionsHttpError bodies contain the real message from the edge function
+      let description = error.message;
+      try {
+        const body = await error.context?.json?.();
+        if (body?.error) description = body.error;
+      } catch {}
       toast({
         title: "Error generating email",
-        description: error.message,
+        description,
         variant: "destructive",
       });
     } finally {
