@@ -68,11 +68,14 @@ const Coach = () => {
 
   const loadStats = async () => {
     try {
-      const { data: leads } = await supabase.from("leads").select("*");
-      const { data: deals } = await supabase.from("deals").select("*");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: leads } = await supabase.from("leads").select("*").eq("user_id", user.id);
+      const { data: deals } = await supabase.from("deals").select("*").eq("user_id", user.id);
       const { data: activities } = await supabase
         .from("activities")
         .select("*")
+        .eq("user_id", user.id)
         .eq("type", "meeting")
         .gte("due_date", new Date().toISOString());
 

@@ -91,18 +91,9 @@ const ICP = () => {
   const { hasFeature, gateModalOpen, setGateModalOpen, gatedFeature, currentPlan, gatedAction, checkLimit, features } = usePlanFeatures();
   const [editing, setEditing] = useState<Partial<ICPProfile> | null>(null);
   const [isNew, setIsNew] = useState(false);
-  const [isDiscovering, setIsDiscovering] = useState(false);
-  const [lookalikes, setLookalikes] = useState<any[]>([]);
 
   const handleDiscoverLookalikes = async () => {
-    setIsDiscovering(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setLookalikes([
-      { name: "DataSync Inc", industry: "SaaS", size: "50-200", matchScore: 92 },
-      { name: "FlowTech Corp", industry: "Fintech", size: "100-500", matchScore: 88 },
-      { name: "ScaleUp Labs", industry: "MarTech", size: "50-200", matchScore: 84 },
-    ]);
-    setIsDiscovering(false);
+    toast.info("Lookalike discovery is being rolled out — you'll be notified when it's ready for your account.");
   };
 
   const icpGated = !hasFeature('icpBuilder');
@@ -220,24 +211,9 @@ const ICP = () => {
                 <p className="text-sm text-muted-foreground mb-4">
                   We analyze patterns from your closed-won deals and surface new prospects with matching signals.
                 </p>
-                <Button onClick={handleDiscoverLookalikes} disabled={isDiscovering}>
-                  {isDiscovering ? "Discovering..." : "Discover Lookalikes"}
+                <Button onClick={handleDiscoverLookalikes}>
+                  Discover Lookalikes
                 </Button>
-                {lookalikes.length > 0 && (
-                  <div className="mt-6 space-y-3">
-                    {lookalikes.map((prospect, index) => (
-                      <div key={index} className="flex items-center justify-between rounded-lg border px-4 py-3">
-                        <div className="space-y-0.5">
-                          <p className="text-sm font-medium">{prospect.name}</p>
-                          <p className="text-xs text-muted-foreground">{prospect.industry} · {prospect.size} employees</p>
-                        </div>
-                        <Badge variant="secondary" className="text-xs tabular-nums">
-                          {prospect.matchScore}% match
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </>
             ) : (
               <div className="text-center py-6">
