@@ -14,7 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Slider } from "@/components/ui/slider";
-import { Target, Plus, Trash2, X, Save, Lock } from "lucide-react";
+import { AlertCircle, Target, Plus, Trash2, X, Save, Lock } from "lucide-react";
 import { toast } from "sonner";
 
 const INDUSTRY_OPTIONS = ["SaaS", "E-commerce", "Healthcare", "Legal", "Finance", "Real Estate", "Agency", "Manufacturing", "Other"];
@@ -87,7 +87,7 @@ function getCompletionScore(p: Partial<ICPProfile>): number {
 }
 
 const ICP = () => {
-  const { profiles, isLoading, createProfile, updateProfile, deleteProfile } = useICPProfiles();
+  const { profiles, isLoading, error: profilesError, createProfile, updateProfile, deleteProfile } = useICPProfiles();
   const { hasFeature, gateModalOpen, setGateModalOpen, gatedFeature, currentPlan, gatedAction, checkLimit, features } = usePlanFeatures();
   const [editing, setEditing] = useState<Partial<ICPProfile> | null>(null);
   const [isNew, setIsNew] = useState(false);
@@ -155,9 +155,19 @@ const ICP = () => {
           <Button onClick={openNew}><Plus className="w-4 h-4 mr-2" />New ICP</Button>
         </div>
 
+        {profilesError && (
+          <div className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+            <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+            <div>
+              <p className="font-medium">Could not load ICP profiles</p>
+              <p className="text-xs mt-0.5 opacity-80">{(profilesError as any)?.message ?? String(profilesError)}</p>
+            </div>
+          </div>
+        )}
+
         {isLoading ? (
           <div className="grid gap-4 md:grid-cols-2">{[1, 2].map((i) => <Skeleton key={i} className="h-48" />)}</div>
-        ) : profiles.length === 0 ? (
+        ) : !profilesError && profiles.length === 0 ? (
           <Card className="border-dashed">
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Target className="w-12 h-12 text-muted-foreground mb-4" />
