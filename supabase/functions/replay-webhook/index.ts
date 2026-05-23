@@ -66,6 +66,16 @@ serve(async (req) => {
           event: delivery.event,
         });
 
+        if (!isValidWebhookUrl(webhook.url)) {
+          logStep('Blocked invalid webhook URL', { deliveryId: delivery.id, url: webhook.url });
+          replayResults.push({
+            originalDeliveryId: delivery.id,
+            success: false,
+            error: 'Invalid webhook URL blocked for security',
+          });
+          continue;
+        }
+
         // Generate signature
         const signature = createHmac('sha256', webhook.secret)
           .update(JSON.stringify(delivery.payload))
