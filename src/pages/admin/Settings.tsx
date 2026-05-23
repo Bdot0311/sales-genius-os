@@ -101,19 +101,32 @@ const AdminSettings = () => {
     return setting?.setting_value ?? null;
   };
 
+  const SETTING_CATEGORIES: Record<string, string> = {
+    maintenance_mode: 'general', maintenance_message: 'general',
+    signup_enabled: 'general', pwa_notifications_enabled: 'general',
+    default_trial_days: 'billing', max_leads_growth: 'billing', max_leads_pro: 'billing',
+    default_rate_limit_minute: 'api', default_rate_limit_day: 'api', max_webhook_retries: 'api',
+    email_from_address: 'email', email_from_name: 'email',
+  };
+
   const updateSetting = async (key: string, value: Json) => {
     setSaving(true);
     try {
+      const category = SETTING_CATEGORIES[key] ?? 'general';
       const { error } = await supabase
         .from("admin_settings")
-        .update({ setting_value: value, updated_at: new Date().toISOString() })
-        .eq("setting_key", key);
+        .upsert(
+          { setting_key: key, setting_value: value, category, updated_at: new Date().toISOString() },
+          { onConflict: 'setting_key' }
+        );
 
       if (error) throw error;
 
-      setSettings(prev => prev.map(s => 
-        s.setting_key === key ? { ...s, setting_value: value } : s
-      ));
+      setSettings(prev => {
+        const exists = prev.some(s => s.setting_key === key);
+        if (exists) return prev.map(s => s.setting_key === key ? { ...s, setting_value: value } : s);
+        return [...prev, { id: key, setting_key: key, setting_value: value, description: null, category }];
+      });
 
       toast({ title: "Setting updated", description: `${key} has been updated` });
     } catch (error) {

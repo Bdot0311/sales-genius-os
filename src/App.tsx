@@ -1,6 +1,7 @@
 import { Component, Suspense, lazy, useState, useEffect, type ComponentType, type ErrorInfo, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index";
 
 // Public marketing routes that should NOT trigger Supabase/auth/white-label loads
@@ -180,6 +181,54 @@ const DeferredUIShell = ({ children }: { children: ReactNode }) => {
   );
 };
 
+const MaintenancePage = ({ message }: { message: string }) => (
+  <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground px-6 text-center">
+    <div className="max-w-md space-y-4">
+      <div className="w-16 h-16 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l5.654-4.654m5.292-5.292l4.654-5.654a2.548 2.548 0 013.586 3.586l-5.653 4.655M16.124 6.88l-4.655 5.653" />
+        </svg>
+      </div>
+      <h1 className="text-2xl font-bold tracking-tight">Under Maintenance</h1>
+      <p className="text-muted-foreground">{message}</p>
+      <p className="text-xs text-muted-foreground/60">Admin? <a href="/auth" className="underline">Sign in here.</a></p>
+    </div>
+  </div>
+);
+
+// Wraps app-only routes (dashboard, settings, etc.) — not landing or admin.
+// Reads maintenance status via a security-definer RPC so any user can query it.
+const MaintenanceGuard = ({ children }: { children: ReactNode }) => {
+  const [state, setState] = useState<{ loading: boolean; active: boolean; message: string; isAdmin: boolean }>({
+    loading: true, active: false, message: "We're performing scheduled maintenance. We'll be back shortly.", isAdmin: false,
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [{ data: user }, { data: active }, { data: msg }, { data: roles }] = await Promise.all([
+        supabase.auth.getUser(),
+        supabase.rpc('get_maintenance_status'),
+        supabase.rpc('get_maintenance_message'),
+        supabase.from('user_roles').select('role').eq('role', 'admin').limit(1),
+      ]);
+      if (cancelled) return;
+      const isAdmin = !!(roles?.length);
+      setState({
+        loading: false,
+        active: active === true,
+        message: typeof msg === 'string' ? msg.replace(/^"|"$/g, '') : "We're performing scheduled maintenance.",
+        isAdmin,
+      });
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  if (state.loading) return <PageLoader />;
+  if (state.active && !state.isAdmin) return <MaintenancePage message={state.message} />;
+  return <>{children}</>;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <DeferredUIShell>
@@ -205,28 +254,28 @@ const App = () => (
               <Route path="/help/article/:slug" element={<HelpCenter />} />
               <Route path="/install" element={<Install />} />
               <Route path="/checkout" element={<Checkout />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/dashboard/leads" element={<Leads />} />
-              <Route path="/dashboard/leads/saved" element={<SavedLeads />} />
-              <Route path="/dashboard/coach" element={<Coach />} />
-              <Route path="/dashboard/coach/live" element={<LiveCoaching />} />
-              <Route path="/dashboard/coach/playbooks" element={<Playbooks />} />
-              <Route path="/dashboard/pipeline" element={<Pipeline />} />
-              <Route path="/dashboard/outreach" element={<Outreach />} />
-              <Route path="/dashboard/calendar" element={<Calendar />} />
-              <Route path="/dashboard/analytics" element={<Analytics />} />
-              <Route path="/dashboard/automations" element={<Automations />} />
-              <Route path="/dashboard/sequences/:id" element={<SequenceDetail />} />
-              <Route path="/dashboard/sequences" element={<Sequences />} />
-              <Route path="/dashboard/message-blocks" element={<MessageBlocks />} />
-              <Route path="/dashboard/icp" element={<ICP />} />
-              <Route path="/dashboard/inbox" element={<Inbox />} />
-              <Route path="/dashboard/deliverability" element={<Deliverability />} />
-              <Route path="/integrations" element={<DashboardIntegrations />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/onboarding-status" element={<OnboardingStatus />} />
-              <Route path="/dashboard/onboarding-status" element={<OnboardingStatus />} />
-              <Route path="/dashboard/agent" element={<Agent />} />
+              <Route path="/dashboard" element={<MaintenanceGuard><Dashboard /></MaintenanceGuard>} />
+              <Route path="/dashboard/leads" element={<MaintenanceGuard><Leads /></MaintenanceGuard>} />
+              <Route path="/dashboard/leads/saved" element={<MaintenanceGuard><SavedLeads /></MaintenanceGuard>} />
+              <Route path="/dashboard/coach" element={<MaintenanceGuard><Coach /></MaintenanceGuard>} />
+              <Route path="/dashboard/coach/live" element={<MaintenanceGuard><LiveCoaching /></MaintenanceGuard>} />
+              <Route path="/dashboard/coach/playbooks" element={<MaintenanceGuard><Playbooks /></MaintenanceGuard>} />
+              <Route path="/dashboard/pipeline" element={<MaintenanceGuard><Pipeline /></MaintenanceGuard>} />
+              <Route path="/dashboard/outreach" element={<MaintenanceGuard><Outreach /></MaintenanceGuard>} />
+              <Route path="/dashboard/calendar" element={<MaintenanceGuard><Calendar /></MaintenanceGuard>} />
+              <Route path="/dashboard/analytics" element={<MaintenanceGuard><Analytics /></MaintenanceGuard>} />
+              <Route path="/dashboard/automations" element={<MaintenanceGuard><Automations /></MaintenanceGuard>} />
+              <Route path="/dashboard/sequences/:id" element={<MaintenanceGuard><SequenceDetail /></MaintenanceGuard>} />
+              <Route path="/dashboard/sequences" element={<MaintenanceGuard><Sequences /></MaintenanceGuard>} />
+              <Route path="/dashboard/message-blocks" element={<MaintenanceGuard><MessageBlocks /></MaintenanceGuard>} />
+              <Route path="/dashboard/icp" element={<MaintenanceGuard><ICP /></MaintenanceGuard>} />
+              <Route path="/dashboard/inbox" element={<MaintenanceGuard><Inbox /></MaintenanceGuard>} />
+              <Route path="/dashboard/deliverability" element={<MaintenanceGuard><Deliverability /></MaintenanceGuard>} />
+              <Route path="/integrations" element={<MaintenanceGuard><DashboardIntegrations /></MaintenanceGuard>} />
+              <Route path="/settings" element={<MaintenanceGuard><Settings /></MaintenanceGuard>} />
+              <Route path="/onboarding-status" element={<MaintenanceGuard><OnboardingStatus /></MaintenanceGuard>} />
+              <Route path="/dashboard/onboarding-status" element={<MaintenanceGuard><OnboardingStatus /></MaintenanceGuard>} />
+              <Route path="/dashboard/agent" element={<MaintenanceGuard><Agent /></MaintenanceGuard>} />
               <Route path="/admin/*" element={<Admin />} />
               <Route path="/unsubscribe" element={<Unsubscribe />} />
               <Route path="/client-portal/:token" element={<ClientPortal />} />
