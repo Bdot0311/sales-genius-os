@@ -171,6 +171,24 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
         } catch { /* ignore invalid referrer */ }
       }
 
+      // Validate the email is real (syntax, disposable check, MX lookup) before creating the account.
+      try {
+        const { data: vData } = await supabase.functions.invoke('validate-email', {
+          body: { email },
+        });
+        if (vData && vData.valid === false) {
+          toast({
+            title: "Please use a valid email",
+            description: vData.reason || "That email address can't be used to sign up.",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+      } catch (err) {
+        console.warn('Email validation skipped:', err);
+      }
+
       // Create the account — the DB trigger (handle_new_user_subscription)
       // will automatically provision a free-tier subscription.
       const { data, error } = await supabase.auth.signUp({

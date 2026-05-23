@@ -46,6 +46,17 @@ const AdminUsers = () => {
   const [selectedUser, setSelectedUser] = useState<UserSubscription | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [resyncing, setResyncing] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([loadSubscriptions(), loadUserRoles()]);
+      toast.success('Users refreshed');
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const resyncStripe = async () => {
     setResyncing(true);
@@ -321,9 +332,9 @@ const AdminUsers = () => {
               </p>
             </div>
             <div className="flex gap-2 flex-wrap">
-              <Button onClick={loadSubscriptions} variant="outline" size="sm" className="border-border/50">
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
+              <Button onClick={handleRefresh} variant="outline" size="sm" className="border-border/50" disabled={refreshing}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                {refreshing ? 'Refreshing…' : 'Refresh'}
               </Button>
               <Button
                 onClick={resyncStripe}
