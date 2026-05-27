@@ -65,6 +65,13 @@ const Leads = () => {
     fetchLeads();
   }, []);
 
+  useRealtimeTable({
+    channel: "leads-page",
+    table: "leads",
+    onChange: () => fetchLeads(),
+  });
+
+
   return (
     <DashboardLayout>
       <PageHeader
