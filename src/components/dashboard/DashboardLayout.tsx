@@ -37,6 +37,7 @@ import { useSubscriptionStatus } from "@/hooks/use-subscription-status";
 import { useAdmin } from "@/hooks/use-admin";
 import { useWhiteLabel } from "@/hooks/use-white-label";
 import { useSearchCredits } from "@/hooks/use-search-credits";
+import { useLiveCrmIndicators } from "@/hooks/use-live-crm-indicators";
 
 interface DashboardLayoutProps {
   children: ReactNode;
