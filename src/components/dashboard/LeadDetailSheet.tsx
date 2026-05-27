@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Building2, Mail, Phone, Globe, Linkedin, Briefcase, Users, DollarSign, Code, Calendar, Sparkles, Pencil, Save, X, TrendingUp } from "lucide-react";
 import { ICPScoreBreakdown } from "./ICPScoreBreakdown";
 import { IntentScoreBadge } from "./IntentScoreBadge";
+import { PresenceIndicator } from "@/components/realtime/PresenceIndicator";
 import { format } from "date-fns";
 import { useState } from "react";
 
@@ -213,6 +214,7 @@ export const LeadDetailSheet = ({
               <p className="text-muted-foreground mt-1">{lead.contact_name}</p>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
+              <PresenceIndicator recordKey={open ? `lead:${lead.id}` : null} editing={editing} className="mr-1" />
               {getEnrichmentStatusBadge(lead.enrichment_status)}
               {lead.icp_score !== null && (
                 <ICPScoreBreakdown lead={lead} score={lead.icp_score} />

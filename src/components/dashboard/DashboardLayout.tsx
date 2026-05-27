@@ -37,6 +37,7 @@ import { useSubscriptionStatus } from "@/hooks/use-subscription-status";
 import { useAdmin } from "@/hooks/use-admin";
 import { useWhiteLabel } from "@/hooks/use-white-label";
 import { useSearchCredits } from "@/hooks/use-search-credits";
+import { useLiveCrmIndicators } from "@/hooks/use-live-crm-indicators";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -85,6 +86,8 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const { isAdmin } = useAdmin();
   const { settings: whiteLabelSettings } = useWhiteLabel();
   const { credits } = useSearchCredits();
+  useLiveCrmIndicators();
+
 
   // Calculate trial days remaining
   const trialDaysRemaining = subscriptionStatus?.trialEndDate

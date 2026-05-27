@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
 import { SAMPLE_DEALS } from "@/lib/sample-data";
+import { useRealtimeTable } from "@/hooks/use-realtime-table";
 
 interface Deal {
   id: string;
@@ -45,6 +46,13 @@ const Pipeline = () => {
     if (!isFreeTier) loadDeals();
     else setLoading(false);
   }, [isFreeTier]);
+
+  useRealtimeTable({
+    channel: "pipeline-deals",
+    table: "deals",
+    enabled: !isFreeTier,
+    onChange: () => loadDeals(),
+  });
 
   const loadDeals = async () => {
     try {
