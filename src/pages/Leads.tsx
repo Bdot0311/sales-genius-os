@@ -16,6 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useExternalLeads, ExternalLeadFilters } from "@/hooks/use-external-leads";
 import { useSubscriptionStatus } from "@/hooks/use-subscription-status";
 import { useSearchCredits } from "@/hooks/use-search-credits";
+import { useRealtimeTable } from "@/hooks/use-realtime-table";
+
 
 const Leads = () => {
   const [leads, setLeads] = useState<any[]>([]);
