@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Building2, Mail, Phone, Globe, Linkedin, Briefcase, Users, DollarSign, Code, Calendar, Sparkles, Pencil, Save, X, TrendingUp } from "lucide-react";
 import { ICPScoreBreakdown } from "./ICPScoreBreakdown";
 import { IntentScoreBadge } from "./IntentScoreBadge";
+import { PresenceIndicator } from "@/components/realtime/PresenceIndicator";
 import { format } from "date-fns";
 import { useState } from "react";
 
