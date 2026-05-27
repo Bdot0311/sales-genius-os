@@ -47,6 +47,13 @@ const Pipeline = () => {
     else setLoading(false);
   }, [isFreeTier]);
 
+  useRealtimeTable({
+    channel: "pipeline-deals",
+    table: "deals",
+    enabled: !isFreeTier,
+    onChange: () => loadDeals(),
+  });
+
   const loadDeals = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
