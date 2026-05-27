@@ -172,21 +172,30 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
       }
 
       // Validate the email is real (syntax, disposable check, MX lookup) before creating the account.
+      // Free-tier abuse mitigation: if the validator is unreachable, block signup rather than fail-open.
       try {
-        const { data: vData } = await supabase.functions.invoke('validate-email', {
+        const { data: vData, error: vErr } = await supabase.functions.invoke('validate-email', {
           body: { email },
         });
-        if (vData && vData.valid === false) {
+        if (vErr) throw vErr;
+        if (!vData || vData.valid === false) {
           toast({
             title: "Please use a valid email",
-            description: vData.reason || "That email address can't be used to sign up.",
+            description: vData?.reason || "That email address can't be used to sign up. Please use a real business address.",
             variant: "destructive",
           });
           setLoading(false);
           return;
         }
       } catch (err) {
-        console.warn('Email validation skipped:', err);
+        console.error('Email validation failed:', err);
+        toast({
+          title: "Couldn't verify your email",
+          description: "We couldn't verify that email right now. Please try again in a moment or use a different address.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
       }
 
       // Create the account — the DB trigger (handle_new_user_subscription)

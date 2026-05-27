@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
   } catch (err: any) {
     console.error("validate-email error:", err?.message ?? err);
     return new Response(
-      JSON.stringify({ valid: true, checks: { syntax: true, disposable: false, mx: true }, reason: "validator_error" }),
+      JSON.stringify({ valid: false, checks: { syntax: false, disposable: false, mx: false }, reason: "Could not verify this email. Please try again." }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
     );
   }
