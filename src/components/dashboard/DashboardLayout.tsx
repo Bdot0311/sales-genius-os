@@ -86,6 +86,8 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const { isAdmin } = useAdmin();
   const { settings: whiteLabelSettings } = useWhiteLabel();
   const { credits } = useSearchCredits();
+  useLiveCrmIndicators();
+
 
   // Calculate trial days remaining
   const trialDaysRemaining = subscriptionStatus?.trialEndDate
