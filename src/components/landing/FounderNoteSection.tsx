@@ -154,7 +154,6 @@ export const FounderNoteSection = () => {
                     onMouseLeave={(e) =>
                       (e.currentTarget.style.color = "hsl(261 75% 55% / 0.55)")
                     }
-                    }
                     aria-label="Brandon on X"
                   >
                     ↗ X
