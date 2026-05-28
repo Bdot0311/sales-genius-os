@@ -23,6 +23,34 @@ const DeferredSection = ({ children }: { children: ReactNode }) => (
 );
 
 const Index = () => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    // Force muted + play for strict mobile autoplay policies
+    video.muted = true;
+    video.playsInline = true;
+    video.autoplay = true;
+
+    const tryPlay = () => {
+      video.play().catch(() => {
+        // Retry once after a short delay (some browsers need interaction first)
+        setTimeout(() => video.play().catch(() => {}), 300);
+      });
+    };
+
+    tryPlay();
+
+    // Some browsers pause video when tab is hidden; resume on visibility change
+    const handleVisibility = () => {
+      if (!document.hidden) tryPlay();
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, []);
+
   return (
     <>
       <SEOHead
@@ -36,12 +64,18 @@ const Index = () => {
       {/* Fixed cinematic video background with purple tint */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none" aria-hidden="true">
         <video
+          ref={videoRef}
           autoPlay
           muted
           loop
           playsInline
-          className="absolute inset-0 w-full object-cover"
-          style={{ height: '100%' }}
+          preload="auto"
+          disablePictureInPicture
+          disableRemotePlayback
+          controls={false}
+          width="100%"
+          height="100%"
+          className="absolute inset-0 h-full w-full object-cover"
         >
           <source
             src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260508_064122_c4750c0e-7476-4b44-94a2-a85a65c63bf2.mp4"
