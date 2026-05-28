@@ -746,7 +746,8 @@ const Outreach = () => {
         .from('signature-logos')
         .getPublicUrl(fileName);
 
-      const imgHtml = `<img src="${publicUrl}" alt="Logo" width="320" style="display:block;max-width:320px;width:100%;height:auto;margin-top:8px;" />`;
+      const imgHtml = `<img src="${publicUrl}" alt="Email signature logo" width="320" style="display:block;max-width:320px;width:100%;height:auto;margin-top:8px;" />`;
+
       setSignature(prev => prev ? `${prev}\n${imgHtml}` : imgHtml);
 
       toast({
