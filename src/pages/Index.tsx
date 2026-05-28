@@ -89,6 +89,8 @@ const Index = () => {
           controls={false}
           width="100%"
           height="100%"
+          poster="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%3E%3Crect width='16' height='9' fill='%230a0612'/%3E%3C/svg%3E"
+          style={{ transition: "opacity 400ms ease" }}
           className="absolute inset-0 h-full w-full object-cover"
         >
           <source
