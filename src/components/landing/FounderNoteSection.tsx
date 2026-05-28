@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
+import founderAvatar from "@/assets/founder-brandon.png";
 export const FounderNoteSection = () => {
   const [isVisible, setIsVisible] = useState(false);
   const ref = useRef<HTMLElement>(null);
@@ -109,16 +109,15 @@ export const FounderNoteSection = () => {
             />
             <div className="flex items-center gap-3">
               {/* Founder avatar — swap src for a real photo when ready */}
-              <div
-                className="w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-sm font-bold text-white select-none"
-                style={{
-                  background:
-                    "linear-gradient(135deg, hsl(261 75% 55%), hsl(280 80% 65%))",
-                }}
-                aria-hidden="true"
-              >
-                B
-              </div>
+              <img
+                src={founderAvatar}
+                alt="Brandon, Founder of SalesOS"
+                width={40}
+                height={40}
+                className="w-10 h-10 rounded-full shrink-0 object-cover"
+                style={{ boxShadow: "0 0 0 1px hsl(261 75% 55% / 0.4)" }}
+              />
+
               <div>
                 <div className="flex items-center gap-2">
                   <p
