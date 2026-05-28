@@ -111,7 +111,7 @@ export const HeroSection = () => {
 
         {/* Subhead */}
         <motion.p
-          className="mb-7 max-w-[22rem] text-base font-light leading-relaxed text-white/55 sm:mb-12 sm:max-w-xl sm:text-xl"
+          className="mb-7 max-w-[22rem] text-base font-light leading-relaxed text-white/80 sm:mb-12 sm:max-w-xl sm:text-xl"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.65, ease, delay: 0.38 }}
