@@ -140,7 +140,7 @@ export const HeroSection = () => {
 
           <motion.a
             href="/demo"
-            className="inline-flex h-11 items-center justify-center gap-1.5 px-5 text-sm text-white/60 transition-colors duration-200 hover:text-white/80 sm:h-[52px]"
+            className="inline-flex h-11 items-center justify-center gap-1.5 px-5 text-sm text-white/85 transition-colors duration-200 hover:text-white sm:h-[52px]"
             whileHover={{ x: 3 }}
           >
             See how it works
