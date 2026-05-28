@@ -147,12 +147,13 @@ export const FounderNoteSection = () => {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs transition-colors duration-200"
-                    style={{ color: "hsl(261 75% 55% / 0.35)" }}
+                    style={{ color: "hsl(261 75% 55% / 0.55)" }}
                     onMouseEnter={(e) =>
-                      (e.currentTarget.style.color = "hsl(261 75% 65%)")
+                      (e.currentTarget.style.color = "hsl(261 75% 72%)")
                     }
                     onMouseLeave={(e) =>
-                      (e.currentTarget.style.color = "hsl(261 75% 55% / 0.35)")
+                      (e.currentTarget.style.color = "hsl(261 75% 55% / 0.55)")
+                    }
                     }
                     aria-label="Brandon on X"
                   >
