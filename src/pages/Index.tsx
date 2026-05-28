@@ -98,10 +98,15 @@ const Index = () => {
             type="video/mp4"
           />
         </video>
-        {/* Purple-tinted dark overlay */}
+        {/* Purple-tinted overlay — light enough to keep the aura visible */}
         <div
           className="absolute inset-0"
-          style={{ background: 'linear-gradient(to bottom, hsl(261 75% 5% / 0.85), hsl(261 75% 3% / 0.92))' }}
+          style={{ background: 'linear-gradient(to bottom, hsl(261 75% 4% / 0.35), hsl(261 75% 3% / 0.55))' }}
+        />
+        {/* Soft vignette to keep text legible at edges */}
+        <div
+          className="absolute inset-0"
+          style={{ background: 'radial-gradient(ellipse at center, transparent 40%, hsl(261 75% 2% / 0.6) 100%)' }}
         />
       </div>
 
