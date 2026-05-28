@@ -21,7 +21,7 @@ export const ProductShowcase = () => {
       />
 
       <div className="container mx-auto px-5 sm:px-8 lg:px-12">
-        <p className="pt-6 mb-6 text-center text-xs uppercase tracking-[0.25em] text-white/25 sm:pt-8 sm:mb-8">
+        <p className="pt-6 mb-6 text-center text-xs uppercase tracking-[0.25em] sm:pt-8 sm:mb-8" style={{ color: "hsl(261 75% 60% / 0.5)" }}>
           The platform
         </p>
 
