@@ -103,6 +103,11 @@ const Index = () => {
           className="absolute inset-0"
           style={{ background: 'linear-gradient(to bottom, hsl(261 75% 4% / 0.35), hsl(261 75% 3% / 0.55))' }}
         />
+        {/* Brand purple color shift — forces video hue toward violet-purple */}
+        <div
+          className="absolute inset-0"
+          style={{ background: 'hsl(261 75% 40%)', mixBlendMode: 'color', opacity: 0.45 }}
+        />
         {/* Soft vignette to keep text legible at edges */}
         <div
           className="absolute inset-0"
