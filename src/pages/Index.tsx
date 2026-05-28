@@ -34,22 +34,36 @@ const Index = () => {
     video.playsInline = true;
     video.autoplay = true;
 
+    const hideVideo = () => {
+      // If autoplay is blocked (e.g. iOS Low Power Mode), hide the element
+      // so the native play-button placeholder never shows. The dark purple
+      // gradient overlay alone becomes the background.
+      video.style.opacity = "0";
+    };
+    const showVideo = () => {
+      video.style.opacity = "1";
+    };
+
     const tryPlay = () => {
-      video.play().catch(() => {
-        // Retry once after a short delay (some browsers need interaction first)
-        setTimeout(() => video.play().catch(() => {}), 300);
-      });
+      const p = video.play();
+      if (p && typeof p.then === "function") {
+        p.then(showVideo).catch(() => {
+          setTimeout(() => {
+            video.play().then(showVideo).catch(hideVideo);
+          }, 300);
+        });
+      }
     };
 
     tryPlay();
 
-    // Some browsers pause video when tab is hidden; resume on visibility change
     const handleVisibility = () => {
       if (!document.hidden) tryPlay();
     };
     document.addEventListener("visibilitychange", handleVisibility);
     return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, []);
+
 
   return (
     <>
@@ -75,6 +89,8 @@ const Index = () => {
           controls={false}
           width="100%"
           height="100%"
+          poster="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%3E%3Crect width='16' height='9' fill='%230a0612'/%3E%3C/svg%3E"
+          style={{ transition: "opacity 400ms ease" }}
           className="absolute inset-0 h-full w-full object-cover"
         >
           <source
