@@ -28,7 +28,7 @@ export const BlogStrip = () => {
     <section
       className="relative px-5 py-20 sm:px-6 sm:py-28 overflow-hidden"
       style={{
-        background: "hsl(261 75% 2%)",
+        background: "hsl(261 75% 2% / 0.82)",
         borderTop: "1px solid hsl(261 75% 50% / 0.18)",
         borderBottom: "1px solid hsl(261 75% 50% / 0.18)",
       }}

@@ -10,7 +10,7 @@ export const FinalCTA = () => {
   return (
     <section
       className="relative py-40 md:py-52 overflow-hidden"
-      style={{ background: "hsl(261 75% 2%)" }}
+      style={{ background: "hsl(261 75% 2% / 0.82)" }}
       aria-labelledby="final-cta-heading"
     >
       {/* Radial glow */}
