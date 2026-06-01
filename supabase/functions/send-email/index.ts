@@ -217,6 +217,7 @@ serve(async (req) => {
       }
 
       const dailyLimit = subscription.daily_email_limit || 10;
+      const nextMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
       if (dailySent >= dailyLimit) {
         await logSystemAlert({
           category: "outreach_send_limit", severity: "warning",
@@ -225,7 +226,11 @@ serve(async (req) => {
           user_id: user.id,
         });
         return new Response(
-          JSON.stringify({ error: `Daily email limit reached (${dailyLimit}/day). Adjust your limit in Outreach settings.` }),
+          JSON.stringify({
+            error: `Daily email limit reached (${dailyLimit}/day). Adjust your limit in Outreach settings.`,
+            code: 'daily_cap_reached',
+            dailyLimit, dailySent,
+          }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -239,11 +244,21 @@ serve(async (req) => {
           user_id: user.id,
         });
         return new Response(
-          JSON.stringify({ error: `Monthly email send limit reached (${monthlyLimit.toLocaleString()}/month on ${subscription.plan} plan). Upgrade to send more.` }),
+          JSON.stringify({
+            error: `Monthly email send cap reached on your ${subscription.plan} plan.`,
+            code: 'monthly_cap_reached',
+            upgradeRequired: true,
+            plan: subscription.plan,
+            monthlyLimit,
+            monthlySent,
+            monthlyRemaining: 0,
+            resetAt: nextMonthStart.toISOString(),
+          }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
     }
+
 
     // Check opt-out status
     const { data: optout } = await supabase

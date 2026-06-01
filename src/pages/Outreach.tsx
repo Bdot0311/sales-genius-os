@@ -25,6 +25,8 @@ import { Badge } from "@/components/ui/badge";
 import { debounce } from "@/lib/utils";
 import { EmailTemplateManager, UserEmailTemplate } from "@/components/outreach/EmailTemplateManager";
 import { EmailPerformanceStats } from "@/components/outreach/EmailPerformanceStats";
+import { EmailUsagePanel } from "@/components/outreach/EmailUsagePanel";
+
 import { FollowUpSuggestion, FollowUpData } from "@/components/outreach/FollowUpSuggestion";
 import { BarChart3, ListOrdered, Layout, Users } from "lucide-react";
 import { BulkSendDialog } from "@/components/outreach/BulkSendDialog";
@@ -1297,7 +1299,21 @@ Return ONLY the corrected email body. No subject line. No explanation. No "Here 
         }
       });
 
+      // 429 monthly/daily cap responses come back as FunctionsHttpError
+      const errCtx: any = (error as any)?.context;
+      if (errCtx?.status === 429) {
+        try {
+          const payload = await errCtx.json();
+          const { showSendError } = await import("@/lib/handle-send-error");
+          showSendError(429, payload);
+        } catch {
+          toast({ title: "Send limit reached", description: "Upgrade your plan to keep sending.", variant: "destructive" });
+        }
+        setIsSending(false);
+        return;
+      }
       if (error) throw error;
+
       
       // Store info for follow-up suggestion before clearing form
       const sentLeadInfo = {
@@ -1812,7 +1828,11 @@ For logos, use HTML:
           </div>
 
           <TabsContent value="compose" className="mt-6">
+            <div className="mb-4">
+              <EmailUsagePanel variant="compact" />
+            </div>
             {/* Follow-up due reminders */}
+
             {dueFollowUps.length > 0 && (
               <div className="mb-4 space-y-2">
                 {dueFollowUps.map(fu => {
@@ -2627,8 +2647,10 @@ For logos, use HTML:
                 <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                 <span>Open tracking pixels can hurt cold email deliverability. <strong>Reply rate</strong> is your real metric — use opens as directional only.</span>
               </div>
+              <EmailUsagePanel />
               <EmailPerformanceStats />
               <p className="text-xs text-muted-foreground text-center">Focus on reply rate as your primary metric.</p>
+
             </div>
           </TabsContent>
         </Tabs>
