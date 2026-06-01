@@ -260,8 +260,11 @@ const Settings = () => {
           {(() => {
             const showPro = isAdmin || subscription?.plan === 'pro' || subscription?.plan === 'agency';
             const tabBase = "data-[state=active]:bg-muted hover:bg-muted/50 gap-2 justify-center";
-            const row1 = showPro ? (
-              <TabsList className="h-auto grid grid-cols-10 gap-2 bg-transparent p-0 w-full">
+            // Responsive grid: 2 cols (mobile) → 3 (sm) → 5 (md) → 10 (lg).
+            // Wraps gracefully on every breakpoint so tabs never overflow.
+            const gridCls = "h-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-10 gap-2 bg-transparent p-0 w-full";
+            const row1 = (
+              <TabsList className={gridCls}>
                 <TabsTrigger value="profile" className={tabBase}><User className="h-4 w-4" />Profile</TabsTrigger>
                 <TabsTrigger value="billing" className={tabBase}><Settings2 className="h-4 w-4" />Billing</TabsTrigger>
                 <TabsTrigger value="subscription" className={tabBase}><CreditCard className="h-4 w-4" />Plan</TabsTrigger>
@@ -270,26 +273,15 @@ const Settings = () => {
                 <TabsTrigger value="notifications" className={tabBase}><Bell className="h-4 w-4" />Notifications</TabsTrigger>
                 <TabsTrigger value="white-label" className={tabBase}><Palette className="h-4 w-4" />White Label</TabsTrigger>
                 <TabsTrigger value="agency-portal" className={tabBase}><Building2 className="h-4 w-4" />Agency Portal</TabsTrigger>
-                <TabsTrigger value="team" className={tabBase}><Users className="h-4 w-4" />Team</TabsTrigger>
-                <TabsTrigger value="activity" className={tabBase}><History className="h-4 w-4" />Activity</TabsTrigger>
-              </TabsList>
-            ) : (
-              <TabsList className="h-auto inline-flex flex-wrap justify-center gap-2 bg-transparent p-0">
-                <TabsTrigger value="profile" className={tabBase}><User className="h-4 w-4" />Profile</TabsTrigger>
-                <TabsTrigger value="billing" className={tabBase}><Settings2 className="h-4 w-4" />Billing</TabsTrigger>
-                <TabsTrigger value="subscription" className={tabBase}><CreditCard className="h-4 w-4" />Plan</TabsTrigger>
-                <TabsTrigger value="credits" className={tabBase}><Coins className="h-4 w-4" />Credits</TabsTrigger>
-                <TabsTrigger value="usage" className={tabBase}><TrendingUp className="h-4 w-4" />Usage</TabsTrigger>
-                <TabsTrigger value="notifications" className={tabBase}><Bell className="h-4 w-4" />Notifications</TabsTrigger>
-                <TabsTrigger value="white-label" className={tabBase}><Palette className="h-4 w-4" />White Label</TabsTrigger>
-                <TabsTrigger value="agency-portal" className={tabBase}><Building2 className="h-4 w-4" />Agency Portal</TabsTrigger>
+                {showPro && <TabsTrigger value="team" className={tabBase}><Users className="h-4 w-4" />Team</TabsTrigger>}
+                {showPro && <TabsTrigger value="activity" className={tabBase}><History className="h-4 w-4" />Activity</TabsTrigger>}
               </TabsList>
             );
             return (
               <div className="bg-card border rounded-lg p-3 mb-6 space-y-2">
                 {row1}
                 {showPro && (
-                  <TabsList className="h-auto grid grid-cols-10 gap-2 bg-transparent p-0 w-full border-t pt-2">
+                  <TabsList className={`${gridCls} border-t pt-2`}>
                     <TabsTrigger value="monitoring" className={tabBase}><Activity className="h-4 w-4" />Monitor</TabsTrigger>
                     <TabsTrigger value="alerts" className={tabBase}><Bell className="h-4 w-4" />Alerts</TabsTrigger>
                     <TabsTrigger value="api-keys" className={tabBase}><Key className="h-4 w-4" />API Keys</TabsTrigger>
@@ -299,7 +291,6 @@ const Settings = () => {
                     <TabsTrigger value="webhook-logs" className={tabBase}><FileText className="h-4 w-4" />Logs</TabsTrigger>
                     <TabsTrigger value="webhook-replay" className={tabBase}><RotateCcw className="h-4 w-4" />Replay</TabsTrigger>
                     <TabsTrigger value="audit" className={tabBase}><FileSearch className="h-4 w-4" />Audit</TabsTrigger>
-                    <span aria-hidden />
                   </TabsList>
                 )}
               </div>
