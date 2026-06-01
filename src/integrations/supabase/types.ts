@@ -2124,6 +2124,110 @@ export type Database = {
           },
         ]
       }
+      seo_audit_runs: {
+        Row: {
+          error: string | null
+          finished_at: string | null
+          id: string
+          issues_found: number | null
+          kind: string
+          new_issues: number | null
+          pages_checked: number | null
+          resolved_issues: number | null
+          started_at: string
+          status: string
+          summary: Json | null
+        }
+        Insert: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          issues_found?: number | null
+          kind: string
+          new_issues?: number | null
+          pages_checked?: number | null
+          resolved_issues?: number | null
+          started_at?: string
+          status?: string
+          summary?: Json | null
+        }
+        Update: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          issues_found?: number | null
+          kind?: string
+          new_issues?: number | null
+          pages_checked?: number | null
+          resolved_issues?: number | null
+          started_at?: string
+          status?: string
+          summary?: Json | null
+        }
+        Relationships: []
+      }
+      seo_issues: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          category: string
+          description: string | null
+          details: Json | null
+          fingerprint: string
+          first_seen_at: string
+          id: string
+          last_run_id: string | null
+          last_seen_at: string
+          notified_at: string | null
+          resolved_at: string | null
+          severity: string
+          title: string
+          url: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          category: string
+          description?: string | null
+          details?: Json | null
+          fingerprint: string
+          first_seen_at?: string
+          id?: string
+          last_run_id?: string | null
+          last_seen_at?: string
+          notified_at?: string | null
+          resolved_at?: string | null
+          severity?: string
+          title: string
+          url?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          category?: string
+          description?: string | null
+          details?: Json | null
+          fingerprint?: string
+          first_seen_at?: string
+          id?: string
+          last_run_id?: string | null
+          last_seen_at?: string
+          notified_at?: string | null
+          resolved_at?: string | null
+          severity?: string
+          title?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seo_issues_last_run_id_fkey"
+            columns: ["last_run_id"]
+            isOneToOne: false
+            referencedRelation: "seo_audit_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sequence_enrollments: {
         Row: {
           completed_at: string | null
@@ -3012,6 +3116,7 @@ export type Database = {
           total_users: number
         }[]
       }
+      admin_get_seo_dashboard: { Args: never; Returns: Json }
       admin_lock_user: {
         Args: { _reason?: string; _user_id: string }
         Returns: undefined
