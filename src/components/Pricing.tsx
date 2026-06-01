@@ -67,6 +67,7 @@ const paidPlans: PaidPlan[] = [
     monthlyProspects: 1000,
     yearlyProspects: 12000,
     dailyLimit: "100 prospects per day",
+    monthlyEmails: 50000,
     features: [
       "Prospect search & verified emails",
       "ICP Builder (3 profiles)",
