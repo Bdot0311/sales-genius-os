@@ -68,7 +68,7 @@ const Auth = () => {
     // Keep checking state in sync if the URL changes (e.g., hash-only changes)
     setCheckingRecovery(isRecoveryFlow);
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth event:", event, "Recovery flow:", isRecoveryFlow, "Has session:", !!session);
 
       if (isRecoveryFlow) {
