@@ -5,12 +5,10 @@ import { AddLeadDialog } from "@/components/dashboard/AddLeadDialog";
 import { OnboardingChecklist } from "@/components/dashboard/OnboardingChecklist";
 import { DashboardTour } from "@/components/dashboard/DashboardTour";
 import { ProspectUsageMeter } from "@/components/dashboard/ProspectUsageMeter";
-import { SampleDataBanner } from "@/components/dashboard/SampleDataBanner";
 import QuickStartWizard from "@/components/onboarding/QuickStartWizard";
 import { TrendingUp, Users, DollarSign, Calendar, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
-import { SAMPLE_STATS } from "@/lib/sample-data";
 import { SEOHead } from "@/components/seo/SEOHead";
 
 const Dashboard = () => {
