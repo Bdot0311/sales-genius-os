@@ -197,7 +197,10 @@ serve(async (req) => {
         sequence_id: enrollment.sequence_id,
         sequence_step: nextStepNumber,
         enrollment_id: enrollmentId,
-        status: 'pending',
+        // 'scheduled' + scheduled_at lets the process-scheduled-emails cron
+        // pick this row up. 'pending' would leave it stranded forever.
+        status: 'scheduled',
+        scheduled_at: new Date().toISOString(),
       })
       .select()
       .single();

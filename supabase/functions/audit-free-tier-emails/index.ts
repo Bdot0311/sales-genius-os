@@ -22,6 +22,37 @@ serve(async (req) => {
       auth: { persistSession: false },
     });
 
+    // AUTH GUARD: This endpoint can mass-lock free accounts, so it must
+    // require either the service role (cron) or an authenticated admin.
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
+    const isServiceRole = bearer && bearer === SERVICE_KEY;
+    if (!isServiceRole) {
+      if (!bearer) {
+        return new Response(JSON.stringify({ error: "Authentication required" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: { user }, error: authErr } = await supabase.auth.getUser(bearer);
+      if (authErr || !user) {
+        return new Response(JSON.stringify({ error: "Invalid authentication token" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: isAdmin } = await supabase.rpc("has_role", {
+        _user_id: user.id,
+        _role: "admin",
+      });
+      if (!isAdmin) {
+        return new Response(JSON.stringify({ error: "Admin privileges required" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     // Optional: caller may pass { dryRun: true } to preview without locking.
     let dryRun = false;
     let limit = 500;

@@ -39,7 +39,6 @@ export const AdminDashboard = () => {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'subscriptions' },
         () => {
-          console.log('Subscription data changed, refreshing stats and MRR...');
           loadStats();
           loadStripeRevenue();
         }
@@ -48,7 +47,6 @@ export const AdminDashboard = () => {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'profiles' },
         () => {
-          console.log('Profile data changed, refreshing stats...');
           loadStats();
         }
       )
@@ -93,7 +91,6 @@ export const AdminDashboard = () => {
       if (error) throw error;
       
       setStripeData(data);
-      console.log('Stripe revenue data loaded:', data);
     } catch (error) {
       console.error('Error loading Stripe revenue:', error);
       // Don't show error toast if it's just that there's no Stripe data yet

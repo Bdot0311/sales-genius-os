@@ -72,7 +72,6 @@ export function useExternalLeads() {
     setLastFilters(filters);
     
     try {
-      console.log('Fetching leads with filters:', filters);
       const { data, error } = await supabase.functions.invoke('fetch-external-leads', {
         body: filters,
       });
@@ -85,7 +84,6 @@ export function useExternalLeads() {
       
       // Only set leads that were returned for this specific search
       const newLeads = data.leads || [];
-      console.log(`Received ${newLeads.length} leads matching search criteria`);
       setLeads(newLeads);
       
       // Update pagination info
@@ -102,7 +100,6 @@ export function useExternalLeads() {
       });
       
       if (data.credits_used) {
-        console.log(`Credits used: ${data.credits_used}`);
       }
       
       return newLeads;
@@ -117,10 +114,16 @@ export function useExternalLeads() {
           variant: 'destructive',
           duration: 10000,
         });
+      } else if (errorMessage.includes('search parameter') || errorMessage.includes('filter')) {
+        toast({
+          title: 'Search Filter Required',
+          description: 'Please provide at least one search filter like job title, industry, or location.',
+          variant: 'destructive',
+        });
       } else {
         toast({
-          title: 'Search failed',
-          description: 'No results found. Try a different query — e.g. "VP of Sales at SaaS companies" or "CTOs in New York".',
+          title: 'Error fetching leads',
+          description: errorMessage,
           variant: 'destructive',
         });
       }
@@ -263,7 +266,7 @@ export function useExternalLeads() {
         user_id: userId,
         lead_id: savedLead.id,
         fields_enriched: ['company_name', 'contact_name', 'contact_email', 'industry', 'company_size', 'job_title', 'linkedin_url', 'icp_score'],
-        source: 'SalesOS',
+        source: 'Lusha',
         status: 'success',
       });
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { PageHeader } from "@/components/dashboard/PageHeader";
-import { SampleDataBanner } from "@/components/dashboard/SampleDataBanner";
+
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +11,7 @@ import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
 import { FeatureHighlight } from "@/components/dashboard/FeatureHighlight";
 import { OUTBOUND_KB } from "@/lib/outbound-kb";
-import { SAMPLE_STATS, SAMPLE_ANALYTICS } from "@/lib/sample-data";
+
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
@@ -66,23 +66,19 @@ const Analytics = () => {
   };
 
   useEffect(() => {
-    if (!isFreeTier) {
-      loadAnalytics();
-      const leadsChannel = supabase.channel('analytics-leads').on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => loadAnalytics()).subscribe();
-      const dealsChannel = supabase.channel('analytics-deals').on('postgres_changes', { event: '*', schema: 'public', table: 'deals' }, () => loadAnalytics()).subscribe();
-      return () => { supabase.removeChannel(leadsChannel); supabase.removeChannel(dealsChannel); };
-    } else {
-      setLoading(false);
-    }
-  }, [isFreeTier]);
+    loadAnalytics();
+    const leadsChannel = supabase.channel('analytics-leads').on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => loadAnalytics()).subscribe();
+    const dealsChannel = supabase.channel('analytics-deals').on('postgres_changes', { event: '*', schema: 'public', table: 'deals' }, () => loadAnalytics()).subscribe();
+    return () => { supabase.removeChannel(leadsChannel); supabase.removeChannel(dealsChannel); };
+  }, []);
 
-  if (planLoading || (!isFreeTier && loading)) {
+  if (planLoading || loading) {
     return <DashboardLayout><div className="flex items-center justify-center h-64"><Loader2 className="w-12 h-12 text-muted-foreground animate-spin" /></div></DashboardLayout>;
   }
 
-  const displayStats = isFreeTier ? SAMPLE_STATS : stats;
-  const displayDealsByStage = isFreeTier ? SAMPLE_ANALYTICS.dealsByStage : dealsByStage;
-  const displayLeadsOverTime = isFreeTier ? SAMPLE_ANALYTICS.leadsOverTime : leadsOverTime;
+  const displayStats = stats;
+  const displayDealsByStage = dealsByStage;
+  const displayLeadsOverTime = leadsOverTime;
   const COLORS = ["hsl(var(--primary))", "hsl(var(--secondary))", "hsl(var(--accent))", "#8884d8", "#82ca9d"];
 
   const statCards = [
@@ -180,7 +176,7 @@ const Analytics = () => {
         }
       />
       <div className="px-6 py-6 space-y-6 max-w-[1400px] mx-auto">
-        {isFreeTier && <SampleDataBanner />}
+        
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {statCards.map((stat) => (

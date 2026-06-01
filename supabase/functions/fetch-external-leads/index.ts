@@ -41,7 +41,7 @@ interface ScoredLead {
   buying_signals: string[];
 }
 
-// Industry normalization map (user-friendly → Prospeo/Railway canonical)
+// Industry normalization map (user-friendly → PDL canonical)
 const INDUSTRY_MAP: Record<string, string> = {
   'law': 'legal services', 'legal': 'legal services', 'legal services': 'legal services',
   'ai': 'computer software', 'ai/ml': 'computer software', 'machine learning': 'computer software',
@@ -69,30 +69,7 @@ const INDUSTRY_MAP: Record<string, string> = {
   'nonprofit': 'nonprofit organization management', 'ngo': 'nonprofit organization management',
 };
 
-// Country name → ISO 2-letter code map
-const COUNTRY_MAP: Record<string, string> = {
-  'united states': 'US', 'usa': 'US', 'us': 'US', 'u.s.': 'US', 'u.s.a.': 'US', 'america': 'US',
-  'united kingdom': 'GB', 'uk': 'GB', 'great britain': 'GB', 'england': 'GB', 'britain': 'GB',
-  'canada': 'CA', 'australia': 'AU', 'germany': 'DE', 'france': 'FR', 'spain': 'ES',
-  'italy': 'IT', 'netherlands': 'NL', 'sweden': 'SE', 'norway': 'NO', 'denmark': 'DK',
-  'switzerland': 'CH', 'austria': 'AT', 'belgium': 'BE', 'ireland': 'IE',
-  'india': 'IN', 'singapore': 'SG', 'israel': 'IL', 'brazil': 'BR',
-  'mexico': 'MX', 'argentina': 'AR', 'colombia': 'CO', 'chile': 'CL',
-  'japan': 'JP', 'south korea': 'KR', 'korea': 'KR', 'china': 'CN', 'taiwan': 'TW',
-  'new zealand': 'NZ', 'south africa': 'ZA', 'nigeria': 'NG', 'kenya': 'KE',
-  'poland': 'PL', 'portugal': 'PT', 'czech republic': 'CZ', 'czechia': 'CZ',
-  'finland': 'FI', 'romania': 'RO', 'hungary': 'HU', 'ukraine': 'UA',
-  'uae': 'AE', 'united arab emirates': 'AE', 'dubai': 'AE',
-  'saudi arabia': 'SA', 'turkey': 'TR', 'russia': 'RU',
-};
-
-function normalizeCountry(raw: string): string {
-  if (!raw) return '';
-  const lower = raw.trim().toLowerCase();
-  return COUNTRY_MAP[lower] || raw.trim();
-}
-
-// Seniority normalization map
+// Seniority normalization map (user-friendly → PDL canonical)
 const SENIORITY_MAP: Record<string, string> = {
   'c-suite': 'cxo', 'c-level': 'cxo', 'executive': 'cxo', 'csuite': 'cxo', 'clevel': 'cxo',
   'vp': 'vp', 'vice president': 'vp',
@@ -104,7 +81,7 @@ const SENIORITY_MAP: Record<string, string> = {
   'partner': 'partner',
 };
 
-// Company size normalization
+// Company size normalization to PDL ranges
 const COMPANY_SIZE_MAP: Record<string, string> = {
   '1-10': '1-10', 'micro': '1-10',
   '11-50': '11-50', 'small': '11-50',
@@ -116,7 +93,7 @@ const COMPANY_SIZE_MAP: Record<string, string> = {
   '10001+': '10001+', 'mega': '10001+',
 };
 
-// Normalize industry value
+// Normalize industry value to PDL-compatible format
 function normalizeIndustry(raw: string): string {
   if (!raw) return '';
   const lower = raw.trim().toLowerCase();
@@ -126,18 +103,18 @@ function normalizeIndustry(raw: string): string {
   for (const [key, value] of Object.entries(INDUSTRY_MAP)) {
     if (lower.includes(key)) return value;
   }
-  // If no match, pass through as-is (Railway may still match it)
+  // If no match, pass through as-is (Railway/PDL may still match it)
   return raw.trim();
 }
 
-// Normalize seniority value
+// Normalize seniority value to PDL-compatible format
 function normalizeSeniority(raw: string): string {
   if (!raw) return '';
   const lower = raw.trim().toLowerCase();
   return SENIORITY_MAP[lower] || raw.trim();
 }
 
-// Normalize company size to standard range format
+// Normalize company size to PDL range format
 function normalizeCompanySize(raw: string): string {
   if (!raw) return '';
   const lower = raw.trim().toLowerCase();
@@ -721,10 +698,44 @@ serve(async (req) => {
       });
     }
 
+    // Track whether we already deducted a credit so we can refund on failure
+    // or on empty result sets. Admins skip the credit path entirely.
+    let creditWasDeducted = !isAdmin;
+    const refundCredit = async (reason: string) => {
+      if (!creditWasDeducted) return;
+      creditWasDeducted = false;
+      try {
+        const { data: sub } = await supabase
+          .from('subscriptions')
+          .select('search_credits_remaining, daily_searches_used')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (!sub) return;
+        await supabase
+          .from('subscriptions')
+          .update({
+            search_credits_remaining: (sub.search_credits_remaining || 0) + 1,
+            daily_searches_used: Math.max((sub.daily_searches_used || 0) - 1, 0),
+          })
+          .eq('user_id', user.id);
+        await supabase.from('search_transactions').insert({
+          user_id: user.id,
+          type: 'refund',
+          amount: 1,
+          balance_after: (sub.search_credits_remaining || 0) + 1,
+          description: `Refund: ${reason}`,
+        });
+        console.log('Credit refunded:', { userId: user.id, reason });
+      } catch (e) {
+        console.error('Failed to refund credit:', e);
+      }
+    };
+
     // Get Railway API URL from secrets
     const railwayBaseUrl = Deno.env.get('RAILWAY_LEADS_API_URL');
     if (!railwayBaseUrl) {
       console.error('RAILWAY_LEADS_API_URL not configured');
+      await refundCredit('provider_not_configured');
       return new Response(
         JSON.stringify({ error: 'Lead data provider not configured', leads: [] }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -736,7 +747,7 @@ serve(async (req) => {
     const railwayUrl = `${baseUrl}/search`;
     console.log('Calling Railway API:', railwayUrl);
 
-    // Prepare request body for Railway/Prospeo API
+    // Prepare request body for Railway API - PDL format
     let jobTitle: string | undefined = filters.job_title;
     let nonJobKeywords: string[] = [];
     
@@ -771,16 +782,15 @@ serve(async (req) => {
     const limit = Math.min(filters.limit || 10, maxResults);
     const offset = (page - 1) * limit;
 
-    // Normalize all values
+    // Normalize all values through PDL-compatible maps
     const normalizedIndustry = normalizeIndustry(filters.industry || '');
     const normalizedSeniority = normalizeSeniority(filters.seniority || '');
     const normalizedCompanySize = normalizeCompanySize(filters.company_size || '');
-    const normalizedCountry = normalizeCountry(filters.country || '');
 
     // Build raw body, we'll strip empty values before sending
     const rawBody: Record<string, any> = {
       job_title: jobTitle || undefined,
-      location: normalizedCountry || undefined,
+      location: filters.country || undefined,
       industry: normalizedIndustry || undefined,
       company: filters.company || undefined,
       company_size: normalizedCompanySize || undefined,
@@ -790,7 +800,7 @@ serve(async (req) => {
       ...(page > 1 ? { offset } : {}),
     };
 
-    // Strip empty/null/undefined values so Railway doesn't build broken queries
+    // CRITICAL: Strip empty/null/undefined values so Railway doesn't build broken PDL queries
     const requestBody: Record<string, any> = Object.fromEntries(
       Object.entries(rawBody).filter(([_, v]) => v !== null && v !== undefined && v !== '')
     );
@@ -825,6 +835,7 @@ serve(async (req) => {
       console.log('Railway response headers:', JSON.stringify(Object.fromEntries(response.headers.entries())));
     } catch (fetchError) {
       console.error('Fetch to Railway failed entirely:', fetchError);
+      await refundCredit('network_error');
       return new Response(
         JSON.stringify({ error: 'Could not reach lead data provider.', error_code: 'network_error', leads: [] }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -833,9 +844,10 @@ serve(async (req) => {
 
     // Handle 402 Payment Required - NO cache fallback (must match search criteria)
     if (response.status === 402) {
-      console.log('Search credits exhausted (402) - returning empty results');
+      console.log('PDL credits exhausted (402) - returning empty results');
+      await refundCredit('provider_credits_exhausted');
       return new Response(
-        JSON.stringify({
+        JSON.stringify({ 
           error: 'Search credits exhausted. Please add more credits to continue searching.',
           error_code: 'credits_exhausted',
           leads: []
@@ -844,41 +856,34 @@ serve(async (req) => {
       );
     }
 
-    // On 400, retry without location filter (common cause: unrecognised location string)
-    if (response.status === 400 && requestBody.location) {
-      console.warn('Railway returned 400 with location, retrying without location filter');
-      const retryBody = { ...requestBody };
-      delete retryBody.location;
-      try {
-        const retryResponse = await fetch(railwayUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(retryBody),
-        });
-        if (retryResponse.ok) {
-          response = retryResponse;
-        } else {
-          const errorText = await response.text();
-          console.error('Railway retry also failed:', retryResponse.status, errorText);
-          return new Response(
-            JSON.stringify({ leads: [], total: 0, success: true }),
-            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-      } catch (retryErr) {
-        console.error('Railway retry fetch failed:', retryErr);
-        return new Response(
-          JSON.stringify({ leads: [], total: 0, success: true }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-    }
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Railway API error:', response.status, errorText);
+      console.error('Railway error response body:', JSON.stringify(errorText));
+      
+      // Log full details server-side but return generic error to client
+      let clientMessage = 'Lead search failed. Please try again.';
+      let errorCode = 'api_error';
+      
+      // Handle specific status codes with user-friendly messages
+      if (response.status === 400) {
+        errorCode = 'invalid_request';
+        clientMessage = 'Invalid search parameters. Please specify at least one filter.';
+      } else if (response.status === 401 || response.status === 403) {
+        errorCode = 'auth_error';
+        clientMessage = 'Authentication error. Please try again.';
+      } else if (response.status === 500) {
+        errorCode = 'server_error';
+        clientMessage = 'Service temporarily unavailable. Please try again later.';
+      }
+      
+      await refundCredit(`upstream_${response.status}`);
       return new Response(
-        JSON.stringify({ leads: [], total: 0, success: true }),
+        JSON.stringify({ 
+          error: clientMessage, 
+          error_code: errorCode,
+          leads: []
+        }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -893,6 +898,7 @@ serve(async (req) => {
       data = JSON.parse(rawText);
     } catch (parseErr) {
       console.error('Failed to parse Railway response as JSON:', parseErr);
+      await refundCredit('invalid_provider_response');
       return new Response(
         JSON.stringify({ error: 'Invalid response from lead provider.', leads: [] }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -913,7 +919,7 @@ serve(async (req) => {
       console.log('Data is direct array format');
       rawLeads = data;
     } else if (data.data && Array.isArray(data.data)) {
-      console.log('Using data.data array (raw response)');
+      console.log('Using data.data array (raw PDL)');
       rawLeads = data.data;
     } else if (data.results && Array.isArray(data.results)) {
       console.log('Using data.results array');
@@ -926,9 +932,10 @@ serve(async (req) => {
       console.log('First raw lead:', JSON.stringify(rawLeads[0], null, 2));
     }
 
-    // If no leads found, return empty - NO cache fallback (must match search criteria)
+    // If no leads found, refund the credit and return empty.
     if (rawLeads.length === 0) {
       console.log('No leads returned for search criteria');
+      await refundCredit('empty_result');
       return new Response(
         JSON.stringify({ 
           success: true,

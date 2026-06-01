@@ -3,7 +3,6 @@ import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { PipelineColumn } from "@/components/dashboard/PipelineColumn";
 import { AddDealDialog } from "@/components/dashboard/AddDealDialog";
-import { SampleDataBanner } from "@/components/dashboard/SampleDataBanner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Plus, Sparkles, Settings, TrendingUp, Loader2 } from "lucide-react";
@@ -11,7 +10,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
-import { SAMPLE_DEALS } from "@/lib/sample-data";
 import { useRealtimeTable } from "@/hooks/use-realtime-table";
 
 interface Deal {
@@ -43,14 +41,13 @@ const Pipeline = () => {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
 
   useEffect(() => {
-    if (!isFreeTier) loadDeals();
-    else setLoading(false);
-  }, [isFreeTier]);
+    loadDeals();
+  }, []);
 
   useRealtimeTable({
     channel: "pipeline-deals",
     table: "deals",
-    enabled: !isFreeTier,
+    enabled: true,
     onChange: () => loadDeals(),
   });
 
@@ -68,16 +65,10 @@ const Pipeline = () => {
     }
   };
 
-  const displayDeals = isFreeTier ? (SAMPLE_DEALS as any as Deal[]) : deals;
-  const getDealsByStage = (stageKey: string) => displayDeals.filter((deal) => deal.stage === stageKey);
+  const getDealsByStage = (stageKey: string) => deals.filter((deal) => deal.stage === stageKey);
   const getTotalValue = (stageKey: string) => getDealsByStage(stageKey).reduce((sum, deal) => sum + (Number(deal.value) || 0), 0);
 
   const handleMoveDeal = async (dealId: string, newStage: string) => {
-    if (isFreeTier) {
-      // Let free users "move" sample deals locally
-      toast({ title: "Sample mode", description: "This is demo data. Upgrade to manage real deals." });
-      return;
-    }
     try {
       const { error } = await supabase.from("deals").update({ stage: newStage }).eq("id", dealId);
       if (error) throw error;
@@ -136,7 +127,7 @@ const Pipeline = () => {
         }
       />
       <div className="px-4 py-4 space-y-6 max-w-[1400px] mx-auto sm:px-6 sm:py-6">
-        {isFreeTier && <SampleDataBanner />}
+        
 
         {!features.automatedStageProgression && (
           <Card className="p-4 border-dashed border-primary/30 bg-primary/5">
@@ -171,7 +162,7 @@ const Pipeline = () => {
           </div>
         </div>
 
-        {!loading && !isFreeTier && deals.length === 0 && (
+        {!loading && deals.length === 0 && (
           <div className="text-center py-12">
             <p className="text-muted-foreground mb-4">No deals yet. Create your first deal to get started.</p>
             <Button variant="hero" onClick={() => setAddDialogOpen(true)}>

@@ -23,7 +23,6 @@ export function useLiveCrmIndicators() {
         const commitTs = payload.commit_timestamp;
         const lag = commitTs ? Date.now() - new Date(commitTs).getTime() : null;
         // eslint-disable-next-line no-console
-        console.log(`[realtime] ${table} ${payload.eventType}${lag !== null ? ` lag=${lag}ms` : ""}`);
       };
 
       // Replies inbox

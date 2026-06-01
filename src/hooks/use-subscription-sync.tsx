@@ -22,7 +22,6 @@ export const useSubscriptionSync = () => {
         return { success: false, error: error.message };
       }
 
-      console.log('Subscription synced:', data);
       return { success: true, data };
     } catch (error) {
       console.error('Unexpected sync error:', error);

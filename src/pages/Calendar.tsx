@@ -14,8 +14,8 @@ import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
-import { SampleDataBanner } from "@/components/dashboard/SampleDataBanner";
-import { SAMPLE_MEETINGS } from "@/lib/sample-data";
+
+
 
 const Calendar = () => {
   const { toast } = useToast();
@@ -41,14 +41,10 @@ const Calendar = () => {
   });
 
   useEffect(() => {
-    if (!isFreeTier) {
-      loadActivities();
-      loadLeads();
-      checkGoogleCalendarConnection();
-    } else {
-      setLoading(false);
-    }
-  }, [isFreeTier]);
+    loadActivities();
+    loadLeads();
+    checkGoogleCalendarConnection();
+  }, []);
 
   const checkGoogleCalendarConnection = async () => {
     try {
@@ -98,10 +94,6 @@ const Calendar = () => {
   };
 
   const handleCreateActivity = async () => {
-    if (isFreeTier) {
-      toast({ title: "Sample mode", description: "Upgrade to schedule real meetings." });
-      return;
-    }
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
@@ -199,9 +191,8 @@ const Calendar = () => {
     setDeleteConfirmOpen(true);
   };
 
-  // Decide which meetings to show
-  const displayMeetings = isFreeTier ? SAMPLE_MEETINGS : activities;
-  const hasNoMeetings = !isFreeTier && !loading && activities.length === 0 && googleEvents.length === 0 && !hasGoogleCalendar;
+  const displayMeetings = activities;
+  const hasNoMeetings = !loading && activities.length === 0 && googleEvents.length === 0 && !hasGoogleCalendar;
 
   return (
     <DashboardLayout>
@@ -238,7 +229,7 @@ const Calendar = () => {
                   <Select value={newActivity.lead_id} onValueChange={(value) => setNewActivity({ ...newActivity, lead_id: value })}>
                     <SelectTrigger><SelectValue placeholder="Select a lead" /></SelectTrigger>
                     <SelectContent>
-                      {(isFreeTier ? [] : leads).map((lead) => (
+                      {leads.map((lead) => (
                         <SelectItem key={lead.id} value={lead.id}>{lead.contact_name} - {lead.company_name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -260,7 +251,7 @@ const Calendar = () => {
           </Dialog>
         </div>
 
-        {isFreeTier && <SampleDataBanner />}
+        
 
         {/* Google Calendar events for connected paid users */}
         {!isFreeTier && hasGoogleCalendar && googleEvents.length > 0 && (

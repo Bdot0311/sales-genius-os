@@ -69,7 +69,6 @@ const Auth = () => {
     setCheckingRecovery(isRecoveryFlow);
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth event:", event, "Recovery flow:", isRecoveryFlow, "Has session:", !!session);
 
       if (isRecoveryFlow) {
         // In recovery flow, DO NOT redirect to dashboard on SIGNED_IN.

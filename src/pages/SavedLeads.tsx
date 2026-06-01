@@ -91,11 +91,13 @@ const SavedLeads = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
+      // Hard cap at 1000 to avoid Supabase's implicit limit silently truncating large lists.
       const { data, error } = await supabase
         .from("leads")
         .select("*")
         .eq("user_id", session.user.id)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .range(0, 999);
 
       if (error) throw error;
       setLeads(data || []);
