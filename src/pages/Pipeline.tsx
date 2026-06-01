@@ -127,7 +127,7 @@ const Pipeline = () => {
         }
       />
       <div className="px-4 py-4 space-y-6 max-w-[1400px] mx-auto sm:px-6 sm:py-6">
-        {isFreeTier && <SampleDataBanner />}
+        
 
         {!features.automatedStageProgression && (
           <Card className="p-4 border-dashed border-primary/30 bg-primary/5">
