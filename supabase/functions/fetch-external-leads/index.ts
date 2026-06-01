@@ -932,9 +932,10 @@ serve(async (req) => {
       console.log('First raw lead:', JSON.stringify(rawLeads[0], null, 2));
     }
 
-    // If no leads found, return empty - NO cache fallback (must match search criteria)
+    // If no leads found, refund the credit and return empty.
     if (rawLeads.length === 0) {
       console.log('No leads returned for search criteria');
+      await refundCredit('empty_result');
       return new Response(
         JSON.stringify({ 
           success: true,
