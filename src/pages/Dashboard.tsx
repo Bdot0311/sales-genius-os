@@ -32,32 +32,28 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
-    if (!isFreeTier) {
-      loadStats();
-    }
+    loadStats();
     checkFirstVisit();
 
-    if (!isFreeTier) {
-      const leadsChannel = supabase
-        .channel('dashboard-leads-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => loadStats())
-        .subscribe();
-      const dealsChannel = supabase
-        .channel('dashboard-deals-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'deals' }, () => loadStats())
-        .subscribe();
-      const activitiesChannel = supabase
-        .channel('dashboard-activities-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'activities' }, () => loadStats())
-        .subscribe();
+    const leadsChannel = supabase
+      .channel('dashboard-leads-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => loadStats())
+      .subscribe();
+    const dealsChannel = supabase
+      .channel('dashboard-deals-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'deals' }, () => loadStats())
+      .subscribe();
+    const activitiesChannel = supabase
+      .channel('dashboard-activities-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'activities' }, () => loadStats())
+      .subscribe();
 
-      return () => {
-        supabase.removeChannel(leadsChannel);
-        supabase.removeChannel(dealsChannel);
-        supabase.removeChannel(activitiesChannel);
-      };
-    }
-  }, [isFreeTier]);
+    return () => {
+      supabase.removeChannel(leadsChannel);
+      supabase.removeChannel(dealsChannel);
+      supabase.removeChannel(activitiesChannel);
+    };
+  }, []);
 
   const checkFirstVisit = async () => {
     try {
