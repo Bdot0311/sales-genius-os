@@ -179,39 +179,67 @@ serve(async (req) => {
       );
     }
 
-    // --- Daily email limit enforcement ---
+    // --- Daily + Monthly email limit enforcement ---
     const { data: subscription, error: subError } = await supabase
       .from('subscriptions')
-      .select('daily_email_limit, daily_emails_sent, daily_emails_reset_at')
+      .select('plan, daily_email_limit, daily_emails_sent, daily_emails_reset_at, monthly_emails_sent, monthly_emails_reset_at')
       .eq('user_id', user.id)
       .eq('status', 'active')
       .single();
 
+    const MONTHLY_EMAIL_LIMITS: Record<string, number> = {
+      free: 0, starter: 50000, growth: 250000, pro: 1000000, elite: 1000000, agency: -1,
+    };
+
     if (subscription) {
       const now = new Date();
-      const resetAt = subscription.daily_emails_reset_at ? new Date(subscription.daily_emails_reset_at) : new Date(0);
       const todayMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-      let currentSent = subscription.daily_emails_sent || 0;
+      const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
 
-      if (resetAt < todayMidnight) {
-        // Reset counter for new day
-        currentSent = 0;
-        await supabase
-          .from('subscriptions')
+      // Daily reset
+      const dailyResetAt = subscription.daily_emails_reset_at ? new Date(subscription.daily_emails_reset_at) : new Date(0);
+      let dailySent = subscription.daily_emails_sent || 0;
+      if (dailyResetAt < todayMidnight) {
+        dailySent = 0;
+        await supabase.from('subscriptions')
           .update({ daily_emails_sent: 0, daily_emails_reset_at: todayMidnight.toISOString() })
           .eq('user_id', user.id);
       }
 
-      if (currentSent >= (subscription.daily_email_limit || 10)) {
+      // Monthly reset
+      const monthlyResetAt = (subscription as any).monthly_emails_reset_at ? new Date((subscription as any).monthly_emails_reset_at) : new Date(0);
+      let monthlySent = (subscription as any).monthly_emails_sent || 0;
+      if (monthlyResetAt < monthStart) {
+        monthlySent = 0;
+        await supabase.from('subscriptions')
+          .update({ monthly_emails_sent: 0, monthly_emails_reset_at: monthStart.toISOString() } as any)
+          .eq('user_id', user.id);
+      }
+
+      const dailyLimit = subscription.daily_email_limit || 10;
+      if (dailySent >= dailyLimit) {
         await logSystemAlert({
-          category: "outreach_send_limit",
-          severity: "warning",
-          message: `User hit daily email send limit (${subscription.daily_email_limit || 10})`,
-          details: { user_id: user.id, daily_email_limit: subscription.daily_email_limit, daily_emails_sent: currentSent },
+          category: "outreach_send_limit", severity: "warning",
+          message: `User hit daily email send limit (${dailyLimit})`,
+          details: { user_id: user.id, daily_email_limit: dailyLimit, daily_emails_sent: dailySent },
           user_id: user.id,
         });
         return new Response(
-          JSON.stringify({ error: `Daily email limit reached (${subscription.daily_email_limit || 10}/day). Adjust your limit in Outreach settings.` }),
+          JSON.stringify({ error: `Daily email limit reached (${dailyLimit}/day). Adjust your limit in Outreach settings.` }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const monthlyLimit = MONTHLY_EMAIL_LIMITS[subscription.plan as string] ?? 0;
+      if (monthlyLimit !== -1 && monthlySent >= monthlyLimit) {
+        await logSystemAlert({
+          category: "outreach_send_limit", severity: "warning",
+          message: `User hit monthly email send limit (${monthlyLimit})`,
+          details: { user_id: user.id, plan: subscription.plan, monthly_emails_sent: monthlySent },
+          user_id: user.id,
+        });
+        return new Response(
+          JSON.stringify({ error: `Monthly email send limit reached (${monthlyLimit.toLocaleString()}/month on ${subscription.plan} plan). Upgrade to send more.` }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
