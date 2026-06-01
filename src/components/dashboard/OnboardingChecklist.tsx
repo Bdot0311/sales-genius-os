@@ -51,7 +51,6 @@ export const OnboardingChecklist = ({ onClose, onStartTour }: OnboardingChecklis
           filter: `user_id=eq.${userId}`
         },
         (payload) => {
-          console.log("Onboarding progress updated:", payload.new);
           setProgress({
             completed_profile: payload.new.completed_profile,
             added_first_lead: payload.new.added_first_lead,

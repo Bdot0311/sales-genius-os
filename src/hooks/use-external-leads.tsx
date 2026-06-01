@@ -72,7 +72,6 @@ export function useExternalLeads() {
     setLastFilters(filters);
     
     try {
-      console.log('Fetching leads with filters:', filters);
       const { data, error } = await supabase.functions.invoke('fetch-external-leads', {
         body: filters,
       });
@@ -85,7 +84,6 @@ export function useExternalLeads() {
       
       // Only set leads that were returned for this specific search
       const newLeads = data.leads || [];
-      console.log(`Received ${newLeads.length} leads matching search criteria`);
       setLeads(newLeads);
       
       // Update pagination info
@@ -102,7 +100,6 @@ export function useExternalLeads() {
       });
       
       if (data.credits_used) {
-        console.log(`PDL credits used: ${data.credits_used}`);
       }
       
       return newLeads;
