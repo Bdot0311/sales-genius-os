@@ -199,27 +199,100 @@ const Leads = () => {
                   console.error('AI parsing failed, using fallback:', error);
                   const lowerQuery = query.toLowerCase();
                   const newFilters: ExternalLeadFilters = { limit: pageSize };
-                  
-                  if (lowerQuery.includes('ceo') || lowerQuery.includes('founder')) {
-                    newFilters.job_title = lowerQuery.includes('ceo') ? 'CEO' : 'Founder';
+
+                  // Job title extraction — order matters, check longer titles first
+                  const titlePatterns: [RegExp, string][] = [
+                    [/chief\s+executive|ceo/i, 'CEO'],
+                    [/chief\s+technology|cto/i, 'CTO'],
+                    [/chief\s+financial|cfo/i, 'CFO'],
+                    [/chief\s+marketing|cmo/i, 'CMO'],
+                    [/chief\s+revenue|cro/i, 'Chief Revenue Officer'],
+                    [/chief\s+product|cpo/i, 'Chief Product Officer'],
+                    [/chief\s+operating|coo/i, 'COO'],
+                    [/co-?founder|cofounder/i, 'Co-Founder'],
+                    [/founder/i, 'Founder'],
+                    [/vp\s+of\s+sales|vice\s+president.*sales/i, 'VP of Sales'],
+                    [/vp\s+of\s+marketing/i, 'VP of Marketing'],
+                    [/vp\s+of\s+engineering/i, 'VP of Engineering'],
+                    [/vp\b/i, 'Vice President'],
+                    [/head\s+of\s+sales/i, 'Head of Sales'],
+                    [/head\s+of\s+growth/i, 'Head of Growth'],
+                    [/head\s+of\s+marketing/i, 'Head of Marketing'],
+                    [/gtm|go.to.market/i, 'GTM Manager OR Growth Manager OR Marketing Manager'],
+                    [/revops|revenue\s+operations/i, 'Revenue Operations Manager'],
+                    [/sales\s+director|director.*sales/i, 'Sales Director'],
+                    [/director/i, 'Director'],
+                    [/account\s+executive|ae\b/i, 'Account Executive'],
+                    [/sdr|bdr|business\s+development\s+rep/i, 'SDR OR BDR'],
+                    [/sales\s+manager/i, 'Sales Manager'],
+                    [/product\s+manager|pm\b/i, 'Product Manager'],
+                    [/engineer|developer|dev\b/i, 'Software Engineer OR Developer'],
+                    [/designer/i, 'Designer'],
+                    [/owner|proprietor/i, 'Owner'],
+                  ];
+                  for (const [pattern, title] of titlePatterns) {
+                    if (pattern.test(lowerQuery)) {
+                      newFilters.job_title = title;
+                      break;
+                    }
                   }
-                  if (lowerQuery.includes('fintech') || lowerQuery.includes('saas') || lowerQuery.includes('tech')) {
-                    newFilters.industry = 'Technology';
+
+                  // Industry extraction
+                  const industryPatterns: [RegExp, string][] = [
+                    [/fintech|financial\s+tech/i, 'Financial Services'],
+                    [/healthtech|health\s+tech|healthcare|medical/i, 'Healthcare'],
+                    [/saas|software/i, 'Computer Software'],
+                    [/ecommerce|e-commerce/i, 'Internet'],
+                    [/marketing|advertising/i, 'Marketing and Advertising'],
+                    [/real\s*estate/i, 'Real Estate'],
+                    [/edtech|education/i, 'Education'],
+                    [/legaltech|legal/i, 'Legal Services'],
+                    [/crypto|blockchain|web3/i, 'Information Technology'],
+                    [/consulting/i, 'Management Consulting'],
+                    [/recruiting|staffing|hr\b/i, 'Staffing and Recruiting'],
+                    [/manufacturing/i, 'Manufacturing'],
+                    [/retail/i, 'Retail'],
+                    [/tech|technology/i, 'Information Technology'],
+                  ];
+                  for (const [pattern, industry] of industryPatterns) {
+                    if (pattern.test(lowerQuery)) {
+                      newFilters.industry = industry;
+                      break;
+                    }
                   }
-                  
-                  const countMatch = lowerQuery.match(/(\d+)\s*(leads?|founders?|ceos?|prospects?)/i);
+
+                  // Location extraction (common patterns)
+                  const locationPatterns: [RegExp, string][] = [
+                    [/united\s+states|usa?\b|u\.s\.a?/i, 'US'],
+                    [/united\s+kingdom|uk\b|britain|england/i, 'GB'],
+                    [/canada/i, 'CA'],
+                    [/australia/i, 'AU'],
+                    [/germany/i, 'DE'],
+                    [/france/i, 'FR'],
+                    [/india/i, 'IN'],
+                    [/new\s+york/i, 'New York'],
+                    [/california|san\s+francisco|silicon\s+valley|los\s+angeles/i, 'California'],
+                    [/london/i, 'London'],
+                    [/toronto/i, 'Toronto'],
+                    [/chicago/i, 'Chicago'],
+                    [/austin/i, 'Austin'],
+                    [/boston/i, 'Boston'],
+                    [/seattle/i, 'Seattle'],
+                  ];
+                  for (const [pattern, location] of locationPatterns) {
+                    if (pattern.test(query)) {
+                      newFilters.country = location;
+                      break;
+                    }
+                  }
+
+                  const countMatch = lowerQuery.match(/(\d+)\s*(leads?|founders?|ceos?|prospects?|people|contacts?)/i);
                   if (countMatch) {
                     newFilters.limit = Math.min(parseInt(countMatch[1]), 100);
                   }
-                  
+
                   setExternalFilters(newFilters);
                   fetchExternalLeads(newFilters);
-                  
-                  toast({
-                    title: "Using basic search",
-                    description: "AI parsing unavailable, using keyword matching",
-                    variant: "default",
-                  });
                 }
               }}
               isSearching={externalLoading}

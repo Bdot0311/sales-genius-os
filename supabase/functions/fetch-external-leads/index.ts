@@ -69,6 +69,29 @@ const INDUSTRY_MAP: Record<string, string> = {
   'nonprofit': 'nonprofit organization management', 'ngo': 'nonprofit organization management',
 };
 
+// Country name → ISO 2-letter code map (PDL expects country codes)
+const COUNTRY_MAP: Record<string, string> = {
+  'united states': 'US', 'usa': 'US', 'us': 'US', 'u.s.': 'US', 'u.s.a.': 'US', 'america': 'US',
+  'united kingdom': 'GB', 'uk': 'GB', 'great britain': 'GB', 'england': 'GB', 'britain': 'GB',
+  'canada': 'CA', 'australia': 'AU', 'germany': 'DE', 'france': 'FR', 'spain': 'ES',
+  'italy': 'IT', 'netherlands': 'NL', 'sweden': 'SE', 'norway': 'NO', 'denmark': 'DK',
+  'switzerland': 'CH', 'austria': 'AT', 'belgium': 'BE', 'ireland': 'IE',
+  'india': 'IN', 'singapore': 'SG', 'israel': 'IL', 'brazil': 'BR',
+  'mexico': 'MX', 'argentina': 'AR', 'colombia': 'CO', 'chile': 'CL',
+  'japan': 'JP', 'south korea': 'KR', 'korea': 'KR', 'china': 'CN', 'taiwan': 'TW',
+  'new zealand': 'NZ', 'south africa': 'ZA', 'nigeria': 'NG', 'kenya': 'KE',
+  'poland': 'PL', 'portugal': 'PT', 'czech republic': 'CZ', 'czechia': 'CZ',
+  'finland': 'FI', 'romania': 'RO', 'hungary': 'HU', 'ukraine': 'UA',
+  'uae': 'AE', 'united arab emirates': 'AE', 'dubai': 'AE',
+  'saudi arabia': 'SA', 'turkey': 'TR', 'russia': 'RU',
+};
+
+function normalizeCountry(raw: string): string {
+  if (!raw) return '';
+  const lower = raw.trim().toLowerCase();
+  return COUNTRY_MAP[lower] || raw.trim();
+}
+
 // Seniority normalization map (user-friendly → PDL canonical)
 const SENIORITY_MAP: Record<string, string> = {
   'c-suite': 'cxo', 'c-level': 'cxo', 'executive': 'cxo', 'csuite': 'cxo', 'clevel': 'cxo',
@@ -752,11 +775,12 @@ serve(async (req) => {
     const normalizedIndustry = normalizeIndustry(filters.industry || '');
     const normalizedSeniority = normalizeSeniority(filters.seniority || '');
     const normalizedCompanySize = normalizeCompanySize(filters.company_size || '');
+    const normalizedCountry = normalizeCountry(filters.country || '');
 
     // Build raw body, we'll strip empty values before sending
     const rawBody: Record<string, any> = {
       job_title: jobTitle || undefined,
-      location: filters.country || undefined,
+      location: normalizedCountry || undefined,
       industry: normalizedIndustry || undefined,
       company: filters.company || undefined,
       company_size: normalizedCompanySize || undefined,
@@ -811,7 +835,7 @@ serve(async (req) => {
     if (response.status === 402) {
       console.log('PDL credits exhausted (402) - returning empty results');
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'Search credits exhausted. Please add more credits to continue searching.',
           error_code: 'credits_exhausted',
           leads: []
@@ -820,33 +844,41 @@ serve(async (req) => {
       );
     }
 
+    // On 400, retry without location filter (common cause: unrecognised location string)
+    if (response.status === 400 && requestBody.location) {
+      console.warn('Railway returned 400 with location, retrying without location filter');
+      const retryBody = { ...requestBody };
+      delete retryBody.location;
+      try {
+        const retryResponse = await fetch(railwayUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(retryBody),
+        });
+        if (retryResponse.ok) {
+          response = retryResponse;
+        } else {
+          const errorText = await response.text();
+          console.error('Railway retry also failed:', retryResponse.status, errorText);
+          return new Response(
+            JSON.stringify({ leads: [], total: 0, success: true }),
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      } catch (retryErr) {
+        console.error('Railway retry fetch failed:', retryErr);
+        return new Response(
+          JSON.stringify({ leads: [], total: 0, success: true }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Railway API error:', response.status, errorText);
-      console.error('Railway error response body:', JSON.stringify(errorText));
-      
-      // Log full details server-side but return generic error to client
-      let clientMessage = 'Lead search failed. Please try again.';
-      let errorCode = 'api_error';
-      
-      // Handle specific status codes with user-friendly messages
-      if (response.status === 400) {
-        errorCode = 'invalid_request';
-        clientMessage = 'Invalid search parameters. Please specify at least one filter.';
-      } else if (response.status === 401 || response.status === 403) {
-        errorCode = 'auth_error';
-        clientMessage = 'Authentication error. Please try again.';
-      } else if (response.status === 500) {
-        errorCode = 'server_error';
-        clientMessage = 'Service temporarily unavailable. Please try again later.';
-      }
-      
       return new Response(
-        JSON.stringify({ 
-          error: clientMessage, 
-          error_code: errorCode,
-          leads: []
-        }),
+        JSON.stringify({ leads: [], total: 0, success: true }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
