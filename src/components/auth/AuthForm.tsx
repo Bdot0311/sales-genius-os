@@ -171,6 +171,33 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
         } catch { /* ignore invalid referrer */ }
       }
 
+      // Validate the email is real (syntax, disposable check, MX lookup) before creating the account.
+      // Free-tier abuse mitigation: if the validator is unreachable, block signup rather than fail-open.
+      try {
+        const { data: vData, error: vErr } = await supabase.functions.invoke('validate-email', {
+          body: { email },
+        });
+        if (vErr) throw vErr;
+        if (!vData || vData.valid === false) {
+          toast({
+            title: "Please use a valid email",
+            description: vData?.reason || "That email address can't be used to sign up. Please use a real business address.",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+      } catch (err) {
+        console.error('Email validation failed:', err);
+        toast({
+          title: "Couldn't verify your email",
+          description: "We couldn't verify that email right now. Please try again in a moment or use a different address.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
       // Create the account — the DB trigger (handle_new_user_subscription)
       // will automatically provision a free-tier subscription.
       const { data, error } = await supabase.auth.signUp({
@@ -240,7 +267,8 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
           >
             <img 
               src={salesosLogo} 
-              alt="SalesOS" 
+              alt="SalesOS product logo" 
+
               className="w-10 h-10 transition-transform duration-300 hover:scale-110" 
             />
             <span className="text-2xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">SalesOS</span>

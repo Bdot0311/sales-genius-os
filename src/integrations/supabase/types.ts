@@ -98,6 +98,54 @@ export type Database = {
         }
         Relationships: []
       }
+      agency_clients: {
+        Row: {
+          agency_earnings_cents: number
+          agency_id: string
+          client_user_id: string | null
+          created_at: string
+          id: string
+          invite_email: string | null
+          invite_token: string
+          joined_at: string | null
+          monthly_value_cents: number
+          plan: string | null
+          status: string
+          total_earnings_cents: number
+          updated_at: string
+        }
+        Insert: {
+          agency_earnings_cents?: number
+          agency_id: string
+          client_user_id?: string | null
+          created_at?: string
+          id?: string
+          invite_email?: string | null
+          invite_token?: string
+          joined_at?: string | null
+          monthly_value_cents?: number
+          plan?: string | null
+          status?: string
+          total_earnings_cents?: number
+          updated_at?: string
+        }
+        Update: {
+          agency_earnings_cents?: number
+          agency_id?: string
+          client_user_id?: string | null
+          created_at?: string
+          id?: string
+          invite_email?: string | null
+          invite_token?: string
+          joined_at?: string | null
+          monthly_value_cents?: number
+          plan?: string | null
+          status?: string
+          total_earnings_cents?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       agent_actions: {
         Row: {
           action_type: string
@@ -2124,6 +2172,110 @@ export type Database = {
           },
         ]
       }
+      seo_audit_runs: {
+        Row: {
+          error: string | null
+          finished_at: string | null
+          id: string
+          issues_found: number | null
+          kind: string
+          new_issues: number | null
+          pages_checked: number | null
+          resolved_issues: number | null
+          started_at: string
+          status: string
+          summary: Json | null
+        }
+        Insert: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          issues_found?: number | null
+          kind: string
+          new_issues?: number | null
+          pages_checked?: number | null
+          resolved_issues?: number | null
+          started_at?: string
+          status?: string
+          summary?: Json | null
+        }
+        Update: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          issues_found?: number | null
+          kind?: string
+          new_issues?: number | null
+          pages_checked?: number | null
+          resolved_issues?: number | null
+          started_at?: string
+          status?: string
+          summary?: Json | null
+        }
+        Relationships: []
+      }
+      seo_issues: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          category: string
+          description: string | null
+          details: Json | null
+          fingerprint: string
+          first_seen_at: string
+          id: string
+          last_run_id: string | null
+          last_seen_at: string
+          notified_at: string | null
+          resolved_at: string | null
+          severity: string
+          title: string
+          url: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          category: string
+          description?: string | null
+          details?: Json | null
+          fingerprint: string
+          first_seen_at?: string
+          id?: string
+          last_run_id?: string | null
+          last_seen_at?: string
+          notified_at?: string | null
+          resolved_at?: string | null
+          severity?: string
+          title: string
+          url?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          category?: string
+          description?: string | null
+          details?: Json | null
+          fingerprint?: string
+          first_seen_at?: string
+          id?: string
+          last_run_id?: string | null
+          last_seen_at?: string
+          notified_at?: string | null
+          resolved_at?: string | null
+          severity?: string
+          title?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seo_issues_last_run_id_fkey"
+            columns: ["last_run_id"]
+            isOneToOne: false
+            referencedRelation: "seo_audit_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sequence_enrollments: {
         Row: {
           completed_at: string | null
@@ -2350,6 +2502,8 @@ export type Database = {
           last_stripe_event_at: string | null
           last_stripe_event_id: string | null
           leads_limit: number
+          monthly_emails_reset_at: string | null
+          monthly_emails_sent: number
           plan: Database["public"]["Enums"]["subscription_plan"]
           search_credits_addon: number
           search_credits_base: number
@@ -2380,6 +2534,8 @@ export type Database = {
           last_stripe_event_at?: string | null
           last_stripe_event_id?: string | null
           leads_limit?: number
+          monthly_emails_reset_at?: string | null
+          monthly_emails_sent?: number
           plan?: Database["public"]["Enums"]["subscription_plan"]
           search_credits_addon?: number
           search_credits_base?: number
@@ -2410,6 +2566,8 @@ export type Database = {
           last_stripe_event_at?: string | null
           last_stripe_event_id?: string | null
           leads_limit?: number
+          monthly_emails_reset_at?: string | null
+          monthly_emails_sent?: number
           plan?: Database["public"]["Enums"]["subscription_plan"]
           search_credits_addon?: number
           search_credits_base?: number
@@ -2839,6 +2997,7 @@ export type Database = {
           id: string
           logo_url: string | null
           primary_color: string | null
+          referral_code: string | null
           secondary_color: string | null
           updated_at: string
           user_id: string
@@ -2853,6 +3012,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           primary_color?: string | null
+          referral_code?: string | null
           secondary_color?: string | null
           updated_at?: string
           user_id: string
@@ -2867,6 +3027,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           primary_color?: string | null
+          referral_code?: string | null
           secondary_color?: string | null
           updated_at?: string
           user_id?: string
@@ -3006,6 +3167,7 @@ export type Database = {
           total_users: number
         }[]
       }
+      admin_get_seo_dashboard: { Args: never; Returns: Json }
       admin_lock_user: {
         Args: { _reason?: string; _user_id: string }
         Returns: undefined
@@ -3053,6 +3215,7 @@ export type Database = {
         }[]
       }
       cleanup_expired_cache: { Args: never; Returns: undefined }
+      current_month_start_utc: { Args: never; Returns: string }
       deduct_search_credits: {
         Args: { _amount: number; _description?: string }
         Returns: Json
@@ -3065,6 +3228,13 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      get_email_send_trend: {
+        Args: { _days?: number }
+        Returns: {
+          day: string
+          sent: number
+        }[]
+      }
       get_expiring_trials: {
         Args: { _days_until_expiry: number }
         Returns: {
@@ -3073,6 +3243,33 @@ export type Database = {
           full_name: string
           trial_end_date: string
           user_id: string
+        }[]
+      }
+      get_maintenance_message: { Args: never; Returns: string }
+      get_maintenance_status: { Args: never; Returns: boolean }
+      get_monthly_email_limit: {
+        Args: { _plan: Database["public"]["Enums"]["subscription_plan"] }
+        Returns: number
+      }
+      get_monthly_email_usage: {
+        Args: never
+        Returns: {
+          daily_limit: number
+          daily_remaining: number
+          daily_sent: number
+          monthly_limit: number
+          monthly_remaining: number
+          monthly_reset_at: string
+          monthly_sent: number
+          plan: Database["public"]["Enums"]["subscription_plan"]
+        }[]
+      }
+      get_sequence_monthly_usage: {
+        Args: never
+        Returns: {
+          sent_this_month: number
+          sequence_id: string
+          sequence_name: string
         }[]
       }
       get_user_leads_usage: {
@@ -3139,6 +3336,7 @@ export type Database = {
         }
         Returns: number
       }
+      next_month_start_utc: { Args: never; Returns: string }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {

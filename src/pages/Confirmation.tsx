@@ -39,12 +39,10 @@ const Confirmation = () => {
           }
         }
 
-        // Also check via Stripe webhook processing (for users who just paid)
         pollCount++;
         if (pollCount >= maxPolls) {
-          // Stop polling after max attempts, assume payment went through
-          setSubscriptionVerified(true);
-          setVerifiedPlan(plan);
+          // Polling timed out — webhook may still be in transit; stop spinner
+          // but do NOT mark subscription verified without Stripe confirmation.
           setIsVerifying(false);
           clearInterval(pollInterval);
         }
@@ -56,21 +54,11 @@ const Confirmation = () => {
     // Initial check
     checkSubscription();
 
-    // Poll every 2 seconds
+    // Poll every 2 seconds for up to 60 seconds
     pollInterval = setInterval(checkSubscription, 2000);
-
-    // After 5 seconds, assume success if still verifying (Stripe webhooks may be delayed)
-    const fallbackTimeout = setTimeout(() => {
-      if (isVerifying) {
-        setSubscriptionVerified(true);
-        setVerifiedPlan(plan);
-        setIsVerifying(false);
-      }
-    }, 5000);
 
     return () => {
       clearInterval(pollInterval);
-      clearTimeout(fallbackTimeout);
     };
   }, [plan, isVerifying]);
 
@@ -214,12 +202,14 @@ const Confirmation = () => {
           
           <div className="space-y-2 sm:space-y-3">
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-fade-in px-4">
-              {isVerifying ? "Processing Payment..." : "Welcome to SalesOS!"}
+              {isVerifying ? "Processing Payment..." : subscriptionVerified ? "Welcome to SalesOS!" : "Almost There!"}
             </h1>
             <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
-              {isVerifying 
+              {isVerifying
                 ? "Please wait while we confirm your subscription..."
-                : "Your plan is active. Next, we'll guide you into account access and setup."
+                : subscriptionVerified
+                  ? "Your plan is active. Next, we'll guide you into account access and setup."
+                  : "Your payment is processing. It may take a few minutes to activate — sign in and your plan will appear automatically."
               }
             </p>
           </div>
@@ -293,6 +283,11 @@ const Confirmation = () => {
               </>
             )}
           </Button>
+          {!isVerifying && !subscriptionVerified && (
+            <p className="text-xs text-muted-foreground text-center mt-2 w-full">
+              Already activated? <a href="/auth" className="text-primary underline">Sign in</a> and your plan will show automatically.
+            </p>
+          )}
           <Button
             variant="outline"
             size="lg"

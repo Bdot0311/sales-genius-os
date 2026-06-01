@@ -768,11 +768,11 @@ Count your words. If over ${wordLimitNote}, ${goal === '4ps_followup' || goal ==
 
 first_name: ${firstName}
 prospect_company: ${sanitizedCompanyName}
-specific_observation: ${triggerContext || '[NOT PROVIDED]'}
-company_signal: ${companySignalParts || '[NOT PROVIDED]'}
-sender_name: ${senderName || '[NOT PROVIDED]'}
-sender_company: ${senderCompany || (businessDescription ? businessDescription.split(' ')[0] : '[NOT PROVIDED]')}
-verified_proof: ${socialProof || '[NOT PROVIDED — no proof claims allowed, keep solution generic]'}
+specific_observation: ${triggerContext || 'not provided — infer from company context and industry'}
+company_signal: ${companySignalParts || 'not provided — use industry and role context'}
+sender_name: ${senderName || 'Sender'}
+sender_company: ${senderCompany || (businessDescription ? businessDescription.split(/[\s\n]/)[0] : 'SalesOS')}
+verified_proof: ${socialProof || 'none — do not cite any customers, metrics, or percentages in the solution line; describe the product benefit in plain terms only'}
 strict_mode: ${strictMode ? 'true' : 'false'}`;
 
     } else {
@@ -802,7 +802,7 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
           {

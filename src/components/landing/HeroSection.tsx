@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ChevronDown } from "lucide-react";
 import { motion } from "motion/react";
 
 const ease = [0.16, 1, 0.3, 1] as const;
@@ -9,7 +9,7 @@ export const HeroSection = () => {
 
   return (
     <section
-      className="relative hero-fullscreen flex flex-col items-center justify-start overflow-hidden px-0 pt-[calc(env(safe-area-inset-top)+4.75rem)] pb-8 sm:justify-center sm:pt-[calc(env(safe-area-inset-top)+7rem)] sm:pb-20"
+      className="relative hero-fullscreen flex flex-col items-center justify-center overflow-hidden px-0 pt-[calc(env(safe-area-inset-top)+4.75rem)] pb-16 sm:pt-[calc(env(safe-area-inset-top)+7rem)] sm:pb-20"
       aria-labelledby="hero-heading"
     >
       <div className="absolute inset-0 bg-[hsl(261,75%,3%)]/60" aria-hidden="true" />
@@ -111,7 +111,7 @@ export const HeroSection = () => {
 
         {/* Subhead */}
         <motion.p
-          className="mb-7 max-w-[22rem] text-base font-light leading-relaxed text-white/55 sm:mb-12 sm:max-w-xl sm:text-xl"
+          className="mb-7 max-w-[22rem] text-base font-light leading-relaxed text-white/80 sm:mb-12 sm:max-w-xl sm:text-xl"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.65, ease, delay: 0.38 }}
@@ -140,7 +140,7 @@ export const HeroSection = () => {
 
           <motion.a
             href="/demo"
-            className="inline-flex h-11 items-center justify-center gap-1.5 px-5 text-sm text-white/60 transition-colors duration-200 hover:text-white/80 sm:h-[52px]"
+            className="inline-flex h-11 items-center justify-center gap-1.5 px-5 text-sm text-white/85 transition-colors duration-200 hover:text-white sm:h-[52px]"
             whileHover={{ x: 3 }}
           >
             See how it works
@@ -149,7 +149,7 @@ export const HeroSection = () => {
         </motion.div>
 
         <motion.p
-          className="mb-3 flex max-w-[21rem] flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-xs leading-tight text-white/25 sm:flex-nowrap"
+          className="mb-3 flex max-w-[21rem] flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-xs leading-tight text-white/70 sm:flex-nowrap"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.65 }}
@@ -161,6 +161,23 @@ export const HeroSection = () => {
           First leads in 2 minutes
         </motion.p>
       </div>
+
+      {/* Scroll indicator */}
+      <motion.div
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 pointer-events-none"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6, delay: 1.1 }}
+        aria-hidden="true"
+      >
+        <span className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-medium">scroll</span>
+        <motion.div
+          animate={{ y: [0, 5, 0] }}
+          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <ChevronDown className="h-4 w-4 text-white/30" />
+        </motion.div>
+      </motion.div>
     </section>
   );
 };

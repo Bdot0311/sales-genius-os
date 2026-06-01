@@ -79,16 +79,21 @@ const Calendar = () => {
   };
 
   const loadActivities = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
     const { data } = await supabase
       .from("activities")
       .select("*, leads(contact_name, company_name)")
+      .eq("user_id", user.id)
       .eq("type", "meeting")
       .order("due_date", { ascending: true });
     if (data) setActivities(data);
   };
 
   const loadLeads = async () => {
-    const { data } = await supabase.from("leads").select("*");
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data } = await supabase.from("leads").select("*").eq("user_id", user.id);
     if (data) setLeads(data);
   };
 

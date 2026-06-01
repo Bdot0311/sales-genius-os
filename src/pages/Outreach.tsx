@@ -25,6 +25,8 @@ import { Badge } from "@/components/ui/badge";
 import { debounce } from "@/lib/utils";
 import { EmailTemplateManager, UserEmailTemplate } from "@/components/outreach/EmailTemplateManager";
 import { EmailPerformanceStats } from "@/components/outreach/EmailPerformanceStats";
+import { EmailUsagePanel } from "@/components/outreach/EmailUsagePanel";
+
 import { FollowUpSuggestion, FollowUpData } from "@/components/outreach/FollowUpSuggestion";
 import { BarChart3, ListOrdered, Layout, Users } from "lucide-react";
 import { BulkSendDialog } from "@/components/outreach/BulkSendDialog";
@@ -299,10 +301,13 @@ const Outreach = () => {
   }, []);
 
   const loadDueFollowUps = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
     const now = new Date().toISOString();
     const { data } = await supabase
       .from("activities")
       .select("id, subject, lead_id, due_date")
+      .eq("user_id", user.id)
       .eq("type", "follow_up")
       .eq("completed", false)
       .lte("due_date", now)
@@ -317,11 +322,14 @@ const Outreach = () => {
   };
 
   const loadDailyEmailLimit = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
     const { data } = await supabase
       .from('subscriptions')
       .select('daily_email_limit, daily_emails_sent, daily_emails_reset_at')
+      .eq('user_id', user.id)
       .eq('status', 'active')
-      .single();
+      .maybeSingle();
     if (data) {
       const now = new Date();
       const resetAt = data.daily_emails_reset_at ? new Date(data.daily_emails_reset_at) : new Date(0);
@@ -333,10 +341,13 @@ const Outreach = () => {
 
   const saveDailyLimit = async (newLimit: number) => {
     if (newLimit < 1) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
     setIsSavingLimit(true);
     const { error } = await supabase
       .from('subscriptions')
       .update({ daily_email_limit: newLimit } as any)
+      .eq('user_id', user.id)
       .eq('status', 'active');
     setIsSavingLimit(false);
     if (!error) {
@@ -346,9 +357,12 @@ const Outreach = () => {
   };
 
   const loadConnectedAccounts = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
     const { data } = await supabase
       .from('integrations')
       .select('id, connected_email')
+      .eq('user_id', user.id)
       .eq('integration_id', 'google')
       .eq('is_active', true);
     
@@ -406,16 +420,20 @@ const Outreach = () => {
   }, [activeTab, isGenerating, isSending, selectedLead, generatedEmail, isSavingDraft, subjectLine]);
 
   const loadCounts = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
     const [sentResult, draftsResult] = await Promise.all([
-      supabase.from('sent_emails').select('id', { count: 'exact', head: true }),
-      supabase.from('email_drafts').select('id', { count: 'exact', head: true }),
+      supabase.from('sent_emails').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+      supabase.from('email_drafts').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
     ]);
     setSentCount(sentResult.count || 0);
     setDraftsCount(draftsResult.count || 0);
   };
 
   const loadLeads = async () => {
-    const { data } = await supabase.from("leads").select("*");
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data } = await supabase.from("leads").select("*").eq("user_id", user.id);
     if (data) setLeads(data);
   };
 
@@ -730,7 +748,8 @@ const Outreach = () => {
         .from('signature-logos')
         .getPublicUrl(fileName);
 
-      const imgHtml = `<img src="${publicUrl}" alt="Logo" width="320" style="display:block;max-width:320px;width:100%;height:auto;margin-top:8px;" />`;
+      const imgHtml = `<img src="${publicUrl}" alt="Email signature logo" width="320" style="display:block;max-width:320px;width:100%;height:auto;margin-top:8px;" />`;
+
       setSignature(prev => prev ? `${prev}\n${imgHtml}` : imgHtml);
 
       toast({
@@ -925,6 +944,10 @@ const Outreach = () => {
       const template = EMAIL_TEMPLATES.find(t => t.value === selectedTemplate);
       const goal = template?.goal || "introduction";
 
+      // Resolve sender name up front so it can be passed to the edge function
+      const resolvedSender = await resolveSenderName();
+      if (resolvedSender && !senderProfileName.trim()) setSenderProfileName(resolvedSender);
+
       // If no subject line, generate one tailored to the template goal
       let finalSubjectLine = subjectLine;
       if (!finalSubjectLine) {
@@ -939,6 +962,7 @@ const Outreach = () => {
             triggerContext,
             openerWord: openerWord === "auto" ? "" : openerWord,
             businessDescription,
+            senderName: resolvedSender,
           },
         });
         if (subjectError) throw subjectError;
@@ -959,24 +983,28 @@ const Outreach = () => {
           openerWord: openerWord === "auto" ? "" : openerWord,
           businessDescription,
           use4SentenceFramework,
+          senderName: resolvedSender,
+          senderCompany: resolvedSender ? businessDescription?.split(/[\n.]/)[0]?.trim() : "",
         },
       });
 
       if (error) throw error;
-      const senderName = await resolveSenderName();
-      const emailBody = appendSenderLine(sanitizeGeneratedEmailBody(data.email), senderName);
-      if (senderName && !senderProfileName.trim()) {
-        setSenderProfileName(senderName);
-      }
+      const emailBody = appendSenderLine(sanitizeGeneratedEmailBody(data.email), resolvedSender);
       setGeneratedEmail(emailBody);
       toast({
         title: "Email generated",
         description: "AI created a personalized sales email designed to book meetings",
       });
     } catch (error: any) {
+      // FunctionsHttpError bodies contain the real message from the edge function
+      let description = error.message;
+      try {
+        const body = await error.context?.json?.();
+        if (body?.error) description = body.error;
+      } catch {}
       toast({
         title: "Error generating email",
-        description: error.message,
+        description,
         variant: "destructive",
       });
     } finally {
@@ -1271,7 +1299,21 @@ Return ONLY the corrected email body. No subject line. No explanation. No "Here 
         }
       });
 
+      // 429 monthly/daily cap responses come back as FunctionsHttpError
+      const errCtx: any = (error as any)?.context;
+      if (errCtx?.status === 429) {
+        try {
+          const payload = await errCtx.json();
+          const { showSendError } = await import("@/lib/handle-send-error");
+          showSendError(429, payload);
+        } catch {
+          toast({ title: "Send limit reached", description: "Upgrade your plan to keep sending.", variant: "destructive" });
+        }
+        setIsSending(false);
+        return;
+      }
       if (error) throw error;
+
       
       // Store info for follow-up suggestion before clearing form
       const sentLeadInfo = {
@@ -1786,7 +1828,11 @@ For logos, use HTML:
           </div>
 
           <TabsContent value="compose" className="mt-6">
+            <div className="mb-4">
+              <EmailUsagePanel variant="compact" />
+            </div>
             {/* Follow-up due reminders */}
+
             {dueFollowUps.length > 0 && (
               <div className="mb-4 space-y-2">
                 {dueFollowUps.map(fu => {
@@ -2601,8 +2647,10 @@ For logos, use HTML:
                 <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                 <span>Open tracking pixels can hurt cold email deliverability. <strong>Reply rate</strong> is your real metric — use opens as directional only.</span>
               </div>
+              <EmailUsagePanel />
               <EmailPerformanceStats />
               <p className="text-xs text-muted-foreground text-center">Focus on reply rate as your primary metric.</p>
+
             </div>
           </TabsContent>
         </Tabs>

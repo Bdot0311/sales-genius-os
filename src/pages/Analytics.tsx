@@ -27,8 +27,10 @@ const Analytics = () => {
 
   const loadAnalytics = async () => {
     try {
-      const { data: leads } = await supabase.from("leads").select("*");
-      const { data: deals } = await supabase.from("deals").select("*");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: leads } = await supabase.from("leads").select("*").eq("user_id", user.id);
+      const { data: deals } = await supabase.from("deals").select("*").eq("user_id", user.id);
       if (leads && deals) {
         const totalValue = deals.reduce((sum, deal) => sum + (Number(deal.value) || 0), 0);
         setStats({ totalLeads: leads.length, totalDeals: deals.length, totalValue, avgDealSize: deals.length > 0 ? totalValue / deals.length : 0 });
@@ -93,8 +95,10 @@ const Analytics = () => {
   const handleExport = async () => {
     if (!features.dataExports) { triggerGate('dataExports'); return; }
     try {
-      const { data: leads } = await supabase.from("leads").select("*");
-      const { data: deals } = await supabase.from("deals").select("*");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: leads } = await supabase.from("leads").select("*").eq("user_id", user.id);
+      const { data: deals } = await supabase.from("deals").select("*").eq("user_id", user.id);
       const exportData = { exportDate: new Date().toISOString(), summary: stats, dealsByStage, leadsOverTime, leads: leads || [], deals: deals || [] };
       const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);

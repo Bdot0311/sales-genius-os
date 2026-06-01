@@ -70,7 +70,7 @@ Respond in this EXACT JSON format:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: "You are an expert B2B sales copywriter. Always respond with valid JSON only, no markdown formatting." },
           { role: "user", content: prompt }

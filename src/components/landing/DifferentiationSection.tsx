@@ -29,7 +29,7 @@ export const DifferentiationSection = () => {
   return (
     <section
       className="relative py-24 md:py-32 overflow-hidden"
-      style={{ background: "hsl(261 75% 2%)" }}
+      style={{ background: "hsl(261 75% 2% / 0.82)" }}
       aria-labelledby="differentiation-heading"
     >
       <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "hsl(261 75% 50% / 0.18)" }} />

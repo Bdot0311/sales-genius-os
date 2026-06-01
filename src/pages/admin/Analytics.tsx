@@ -7,6 +7,7 @@ import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, Cart
 import { TrendingUp, Users, DollarSign, CreditCard, BarChart3, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { SEOMonitorTab } from "@/components/admin/SEOMonitorTab";
 
 interface SubscriptionData {
   user_id: string;
@@ -248,12 +249,18 @@ const AdminAnalytics = () => {
         </Card>
       </div>
 
-      <Tabs defaultValue="growth" className="space-y-4">
+      <Tabs defaultValue={new URLSearchParams(window.location.search).get("tab") === "seo" ? "seo" : "growth"} className="space-y-4">
         <TabsList>
           <TabsTrigger value="growth">User Growth</TabsTrigger>
           <TabsTrigger value="revenue">Revenue</TabsTrigger>
           <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
+          <TabsTrigger value="seo">SEO Monitor</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="seo">
+          <SEOMonitorTab />
+        </TabsContent>
+
 
         <TabsContent value="growth" className="space-y-4">
           <Card>

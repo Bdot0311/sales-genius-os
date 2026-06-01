@@ -1,10 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders, requireServiceRole } from "../_shared/internal-auth.ts";
 
 // RFC 2047 MIME encode subject for non-ASCII characters
 const mimeEncodeSubject = (subject: string) => {
@@ -19,8 +15,11 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+  const unauth = requireServiceRole(req);
+  if (unauth) return unauth;
 
   try {
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -51,36 +50,55 @@ serve(async (req) => {
     let processed = 0;
     let failed = 0;
 
-    // Pre-fetch daily limits for all unique users
+    // Pre-fetch daily + monthly limits for all unique users
     const userIds = [...new Set(scheduledEmails.map((e: any) => e.user_id))];
-    const userLimits: Record<string, { limit: number; sent: number }> = {};
+    const MONTHLY_EMAIL_LIMITS: Record<string, number> = {
+      free: 0, starter: 50000, growth: 250000, pro: 1000000, elite: 1000000, agency: -1,
+    };
+    const userLimits: Record<string, { dailyLimit: number; dailySent: number; monthlyLimit: number; monthlySent: number }> = {};
     for (const uid of userIds) {
       const { data: sub } = await supabase
         .from('subscriptions')
-        .select('daily_email_limit, daily_emails_sent, daily_emails_reset_at')
+        .select('plan, daily_email_limit, daily_emails_sent, daily_emails_reset_at, monthly_emails_sent, monthly_emails_reset_at')
         .eq('user_id', uid)
         .eq('status', 'active')
         .single();
       if (sub) {
         const now = new Date();
-        const resetAt = sub.daily_emails_reset_at ? new Date(sub.daily_emails_reset_at) : new Date(0);
         const todayMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-        let currentSent = sub.daily_emails_sent || 0;
-        if (resetAt < todayMidnight) {
-          currentSent = 0;
+        const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+        const dailyResetAt = sub.daily_emails_reset_at ? new Date(sub.daily_emails_reset_at) : new Date(0);
+        let dailySent = sub.daily_emails_sent || 0;
+        if (dailyResetAt < todayMidnight) {
+          dailySent = 0;
           await supabase.from('subscriptions').update({ daily_emails_sent: 0, daily_emails_reset_at: todayMidnight.toISOString() }).eq('user_id', uid);
         }
-        userLimits[uid] = { limit: sub.daily_email_limit || 10, sent: currentSent };
+        const monthlyResetAt = (sub as any).monthly_emails_reset_at ? new Date((sub as any).monthly_emails_reset_at) : new Date(0);
+        let monthlySent = (sub as any).monthly_emails_sent || 0;
+        if (monthlyResetAt < monthStart) {
+          monthlySent = 0;
+          await supabase.from('subscriptions').update({ monthly_emails_sent: 0, monthly_emails_reset_at: monthStart.toISOString() } as any).eq('user_id', uid);
+        }
+        userLimits[uid] = {
+          dailyLimit: sub.daily_email_limit || 10,
+          dailySent,
+          monthlyLimit: MONTHLY_EMAIL_LIMITS[sub.plan as string] ?? 0,
+          monthlySent,
+        };
       }
     }
 
     for (const email of scheduledEmails) {
       try {
-        // Check daily limit
+        // Check daily + monthly limits
         const ul = userLimits[email.user_id];
-        if (ul && ul.sent >= ul.limit) {
-          console.log(`Daily limit reached for user ${email.user_id} (${ul.sent}/${ul.limit}), skipping email ${email.id}`);
-          continue; // Skip, don't fail. Will retry next cron run
+        if (ul && ul.dailySent >= ul.dailyLimit) {
+          console.log(`Daily limit reached for user ${email.user_id} (${ul.dailySent}/${ul.dailyLimit}), skipping email ${email.id}`);
+          continue;
+        }
+        if (ul && ul.monthlyLimit !== -1 && ul.monthlySent >= ul.monthlyLimit) {
+          console.log(`Monthly limit reached for user ${email.user_id} (${ul.monthlySent}/${ul.monthlyLimit}), skipping email ${email.id}`);
+          continue;
         }
         // Get user's integration for sending
         const { data: integration } = await supabase
@@ -234,9 +252,12 @@ serve(async (req) => {
               .eq("user_id", email.user_id);
           }
 
-          // Increment daily counter
-          await supabase.from('subscriptions').update({ daily_emails_sent: (ul?.sent || 0) + 1 }).eq('user_id', email.user_id);
-          if (ul) ul.sent += 1;
+          // Increment daily + monthly counters
+          await supabase.from('subscriptions').update({
+            daily_emails_sent: (ul?.dailySent || 0) + 1,
+            monthly_emails_sent: (ul?.monthlySent || 0) + 1,
+          } as any).eq('user_id', email.user_id);
+          if (ul) { ul.dailySent += 1; ul.monthlySent += 1; }
 
           processed++;
           console.log(`Sent scheduled email ${email.id} to ${email.to_email}`);

@@ -13,7 +13,7 @@ export const TrustBar = () => (
   <section
     className="py-10"
     style={{
-      background: "hsl(261 75% 2%)",
+      background: "hsl(261 75% 2% / 0.82)",
       borderTop: "1px solid hsl(261 75% 50% / 0.18)",
       borderBottom: "1px solid hsl(261 75% 50% / 0.18)",
     }}

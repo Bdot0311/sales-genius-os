@@ -9,7 +9,7 @@ export const ProductShowcase = () => {
   return (
     <section
       className="relative overflow-hidden pb-4 sm:pb-0"
-      style={{ background: "hsl(261 75% 2%)" }}
+      style={{ background: "hsl(261 75% 2% / 0.82)" }}
       aria-label="Product preview"
     >
       <div
@@ -21,7 +21,7 @@ export const ProductShowcase = () => {
       />
 
       <div className="container mx-auto px-5 sm:px-8 lg:px-12">
-        <p className="pt-6 mb-6 text-center text-xs uppercase tracking-[0.25em] text-white/25 sm:pt-8 sm:mb-8">
+        <p className="pt-6 mb-6 text-center text-xs uppercase tracking-[0.25em] sm:pt-8 sm:mb-8" style={{ color: "hsl(261 75% 65%)" }}>
           The platform
         </p>
 

@@ -1,6 +1,6 @@
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { Shield, Lock, Eye, Server, FileCheck, AlertTriangle } from "lucide-react";
+import { Shield, Lock, Eye, Server, FileCheck, AlertTriangle, Mail } from "lucide-react";
 import { SEOHead, BreadcrumbSchema } from "@/components/seo";
 
 const iconWrap = {
@@ -94,6 +94,20 @@ const Security = () => {
             <div className="space-y-12">
 
               {[
+                {
+                  Icon: Mail,
+                  id: "inbox-data",
+                  title: "Inbox & Email Data Handling",
+                  body: "When you connect a mailbox (Gmail, Outlook), your messages and OAuth tokens are isolated to your account and never exposed to other customers, our team, or third-party tools. Connected inboxes power your outreach — nothing else.",
+                  items: [
+                    "OAuth refresh tokens are stored server-side only and never sent to the browser",
+                    "Row-Level Security on every email table — your sent emails, replies, and drafts are scoped to your user ID at the database level (no cross-tenant queries possible)",
+                    "Email bodies and reply content are never used to train AI models, shared with advertisers, or sold",
+                    "AI drafting calls send only the minimum prompt context required and run through privacy-respecting model providers (no training on customer data)",
+                    "Disconnect a mailbox at any time — tokens are revoked and stored copies of message metadata become inaccessible",
+                    "We do not read your inbox; sync is limited to threads tied to outreach you sent through SalesOS",
+                  ],
+                },
                 {
                   Icon: Lock,
                   id: "encryption",

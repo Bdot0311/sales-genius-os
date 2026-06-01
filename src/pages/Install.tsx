@@ -98,10 +98,11 @@ const Install = () => {
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} aria-label="Go back">
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <img src={salesosLogo} alt="SalesOS" className="w-8 h-8 rounded-lg" />
+          <img src={salesosLogo} alt="SalesOS product logo" className="w-8 h-8 rounded-lg" />
+
           <span className="text-lg font-bold">Install SalesOS</span>
         </div>
       </header>

@@ -22,7 +22,7 @@ const footerLinks = {
 
 export const FooterSection = () => {
   return (
-    <footer className="py-16 md:py-20 border-t" style={{ background: "hsl(261 75% 2%)", borderColor: "hsl(261 75% 50% / 0.18)" }}>
+    <footer className="py-16 md:py-20 border-t" style={{ background: "hsl(261 75% 2% / 0.88)", borderColor: "hsl(261 75% 50% / 0.18)" }}>
       <div className="container mx-auto px-6">
         <div className="max-w-[1120px] mx-auto">
           <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-12 mb-12">

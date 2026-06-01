@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
 import { SAMPLE_DEALS } from "@/lib/sample-data";
+import { useRealtimeTable } from "@/hooks/use-realtime-table";
 
 interface Deal {
   id: string;
@@ -46,9 +47,18 @@ const Pipeline = () => {
     else setLoading(false);
   }, [isFreeTier]);
 
+  useRealtimeTable({
+    channel: "pipeline-deals",
+    table: "deals",
+    enabled: !isFreeTier,
+    onChange: () => loadDeals(),
+  });
+
   const loadDeals = async () => {
     try {
-      const { data, error } = await supabase.from("deals").select("*").order("created_at", { ascending: false });
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoading(false); return; }
+      const { data, error } = await supabase.from("deals").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
       if (error) throw error;
       setDeals(data || []);
     } catch (error: any) {

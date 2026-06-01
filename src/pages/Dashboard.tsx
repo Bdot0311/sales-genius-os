@@ -78,11 +78,14 @@ const Dashboard = () => {
 
   const loadStats = async () => {
     try {
-      const { data: leads } = await supabase.from("leads").select("id");
-      const { data: deals } = await supabase.from("deals").select("id, value");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: leads } = await supabase.from("leads").select("id").eq("user_id", user.id);
+      const { data: deals } = await supabase.from("deals").select("id, value").eq("user_id", user.id);
       const { data: activities } = await supabase
         .from("activities")
         .select("*")
+        .eq("user_id", user.id)
         .eq("type", "meeting")
         .gte("due_date", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
       const totalValue = deals?.reduce((sum, deal) => sum + (Number(deal.value) || 0), 0) || 0;
