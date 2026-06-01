@@ -18,6 +18,7 @@ interface PaidPlan {
   monthlyProspects: number;
   yearlyProspects: number;
   dailyLimit: string;
+  monthlyEmails: number; // -1 = unlimited
   features: string[];
   highlighted?: boolean;
   monthlyPriceId: string;
@@ -66,6 +67,7 @@ const paidPlans: PaidPlan[] = [
     monthlyProspects: 1000,
     yearlyProspects: 12000,
     dailyLimit: "100 prospects per day",
+    monthlyEmails: 50000,
     features: [
       "Prospect search & verified emails",
       "ICP Builder (3 profiles)",
@@ -89,6 +91,7 @@ const paidPlans: PaidPlan[] = [
     monthlyProspects: 2500,
     yearlyProspects: 30000,
     dailyLimit: "250 prospects per day",
+    monthlyEmails: 250000,
     features: [
       "Everything in Starter, plus:",
       "Unified reply inbox with AI drafts",
@@ -113,6 +116,7 @@ const paidPlans: PaidPlan[] = [
     monthlyProspects: 5000,
     yearlyProspects: 60000,
     dailyLimit: "500 prospects per day",
+    monthlyEmails: 1000000,
     features: [
       "Everything in Growth, plus:",
       "Sequence branching & A/B testing",
@@ -136,6 +140,7 @@ const paidPlans: PaidPlan[] = [
     monthlyProspects: 15000,
     yearlyProspects: 180000,
     dailyLimit: "1,500 prospects per day",
+    monthlyEmails: -1,
     features: [
       "Everything in Pro, plus:",
       "White-label client portal",
@@ -153,10 +158,11 @@ const paidPlans: PaidPlan[] = [
 
 const comparisonCategories = [
   {
-    name: "Verified Prospects",
+    name: "Verified Prospects & Email Sends",
     features: [
       { name: "Monthly verified prospects", free: "0", starter: "1,000", growth: "2,500", pro: "5,000", agency: "15,000" },
       { name: "Daily prospect limit", free: "0", starter: "100", growth: "250", pro: "500", agency: "1,500" },
+      { name: "Monthly email sends", free: "0", starter: "50,000", growth: "250,000", pro: "1,000,000", agency: "Unlimited" },
       { name: "Prospect search", free: "—", starter: true, growth: true, pro: true, agency: true },
       { name: "Verified email data", free: "—", starter: true, growth: true, pro: true, agency: true },
       { name: "Advanced prospect filters", free: false, starter: false, growth: true, pro: true, agency: true },
@@ -471,6 +477,10 @@ export const Pricing = () => {
                         : `${plan.monthlyProspects.toLocaleString()} prospects/month`}
                     </p>
                     <p className="text-xs mt-0.5" style={{ color: "hsl(0 0% 100% / 0.6)" }}>{plan.dailyLimit}</p>
+                    <p className="text-sm font-medium mt-2 pt-2" style={{ color: isHighlighted ? "hsl(0 0% 95%)" : "hsl(0 0% 88%)", borderTop: "1px solid hsl(261 75% 50% / 0.14)" }}>
+                      {plan.monthlyEmails === -1 ? "Unlimited emails/month" : `${plan.monthlyEmails.toLocaleString()} emails/month`}
+                    </p>
+                    <p className="text-xs mt-0.5" style={{ color: "hsl(0 0% 100% / 0.6)" }}>Send pace controlled in Outreach settings</p>
                   </div>
                 )}
 
