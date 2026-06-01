@@ -3059,6 +3059,7 @@ export type Database = {
         }[]
       }
       cleanup_expired_cache: { Args: never; Returns: undefined }
+      current_month_start_utc: { Args: never; Returns: string }
       deduct_search_credits: {
         Args: { _amount: number; _description?: string }
         Returns: Json
@@ -3070,6 +3071,13 @@ export type Database = {
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
+      }
+      get_email_send_trend: {
+        Args: { _days?: number }
+        Returns: {
+          day: string
+          sent: number
+        }[]
       }
       get_expiring_trials: {
         Args: { _days_until_expiry: number }
@@ -3086,6 +3094,27 @@ export type Database = {
       get_monthly_email_limit: {
         Args: { _plan: Database["public"]["Enums"]["subscription_plan"] }
         Returns: number
+      }
+      get_monthly_email_usage: {
+        Args: never
+        Returns: {
+          daily_limit: number
+          daily_remaining: number
+          daily_sent: number
+          monthly_limit: number
+          monthly_remaining: number
+          monthly_reset_at: string
+          monthly_sent: number
+          plan: Database["public"]["Enums"]["subscription_plan"]
+        }[]
+      }
+      get_sequence_monthly_usage: {
+        Args: never
+        Returns: {
+          sent_this_month: number
+          sequence_id: string
+          sequence_name: string
+        }[]
       }
       get_user_leads_usage: {
         Args: never
@@ -3151,6 +3180,7 @@ export type Database = {
         }
         Returns: number
       }
+      next_month_start_utc: { Args: never; Returns: string }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
