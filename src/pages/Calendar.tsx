@@ -251,7 +251,7 @@ const Calendar = () => {
           </Dialog>
         </div>
 
-        {isFreeTier && <SampleDataBanner />}
+        
 
         {/* Google Calendar events for connected paid users */}
         {!isFreeTier && hasGoogleCalendar && googleEvents.length > 0 && (
