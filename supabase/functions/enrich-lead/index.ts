@@ -39,23 +39,6 @@ function normalizeLinkedInUrl(url: string | null): string | null {
   }
 }
 
-async function prospeoRequest(apiKey: string, endpoint: string, body: Record<string, string>): Promise<any> {
-  const res = await fetch(`https://api.prospeo.io/${endpoint}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-KEY': apiKey,
-    },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    console.warn(`Prospeo /${endpoint} returned ${res.status}:`, text);
-    return null;
-  }
-  return res.json();
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -70,7 +53,7 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const prospeoApiKey = Deno.env.get('PROSPEO_API_KEY');
+    const railwayBaseUrl = Deno.env.get('RAILWAY_LEADS_API_URL');
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const token = authHeader.replace('Bearer ', '');
@@ -127,118 +110,96 @@ serve(async (req) => {
 
     console.log('Enriching lead:', lead.contact_name, lead.company_name);
 
-    if (!prospeoApiKey) throw new Error('Prospeo API key not configured');
+    if (!railwayBaseUrl) throw new Error('Railway API not configured');
+
+    const baseUrl = railwayBaseUrl.replace(/\/+$/, '').replace(/\/(search|docs|health)$/, '');
+    const enrichUrl = `${baseUrl}/enrich`;
+
+    const nameIsTitle = isJobTitle(lead.contact_name);
+
+    // Build enrich request payload
+    const enrichPayload: Record<string, string> = {};
+
+    if (lead.linkedin_url) {
+      const normalized = normalizeLinkedInUrl(lead.linkedin_url);
+      if (normalized) enrichPayload.linkedin_url = normalized;
+    }
+    if (lead.contact_email) enrichPayload.email = lead.contact_email;
+    if (!nameIsTitle && lead.contact_name) {
+      const parts = lead.contact_name.trim().split(/\s+/);
+      if (parts.length >= 2) {
+        enrichPayload.first_name = parts[0];
+        enrichPayload.last_name = parts.slice(1).join(' ');
+      }
+    }
+    if (lead.company_name) enrichPayload.company = lead.company_name;
+    if (lead.company_website) {
+      try {
+        const u = new URL(lead.company_website.startsWith('http') ? lead.company_website : `https://${lead.company_website}`);
+        enrichPayload.domain = u.hostname.replace('www.', '');
+      } catch { /* ignore */ }
+    }
+    if (!enrichPayload.domain && lead.contact_email) {
+      const d = lead.contact_email.split('@')[1];
+      if (d && !FREE_EMAIL_DOMAINS.has(d)) enrichPayload.domain = d;
+    }
+
+    console.log('Calling Railway /enrich with:', Object.keys(enrichPayload).join(', '));
+
+    let railwayData: any = null;
+    try {
+      const res = await fetch(enrichUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(enrichPayload),
+      });
+      console.log('Railway /enrich status:', res.status);
+      if (res.ok) {
+        railwayData = await res.json();
+        console.log('Railway /enrich response keys:', Object.keys(railwayData || {}));
+      } else {
+        const errText = await res.text();
+        console.warn('Railway /enrich error:', res.status, errText);
+      }
+    } catch (fetchErr) {
+      console.error('Railway /enrich fetch failed:', fetchErr);
+    }
 
     const enrichmentData: Record<string, any> = {
       enrichment_status: 'enriched',
       enriched_at: new Date().toISOString(),
     };
 
-    const nameIsTitle = isJobTitle(lead.contact_name);
-    if (nameIsTitle) console.log('Detected job title as contact name:', lead.contact_name);
+    if (railwayData && !railwayData.error) {
+      const p = railwayData.person ?? railwayData.contact ?? railwayData.response ?? railwayData;
+      const c = railwayData.company ?? p?.company ?? {};
 
-    // --- Person Enrichment via Prospeo ---
-    let personFound = false;
-    if (lead.linkedin_url || (!nameIsTitle && lead.contact_name)) {
-      try {
-        let personData: any = null;
+      // Person fields
+      const fullName = [p.first_name, p.last_name].filter(Boolean).join(' ') || p.full_name || p.name;
+      if (nameIsTitle && fullName) enrichmentData.contact_name = fullName;
+      else if (fullName && !lead.contact_name) enrichmentData.contact_name = fullName;
 
-        // Priority 1: LinkedIn URL → Prospeo linkedin-email-finder
-        if (lead.linkedin_url) {
-          const normalized = normalizeLinkedInUrl(lead.linkedin_url);
-          if (normalized) {
-            console.log('Prospeo linkedin-email-finder for:', normalized);
-            personData = await prospeoRequest(prospeoApiKey, 'linkedin-email-finder', { url: normalized });
-          }
-        }
+      const email = p.email?.value ?? p.email ?? p.business_email;
+      if (email && !lead.contact_email) enrichmentData.contact_email = email;
 
-        // Priority 2: First + Last name + domain → Prospeo email-finder
-        if (!personData && !nameIsTitle && lead.contact_name) {
-          const parts = lead.contact_name.trim().split(/\s+/);
-          if (parts.length >= 2) {
-            // Resolve domain from website or email
-            let domain = '';
-            if (lead.company_website) {
-              try {
-                const u = new URL(lead.company_website.startsWith('http') ? lead.company_website : `https://${lead.company_website}`);
-                domain = u.hostname.replace('www.', '');
-              } catch { /* ignore */ }
-            }
-            if (!domain && lead.contact_email) {
-              const d = lead.contact_email.split('@')[1];
-              if (d && !FREE_EMAIL_DOMAINS.has(d)) domain = d;
-            }
-            if (!domain && lead.company_name) {
-              // Use company name as last resort — Prospeo supports it
-              domain = lead.company_name;
-            }
-            if (domain) {
-              console.log('Prospeo email-finder for:', parts[0], parts.slice(1).join(' '), 'at', domain);
-              personData = await prospeoRequest(prospeoApiKey, 'email-finder', {
-                first_name: parts[0],
-                last_name: parts.slice(1).join(' '),
-                company: domain,
-              });
-            }
-          }
-        }
-
-        if (personData && !personData.error) {
-          const p = personData.response ?? personData;
-          personFound = true;
-
-          // Email
-          const email = p.email?.value ?? p.email;
-          if (email && !lead.contact_email) enrichmentData.contact_email = email;
-
-          // Name
-          const fullName = [p.first_name, p.last_name].filter(Boolean).join(' ');
-          if (nameIsTitle && fullName) enrichmentData.contact_name = fullName;
-          else if (fullName && !lead.contact_name) enrichmentData.contact_name = fullName;
-
-          // Job info
-          if (p.job_title) enrichmentData.job_title = p.job_title;
-          if (p.seniority) enrichmentData.seniority = p.seniority;
-          if (p.linkedin_url) enrichmentData.linkedin_url = normalizeLinkedInUrl(p.linkedin_url) || p.linkedin_url;
-
-          // Company info returned alongside person
-          if (p.company_name && !lead.company_name) enrichmentData.company_name = p.company_name;
-          if (p.company?.size) enrichmentData.employee_count = p.company.size;
-          if (p.company?.industry) enrichmentData.industry = p.company.industry;
-        }
-      } catch (personErr) {
-        console.error('Person enrichment error:', personErr);
+      if (p.job_title || p.title) enrichmentData.job_title = p.job_title ?? p.title;
+      if (p.seniority) enrichmentData.seniority = p.seniority;
+      if (p.linkedin_url || p.linkedInUrl) {
+        enrichmentData.linkedin_url = normalizeLinkedInUrl(p.linkedin_url ?? p.linkedInUrl);
       }
-    }
+      if (p.phone || p.phone_number) enrichmentData.contact_phone = p.phone ?? p.phone_number;
 
-    // --- Company Enrichment via Prospeo domain-search ---
-    if (!personFound && (lead.company_website || lead.contact_email || lead.company_name)) {
-      try {
-        let domain = '';
-        if (lead.company_website) {
-          try {
-            const u = new URL(lead.company_website.startsWith('http') ? lead.company_website : `https://${lead.company_website}`);
-            domain = u.hostname.replace('www.', '');
-          } catch { /* ignore */ }
-        }
-        if (!domain && lead.contact_email) {
-          const d = lead.contact_email.split('@')[1];
-          if (d && !FREE_EMAIL_DOMAINS.has(d)) domain = d;
-        }
-
-        if (domain) {
-          console.log('Prospeo domain-search for:', domain);
-          const companyData = await prospeoRequest(prospeoApiKey, 'domain-search', { company: domain });
-          if (companyData && !companyData.error) {
-            const c = companyData.response ?? companyData;
-            if (c.emails?.length && !lead.contact_email) {
-              enrichmentData.contact_email = c.emails[0].email ?? c.emails[0];
-            }
-          }
-        }
-      } catch (companyErr) {
-        console.error('Company enrichment error:', companyErr);
+      // Company fields
+      if (c.website && !lead.company_website) enrichmentData.company_website = c.website;
+      if (c.industry) enrichmentData.industry = c.industry;
+      if (c.size || c.employee_count || c.employeeRange) {
+        enrichmentData.employee_count = String(c.size ?? c.employee_count ?? c.employeeRange);
       }
+      if (c.linkedin_url || c.linkedInUrl) {
+        enrichmentData.company_linkedin = normalizeLinkedInUrl(c.linkedin_url ?? c.linkedInUrl);
+      }
+      if (c.description) enrichmentData.company_description = c.description;
+      if (c.technologies?.length) enrichmentData.technologies = c.technologies.slice(0, 20);
     }
 
     const enrichedFields = Object.keys(enrichmentData).filter(
