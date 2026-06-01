@@ -698,6 +698,39 @@ serve(async (req) => {
       });
     }
 
+    // Track whether we already deducted a credit so we can refund on failure
+    // or on empty result sets. Admins skip the credit path entirely.
+    let creditWasDeducted = !isAdmin;
+    const refundCredit = async (reason: string) => {
+      if (!creditWasDeducted) return;
+      creditWasDeducted = false;
+      try {
+        const { data: sub } = await supabase
+          .from('subscriptions')
+          .select('search_credits_remaining, daily_searches_used')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (!sub) return;
+        await supabase
+          .from('subscriptions')
+          .update({
+            search_credits_remaining: (sub.search_credits_remaining || 0) + 1,
+            daily_searches_used: Math.max((sub.daily_searches_used || 0) - 1, 0),
+          })
+          .eq('user_id', user.id);
+        await supabase.from('search_transactions').insert({
+          user_id: user.id,
+          type: 'refund',
+          amount: 1,
+          balance_after: (sub.search_credits_remaining || 0) + 1,
+          description: `Refund: ${reason}`,
+        });
+        console.log('Credit refunded:', { userId: user.id, reason });
+      } catch (e) {
+        console.error('Failed to refund credit:', e);
+      }
+    };
+
     // Get Railway API URL from secrets
     const railwayBaseUrl = Deno.env.get('RAILWAY_LEADS_API_URL');
     if (!railwayBaseUrl) {
