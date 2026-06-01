@@ -191,9 +191,8 @@ const Calendar = () => {
     setDeleteConfirmOpen(true);
   };
 
-  // Decide which meetings to show
-  const displayMeetings = isFreeTier ? SAMPLE_MEETINGS : activities;
-  const hasNoMeetings = !isFreeTier && !loading && activities.length === 0 && googleEvents.length === 0 && !hasGoogleCalendar;
+  const displayMeetings = activities;
+  const hasNoMeetings = !loading && activities.length === 0 && googleEvents.length === 0 && !hasGoogleCalendar;
 
   return (
     <DashboardLayout>
