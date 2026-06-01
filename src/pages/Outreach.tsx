@@ -1828,7 +1828,11 @@ For logos, use HTML:
           </div>
 
           <TabsContent value="compose" className="mt-6">
+            <div className="mb-4">
+              <EmailUsagePanel variant="compact" />
+            </div>
             {/* Follow-up due reminders */}
+
             {dueFollowUps.length > 0 && (
               <div className="mb-4 space-y-2">
                 {dueFollowUps.map(fu => {
