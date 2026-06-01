@@ -94,13 +94,11 @@ const Dashboard = () => {
     }
   };
 
-  const displayStats = isFreeTier ? SAMPLE_STATS : stats;
-
   const statCards = [
-    { title: "Total Leads", value: displayStats.totalLeads, icon: Users, color: "text-blue-400" },
-    { title: "Active Deals", value: displayStats.totalDeals, icon: TrendingUp, color: "text-violet-400" },
-    { title: "Pipeline Value", value: `$${displayStats.totalValue.toLocaleString()}`, icon: DollarSign, color: "text-emerald-400" },
-    { title: "Meetings This Week", value: displayStats.meetingsThisWeek, icon: Calendar, color: "text-amber-400" },
+    { title: "Total Leads", value: stats.totalLeads, icon: Users, color: "text-blue-400" },
+    { title: "Active Deals", value: stats.totalDeals, icon: TrendingUp, color: "text-violet-400" },
+    { title: "Pipeline Value", value: `$${stats.totalValue.toLocaleString()}`, icon: DollarSign, color: "text-emerald-400" },
+    { title: "Meetings This Week", value: stats.meetingsThisWeek, icon: Calendar, color: "text-amber-400" },
   ];
 
   return (
