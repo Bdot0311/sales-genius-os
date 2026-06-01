@@ -41,14 +41,13 @@ const Pipeline = () => {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
 
   useEffect(() => {
-    if (!isFreeTier) loadDeals();
-    else setLoading(false);
-  }, [isFreeTier]);
+    loadDeals();
+  }, []);
 
   useRealtimeTable({
     channel: "pipeline-deals",
     table: "deals",
-    enabled: !isFreeTier,
+    enabled: true,
     onChange: () => loadDeals(),
   });
 
@@ -66,16 +65,10 @@ const Pipeline = () => {
     }
   };
 
-  const displayDeals = isFreeTier ? (SAMPLE_DEALS as any as Deal[]) : deals;
-  const getDealsByStage = (stageKey: string) => displayDeals.filter((deal) => deal.stage === stageKey);
+  const getDealsByStage = (stageKey: string) => deals.filter((deal) => deal.stage === stageKey);
   const getTotalValue = (stageKey: string) => getDealsByStage(stageKey).reduce((sum, deal) => sum + (Number(deal.value) || 0), 0);
 
   const handleMoveDeal = async (dealId: string, newStage: string) => {
-    if (isFreeTier) {
-      // Let free users "move" sample deals locally
-      toast({ title: "Sample mode", description: "This is demo data. Upgrade to manage real deals." });
-      return;
-    }
     try {
       const { error } = await supabase.from("deals").update({ stage: newStage }).eq("id", dealId);
       if (error) throw error;
