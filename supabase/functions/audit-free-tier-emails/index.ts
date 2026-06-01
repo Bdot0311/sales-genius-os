@@ -53,6 +53,9 @@ serve(async (req) => {
       }
     }
 
+    // Optional: caller may pass { dryRun: true } to preview without locking.
+    let dryRun = false;
+    let limit = 500;
     try {
       const body = await req.json();
       if (body?.dryRun === true) dryRun = true;
