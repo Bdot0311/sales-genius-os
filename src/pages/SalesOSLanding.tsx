@@ -624,13 +624,13 @@ const FinalCTA = () => (
         </p>
         <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
           <AppleButton label="Start free" />
-          <Link
-            to="/contact"
+          <a
+            href="mailto:support@bdotindustries.com?subject=Talk%20to%20sales"
             className="group inline-flex items-center gap-2 rounded-full border border-white/15 text-white text-sm font-medium px-5 py-3 hover:bg-white/5 transition-colors"
           >
             Talk to sales
             <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-[1px]" />
-          </Link>
+          </a>
         </div>
       </div>
     </motion.div>
