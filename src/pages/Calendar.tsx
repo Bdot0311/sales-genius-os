@@ -41,14 +41,10 @@ const Calendar = () => {
   });
 
   useEffect(() => {
-    if (!isFreeTier) {
-      loadActivities();
-      loadLeads();
-      checkGoogleCalendarConnection();
-    } else {
-      setLoading(false);
-    }
-  }, [isFreeTier]);
+    loadActivities();
+    loadLeads();
+    checkGoogleCalendarConnection();
+  }, []);
 
   const checkGoogleCalendarConnection = async () => {
     try {
