@@ -18,6 +18,7 @@ interface PaidPlan {
   monthlyProspects: number;
   yearlyProspects: number;
   dailyLimit: string;
+  monthlyEmails: number; // -1 = unlimited
   features: string[];
   highlighted?: boolean;
   monthlyPriceId: string;
