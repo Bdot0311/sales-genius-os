@@ -290,37 +290,39 @@ const Settings = () => {
                   <Bell className="h-4 w-4" />
                   Notifications
                 </TabsTrigger>
-                <TabsTrigger value="white-label" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
-                  <Palette className="h-4 w-4" />
-                  White Label
-                </TabsTrigger>
-                <TabsTrigger value="agency-portal" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
-                  <Building2 className="h-4 w-4" />
-                  Agency Portal
-                </TabsTrigger>
-                {(isAdmin || subscription?.plan === 'pro' || subscription?.plan === 'agency') && (
-                  <>
-                    <TabsTrigger value="monitoring" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
-                      <Activity className="h-4 w-4" />
-                      Monitor
-                    </TabsTrigger>
-                    <TabsTrigger value="alerts" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
-                      <Bell className="h-4 w-4" />
-                      Alerts
-                    </TabsTrigger>
-                    <TabsTrigger value="api-keys" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
-                      <Key className="h-4 w-4" />
-                      API Keys
-                    </TabsTrigger>
-                  </>
-                )}
                 </TabsList>
               </div>
 
-              {/* Second row of tabs (Pro and Agency) */}
+              {/* White Label + Agency Portal — always visible */}
+              <div className="flex justify-center">
+                <TabsList className="h-auto inline-flex flex-wrap justify-center gap-2 bg-transparent p-0">
+                  <TabsTrigger value="white-label" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                    <Palette className="h-4 w-4" />
+                    White Label
+                  </TabsTrigger>
+                  <TabsTrigger value="agency-portal" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                    <Building2 className="h-4 w-4" />
+                    Agency Portal
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+
+              {/* Pro / Agency tools */}
               {(isAdmin || subscription?.plan === 'pro' || subscription?.plan === 'agency') && (
                 <div className="flex justify-center">
                   <TabsList className="h-auto inline-flex flex-wrap justify-center gap-2 bg-transparent p-0">
+                  <TabsTrigger value="monitoring" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                    <Activity className="h-4 w-4" />
+                    Monitor
+                  </TabsTrigger>
+                  <TabsTrigger value="alerts" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                    <Bell className="h-4 w-4" />
+                    Alerts
+                  </TabsTrigger>
+                  <TabsTrigger value="api-keys" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                    <Key className="h-4 w-4" />
+                    API Keys
+                  </TabsTrigger>
                   <TabsTrigger value="api-versions" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
                     <GitBranch className="h-4 w-4" />
                     Versions
