@@ -3,7 +3,6 @@ import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { PipelineColumn } from "@/components/dashboard/PipelineColumn";
 import { AddDealDialog } from "@/components/dashboard/AddDealDialog";
-import { SampleDataBanner } from "@/components/dashboard/SampleDataBanner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Plus, Sparkles, Settings, TrendingUp, Loader2 } from "lucide-react";
@@ -11,7 +10,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
-import { SAMPLE_DEALS } from "@/lib/sample-data";
 import { useRealtimeTable } from "@/hooks/use-realtime-table";
 
 interface Deal {
