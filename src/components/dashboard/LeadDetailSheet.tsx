@@ -436,7 +436,7 @@ export const LeadDetailSheet = ({
                         </Badge>
                         <span className="text-xs text-muted-foreground">{format(new Date(entry.enriched_at), 'PPp')}</span>
                       </div>
-                      <div className="text-xs text-muted-foreground">Source: {['peopledatalabs', 'People Data Labs', 'Lusha', 'Prospeo', 'lusha', 'prospeo'].includes(entry.source) ? 'SalesOS' : entry.source}</div>
+                      <div className="text-xs text-muted-foreground">Source: {['prospeo', 'Prospeo', 'peopledatalabs', 'People Data Labs', 'Lusha', 'lusha'].includes(entry.source) ? 'SalesOS' : entry.source}</div>
                       {entry.error_message && (
                         <p className="text-xs text-muted-foreground bg-muted/50 rounded p-2 italic">{entry.error_message}</p>
                       )}

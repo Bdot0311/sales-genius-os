@@ -41,7 +41,7 @@ interface ScoredLead {
   buying_signals: string[];
 }
 
-// Industry normalization map (user-friendly → PDL canonical)
+// Industry normalization map (user-friendly → Prospeo/Railway canonical)
 const INDUSTRY_MAP: Record<string, string> = {
   'law': 'legal services', 'legal': 'legal services', 'legal services': 'legal services',
   'ai': 'computer software', 'ai/ml': 'computer software', 'machine learning': 'computer software',
@@ -69,7 +69,7 @@ const INDUSTRY_MAP: Record<string, string> = {
   'nonprofit': 'nonprofit organization management', 'ngo': 'nonprofit organization management',
 };
 
-// Country name → ISO 2-letter code map (PDL expects country codes)
+// Country name → ISO 2-letter code map
 const COUNTRY_MAP: Record<string, string> = {
   'united states': 'US', 'usa': 'US', 'us': 'US', 'u.s.': 'US', 'u.s.a.': 'US', 'america': 'US',
   'united kingdom': 'GB', 'uk': 'GB', 'great britain': 'GB', 'england': 'GB', 'britain': 'GB',
@@ -92,7 +92,7 @@ function normalizeCountry(raw: string): string {
   return COUNTRY_MAP[lower] || raw.trim();
 }
 
-// Seniority normalization map (user-friendly → PDL canonical)
+// Seniority normalization map
 const SENIORITY_MAP: Record<string, string> = {
   'c-suite': 'cxo', 'c-level': 'cxo', 'executive': 'cxo', 'csuite': 'cxo', 'clevel': 'cxo',
   'vp': 'vp', 'vice president': 'vp',
@@ -104,7 +104,7 @@ const SENIORITY_MAP: Record<string, string> = {
   'partner': 'partner',
 };
 
-// Company size normalization to PDL ranges
+// Company size normalization
 const COMPANY_SIZE_MAP: Record<string, string> = {
   '1-10': '1-10', 'micro': '1-10',
   '11-50': '11-50', 'small': '11-50',
@@ -116,7 +116,7 @@ const COMPANY_SIZE_MAP: Record<string, string> = {
   '10001+': '10001+', 'mega': '10001+',
 };
 
-// Normalize industry value to PDL-compatible format
+// Normalize industry value
 function normalizeIndustry(raw: string): string {
   if (!raw) return '';
   const lower = raw.trim().toLowerCase();
@@ -126,18 +126,18 @@ function normalizeIndustry(raw: string): string {
   for (const [key, value] of Object.entries(INDUSTRY_MAP)) {
     if (lower.includes(key)) return value;
   }
-  // If no match, pass through as-is (Railway/PDL may still match it)
+  // If no match, pass through as-is (Railway may still match it)
   return raw.trim();
 }
 
-// Normalize seniority value to PDL-compatible format
+// Normalize seniority value
 function normalizeSeniority(raw: string): string {
   if (!raw) return '';
   const lower = raw.trim().toLowerCase();
   return SENIORITY_MAP[lower] || raw.trim();
 }
 
-// Normalize company size to PDL range format
+// Normalize company size to standard range format
 function normalizeCompanySize(raw: string): string {
   if (!raw) return '';
   const lower = raw.trim().toLowerCase();
@@ -736,7 +736,7 @@ serve(async (req) => {
     const railwayUrl = `${baseUrl}/search`;
     console.log('Calling Railway API:', railwayUrl);
 
-    // Prepare request body for Railway API - PDL format
+    // Prepare request body for Railway/Prospeo API
     let jobTitle: string | undefined = filters.job_title;
     let nonJobKeywords: string[] = [];
     
@@ -771,7 +771,7 @@ serve(async (req) => {
     const limit = Math.min(filters.limit || 10, maxResults);
     const offset = (page - 1) * limit;
 
-    // Normalize all values through PDL-compatible maps
+    // Normalize all values
     const normalizedIndustry = normalizeIndustry(filters.industry || '');
     const normalizedSeniority = normalizeSeniority(filters.seniority || '');
     const normalizedCompanySize = normalizeCompanySize(filters.company_size || '');
@@ -790,7 +790,7 @@ serve(async (req) => {
       ...(page > 1 ? { offset } : {}),
     };
 
-    // CRITICAL: Strip empty/null/undefined values so Railway doesn't build broken PDL queries
+    // Strip empty/null/undefined values so Railway doesn't build broken queries
     const requestBody: Record<string, any> = Object.fromEntries(
       Object.entries(rawBody).filter(([_, v]) => v !== null && v !== undefined && v !== '')
     );
@@ -833,7 +833,7 @@ serve(async (req) => {
 
     // Handle 402 Payment Required - NO cache fallback (must match search criteria)
     if (response.status === 402) {
-      console.log('PDL credits exhausted (402) - returning empty results');
+      console.log('Search credits exhausted (402) - returning empty results');
       return new Response(
         JSON.stringify({
           error: 'Search credits exhausted. Please add more credits to continue searching.',
@@ -913,7 +913,7 @@ serve(async (req) => {
       console.log('Data is direct array format');
       rawLeads = data;
     } else if (data.data && Array.isArray(data.data)) {
-      console.log('Using data.data array (raw PDL)');
+      console.log('Using data.data array (raw response)');
       rawLeads = data.data;
     } else if (data.results && Array.isArray(data.results)) {
       console.log('Using data.results array');

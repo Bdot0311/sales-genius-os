@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 type IntentLabel = 'Cold' | 'Warm' | 'Hot' | 'Very Hot';
-type SignalType = 'lusha_contact' | 'lusha_company' | 'manual' | 'future_provider';
+type SignalType = 'prospeo_contact' | 'manual' | 'future_provider';
 
 interface ScoreResult {
   score: number;
@@ -247,7 +247,7 @@ function scoreLead(data: {
   const intentScore = Math.max(0, Math.min(100, icpFit + contactQuality + decisionMakerFit + companyFit + recency));
   const label = getIntentLabel(intentScore);
   const recommendedAngle = getRecommendedAngle(jt);
-  const signalType: SignalType = data.enrichedAt ? 'lusha_contact' : 'manual';
+  const signalType: SignalType = data.enrichedAt ? 'prospeo_contact' : 'manual';
   const signalDate = data.enrichedAt || new Date().toISOString();
 
   // Legacy fields (backwards compat with callers that read these)

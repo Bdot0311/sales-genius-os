@@ -20,12 +20,8 @@ const FREE_EMAIL_DOMAINS = new Set([
 
 function isJobTitle(name: string): boolean {
   const trimmed = name.trim();
-  if (!trimmed.includes(' ') && JOB_TITLE_PATTERNS.has(trimmed.toLowerCase())) {
-    return true;
-  }
-  if (/^(co-?founder|vice president|head of|chief .+ officer)$/i.test(trimmed)) {
-    return true;
-  }
+  if (!trimmed.includes(' ') && JOB_TITLE_PATTERNS.has(trimmed.toLowerCase())) return true;
+  if (/^(co-?founder|vice president|head of|chief .+ officer)$/i.test(trimmed)) return true;
   return false;
 }
 
@@ -43,6 +39,23 @@ function normalizeLinkedInUrl(url: string | null): string | null {
   }
 }
 
+async function prospeoRequest(apiKey: string, endpoint: string, body: Record<string, string>): Promise<any> {
+  const res = await fetch(`https://api.prospeo.io/${endpoint}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-KEY': apiKey,
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    console.warn(`Prospeo /${endpoint} returned ${res.status}:`, text);
+    return null;
+  }
+  return res.json();
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -50,7 +63,6 @@ serve(async (req) => {
 
   try {
     const { leadId } = await req.json();
-
     if (!leadId) throw new Error('Lead ID is required');
 
     const authHeader = req.headers.get('Authorization');
@@ -58,12 +70,11 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const lushaApiKey = Deno.env.get('LUSHA_API_KEY');
+    const prospeoApiKey = Deno.env.get('PROSPEO_API_KEY');
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-
     if (userError || !user) throw new Error('Invalid user token');
 
     console.log('Enriching lead for user:', user.id);
@@ -84,7 +95,6 @@ serve(async (req) => {
         .maybeSingle();
 
       if (!subscription || subscription.plan === 'free') {
-        console.log('Free tier user blocked from enrichment:', { userId: user.id });
         return new Response(
           JSON.stringify({
             error: 'Lead enrichment requires a paid plan. Upgrade to Growth ($49/mo) to unlock enrichment.',
@@ -117,7 +127,7 @@ serve(async (req) => {
 
     console.log('Enriching lead:', lead.contact_name, lead.company_name);
 
-    if (!lushaApiKey) throw new Error('Lusha API key not configured');
+    if (!prospeoApiKey) throw new Error('Prospeo API key not configured');
 
     const enrichmentData: Record<string, any> = {
       enrichment_status: 'enriched',
@@ -127,134 +137,103 @@ serve(async (req) => {
     const nameIsTitle = isJobTitle(lead.contact_name);
     if (nameIsTitle) console.log('Detected job title as contact name:', lead.contact_name);
 
-    // --- Person Enrichment via Lusha ---
+    // --- Person Enrichment via Prospeo ---
     let personFound = false;
-    if (lead.contact_email || lead.linkedin_url || (!nameIsTitle && lead.contact_name)) {
+    if (lead.linkedin_url || (!nameIsTitle && lead.contact_name)) {
       try {
-        const personParams: Record<string, string> = {};
+        let personData: any = null;
 
-        // Priority 1: LinkedIn URL
+        // Priority 1: LinkedIn URL → Prospeo linkedin-email-finder
         if (lead.linkedin_url) {
           const normalized = normalizeLinkedInUrl(lead.linkedin_url);
-          if (normalized) personParams.linkedInUrl = normalized;
+          if (normalized) {
+            console.log('Prospeo linkedin-email-finder for:', normalized);
+            personData = await prospeoRequest(prospeoApiKey, 'linkedin-email-finder', { url: normalized });
+          }
         }
 
-        // Priority 2: Email address
-        if (lead.contact_email) personParams.emailAddress = lead.contact_email;
-
-        // Priority 3: Name + Company (only if name is not a job title)
-        if (!nameIsTitle && lead.contact_name) {
+        // Priority 2: First + Last name + domain → Prospeo email-finder
+        if (!personData && !nameIsTitle && lead.contact_name) {
           const parts = lead.contact_name.trim().split(/\s+/);
           if (parts.length >= 2) {
-            personParams.firstName = parts[0];
-            personParams.lastName = parts.slice(1).join(' ');
-          } else if (parts.length === 1 && parts[0].length > 1) {
-            personParams.firstName = parts[0];
+            // Resolve domain from website or email
+            let domain = '';
+            if (lead.company_website) {
+              try {
+                const u = new URL(lead.company_website.startsWith('http') ? lead.company_website : `https://${lead.company_website}`);
+                domain = u.hostname.replace('www.', '');
+              } catch { /* ignore */ }
+            }
+            if (!domain && lead.contact_email) {
+              const d = lead.contact_email.split('@')[1];
+              if (d && !FREE_EMAIL_DOMAINS.has(d)) domain = d;
+            }
+            if (!domain && lead.company_name) {
+              // Use company name as last resort — Prospeo supports it
+              domain = lead.company_name;
+            }
+            if (domain) {
+              console.log('Prospeo email-finder for:', parts[0], parts.slice(1).join(' '), 'at', domain);
+              personData = await prospeoRequest(prospeoApiKey, 'email-finder', {
+                first_name: parts[0],
+                last_name: parts.slice(1).join(' '),
+                company: domain,
+              });
+            }
           }
         }
-        if (lead.company_name) personParams.company = lead.company_name;
 
-        if (personParams.linkedInUrl || personParams.emailAddress || (personParams.firstName && personParams.company)) {
-          const qs = new URLSearchParams(personParams).toString();
-          console.log('Lusha person params:', Object.keys(personParams).join(', '));
+        if (personData && !personData.error) {
+          const p = personData.response ?? personData;
+          personFound = true;
 
-          const personRes = await fetch(`https://api.lusha.com/contacts?${qs}`, {
-            headers: { 'api_key': lushaApiKey },
-          });
+          // Email
+          const email = p.email?.value ?? p.email;
+          if (email && !lead.contact_email) enrichmentData.contact_email = email;
 
-          if (personRes.ok) {
-            const json = await personRes.json();
-            const p = json?.data ?? json;
-            if (p && (p.firstName || p.fullName || p.emailAddresses?.length)) {
-              personFound = true;
+          // Name
+          const fullName = [p.first_name, p.last_name].filter(Boolean).join(' ');
+          if (nameIsTitle && fullName) enrichmentData.contact_name = fullName;
+          else if (fullName && !lead.contact_name) enrichmentData.contact_name = fullName;
 
-              const fullName = p.fullName ?? [p.firstName, p.lastName].filter(Boolean).join(' ');
-              if (nameIsTitle && fullName) {
-                enrichmentData.contact_name = fullName;
-              } else if (fullName && !lead.contact_name) {
-                enrichmentData.contact_name = fullName;
-              }
+          // Job info
+          if (p.job_title) enrichmentData.job_title = p.job_title;
+          if (p.seniority) enrichmentData.seniority = p.seniority;
+          if (p.linkedin_url) enrichmentData.linkedin_url = normalizeLinkedInUrl(p.linkedin_url) || p.linkedin_url;
 
-              if (p.title) enrichmentData.job_title = p.title;
-              if (p.department) enrichmentData.department = p.department;
-              if (p.seniority) enrichmentData.seniority = p.seniority;
-              if (p.linkedInUrl) enrichmentData.linkedin_url = normalizeLinkedInUrl(p.linkedInUrl) || p.linkedInUrl;
-
-              // Pick best email: professional first, then personal
-              const emails: Array<{ value: string; type?: string }> = p.emailAddresses ?? [];
-              if (emails.length && !lead.contact_email) {
-                const professional = emails.find((e) => e.type === 'professional' || e.type === 'work');
-                enrichmentData.contact_email = (professional ?? emails[0]).value;
-              }
-
-              // Pick best phone
-              const phones: Array<{ localizedNumber?: string; number?: string }> = p.phoneNumbers ?? [];
-              if (phones.length && !lead.contact_phone) {
-                enrichmentData.contact_phone = phones[0].localizedNumber ?? phones[0].number;
-              }
-
-              if (p.location) {
-                enrichmentData.notes = (lead.notes ? lead.notes + '\n' : '') + `Location: ${p.location}`;
-              }
-            }
-          } else {
-            const errText = await personRes.text();
-            console.warn('Lusha person enrich returned', personRes.status, errText);
-          }
-        } else {
-          console.warn('Skipping person enrichment: insufficient identifiers');
+          // Company info returned alongside person
+          if (p.company_name && !lead.company_name) enrichmentData.company_name = p.company_name;
+          if (p.company?.size) enrichmentData.employee_count = p.company.size;
+          if (p.company?.industry) enrichmentData.industry = p.company.industry;
         }
       } catch (personErr) {
         console.error('Person enrichment error:', personErr);
       }
     }
 
-    // --- Company Enrichment via Lusha ---
-    if (lead.company_name || lead.company_website || lead.contact_email) {
+    // --- Company Enrichment via Prospeo domain-search ---
+    if (!personFound && (lead.company_website || lead.contact_email || lead.company_name)) {
       try {
-        const companyParams: Record<string, string> = {};
-
-        // Prefer domain over name
+        let domain = '';
         if (lead.company_website) {
           try {
-            const url = new URL(lead.company_website.startsWith('http') ? lead.company_website : `https://${lead.company_website}`);
-            companyParams.domain = url.hostname.replace('www.', '');
-          } catch { /* ignore bad URL */ }
+            const u = new URL(lead.company_website.startsWith('http') ? lead.company_website : `https://${lead.company_website}`);
+            domain = u.hostname.replace('www.', '');
+          } catch { /* ignore */ }
+        }
+        if (!domain && lead.contact_email) {
+          const d = lead.contact_email.split('@')[1];
+          if (d && !FREE_EMAIL_DOMAINS.has(d)) domain = d;
         }
 
-        if (!companyParams.domain && lead.contact_email) {
-          const emailDomain = lead.contact_email.split('@')[1];
-          if (emailDomain && !FREE_EMAIL_DOMAINS.has(emailDomain)) {
-            companyParams.domain = emailDomain;
-          }
-        }
-
-        if (!companyParams.domain && lead.company_name) {
-          companyParams.name = lead.company_name;
-        }
-
-        if (Object.keys(companyParams).length > 0) {
-          const qs = new URLSearchParams(companyParams).toString();
-          const companyRes = await fetch(`https://api.lusha.com/company?${qs}`, {
-            headers: { 'api_key': lushaApiKey },
-          });
-
-          if (companyRes.ok) {
-            const json = await companyRes.json();
-            const c = json?.data ?? json;
-            if (c) {
-              if (c.website && !lead.company_website) enrichmentData.company_website = c.website;
-              if (c.linkedInUrl) enrichmentData.company_linkedin = normalizeLinkedInUrl(c.linkedInUrl) || c.linkedInUrl;
-              if (c.industry) enrichmentData.industry = c.industry;
-              if (c.description) enrichmentData.company_description = c.description;
-              // Lusha returns employeeRange ("51-200") and/or employeeCount (number)
-              if (c.employeeRange) enrichmentData.employee_count = c.employeeRange;
-              else if (c.employeeCount) enrichmentData.employee_count = String(c.employeeCount);
-              if (c.annualRevenue) enrichmentData.annual_revenue = c.annualRevenue;
-              if (c.technologies?.length) enrichmentData.technologies = c.technologies.slice(0, 20);
+        if (domain) {
+          console.log('Prospeo domain-search for:', domain);
+          const companyData = await prospeoRequest(prospeoApiKey, 'domain-search', { company: domain });
+          if (companyData && !companyData.error) {
+            const c = companyData.response ?? companyData;
+            if (c.emails?.length && !lead.contact_email) {
+              enrichmentData.contact_email = c.emails[0].email ?? c.emails[0];
             }
-          } else {
-            console.warn('Lusha company enrich returned', companyRes.status, await companyRes.text());
           }
         }
       } catch (companyErr) {
@@ -276,9 +255,9 @@ serve(async (req) => {
       if (!hasEmail && !hasLinkedin && !hasRealName) {
         noMatchReason = 'Not enough identifying data. Add a full name, email address, or LinkedIn URL and try again.';
       } else if (nameIsTitle && !hasEmail && !hasLinkedin) {
-        noMatchReason = `"${lead.contact_name}" looks like a job title, not a person's name. Add an email or LinkedIn URL to identify this contact.`;
+        noMatchReason = `"${lead.contact_name}" looks like a job title. Add an email or LinkedIn URL to identify this contact.`;
       } else {
-        noMatchReason = 'No matching records found in our data providers. Try adding more contact details.';
+        noMatchReason = 'No matching records found. Try adding more contact details.';
       }
     }
 
@@ -290,7 +269,6 @@ serve(async (req) => {
 
     if (updateError) throw updateError;
 
-    // Delegate scoring to score-lead (5-category intent scoring)
     if (enrichedFields.length > 0) {
       try {
         const scoreRes = await fetch(`${supabaseUrl}/functions/v1/score-lead`, {
@@ -302,11 +280,8 @@ serve(async (req) => {
           },
           body: JSON.stringify({ leadId }),
         });
-        if (!scoreRes.ok) {
-          console.error('score-lead returned', scoreRes.status, await scoreRes.text());
-        } else {
-          console.log('Lead scored after enrichment:', leadId);
-        }
+        if (!scoreRes.ok) console.error('score-lead returned', scoreRes.status);
+        else console.log('Lead scored after enrichment:', leadId);
       } catch (scoreErr) {
         console.error('Error calling score-lead after enrichment:', scoreErr);
       }
@@ -318,7 +293,7 @@ serve(async (req) => {
       lead_id: leadId,
       user_id: user.id,
       fields_enriched: enrichedFields,
-      source: 'lusha',
+      source: 'prospeo',
       status: enrichedFields.length > 0 ? 'success' : 'no_match',
       error_message: noMatchReason || null,
     });

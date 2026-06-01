@@ -102,7 +102,7 @@ export function useExternalLeads() {
       });
       
       if (data.credits_used) {
-        console.log(`PDL credits used: ${data.credits_used}`);
+        console.log(`Credits used: ${data.credits_used}`);
       }
       
       return newLeads;

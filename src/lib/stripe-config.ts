@@ -120,7 +120,7 @@ export const ADDON_CONFIG = {
   },
 } as const;
 
-// One-time credit top-up packs (Lusha-style)
+// One-time credit top-up packs
 export const TOPUP_PACKS = [
   {
     priceId: 'price_1T8vsKFTerosS6hitP0ffw6v',
