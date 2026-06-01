@@ -133,11 +133,11 @@ const Leads = () => {
                   return;
                 }
 
-                // Deduct credit before searching
-                const creditResult = await useCredit(1, `Lead search: ${query.substring(0, 50)}`);
-                if (!creditResult.success) {
-                  return;
-                }
+                // NOTE: Credit deduction is handled server-side by the
+                // fetch-external-leads edge function. We only do the
+                // client-side canSearch gate above so the UI can short-circuit
+                // before kicking off an external call. Deducting here would
+                // double-charge the user.
 
                 setAiSearchQuery(query);
                 setShowExternalLeads(true);

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
   ChevronRight, Menu, Search, Sparkles,
@@ -35,15 +36,16 @@ const NoiseFilter = () => (
 
 // ── Shared components ────────────────────────────────────────────────────
 
-interface AppleButtonProps { label?: string; full?: boolean; }
-const AppleButton = ({ label = 'Download SalesOS', full }: AppleButtonProps) => (
-  <button
+interface AppleButtonProps { label?: string; full?: boolean; to?: string; }
+const AppleButton = ({ label = 'Start free', full, to = '/auth' }: AppleButtonProps) => (
+  <Link
+    to={to}
     className={`group inline-flex items-center justify-center gap-2 rounded-full bg-white text-black font-medium text-sm px-5 py-3 transition-all hover:bg-white/90 active:scale-[0.98]${full ? ' w-full' : ''}`}
   >
     <AppleLogo className="w-4 h-4" />
     {label}
     <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-[1px]" />
-  </button>
+  </Link>
 );
 
 interface SectionEyebrowProps { label: string; tag?: string; }
@@ -132,8 +134,8 @@ const Hero = () => (
       transition={{ delay: 0.7, duration: 0.6 }}
       className="mt-10 flex flex-col items-center gap-3"
     >
-      <AppleButton />
-      <span className="text-xs text-white/40">Download for Intel / Apple Silicon</span>
+      <AppleButton label="Start free" />
+      <span className="text-xs text-white/40">Web-based — no download needed</span>
     </motion.div>
   </section>
 );
@@ -621,11 +623,14 @@ const FinalCTA = () => (
           — not a grind.
         </p>
         <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-          <AppleButton label="Download SalesOS" />
-          <button className="group inline-flex items-center gap-2 rounded-full border border-white/15 text-white text-sm font-medium px-5 py-3 hover:bg-white/5 transition-colors">
+          <AppleButton label="Start free" />
+          <a
+            href="mailto:support@bdotindustries.com?subject=Talk%20to%20sales"
+            className="group inline-flex items-center gap-2 rounded-full border border-white/15 text-white text-sm font-medium px-5 py-3 hover:bg-white/5 transition-colors"
+          >
             Talk to sales
             <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-[1px]" />
-          </button>
+          </a>
         </div>
       </div>
     </motion.div>
