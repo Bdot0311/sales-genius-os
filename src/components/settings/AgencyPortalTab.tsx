@@ -222,7 +222,34 @@ export const AgencyPortalTab = () => {
           )}
           <p className="text-xs text-muted-foreground">
             Revenue split: <span className="font-medium text-green-600">50% to you</span> · 50% to SalesOS.
-            Payouts processed monthly — email <a href="mailto:support@alephwave.io" className="underline">support@alephwave.io</a> to request a transfer.
+            Connect your Stripe account below to receive automatic monthly payouts. For any issues email <a href="mailto:support@bdotindustries.com" className="underline">support@bdotindustries.com</a>.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Stripe Payouts */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <DollarSign className="h-4 w-4" />
+            Payout Account
+          </CardTitle>
+          <CardDescription>
+            Connect your Stripe account to receive automatic monthly payouts of your 50% revenue share.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Button
+            variant="outline"
+            className="gap-2 w-full sm:w-auto"
+            onClick={() => window.open("https://connect.stripe.com/oauth/authorize?response_type=code&client_id=ca_placeholder&scope=read_write", "_blank")}
+          >
+            <ExternalLink className="h-4 w-4" />
+            Connect Stripe Account
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            Payouts are processed on the 1st of each month. Questions? Email{" "}
+            <a href="mailto:support@bdotindustries.com" className="underline">support@bdotindustries.com</a>.
           </p>
         </CardContent>
       </Card>
