@@ -5,12 +5,10 @@ import { AddLeadDialog } from "@/components/dashboard/AddLeadDialog";
 import { OnboardingChecklist } from "@/components/dashboard/OnboardingChecklist";
 import { DashboardTour } from "@/components/dashboard/DashboardTour";
 import { ProspectUsageMeter } from "@/components/dashboard/ProspectUsageMeter";
-import { SampleDataBanner } from "@/components/dashboard/SampleDataBanner";
 import QuickStartWizard from "@/components/onboarding/QuickStartWizard";
 import { TrendingUp, Users, DollarSign, Calendar, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
-import { SAMPLE_STATS } from "@/lib/sample-data";
 import { SEOHead } from "@/components/seo/SEOHead";
 
 const Dashboard = () => {
@@ -34,32 +32,28 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
-    if (!isFreeTier) {
-      loadStats();
-    }
+    loadStats();
     checkFirstVisit();
 
-    if (!isFreeTier) {
-      const leadsChannel = supabase
-        .channel('dashboard-leads-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => loadStats())
-        .subscribe();
-      const dealsChannel = supabase
-        .channel('dashboard-deals-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'deals' }, () => loadStats())
-        .subscribe();
-      const activitiesChannel = supabase
-        .channel('dashboard-activities-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'activities' }, () => loadStats())
-        .subscribe();
+    const leadsChannel = supabase
+      .channel('dashboard-leads-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => loadStats())
+      .subscribe();
+    const dealsChannel = supabase
+      .channel('dashboard-deals-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'deals' }, () => loadStats())
+      .subscribe();
+    const activitiesChannel = supabase
+      .channel('dashboard-activities-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'activities' }, () => loadStats())
+      .subscribe();
 
-      return () => {
-        supabase.removeChannel(leadsChannel);
-        supabase.removeChannel(dealsChannel);
-        supabase.removeChannel(activitiesChannel);
-      };
-    }
-  }, [isFreeTier]);
+    return () => {
+      supabase.removeChannel(leadsChannel);
+      supabase.removeChannel(dealsChannel);
+      supabase.removeChannel(activitiesChannel);
+    };
+  }, []);
 
   const checkFirstVisit = async () => {
     try {
@@ -100,13 +94,11 @@ const Dashboard = () => {
     }
   };
 
-  const displayStats = isFreeTier ? SAMPLE_STATS : stats;
-
   const statCards = [
-    { title: "Total Leads", value: displayStats.totalLeads, icon: Users, color: "text-blue-400" },
-    { title: "Active Deals", value: displayStats.totalDeals, icon: TrendingUp, color: "text-violet-400" },
-    { title: "Pipeline Value", value: `$${displayStats.totalValue.toLocaleString()}`, icon: DollarSign, color: "text-emerald-400" },
-    { title: "Meetings This Week", value: displayStats.meetingsThisWeek, icon: Calendar, color: "text-amber-400" },
+    { title: "Total Leads", value: stats.totalLeads, icon: Users, color: "text-blue-400" },
+    { title: "Active Deals", value: stats.totalDeals, icon: TrendingUp, color: "text-violet-400" },
+    { title: "Pipeline Value", value: `$${stats.totalValue.toLocaleString()}`, icon: DollarSign, color: "text-emerald-400" },
+    { title: "Meetings This Week", value: stats.meetingsThisWeek, icon: Calendar, color: "text-amber-400" },
   ];
 
   return (
@@ -121,7 +113,7 @@ const Dashboard = () => {
         {showChecklist && (
           <OnboardingChecklist onClose={() => setShowChecklist(false)} onStartTour={() => setShowTour(true)} />
         )}
-        {isFreeTier && <SampleDataBanner />}
+        
 
         {/* Header row */}
         <div className="flex items-center justify-between">
@@ -184,10 +176,10 @@ const Dashboard = () => {
               <p className="text-[11px] font-semibold text-primary uppercase tracking-wider">AI Insight</p>
             </div>
             <p className="text-sm text-foreground/80 leading-relaxed flex-1">
-              {isFreeTier
-                ? `${displayStats.totalLeads} sample leads, ${displayStats.totalDeals} demo deals worth $${displayStats.totalValue.toLocaleString()}. Upgrade to track real data.`
-                : stats.totalLeads > 0
-                  ? `${stats.totalLeads} lead${stats.totalLeads > 1 ? 's' : ''}, ${stats.totalDeals} deal${stats.totalDeals !== 1 ? 's' : ''} worth $${stats.totalValue.toLocaleString()}. ${stats.meetingsThisWeek > 0 ? `${stats.meetingsThisWeek} meeting${stats.meetingsThisWeek > 1 ? 's' : ''} this week.` : 'No meetings this week yet.'}`
+              {stats.totalLeads > 0
+                ? `${stats.totalLeads} lead${stats.totalLeads > 1 ? 's' : ''}, ${stats.totalDeals} deal${stats.totalDeals !== 1 ? 's' : ''} worth $${stats.totalValue.toLocaleString()}. ${stats.meetingsThisWeek > 0 ? `${stats.meetingsThisWeek} meeting${stats.meetingsThisWeek > 1 ? 's' : ''} this week.` : 'No meetings this week yet.'}`
+                : isFreeTier
+                  ? 'Free plan: 10 lead searches and 10 outbound emails this month. Upgrade for unlimited capacity.'
                   : 'Add your first lead to get AI-powered insights and coaching.'}
             </p>
             <button
