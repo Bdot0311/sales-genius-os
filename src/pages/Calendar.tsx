@@ -14,8 +14,8 @@ import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
-import { SampleDataBanner } from "@/components/dashboard/SampleDataBanner";
-import { SAMPLE_MEETINGS } from "@/lib/sample-data";
+
+
 
 const Calendar = () => {
   const { toast } = useToast();
