@@ -258,10 +258,8 @@ const Settings = () => {
       <div className="px-6 py-6 space-y-6 max-w-[1400px] mx-auto">
         <Tabs defaultValue="profile" className="space-y-6">
           <div className="bg-card border rounded-lg p-3 mb-6">
-            <div className="space-y-2">
-              {/* First row of tabs */}
-              <div className="flex justify-center">
-                <TabsList className="h-auto inline-flex flex-wrap justify-center gap-2 bg-transparent p-0">
+            <div className="flex justify-center">
+              <TabsList className="h-auto inline-flex flex-wrap justify-center gap-2 bg-transparent p-0">
                 <TabsTrigger value="profile" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
                   <User className="h-4 w-4" />
                   Profile
@@ -286,74 +284,63 @@ const Settings = () => {
                   <Bell className="h-4 w-4" />
                   Notifications
                 </TabsTrigger>
-                </TabsList>
-              </div>
-
-              {/* White Label + Agency Portal — always visible */}
-              <div className="flex justify-center">
-                <TabsList className="h-auto inline-flex flex-wrap justify-center gap-2 bg-transparent p-0">
-                  <TabsTrigger value="white-label" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
-                    <Palette className="h-4 w-4" />
-                    White Label
-                  </TabsTrigger>
-                  <TabsTrigger value="agency-portal" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
-                    <Building2 className="h-4 w-4" />
-                    Agency Portal
-                  </TabsTrigger>
-                </TabsList>
-              </div>
-
-              {/* Pro / Agency tools */}
-              {(isAdmin || subscription?.plan === 'pro' || subscription?.plan === 'agency') && (
-                <div className="flex justify-center">
-                  <TabsList className="h-auto inline-flex flex-wrap justify-center gap-2 bg-transparent p-0">
-                  <TabsTrigger value="monitoring" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
-                    <Activity className="h-4 w-4" />
-                    Monitor
-                  </TabsTrigger>
-                  <TabsTrigger value="alerts" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
-                    <Bell className="h-4 w-4" />
-                    Alerts
-                  </TabsTrigger>
-                  <TabsTrigger value="api-keys" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
-                    <Key className="h-4 w-4" />
-                    API Keys
-                  </TabsTrigger>
-                  <TabsTrigger value="api-versions" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
-                    <GitBranch className="h-4 w-4" />
-                    Versions
-                  </TabsTrigger>
-                  <TabsTrigger value="graphql" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
-                    <Code2 className="h-4 w-4" />
-                    GraphQL
-                  </TabsTrigger>
-                  <TabsTrigger value="webhooks" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
-                    <Webhook className="h-4 w-4" />
-                    Webhooks
-                  </TabsTrigger>
-                  <TabsTrigger value="webhook-logs" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
-                    <FileText className="h-4 w-4" />
-                    Logs
-                  </TabsTrigger>
-                  <TabsTrigger value="webhook-replay" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
-                    <RotateCcw className="h-4 w-4" />
-                    Replay
-                  </TabsTrigger>
-                  <TabsTrigger value="team" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
-                    <Users className="h-4 w-4" />
-                    Team
-                  </TabsTrigger>
-                  <TabsTrigger value="activity" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
-                    <History className="h-4 w-4" />
-                    Activity
-                  </TabsTrigger>
-                  <TabsTrigger value="audit" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
-                    <FileSearch className="h-4 w-4" />
-                    Audit
-                  </TabsTrigger>
-                  </TabsList>
-                </div>
-              )}
+                <TabsTrigger value="white-label" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                  <Palette className="h-4 w-4" />
+                  White Label
+                </TabsTrigger>
+                <TabsTrigger value="agency-portal" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                  <Building2 className="h-4 w-4" />
+                  Agency Portal
+                </TabsTrigger>
+                {(isAdmin || subscription?.plan === 'pro' || subscription?.plan === 'agency') && (
+                  <>
+                    <TabsTrigger value="monitoring" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                      <Activity className="h-4 w-4" />
+                      Monitor
+                    </TabsTrigger>
+                    <TabsTrigger value="alerts" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                      <Bell className="h-4 w-4" />
+                      Alerts
+                    </TabsTrigger>
+                    <TabsTrigger value="api-keys" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                      <Key className="h-4 w-4" />
+                      API Keys
+                    </TabsTrigger>
+                    <TabsTrigger value="api-versions" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                      <GitBranch className="h-4 w-4" />
+                      Versions
+                    </TabsTrigger>
+                    <TabsTrigger value="graphql" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                      <Code2 className="h-4 w-4" />
+                      GraphQL
+                    </TabsTrigger>
+                    <TabsTrigger value="webhooks" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                      <Webhook className="h-4 w-4" />
+                      Webhooks
+                    </TabsTrigger>
+                    <TabsTrigger value="webhook-logs" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                      <FileText className="h-4 w-4" />
+                      Logs
+                    </TabsTrigger>
+                    <TabsTrigger value="webhook-replay" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                      <RotateCcw className="h-4 w-4" />
+                      Replay
+                    </TabsTrigger>
+                    <TabsTrigger value="team" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                      <Users className="h-4 w-4" />
+                      Team
+                    </TabsTrigger>
+                    <TabsTrigger value="activity" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                      <History className="h-4 w-4" />
+                      Activity
+                    </TabsTrigger>
+                    <TabsTrigger value="audit" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                      <FileSearch className="h-4 w-4" />
+                      Audit
+                    </TabsTrigger>
+                  </>
+                )}
+              </TabsList>
             </div>
           </div>
 
