@@ -735,6 +735,7 @@ serve(async (req) => {
     const railwayBaseUrl = Deno.env.get('RAILWAY_LEADS_API_URL');
     if (!railwayBaseUrl) {
       console.error('RAILWAY_LEADS_API_URL not configured');
+      await refundCredit('provider_not_configured');
       return new Response(
         JSON.stringify({ error: 'Lead data provider not configured', leads: [] }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
