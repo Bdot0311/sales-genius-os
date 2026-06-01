@@ -2641,8 +2641,10 @@ For logos, use HTML:
                 <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                 <span>Open tracking pixels can hurt cold email deliverability. <strong>Reply rate</strong> is your real metric — use opens as directional only.</span>
               </div>
+              <EmailUsagePanel />
               <EmailPerformanceStats />
               <p className="text-xs text-muted-foreground text-center">Focus on reply rate as your primary metric.</p>
+
             </div>
           </TabsContent>
         </Tabs>
