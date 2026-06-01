@@ -94,10 +94,6 @@ const Calendar = () => {
   };
 
   const handleCreateActivity = async () => {
-    if (isFreeTier) {
-      toast({ title: "Sample mode", description: "Upgrade to schedule real meetings." });
-      return;
-    }
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
