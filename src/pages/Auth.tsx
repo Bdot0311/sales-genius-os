@@ -9,11 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { SEOHead } from "@/components/seo/SEOHead";
+import { useWhiteLabel } from "@/hooks/use-white-label";
 
 const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const { settings: wlSettings, isCustomDomain } = useWhiteLabel();
 
   // Capture agency invite/referral params before the user signs up.
   // Store in sessionStorage so they survive email-verification redirects.
@@ -266,6 +268,24 @@ const Auth = () => {
       </Button>
 
       <div className="relative z-10 w-full max-w-md mx-auto space-y-4">
+        {/* Show agency branding on custom domains, SalesOS branding on own domain */}
+        {isCustomDomain && wlSettings ? (
+          <div className="flex flex-col items-center gap-3 mb-2">
+            {wlSettings.logo_url ? (
+              <img src={wlSettings.logo_url} alt={wlSettings.company_name || "Logo"} className="h-10 object-contain" />
+            ) : (
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-lg"
+                style={{ background: wlSettings.primary_color || "#8B5CF6" }}
+              >
+                {(wlSettings.company_name || "A").charAt(0).toUpperCase()}
+              </div>
+            )}
+            {wlSettings.company_name && (
+              <h1 className="text-xl font-semibold">{wlSettings.company_name}</h1>
+            )}
+          </div>
+        ) : null}
         <div className="text-center px-0 space-y-2">
           <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
             Already have access? Sign in below. New here? You can explore the workflow first, then choose the plan that fits your outbound needs.

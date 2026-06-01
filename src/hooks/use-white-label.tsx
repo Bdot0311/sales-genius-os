@@ -50,11 +50,15 @@ const applyWhiteLabel = (data: WhiteLabelSettings) => {
   }
 };
 
+const OWN_DOMAINS = ["salesos.alephwavex.io", "localhost", "127.0.0.1"];
+
 export const useWhiteLabel = () => {
   const [settings, setSettings] = useState<WhiteLabelSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  // true when this user is viewing through someone else's white-label (agency client)
+  // true when the app is running on an agency's custom domain
+  const [isCustomDomain, setIsCustomDomain] = useState(false);
+  // true when a logged-in user is a client under an agency
   const [isAgencyClient, setIsAgencyClient] = useState(false);
 
   const loadSettings = useCallback(async () => {
@@ -62,11 +66,36 @@ export const useWhiteLabel = () => {
       setLoading(true);
       setError(null);
 
+      const hostname = typeof window !== "undefined" ? window.location.hostname : "";
+      const isAgencyDomain = !!hostname && !OWN_DOMAINS.some(d => hostname === d || hostname.endsWith(`.${d}`));
+
+      // ── Custom domain ──────────────────────────────────────────────────────
+      // When the app is served from app.theiragency.com (a verified custom domain
+      // set by an agency owner), load that agency's branding globally — regardless
+      // of who is logged in. SalesOS branding is completely hidden on these domains.
+      if (isAgencyDomain) {
+        const { data: domainWl } = await supabase
+          .from("white_label_settings")
+          .select("*")
+          .eq("custom_domain", hostname)
+          .eq("domain_verified", true)
+          .maybeSingle();
+
+        if (domainWl) {
+          setSettings(domainWl);
+          applyWhiteLabel(domainWl);
+          setIsCustomDomain(true);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // ── Logged-in user ─────────────────────────────────────────────────────
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
 
-      // Check if this user is a client under an agency — if so, load the agency's
-      // branding so the platform looks like the agency's own product.
+      // If this user is an active client under an agency, load the agency's
+      // branding so the entire dashboard looks like the agency's own product.
       const { data: agencyLink } = await supabase
         .from("agency_clients")
         .select("agency_id")
@@ -118,5 +147,5 @@ export const useWhiteLabel = () => {
     }
   }, []);
 
-  return { settings, loading, error, isAgencyClient, updateSettings, reload: loadSettings };
+  return { settings, loading, error, isCustomDomain, isAgencyClient, updateSettings, reload: loadSettings };
 };
