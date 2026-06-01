@@ -1297,7 +1297,21 @@ Return ONLY the corrected email body. No subject line. No explanation. No "Here 
         }
       });
 
+      // 429 monthly/daily cap responses come back as FunctionsHttpError
+      const errCtx: any = (error as any)?.context;
+      if (errCtx?.status === 429) {
+        try {
+          const payload = await errCtx.json();
+          const { showSendError } = await import("@/lib/handle-send-error");
+          showSendError(429, payload);
+        } catch {
+          toast({ title: "Send limit reached", description: "Upgrade your plan to keep sending.", variant: "destructive" });
+        }
+        setIsSending(false);
+        return;
+      }
       if (error) throw error;
+
       
       // Store info for follow-up suggestion before clearing form
       const sentLeadInfo = {
