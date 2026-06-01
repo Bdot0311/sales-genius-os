@@ -252,9 +252,12 @@ serve(async (req) => {
               .eq("user_id", email.user_id);
           }
 
-          // Increment daily counter
-          await supabase.from('subscriptions').update({ daily_emails_sent: (ul?.sent || 0) + 1 }).eq('user_id', email.user_id);
-          if (ul) ul.sent += 1;
+          // Increment daily + monthly counters
+          await supabase.from('subscriptions').update({
+            daily_emails_sent: (ul?.dailySent || 0) + 1,
+            monthly_emails_sent: (ul?.monthlySent || 0) + 1,
+          } as any).eq('user_id', email.user_id);
+          if (ul) { ul.dailySent += 1; ul.monthlySent += 1; }
 
           processed++;
           console.log(`Sent scheduled email ${email.id} to ${email.to_email}`);
