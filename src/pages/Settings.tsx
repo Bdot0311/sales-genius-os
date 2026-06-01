@@ -15,7 +15,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { toast } from "sonner";
-import { CreditCard, TrendingUp, Check, RefreshCw, User, Save, Loader2, Palette, Activity, Bell, Key, GitBranch, Code2, Webhook, FileText, RotateCcw, Users, History, FileSearch, Globe, Coins, ExternalLink, Settings2, Copy, Gift, MapPin, Shield, AlertTriangle } from "lucide-react";
+import { CreditCard, TrendingUp, Check, RefreshCw, User, Save, Loader2, Palette, Activity, Bell, Key, GitBranch, Code2, Webhook, FileText, RotateCcw, Users, History, FileSearch, Globe, Coins, ExternalLink, Settings2, Copy, Gift, MapPin, Shield, AlertTriangle, Building2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { CAN_SPAM_PENALTY, generateComplianceFooter } from "@/lib/compliance";
 import { Switch } from "@/components/ui/switch";
@@ -36,11 +36,14 @@ import { GraphQLPlayground } from "@/components/settings/GraphQLPlayground";
 import { CreditsUsageTab } from "@/components/settings/CreditsUsageTab";
 import { ChangePasswordCard } from "@/components/settings/ChangePasswordCard";
 import NotificationsTab from "@/components/settings/NotificationsTab";
+import { AgencyPortalTab } from "@/components/settings/AgencyPortalTab";
+import { useAdmin } from "@/hooks/use-admin";
 
 const Settings = () => {
   const { subscription, loading: subLoading } = useSubscription();
   const { usage, loading: usageLoading } = useLeadsUsage();
   const { manualSync } = useSubscriptionSync();
+  const { isAdmin } = useAdmin();
   const [syncing, setSyncing] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [profile, setProfile] = useState({
@@ -287,7 +290,7 @@ const Settings = () => {
                   <Bell className="h-4 w-4" />
                   Notifications
                 </TabsTrigger>
-                {(subscription?.plan === 'pro' || subscription?.plan === 'agency') && (
+                {(isAdmin || subscription?.plan === 'pro' || subscription?.plan === 'agency') && (
                   <>
                     <TabsTrigger value="white-label" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
                       <Palette className="h-4 w-4" />
@@ -307,11 +310,17 @@ const Settings = () => {
                     </TabsTrigger>
                   </>
                 )}
+                {(isAdmin || subscription?.plan === 'agency') && (
+                  <TabsTrigger value="agency-portal" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                    <Building2 className="h-4 w-4" />
+                    Agency Portal
+                  </TabsTrigger>
+                )}
                 </TabsList>
               </div>
 
               {/* Second row of tabs (Pro and Agency) */}
-              {(subscription?.plan === 'pro' || subscription?.plan === 'agency') && (
+              {(isAdmin || subscription?.plan === 'pro' || subscription?.plan === 'agency') && (
                 <div className="flex justify-center">
                   <TabsList className="h-auto inline-flex flex-wrap justify-center gap-2 bg-transparent p-0">
                   <TabsTrigger value="api-versions" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
@@ -886,7 +895,13 @@ const Settings = () => {
             })()}
           </TabsContent>
 
-          {(subscription?.plan === 'pro' || subscription?.plan === 'agency') && (
+          {(isAdmin || subscription?.plan === 'agency') && (
+            <TabsContent value="agency-portal" className="space-y-6">
+              <AgencyPortalTab />
+            </TabsContent>
+          )}
+
+          {(isAdmin || subscription?.plan === 'pro' || subscription?.plan === 'agency') && (
             <>
               <TabsContent value="white-label">
                 <WhiteLabelTab />
