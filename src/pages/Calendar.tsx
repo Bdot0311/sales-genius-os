@@ -229,7 +229,7 @@ const Calendar = () => {
                   <Select value={newActivity.lead_id} onValueChange={(value) => setNewActivity({ ...newActivity, lead_id: value })}>
                     <SelectTrigger><SelectValue placeholder="Select a lead" /></SelectTrigger>
                     <SelectContent>
-                      {(isFreeTier ? [] : leads).map((lead) => (
+                      {leads.map((lead) => (
                         <SelectItem key={lead.id} value={lead.id}>{lead.contact_name} - {lead.company_name}</SelectItem>
                       ))}
                     </SelectContent>
