@@ -140,6 +140,7 @@ const paidPlans: PaidPlan[] = [
     monthlyProspects: 15000,
     yearlyProspects: 180000,
     dailyLimit: "1,500 prospects per day",
+    monthlyEmails: -1,
     features: [
       "Everything in Pro, plus:",
       "White-label client portal",
