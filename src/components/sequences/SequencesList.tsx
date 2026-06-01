@@ -158,6 +158,8 @@ const SEQUENCE_TEMPLATES = [
 export function SequencesList() {
   const navigate = useNavigate();
   const { sequences, isLoading, createSequence, updateSequence, deleteSequence } = useSequences();
+  const { data: sequenceUsage } = useSequenceUsage();
+
   const { features, getLimit, isAdmin, currentPlan } = usePlanFeatures();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createMode, setCreateMode] = useState<"choose" | "scratch" | "template">("choose");
