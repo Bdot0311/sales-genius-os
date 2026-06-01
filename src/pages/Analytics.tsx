@@ -66,23 +66,19 @@ const Analytics = () => {
   };
 
   useEffect(() => {
-    if (!isFreeTier) {
-      loadAnalytics();
-      const leadsChannel = supabase.channel('analytics-leads').on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => loadAnalytics()).subscribe();
-      const dealsChannel = supabase.channel('analytics-deals').on('postgres_changes', { event: '*', schema: 'public', table: 'deals' }, () => loadAnalytics()).subscribe();
-      return () => { supabase.removeChannel(leadsChannel); supabase.removeChannel(dealsChannel); };
-    } else {
-      setLoading(false);
-    }
-  }, [isFreeTier]);
+    loadAnalytics();
+    const leadsChannel = supabase.channel('analytics-leads').on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => loadAnalytics()).subscribe();
+    const dealsChannel = supabase.channel('analytics-deals').on('postgres_changes', { event: '*', schema: 'public', table: 'deals' }, () => loadAnalytics()).subscribe();
+    return () => { supabase.removeChannel(leadsChannel); supabase.removeChannel(dealsChannel); };
+  }, []);
 
-  if (planLoading || (!isFreeTier && loading)) {
+  if (planLoading || loading) {
     return <DashboardLayout><div className="flex items-center justify-center h-64"><Loader2 className="w-12 h-12 text-muted-foreground animate-spin" /></div></DashboardLayout>;
   }
 
-  const displayStats = isFreeTier ? SAMPLE_STATS : stats;
-  const displayDealsByStage = isFreeTier ? SAMPLE_ANALYTICS.dealsByStage : dealsByStage;
-  const displayLeadsOverTime = isFreeTier ? SAMPLE_ANALYTICS.leadsOverTime : leadsOverTime;
+  const displayStats = stats;
+  const displayDealsByStage = dealsByStage;
+  const displayLeadsOverTime = leadsOverTime;
   const COLORS = ["hsl(var(--primary))", "hsl(var(--secondary))", "hsl(var(--accent))", "#8884d8", "#82ca9d"];
 
   const statCards = [
