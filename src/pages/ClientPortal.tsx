@@ -89,10 +89,10 @@ const ClientPortal = () => {
             if (leadIds.length > 0) {
               const { data: leadsData } = await supabase
                 .from("leads")
-                .select("id, name, company_name")
+                .select("id, contact_name, company_name")
                 .in("id", leadIds);
               if (leadsData) {
-                leadsData.forEach(l => { leadsMap[l.id] = { name: l.name, company: l.company_name || "" }; });
+                leadsData.forEach(l => { leadsMap[l.id] = { name: l.contact_name || "Unknown", company: l.company_name || "" }; });
               }
             }
 

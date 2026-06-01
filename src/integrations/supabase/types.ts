@@ -98,6 +98,54 @@ export type Database = {
         }
         Relationships: []
       }
+      agency_clients: {
+        Row: {
+          agency_earnings_cents: number
+          agency_id: string
+          client_user_id: string | null
+          created_at: string
+          id: string
+          invite_email: string | null
+          invite_token: string
+          joined_at: string | null
+          monthly_value_cents: number
+          plan: string | null
+          status: string
+          total_earnings_cents: number
+          updated_at: string
+        }
+        Insert: {
+          agency_earnings_cents?: number
+          agency_id: string
+          client_user_id?: string | null
+          created_at?: string
+          id?: string
+          invite_email?: string | null
+          invite_token?: string
+          joined_at?: string | null
+          monthly_value_cents?: number
+          plan?: string | null
+          status?: string
+          total_earnings_cents?: number
+          updated_at?: string
+        }
+        Update: {
+          agency_earnings_cents?: number
+          agency_id?: string
+          client_user_id?: string | null
+          created_at?: string
+          id?: string
+          invite_email?: string | null
+          invite_token?: string
+          joined_at?: string | null
+          monthly_value_cents?: number
+          plan?: string | null
+          status?: string
+          total_earnings_cents?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       agent_actions: {
         Row: {
           action_type: string
@@ -2949,6 +2997,7 @@ export type Database = {
           id: string
           logo_url: string | null
           primary_color: string | null
+          referral_code: string | null
           secondary_color: string | null
           updated_at: string
           user_id: string
@@ -2963,6 +3012,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           primary_color?: string | null
+          referral_code?: string | null
           secondary_color?: string | null
           updated_at?: string
           user_id: string
@@ -2977,6 +3027,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           primary_color?: string | null
+          referral_code?: string | null
           secondary_color?: string | null
           updated_at?: string
           user_id?: string
