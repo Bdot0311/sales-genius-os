@@ -116,6 +116,7 @@ const paidPlans: PaidPlan[] = [
     monthlyProspects: 5000,
     yearlyProspects: 60000,
     dailyLimit: "500 prospects per day",
+    monthlyEmails: 1000000,
     features: [
       "Everything in Growth, plus:",
       "Sequence branching & A/B testing",
