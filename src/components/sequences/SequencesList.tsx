@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSequences } from "@/hooks/use-sequences";
+import { useSequenceUsage } from "@/hooks/use-email-usage";
+
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -492,7 +494,12 @@ export function SequencesList() {
                     <Clock className="w-4 h-4" />
                     <span>{formatDistanceToNow(new Date(sequence.updated_at), { addSuffix: true })}</span>
                   </div>
+                  <div className="flex items-center gap-1 ml-auto" title="Emails sent this month">
+                    <Mail className="w-4 h-4" />
+                    <span>{(sequenceUsage?.find(u => u.sequence_id === sequence.id)?.sent_this_month ?? 0).toLocaleString()}/mo</span>
+                  </div>
                 </div>
+
                 {/* A/B Test toggle */}
                 <div className="flex items-center justify-between mt-3 pt-3 border-t border-border" onClick={(e) => e.stopPropagation()}>
                   <span className="text-xs text-muted-foreground">A/B Test</span>
