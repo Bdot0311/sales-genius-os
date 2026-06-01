@@ -2350,6 +2350,8 @@ export type Database = {
           last_stripe_event_at: string | null
           last_stripe_event_id: string | null
           leads_limit: number
+          monthly_emails_reset_at: string | null
+          monthly_emails_sent: number
           plan: Database["public"]["Enums"]["subscription_plan"]
           search_credits_addon: number
           search_credits_base: number
@@ -2380,6 +2382,8 @@ export type Database = {
           last_stripe_event_at?: string | null
           last_stripe_event_id?: string | null
           leads_limit?: number
+          monthly_emails_reset_at?: string | null
+          monthly_emails_sent?: number
           plan?: Database["public"]["Enums"]["subscription_plan"]
           search_credits_addon?: number
           search_credits_base?: number
@@ -2410,6 +2414,8 @@ export type Database = {
           last_stripe_event_at?: string | null
           last_stripe_event_id?: string | null
           leads_limit?: number
+          monthly_emails_reset_at?: string | null
+          monthly_emails_sent?: number
           plan?: Database["public"]["Enums"]["subscription_plan"]
           search_credits_addon?: number
           search_credits_base?: number
@@ -3077,6 +3083,10 @@ export type Database = {
       }
       get_maintenance_message: { Args: never; Returns: string }
       get_maintenance_status: { Args: never; Returns: boolean }
+      get_monthly_email_limit: {
+        Args: { _plan: Database["public"]["Enums"]["subscription_plan"] }
+        Returns: number
+      }
       get_user_leads_usage: {
         Args: never
         Returns: {
