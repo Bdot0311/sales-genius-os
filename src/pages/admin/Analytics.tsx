@@ -7,6 +7,7 @@ import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, Cart
 import { TrendingUp, Users, DollarSign, CreditCard, BarChart3, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { SEOMonitorTab } from "@/components/admin/SEOMonitorTab";
 
 interface SubscriptionData {
   user_id: string;
