@@ -113,7 +113,7 @@ const Dashboard = () => {
         {showChecklist && (
           <OnboardingChecklist onClose={() => setShowChecklist(false)} onStartTour={() => setShowTour(true)} />
         )}
-        {isFreeTier && <SampleDataBanner />}
+        
 
         {/* Header row */}
         <div className="flex items-center justify-between">
