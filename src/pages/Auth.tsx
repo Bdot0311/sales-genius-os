@@ -15,6 +15,33 @@ const Auth = () => {
   const location = useLocation();
   const { toast } = useToast();
 
+  // Capture agency invite/referral params before the user signs up.
+  // Store in sessionStorage so they survive email-verification redirects.
+  const inviteToken = useMemo(() => new URLSearchParams(location.search).get("invite"), [location.search]);
+  const refCode = useMemo(() => new URLSearchParams(location.search).get("ref"), [location.search]);
+
+  useEffect(() => {
+    if (inviteToken) sessionStorage.setItem("agency_invite_token", inviteToken);
+    if (refCode) sessionStorage.setItem("agency_ref_code", refCode);
+  }, [inviteToken, refCode]);
+
+  // After sign-in or sign-up, attempt to link user to agency if params were present.
+  const linkAgency = async (token: string) => {
+    const invite = sessionStorage.getItem("agency_invite_token");
+    const ref = sessionStorage.getItem("agency_ref_code");
+    if (!invite && !ref) return;
+    try {
+      await supabase.functions.invoke("link-agency-client", {
+        body: invite ? { invite_token: invite } : { ref_code: ref },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      sessionStorage.removeItem("agency_invite_token");
+      sessionStorage.removeItem("agency_ref_code");
+    } catch (e) {
+      console.warn("Agency link failed:", e);
+    }
+  };
+
   // Supabase recovery redirects often encode `type=recovery` in the URL hash (after #)
   // not in the query string. We must check BOTH.
   const recoveryType = useMemo(() => {
@@ -53,8 +80,9 @@ const Auth = () => {
         return;
       }
 
-      // Normal flow: redirect to dashboard when signed in
+      // Normal flow: link agency if needed, then redirect to dashboard
       if (event === "SIGNED_IN" && session) {
+        await linkAgency(session.access_token);
         navigate("/dashboard");
       }
     });
