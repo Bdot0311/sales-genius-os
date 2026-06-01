@@ -476,6 +476,10 @@ export const Pricing = () => {
                         : `${plan.monthlyProspects.toLocaleString()} prospects/month`}
                     </p>
                     <p className="text-xs mt-0.5" style={{ color: "hsl(0 0% 100% / 0.6)" }}>{plan.dailyLimit}</p>
+                    <p className="text-sm font-medium mt-2 pt-2" style={{ color: isHighlighted ? "hsl(0 0% 95%)" : "hsl(0 0% 88%)", borderTop: "1px solid hsl(261 75% 50% / 0.14)" }}>
+                      {plan.monthlyEmails === -1 ? "Unlimited emails/month" : `${plan.monthlyEmails.toLocaleString()} emails/month`}
+                    </p>
+                    <p className="text-xs mt-0.5" style={{ color: "hsl(0 0% 100% / 0.6)" }}>Send pace controlled in Outreach settings</p>
                   </div>
                 )}
 
