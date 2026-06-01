@@ -83,8 +83,42 @@
     />
     <noscript><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,800;1,800&display=swap" rel="stylesheet" /></noscript>
 
-    <!-- JSON-LD is rendered by React components (StructuredData.tsx) to avoid duplication.
-         Non-JS crawlers rely on the #static-content div below for textual context. -->
+    <!-- Homepage JSON-LD: Organization, WebSite, FAQPage (mirrors #static-content FAQs) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://salesos.alephwavex.io/#organization",
+          "name": "SalesOS",
+          "url": "https://salesos.alephwavex.io/",
+          "logo": "https://salesos.alephwavex.io/salesos-og.png"
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://salesos.alephwavex.io/#website",
+          "url": "https://salesos.alephwavex.io/",
+          "name": "SalesOS",
+          "publisher": { "@id": "https://salesos.alephwavex.io/#organization" },
+          "inLanguage": "en-US"
+        },
+        {
+          "@type": "FAQPage",
+          "@id": "https://salesos.alephwavex.io/#faq",
+          "mainEntity": [
+            { "@type": "Question", "name": "What is SalesOS?", "acceptedAnswer": { "@type": "Answer", "text": "SalesOS is a B2B prospecting and outreach platform that helps teams go from ICP definition to live outreach faster." } },
+            { "@type": "Question", "name": "Do I need boolean search skills to use it?", "acceptedAnswer": { "@type": "Answer", "text": "No. SalesOS is built around plain-English targeting." } },
+            { "@type": "Question", "name": "Can I try it before paying?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. You can start free and upgrade when you are ready." } },
+            { "@type": "Question", "name": "Who is SalesOS best for?", "acceptedAnswer": { "@type": "Answer", "text": "It is strongest for founder-led sales teams, outbound agencies, SDR teams, and B2B operators running outbound motions." } },
+            { "@type": "Question", "name": "What integrations are available?", "acceptedAnswer": { "@type": "Answer", "text": "SalesOS currently supports Google Workspace and is expanding support for tools like Slack, HubSpot, Salesforce, Calendly, and Zapier." } },
+            { "@type": "Question", "name": "Is SalesOS a fit for every business?", "acceptedAnswer": { "@type": "Answer", "text": "No. It is generally not the right fit for e-commerce, B2C, or companies that do not run outbound." } }
+          ]
+        }
+      ]
+    }
+    </script>
+
 
     
   
