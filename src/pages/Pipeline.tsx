@@ -162,7 +162,7 @@ const Pipeline = () => {
           </div>
         </div>
 
-        {!loading && !isFreeTier && deals.length === 0 && (
+        {!loading && deals.length === 0 && (
           <div className="text-center py-12">
             <p className="text-muted-foreground mb-4">No deals yet. Create your first deal to get started.</p>
             <Button variant="hero" onClick={() => setAddDialogOpen(true)}>
