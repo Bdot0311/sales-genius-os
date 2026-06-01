@@ -470,6 +470,11 @@ ${unsubscribeFooterHtml}
           .update({ daily_emails_sent: (subscription?.daily_emails_sent || 0) + 1 } as any)
           .eq('user_id', user.id);
       }
+      // Increment monthly counter
+      await supabase
+        .from('subscriptions')
+        .update({ monthly_emails_sent: ((subscription as any)?.monthly_emails_sent || 0) + 1 } as any)
+        .eq('user_id', user.id);
 
       // Update lead's last_contacted_at if leadId is provided
       if (leadId) {
