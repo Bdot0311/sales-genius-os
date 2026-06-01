@@ -282,10 +282,6 @@ const Settings = () => {
                   <TrendingUp className="h-4 w-4" />
                   Usage
                 </TabsTrigger>
-                <TabsTrigger value="referral" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
-                  <Gift className="h-4 w-4" />
-                  Referral
-                </TabsTrigger>
                 <TabsTrigger value="notifications" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
                   <Bell className="h-4 w-4" />
                   Notifications
