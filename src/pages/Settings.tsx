@@ -15,11 +15,10 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { toast } from "sonner";
-import { CreditCard, TrendingUp, Check, RefreshCw, User, Save, Loader2, Palette, Activity, Bell, Key, GitBranch, Code2, Webhook, FileText, RotateCcw, Users, History, FileSearch, Globe, Coins, ExternalLink, Settings2, Copy, Gift, MapPin, Shield, AlertTriangle } from "lucide-react";
+import { CreditCard, TrendingUp, Check, RefreshCw, User, Save, Loader2, Palette, Activity, Bell, Key, GitBranch, Code2, Webhook, FileText, RotateCcw, Users, History, FileSearch, Globe, Coins, ExternalLink, Settings2, Copy, MapPin, Shield, AlertTriangle, Building2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { CAN_SPAM_PENALTY, generateComplianceFooter } from "@/lib/compliance";
 import { Switch } from "@/components/ui/switch";
-import { PLAN_FEATURES } from "@/lib/plan-features";
 import { APIKeysTab } from "@/components/settings/APIKeysTab";
 import { TeamMembersTab } from "@/components/settings/TeamMembersTab";
 import { WhiteLabelTab } from "@/components/settings/WhiteLabelTab";
@@ -36,11 +35,14 @@ import { GraphQLPlayground } from "@/components/settings/GraphQLPlayground";
 import { CreditsUsageTab } from "@/components/settings/CreditsUsageTab";
 import { ChangePasswordCard } from "@/components/settings/ChangePasswordCard";
 import NotificationsTab from "@/components/settings/NotificationsTab";
+import { AgencyPortalTab } from "@/components/settings/AgencyPortalTab";
+import { useAdmin } from "@/hooks/use-admin";
 
 const Settings = () => {
   const { subscription, loading: subLoading } = useSubscription();
   const { usage, loading: usageLoading } = useLeadsUsage();
   const { manualSync } = useSubscriptionSync();
+  const { isAdmin } = useAdmin();
   const [syncing, setSyncing] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [profile, setProfile] = useState({
@@ -279,41 +281,43 @@ const Settings = () => {
                   <TrendingUp className="h-4 w-4" />
                   Usage
                 </TabsTrigger>
-                <TabsTrigger value="referral" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
-                  <Gift className="h-4 w-4" />
-                  Referral
-                </TabsTrigger>
                 <TabsTrigger value="notifications" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
                   <Bell className="h-4 w-4" />
                   Notifications
                 </TabsTrigger>
-                {(subscription?.plan === 'pro' || subscription?.plan === 'agency') && (
-                  <>
-                    <TabsTrigger value="white-label" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
-                      <Palette className="h-4 w-4" />
-                      White Label
-                    </TabsTrigger>
-                    <TabsTrigger value="monitoring" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
-                      <Activity className="h-4 w-4" />
-                      Monitor
-                    </TabsTrigger>
-                    <TabsTrigger value="alerts" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
-                      <Bell className="h-4 w-4" />
-                      Alerts
-                    </TabsTrigger>
-                    <TabsTrigger value="api-keys" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
-                      <Key className="h-4 w-4" />
-                      API Keys
-                    </TabsTrigger>
-                  </>
-                )}
                 </TabsList>
               </div>
 
-              {/* Second row of tabs (Pro and Agency) */}
-              {(subscription?.plan === 'pro' || subscription?.plan === 'agency') && (
+              {/* White Label + Agency Portal — always visible */}
+              <div className="flex justify-center">
+                <TabsList className="h-auto inline-flex flex-wrap justify-center gap-2 bg-transparent p-0">
+                  <TabsTrigger value="white-label" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                    <Palette className="h-4 w-4" />
+                    White Label
+                  </TabsTrigger>
+                  <TabsTrigger value="agency-portal" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                    <Building2 className="h-4 w-4" />
+                    Agency Portal
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+
+              {/* Pro / Agency tools */}
+              {(isAdmin || subscription?.plan === 'pro' || subscription?.plan === 'agency') && (
                 <div className="flex justify-center">
                   <TabsList className="h-auto inline-flex flex-wrap justify-center gap-2 bg-transparent p-0">
+                  <TabsTrigger value="monitoring" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                    <Activity className="h-4 w-4" />
+                    Monitor
+                  </TabsTrigger>
+                  <TabsTrigger value="alerts" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                    <Bell className="h-4 w-4" />
+                    Alerts
+                  </TabsTrigger>
+                  <TabsTrigger value="api-keys" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
+                    <Key className="h-4 w-4" />
+                    API Keys
+                  </TabsTrigger>
                   <TabsTrigger value="api-versions" className="data-[state=active]:bg-muted hover:bg-muted/50 gap-2">
                     <GitBranch className="h-4 w-4" />
                     Versions
@@ -747,151 +751,16 @@ const Settings = () => {
             <NotificationsTab />
           </TabsContent>
 
-          <TabsContent value="referral" className="space-y-6">
-            {(() => {
-              const planKey = (subscription?.plan || 'free') as keyof typeof PLAN_FEATURES;
-              const planFeatures = PLAN_FEATURES[planKey] ?? PLAN_FEATURES.free;
-              const hasReferral = 'referralProgram' in planFeatures && (planFeatures as any).referralProgram === true;
-              const referralCode = profile.email
-                ? `SALES-${profile.email.split('@')[0].toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8)}`
-                : 'SALES-XXXX';
-              const referralUrl = `https://salesos.alephwavex.io/ref/${referralCode}`;
-
-              if (!hasReferral) {
-                return (
-                  <Card>
-                    <CardContent className="flex flex-col items-center justify-center py-16 gap-4">
-                      <Gift className="h-12 w-12 text-muted-foreground" />
-                      <div className="text-center space-y-2">
-                        <h3 className="text-lg font-semibold">Referral Program</h3>
-                        <p className="text-muted-foreground text-sm max-w-sm">
-                          Referral program is available on Agency plan. Upgrade to start earning credits for every friend you bring on board.
-                        </p>
-                      </div>
-                      <Button
-                        variant="hero"
-                        onClick={() => window.location.hash = '#subscription'}
-                        className="gap-2 mt-2"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                        View Plans
-                      </Button>
-                    </CardContent>
-                  </Card>
-                );
-              }
-
-              return (
-                <>
-                  {/* Referral Link */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Gift className="h-5 w-5" />
-                        Your Referral Link
-                      </CardTitle>
-                      <CardDescription>
-                        Share this link with friends. When they sign up, you both earn 200 free credits.
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <Input
-                          readOnly
-                          value={referralUrl}
-                          className="font-mono text-sm"
-                        />
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => {
-                            navigator.clipboard.writeText(referralUrl);
-                            toast.success("Referral link copied to clipboard!");
-                          }}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Your referral code: <span className="font-mono font-medium">{referralCode}</span>
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  {/* Referral Stats */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <TrendingUp className="h-5 w-5" />
-                        Referral Stats
-                      </CardTitle>
-                      <CardDescription>
-                        Track your referral performance
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="p-4 bg-muted/50 rounded-lg border text-center space-y-1">
-                          <p className="text-2xl font-bold">0</p>
-                          <p className="text-sm text-muted-foreground">Referrals sent</p>
-                        </div>
-                        <div className="p-4 bg-muted/50 rounded-lg border text-center space-y-1">
-                          <p className="text-2xl font-bold">0</p>
-                          <p className="text-sm text-muted-foreground">Conversions</p>
-                        </div>
-                        <div className="p-4 bg-muted/50 rounded-lg border text-center space-y-1">
-                          <p className="text-2xl font-bold">0</p>
-                          <p className="text-sm text-muted-foreground">Credits earned</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* How It Works */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>How It Works</CardTitle>
-                      <CardDescription>
-                        Three simple steps to earn free credits
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid sm:grid-cols-3 gap-4">
-                        <div className="p-4 bg-muted/50 rounded-lg border space-y-2">
-                          <div className="flex items-center gap-2">
-                            <div className="h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold flex-shrink-0">1</div>
-                            <p className="font-medium text-sm">Share your link</p>
-                          </div>
-                          <p className="text-xs text-muted-foreground">Copy your unique referral link and share it with colleagues, founders, or anyone doing outbound.</p>
-                        </div>
-                        <div className="p-4 bg-muted/50 rounded-lg border space-y-2">
-                          <div className="flex items-center gap-2">
-                            <div className="h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold flex-shrink-0">2</div>
-                            <p className="font-medium text-sm">Friend signs up</p>
-                          </div>
-                          <p className="text-xs text-muted-foreground">Your friend clicks your link and creates a SalesOS account. No credit card required to get started.</p>
-                        </div>
-                        <div className="p-4 bg-muted/50 rounded-lg border space-y-2">
-                          <div className="flex items-center gap-2">
-                            <div className="h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold flex-shrink-0">3</div>
-                            <p className="font-medium text-sm">You both get 200 credits</p>
-                          </div>
-                          <p className="text-xs text-muted-foreground">Once they sign up, you each receive 200 free search credits automatically added to your accounts.</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </>
-              );
-            })()}
+          <TabsContent value="agency-portal" className="space-y-6">
+            <AgencyPortalTab />
           </TabsContent>
 
-          {(subscription?.plan === 'pro' || subscription?.plan === 'agency') && (
-            <>
-              <TabsContent value="white-label">
-                <WhiteLabelTab />
-              </TabsContent>
+          <TabsContent value="white-label">
+            <WhiteLabelTab />
+          </TabsContent>
 
+          {(isAdmin || subscription?.plan === 'pro' || subscription?.plan === 'agency') && (
+            <>
               <TabsContent value="monitoring">
                 <MonitoringDashboard />
               </TabsContent>
