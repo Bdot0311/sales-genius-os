@@ -835,6 +835,7 @@ serve(async (req) => {
       console.log('Railway response headers:', JSON.stringify(Object.fromEntries(response.headers.entries())));
     } catch (fetchError) {
       console.error('Fetch to Railway failed entirely:', fetchError);
+      await refundCredit('network_error');
       return new Response(
         JSON.stringify({ error: 'Could not reach lead data provider.', error_code: 'network_error', leads: [] }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -844,6 +845,7 @@ serve(async (req) => {
     // Handle 402 Payment Required - NO cache fallback (must match search criteria)
     if (response.status === 402) {
       console.log('PDL credits exhausted (402) - returning empty results');
+      await refundCredit('provider_credits_exhausted');
       return new Response(
         JSON.stringify({ 
           error: 'Search credits exhausted. Please add more credits to continue searching.',
@@ -875,6 +877,7 @@ serve(async (req) => {
         clientMessage = 'Service temporarily unavailable. Please try again later.';
       }
       
+      await refundCredit(`upstream_${response.status}`);
       return new Response(
         JSON.stringify({ 
           error: clientMessage, 
@@ -895,6 +898,7 @@ serve(async (req) => {
       data = JSON.parse(rawText);
     } catch (parseErr) {
       console.error('Failed to parse Railway response as JSON:', parseErr);
+      await refundCredit('invalid_provider_response');
       return new Response(
         JSON.stringify({ error: 'Invalid response from lead provider.', leads: [] }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
