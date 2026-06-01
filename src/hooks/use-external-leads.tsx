@@ -114,16 +114,10 @@ export function useExternalLeads() {
           variant: 'destructive',
           duration: 10000,
         });
-      } else if (errorMessage.includes('search parameter') || errorMessage.includes('filter')) {
-        toast({
-          title: 'Search Filter Required',
-          description: 'Please provide at least one search filter like job title, industry, or location.',
-          variant: 'destructive',
-        });
       } else {
         toast({
-          title: 'Error fetching leads',
-          description: errorMessage,
+          title: 'Search failed',
+          description: 'No results found. Try a different query — e.g. "VP of Sales at SaaS companies" or "CTOs in New York".',
           variant: 'destructive',
         });
       }
