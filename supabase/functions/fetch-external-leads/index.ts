@@ -1037,35 +1037,71 @@ serve(async (req) => {
       console.log('First raw lead:', JSON.stringify(rawLeads[0], null, 2));
     }
 
-    // If no leads found, log the Railway API schema for diagnosis then refund the credit.
+    // Progressive fallback: if full search returned 0, retry with progressively fewer filters.
+    // This handles cases where the job title exists in the DB but not under that industry/location.
+    const parseLeadsFromData = (d: any): any[] => {
+      if (Array.isArray(d)) return d;
+      const KEYS = ['leads', 'contacts', 'people', 'persons', 'results', 'data', 'items', 'records', 'email_list'];
+      for (const k of KEYS) {
+        if (d[k] && Array.isArray(d[k]) && d[k].length > 0) return d[k];
+      }
+      return [];
+    };
+
+    if (rawLeads.length === 0 && (requestBody.industry || requestBody.location)) {
+      // Retry 1: drop industry (keep location + job_title)
+      if (requestBody.industry) {
+        const noIndustry = { ...requestBody };
+        delete noIndustry.industry;
+        console.log('0 results — retrying without industry:', JSON.stringify(noIndustry));
+        try {
+          const r = await fetch(railwayUrl, { method: 'POST', headers: railwayHeaders, body: JSON.stringify(noIndustry) });
+          if (r.ok) {
+            const d = await r.json();
+            console.log('No-industry retry response (first 1000):', JSON.stringify(d).substring(0, 1000));
+            rawLeads = parseLeadsFromData(d);
+          }
+        } catch (e) { console.log('No-industry retry failed:', e); }
+      }
+
+      // Retry 2: if still 0, drop location too — just job_title + limit
+      if (rawLeads.length === 0 && requestBody.location) {
+        const jobOnly: Record<string, any> = { limit: requestBody.limit };
+        if (requestBody.job_title) jobOnly.job_title = requestBody.job_title;
+        if (requestBody.seniority) jobOnly.seniority = requestBody.seniority;
+        if (requestBody.offset) jobOnly.offset = requestBody.offset;
+        console.log('0 results — final retry, job title only:', JSON.stringify(jobOnly));
+        try {
+          const r = await fetch(railwayUrl, { method: 'POST', headers: railwayHeaders, body: JSON.stringify(jobOnly) });
+          if (r.ok) {
+            const d = await r.json();
+            console.log('Job-only retry response (first 1000):', JSON.stringify(d).substring(0, 1000));
+            rawLeads = parseLeadsFromData(d);
+          }
+        } catch (e) { console.log('Job-only retry failed:', e); }
+      }
+    }
+
+    // If all retries exhausted, log schema for diagnosis and refund.
     if (rawLeads.length === 0) {
-      console.log('No leads returned — fetching Railway schema for diagnosis...');
+      console.log('All retries returned 0 leads — fetching Railway schema for diagnosis...');
       try {
-        const schemaRes = await fetch(`${baseUrl}/openapi.json`, {
-          headers: railwayHeaders,
-        });
+        const schemaRes = await fetch(`${baseUrl}/openapi.json`, { headers: railwayHeaders });
         if (schemaRes.ok) {
           const schema = await schemaRes.json();
           console.log('=== RAILWAY OPENAPI SCHEMA ===');
           console.log(JSON.stringify(schema, null, 2).substring(0, 8000));
         } else {
-          console.log('Railway schema not available, status:', schemaRes.status);
-          // Also try root endpoint for clues
+          console.log('Schema not available:', schemaRes.status);
           const rootRes = await fetch(baseUrl, { headers: railwayHeaders });
-          console.log('Railway root status:', rootRes.status, 'body:', (await rootRes.text()).substring(0, 500));
+          console.log('Root endpoint:', rootRes.status, (await rootRes.text()).substring(0, 500));
         }
-      } catch (probeErr) {
-        console.log('Schema probe failed:', probeErr);
-      }
+      } catch (probeErr) { console.log('Schema probe failed:', probeErr); }
+
       await refundCredit('empty_result');
       return new Response(
-        JSON.stringify({ 
-          success: true,
-          leads: [],
-          total: 0,
-          from_cache: false,
-          message: 'No leads found for this search. Try different search criteria.'
-        }),
+        JSON.stringify({ success: true, leads: [], total: 0, from_cache: false,
+          message: 'No leads found for this search. Try different search criteria.' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

@@ -154,9 +154,9 @@ const Leads = () => {
                     limit: pageSize,
                   };
                   
-                  // Use job titles if available
+                  // Use the first job title only — Railway doesn't support boolean OR syntax
                   if (aiFilters.jobTitles?.length > 0) {
-                    newFilters.job_title = aiFilters.jobTitles.join(' OR ');
+                    newFilters.job_title = aiFilters.jobTitles[0];
                   }
 
                   // Industry: ignore generic "B2B" (it kills recall in Railway)
@@ -185,11 +185,11 @@ const Leads = () => {
                   
                   // If no job titles but keywords exist, try to build job_title from keywords
                   if (!newFilters.job_title && aiFilters.keywords?.length > 0) {
-                    const jobKeywords = aiFilters.keywords.filter((k: string) => 
+                    const jobKeywords = aiFilters.keywords.filter((k: string) =>
                       /ceo|cto|cfo|founder|director|vp|head|manager|executive|owner/i.test(k)
                     );
                     if (jobKeywords.length > 0) {
-                      newFilters.job_title = jobKeywords.join(' OR ');
+                      newFilters.job_title = jobKeywords[0]; // use first match only
                     }
                   }
                   
@@ -218,15 +218,15 @@ const Leads = () => {
                     [/head\s+of\s+sales/i, 'Head of Sales'],
                     [/head\s+of\s+growth/i, 'Head of Growth'],
                     [/head\s+of\s+marketing/i, 'Head of Marketing'],
-                    [/gtm|go.to.market/i, 'GTM Manager OR Growth Manager OR Marketing Manager'],
+                    [/gtm|go.to.market/i, 'Growth Manager'],
                     [/revops|revenue\s+operations/i, 'Revenue Operations Manager'],
                     [/sales\s+director|director.*sales/i, 'Sales Director'],
                     [/director/i, 'Director'],
                     [/account\s+executive|ae\b/i, 'Account Executive'],
-                    [/sdr|bdr|business\s+development\s+rep/i, 'SDR OR BDR'],
+                    [/sdr|bdr|business\s+development\s+rep/i, 'Sales Development Representative'],
                     [/sales\s+manager/i, 'Sales Manager'],
                     [/product\s+manager|pm\b/i, 'Product Manager'],
-                    [/engineer|developer|dev\b/i, 'Software Engineer OR Developer'],
+                    [/engineer|developer|dev\b/i, 'Software Engineer'],
                     [/designer/i, 'Designer'],
                     [/owner|proprietor/i, 'Owner'],
                   ];
