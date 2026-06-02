@@ -146,11 +146,18 @@ serve(async (req) => {
 
     console.log('Calling Railway /enrich with:', Object.keys(enrichPayload).join(', '));
 
+    const railwayApiKey = Deno.env.get('RAILWAY_API_KEY');
+    const enrichHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (railwayApiKey) {
+      enrichHeaders['Authorization'] = `Bearer ${railwayApiKey}`;
+      enrichHeaders['X-API-Key'] = railwayApiKey;
+    }
+
     let railwayData: any = null;
     try {
       const res = await fetch(enrichUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: enrichHeaders,
         body: JSON.stringify(enrichPayload),
       });
       console.log('Railway /enrich status:', res.status);
