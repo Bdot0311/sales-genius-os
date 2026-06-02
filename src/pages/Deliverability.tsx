@@ -935,18 +935,31 @@ function CloudflareSetupCard({
       </div>
 
       {/* Token input */}
-      <div className="space-y-1.5">
-        <div className="flex items-center justify-between">
-          <label className="text-xs font-medium">Cloudflare API Token</label>
-          <a
-            href="https://dash.cloudflare.com/profile/api-tokens/create"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-primary flex items-center gap-1 hover:underline"
-          >
-            Create token <ExternalLink className="w-3 h-3" />
-          </a>
+      <div className="space-y-2">
+        <label className="text-xs font-medium">Cloudflare API Token</label>
+
+        {/* How to create the token */}
+        <div className="rounded-md border border-border/60 bg-muted/40 p-3 space-y-1.5">
+          <p className="text-xs font-medium">How to get your token (takes ~30 seconds):</p>
+          <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+            <li>
+              Open{' '}
+              <a
+                href="https://dash.cloudflare.com/profile/api-tokens/create"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary inline-flex items-center gap-0.5 hover:underline"
+              >
+                Cloudflare's token page <ExternalLink className="w-3 h-3" />
+              </a>
+            </li>
+            <li>Next to <strong>"Edit zone DNS"</strong>, click <strong>Use template</strong></li>
+            <li>Under <strong>Zone Resources</strong>, select <strong>Specific zone → {results.domain}</strong></li>
+            <li>Click <strong>Continue to summary</strong>, then <strong>Create Token</strong></li>
+            <li>Copy the token and paste it below</li>
+          </ol>
         </div>
+
         <Input
           type="password"
           placeholder="Paste your Cloudflare API token…"
@@ -955,7 +968,7 @@ function CloudflareSetupCard({
           className="font-mono text-xs"
         />
         <p className="text-xs text-muted-foreground">
-          Create a token with <strong>Zone → DNS → Edit</strong> permission scoped to {results.domain}. The token is used once and never stored.
+          The token needs <strong>Zone → DNS → Edit</strong> access for {results.domain}. It's used once to apply your records and is never stored.
         </p>
       </div>
 
