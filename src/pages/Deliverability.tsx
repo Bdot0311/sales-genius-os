@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Mail, Plus, Trash2, Lock, ShieldAlert, ShieldCheck, ShieldX, TrendingUp, AlertTriangle, Ban, CheckCircle2, XCircle, Globe, Loader2, Copy, ExternalLink } from "lucide-react";
 import { OUTBOUND_KB } from "@/lib/outbound-kb";
 import { discoverDomainConnect, buildApplyUrl } from "@/lib/domain-connect";
+import { applyCloudflareRecords, CfApplyResult } from "@/lib/cloudflare-dns";
 import { toast } from "sonner";
 
 interface Mailbox {
@@ -62,7 +63,7 @@ const Deliverability = () => {
   const [showDNSCheck, setShowDNSCheck] = useState(false);
   const [dnsChecking, setDnsChecking] = useState(false);
   const [dnsResults, setDnsResults] = useState<DnsResults | null>(null);
-  const [setupMode, setSetupMode] = useState<'auto' | 'manual' | null>(null);
+  const [setupMode, setSetupMode] = useState<'cloudflare' | 'auto' | 'manual' | null>(null);
   const [autoSetupLoading, setAutoSetupLoading] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [newEmail, setNewEmail] = useState("");
@@ -254,9 +255,15 @@ const Deliverability = () => {
     }
   };
 
-  // "Do It For Me" — try the automated DomainConnect flow; fall back to the guided steps.
+  // "Do It For Me" — Cloudflare gets the API-token flow; everyone else gets DomainConnect.
   const handleAutoSetup = async () => {
     if (!dnsResults) return;
+
+    if (dnsResults.providerSlug === 'cloudflare') {
+      setSetupMode('cloudflare');
+      return;
+    }
+
     setAutoSetupLoading(true);
     try {
       const discovery = await discoverDomainConnect(dnsResults.domain);
@@ -537,12 +544,20 @@ const Deliverability = () => {
                     </div>
                   )}
 
-                  {/* Do It For Me — provider-specific guide */}
+                  {/* Cloudflare one-click apply */}
+                  {setupMode === 'cloudflare' && (
+                    <CloudflareSetupCard
+                      results={dnsResults}
+                      onFallback={() => setSetupMode('auto')}
+                    />
+                  )}
+
+                  {/* DomainConnect guided fallback */}
                   {setupMode === 'auto' && (
                     <ProviderSetupGuide results={dnsResults} />
                   )}
 
-                  {/* Set Up Manually — raw record values */}
+                  {/* Manual copy-paste */}
                   {setupMode === 'manual' && (
                     <ManualSetupGuide results={dnsResults} />
                   )}
@@ -809,6 +824,177 @@ function DeliverabilityHealthThresholds({ mailboxCount, metrics }: { mailboxCoun
           ))}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function CloudflareSetupCard({
+  results,
+  onFallback,
+}: {
+  results: DnsResults;
+  onFallback: () => void;
+}) {
+  const [cfToken, setCfToken] = useState('');
+  const [applying, setApplying] = useState(false);
+  const [applyResult, setApplyResult] = useState<CfApplyResult | null>(null);
+  const [esp, setEsp] = useState<'google' | 'microsoft'>('google');
+
+  const missingRecords = [
+    !results.spf.found && {
+      type: 'TXT' as const,
+      name: '@' as const,
+      content:
+        esp === 'google'
+          ? 'v=spf1 include:_spf.google.com ~all'
+          : 'v=spf1 include:spf.protection.outlook.com ~all',
+      label: 'SPF',
+    },
+    !results.dmarc.found && {
+      type: 'TXT' as const,
+      name: '_dmarc' as const,
+      content: `v=DMARC1; p=quarantine; rua=mailto:dmarc@${results.domain}`,
+      label: 'DMARC',
+    },
+  ].filter(Boolean) as Array<{ type: 'TXT'; name: '@' | '_dmarc'; content: string; label: string }>;
+
+  const handleApply = async () => {
+    if (!cfToken.trim() || missingRecords.length === 0) return;
+    setApplying(true);
+    setApplyResult(null);
+    try {
+      const result = await applyCloudflareRecords(
+        results.domain,
+        cfToken.trim(),
+        missingRecords.map(({ type, name, content }) => ({ type, name, content }))
+      );
+      setApplyResult(result);
+      if (result.success) {
+        toast.success('DNS records added to Cloudflare!');
+      } else {
+        toast.error(result.error || 'Some records failed — check the details below');
+      }
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  return (
+    <div className="rounded-lg border p-4 space-y-4">
+      <div className="flex items-center justify-between">
+        <h4 className="text-sm font-semibold flex items-center gap-2">
+          <img src="https://www.cloudflare.com/favicon.ico" alt="" className="w-4 h-4" />
+          Apply to Cloudflare
+        </h4>
+        <Button variant="ghost" size="sm" className="text-xs h-7" onClick={onFallback}>
+          Show manual steps instead
+        </Button>
+      </div>
+
+      {/* ESP selector */}
+      <div className="space-y-1.5">
+        <p className="text-xs text-muted-foreground font-medium">Which email provider do you send from?</p>
+        <div className="flex gap-2">
+          {(['google', 'microsoft'] as const).map((e) => (
+            <Button
+              key={e}
+              size="sm"
+              variant={esp === e ? 'default' : 'outline'}
+              className="h-7 text-xs"
+              onClick={() => setEsp(e)}
+            >
+              {e === 'google' ? 'Google Workspace' : 'Microsoft 365'}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {/* Records to be written */}
+      <div className="space-y-2">
+        <p className="text-xs text-muted-foreground font-medium">Records that will be added:</p>
+        {missingRecords.map((rec) => (
+          <div key={rec.name} className="flex items-start gap-2 p-2 rounded bg-muted/60">
+            <Badge variant="outline" className="text-xs shrink-0 mt-0.5">{rec.label}</Badge>
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground">Host: <code>{rec.name}</code></p>
+              <p className="text-xs break-all"><code>{rec.content}</code></p>
+            </div>
+          </div>
+        ))}
+        {!results.dkim.found && (
+          <div className="flex items-start gap-2 p-2 rounded border border-yellow-500/20 bg-yellow-500/5">
+            <Badge variant="outline" className="text-xs text-yellow-600 border-yellow-500/30 shrink-0 mt-0.5">DKIM</Badge>
+            <p className="text-xs text-muted-foreground">
+              DKIM must be generated inside your email provider and can't be auto-applied.
+              {esp === 'google'
+                ? ' Go to Google Workspace Admin → Apps → Gmail → Authenticate email.'
+                : ' Go to Microsoft 365 Admin → Exchange → DomainKeys Identified Mail.'}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Token input */}
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-medium">Cloudflare API Token</label>
+          <a
+            href="https://dash.cloudflare.com/profile/api-tokens/create"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-primary flex items-center gap-1 hover:underline"
+          >
+            Create token <ExternalLink className="w-3 h-3" />
+          </a>
+        </div>
+        <Input
+          type="password"
+          placeholder="Paste your Cloudflare API token…"
+          value={cfToken}
+          onChange={(e) => setCfToken(e.target.value)}
+          className="font-mono text-xs"
+        />
+        <p className="text-xs text-muted-foreground">
+          Create a token with <strong>Zone → DNS → Edit</strong> permission scoped to {results.domain}. The token is used once and never stored.
+        </p>
+      </div>
+
+      {/* Apply button */}
+      <Button
+        onClick={handleApply}
+        disabled={!cfToken.trim() || applying || applyResult?.success === true}
+        className="w-full"
+      >
+        {applying
+          ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Applying records…</>
+          : applyResult?.success
+            ? <><CheckCircle2 className="w-4 h-4 mr-2 text-green-500" />Records applied!</>
+            : 'Apply Records to Cloudflare'}
+      </Button>
+
+      {/* Per-record results */}
+      {applyResult && (
+        <div className="space-y-1.5">
+          {applyResult.error && (
+            <p className="text-xs text-red-500 flex items-center gap-1">
+              <XCircle className="w-4 h-4 shrink-0" /> {applyResult.error}
+            </p>
+          )}
+          {applyResult.results?.map((r) => (
+            <div key={r.name} className={`flex items-center gap-2 text-xs ${r.success ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
+              {r.success
+                ? <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                : <XCircle className="w-3.5 h-3.5 shrink-0" />}
+              <span><code>{r.name}</code> — {r.success ? r.action : `failed: ${r.error}`}</span>
+            </div>
+          ))}
+          {applyResult.success && (
+            <p className="text-xs text-muted-foreground pt-1">
+              Changes are live. DNS propagation takes 1–5 minutes — click Check again to verify.
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
