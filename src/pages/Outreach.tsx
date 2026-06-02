@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -138,6 +138,53 @@ const EMAIL_TEMPLATES = [
   },
 ];
 
+// AI auto-pick: choose the best template from EMAIL_TEMPLATES based on the lead's
+// research data (funding, exec hires, hiring, expansion, etc.). Falls back to the
+// cold introduction template when no buying signal is detected.
+type EmailTemplate = (typeof EMAIL_TEMPLATES)[number];
+
+function pickBestTemplate(lead: any): { template: EmailTemplate; reason: string } {
+  const intro = EMAIL_TEMPLATES.find((t) => t.value === "introduction")!;
+  if (!lead) return { template: intro, reason: "no lead data yet" };
+
+  const byValue = (v: string) => EMAIL_TEMPLATES.find((t) => t.value === v) || intro;
+
+  // Flatten any signal/news-shaped data the lead carries
+  const signals = Array.isArray(lead.intent_signals) ? lead.intent_signals : [];
+  const news = Array.isArray(lead.news) ? lead.news : [];
+  const haystackParts: string[] = [];
+  for (const s of [...signals, ...news]) {
+    if (!s) continue;
+    if (typeof s === "string") { haystackParts.push(s); continue; }
+    haystackParts.push(String(s.category || s.type || ""));
+    haystackParts.push(String(s.title || s.headline || s.summary || ""));
+  }
+  if (lead.funding_stage) haystackParts.push(String(lead.funding_stage));
+  if (lead.notes) haystackParts.push(String(lead.notes));
+  const hay = haystackParts.join(" ").toLowerCase();
+
+  const has = (re: RegExp) => re.test(hay);
+
+  // Priority order — strongest commercial signal wins
+  if (lead.funding_total || lead.funding_stage || has(/\bfund(ing|ed)?\b|\braised?\b|\bseries [a-h]\b|\bseed round\b|\bipo\b/)) {
+    return { template: byValue("signal_funding"), reason: "recent funding round detected" };
+  }
+  if (has(/\b(new|appointed|hired|joined)\s+(ceo|cto|cmo|cfo|chro|coo|cro|vp|head of|chief)\b|leadership change|exec(utive)? hire/)) {
+    return { template: byValue("signal_new_exec"), reason: "recent executive hire" };
+  }
+  if (has(/\bhiring\b|\bjob (post|open)|\bopen role|\brecruit/) || lead.is_hiring) {
+    return { template: byValue("signal_job_posting"), reason: "actively hiring for relevant roles" };
+  }
+  if (has(/\bexpan(d|sion|ding)\b|\bnew (office|market|region)\b|\blaunch(ed|ing)?\b|\bopen(ed|ing)? .* office\b/)) {
+    return { template: byValue("signal_expansion"), reason: "company expansion detected" };
+  }
+  if (has(/\bmerger\b|\bacquir(ed|ition)\b|\bpartnership\b/)) {
+    return { template: byValue("signal_new_exec"), reason: "M&A / partnership signal — likely stack changes" };
+  }
+
+  return { template: intro, reason: "no strong buying signal — cold intro" };
+}
+
 const stripHtmlToText = (html: string): string => {
   return html
     .replace(/<br\s*\/?>/gi, '\n')
@@ -231,7 +278,9 @@ const Outreach = () => {
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
   const [sentCount, setSentCount] = useState(0);
   const [draftsCount, setDraftsCount] = useState(0);
-  const [selectedTemplate, setSelectedTemplate] = useState("");
+  // "auto" means the AI picks the best template from the lead's research signals.
+  // Any explicit value overrides the auto-pick.
+  const [selectedTemplate, setSelectedTemplate] = useState("auto");
   const [emailVariants, setEmailVariants] = useState<EmailVariant[]>([]);
   const [isGeneratingVariants, setIsGeneratingVariants] = useState(false);
   const [showVariantPicker, setShowVariantPicker] = useState(false);
@@ -845,7 +894,7 @@ const Outreach = () => {
     setIsGeneratingSubject(true);
     try {
       const lead = leads.find((l) => l.id === selectedLead);
-      const template = EMAIL_TEMPLATES.find(t => t.value === selectedTemplate);
+      const template = resolveActiveTemplate();
       const { data, error } = await supabase.functions.invoke("generate-email", {
         body: {
           lead,
@@ -940,8 +989,8 @@ const Outreach = () => {
     setIsGenerating(true);
     try {
       const lead = leads.find((l) => l.id === selectedLead);
-      // Use the goal from the selected template — default to introduction
-      const template = EMAIL_TEMPLATES.find(t => t.value === selectedTemplate);
+      // Use the goal from the active template — AI-picked when in auto mode
+      const template = resolveActiveTemplate();
       const goal = template?.goal || "introduction";
 
       // Resolve sender name up front so it can be passed to the edge function
@@ -1107,8 +1156,21 @@ Return ONLY the corrected email body. No subject line. No explanation. No "Here 
     }
   };
 
+  // Auto-pick result for the currently selected lead — recomputed when the lead changes.
+  const autoPick = useMemo(() => {
+    const lead = leads.find((l) => l.id === selectedLead);
+    return pickBestTemplate(lead);
+  }, [selectedLead, leads]);
+
+  // Resolve the template that should actually drive generation, honoring auto mode.
+  const resolveActiveTemplate = (): EmailTemplate => {
+    if (selectedTemplate === "auto") return autoPick.template;
+    return EMAIL_TEMPLATES.find((t) => t.value === selectedTemplate) || autoPick.template;
+  };
+
   const handleTemplateSelect = (templateValue: string) => {
     setSelectedTemplate(templateValue);
+    if (templateValue === "auto") return; // AI picks at generate-time; don't preset subject
     const template = EMAIL_TEMPLATES.find(t => t.value === templateValue);
     if (template && selectedLead) {
       const lead = leads.find(l => l.id === selectedLead);
@@ -1138,10 +1200,10 @@ Return ONLY the corrected email body. No subject line. No explanation. No "Here 
     try {
       const lead = leads.find((l) => l.id === selectedLead);
 
-      // Pick 3 diverse templates to compare — current + 2 different styles
-      // Always include the currently selected template, then pick 2 different categories
-      const currentTemplate = EMAIL_TEMPLATES.find(t => t.value === selectedTemplate);
-      const otherTemplates = EMAIL_TEMPLATES.filter(t => t.value !== selectedTemplate);
+      // Pick 3 diverse templates to compare — anchor + 2 different styles.
+      // Anchor on the active template (AI-picked when in auto mode, manual otherwise).
+      const currentTemplate = resolveActiveTemplate();
+      const otherTemplates = EMAIL_TEMPLATES.filter(t => t.value !== currentTemplate.value);
 
       // Prefer variety: pick one standard and one signal if possible
       const standards = otherTemplates.filter(t => t.category === 'standard');
@@ -1614,9 +1676,9 @@ ${formattedBody}
               businessDescription={businessDescription}
               signature={signature}
               senderName={getSenderName()}
-              emailGoal={EMAIL_TEMPLATES.find(t => t.value === selectedTemplate)?.goal || "introduction"}
-              templateDescription={EMAIL_TEMPLATES.find(t => t.value === selectedTemplate)?.description || ""}
-              templateValue={selectedTemplate || ""}
+              emailGoal={resolveActiveTemplate().goal || "introduction"}
+              templateDescription={resolveActiveTemplate().description || ""}
+              templateValue={resolveActiveTemplate().value || ""}
               complianceSettings={complianceSettings}
               useSpintax={useSpintax}
               onComplete={() => {
@@ -1881,7 +1943,7 @@ For logos, use HTML:
                   <div className="flex items-center gap-2">
                     <EmailTemplateManager
                       currentTemplate={{
-                        goal: selectedTemplate ? EMAIL_TEMPLATES.find(t => t.value === selectedTemplate)?.goal : undefined,
+                        goal: resolveActiveTemplate().goal,
                         suggestedSubject: subjectLine,
                         triggerContext,
                       }}
@@ -2035,9 +2097,21 @@ For logos, use HTML:
                     </Label>
                     <Select value={selectedTemplate} onValueChange={handleTemplateSelect}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a template (optional)" />
+                        <SelectValue placeholder="AI Auto-Pick (recommended)" />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="auto">
+                          <div className="flex flex-col">
+                            <span className="flex items-center gap-1.5">
+                              <Sparkles className="h-3.5 w-3.5 text-primary" />
+                              AI Auto-Pick
+                              <span className="text-[10px] uppercase tracking-wide text-primary/80 ml-1">Recommended</span>
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              Picks the right template from each lead's research signals
+                            </span>
+                          </div>
+                        </SelectItem>
                         <SelectGroup>
                           <SelectLabel>— Standard —</SelectLabel>
                           {EMAIL_TEMPLATES.filter(t => t.category === "standard").map((template) => (
@@ -2065,6 +2139,24 @@ For logos, use HTML:
                         </SelectGroup>
                       </SelectContent>
                     </Select>
+                    {selectedTemplate === "auto" && selectedLead && (
+                      <div className="mt-2 flex items-start gap-2 rounded-md border border-primary/20 bg-primary/5 px-3 py-2 text-xs">
+                        <Sparkles className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <span className="text-muted-foreground">AI picked </span>
+                          <span className="font-medium text-foreground">{autoPick.template.label}</span>
+                          <span className="text-muted-foreground"> — {autoPick.reason}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleTemplateSelect(autoPick.template.value)}
+                          className="text-primary hover:underline shrink-0"
+                          title="Lock this template instead of auto-picking"
+                        >
+                          Override
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* P0.1 — First touch toggle */}
