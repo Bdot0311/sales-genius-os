@@ -1,0 +1,26 @@
+{
+  "providerId": "salesos.io",
+  "providerName": "SalesOS",
+  "serviceId": "email-auth",
+  "serviceName": "SalesOS Email Authentication (SPF + DMARC)",
+  "version": 1,
+  "logoUrl": "https://salesos.alephwavex.io/logo.png",
+  "description": "Sets up SPF and DMARC records so cold email sent through SalesOS lands in the inbox.",
+  "syncBlock": false,
+  "records": [
+    {
+      "type": "TXT",
+      "host": "@",
+      "data": "v=spf1 include:%spfinclude% ~all",
+      "ttl": 3600,
+      "groupId": "spf"
+    },
+    {
+      "type": "TXT",
+      "host": "_dmarc",
+      "data": "v=DMARC1; p=%dmarcpolicy%; rua=mailto:%dmarcrua%",
+      "ttl": 3600,
+      "groupId": "dmarc"
+    }
+  ]
+}
