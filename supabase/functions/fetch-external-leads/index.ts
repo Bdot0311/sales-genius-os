@@ -72,18 +72,41 @@ const INDUSTRY_MAP: Record<string, string> = {
 // Country name → ISO 2-letter code map
 const COUNTRY_MAP: Record<string, string> = {
   'united states': 'US', 'usa': 'US', 'us': 'US', 'u.s.': 'US', 'u.s.a.': 'US', 'america': 'US',
+  // US cities/states → country code (location filter will be dropped if Railway doesn't understand city)
+  'new york': 'US', 'california': 'US', 'san francisco': 'US', 'silicon valley': 'US',
+  'los angeles': 'US', 'chicago': 'US', 'austin': 'US', 'boston': 'US', 'seattle': 'US',
+  'miami': 'US', 'denver': 'US', 'atlanta': 'US', 'dallas': 'US', 'houston': 'US',
+  'new york city': 'US', 'nyc': 'US', 'sf': 'US', 'la': 'US',
   'united kingdom': 'GB', 'uk': 'GB', 'great britain': 'GB', 'england': 'GB', 'britain': 'GB',
-  'canada': 'CA', 'australia': 'AU', 'germany': 'DE', 'france': 'FR', 'spain': 'ES',
-  'italy': 'IT', 'netherlands': 'NL', 'sweden': 'SE', 'norway': 'NO', 'denmark': 'DK',
-  'switzerland': 'CH', 'austria': 'AT', 'belgium': 'BE', 'ireland': 'IE',
-  'india': 'IN', 'singapore': 'SG', 'israel': 'IL', 'brazil': 'BR',
-  'mexico': 'MX', 'argentina': 'AR', 'colombia': 'CO', 'chile': 'CL',
-  'japan': 'JP', 'south korea': 'KR', 'korea': 'KR', 'china': 'CN', 'taiwan': 'TW',
-  'new zealand': 'NZ', 'south africa': 'ZA', 'nigeria': 'NG', 'kenya': 'KE',
-  'poland': 'PL', 'portugal': 'PT', 'czech republic': 'CZ', 'czechia': 'CZ',
-  'finland': 'FI', 'romania': 'RO', 'hungary': 'HU', 'ukraine': 'UA',
-  'uae': 'AE', 'united arab emirates': 'AE', 'dubai': 'AE',
-  'saudi arabia': 'SA', 'turkey': 'TR', 'russia': 'RU',
+  'london': 'GB', 'manchester': 'GB', 'edinburgh': 'GB',
+  'canada': 'CA', 'toronto': 'CA', 'vancouver': 'CA', 'montreal': 'CA',
+  'australia': 'AU', 'sydney': 'AU', 'melbourne': 'AU',
+  'germany': 'DE', 'berlin': 'DE', 'munich': 'DE', 'hamburg': 'DE',
+  'france': 'FR', 'paris': 'FR', 'spain': 'ES', 'madrid': 'ES', 'barcelona': 'ES',
+  'italy': 'IT', 'rome': 'IT', 'milan': 'IT',
+  'netherlands': 'NL', 'amsterdam': 'NL', 'sweden': 'SE', 'stockholm': 'SE',
+  'norway': 'NO', 'denmark': 'DK', 'copenhagen': 'DK',
+  'switzerland': 'CH', 'zurich': 'CH', 'austria': 'AT', 'vienna': 'AT',
+  'belgium': 'BE', 'brussels': 'BE', 'ireland': 'IE', 'dublin': 'IE',
+  'india': 'IN', 'bangalore': 'IN', 'mumbai': 'IN', 'delhi': 'IN', 'hyderabad': 'IN',
+  'singapore': 'SG', 'israel': 'IL', 'tel aviv': 'IL',
+  'brazil': 'BR', 'são paulo': 'BR', 'sao paulo': 'BR', 'rio de janeiro': 'BR',
+  'mexico': 'MX', 'mexico city': 'MX',
+  'argentina': 'AR', 'buenos aires': 'AR', 'colombia': 'CO', 'bogota': 'CO',
+  'chile': 'CL', 'santiago': 'CL',
+  'japan': 'JP', 'tokyo': 'JP', 'osaka': 'JP',
+  'south korea': 'KR', 'korea': 'KR', 'seoul': 'KR',
+  'china': 'CN', 'beijing': 'CN', 'shanghai': 'CN', 'taiwan': 'TW', 'taipei': 'TW',
+  'new zealand': 'NZ', 'auckland': 'NZ',
+  'south africa': 'ZA', 'cape town': 'ZA', 'johannesburg': 'ZA',
+  'nigeria': 'NG', 'lagos': 'NG', 'kenya': 'KE', 'nairobi': 'KE',
+  'poland': 'PL', 'warsaw': 'PL', 'portugal': 'PT', 'lisbon': 'PT',
+  'czech republic': 'CZ', 'czechia': 'CZ', 'prague': 'CZ',
+  'finland': 'FI', 'helsinki': 'FI', 'romania': 'RO', 'bucharest': 'RO',
+  'hungary': 'HU', 'budapest': 'HU', 'ukraine': 'UA', 'kyiv': 'UA',
+  'uae': 'AE', 'united arab emirates': 'AE', 'dubai': 'AE', 'abu dhabi': 'AE',
+  'saudi arabia': 'SA', 'riyadh': 'SA', 'turkey': 'TR', 'istanbul': 'TR',
+  'russia': 'RU', 'moscow': 'RU',
 };
 
 function normalizeCountry(raw: string): string {
@@ -439,25 +462,45 @@ function generateBuyingSignals(lead: any): string[] {
   return signals.length > 0 ? signals : ['Prospect'];
 }
 
-// Map Railway response to ScoredLead format
-// Railway now pre-transforms leads, so we just add scores if missing
+// Map Railway response to ScoredLead format — handles many field name conventions
 function mapRailwayLead(lead: any): ScoredLead {
-  // Always recalculate scores for consistency and per-lead variation
-  const scores = calculateScores(lead);
-  
+  // Resolve field names across common API conventions
+  const firstName = lead.first_name || lead.firstName || '';
+  const lastName = lead.last_name || lead.lastName || '';
+  const fullNameFromParts = (firstName && lastName) ? `${firstName} ${lastName}` : (firstName || lastName);
+
+  const jobTitle = lead.job_title || lead.title || lead.position || lead.job_title_levels || lead.role || '';
+  const companyName = lead.company_name || lead.company || lead.organization || lead.employer || lead.company_display_name || '';
+  const companyDomain = lead.company_domain || lead.domain || lead.company_website || lead.website || '';
+  const businessEmail = lead.business_email || lead.email || lead.work_email || lead.contact_email || null;
+  const contactName = lead.contact_name || lead.full_name || lead.name || fullNameFromParts || '';
+  const industry = lead.industry || lead.company_industry || lead.sector || lead.vertical || '';
+  const companySize = lead.company_size || lead.employee_count || lead.employees ||
+    lead.company_employee_count || lead.size || lead.employee_range || '';
+  const country = lead.country || lead.location_country || lead.country_code ||
+    lead.location || lead.geo_country || '';
+  const linkedinUrl = lead.linkedin_url || lead.linkedin || lead.linkedin_profile ||
+    lead.profile_url || lead.linkedinUrl || null;
+
+  const normalised = {
+    job_title: jobTitle,
+    company_name: companyName,
+    company_domain: companyDomain,
+    business_email: businessEmail,
+    contact_name: contactName,
+    industry,
+    company_size: String(companySize),
+    country,
+    linkedin_url: linkedinUrl,
+  };
+
+  const scores = calculateScores(normalised);
+
   return {
-    job_title: lead.job_title || '',
-    company_name: lead.company_name || '',
-    company_domain: lead.company_domain || '',
-    business_email: lead.business_email || null,
-    contact_name: lead.contact_name || '',
-    industry: lead.industry || '',
-    company_size: lead.company_size || '',
-    country: lead.country || '',
-    linkedin_url: lead.linkedin_url || null,
+    ...normalised,
     scores,
-    score_explanation: generateScoreExplanation(lead, scores),
-    buying_signals: generateBuyingSignals(lead),
+    score_explanation: generateScoreExplanation(normalised, scores),
+    buying_signals: generateBuyingSignals(normalised),
   };
 }
 
@@ -770,6 +813,31 @@ serve(async (req) => {
     const railwayUrl = `${baseUrl}/search`;
     console.log('Calling Railway API:', railwayUrl);
 
+    // Admin-only schema probe: call with { _probe: true } to retrieve the Railway OpenAPI schema.
+    // Useful for diagnosing field name mismatches without touching Supabase logs.
+    if ((filters as any)._probe === true && isAdmin) {
+      const probeRailwayKey = Deno.env.get('RAILWAY_API_KEY');
+      const probeHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (probeRailwayKey) {
+        probeHeaders['Authorization'] = `Bearer ${probeRailwayKey}`;
+        probeHeaders['X-API-Key'] = probeRailwayKey;
+      }
+      const endpoints = ['/openapi.json', '/docs', '/'];
+      const probeResults: Record<string, any> = {};
+      for (const ep of endpoints) {
+        try {
+          const r = await fetch(`${baseUrl}${ep}`, { headers: probeHeaders });
+          const txt = await r.text();
+          probeResults[ep] = { status: r.status, body: txt.substring(0, 3000) };
+        } catch (e) {
+          probeResults[ep] = { error: String(e) };
+        }
+      }
+      return new Response(JSON.stringify({ probe: true, results: probeResults }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Prepare request body for Railway API - PDL format
     let jobTitle: string | undefined = filters.job_title;
     let nonJobKeywords: string[] = [];
@@ -844,15 +912,21 @@ serve(async (req) => {
     console.log('URL:', railwayUrl);
     console.log('Request body:', JSON.stringify(requestBody, null, 2));
 
+    // Optional per-request API key (set RAILWAY_API_KEY in Supabase secrets if required)
+    const railwayApiKey = Deno.env.get('RAILWAY_API_KEY');
+    const railwayHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (railwayApiKey) {
+      railwayHeaders['Authorization'] = `Bearer ${railwayApiKey}`;
+      railwayHeaders['X-API-Key'] = railwayApiKey;
+    }
+
     // Call Railway backend
     let response: Response;
     try {
       console.log('Fetching from Railway URL:', railwayUrl);
       response = await fetch(railwayUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: railwayHeaders,
         body: JSON.stringify(requestBody),
       });
       console.log('Railway response status:', response.status);
@@ -888,7 +962,7 @@ serve(async (req) => {
       try {
         const retryRes = await fetch(railwayUrl, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: railwayHeaders,
           body: JSON.stringify(retryBody),
         });
         if (retryRes.ok) {
@@ -941,20 +1015,20 @@ serve(async (req) => {
     console.log('count:', data.count);
     console.log('Full response data:', JSON.stringify(data, null, 2).substring(0, 2000));
 
-    // Handle different response formats - prioritize data.leads (pre-transformed by Railway)
+    // Handle many response formats — Railway may use any of these keys
     let rawLeads: any[] = [];
-    if (data.leads && Array.isArray(data.leads)) {
-      console.log('Using pre-transformed leads array from Railway');
-      rawLeads = data.leads;
-    } else if (Array.isArray(data)) {
+    const LEAD_ARRAY_KEYS = ['leads', 'contacts', 'people', 'persons', 'results', 'data', 'items', 'records', 'email_list'];
+    if (Array.isArray(data)) {
       console.log('Data is direct array format');
       rawLeads = data;
-    } else if (data.data && Array.isArray(data.data)) {
-      console.log('Using data.data array (raw PDL)');
-      rawLeads = data.data;
-    } else if (data.results && Array.isArray(data.results)) {
-      console.log('Using data.results array');
-      rawLeads = data.results;
+    } else {
+      for (const key of LEAD_ARRAY_KEYS) {
+        if (data[key] && Array.isArray(data[key]) && data[key].length > 0) {
+          console.log(`Using data.${key} array from Railway response`);
+          rawLeads = data[key];
+          break;
+        }
+      }
     }
 
     console.log('=== LEAD DATA ===');
@@ -963,9 +1037,26 @@ serve(async (req) => {
       console.log('First raw lead:', JSON.stringify(rawLeads[0], null, 2));
     }
 
-    // If no leads found, refund the credit and return empty.
+    // If no leads found, log the Railway API schema for diagnosis then refund the credit.
     if (rawLeads.length === 0) {
-      console.log('No leads returned for search criteria');
+      console.log('No leads returned — fetching Railway schema for diagnosis...');
+      try {
+        const schemaRes = await fetch(`${baseUrl}/openapi.json`, {
+          headers: railwayHeaders,
+        });
+        if (schemaRes.ok) {
+          const schema = await schemaRes.json();
+          console.log('=== RAILWAY OPENAPI SCHEMA ===');
+          console.log(JSON.stringify(schema, null, 2).substring(0, 8000));
+        } else {
+          console.log('Railway schema not available, status:', schemaRes.status);
+          // Also try root endpoint for clues
+          const rootRes = await fetch(baseUrl, { headers: railwayHeaders });
+          console.log('Railway root status:', rootRes.status, 'body:', (await rootRes.text()).substring(0, 500));
+        }
+      } catch (probeErr) {
+        console.log('Schema probe failed:', probeErr);
+      }
       await refundCredit('empty_result');
       return new Response(
         JSON.stringify({ 
