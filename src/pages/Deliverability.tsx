@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Mail, Plus, Trash2, Lock, ShieldAlert, ShieldCheck, ShieldX, TrendingUp, AlertTriangle, Ban, CheckCircle2, XCircle, Globe, Loader2, Copy, ExternalLink } from "lucide-react";
 import { OUTBOUND_KB } from "@/lib/outbound-kb";
+import { discoverDomainConnect, buildApplyUrl } from "@/lib/domain-connect";
 import { toast } from "sonner";
 
 interface Mailbox {
@@ -62,6 +63,7 @@ const Deliverability = () => {
   const [dnsChecking, setDnsChecking] = useState(false);
   const [dnsResults, setDnsResults] = useState<DnsResults | null>(null);
   const [setupMode, setSetupMode] = useState<'auto' | 'manual' | null>(null);
+  const [autoSetupLoading, setAutoSetupLoading] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [newEmail, setNewEmail] = useState("");
 
@@ -249,6 +251,51 @@ const Deliverability = () => {
       toast.error('DNS lookup failed. Check your domain and try again.');
     } finally {
       setDnsChecking(false);
+    }
+  };
+
+  // "Do It For Me" — try the automated DomainConnect flow; fall back to the guided steps.
+  const handleAutoSetup = async () => {
+    if (!dnsResults) return;
+    setAutoSetupLoading(true);
+    try {
+      const discovery = await discoverDomainConnect(dnsResults.domain);
+
+      if (discovery.supported) {
+        // Determine SPF include based on detected/likely ESP (default Google Workspace).
+        const isOutlook = dnsResults.nameservers.some((ns) => ns.includes("outlook"));
+        const variables: Record<string, string> = {
+          spfinclude: isOutlook ? "spf.protection.outlook.com" : "_spf.google.com",
+          dmarcpolicy: "quarantine",
+          dmarcrua: `dmarc@${dnsResults.domain}`,
+        };
+        const applyUrl = buildApplyUrl(
+          discovery.settings,
+          dnsResults.domain,
+          variables,
+          window.location.href
+        );
+        // Send the user to their provider's confirm screen.
+        window.open(applyUrl, "_blank", "noopener,noreferrer");
+        toast.success(
+          `Opening ${discovery.settings.providerName || dnsResults.provider} — confirm the records to finish.`
+        );
+        // Also reveal the manual values in case the popup is blocked.
+        setSetupMode("auto");
+      } else {
+        // Provider doesn't support DomainConnect — show the guided flow.
+        const reasonMsg =
+          discovery.reason === "no_record" || discovery.reason === "no_sync"
+            ? `${dnsResults.provider} doesn't support one-click setup. Here's the guided way.`
+            : "Couldn't reach your provider for automatic setup. Here's the guided way.";
+        toast.info(reasonMsg);
+        setSetupMode("auto");
+      }
+    } catch {
+      toast.error("Automatic setup failed. Use the guided steps below.");
+      setSetupMode("auto");
+    } finally {
+      setAutoSetupLoading(false);
     }
   };
 
@@ -473,9 +520,12 @@ const Deliverability = () => {
                       <Button
                         size="sm"
                         variant={setupMode === 'auto' ? 'default' : 'outline'}
-                        onClick={() => setSetupMode(setupMode === 'auto' ? null : 'auto')}
+                        onClick={handleAutoSetup}
+                        disabled={autoSetupLoading}
                       >
-                        Do It For Me
+                        {autoSetupLoading
+                          ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Setting up</>
+                          : 'Do It For Me'}
                       </Button>
                       <Button
                         size="sm"
