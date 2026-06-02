@@ -12,9 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Mail, Plus, Trash2, AlertCircle, Lock, ShieldAlert, ShieldCheck, ShieldX, TrendingUp, AlertTriangle, Ban } from "lucide-react";
+import { Mail, Plus, Trash2, Lock, ShieldAlert, ShieldCheck, ShieldX, TrendingUp, AlertTriangle, Ban, CheckCircle2, XCircle, Globe, Loader2, Copy, ExternalLink } from "lucide-react";
 import { OUTBOUND_KB } from "@/lib/outbound-kb";
 import { toast } from "sonner";
 
@@ -38,12 +37,31 @@ interface ReputationMetrics {
   lastUpdated: string;
 }
 
+interface DnsRecord {
+  found: boolean;
+  value?: string;
+  selector?: string;
+}
+
+interface DnsResults {
+  domain: string;
+  provider: string;
+  providerSlug: string;
+  nameservers: string[];
+  spf: DnsRecord;
+  dkim: DnsRecord;
+  dmarc: DnsRecord;
+}
+
 const Deliverability = () => {
   const queryClient = useQueryClient();
   const { hasFeature, gateModalOpen, setGateModalOpen, gatedFeature, currentPlan, triggerGate } = usePlanFeatures();
   const deliverabilityGated = !hasFeature('deliverabilityDashboard');
   const [domainInput, setDomainInput] = useState("");
   const [showDNSCheck, setShowDNSCheck] = useState(false);
+  const [dnsChecking, setDnsChecking] = useState(false);
+  const [dnsResults, setDnsResults] = useState<DnsResults | null>(null);
+  const [setupMode, setSetupMode] = useState<'auto' | 'manual' | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [newEmail, setNewEmail] = useState("");
 
@@ -145,6 +163,93 @@ const Deliverability = () => {
     if (mb.warmup_active) score += 20;
     if ((mb.current_week || 1) >= 3) score += 20;
     return Math.min(score, 100);
+  };
+
+  const checkDns = async () => {
+    const domain = domainInput.trim().toLowerCase()
+      .replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+    if (!domain || !domain.includes('.')) return;
+
+    setDnsChecking(true);
+    setDnsResults(null);
+    setSetupMode(null);
+
+    const doh = async (name: string, type: string) => {
+      try {
+        const r = await fetch(
+          `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(name)}&type=${type}`,
+          { headers: { Accept: 'application/dns-json' } }
+        );
+        return r.ok ? r.json() : null;
+      } catch { return null; }
+    };
+
+    try {
+      // NS records → detect DNS provider
+      const nsData = await doh(domain, 'NS');
+      const nameservers: string[] = (nsData?.Answer || [])
+        .map((a: any) => a.data.replace(/\.$/, '').toLowerCase());
+
+      let provider = 'Unknown', providerSlug = 'unknown';
+      if (nameservers.some(ns => ns.includes('ns.cloudflare.com'))) {
+        provider = 'Cloudflare'; providerSlug = 'cloudflare';
+      } else if (nameservers.some(ns => ns.includes('domaincontrol.com'))) {
+        provider = 'GoDaddy'; providerSlug = 'godaddy';
+      } else if (nameservers.some(ns => ns.includes('registrar-servers.com') || ns.includes('web-hosting.com'))) {
+        provider = 'Namecheap'; providerSlug = 'namecheap';
+      } else if (nameservers.some(ns => ns.includes('awsdns'))) {
+        provider = 'AWS Route53'; providerSlug = 'route53';
+      } else if (nameservers.some(ns => ns.includes('googledomains.com') || ns.includes('google.com/dns'))) {
+        provider = 'Google Domains'; providerSlug = 'google';
+      } else if (nameservers.some(ns => ns.includes('squarespace.com'))) {
+        provider = 'Squarespace'; providerSlug = 'squarespace';
+      } else if (nameservers.some(ns => ns.includes('bluehost.com'))) {
+        provider = 'Bluehost'; providerSlug = 'bluehost';
+      } else if (nameservers.length > 0) {
+        const parts = nameservers[0].split('.');
+        provider = parts.slice(-2).join('.');
+        providerSlug = 'other';
+      }
+
+      // SPF — TXT record at root containing v=spf1
+      const txtData = await doh(domain, 'TXT');
+      const txts: string[] = (txtData?.Answer || [])
+        .map((a: any) => a.data.replace(/^"|"$/g, '').replace(/"\s*"/g, ''));
+      const spfValue = txts.find(r => r.startsWith('v=spf1'));
+
+      // DMARC — TXT at _dmarc.domain
+      const dmarcData = await doh(`_dmarc.${domain}`, 'TXT');
+      const dmarcs: string[] = (dmarcData?.Answer || [])
+        .map((a: any) => a.data.replace(/^"|"$/g, ''));
+      const dmarcValue = dmarcs.find(r => r.startsWith('v=DMARC1'));
+
+      // DKIM — try common selectors in parallel
+      const dkimSelectors = ['google', 'selector1', 'selector2', 'mail', 'default', 'k1', 'dkim', 's1', 's2', 'em'];
+      const dkimHits = await Promise.all(
+        dkimSelectors.map(async (sel) => {
+          const d = await doh(`${sel}._domainkey.${domain}`, 'TXT');
+          const recs: string[] = (d?.Answer || []).map((a: any) => a.data);
+          const hit = recs.find(r => r.includes('v=DKIM1') || r.includes('p='));
+          return hit ? { selector: sel, value: hit } : null;
+        })
+      );
+      const dkimHit = dkimHits.find(Boolean);
+
+      setDnsResults({
+        domain,
+        provider,
+        providerSlug,
+        nameservers,
+        spf: { found: !!spfValue, value: spfValue },
+        dkim: dkimHit ? { found: true, value: dkimHit!.value, selector: dkimHit!.selector } : { found: false },
+        dmarc: { found: !!dmarcValue, value: dmarcValue },
+      });
+      setShowDNSCheck(true);
+    } catch {
+      toast.error('DNS lookup failed. Check your domain and try again.');
+    } finally {
+      setDnsChecking(false);
+    }
   };
 
   return (
@@ -259,59 +364,138 @@ const Deliverability = () => {
           <h2 className="text-xl font-semibold">DNS Health Checker</h2>
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Check a domain</CardTitle>
-              <CardDescription>Verify SPF, DKIM, and DMARC records for your sending domain</CardDescription>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Globe className="w-4 h-4" />
+                Check a domain
+              </CardTitle>
+              <CardDescription>We auto-detect your DNS provider and verify SPF, DKIM, and DMARC records</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-2">
-                <Input placeholder="yourdomain.com" value={domainInput} onChange={(e) => setDomainInput(e.target.value)} />
-                <Button onClick={() => setShowDNSCheck(!!domainInput)}>Check</Button>
+                <Input
+                  placeholder="yourdomain.com"
+                  value={domainInput}
+                  onChange={(e) => setDomainInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && checkDns()}
+                />
+                <Button onClick={checkDns} disabled={!domainInput || dnsChecking}>
+                  {dnsChecking
+                    ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Checking</>
+                    : 'Check'}
+                </Button>
               </div>
-              {showDNSCheck && (
-                <div className="space-y-3">
-                  {[
-                    { label: "SPF Record", detail: "Manual verification required" },
-                    { label: "DKIM", detail: "Check your email provider admin console" },
-                    { label: "DMARC", detail: "Recommended: set up a DMARC policy" },
-                    { label: "Custom Domain Sending", detail: "Verify you're sending from a workspace domain" },
-                  ].map((check) => (
-                    <div key={check.label} className="flex items-center gap-3 p-3 rounded-lg border">
-                      <AlertCircle className="w-5 h-5 text-yellow-500 flex-shrink-0" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">{check.label}</p>
-                        <p className="text-xs text-muted-foreground">{check.detail}</p>
+
+              {dnsChecking && (
+                <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Scanning DNS records...
+                </div>
+              )}
+
+              {dnsResults && (
+                <div className="space-y-4">
+                  {/* Provider banner */}
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 text-sm">
+                    <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <span>DNS provider: <strong>{dnsResults.provider}</strong></span>
+                    {dnsResults.nameservers[0] && (
+                      <span className="ml-auto text-xs text-muted-foreground truncate">{dnsResults.nameservers[0]}</span>
+                    )}
+                  </div>
+
+                  {/* Record status rows */}
+                  <div className="space-y-2">
+                    {[
+                      {
+                        label: 'SPF Record',
+                        record: dnsResults.spf,
+                        description: dnsResults.spf.found
+                          ? dnsResults.spf.value!
+                          : 'Authorizes servers to send email from your domain',
+                      },
+                      {
+                        label: 'DKIM',
+                        record: dnsResults.dkim,
+                        description: dnsResults.dkim.found
+                          ? `Selector: ${dnsResults.dkim.selector} · ${dnsResults.dkim.value!.substring(0, 60)}…`
+                          : 'Cryptographic signature that proves email authenticity',
+                      },
+                      {
+                        label: 'DMARC',
+                        record: dnsResults.dmarc,
+                        description: dnsResults.dmarc.found
+                          ? dnsResults.dmarc.value!
+                          : 'Policy for handling emails that fail SPF/DKIM',
+                      },
+                    ].map((check) => (
+                      <div
+                        key={check.label}
+                        className={`flex items-start gap-3 p-3 rounded-lg border ${
+                          check.record.found
+                            ? 'border-green-500/20 bg-green-500/5'
+                            : 'border-red-500/20 bg-red-500/5'
+                        }`}
+                      >
+                        {check.record.found
+                          ? <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                          : <XCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium">{check.label}</p>
+                          <p className="text-xs text-muted-foreground truncate">{check.description}</p>
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className={
+                            check.record.found
+                              ? 'text-green-500 border-green-500/30 shrink-0'
+                              : 'text-red-500 border-red-500/30 shrink-0'
+                          }
+                        >
+                          {check.record.found ? 'Configured' : 'Missing'}
+                        </Badge>
                       </div>
-                      <Badge variant="outline">Check Manually</Badge>
+                    ))}
+                  </div>
+
+                  {/* All good */}
+                  {dnsResults.spf.found && dnsResults.dkim.found && dnsResults.dmarc.found && (
+                    <div className="flex items-center gap-2 p-3 rounded-lg border border-green-500/20 bg-green-500/5">
+                      <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
+                      <p className="text-sm font-medium text-green-700 dark:text-green-400">
+                        All records are configured correctly. This domain is ready to send.
+                      </p>
                     </div>
-                  ))}
-                  <Accordion type="single" collapsible>
-                    <AccordionItem value="spf">
-                      <AccordionTrigger className="text-sm">How to set up SPF</AccordionTrigger>
-                      <AccordionContent>
-                        <p className="text-sm text-muted-foreground mb-2">Add this TXT record to your DNS:</p>
-                        <code className="block p-2 rounded bg-muted text-xs">v=spf1 include:_spf.google.com ~all</code>
-                      </AccordionContent>
-                    </AccordionItem>
-                    <AccordionItem value="dkim">
-                      <AccordionTrigger className="text-sm">How to set up DKIM</AccordionTrigger>
-                      <AccordionContent>
-                        <p className="text-sm text-muted-foreground">Enable DKIM in your Google Workspace Admin console under Apps → Google Workspace → Gmail → Authenticate email.</p>
-                      </AccordionContent>
-                    </AccordionItem>
-                    <AccordionItem value="dmarc">
-                      <AccordionTrigger className="text-sm">How to set up DMARC</AccordionTrigger>
-                      <AccordionContent>
-                        <p className="text-sm text-muted-foreground mb-2">Add this TXT record to your DNS:</p>
-                        <code className="block p-2 rounded bg-muted text-xs">v=DMARC1; p=quarantine; rua=mailto:dmarc@{domainInput}</code>
-                      </AccordionContent>
-                    </AccordionItem>
-                    <AccordionItem value="custom">
-                      <AccordionTrigger className="text-sm">How to verify custom domain sending</AccordionTrigger>
-                      <AccordionContent>
-                        <p className="text-sm text-muted-foreground">Ensure you're sending from a Google Workspace or Microsoft 365 domain, not a personal Gmail/Outlook account. Personal accounts have lower deliverability and stricter rate limits.</p>
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
+                  )}
+
+                  {/* Action buttons when records are missing */}
+                  {(!dnsResults.spf.found || !dnsResults.dkim.found || !dnsResults.dmarc.found) && (
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant={setupMode === 'auto' ? 'default' : 'outline'}
+                        onClick={() => setSetupMode(setupMode === 'auto' ? null : 'auto')}
+                      >
+                        Do It For Me
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={setupMode === 'manual' ? 'default' : 'outline'}
+                        onClick={() => setSetupMode(setupMode === 'manual' ? null : 'manual')}
+                      >
+                        Set Up Manually
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Do It For Me — provider-specific guide */}
+                  {setupMode === 'auto' && (
+                    <ProviderSetupGuide results={dnsResults} />
+                  )}
+
+                  {/* Set Up Manually — raw record values */}
+                  {setupMode === 'manual' && (
+                    <ManualSetupGuide results={dnsResults} />
+                  )}
                 </div>
               )}
             </CardContent>
@@ -575,6 +759,175 @@ function DeliverabilityHealthThresholds({ mailboxCount, metrics }: { mailboxCoun
           ))}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function CopyButton({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    navigator.clipboard.writeText(value);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={copy}>
+      {copied ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+    </Button>
+  );
+}
+
+function ManualSetupGuide({ results }: { results: DnsResults }) {
+  const { domain, spf, dkim, dmarc } = results;
+  const missingRecords = [
+    !spf.found && {
+      name: 'SPF',
+      type: 'TXT',
+      host: '@',
+      value: 'v=spf1 include:_spf.google.com ~all',
+      note: 'If you use Microsoft 365 instead of Google Workspace, use: v=spf1 include:spf.protection.outlook.com ~all',
+    },
+    !dkim.found && {
+      name: 'DKIM',
+      type: 'TXT',
+      host: 'google._domainkey',
+      value: '(generate from your email provider admin panel)',
+      note: 'Google Workspace: Admin → Apps → Google Workspace → Gmail → Authenticate email → Generate key',
+    },
+    !dmarc.found && {
+      name: 'DMARC',
+      type: 'TXT',
+      host: '_dmarc',
+      value: `v=DMARC1; p=quarantine; rua=mailto:dmarc@${domain}`,
+      note: 'Start with p=none for monitoring, then move to p=quarantine or p=reject',
+    },
+  ].filter(Boolean) as Array<{ name: string; type: string; host: string; value: string; note: string }>;
+
+  return (
+    <div className="rounded-lg border p-4 space-y-4">
+      <h4 className="text-sm font-semibold">DNS Records to Add</h4>
+      <p className="text-xs text-muted-foreground">Log in to your DNS provider and add the following records. Each record type is TXT.</p>
+      <div className="space-y-4">
+        {missingRecords.map((rec) => (
+          <div key={rec.name} className="space-y-2">
+            <p className="text-sm font-medium">{rec.name}</p>
+            <div className="grid grid-cols-[auto_1fr_auto] gap-2 items-center">
+              <span className="text-xs text-muted-foreground w-16">Host / Name</span>
+              <code className="text-xs bg-muted px-2 py-1 rounded truncate">{rec.host}</code>
+              <CopyButton value={rec.host} />
+            </div>
+            <div className="grid grid-cols-[auto_1fr_auto] gap-2 items-center">
+              <span className="text-xs text-muted-foreground w-16">Value</span>
+              <code className="text-xs bg-muted px-2 py-1 rounded truncate">{rec.value}</code>
+              <CopyButton value={rec.value} />
+            </div>
+            <p className="text-xs text-muted-foreground italic">{rec.note}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const PROVIDER_CONFIG: Record<string, {
+  manageUrl: string;
+  label: string;
+  steps: string[];
+}> = {
+  cloudflare: {
+    manageUrl: 'https://dash.cloudflare.com',
+    label: 'Open Cloudflare Dashboard',
+    steps: [
+      'Log in at dash.cloudflare.com',
+      'Click your domain name',
+      'Click the DNS tab, then Records',
+      'Click Add record for each missing record below',
+      'Set Type to TXT, paste the Host and Value, then Save',
+    ],
+  },
+  godaddy: {
+    manageUrl: 'https://dcc.godaddy.com/manage/dns',
+    label: 'Open GoDaddy DNS',
+    steps: [
+      'Log in at dcc.godaddy.com',
+      'Select your domain and click Manage DNS',
+      'Scroll to DNS Records and click Add',
+      'Set Type to TXT and fill in the Host and Value below',
+      'Save each record',
+    ],
+  },
+  namecheap: {
+    manageUrl: 'https://ap.www.namecheap.com/domains/list/',
+    label: 'Open Namecheap DNS',
+    steps: [
+      'Log in at namecheap.com → Domain List',
+      'Click Manage next to your domain',
+      'Click the Advanced DNS tab',
+      'Click Add New Record, choose TXT Record',
+      'Enter the Host and Value from below, then Save Changes',
+    ],
+  },
+  route53: {
+    manageUrl: 'https://console.aws.amazon.com/route53/',
+    label: 'Open Route53',
+    steps: [
+      'Log in to AWS Console → Route 53',
+      'Click Hosted Zones and select your domain',
+      'Click Create Record for each missing record',
+      'Set type to TXT and paste the values below',
+    ],
+  },
+  google: {
+    manageUrl: 'https://domains.google.com',
+    label: 'Open Google Domains',
+    steps: [
+      'Log in at domains.google.com',
+      'Click on your domain → DNS',
+      'Scroll to Custom Records and click Manage Custom Records',
+      'Add each TXT record below with the host and value shown',
+    ],
+  },
+  squarespace: {
+    manageUrl: 'https://account.squarespace.com/domains',
+    label: 'Open Squarespace Domains',
+    steps: [
+      'Log in at squarespace.com → Domains',
+      'Click your domain → DNS Settings',
+      'Click Add Record and choose TXT',
+      'Enter the host and value for each record below',
+    ],
+  },
+};
+
+function ProviderSetupGuide({ results }: { results: DnsResults }) {
+  const config = PROVIDER_CONFIG[results.providerSlug];
+  const steps = config?.steps || [
+    'Log in to your DNS provider',
+    'Find the DNS Management or Zone Editor section',
+    'Add a new TXT record for each missing item below',
+    'Enter the exact Host and Value shown — save each record',
+    'DNS changes propagate within 5–60 minutes',
+  ];
+
+  return (
+    <div className="rounded-lg border p-4 space-y-4">
+      <div className="flex items-center justify-between">
+        <h4 className="text-sm font-semibold">Step-by-Step: {results.provider}</h4>
+        {config && (
+          <a href={config.manageUrl} target="_blank" rel="noopener noreferrer">
+            <Button variant="outline" size="sm" className="gap-1.5 h-7 text-xs">
+              <ExternalLink className="w-3.5 h-3.5" />
+              {config.label}
+            </Button>
+          </a>
+        )}
+      </div>
+      <ol className="space-y-2 list-decimal list-inside">
+        {steps.map((step, i) => (
+          <li key={i} className="text-sm text-muted-foreground">{step}</li>
+        ))}
+      </ol>
+      <ManualSetupGuide results={results} />
     </div>
   );
 }
