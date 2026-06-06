@@ -291,7 +291,7 @@ const Deliverability = () => {
         setSetupMode("auto");
       } else {
         // Provider doesn't support DomainConnect — show the guided flow.
-        const reason = discovery.reason;
+        const reason = (discovery as { supported: false; reason: string }).reason;
         const reasonMsg =
           reason === "no_record" || reason === "no_sync"
             ? `${dnsResults.provider} doesn't support one-click setup. Here's the guided way.`
