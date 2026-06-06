@@ -106,7 +106,8 @@ serve(async (req) => {
       </div>
     </body></html>`;
 
-    const emailRecipients = [...new Set(adminEmails)].filter(Boolean);
+    const NOTIFICATION_EMAIL = Deno.env.get("NOTIFICATION_EMAIL") || "brandon@bdotindustries.com";
+    const emailRecipients = [...new Set([...adminEmails, NOTIFICATION_EMAIL])].filter(Boolean);
     
     if (emailRecipients.length === 0) {
       return new Response(JSON.stringify({ message: "Event logged, but no admin emails configured" }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
