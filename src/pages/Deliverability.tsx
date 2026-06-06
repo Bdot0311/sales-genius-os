@@ -289,7 +289,7 @@ const Deliverability = () => {
         );
         // Also reveal the manual values in case the popup is blocked.
         setSetupMode("auto");
-      } else {
+      } else if (!discovery.supported) {
         // Provider doesn't support DomainConnect — show the guided flow.
         const reasonMsg =
           discovery.reason === "no_record" || discovery.reason === "no_sync"
