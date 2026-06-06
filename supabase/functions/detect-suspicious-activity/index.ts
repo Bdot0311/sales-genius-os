@@ -149,8 +149,10 @@ serve(async (req) => {
       const adminIds = adminRoles?.map(r => r.user_id) || [];
       const { data: adminProfiles } = await supabaseClient.from("profiles").select("email").in("id", adminIds);
       const adminEmails = adminProfiles?.map(p => p.email).filter(Boolean) || [];
+      const NOTIFICATION_EMAIL = Deno.env.get("NOTIFICATION_EMAIL") || "brandon@bdotindustries.com";
+      const allRecipients = [...new Set([...adminEmails, NOTIFICATION_EMAIL])].filter(Boolean);
 
-      if (adminEmails.length > 0) {
+      if (allRecipients.length > 0) {
         const adminEmailHtml = `<!DOCTYPE html><html><head><style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
@@ -170,10 +172,10 @@ serve(async (req) => {
           </div>
         </body></html>`;
 
-        for (const adminEmail of adminEmails) {
+        for (const adminEmail of allRecipients) {
           await enqueueAlert(supabaseClient, adminEmail, '🚨 [CRITICAL] Platform Security Alert - Immediate Action Required', adminEmailHtml, 'suspicious-activity-admin');
         }
-        logStep("Admin alerts enqueued", { adminCount: adminEmails.length, criticalAlerts: criticalAlerts.length });
+        logStep("Admin alerts enqueued", { adminCount: allRecipients.length, criticalAlerts: criticalAlerts.length });
       }
     }
 
