@@ -172,10 +172,10 @@ serve(async (req) => {
           </div>
         </body></html>`;
 
-        for (const adminEmail of adminEmails) {
+        for (const adminEmail of allRecipients) {
           await enqueueAlert(supabaseClient, adminEmail, '🚨 [CRITICAL] Platform Security Alert - Immediate Action Required', adminEmailHtml, 'suspicious-activity-admin');
         }
-        logStep("Admin alerts enqueued", { adminCount: adminEmails.length, criticalAlerts: criticalAlerts.length });
+        logStep("Admin alerts enqueued", { adminCount: allRecipients.length, criticalAlerts: criticalAlerts.length });
       }
     }
 
