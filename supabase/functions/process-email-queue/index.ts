@@ -246,6 +246,32 @@ Deno.serve(async (req) => {
         }
       }
 
+      // Ensure transactional emails have an unsubscribe_token (required by Email API).
+      // Auto-mint one if the caller didn't include it.
+      let unsubscribeToken: string | undefined = payload.unsubscribe_token
+      if (payload.purpose === 'transactional' && !unsubscribeToken && payload.to) {
+        const normalizedEmail = String(payload.to).trim().toLowerCase()
+        const { data: existing } = await supabase
+          .from('email_unsubscribe_tokens')
+          .select('token')
+          .eq('email', normalizedEmail)
+          .maybeSingle()
+        if (existing?.token) {
+          unsubscribeToken = existing.token
+        } else {
+          const newToken = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '')
+          const { data: upserted, error: upsertErr } = await supabase
+            .from('email_unsubscribe_tokens')
+            .upsert({ token: newToken, email: normalizedEmail }, { onConflict: 'email' })
+            .select('token')
+            .maybeSingle()
+          if (upsertErr) {
+            console.error('Failed to mint unsubscribe token', { error: upsertErr })
+          }
+          unsubscribeToken = upserted?.token ?? newToken
+        }
+      }
+
       try {
         await sendLovableEmail(
           {
@@ -259,7 +285,7 @@ Deno.serve(async (req) => {
             purpose: payload.purpose,
             label: payload.label,
             idempotency_key: payload.idempotency_key,
-            unsubscribe_token: payload.unsubscribe_token,
+            unsubscribe_token: unsubscribeToken,
             message_id: payload.message_id,
           },
           // sendUrl is optional — when LOVABLE_SEND_URL is not set, the library
@@ -267,6 +293,7 @@ Deno.serve(async (req) => {
           // Set LOVABLE_SEND_URL as a Supabase secret to override (e.g. for local dev).
           { apiKey, sendUrl: Deno.env.get('LOVABLE_SEND_URL') }
         )
+
 
         // Log success
         await supabase.from('email_send_log').insert({
