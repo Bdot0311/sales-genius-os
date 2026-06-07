@@ -43,10 +43,10 @@ export function useRealtimeTable({
     const ch: RealtimeChannel = supabase
       .channel(channel)
       .on(
-        // @ts-expect-error – supabase-js v2 generic for postgres_changes
-        "postgres_changes",
+        "postgres_changes" as never,
         { event, schema, table, ...(filter ? { filter } : {}) },
         (payload: RealtimePostgresChangesPayload<any>) => {
+
           if (debug) {
             const commitTs = (payload as any).commit_timestamp;
             const latency =

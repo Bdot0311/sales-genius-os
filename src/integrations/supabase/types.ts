@@ -1953,6 +1953,24 @@ export type Database = {
           },
         ]
       }
+      rl_buckets: {
+        Row: {
+          bucket_key: string
+          hits: number
+          window_start: string
+        }
+        Insert: {
+          bucket_key: string
+          hits?: number
+          window_start: string
+        }
+        Update: {
+          bucket_key?: string
+          hits?: number
+          window_start?: string
+        }
+        Relationships: []
+      }
       scheduled_imports: {
         Row: {
           created_at: string
@@ -3212,6 +3230,11 @@ export type Database = {
         }[]
       }
       cleanup_expired_cache: { Args: never; Returns: undefined }
+      cleanup_rl_buckets: { Args: never; Returns: undefined }
+      consume_rate_limit: {
+        Args: { _key: string; _max: number; _window_seconds: number }
+        Returns: boolean
+      }
       current_month_start_utc: { Args: never; Returns: string }
       deduct_search_credits: {
         Args: { _amount: number; _description?: string }

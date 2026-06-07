@@ -58,9 +58,16 @@ async function checkMx(domain: string): Promise<boolean> {
   }
 }
 
+import { rateLimit, rateLimitResponse, clientIp } from "../_shared/rate-limit.ts";
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
+    // 30 requests/minute per IP — typing form burst
+    const rl = await rateLimit(`validate-email:${clientIp(req)}`, 30, 60);
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfter, corsHeaders);
+
+
     const body = await req.json().catch(() => ({}));
     const email = body?.email;
     const result: Result = {

@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
+import { rateLimit, rateLimitResponse, clientIp } from "../_shared/rate-limit.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,7 +28,12 @@ serve(async (req) => {
   }
 
   try {
+    // 5 requests per hour per IP
+    const rl = await rateLimit(`integration-req:${clientIp(req)}`, 5, 3600);
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfter, corsHeaders);
+
     const body = await req.json().catch(() => ({} as Record<string, unknown>));
+
     const name = clean(body.name, 200);
     const email = clean(body.email, 320);
     const company = clean(body.company, 200);

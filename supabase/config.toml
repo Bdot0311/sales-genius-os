@@ -38,9 +38,18 @@ project_id = "ghgfjnepvxvxrncmskys"
   [functions.generate-email]
     verify_jwt = true
   [functions.google-oauth-callback]
-    verify_jwt = true
+    verify_jwt = false
   [functions.google-oauth-init]
     verify_jwt = true
+  [functions.hubspot-oauth-callback]
+    verify_jwt = false
+  [functions.salesforce-oauth-callback]
+    verify_jwt = false
+  [functions.calendly-oauth-callback]
+    verify_jwt = false
+  [functions.slack-oauth-callback]
+    verify_jwt = false
+
   [functions.graphql-api]
     verify_jwt = false
   [functions.handle-email-suppression]
