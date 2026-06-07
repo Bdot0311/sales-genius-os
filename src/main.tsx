@@ -1,6 +1,16 @@
 import { createRoot } from "react-dom/client";
+import * as Sentry from "@sentry/react";
 import App from "./App.tsx";
 import "./index.css";
+
+Sentry.init({
+  dsn: "https://3419bbc0b0d5de6af9e00fd6f7b96295@o4511526216597504.ingest.us.sentry.io/4511526241697792",
+  sendDefaultPii: true,
+  tracesSampleRate: 0.1,
+  replaysSessionSampleRate: 0,
+  replaysOnErrorSampleRate: 1.0,
+  environment: import.meta.env.MODE,
+});
 
 // Self-heal stale chunk references after a redeploy. When a dynamic import
 // fails because the hashed chunk URL no longer exists, force a one-shot
