@@ -447,6 +447,7 @@ export type Database = {
           method: string
           response_time_ms: number | null
           status_code: number | null
+          user_id: string | null
         }
         Insert: {
           api_key_id: string
@@ -456,6 +457,7 @@ export type Database = {
           method: string
           response_time_ms?: number | null
           status_code?: number | null
+          user_id?: string | null
         }
         Update: {
           api_key_id?: string
@@ -465,6 +467,7 @@ export type Database = {
           method?: string
           response_time_ms?: number | null
           status_code?: number | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -2354,6 +2357,7 @@ export type Database = {
           subject_template: string
           trigger_condition: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           body_template: string
@@ -2369,6 +2373,7 @@ export type Database = {
           subject_template: string
           trigger_condition?: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           body_template?: string
@@ -2384,6 +2389,7 @@ export type Database = {
           subject_template?: string
           trigger_condition?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -2496,8 +2502,6 @@ export type Database = {
           last_stripe_event_at: string | null
           last_stripe_event_id: string | null
           leads_limit: number
-          monthly_emails_reset_at: string | null
-          monthly_emails_sent: number
           plan: Database["public"]["Enums"]["subscription_plan"]
           search_credits_addon: number
           search_credits_base: number
@@ -2528,8 +2532,6 @@ export type Database = {
           last_stripe_event_at?: string | null
           last_stripe_event_id?: string | null
           leads_limit?: number
-          monthly_emails_reset_at?: string | null
-          monthly_emails_sent?: number
           plan?: Database["public"]["Enums"]["subscription_plan"]
           search_credits_addon?: number
           search_credits_base?: number
@@ -2560,8 +2562,6 @@ export type Database = {
           last_stripe_event_at?: string | null
           last_stripe_event_id?: string | null
           leads_limit?: number
-          monthly_emails_reset_at?: string | null
-          monthly_emails_sent?: number
           plan?: Database["public"]["Enums"]["subscription_plan"]
           search_credits_addon?: number
           search_credits_base?: number
@@ -2835,6 +2835,7 @@ export type Database = {
           response_body: string | null
           response_status: number | null
           status: string
+          user_id: string | null
           webhook_id: string
         }
         Insert: {
@@ -2850,6 +2851,7 @@ export type Database = {
           response_body?: string | null
           response_status?: number | null
           status?: string
+          user_id?: string | null
           webhook_id: string
         }
         Update: {
@@ -2865,6 +2867,7 @@ export type Database = {
           response_body?: string | null
           response_status?: number | null
           status?: string
+          user_id?: string | null
           webhook_id?: string
         }
         Relationships: [
@@ -3259,6 +3262,7 @@ export type Database = {
           plan: Database["public"]["Enums"]["subscription_plan"]
         }[]
       }
+      get_my_referral_code: { Args: never; Returns: string }
       get_sequence_monthly_usage: {
         Args: never
         Returns: {
@@ -3351,6 +3355,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      reset_daily_email_counters: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "user"
