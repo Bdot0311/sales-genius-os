@@ -61,19 +61,21 @@ async function checkMx(domain: string): Promise<boolean> {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
-    const { email } = await req.json().catch(() => ({}));
+    const body = await req.json().catch(() => ({}));
+    const email = body?.email;
     const result: Result = {
       valid: false,
       checks: { syntax: false, disposable: false, mx: false },
     };
 
-    if (!email || typeof email !== "string") {
+    if (!email || typeof email !== "string" || email.length > 320) {
       result.reason = "Email is required.";
       return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
     }
+
 
     const normalized = email.trim().toLowerCase();
     result.checks.syntax = EMAIL_RE.test(normalized);
