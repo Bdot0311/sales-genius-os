@@ -139,31 +139,42 @@ const DeferredUIShell = ({ children }: { children: ReactNode }) => {
     const isPublic = isPublicLandingPath(window.location.pathname);
 
     const load = () => {
-      const imports: Promise<any>[] = [
-        import("@/components/ui/toaster"),
-        import("@/components/ui/sonner"),
-      ];
-      if (!isPublic) {
-        imports.push(import("@/hooks/use-white-label"));
-      }
+      const toasterPromise = import("@/components/ui/toaster");
+      const sonnerPromise = import("@/components/ui/sonner");
+      const whiteLabelPromise = !isPublic
+        ? import("@/hooks/use-white-label")
+        : Promise.resolve(null);
 
-      Promise.all(imports).then((mods) => {
-        const Toaster = mods[0].Toaster;
-        const SonnerToaster = mods[1].Toaster;
-        const useWhiteLabel = !isPublic ? mods[2]?.useWhiteLabel : null;
+      Promise.all([toasterPromise, sonnerPromise, whiteLabelPromise])
+        .then(([toasterMod, sonnerMod, whiteLabelMod]) => {
+          const Toaster = toasterMod?.Toaster;
+          const SonnerToaster = sonnerMod?.Toaster;
+          const useWhiteLabel = whiteLabelMod?.useWhiteLabel ?? null;
 
-        // Stable component rendered once — provides toasts + white-label CSS vars.
-        // Never wraps children so the children tree is never remounted.
-        const Providers = () => {
-          if (useWhiteLabel) {
-            try { useWhiteLabel(); } catch (e) { console.error("WhiteLabel init error:", e); }
+          if (!Toaster || !SonnerToaster) {
+            console.error("DeferredUIShell: missing Toaster export", {
+              hasToaster: !!Toaster,
+              hasSonner: !!SonnerToaster,
+            });
+            return;
           }
-          return <><Toaster /><SonnerToaster /></>;
-        };
 
-        setSideEffects(() => Providers);
-      });
+          // Stable component rendered once — provides toasts + white-label CSS vars.
+          // Never wraps children so the children tree is never remounted.
+          const Providers = () => {
+            if (useWhiteLabel) {
+              try { useWhiteLabel(); } catch (e) { console.error("WhiteLabel init error:", e); }
+            }
+            return <><Toaster /><SonnerToaster /></>;
+          };
+
+          setSideEffects(() => Providers);
+        })
+        .catch((err) => {
+          console.error("DeferredUIShell: failed to load UI shell", err);
+        });
     };
+
 
     const delay = isPublic ? 1500 : 100;
     if ('requestIdleCallback' in window) {
