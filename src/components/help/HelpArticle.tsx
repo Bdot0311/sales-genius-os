@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Clock, ThumbsUp, ThumbsDown, ChevronRight } from "lucide-react";
+import DOMPurify from "dompurify";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -40,11 +41,16 @@ export const HelpArticle = ({ article }: HelpArticleProps) => {
   };
 
   const renderInlineFormatting = (text: string) => {
+    const escapeAttr = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
     const result = text
       .replace(/\*\*(.*?)\*\*/g, '<strong style="color:hsl(0 0% 90%);font-weight:600">$1</strong>')
       .replace(/`([^`]+)`/g, '<code style="background:hsl(261 75% 50% / 0.12);padding:2px 6px;border-radius:4px;font-size:0.85em;color:hsl(261 75% 72%)">$1</code>')
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" style="color:hsl(261 75% 65%);text-decoration:underline">$1</a>');
-    return <span dangerouslySetInnerHTML={{ __html: result }} />;
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, url) => {
+        const safe = /^https?:\/\//i.test(url) ? escapeAttr(url) : '#';
+        return `<a href="${safe}" target="_blank" rel="noopener noreferrer" style="color:hsl(261 75% 65%);text-decoration:underline">${label}</a>`;
+      });
+    const clean = DOMPurify.sanitize(result, { ALLOWED_TAGS: ['strong', 'code', 'a'], ALLOWED_ATTR: ['href', 'target', 'rel', 'style'] });
+    return <span dangerouslySetInnerHTML={{ __html: clean }} />;
   };
 
   const renderContent = (content: string) => {

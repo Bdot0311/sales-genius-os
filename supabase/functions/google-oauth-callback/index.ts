@@ -37,16 +37,18 @@ serve(async (req) => {
       throw new Error("Not authenticated");
     }
 
-    // Verify state matches user
-    if (state) {
-      try {
-        const stateData = JSON.parse(state);
-        if (stateData.userId !== user.id) {
-          throw new Error("State mismatch - possible CSRF attack");
-        }
-      } catch (e) {
-        console.warn("Could not verify state:", e);
-      }
+    // Verify state matches user (CSRF protection - required)
+    if (!state) {
+      throw new Error("Missing state parameter");
+    }
+    let stateData: { userId?: string };
+    try {
+      stateData = JSON.parse(state);
+    } catch {
+      throw new Error("Invalid state parameter");
+    }
+    if (stateData.userId !== user.id) {
+      throw new Error("State mismatch - possible CSRF attack");
     }
 
     console.log("Exchanging code for tokens for user:", user.id);
