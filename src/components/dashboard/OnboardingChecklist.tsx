@@ -211,7 +211,7 @@ export const OnboardingChecklist = ({ onClose, onStartTour }: OnboardingChecklis
                 {!isCompleted && (step.link || step.action) && (
                   <Button
                     size="sm"
-                    variant="outline"
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm font-medium flex-shrink-0"
                     onClick={() => {
                       if (step.action) {
                         step.action();
@@ -223,6 +223,7 @@ export const OnboardingChecklist = ({ onClose, onStartTour }: OnboardingChecklis
                     {step.actionLabel || "Go"}
                   </Button>
                 )}
+
               </div>
             );
           })}
