@@ -30,14 +30,11 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !user) throw new Error("Not authenticated");
 
-    if (state) {
-      try {
-        const stateData = JSON.parse(state);
-        if (stateData.userId !== user.id) throw new Error("State mismatch");
-      } catch (e) {
-        if (e instanceof Error && e.message === "State mismatch") throw e;
-      }
-    }
+    if (!state) throw new Error("Missing state parameter");
+    let stateData: { userId?: string };
+    try { stateData = JSON.parse(state); }
+    catch { throw new Error("Invalid state parameter"); }
+    if (stateData.userId !== user.id) throw new Error("State mismatch - possible CSRF attack");
 
     const tokenResponse = await fetch("https://api.hubapi.com/oauth/v1/token", {
       method: "POST",
