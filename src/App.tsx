@@ -57,6 +57,7 @@ const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const ClientPortal = lazy(() => import("./pages/ClientPortal"));
 const Blog = lazy(() => import("./pages/Blog"));
 const BlogPost = lazy(() => import("./pages/BlogPost"));
+import SentryTest from "./pages/SentryTest";
 const NotFound = lazy(() => import("./pages/NotFound"));
 const OnboardingStatus = lazy(() => import("./pages/OnboardingStatus"));
 const Agent = lazy(() => import("./pages/Agent"));
