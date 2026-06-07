@@ -28,7 +28,12 @@ serve(async (req) => {
   }
 
   try {
+    // 5 requests per hour per IP
+    const rl = await rateLimit(`integration-req:${clientIp(req)}`, 5, 3600);
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfter, corsHeaders);
+
     const body = await req.json().catch(() => ({} as Record<string, unknown>));
+
     const name = clean(body.name, 200);
     const email = clean(body.email, 320);
     const company = clean(body.company, 200);
