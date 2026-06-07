@@ -1588,7 +1588,6 @@ export type Database = {
           login_method: string
           status: string
           user_agent: string | null
-          user_email: string
           user_id: string | null
         }
         Insert: {
@@ -1598,7 +1597,6 @@ export type Database = {
           login_method?: string
           status?: string
           user_agent?: string | null
-          user_email: string
           user_id?: string | null
         }
         Update: {
@@ -1608,7 +1606,6 @@ export type Database = {
           login_method?: string
           status?: string
           user_agent?: string | null
-          user_email?: string
           user_id?: string | null
         }
         Relationships: []
@@ -2402,7 +2399,6 @@ export type Database = {
         Row: {
           created_at: string
           details: Json | null
-          email: string | null
           id: string
           message: string | null
           source: string
@@ -2414,7 +2410,6 @@ export type Database = {
         Insert: {
           created_at?: string
           details?: Json | null
-          email?: string | null
           id?: string
           message?: string | null
           source?: string
@@ -2426,7 +2421,6 @@ export type Database = {
         Update: {
           created_at?: string
           details?: Json | null
-          email?: string | null
           id?: string
           message?: string | null
           source?: string
@@ -3228,6 +3222,7 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      get_api_key_value: { Args: { _id: string }; Returns: string }
       get_email_send_trend: {
         Args: { _days?: number }
         Returns: {
@@ -3318,11 +3313,11 @@ export type Database = {
       log_signup_event: {
         Args: {
           _details?: Json
-          _email: string
-          _message: string
+          _email?: string
+          _message?: string
           _source?: string
-          _stage: string
-          _status: string
+          _stage?: string
+          _status?: string
           _user_id: string
         }
         Returns: undefined
@@ -3351,7 +3346,7 @@ export type Database = {
           p_login_method?: string
           p_status?: string
           p_user_agent?: string
-          p_user_email: string
+          p_user_email?: string
           p_user_id: string
         }
         Returns: undefined

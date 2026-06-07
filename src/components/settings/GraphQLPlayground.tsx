@@ -66,15 +66,22 @@ export const GraphQLPlayground = () => {
         throw new Error('Not authenticated');
       }
 
-      // Get user's API key
+      // Get user's API key (fetch metadata, then resolve value via secure RPC)
       const { data: apiKeys } = await supabase
         .from('api_keys')
-        .select('key')
+        .select('id')
         .eq('is_active', true)
         .limit(1);
 
       if (!apiKeys || apiKeys.length === 0) {
         throw new Error('No active API key found. Please create one in the API Keys tab.');
+      }
+
+      const { data: keyValue, error: keyError } = await supabase.rpc('get_api_key_value', {
+        _id: apiKeys[0].id,
+      });
+      if (keyError || !keyValue) {
+        throw new Error(keyError?.message || 'Unable to load API key');
       }
 
       const response = await fetch(
@@ -83,7 +90,7 @@ export const GraphQLPlayground = () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'X-API-Key': apiKeys[0].key,
+            'X-API-Key': keyValue as string,
           },
           body: JSON.stringify({ query }),
         }
