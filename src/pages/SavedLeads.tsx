@@ -713,7 +713,7 @@ const SavedLeads = () => {
         onSave={async (leadId, updates) => {
           const { error } = await supabase
             .from("leads")
-            .update(updates)
+            .update(updates as any)
             .eq("id", leadId);
           if (error) {
             toast({ title: "Error saving lead", description: error.message, variant: "destructive" });
