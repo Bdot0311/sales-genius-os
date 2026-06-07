@@ -484,8 +484,9 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
               </Button>
 
               <p className="text-xs text-muted-foreground text-center leading-relaxed">
-                Free forever — no credit card required. Upgrade anytime to unlock lead generation.
+                Free forever — no credit card required. Includes 10 free lead searches to try the platform.
               </p>
+
             </form>
           </TabsContent>
         </Tabs>
