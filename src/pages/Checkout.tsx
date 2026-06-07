@@ -10,11 +10,12 @@ import { STRIPE_PRICE_IDS } from "@/lib/stripe-config";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const STRIPE_PK = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
-if (!STRIPE_PK) {
-  console.error("VITE_STRIPE_PUBLISHABLE_KEY is not configured");
-}
-const stripePromise = STRIPE_PK ? loadStripe(STRIPE_PK) : Promise.resolve(null);
+// Stripe publishable key — safe to expose in client per Stripe docs.
+// Prefer env override; fallback is the live publishable key for production.
+const STRIPE_PK =
+  import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ||
+  "pk_live_51T8THPFTerosS6hiQnrx3VN6cwsIJCVHKPrHT50Y71g3Z1IiQ0HbdZvqHHp5bV3k9mOGFZQKHVDT2tT8FPGnXkqN00e2ecLQHm";
+const stripePromise = loadStripe(STRIPE_PK);
 
 type PlanKey = "starter" | "growth" | "pro" | "agency";
 type IntervalKey = "monthly" | "yearly";
