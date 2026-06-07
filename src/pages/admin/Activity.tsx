@@ -141,7 +141,15 @@ const AdminActivity = () => {
       console.error('Error loading login events:', error);
       return;
     }
-    setLoginEvents(data || []);
+    const userIds = [...new Set((data || []).map((d: any) => d.user_id).filter(Boolean))];
+    const { data: profs } = userIds.length
+      ? await supabase.from('profiles').select('id, email').in('id', userIds)
+      : { data: [] as any[] };
+    const emailMap = new Map((profs || []).map((p: any) => [p.id, p.email]));
+    setLoginEvents((data || []).map((d: any) => ({
+      ...d,
+      user_email: emailMap.get(d.user_id) || 'Unknown',
+    })));
   };
 
   const loadSystemEvents = async () => {

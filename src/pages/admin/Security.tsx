@@ -134,7 +134,15 @@ const AdminSecurity = () => {
       console.error('Error loading login attempts:', error);
       return;
     }
-    setLoginAttempts(data || []);
+    const userIds = [...new Set((data || []).map((d: any) => d.user_id).filter(Boolean))];
+    const { data: profs } = userIds.length
+      ? await supabase.from('profiles').select('id, email').in('id', userIds)
+      : { data: [] as any[] };
+    const emailMap = new Map((profs || []).map((p: any) => [p.id, p.email]));
+    setLoginAttempts((data || []).map((d: any) => ({
+      ...d,
+      user_email: emailMap.get(d.user_id) || 'Unknown',
+    })));
   }, []);
 
   const loadRateLimitBuckets = useCallback(async () => {

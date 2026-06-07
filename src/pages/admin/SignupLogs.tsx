@@ -55,9 +55,16 @@ const AdminSignupLogs = () => {
       .limit(500);
     if (error) {
       toast.error(`Failed to load signup logs: ${error.message}`);
-    } else {
-      setRows((data || []) as unknown as DiagRow[]);
+      setLoading(false);
+      return;
     }
+    const raw = (data || []) as any[];
+    const userIds = [...new Set(raw.map((r) => r.user_id).filter(Boolean))];
+    const { data: profs } = userIds.length
+      ? await supabase.from("profiles").select("id, email").in("id", userIds)
+      : { data: [] as any[] };
+    const emailMap = new Map((profs || []).map((p: any) => [p.id, p.email]));
+    setRows(raw.map((r) => ({ ...r, email: emailMap.get(r.user_id) || null })) as DiagRow[]);
     setLoading(false);
   };
 
