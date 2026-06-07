@@ -30,7 +30,37 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
   const [resetLoading, setResetLoading] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [googleLoading, setGoogleLoading] = useState(false);
   const { toast } = useToast();
+
+  const handleGoogleAuth = async () => {
+    setGoogleLoading(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        toast({
+          title: "Google sign-in failed",
+          description: result.error.message || "Please try again or use email instead.",
+          variant: "destructive",
+        });
+        setGoogleLoading(false);
+        return;
+      }
+      if (result.redirected) return;
+      onSuccess?.();
+    } catch (err: any) {
+      toast({
+        title: "Google sign-in failed",
+        description: err?.message || "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
