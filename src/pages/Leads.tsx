@@ -41,8 +41,17 @@ const Leads = () => {
     goToPage,
   } = useExternalLeads();
 
-  // Check if user can access lead gen (must be paid, not trial)
-  const canAccessLeadGen = subscriptionStatus?.isPaidUser === true;
+  // Lead generation is available to all signed-in users. Free tier gets a
+  // limited monthly credit pool (enforced by useSearchCredits + server-side
+  // credit deduction in fetch-external-leads). Paid plans get larger pools.
+  // Out-of-credits state is handled by the credits-exhausted card below.
+  const canAccessLeadGen = true;
+  const isOutOfCredits =
+    !subscriptionLoading &&
+    subscriptionStatus?.isPaidUser !== true &&
+    credits != null &&
+    (credits.remainingCredits ?? 0) <= 0;
+
 
   const fetchLeads = async () => {
     try {
