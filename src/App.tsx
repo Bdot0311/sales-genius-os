@@ -308,6 +308,7 @@ const App = () => (
               <Route path="/client-portal/:token" element={<ClientPortal />} />
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogPost />} />
+              <Route path="/sentry-test" element={<SentryTest />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
