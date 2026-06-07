@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index";
+import SentryTest from "./pages/SentryTest";
 
 // Public marketing routes that should NOT trigger Supabase/auth/white-label loads
 const PUBLIC_LANDING_PREFIXES = [
@@ -308,6 +309,7 @@ const App = () => (
               <Route path="/client-portal/:token" element={<ClientPortal />} />
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogPost />} />
+              <Route path="/sentry-test" element={<SentryTest />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
