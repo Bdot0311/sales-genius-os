@@ -41,8 +41,17 @@ const Leads = () => {
     goToPage,
   } = useExternalLeads();
 
-  // Check if user can access lead gen (must be paid, not trial)
-  const canAccessLeadGen = subscriptionStatus?.isPaidUser === true;
+  // Lead generation is available to all signed-in users. Free tier gets a
+  // limited monthly credit pool (enforced by useSearchCredits + server-side
+  // credit deduction in fetch-external-leads). Paid plans get larger pools.
+  // Out-of-credits state is handled by the credits-exhausted card below.
+  const canAccessLeadGen = true;
+  const isOutOfCredits =
+    !subscriptionLoading &&
+    subscriptionStatus?.isPaidUser !== true &&
+    credits != null &&
+    (credits.remainingCredits ?? 0) <= 0;
+
 
   const fetchLeads = async () => {
     try {
@@ -91,23 +100,20 @@ const Leads = () => {
       />
       <div className="px-6 py-6 space-y-6 max-w-[1400px] mx-auto">
 
-        {/* Trial User Lock Screen */}
-        {!subscriptionLoading && !canAccessLeadGen && (
+        {/* Out-of-credits upsell (only shown when a free user has used all 10 searches) */}
+        {isOutOfCredits && (
           <Card className="border-2 border-dashed border-muted-foreground/25">
-            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-6">
-                <Lock className="w-8 h-8 text-muted-foreground" />
+            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mb-5">
+                <Lock className="w-7 h-7 text-muted-foreground" />
               </div>
-              <h2 className="text-2xl font-bold mb-2">Lead Generation is a Paid Feature</h2>
+              <h2 className="text-2xl font-bold mb-2">You've used your 10 free searches</h2>
               <p className="text-muted-foreground max-w-md mb-6">
-                {subscriptionStatus?.isTrialUser 
-                  ? "AI Lead Generation is not included in your free trial. Upgrade to a paid plan starting at $39/month to unlock access to our B2B lead database."
-                  : "Subscribe to a paid plan starting at $39/month to unlock AI-powered lead generation and access millions of B2B contacts."
-                }
+                Nice work exploring the lead engine. Upgrade to a paid plan to unlock thousands of monthly searches and verified contact data.
               </p>
               <Button onClick={() => navigate('/pricing')} size="lg" className="gap-2">
                 <CreditCard className="w-4 h-4" />
-                Upgrade Now
+                See plans
               </Button>
               <p className="text-sm text-muted-foreground mt-4">
                 Cancel anytime • Instant access after upgrade
@@ -115,6 +121,7 @@ const Leads = () => {
             </CardContent>
           </Card>
         )}
+
 
         {/* AI Command Interface - Hero Section (only show for paid users) */}
         {canAccessLeadGen && (
