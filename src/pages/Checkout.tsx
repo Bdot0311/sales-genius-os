@@ -90,8 +90,7 @@ const Checkout = () => {
           </div>
           <img
             src="/salesos-logo-small.webp"
-            alt="SalesOS product logo"
-
+            alt="SalesOS Logo"
             className="h-8 w-auto hidden sm:block"
           />
         </div>
