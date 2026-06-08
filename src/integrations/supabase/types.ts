@@ -1837,6 +1837,51 @@ export type Database = {
           },
         ]
       }
+      re_engagement_log: {
+        Row: {
+          attempted_at: string
+          created_at: string
+          days_inactive: number | null
+          eligibility_reason: string
+          error_message: string | null
+          id: string
+          last_sign_in_at: string | null
+          recipient_email: string
+          status: string
+          triggered_by: string | null
+          triggered_manually: boolean
+          user_id: string | null
+        }
+        Insert: {
+          attempted_at?: string
+          created_at?: string
+          days_inactive?: number | null
+          eligibility_reason: string
+          error_message?: string | null
+          id?: string
+          last_sign_in_at?: string | null
+          recipient_email: string
+          status: string
+          triggered_by?: string | null
+          triggered_manually?: boolean
+          user_id?: string | null
+        }
+        Update: {
+          attempted_at?: string
+          created_at?: string
+          days_inactive?: number | null
+          eligibility_reason?: string
+          error_message?: string | null
+          id?: string
+          last_sign_in_at?: string | null
+          recipient_email?: string
+          status?: string
+          triggered_by?: string | null
+          triggered_manually?: boolean
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       reply_analysis: {
         Row: {
           agent_reply_sent_at: string | null
