@@ -905,7 +905,7 @@ serve(async (req) => {
     
     if (!hasSearchParam) {
       console.warn('No search parameters provided, adding default job_title');
-      requestBody.job_title = 'CEO OR Founder OR CTO OR Director';
+      requestBody.job_title = 'CEO';
     }
 
     console.log('=== REQUEST TO RAILWAY ===');
