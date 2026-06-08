@@ -116,6 +116,9 @@ export const FooterSection = () => {
               <a href="https://landingboost.app/badges/top-1" target="_blank" rel="noopener noreferrer">
                 <img src="https://landingboost.app/badges/top1-dark.svg" alt="Top 1% Landing Page — Verified by LandingBoost" className="h-10 w-auto" width={200} height={40} loading="lazy" />
               </a>
+              <a href="https://nicklaunches.com/products/salesos/?utm_source=salesos.alephwavex.io&utm_medium=badge&utm_campaign=featured" target="_blank" rel="noopener">
+                <img src="https://nicklaunches.com/badges/featured-dark.svg" alt="SalesOS on Nick Launches" className="h-10 w-auto" width={244} height={56} loading="lazy" />
+              </a>
             </div>
             <p className="text-sm text-center" style={{ color: "hsl(0 0% 100% / 0.3)" }}>
               © {new Date().getFullYear()} BDØT Industries LLC. All rights reserved.
