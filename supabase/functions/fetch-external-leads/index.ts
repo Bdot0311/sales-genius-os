@@ -562,7 +562,7 @@ async function fetchCachedResults(railwayBaseUrl: string): Promise<{ searches: a
 
 // Plan credit configuration - must match stripe-config.ts
 const PLAN_CREDITS = {
-  free: { monthlyCredits: 0, dailyLimit: 0, maxResultsPerSearch: 0 },
+  free: { monthlyCredits: 10, dailyLimit: 5, maxResultsPerSearch: 10 },
   starter: { monthlyCredits: 1000, dailyLimit: 100, maxResultsPerSearch: 25 },
   growth: { monthlyCredits: 2500, dailyLimit: 250, maxResultsPerSearch: 50 },
   pro: { monthlyCredits: 5000, dailyLimit: 500, maxResultsPerSearch: 100 },
@@ -608,9 +608,10 @@ serve(async (req) => {
     const isAdmin = adminRole?.role === 'admin';
     console.log('User check:', { userId: user.id, isAdmin });
 
-    // CRITICAL: Enforce subscription and credit limits (unless admin)
+    // Enforce credit limits for non-admin users.
+    // Free accounts get 10 lifetime leads — no subscription required.
+    // Paid accounts use their monthly allotment.
     if (!isAdmin) {
-      // Get user's subscription
       const { data: subscription, error: subError } = await supabase
         .from('subscriptions')
         .select('plan, status, account_status, search_credits_remaining, daily_searches_used, daily_searches_reset_at, stripe_subscription_id')
@@ -622,67 +623,22 @@ serve(async (req) => {
         throw new Error('Failed to verify subscription');
       }
 
-      // Check if user has an active paid subscription
-      if (!subscription || subscription.status !== 'active') {
-        console.log('User has no active subscription:', { userId: user.id });
+      // Hard-lock only explicitly locked accounts.
+      if (subscription?.account_status === 'locked') {
         return new Response(
-          JSON.stringify({ 
-            error: 'Active subscription required',
-            error_code: 'no_subscription',
-            leads: [] 
-          }),
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      // CRITICAL: Block free-tier users from lead search entirely
-      if (subscription.plan === 'free') {
-        console.log('Free tier user blocked from lead search:', { userId: user.id });
-        return new Response(
-          JSON.stringify({ 
-            error: 'Lead search requires a paid plan. Upgrade to Growth ($49/mo) to unlock AI-powered lead discovery.',
-            error_code: 'free_tier_blocked',
-            upgrade_plan: 'growth',
-            leads: [] 
-          }),
+          JSON.stringify({ error: 'Account is locked. Please contact support.', error_code: 'account_locked', leads: [] }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      // Check if account is locked
-      if (subscription.account_status === 'locked') {
-        console.log('User account is locked:', { userId: user.id });
-        return new Response(
-          JSON.stringify({ 
-            error: 'Account is locked. Please contact support.',
-            error_code: 'account_locked',
-            leads: [] 
-          }),
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      // IMPORTANT: Check if user is on a trial without Stripe subscription (trial users can't access leads)
-      if (subscription.account_status === 'trial' && !subscription.stripe_subscription_id) {
-        console.log('Trial user attempting lead search:', { userId: user.id });
-        return new Response(
-          JSON.stringify({ 
-            error: 'Lead generation requires a paid subscription',
-            error_code: 'trial_access_denied',
-            leads: [] 
-          }),
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      // Get plan limits
-      const plan = subscription.plan as keyof typeof PLAN_CREDITS;
-      const planConfig = PLAN_CREDITS[plan] || PLAN_CREDITS.growth;
+      // Resolve plan — no subscription row = free tier.
+      const plan = (subscription?.plan || 'free') as keyof typeof PLAN_CREDITS;
+      const planConfig = PLAN_CREDITS[plan] || PLAN_CREDITS.free;
 
       // Check daily limit reset
       const now = new Date();
-      const resetAt = subscription.daily_searches_reset_at ? new Date(subscription.daily_searches_reset_at) : null;
-      let dailyUsed = subscription.daily_searches_used || 0;
+      const resetAt = subscription?.daily_searches_reset_at ? new Date(subscription.daily_searches_reset_at) : null;
+      let dailyUsed = subscription?.daily_searches_used || 0;
 
       if (!resetAt || now >= resetAt) {
         // Reset daily counter
@@ -710,22 +666,26 @@ serve(async (req) => {
             daily_limit: planConfig.dailyLimit,
             leads: [] 
           }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      // Check monthly credits
-      const remainingCredits = subscription.search_credits_remaining || 0;
+      // Check credits — free users get 10, paid users get their plan allotment.
+      const remainingCredits = subscription?.search_credits_remaining ?? planConfig.monthlyCredits;
       if (remainingCredits <= 0) {
-        console.log('Monthly credits exhausted:', { userId: user.id, remaining: remainingCredits });
+        const isFree = plan === 'free';
+        console.log('Credits exhausted:', { userId: user.id, plan, remaining: remainingCredits });
         return new Response(
-          JSON.stringify({ 
-            error: 'Monthly search credits exhausted. Add more credits or wait for reset.',
+          JSON.stringify({
+            error: isFree
+              ? 'You\'ve used your 10 free leads. Upgrade to a paid plan to keep finding prospects.'
+              : 'Monthly search credits exhausted. Add more credits or wait for monthly reset.',
             error_code: 'credits_exhausted',
+            upgrade_required: isFree,
             remaining_credits: remainingCredits,
-            leads: [] 
+            leads: [],
           }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 

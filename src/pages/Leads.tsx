@@ -42,7 +42,9 @@ const Leads = () => {
   } = useExternalLeads();
 
   // Check if user can access lead gen (must be paid, not trial)
-  const canAccessLeadGen = subscriptionStatus?.isPaidUser === true;
+  // Everyone can search — free users get 10 leads before hitting the upsell.
+  const canAccessLeadGen = true;
+  const isOutOfFreeLeads = !subscriptionStatus?.isPaidUser && credits !== null && credits.remainingCredits <= 0;
 
   const fetchLeads = async () => {
     try {
@@ -91,26 +93,23 @@ const Leads = () => {
       />
       <div className="px-6 py-6 space-y-6 max-w-[1400px] mx-auto">
 
-        {/* Trial User Lock Screen */}
-        {!subscriptionLoading && !canAccessLeadGen && (
-          <Card className="border-2 border-dashed border-muted-foreground/25">
-            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-6">
-                <Lock className="w-8 h-8 text-muted-foreground" />
+        {/* Free-leads exhausted upsell — shown only after the 10 free leads are used */}
+        {!subscriptionLoading && isOutOfFreeLeads && (
+          <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10">
+            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-5">
+                <Sparkles className="w-7 h-7 text-primary" />
               </div>
-              <h2 className="text-2xl font-bold mb-2">Lead Generation is a Paid Feature</h2>
-              <p className="text-muted-foreground max-w-md mb-6">
-                {subscriptionStatus?.isTrialUser 
-                  ? "AI Lead Generation is not included in your free trial. Upgrade to a paid plan starting at $39/month to unlock access to our B2B lead database."
-                  : "Subscribe to a paid plan starting at $39/month to unlock AI-powered lead generation and access millions of B2B contacts."
-                }
+              <h2 className="text-2xl font-bold mb-2">You've used your 10 free leads</h2>
+              <p className="text-muted-foreground max-w-sm mb-6">
+                Upgrade to keep finding prospects. Starter gives you 1,000 leads/month — more than enough to build a full pipeline.
               </p>
               <Button onClick={() => navigate('/pricing')} size="lg" className="gap-2">
                 <CreditCard className="w-4 h-4" />
-                Upgrade Now
+                Upgrade to get more leads
               </Button>
-              <p className="text-sm text-muted-foreground mt-4">
-                Cancel anytime • Instant access after upgrade
+              <p className="text-sm text-muted-foreground mt-3">
+                Plans from $39/mo · Cancel anytime
               </p>
             </CardContent>
           </Card>
@@ -123,11 +122,14 @@ const Leads = () => {
               onSearch={async (query) => {
                 // Check if user can search
                 if (!canSearch) {
+                  const isFreeExhausted = !subscriptionStatus?.isPaidUser && (credits?.remainingCredits ?? 0) <= 0;
                   toast({
-                    title: "Search limit reached",
-                    description: credits?.remainingCredits === 0 
-                      ? "You've used all your search credits. Purchase a credit pack or upgrade your plan to continue."
-                      : "You've reached your daily search limit. Try again tomorrow.",
+                    title: isFreeExhausted ? "Free leads used up" : "Search limit reached",
+                    description: isFreeExhausted
+                      ? "You've used your 10 free leads. Upgrade to keep finding prospects."
+                      : credits?.remainingCredits === 0
+                        ? "You've used all your search credits. Purchase a credit pack or upgrade your plan to continue."
+                        : "You've reached your daily search limit. Try again tomorrow.",
                     variant: "destructive",
                   });
                   return;

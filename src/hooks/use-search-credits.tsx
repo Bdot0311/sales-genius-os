@@ -38,22 +38,20 @@ export const useSearchCredits = () => {
 
       if (error) throw error;
 
-      if (data) {
-        const plan = (data.plan || 'free') as PlanType;
-        const planConfig = PLAN_CONFIG[plan];
-        
-        setCredits({
-          baseCredits: data.search_credits_base || planConfig.monthlyProspects,
-          addonCredits: data.search_credits_addon || 0,
-          totalCredits: (data.search_credits_base || planConfig.monthlyProspects) + (data.search_credits_addon || 0),
-          remainingCredits: data.search_credits_remaining || planConfig.monthlyProspects,
-          dailySearchesUsed: data.daily_searches_used || 0,
-          dailySearchLimit: planConfig.dailyLimit,
-          plan,
-          addonPriceId: data.addon_price_id,
-          creditsResetAt: data.credits_reset_at,
-        });
-      }
+      const plan = (data?.plan || 'free') as PlanType;
+      const planConfig = PLAN_CONFIG[plan];
+
+      setCredits({
+        baseCredits: data?.search_credits_base || planConfig.monthlyProspects,
+        addonCredits: data?.search_credits_addon || 0,
+        totalCredits: (data?.search_credits_base || planConfig.monthlyProspects) + (data?.search_credits_addon || 0),
+        remainingCredits: data?.search_credits_remaining ?? planConfig.monthlyProspects,
+        dailySearchesUsed: data?.daily_searches_used || 0,
+        dailySearchLimit: planConfig.dailyLimit,
+        plan,
+        addonPriceId: data?.addon_price_id ?? null,
+        creditsResetAt: data?.credits_reset_at ?? null,
+      });
     } catch (error) {
       console.error('Error fetching search credits:', error);
     } finally {
