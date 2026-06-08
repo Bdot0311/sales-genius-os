@@ -25,13 +25,22 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Authenticate user
-    const authHeader = req.headers.get('Authorization')!;
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      );
+    }
     const { data: { user }, error: authError } = await supabase.auth.getUser(
       authHeader.replace('Bearer ', '')
     );
 
     if (authError || !user) {
-      throw new Error('Unauthorized');
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      );
     }
 
     const { deliveryIds } = await req.json();
