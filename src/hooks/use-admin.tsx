@@ -83,6 +83,10 @@ export const useAdmin = () => {
         return;
       }
 
+      void supabase.rpc('touch_last_active');
+
+
+
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')
