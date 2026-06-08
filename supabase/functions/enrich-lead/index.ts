@@ -220,6 +220,9 @@ serve(async (req) => {
       const techs = c.technologies ?? root.technologies;
       if (Array.isArray(techs) && techs.length) enrichmentData.technologies = techs.slice(0, 20);
     }
+    console.log('Mapped enrichmentData:', JSON.stringify(enrichmentData));
+    if (railwayData) console.log('Raw Railway lead:', JSON.stringify(railwayData).slice(0, 800));
+
 
 
     const enrichedFields = Object.keys(enrichmentData).filter(
