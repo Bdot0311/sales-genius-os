@@ -81,6 +81,7 @@ const Admin = () => {
               <Route path="webhooks" element={<AdminWebhooks />} />
               <Route path="signup-logs" element={<AdminSignupLogs />} />
               <Route path="re-engagement" element={<AdminReEngagement />} />
+              <Route path="realtime" element={<AdminRealtimeHealth />} />
               <Route path="*" element={<Navigate to="/admin" replace />} />
             </Routes>
           </main>
