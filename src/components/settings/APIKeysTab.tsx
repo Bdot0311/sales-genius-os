@@ -57,7 +57,7 @@ export const APIKeysTab = () => {
     try {
       const { data, error } = await supabase
         .from("api_keys")
-        .select("*")
+        .select("id, name, prefix, created_at, last_used_at, expires_at, is_active, rate_limit_per_minute, rate_limit_per_day, total_requests, last_request_at, scopes, environment, rotation_reminder_sent, user_id")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
