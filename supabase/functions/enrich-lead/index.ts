@@ -117,29 +117,29 @@ serve(async (req) => {
 
     const nameIsTitle = isJobTitle(lead.contact_name);
 
-    // Build enrich request payload. Wiza-backed Railway API requires EXACTLY ONE of:
-    //   (a) linkedin_url, (b) email, or (c) first_name + last_name + company.
-    // Pick the strongest single identifier in that order.
+    // Build enrich request payload. Railway (Wiza-backed) accepts EXACTLY ONE of:
+    //   (a) linkedin_url, (b) email, or (c) full_name + company.
+    // We prefer full_name+company (highest match rate), then email, then linkedin_url.
     const enrichPayload: Record<string, string> = {};
 
     const normalizedLinkedin = lead.linkedin_url ? normalizeLinkedInUrl(lead.linkedin_url) : null;
     const looksLikeLinkedinProfile = !!normalizedLinkedin
       && /linkedin\.com\/in\/[^/]+/.test(normalizedLinkedin);
 
-    const nameParts = (!nameIsTitle && lead.contact_name)
-      ? lead.contact_name.trim().split(/\s+/)
-      : [];
-    const hasFullName = nameParts.length >= 2 && !!lead.company_name;
+    const fullName = (!nameIsTitle && lead.contact_name && lead.contact_name.trim().split(/\s+/).length >= 2)
+      ? lead.contact_name.trim()
+      : null;
 
-    if (looksLikeLinkedinProfile) {
-      enrichPayload.linkedin_url = normalizedLinkedin!;
+    if (fullName && lead.company_name) {
+      enrichPayload.full_name = fullName;
+      enrichPayload.company = lead.company_name;
     } else if (lead.contact_email) {
       enrichPayload.email = lead.contact_email;
-    } else if (hasFullName) {
-      enrichPayload.first_name = nameParts[0];
-      enrichPayload.last_name = nameParts.slice(1).join(' ');
-      enrichPayload.company = lead.company_name!;
+    } else if (looksLikeLinkedinProfile) {
+      enrichPayload.linkedin_url = normalizedLinkedin!;
     }
+
+
 
 
 
