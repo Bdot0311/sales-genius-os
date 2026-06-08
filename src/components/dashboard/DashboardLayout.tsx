@@ -202,6 +202,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               size="icon"
               className="lg:hidden"
               onClick={() => setSidebarOpen(false)}
+              aria-label="Close sidebar"
             >
               <X className="w-5 h-5" />
             </Button>
