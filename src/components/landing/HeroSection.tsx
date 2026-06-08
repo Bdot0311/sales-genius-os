@@ -81,15 +81,10 @@ export const HeroSection = () => {
           className="font-display mb-5 max-w-[13ch] text-balance sm:mb-8 sm:max-w-none"
           style={{ fontSize: "clamp(2.05rem, 6.4vw, 5.25rem)", lineHeight: 1.02, letterSpacing: "-0.01em", fontWeight: 800 }}
         >
-          <motion.span
-            className="block text-white"
-            initial={{ opacity: 0, y: 32 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ type: "spring", stiffness: 60, damping: 18, delay: 0.1 }}
-          >
+          <span className="block text-white">
             Find who to sell to.
-          </motion.span>
-          <motion.span
+          </span>
+          <span
             className="block font-display italic animate-shiny"
             style={{
               fontStyle: "italic",
@@ -101,12 +96,9 @@ export const HeroSection = () => {
               backgroundClip: "text",
               filter: "url(#c3-noise)",
             }}
-            initial={{ opacity: 0, y: 32 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ type: "spring", stiffness: 60, damping: 18, delay: 0.24 }}
           >
             Then close them.
-          </motion.span>
+          </span>
         </h1>
 
         {/* Subhead */}
