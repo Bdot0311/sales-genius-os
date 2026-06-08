@@ -199,7 +199,7 @@ serve(async (req) => {
       if (p.phone || p.phone_number || p.mobile_phone) {
         enrichmentData.contact_phone = p.phone ?? p.phone_number ?? p.mobile_phone;
       }
-      if (p.location && !lead.location) enrichmentData.location = p.location;
+      // (no `location` column on leads; skip)
 
       // Company fields
       const companyName = c.name ?? c.company_name ?? root.company_name;
