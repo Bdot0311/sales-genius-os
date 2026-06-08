@@ -2249,6 +2249,7 @@ For logos, use HTML:
                         onClick={generateTriggerContext}
                         disabled={isGeneratingTrigger || !selectedLead}
                         className="shrink-0"
+                        aria-label="Generate trigger context"
                       >
                         {isGeneratingTrigger ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
