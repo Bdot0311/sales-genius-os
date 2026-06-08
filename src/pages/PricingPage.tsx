@@ -137,13 +137,13 @@ const PricingPage = () => {
                   </span>
                 </h1>
 
-                <p className="mb-4 max-w-2xl text-base leading-relaxed text-white/60 sm:text-lg">
+                <p className="mb-4 max-w-2xl text-base leading-relaxed text-white/80 sm:text-lg">
                   SalesOS is built for founder-led teams, outbound agencies, and
                   B2B sales teams that want a faster path from ICP definition to
                   live outreach.
                 </p>
 
-                <p className="text-xs uppercase tracking-[0.22em] text-white/35">
+                <p className="text-xs uppercase tracking-[0.22em] text-white/75">
                   Plans from $39 / month · Upgrade anytime
                 </p>
               </div>
