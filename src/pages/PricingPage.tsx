@@ -283,7 +283,7 @@ const PricingPage = () => {
                     <li key={item.to}>
                       <Link
                         to={item.to}
-                        className="text-white/55 hover:text-white transition-colors"
+                        className="text-white/80 hover:text-white transition-colors"
                       >
                         {item.label}
                       </Link>
