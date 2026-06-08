@@ -2441,6 +2441,7 @@ For logos, use HTML:
                           variant="ghost"
                           size="icon"
                           className="h-6 w-6"
+                          aria-label="Close variant picker"
                           onClick={() => {
                             setShowVariantPicker(false);
                             setEmailVariants([]);
