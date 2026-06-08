@@ -178,11 +178,14 @@ serve(async (req) => {
     };
 
     if (railwayData && !railwayData.error) {
-      const p = railwayData.person ?? railwayData.contact ?? railwayData.response ?? railwayData;
-      const c = railwayData.company ?? p?.company ?? {};
+      // Railway returns { lead: {...} } or legacy { person, company } / flat shapes.
+      const root = railwayData.lead ?? railwayData;
+      const p = root.person ?? root.contact ?? root.response ?? root;
+      const c = root.company ?? p?.company ?? root;
 
       // Person fields
-      const fullName = [p.first_name, p.last_name].filter(Boolean).join(' ') || p.full_name || p.name;
+      const fullName = [p.first_name, p.last_name].filter(Boolean).join(' ')
+        || p.full_name || p.name || p.contact_name;
       if (nameIsTitle && fullName) enrichmentData.contact_name = fullName;
       else if (fullName && !lead.contact_name) enrichmentData.contact_name = fullName;
 
@@ -194,20 +197,31 @@ serve(async (req) => {
       if (p.linkedin_url || p.linkedInUrl) {
         enrichmentData.linkedin_url = normalizeLinkedInUrl(p.linkedin_url ?? p.linkedInUrl);
       }
-      if (p.phone || p.phone_number) enrichmentData.contact_phone = p.phone ?? p.phone_number;
+      if (p.phone || p.phone_number || p.mobile_phone) {
+        enrichmentData.contact_phone = p.phone ?? p.phone_number ?? p.mobile_phone;
+      }
+      if (p.location && !lead.location) enrichmentData.location = p.location;
 
       // Company fields
-      if (c.website && !lead.company_website) enrichmentData.company_website = c.website;
-      if (c.industry) enrichmentData.industry = c.industry;
-      if (c.size || c.employee_count || c.employeeRange) {
-        enrichmentData.employee_count = String(c.size ?? c.employee_count ?? c.employeeRange);
+      const companyName = c.name ?? c.company_name ?? root.company_name;
+      if (companyName && !lead.company_name) enrichmentData.company_name = companyName;
+      const website = c.website ?? c.domain ?? root.company_domain;
+      if (website && !lead.company_website) {
+        enrichmentData.company_website = website.startsWith('http') ? website : `https://${website}`;
       }
+      const industry = c.industry ?? root.industry ?? root.company_industry;
+      if (industry) enrichmentData.industry = industry;
+      const size = c.size ?? c.employee_count ?? c.employeeRange ?? root.company_size;
+      if (size) enrichmentData.employee_count = String(size);
       if (c.linkedin_url || c.linkedInUrl) {
         enrichmentData.company_linkedin = normalizeLinkedInUrl(c.linkedin_url ?? c.linkedInUrl);
       }
-      if (c.description) enrichmentData.company_description = c.description;
-      if (c.technologies?.length) enrichmentData.technologies = c.technologies.slice(0, 20);
+      const desc = c.description ?? root.company_description;
+      if (desc) enrichmentData.company_description = desc;
+      const techs = c.technologies ?? root.technologies;
+      if (Array.isArray(techs) && techs.length) enrichmentData.technologies = techs.slice(0, 20);
     }
+
 
     const enrichedFields = Object.keys(enrichmentData).filter(
       (k) => k !== 'enrichment_status' && k !== 'enriched_at'
