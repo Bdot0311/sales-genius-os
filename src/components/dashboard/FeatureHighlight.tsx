@@ -35,7 +35,7 @@ export const FeatureHighlight = ({ availableOn, onUpgrade, inline = false }: Fea
       <span className="text-sm text-muted-foreground">Available with {planName}</span>
       {onUpgrade && (
         <Button variant="link" size="sm" className="h-auto p-0 ml-auto" onClick={onUpgrade}>
-          Learn more
+          Learn about {planName}
         </Button>
       )}
     </div>
