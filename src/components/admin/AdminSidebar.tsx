@@ -24,6 +24,7 @@ const menuItems = [
   { title: "Signup Logs", url: "/admin/signup-logs", icon: UserPlus },
   { title: "Re-engagement", url: "/admin/re-engagement", icon: Mail },
   { title: "Security", url: "/admin/security", icon: Lock },
+  { title: "Realtime Health", url: "/admin/realtime", icon: Radio },
   { title: "Settings", url: "/admin/settings", icon: Settings },
 ];
 
