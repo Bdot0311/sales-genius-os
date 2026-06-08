@@ -17,6 +17,7 @@ import AdminSettings from "./admin/Settings";
 import AdminAlerts from "./admin/Alerts";
 import AdminWebhooks from "./admin/Webhooks";
 import AdminSignupLogs from "./admin/SignupLogs";
+import AdminReEngagement from "./admin/ReEngagement";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -78,6 +79,7 @@ const Admin = () => {
               <Route path="alerts" element={<AdminAlerts />} />
               <Route path="webhooks" element={<AdminWebhooks />} />
               <Route path="signup-logs" element={<AdminSignupLogs />} />
+              <Route path="re-engagement" element={<AdminReEngagement />} />
               <Route path="*" element={<Navigate to="/admin" replace />} />
             </Routes>
           </main>

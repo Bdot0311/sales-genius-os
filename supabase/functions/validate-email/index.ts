@@ -58,22 +58,31 @@ async function checkMx(domain: string): Promise<boolean> {
   }
 }
 
+import { rateLimit, rateLimitResponse, clientIp } from "../_shared/rate-limit.ts";
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
-    const { email } = await req.json().catch(() => ({}));
+    // 30 requests/minute per IP — typing form burst
+    const rl = await rateLimit(`validate-email:${clientIp(req)}`, 30, 60);
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfter, corsHeaders);
+
+
+    const body = await req.json().catch(() => ({}));
+    const email = body?.email;
     const result: Result = {
       valid: false,
       checks: { syntax: false, disposable: false, mx: false },
     };
 
-    if (!email || typeof email !== "string") {
+    if (!email || typeof email !== "string" || email.length > 320) {
       result.reason = "Email is required.";
       return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
     }
+
 
     const normalized = email.trim().toLowerCase();
     result.checks.syntax = EMAIL_RE.test(normalized);

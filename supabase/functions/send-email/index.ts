@@ -123,8 +123,9 @@ serve(async (req) => {
     // Check if token needs refresh (for Google)
     if ((integrationId === 'google' || !integrationId) && config.expiresAt && Date.now() >= config.expiresAt && config.refreshToken) {
       console.log('Token expired, refreshing...');
-      const googleClientId = config.clientId || Deno.env.get('GOOGLE_CLIENT_ID');
-      const googleClientSecret = config.clientSecret || Deno.env.get('GOOGLE_CLIENT_SECRET');
+      // OAuth app credentials must come from server secrets only — never from DB config
+      const googleClientId = Deno.env.get('GOOGLE_CLIENT_ID');
+      const googleClientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET');
       
       if (!googleClientId || !googleClientSecret) {
         console.error('Missing Google OAuth credentials for token refresh');

@@ -447,6 +447,7 @@ export type Database = {
           method: string
           response_time_ms: number | null
           status_code: number | null
+          user_id: string | null
         }
         Insert: {
           api_key_id: string
@@ -456,6 +457,7 @@ export type Database = {
           method: string
           response_time_ms?: number | null
           status_code?: number | null
+          user_id?: string | null
         }
         Update: {
           api_key_id?: string
@@ -465,6 +467,7 @@ export type Database = {
           method?: string
           response_time_ms?: number | null
           status_code?: number | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -1588,7 +1591,6 @@ export type Database = {
           login_method: string
           status: string
           user_agent: string | null
-          user_email: string
           user_id: string | null
         }
         Insert: {
@@ -1598,7 +1600,6 @@ export type Database = {
           login_method?: string
           status?: string
           user_agent?: string | null
-          user_email: string
           user_id?: string | null
         }
         Update: {
@@ -1608,7 +1609,6 @@ export type Database = {
           login_method?: string
           status?: string
           user_agent?: string | null
-          user_email?: string
           user_id?: string | null
         }
         Relationships: []
@@ -1837,6 +1837,51 @@ export type Database = {
           },
         ]
       }
+      re_engagement_log: {
+        Row: {
+          attempted_at: string
+          created_at: string
+          days_inactive: number | null
+          eligibility_reason: string
+          error_message: string | null
+          id: string
+          last_sign_in_at: string | null
+          recipient_email: string
+          status: string
+          triggered_by: string | null
+          triggered_manually: boolean
+          user_id: string | null
+        }
+        Insert: {
+          attempted_at?: string
+          created_at?: string
+          days_inactive?: number | null
+          eligibility_reason: string
+          error_message?: string | null
+          id?: string
+          last_sign_in_at?: string | null
+          recipient_email: string
+          status: string
+          triggered_by?: string | null
+          triggered_manually?: boolean
+          user_id?: string | null
+        }
+        Update: {
+          attempted_at?: string
+          created_at?: string
+          days_inactive?: number | null
+          eligibility_reason?: string
+          error_message?: string | null
+          id?: string
+          last_sign_in_at?: string | null
+          recipient_email?: string
+          status?: string
+          triggered_by?: string | null
+          triggered_manually?: boolean
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       reply_analysis: {
         Row: {
           agent_reply_sent_at: string | null
@@ -1952,6 +1997,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      rl_buckets: {
+        Row: {
+          bucket_key: string
+          hits: number
+          window_start: string
+        }
+        Insert: {
+          bucket_key: string
+          hits?: number
+          window_start: string
+        }
+        Update: {
+          bucket_key?: string
+          hits?: number
+          window_start?: string
+        }
+        Relationships: []
       }
       scheduled_imports: {
         Row: {
@@ -2357,6 +2420,7 @@ export type Database = {
           subject_template: string
           trigger_condition: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           body_template: string
@@ -2372,6 +2436,7 @@ export type Database = {
           subject_template: string
           trigger_condition?: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           body_template?: string
@@ -2387,6 +2452,7 @@ export type Database = {
           subject_template?: string
           trigger_condition?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -2402,7 +2468,6 @@ export type Database = {
         Row: {
           created_at: string
           details: Json | null
-          email: string | null
           id: string
           message: string | null
           source: string
@@ -2414,7 +2479,6 @@ export type Database = {
         Insert: {
           created_at?: string
           details?: Json | null
-          email?: string | null
           id?: string
           message?: string | null
           source?: string
@@ -2426,7 +2490,6 @@ export type Database = {
         Update: {
           created_at?: string
           details?: Json | null
-          email?: string | null
           id?: string
           message?: string | null
           source?: string
@@ -2502,8 +2565,6 @@ export type Database = {
           last_stripe_event_at: string | null
           last_stripe_event_id: string | null
           leads_limit: number
-          monthly_emails_reset_at: string | null
-          monthly_emails_sent: number
           plan: Database["public"]["Enums"]["subscription_plan"]
           search_credits_addon: number
           search_credits_base: number
@@ -2534,8 +2595,6 @@ export type Database = {
           last_stripe_event_at?: string | null
           last_stripe_event_id?: string | null
           leads_limit?: number
-          monthly_emails_reset_at?: string | null
-          monthly_emails_sent?: number
           plan?: Database["public"]["Enums"]["subscription_plan"]
           search_credits_addon?: number
           search_credits_base?: number
@@ -2566,8 +2625,6 @@ export type Database = {
           last_stripe_event_at?: string | null
           last_stripe_event_id?: string | null
           leads_limit?: number
-          monthly_emails_reset_at?: string | null
-          monthly_emails_sent?: number
           plan?: Database["public"]["Enums"]["subscription_plan"]
           search_credits_addon?: number
           search_credits_base?: number
@@ -2841,6 +2898,7 @@ export type Database = {
           response_body: string | null
           response_status: number | null
           status: string
+          user_id: string | null
           webhook_id: string
         }
         Insert: {
@@ -2856,6 +2914,7 @@ export type Database = {
           response_body?: string | null
           response_status?: number | null
           status?: string
+          user_id?: string | null
           webhook_id: string
         }
         Update: {
@@ -2871,6 +2930,7 @@ export type Database = {
           response_body?: string | null
           response_status?: number | null
           status?: string
+          user_id?: string | null
           webhook_id?: string
         }
         Relationships: [
@@ -3215,6 +3275,11 @@ export type Database = {
         }[]
       }
       cleanup_expired_cache: { Args: never; Returns: undefined }
+      cleanup_rl_buckets: { Args: never; Returns: undefined }
+      consume_rate_limit: {
+        Args: { _key: string; _max: number; _window_seconds: number }
+        Returns: boolean
+      }
       current_month_start_utc: { Args: never; Returns: string }
       deduct_search_credits: {
         Args: { _amount: number; _description?: string }
@@ -3228,6 +3293,7 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      get_api_key_value: { Args: { _id: string }; Returns: string }
       get_email_send_trend: {
         Args: { _days?: number }
         Returns: {
@@ -3264,6 +3330,7 @@ export type Database = {
           plan: Database["public"]["Enums"]["subscription_plan"]
         }[]
       }
+      get_my_referral_code: { Args: never; Returns: string }
       get_sequence_monthly_usage: {
         Args: never
         Returns: {
@@ -3318,11 +3385,11 @@ export type Database = {
       log_signup_event: {
         Args: {
           _details?: Json
-          _email: string
-          _message: string
+          _email?: string
+          _message?: string
           _source?: string
-          _stage: string
-          _status: string
+          _stage?: string
+          _status?: string
           _user_id: string
         }
         Returns: undefined
@@ -3351,11 +3418,12 @@ export type Database = {
           p_login_method?: string
           p_status?: string
           p_user_agent?: string
-          p_user_email: string
+          p_user_email?: string
           p_user_id: string
         }
         Returns: undefined
       }
+      reset_daily_email_counters: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "user"

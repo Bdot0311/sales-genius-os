@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import salesosLogo from "@/assets/salesos-logo.webp";
+
 import {
   Dialog,
   DialogContent,
@@ -28,7 +30,37 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
   const [resetLoading, setResetLoading] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [googleLoading, setGoogleLoading] = useState(false);
   const { toast } = useToast();
+
+  const handleGoogleAuth = async () => {
+    setGoogleLoading(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        toast({
+          title: "Google sign-in failed",
+          description: result.error.message || "Please try again or use email instead.",
+          variant: "destructive",
+        });
+        setGoogleLoading(false);
+        return;
+      }
+      if (result.redirected) return;
+      onSuccess?.();
+    } catch (err: any) {
+      toast({
+        title: "Google sign-in failed",
+        description: err?.message || "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -288,6 +320,37 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
           </p>
         </div>
 
+        <div className="mb-5 space-y-3">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full bg-card hover:bg-muted border-border/60"
+            onClick={handleGoogleAuth}
+            disabled={googleLoading}
+          >
+            {googleLoading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <svg className="mr-2 h-4 w-4" viewBox="0 0 48 48" aria-hidden="true">
+                <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.4 29.3 35.5 24 35.5c-6.4 0-11.5-5.1-11.5-11.5S17.6 12.5 24 12.5c2.9 0 5.6 1.1 7.7 2.9l5.7-5.7C33.6 6.3 29 4.5 24 4.5 13.2 4.5 4.5 13.2 4.5 24S13.2 43.5 24 43.5 43.5 34.8 43.5 24c0-1.2-.1-2.4-.3-3.5z"/>
+                <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16.1 19 13 24 13c2.9 0 5.6 1.1 7.7 2.9l5.7-5.7C33.6 6.8 29 5 24 5 16.3 5 9.7 9 6.3 14.7z"/>
+                <path fill="#4CAF50" d="M24 43c5 0 9.5-1.9 12.9-5l-6-5.1C29 34.4 26.6 35.5 24 35.5c-5.3 0-9.7-3.1-11.3-7.5l-6.5 5C9.6 38.9 16.2 43 24 43z"/>
+                <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4-4 5.4l6 5.1C40.9 35.5 43.5 30.2 43.5 24c0-1.2-.1-2.4-.3-3.5z"/>
+              </svg>
+            )}
+            Continue with Google
+          </Button>
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border/50" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">or continue with email</span>
+            </div>
+          </div>
+        </div>
+
+
         <Tabs 
           value={mode} 
           onValueChange={(v) => setMode(v as "signin" | "signup")} 
@@ -421,8 +484,9 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
               </Button>
 
               <p className="text-xs text-muted-foreground text-center leading-relaxed">
-                Free forever — no credit card required. Upgrade anytime to unlock lead generation.
+                Free forever — no credit card required. Includes 10 free lead searches to try the platform.
               </p>
+
             </form>
           </TabsContent>
         </Tabs>

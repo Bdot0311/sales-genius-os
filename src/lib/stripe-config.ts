@@ -49,7 +49,7 @@ export const PLAN_CONFIG = {
     yearlyTotal: 0,
     monthlyProspects: 10,
     yearlyProspects: 10,
-    dailyLimit: 5,
+    dailyLimit: 10,
     emailRevealCost: 1,
     phoneRevealCost: 10,
     companyRevealCost: 1,

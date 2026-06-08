@@ -12,29 +12,43 @@ serve(async (req) => {
   }
 
   try {
-    console.log("Starting logo upload to storage...");
-
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Fetch the logo from the existing URL
+    // Require auth + admin role
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authErr } = await supabaseAdmin.auth.getUser(token);
+    if (authErr || !user) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const { data: isAdmin } = await supabaseAdmin.rpc("has_role", { _user_id: user.id, _role: "admin" });
+    if (!isAdmin) {
+      return new Response(
+        JSON.stringify({ error: "Forbidden" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const logoSourceUrl = "https://salesos.alephwavex.io/salesos-logo.webp";
-    console.log("Fetching logo from:", logoSourceUrl);
-    
     const logoResponse = await fetch(logoSourceUrl);
     if (!logoResponse.ok) {
       throw new Error(`Failed to fetch logo: ${logoResponse.status}`);
     }
-
-    const logoBlob = await logoResponse.blob();
-    const logoArrayBuffer = await logoBlob.arrayBuffer();
+    const logoArrayBuffer = await logoResponse.arrayBuffer();
     const logoUint8Array = new Uint8Array(logoArrayBuffer);
 
-    console.log("Logo fetched, size:", logoUint8Array.length, "bytes");
-
-    // Upload to storage bucket
     const { data, error } = await supabaseAdmin.storage
       .from("email-assets")
       .upload("salesos-logo.webp", logoUint8Array, {
@@ -42,33 +56,21 @@ serve(async (req) => {
         upsert: true,
       });
 
-    if (error) {
-      console.error("Storage upload error:", error);
-      throw new Error(`Storage upload failed: ${error.message}`);
-    }
+    if (error) throw new Error(`Storage upload failed: ${error.message}`);
 
-    console.log("Logo uploaded successfully:", data);
-
-    // Get the public URL
     const { data: publicUrlData } = supabaseAdmin.storage
       .from("email-assets")
       .getPublicUrl("salesos-logo.webp");
 
-    console.log("Public URL:", publicUrlData.publicUrl);
-
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        path: data.path,
-        publicUrl: publicUrlData.publicUrl
-      }),
+      JSON.stringify({ success: true, path: data.path, publicUrl: publicUrlData.publicUrl }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
   } catch (error: any) {
     console.error("Upload error:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+      JSON.stringify({ error: error?.message ?? "Unknown error" }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
   }
 });

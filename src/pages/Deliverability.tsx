@@ -291,8 +291,9 @@ const Deliverability = () => {
         setSetupMode("auto");
       } else {
         // Provider doesn't support DomainConnect — show the guided flow.
+        const reason = (discovery as { supported: false; reason: string }).reason;
         const reasonMsg =
-          discovery.reason === "no_record" || discovery.reason === "no_sync"
+          reason === "no_record" || reason === "no_sync"
             ? `${dnsResults.provider} doesn't support one-click setup. Here's the guided way.`
             : "Couldn't reach your provider for automatic setup. Here's the guided way.";
         toast.info(reasonMsg);

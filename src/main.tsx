@@ -1,6 +1,54 @@
 import { createRoot } from "react-dom/client";
+import * as Sentry from "@sentry/react";
 import App from "./App.tsx";
 import "./index.css";
+
+Sentry.init({
+  dsn: "https://3419bbc0b0d5de6af9e00fd6f7b96295@o4511526216597504.ingest.us.sentry.io/4511526241697792",
+  sendDefaultPii: true,
+  tracesSampleRate: 0.1,
+  replaysSessionSampleRate: 0,
+  replaysOnErrorSampleRate: 1.0,
+  environment: import.meta.env.MODE,
+  // Filter out noise from browser extensions, third-party scripts, and known
+  // non-actionable rejections. These do not originate from our code.
+  ignoreErrors: [
+    // Browser-extension injected content scripts (LastPass/password managers etc.)
+    "Object Not Found Matching Id",
+    "MethodName:update",
+    "MethodName:getProperty",
+    // Generic noisy / non-actionable runtime errors
+    "ResizeObserver loop limit exceeded",
+    "ResizeObserver loop completed with undelivered notifications",
+    "Non-Error promise rejection captured",
+    // Network/abort noise users can't act on
+    "Network request failed",
+    "Load failed",
+    "AbortError",
+    "The user aborted a request",
+    // Chunk reloads are self-healed above; no need to alert
+    "Failed to fetch dynamically imported module",
+    "Importing a module script failed",
+    "ChunkLoadError",
+  ],
+  denyUrls: [
+    // Browser extensions
+    /extensions\//i,
+    /^chrome:\/\//i,
+    /^chrome-extension:\/\//i,
+    /^moz-extension:\/\//i,
+    /^safari-extension:\/\//i,
+    /^safari-web-extension:\/\//i,
+  ],
+  beforeSend(event, hint) {
+    const ex: any = hint?.originalException;
+    const msg = typeof ex === "string" ? ex : ex?.message || event.message || "";
+    if (typeof msg === "string" && /Object Not Found Matching Id|MethodName:(update|getProperty)/i.test(msg)) {
+      return null;
+    }
+    return event;
+  },
+});
 
 // Self-heal stale chunk references after a redeploy. When a dynamic import
 // fails because the hashed chunk URL no longer exists, force a one-shot

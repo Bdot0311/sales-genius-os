@@ -10,13 +10,18 @@ import { STRIPE_PRICE_IDS } from "@/lib/stripe-config";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const stripePromise = loadStripe(
+// Stripe publishable key — safe to expose in client per Stripe docs.
+// Prefer env override; fallback is the live publishable key for production.
+const STRIPE_PK =
   import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ||
-    "pk_live_51T8THPFTerosS6hiQnrx3VN6cwsIJCVHKPrHT50Y71g3Z1IiQ0HbdZvqHHp5bV3k9mOGFZQKHVDT2tT8FPGnXkqN00e2ecLQHm"
-);
+  "pk_live_51T8THPFTerosS6hiQnrx3VN6cwsIJCVHKPrHT50Y71g3Z1IiQ0HbdZvqHHp5bV3k9mOGFZQKHVDT2tT8FPGnXkqN00e2ecLQHm";
+const stripePromise = loadStripe(STRIPE_PK);
 
 type PlanKey = "starter" | "growth" | "pro" | "agency";
 type IntervalKey = "monthly" | "yearly";
+
+const VALID_PLANS: readonly PlanKey[] = ["starter", "growth", "pro", "agency"] as const;
+const VALID_INTERVALS: readonly IntervalKey[] = ["monthly", "yearly"] as const;
 
 const priceIdMap: Record<`${PlanKey}_${IntervalKey}`, string> = {
   starter_monthly: STRIPE_PRICE_IDS.starter_monthly,
@@ -41,8 +46,10 @@ const Checkout = () => {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
 
-  const plan = (searchParams.get("plan") || "growth") as PlanKey;
-  const interval = (searchParams.get("interval") || "monthly") as IntervalKey;
+  const rawPlan = searchParams.get("plan") ?? "growth";
+  const rawInterval = searchParams.get("interval") ?? "monthly";
+  const plan: PlanKey = (VALID_PLANS as readonly string[]).includes(rawPlan) ? (rawPlan as PlanKey) : "growth";
+  const interval: IntervalKey = (VALID_INTERVALS as readonly string[]).includes(rawInterval) ? (rawInterval as IntervalKey) : "monthly";
   const key = `${plan}_${interval}` as `${PlanKey}_${IntervalKey}`;
   const priceId = priceIdMap[key];
 

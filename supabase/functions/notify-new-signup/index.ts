@@ -17,8 +17,20 @@ serve(async (req) => {
 
     const { record } = await req.json();
 
-    const userEmail = record?.email || 'Unknown';
-    const fullName = record?.full_name || 'No name provided';
+    // Hard guard: never send admin notifications for incomplete/fake signups.
+    // A real signup row always has an email; if missing, drop silently with 200.
+    const rawEmail = (record?.email || '').toString().trim().toLowerCase();
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail);
+    if (!emailValid) {
+      console.warn('notify-new-signup: skipped — missing/invalid email on record', { hasRecord: !!record });
+      return new Response(JSON.stringify({ success: true, skipped: 'invalid_email' }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const userEmail = rawEmail;
+    const fullName = (record?.full_name || '').toString().trim() || 'No name provided';
     const signupTime = new Date(record?.created_at || Date.now()).toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',

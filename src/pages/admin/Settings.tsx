@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Settings, CreditCard, Key, Mail, Flag, Plus, Pencil, Trash2, Loader2, Save, Info } from "lucide-react";
 import type { Json } from "@/integrations/supabase/types";
+import { EmailLogsPanel } from "@/components/admin/EmailLogsPanel";
 
 function debounce<T extends (...args: any[]) => any>(fn: T, ms: number): T {
   let timer: ReturnType<typeof setTimeout>;
@@ -471,6 +472,8 @@ const AdminSettings = () => {
                 />
               </div>
             </div>
+
+            <EmailLogsPanel />
           </TabsContent>
 
           {/* Feature Flags */}

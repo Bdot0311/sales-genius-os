@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index";
+import SentryTest from "./pages/SentryTest";
 
 // Public marketing routes that should NOT trigger Supabase/auth/white-label loads
 const PUBLIC_LANDING_PREFIXES = [
@@ -138,31 +139,42 @@ const DeferredUIShell = ({ children }: { children: ReactNode }) => {
     const isPublic = isPublicLandingPath(window.location.pathname);
 
     const load = () => {
-      const imports: Promise<any>[] = [
-        import("@/components/ui/toaster"),
-        import("@/components/ui/sonner"),
-      ];
-      if (!isPublic) {
-        imports.push(import("@/hooks/use-white-label"));
-      }
+      const toasterPromise = import("@/components/ui/toaster");
+      const sonnerPromise = import("@/components/ui/sonner");
+      const whiteLabelPromise = !isPublic
+        ? import("@/hooks/use-white-label")
+        : Promise.resolve(null);
 
-      Promise.all(imports).then((mods) => {
-        const Toaster = mods[0].Toaster;
-        const SonnerToaster = mods[1].Toaster;
-        const useWhiteLabel = !isPublic ? mods[2]?.useWhiteLabel : null;
+      Promise.all([toasterPromise, sonnerPromise, whiteLabelPromise])
+        .then(([toasterMod, sonnerMod, whiteLabelMod]) => {
+          const Toaster = toasterMod?.Toaster;
+          const SonnerToaster = sonnerMod?.Toaster;
+          const useWhiteLabel = whiteLabelMod?.useWhiteLabel ?? null;
 
-        // Stable component rendered once — provides toasts + white-label CSS vars.
-        // Never wraps children so the children tree is never remounted.
-        const Providers = () => {
-          if (useWhiteLabel) {
-            try { useWhiteLabel(); } catch (e) { console.error("WhiteLabel init error:", e); }
+          if (!Toaster || !SonnerToaster) {
+            console.error("DeferredUIShell: missing Toaster export", {
+              hasToaster: !!Toaster,
+              hasSonner: !!SonnerToaster,
+            });
+            return;
           }
-          return <><Toaster /><SonnerToaster /></>;
-        };
 
-        setSideEffects(() => Providers);
-      });
+          // Stable component rendered once — provides toasts + white-label CSS vars.
+          // Never wraps children so the children tree is never remounted.
+          const Providers = () => {
+            if (useWhiteLabel) {
+              try { useWhiteLabel(); } catch (e) { console.error("WhiteLabel init error:", e); }
+            }
+            return <><Toaster /><SonnerToaster /></>;
+          };
+
+          setSideEffects(() => Providers);
+        })
+        .catch((err) => {
+          console.error("DeferredUIShell: failed to load UI shell", err);
+        });
     };
+
 
     const delay = isPublic ? 1500 : 100;
     if ('requestIdleCallback' in window) {
@@ -303,11 +315,12 @@ const App = () => (
               <Route path="/onboarding-status" element={<MaintenanceGuard><OnboardingStatus /></MaintenanceGuard>} />
               <Route path="/dashboard/onboarding-status" element={<MaintenanceGuard><OnboardingStatus /></MaintenanceGuard>} />
               <Route path="/dashboard/agent" element={<MaintenanceGuard><Agent /></MaintenanceGuard>} />
-              <Route path="/admin/*" element={<Admin />} />
+              <Route path="/admin/*" element={<MaintenanceGuard><Admin /></MaintenanceGuard>} />
               <Route path="/unsubscribe" element={<Unsubscribe />} />
               <Route path="/client-portal/:token" element={<ClientPortal />} />
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogPost />} />
+              <Route path="/sentry-test" element={<SentryTest />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
