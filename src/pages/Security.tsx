@@ -12,7 +12,7 @@ const Security = () => {
   return (
     <>
       <SEOHead
-        title="Security Practices & Data Protection - Enterprise Grade | SalesOS"
+        title="Security & Data Protection | SalesOS"
         description="Learn about SalesOS security practices. Enterprise-grade data protection with encryption, SOC 2 compliance, GDPR/CCPA compliance, and 24/7 monitoring."
         keywords="SalesOS security, data encryption, SOC 2, GDPR compliance, enterprise security, data protection"
         ogImage="https://salesos.alephwavex.io/salesos-og.png"
