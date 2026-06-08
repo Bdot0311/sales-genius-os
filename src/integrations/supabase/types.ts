@@ -3424,6 +3424,7 @@ export type Database = {
         Returns: undefined
       }
       reset_daily_email_counters: { Args: never; Returns: undefined }
+      touch_last_active: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "user"

@@ -22,6 +22,13 @@ export const AdminProvider = ({ children }: { children: React.ReactNode }) => {
         return;
       }
 
+      // Heartbeat: keep "last login" fresh in the admin panel for any authenticated session.
+      // auth.users.last_sign_in_at doesn't update on refresh-token activity, and the
+      // record_user_login RPC only fires from the email/password form.
+      void supabase.rpc('touch_last_active');
+
+
+
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')
@@ -75,6 +82,10 @@ export const useAdmin = () => {
         setLoading(false);
         return;
       }
+
+      void supabase.rpc('touch_last_active');
+
+
 
       const { data, error } = await supabase
         .from('user_roles')
