@@ -117,32 +117,31 @@ serve(async (req) => {
 
     const nameIsTitle = isJobTitle(lead.contact_name);
 
-    // Build enrich request payload
+    // Build enrich request payload. Railway (Wiza-backed) accepts EXACTLY ONE of:
+    //   (a) linkedin_url, (b) email, or (c) full_name + company.
+    // We prefer full_name+company (highest match rate), then email, then linkedin_url.
     const enrichPayload: Record<string, string> = {};
 
-    if (lead.linkedin_url) {
-      const normalized = normalizeLinkedInUrl(lead.linkedin_url);
-      if (normalized) enrichPayload.linkedin_url = normalized;
+    const normalizedLinkedin = lead.linkedin_url ? normalizeLinkedInUrl(lead.linkedin_url) : null;
+    const looksLikeLinkedinProfile = !!normalizedLinkedin
+      && /linkedin\.com\/in\/[^/]+/.test(normalizedLinkedin);
+
+    const fullName = (!nameIsTitle && lead.contact_name && lead.contact_name.trim().split(/\s+/).length >= 2)
+      ? lead.contact_name.trim()
+      : null;
+
+    if (fullName && lead.company_name) {
+      enrichPayload.full_name = fullName;
+      enrichPayload.company = lead.company_name;
+    } else if (lead.contact_email) {
+      enrichPayload.email = lead.contact_email;
+    } else if (looksLikeLinkedinProfile) {
+      enrichPayload.linkedin_url = normalizedLinkedin!;
     }
-    if (lead.contact_email) enrichPayload.email = lead.contact_email;
-    if (!nameIsTitle && lead.contact_name) {
-      const parts = lead.contact_name.trim().split(/\s+/);
-      if (parts.length >= 2) {
-        enrichPayload.first_name = parts[0];
-        enrichPayload.last_name = parts.slice(1).join(' ');
-      }
-    }
-    if (lead.company_name) enrichPayload.company = lead.company_name;
-    if (lead.company_website) {
-      try {
-        const u = new URL(lead.company_website.startsWith('http') ? lead.company_website : `https://${lead.company_website}`);
-        enrichPayload.domain = u.hostname.replace('www.', '');
-      } catch { /* ignore */ }
-    }
-    if (!enrichPayload.domain && lead.contact_email) {
-      const d = lead.contact_email.split('@')[1];
-      if (d && !FREE_EMAIL_DOMAINS.has(d)) enrichPayload.domain = d;
-    }
+
+
+
+
 
     console.log('Calling Railway /enrich with:', Object.keys(enrichPayload).join(', '));
 
@@ -178,11 +177,14 @@ serve(async (req) => {
     };
 
     if (railwayData && !railwayData.error) {
-      const p = railwayData.person ?? railwayData.contact ?? railwayData.response ?? railwayData;
-      const c = railwayData.company ?? p?.company ?? {};
+      // Railway returns { lead: {...} } or legacy { person, company } / flat shapes.
+      const root = railwayData.lead ?? railwayData;
+      const p = root.person ?? root.contact ?? root.response ?? root;
+      const c = root.company ?? p?.company ?? root;
 
       // Person fields
-      const fullName = [p.first_name, p.last_name].filter(Boolean).join(' ') || p.full_name || p.name;
+      const fullName = [p.first_name, p.last_name].filter(Boolean).join(' ')
+        || p.full_name || p.name || p.contact_name;
       if (nameIsTitle && fullName) enrichmentData.contact_name = fullName;
       else if (fullName && !lead.contact_name) enrichmentData.contact_name = fullName;
 
@@ -194,20 +196,34 @@ serve(async (req) => {
       if (p.linkedin_url || p.linkedInUrl) {
         enrichmentData.linkedin_url = normalizeLinkedInUrl(p.linkedin_url ?? p.linkedInUrl);
       }
-      if (p.phone || p.phone_number) enrichmentData.contact_phone = p.phone ?? p.phone_number;
+      if (p.phone || p.phone_number || p.mobile_phone) {
+        enrichmentData.contact_phone = p.phone ?? p.phone_number ?? p.mobile_phone;
+      }
+      // (no `location` column on leads; skip)
 
       // Company fields
-      if (c.website && !lead.company_website) enrichmentData.company_website = c.website;
-      if (c.industry) enrichmentData.industry = c.industry;
-      if (c.size || c.employee_count || c.employeeRange) {
-        enrichmentData.employee_count = String(c.size ?? c.employee_count ?? c.employeeRange);
+      const companyName = c.name ?? c.company_name ?? root.company_name;
+      if (companyName && !lead.company_name) enrichmentData.company_name = companyName;
+      const website = c.website ?? c.domain ?? root.company_domain;
+      if (website && !lead.company_website) {
+        enrichmentData.company_website = website.startsWith('http') ? website : `https://${website}`;
       }
+      const industry = c.industry ?? root.industry ?? root.company_industry;
+      if (industry) enrichmentData.industry = industry;
+      const size = c.size ?? c.employee_count ?? c.employeeRange ?? root.company_size;
+      if (size) enrichmentData.employee_count = String(size);
       if (c.linkedin_url || c.linkedInUrl) {
         enrichmentData.company_linkedin = normalizeLinkedInUrl(c.linkedin_url ?? c.linkedInUrl);
       }
-      if (c.description) enrichmentData.company_description = c.description;
-      if (c.technologies?.length) enrichmentData.technologies = c.technologies.slice(0, 20);
+      const desc = c.description ?? root.company_description;
+      if (desc) enrichmentData.company_description = desc;
+      const techs = c.technologies ?? root.technologies;
+      if (Array.isArray(techs) && techs.length) enrichmentData.technologies = techs.slice(0, 20);
     }
+    console.log('Mapped enrichmentData:', JSON.stringify(enrichmentData));
+    if (railwayData) console.log('Raw Railway lead:', JSON.stringify(railwayData).slice(0, 800));
+
+
 
     const enrichedFields = Object.keys(enrichmentData).filter(
       (k) => k !== 'enrichment_status' && k !== 'enriched_at'
