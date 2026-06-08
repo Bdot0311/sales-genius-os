@@ -104,20 +104,56 @@ export function useExternalLeads() {
       
       return newLeads;
     } catch (error: any) {
-      const errorMessage = error.message || 'Failed to fetch leads';
-      
-      // Check for credit-related errors
-      if (errorMessage.includes('credits') || errorMessage.includes('402') || errorMessage.includes('Payment') || errorMessage.includes('exhausted')) {
+      let errorMessage = error.message || 'Failed to fetch leads';
+
+      // Supabase FunctionsHttpError — try to extract the actual body from the edge function
+      if (error.context) {
+        try {
+          const body = await error.context.json?.();
+          if (body?.error) errorMessage = body.error;
+          else if (body?.message) errorMessage = body.message;
+        } catch {}
+      }
+
+      // Credit / billing errors get a dedicated toast
+      if (
+        errorMessage.toLowerCase().includes('credit') ||
+        errorMessage.toLowerCase().includes('exhausted') ||
+        errorMessage.toLowerCase().includes('payment') ||
+        errorMessage.toLowerCase().includes('402') ||
+        errorMessage.toLowerCase().includes('upgrade')
+      ) {
         toast({
           title: 'Search Credits Exhausted',
           description: 'Your SalesOS search credits have been used up. Contact support or add more credits to continue searching.',
           variant: 'destructive',
           duration: 10000,
         });
+      } else if (
+        errorMessage.toLowerCase().includes('subscription') ||
+        errorMessage.toLowerCase().includes('paid plan') ||
+        errorMessage.toLowerCase().includes('trial')
+      ) {
+        toast({
+          title: 'Subscription Required',
+          description: errorMessage,
+          variant: 'destructive',
+          duration: 10000,
+        });
+      } else if (
+        errorMessage.toLowerCase().includes('reach') ||
+        errorMessage.toLowerCase().includes('network') ||
+        errorMessage.toLowerCase().includes('provider')
+      ) {
+        toast({
+          title: 'Search unavailable',
+          description: 'Could not connect to the lead data provider. This is usually a temporary issue — please try again in a moment.',
+          variant: 'destructive',
+        });
       } else {
         toast({
           title: 'Search failed',
-          description: 'No results found. Try a different query — e.g. "VP of Sales at SaaS companies" or "CTOs in New York".',
+          description: errorMessage || 'No results found. Try a different query — e.g. "VP of Sales at SaaS companies" or "CTOs in New York".',
           variant: 'destructive',
         });
       }
