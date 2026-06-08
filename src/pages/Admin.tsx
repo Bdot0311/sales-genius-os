@@ -18,6 +18,7 @@ import AdminAlerts from "./admin/Alerts";
 import AdminWebhooks from "./admin/Webhooks";
 import AdminSignupLogs from "./admin/SignupLogs";
 import AdminReEngagement from "./admin/ReEngagement";
+import AdminRealtimeHealth from "./admin/RealtimeHealth";
 
 const Admin = () => {
   const navigate = useNavigate();
