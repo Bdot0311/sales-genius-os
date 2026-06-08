@@ -165,6 +165,26 @@
     <priority>0.5</priority>
   </url>
 
+  <!-- Auth & Conversion Pages -->
+  <url>
+    <loc>https://sales-genius-os.lovable.app/auth</loc>
+    <lastmod>2026-06-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://sales-genius-os.lovable.app/checkout</loc>
+    <lastmod>2026-06-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://sales-genius-os.lovable.app/confirmation</loc>
+    <lastmod>2026-06-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
   <!-- Help Categories -->
   <url><loc>https://sales-genius-os.lovable.app/help/category/getting-started</loc><lastmod>2026-06-08</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://sales-genius-os.lovable.app/help/category/account</loc><lastmod>2026-06-08</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
