@@ -162,7 +162,7 @@ const PricingPage = () => {
               <h2 className="font-display text-xl sm:text-2xl font-bold mb-2" style={{ color: "hsl(0 0% 92%)", letterSpacing: "-0.01em" }}>
                 Why buy now?
               </h2>
-              <p className="text-white/55 leading-relaxed text-sm sm:text-base">
+              <p className="text-white/80 leading-relaxed text-sm sm:text-base">
                 If SalesOS saves your team even a few hours a week on list
                 building, lead prioritization, and first-touch drafting, it pays
                 for itself fast. The right plan is about how much prospecting
