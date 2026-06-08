@@ -117,32 +117,31 @@ serve(async (req) => {
 
     const nameIsTitle = isJobTitle(lead.contact_name);
 
-    // Build enrich request payload
+    // Build enrich request payload. Wiza-backed Railway API requires EXACTLY ONE of:
+    //   (a) linkedin_url, (b) email, or (c) first_name + last_name + company.
+    // Pick the strongest single identifier in that order.
     const enrichPayload: Record<string, string> = {};
 
-    if (lead.linkedin_url) {
-      const normalized = normalizeLinkedInUrl(lead.linkedin_url);
-      if (normalized) enrichPayload.linkedin_url = normalized;
+    const normalizedLinkedin = lead.linkedin_url ? normalizeLinkedInUrl(lead.linkedin_url) : null;
+    const looksLikeLinkedinProfile = !!normalizedLinkedin
+      && /linkedin\.com\/in\/[^/]+/.test(normalizedLinkedin);
+
+    const nameParts = (!nameIsTitle && lead.contact_name)
+      ? lead.contact_name.trim().split(/\s+/)
+      : [];
+    const hasFullName = nameParts.length >= 2 && !!lead.company_name;
+
+    if (looksLikeLinkedinProfile) {
+      enrichPayload.linkedin_url = normalizedLinkedin!;
+    } else if (lead.contact_email) {
+      enrichPayload.email = lead.contact_email;
+    } else if (hasFullName) {
+      enrichPayload.first_name = nameParts[0];
+      enrichPayload.last_name = nameParts.slice(1).join(' ');
+      enrichPayload.company = lead.company_name!;
     }
-    if (lead.contact_email) enrichPayload.email = lead.contact_email;
-    if (!nameIsTitle && lead.contact_name) {
-      const parts = lead.contact_name.trim().split(/\s+/);
-      if (parts.length >= 2) {
-        enrichPayload.first_name = parts[0];
-        enrichPayload.last_name = parts.slice(1).join(' ');
-      }
-    }
-    if (lead.company_name) enrichPayload.company = lead.company_name;
-    if (lead.company_website) {
-      try {
-        const u = new URL(lead.company_website.startsWith('http') ? lead.company_website : `https://${lead.company_website}`);
-        enrichPayload.domain = u.hostname.replace('www.', '');
-      } catch { /* ignore */ }
-    }
-    if (!enrichPayload.domain && lead.contact_email) {
-      const d = lead.contact_email.split('@')[1];
-      if (d && !FREE_EMAIL_DOMAINS.has(d)) enrichPayload.domain = d;
-    }
+
+
 
     console.log('Calling Railway /enrich with:', Object.keys(enrichPayload).join(', '));
 
