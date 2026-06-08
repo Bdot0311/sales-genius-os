@@ -297,7 +297,8 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
           >
             <img 
               src={salesosLogo} 
-              alt="SalesOS product logo" 
+              alt="SalesOS Logo" 
+
 
               className="w-10 h-10 transition-transform duration-300 hover:scale-110" 
             />

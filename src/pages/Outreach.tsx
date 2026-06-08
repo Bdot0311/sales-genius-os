@@ -2249,6 +2249,7 @@ For logos, use HTML:
                         onClick={generateTriggerContext}
                         disabled={isGeneratingTrigger || !selectedLead}
                         className="shrink-0"
+                        aria-label="Generate trigger context"
                       >
                         {isGeneratingTrigger ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -2326,6 +2327,7 @@ For logos, use HTML:
                         onClick={generateSubjectLine}
                         disabled={isGeneratingSubject || !selectedLead}
                         className="shrink-0"
+                        aria-label="Generate subject line"
                       >
                         {isGeneratingSubject ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -2439,6 +2441,7 @@ For logos, use HTML:
                           variant="ghost"
                           size="icon"
                           className="h-6 w-6"
+                          aria-label="Close variant picker"
                           onClick={() => {
                             setShowVariantPicker(false);
                             setEmailVariants([]);
@@ -2477,7 +2480,7 @@ For logos, use HTML:
                                     {variant.body.slice(0, 130)}...
                                   </p>
                                 </div>
-                                <Button variant="ghost" size="icon" className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button variant="ghost" size="icon" className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" aria-label="Select this variant">
                                   <Check className="w-4 h-4" />
                                 </Button>
                               </div>
