@@ -673,7 +673,256 @@ B2B prospecting in 2026 isn't about doing more — it's about being more deliber
 If you want a workflow that handles ICP search, verified emails, fit scoring, and AI-drafted first-touch in one place, [try OutReign free](https://salesos.alephwavex.io). Describe your ideal customer in plain English, send your first email in under 2 minutes — no credit card.
     `.trim(),
   },
+  {
+    slug: "partnership-email-templates",
+    title: "12 Partnership Email Templates That Actually Get Replies",
+    description: "Proven partnership outreach templates for co-marketing, integrations, affiliate, reseller, and content collaborations — plus the structure that makes them convert.",
+    publishedAt: "2026-06-12",
+    readingTime: "10 min read",
+    category: "Outbound",
+    keywords: ["partnership email templates", "partnership outreach email", "collaboration email template", "co-marketing email", "integration partnership email", "affiliate outreach email", "business partnership proposal email"],
+    content: `
+Partnership emails are not cold sales emails. The recipient is another operator who reads outbound for a living, and they can spot a lazy "let's hop on a call to explore synergies" pitch in 4 seconds. The templates below work because they do three things most partnership outreach skips: lead with a specific reason the other side wins, propose one concrete next step, and respect the reader's time.
+
+Use these as starting points. Swap names, numbers, and links to match your situation — but keep the structure.
+
+## The Structure That Makes Partnership Emails Convert
+
+Every template here follows the same skeleton:
+
+1. **Subject line that signals partnership, not sales.** "Quick idea for {{company}} + {{your company}}" beats "Partnership Opportunity" — the second one reads like a template.
+2. **One line of context.** Who you are, why you're writing them specifically (not a list of 50 companies).
+3. **The asymmetric value.** What they get, in concrete terms. Money, distribution, a feature gap closed, a co-marketing audience.
+4. **One specific ask.** Not "let's chat." A 20-minute call, a Loom review, a shared doc, a yes/no on one question.
+5. **A graceful out.** "If this isn't a fit, no worries — happy to point you to someone who'd be a better match."
+
+Skip any one of these and the reply rate craters.
+
+## 1. Cold Co-Marketing Pitch (Webinar / Joint Content)
+
+**Subject:** Co-hosted webinar idea for {{their_company}}
+
+Hi {{first_name}},
+
+I run {{your_company}} — we sell {{your_product}} to {{shared_ICP}}, which I think overlaps with about {{X}}% of your audience.
+
+I'd like to co-host a 30-minute webinar with you on **"{{topic_that_helps_their_buyer}}"**. You bring the framework, I bring the case studies. We split the lead list 50/50.
+
+We did this last quarter with {{reference_partner}} and pulled {{specific_number}} registrants — happy to share the playbook.
+
+Worth a 20-minute call next week to see if the topic and timing line up?
+
+— {{your_name}}
+
+**Why it works:** Specific topic, specific format, specific split, social proof. Zero ambiguity about what you're proposing.
+
+## 2. Integration Partnership (Technical / API)
+
+**Subject:** {{your_product}} ↔ {{their_product}} integration — 3 mutual customers asking
+
+Hi {{first_name}},
+
+I'm {{your_name}} from {{your_company}}. We've had {{specific_number}} mutual customers in the last 60 days ask if we integrate with {{their_product}} — I want to ship the integration this quarter.
+
+The MVP is straightforward on our side: {{specific_integration_detail}}. We'd handle the build and the support docs. From you we'd need access to your sandbox and a 30-minute review with someone on your platform team.
+
+In return, we'd feature {{their_product}} in our integrations page (~{{traffic_number}} monthly visits), include it in our onboarding flow, and co-write a launch post.
+
+Who's the right person on your side to scope this?
+
+— {{your_name}}
+
+**Why it works:** Demand evidence, clear scope, clear effort split, mutual distribution promise.
+
+## 3. Affiliate / Referral Partnership
+
+**Subject:** 30% recurring for sending us {{ICP_descriptor}} customers
+
+Hi {{first_name}},
+
+I noticed {{their_company}} works closely with {{ICP_descriptor}} — that's exactly our buyer at {{your_company}}.
+
+We pay **30% recurring commission** on every customer you refer, for as long as they stay. Our average customer pays $1,400/year, so a single referral is ~$420/year in passive revenue.
+
+Setup is one form (5 minutes) and a unique link. No contracts to negotiate, no minimum volume.
+
+Want me to send over the details? Happy to walk through the dashboard on a 15-minute call if useful.
+
+— {{your_name}}
+
+**Why it works:** Real dollar number, low setup friction, optional call. Lets the reader say yes without committing to a meeting.
+
+## 4. Reseller / White-Label Pitch
+
+**Subject:** White-label opportunity for {{their_company}} clients
+
+Hi {{first_name}},
+
+{{their_company}} already sells {{adjacent_service}} to {{ICP}}. We make {{your_product}}, which solves {{adjacent_problem}} for the same buyer.
+
+I'd like to offer you a white-label version: your branding, your pricing, your invoice. We handle hosting, support tier 2, and product updates. You keep the customer relationship and the margin.
+
+Our existing partner program pays out ~$8k/quarter per active partner. Happy to share the exact economics on a call.
+
+Are you the right person to scope this, or should I be talking to someone else on your team?
+
+— {{your_name}}
+
+**Why it works:** Real revenue number, clear who-does-what split, polite ask for the right contact instead of pushing for a meeting.
+
+## 5. Content Collaboration (Guest Post / Newsletter Swap)
+
+**Subject:** Guest post idea: "{{specific_post_title}}" for {{their_publication}}
+
+Hi {{first_name}},
+
+I've been reading {{their_publication}} for a while — your piece on {{specific_recent_post}} was the most useful thing I read that week.
+
+I'd like to pitch a guest post: **"{{specific_post_title}}"**. It's a deep-dive on {{topic}}, with original data from {{your_company}}'s {{data_source}} ({{data_size}} data points). Aimed at your {{audience_descriptor}} readers — should land at around 1,800 words.
+
+Outline below — happy to write the full draft on spec if the angle works for you.
+
+{{three-bullet outline}}
+
+— {{your_name}}
+
+**Why it works:** Shows you actually read the publication, brings unique data, offers spec work to remove risk, includes an outline so the editor can say yes in 2 minutes.
+
+## 6. Newsletter / Audience Swap
+
+**Subject:** Newsletter swap with {{their_newsletter}} — both lists similar size
+
+Hi {{first_name}},
+
+Our newsletters are roughly the same size ({{your_subscriber_count}} on our side, {{their_subscriber_count}} on yours per your last footer) and overlap on {{shared_audience}} but probably don't have much subscriber overlap.
+
+Want to swap one feature each? You write 100 words about {{their_newsletter}} in our next issue, we write 100 about ours in yours. Easiest win in audience-building.
+
+Our last swap (with {{reference_swap}}) drove {{specific_number}} new subscribers in 48 hours. Happy to share the format.
+
+In or out?
+
+— {{your_name}}
+
+**Why it works:** Math-based pitch, low effort, clear ask, gives a hard yes/no out.
+
+## 7. Conference / Event Co-Sponsorship
+
+**Subject:** Co-sponsoring {{event_name}} with {{their_company}}?
+
+Hi {{first_name}},
+
+I'm looking at sponsoring {{event_name}} in {{month}} — {{specific_audience}} is exactly our ICP. The ${{sponsor_tier_cost}} tier is more than I want to commit solo.
+
+Would {{their_company}} want to split a co-sponsorship? Shared booth, shared lead list, your logo on our materials and vice versa. Roughly $\{{half_cost}} each.
+
+Worth a 15-minute call this week to decide before the early-bird deadline ({{deadline_date}})?
+
+— {{your_name}}
+
+**Why it works:** Time pressure is real (event deadline), not manufactured. Clear cost-sharing math. Specific tier and date.
+
+## 8. Joint Customer Research / Report
+
+**Subject:** Joint state-of-{{industry}} report — would {{their_company}} co-author?
+
+Hi {{first_name}},
+
+I want to publish a "State of {{industry}}" report next quarter — survey {{respondent_count}} {{ICP}} on {{specific_topics}}, publish in {{month}}, push to both audiences.
+
+Looking for one co-author who can bring their {{their_audience_size}} list to the survey distribution. In exchange: co-branded report, co-bylined launch post, equal share of the lead list (any respondent who opts in).
+
+We'd handle survey design, write-up, design, and hosting. You'd handle distribution and one round of edits.
+
+Want to see the proposed survey questions?
+
+— {{your_name}}
+
+**Why it works:** High-value asset (industry report) with clear effort split. Asks for survey-question review, which is a small, easy yes.
+
+## 9. Tool Bundle / Joint Offer
+
+**Subject:** Joint offer for {{ICP}}: {{your_product}} + {{their_product}}
+
+Hi {{first_name}},
+
+A lot of our customers also use {{their_product}}. I want to test a joint offer: bundled annual pricing on both products at {{specific_discount}}% off, promoted to both customer bases.
+
+Quick math: ~{{their_customer_count}} of your customers fit our ICP. Even a 3% conversion is {{specific_revenue}} in expansion ARR — split however we agree.
+
+I've drafted the landing page mockup and pricing structure — can I send it over?
+
+— {{your_name}}
+
+**Why it works:** Specific math, low-risk ask (just review a mockup), respects that bundling has tradeoffs.
+
+## 10. Community / Slack Group Cross-Promotion
+
+**Subject:** Cross-promote {{their_community}} and {{your_community}}?
+
+Hi {{first_name}},
+
+I run {{your_community}} ({{member_count}} {{descriptor}}). You run {{their_community}}. Our members keep asking about exactly the topics you cover.
+
+Want to do a soft cross-promote? You drop a one-liner in our weekly digest, we drop one in yours. No exclusivity, no contracts, just a one-time A/B test to see if our audiences overlap.
+
+If it works, we can talk about a deeper collab.
+
+— {{your_name}}
+
+**Why it works:** "Soft" framing, A/B test framing, optional deeper collab. Lowers the commitment to nearly zero.
+
+## 11. Customer Reference / Case Study Trade
+
+**Subject:** Case study trade — {{shared_customer}}?
+
+Hi {{first_name}},
+
+{{shared_customer}} uses both {{your_product}} and {{their_product}}. They mentioned {{specific_outcome}} on a call last week.
+
+Want to co-write a case study? Joint interview, joint write-up, both companies publish to our blogs and email lists. {{shared_customer}} already said they'd participate — they like the cross-promotion.
+
+I can have a first draft to you by {{date}}. Are you in?
+
+— {{your_name}}
+
+**Why it works:** Real customer, real outcome, customer already on board. Removes the hardest step (getting the customer to say yes) before you even pitch.
+
+## 12. Re-Engagement: Following Up on a Dormant Partnership
+
+**Subject:** {{their_company}} + {{your_company}} — worth another look?
+
+Hi {{first_name}},
+
+We talked about a partnership last {{timeframe}} but it didn't land — bad timing on both sides.
+
+Things changed on our side: {{specific_update_1}} and {{specific_update_2}}. Curious if anything's shifted on yours.
+
+If not the original idea, here's a smaller one that might work now: {{micro_pitch}}. 15 minutes next week to compare notes?
+
+— {{your_name}}
+
+**Why it works:** Honest about the dead conversation, brings new context, offers a smaller-scoped alternative. Doesn't pretend the first try succeeded.
+
+## What Makes These Templates Stop Working
+
+The fastest way to kill a partnership email is to copy-paste a template without doing the homework. The brackets are where the work happens — *{{specific_number}}*, *{{shared_customer}}*, *{{specific_recent_post}}*. If you can't fill those in with real data, you're not ready to send.
+
+Three habits that compound:
+
+- **Send 5 deeply-researched emails per week, not 50 generic ones.** Partnership reply rates on well-researched emails sit around 30-40%. On generic ones, under 5%.
+- **Track responses by template and by industry.** What works for SaaS partnerships won't work for media. Adjust per vertical.
+- **Always include a graceful out.** "If this isn't a fit, no worries — happy to point you to {{adjacent_company}}." Doubles your reply rate (even no-replies become useful intros).
+
+## The Bottom Line
+
+Partnership emails work when they're specific, asymmetric in the recipient's favor, and end with one concrete ask. Templates are scaffolding — they save you 20 minutes of staring at a blank page, but the 10 minutes of research that fills the brackets is where the reply comes from.
+
+If you'd rather have AI draft partnership and outbound emails that already follow this structure — grounded in real company context, not generic placeholders — [try OutReign free](https://salesos.alephwavex.io). First email in under 2 minutes, no credit card.
+    `.trim(),
+  },
 ];
+
 
 export function getPostBySlug(slug: string): BlogPost | undefined {
   return blogPosts.find((p) => p.slug === slug);
