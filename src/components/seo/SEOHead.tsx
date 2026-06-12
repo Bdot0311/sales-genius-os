@@ -6,6 +6,8 @@ import {
   calculateReadingTime,
   formatSchemaDate,
   shouldIndexPage,
+  withSocialVersion,
+  SOCIAL_CARD_VERSION,
   CANONICAL_DOMAIN 
 } from '@/lib/seo-utils';
 
