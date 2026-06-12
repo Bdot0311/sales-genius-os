@@ -99,8 +99,8 @@ export const Navbar = () => {
                   fetchPriority="high"
                 />
                 <span className="text-base sm:text-lg font-semibold whitespace-nowrap">
-                  <span className="text-foreground">Sales</span>
-                  <span className="text-primary">OS</span>
+                  <span className="text-foreground">Out</span>
+                  <span className="text-primary">Reign</span>
                 </span>
               </>
             </div>
