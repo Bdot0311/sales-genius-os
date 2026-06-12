@@ -253,7 +253,7 @@ const BlogPost = () => {
             className="mt-16 p-8 rounded-2xl"
             style={{ background: "hsl(261 75% 50% / 0.07)", border: "1px solid hsl(261 75% 50% / 0.18)" }}
           >
-            <p className="text-sm font-medium mb-1" style={{ color: "hsl(261 75% 70%)" }}>Try SalesOS free</p>
+            <p className="text-sm font-medium mb-1" style={{ color: "hsl(261 75% 70%)" }}>Try OutReign free</p>
             <p className="text-base font-light mb-5" style={{ color: "hsl(0 0% 100% / 0.5)" }}>
               Describe your ICP in plain English and get ranked, verified prospects in under 2 minutes.
             </p>

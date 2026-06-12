@@ -1,6 +1,6 @@
 // Auto-refills blog_topic_queue when unused topics drop below threshold.
 // Triggered weekly by pg_cron. Uses Lovable AI to generate fresh SEO/AEO topics
-// scoped to SalesOS (outbound sales, AI SDR, cold email, ICP, comparisons).
+// scoped to OutReign (outbound sales, AI SDR, cold email, ICP, comparisons).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -11,7 +11,7 @@ const corsHeaders = {
 const MIN_UNUSED = 8;     // refill when fewer than this remain unused
 const BATCH_SIZE = 20;    // how many to generate per refill run
 
-const SYSTEM_PROMPT = `You are an SEO/AEO strategist for SalesOS — an outbound sales platform for founders and 1-10 person sales teams. SalesOS replaces stacks like Apollo + Instantly + Salesloft.
+const SYSTEM_PROMPT = `You are an SEO/AEO strategist for OutReign — an outbound sales platform for founders and 1-10 person sales teams. OutReign replaces stacks like Apollo + Instantly + Salesloft.
 
 Generate ${BATCH_SIZE} fresh blog post topic ideas optimized for SEO and Answer Engine Optimization (AEO / LLM citations). Prioritize:
 - "alternative" and comparison keywords ("X vs Y", "best X for Y")

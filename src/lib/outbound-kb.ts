@@ -1,4 +1,4 @@
-// SalesOS Outbound Knowledge Base — 2026 Edition
+// OutReign Outbound Knowledge Base — 2026 Edition
 // Source of truth for email quality, sequence logic, benchmarks, and deliverability thresholds.
 
 export const OUTBOUND_KB = {

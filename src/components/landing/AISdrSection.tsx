@@ -259,7 +259,7 @@ export const AISdrSection = () => {
                 className={`text-base leading-relaxed mb-8 max-w-[480px] transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
                 style={{ color: "hsl(0 0% 100% / 0.65)", transitionDelay: "160ms" }}
               >
-                Connect your Gmail and SalesOS watches every active thread. It classifies replies, handles objections, sends Calendly links when prospects ask for calls, and auto-replies in your voice, on your schedule.
+                Connect your Gmail and OutReign watches every active thread. It classifies replies, handles objections, sends Calendly links when prospects ask for calls, and auto-replies in your voice, on your schedule.
               </p>
 
               {/* Capability grid */}
@@ -340,7 +340,7 @@ export const AISdrSection = () => {
                       <div key={i} className="w-2.5 h-2.5 rounded-full" style={{ background: bg }} />
                     ))}
                     <span className="ml-2 text-[11px] font-medium" style={{ color: "hsl(0 0% 100% / 0.2)" }}>
-                      SalesOS — AI SDR · Activity Feed
+                      OutReign — AI SDR · Activity Feed
                     </span>
                   </div>
                   <div

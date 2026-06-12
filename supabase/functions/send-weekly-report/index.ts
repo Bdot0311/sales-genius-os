@@ -68,7 +68,7 @@ serve(async (req) => {
 </div></div></body></html>`;
 
         const messageId = crypto.randomUUID();
-        await supabaseClient.rpc('enqueue_email', { queue_name: 'transactional_emails', payload: { message_id: messageId, to: (user.profiles as any).email, from: 'SalesOS Reports <noreply@notify.bdotindustries.com>', sender_domain: 'notify.bdotindustries.com', subject: '📊 Your Weekly SalesOS Performance Report', html, text: `Weekly Report: ${newLeads?.length||0} leads, ${totalEmails} emails, ${openRate}% open rate`, purpose: 'transactional', label: 'weekly-report', idempotency_key: `weekly-${user.user_id}-${new Date().toISOString().split('T')[0]}`, queued_at: new Date().toISOString() } });
+        await supabaseClient.rpc('enqueue_email', { queue_name: 'transactional_emails', payload: { message_id: messageId, to: (user.profiles as any).email, from: 'OutReign Reports <noreply@notify.bdotindustries.com>', sender_domain: 'notify.bdotindustries.com', subject: '📊 Your Weekly OutReign Performance Report', html, text: `Weekly Report: ${newLeads?.length||0} leads, ${totalEmails} emails, ${openRate}% open rate`, purpose: 'transactional', label: 'weekly-report', idempotency_key: `weekly-${user.user_id}-${new Date().toISOString().split('T')[0]}`, queued_at: new Date().toISOString() } });
         await supabaseClient.from('email_send_log').insert({ message_id: messageId, template_name: 'weekly-report', recipient_email: (user.profiles as any).email, status: 'pending' });
         reportsSent++;
       } catch (err) { logStep("Error for user", { userId: user.user_id, error: err }); }

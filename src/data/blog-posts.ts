@@ -33,7 +33,7 @@ Instead of building a query, describe who you want:
 
 > "VP of Sales at Series B SaaS companies in the US, 50–200 employees, actively hiring SDRs"
 
-Modern lead discovery tools (including SalesOS) parse natural language intent and return a ranked list of prospects scored against your description. You see match percentages, company context, and signals — not a raw dump of 5,000 unqualified names.
+Modern lead discovery tools (including OutReign) parse natural language intent and return a ranked list of prospects scored against your description. You see match percentages, company context, and signals — not a raw dump of 5,000 unqualified names.
 
 ## What to Include in Your Description
 
@@ -60,13 +60,13 @@ A list is only useful if you can reach out. The next bottleneck is getting verif
 3. Review an AI-drafted first-touch email that uses their company context
 4. Edit, send, track
 
-Tools like SalesOS do all four steps in one workflow. The alternative is Apollo (for data) + manual qualification + Gmail + a separate sequence tool — four tools, 2+ hours of setup per campaign.
+Tools like OutReign do all four steps in one workflow. The alternative is Apollo (for data) + manual qualification + Gmail + a separate sequence tool — four tools, 2+ hours of setup per campaign.
 
 ## The Bottom Line
 
 Boolean search is a skill worth skipping. Describe who you want, let the software match you to real prospects, and spend your time writing and sending — not querying.
 
-If you want to try this approach: [SalesOS is free to start](https://salesos.alephwavex.io) — describe your ICP and see ranked matches before you commit to anything.
+If you want to try this approach: [OutReign is free to start](https://salesos.alephwavex.io) — describe your ICP and see ranked matches before you commit to anything.
     `.trim(),
   },
   {
@@ -139,7 +139,7 @@ You use ICP scoring to decide who to contact. You use lead scoring to decide who
 
 Manual qualification is the most common time sink in outbound sales. ICP scoring eliminates it by automating the judgment call at scale. Instead of reading 200 LinkedIn profiles to find 20 good ones, you describe your ICP once and get a ranked list with scores already applied.
 
-SalesOS uses ICP scoring to rank every prospect returned from a plain-English search. [Try it free](https://salesos.alephwavex.io) — describe your ICP and see match scores on real prospects.
+OutReign uses ICP scoring to rank every prospect returned from a plain-English search. [Try it free](https://salesos.alephwavex.io) — describe your ICP and see match scores on real prospects.
     `.trim(),
   },
   {
@@ -151,7 +151,7 @@ SalesOS uses ICP scoring to rank every prospect returned from a plain-English se
     category: "Comparisons",
     keywords: ["Apollo alternative", "Apollo.io alternative", "B2B prospecting tool", "founder outbound", "outbound sales software for startups"],
     content: `
-The best Apollo alternative for founders doing their own outbound is a tool that handles the full workflow — finding leads, verifying emails, and drafting outreach — without requiring an ops function to set it up. SalesOS is built for exactly this use case.
+The best Apollo alternative for founders doing their own outbound is a tool that handles the full workflow — finding leads, verifying emails, and drafting outreach — without requiring an ops function to set it up. OutReign is built for exactly this use case.
 
 ## Why Founders Stop Using Apollo
 
@@ -175,9 +175,9 @@ A founder doing outbound needs to move from "who should I email this week" to "e
 - **Drafted outreach**: A first-touch email that references something real about the prospect, not a template
 - **Simple sending**: Send from the same tool, not a second app
 
-## How SalesOS Compares to Apollo for Founders
+## How OutReign Compares to Apollo for Founders
 
-| | Apollo | SalesOS |
+| | Apollo | OutReign |
 |---|---|---|
 | Search method | Boolean/filter UI | Plain English description |
 | Results | Raw contact list | Ranked by ICP fit score |
@@ -200,7 +200,7 @@ Apollo wins if:
 
 If you're a founder, first sales hire, or small SDR team without ops support, Apollo's power comes at a cost in time and complexity that makes it a poor fit. A tool designed around your workflow — describe ICP, get ranked prospects, send verified personalized emails — is a better match.
 
-[SalesOS is free to try](https://salesos.alephwavex.io) — no credit card, no setup. Describe your ICP and have your first email sent in under 2 minutes.
+[OutReign is free to try](https://salesos.alephwavex.io) — no credit card, no setup. Describe your ICP and have your first email sent in under 2 minutes.
     `.trim(),
   },
   {
@@ -231,7 +231,7 @@ Apollo, Instantly, Salesloft, and Outreach all promise to run your outbound. The
 | Instantly | High-volume cold email + inbox warming | No data, no CRM, no personalization layer | $37/mo |
 | Salesloft | Enterprise SDR teams with managers | Heavy, expensive, contracts required | $125/user/mo |
 | Outreach | Same as Salesloft, slightly more rigid | Same — built for 50+ rep orgs | Custom (~$130/user/mo) |
-| **SalesOS** | **Founders & teams under 10 reps** | **Not built for 100k+ sends/mo** | **Free, then $29/mo** |
+| **OutReign** | **Founders & teams under 10 reps** | **Not built for 100k+ sends/mo** | **Free, then $29/mo** |
 
 ## 1. Apollo — The Database Play
 
@@ -285,7 +285,7 @@ The four tools above are built for two extremes: massive databases (Apollo), mas
 - Personalized first-touch emails that don't read like a template
 - Send + reply tracking without standing up a CRM
 
-That's the gap [SalesOS](/sales-operations-software) was built for. Describe your ICP in plain English, get ranked prospects with verified emails, and a first-touch email is drafted for each one — ready to edit and send. No boolean filters, no warmup setup, no $125/seat.
+That's the gap [OutReign](/sales-operations-software) was built for. Describe your ICP in plain English, get ranked prospects with verified emails, and a first-touch email is drafted for each one — ready to edit and send. No boolean filters, no warmup setup, no $125/seat.
 
 ## Side-by-Side Decision Matrix
 
@@ -294,24 +294,24 @@ That's the gap [SalesOS](/sales-operations-software) was built for. Describe you
 | 100,000+ sends/month | Instantly |
 | A managed SDR team with coaching | Salesloft or Outreach |
 | Phone dialing + heavy CRM workflow | Apollo |
-| To go from "idea" to "first email sent" today | SalesOS |
-| Verified emails + AI personalization + ranked prospects in one place | SalesOS |
+| To go from "idea" to "first email sent" today | OutReign |
+| Verified emails + AI personalization + ranked prospects in one place | OutReign |
 
 ## The Bottom Line
 
-Pick the tool built for your stage. Apollo, Instantly, Salesloft, and Outreach are all good at what they do — and all wrong for a founder running outbound between product calls. If you're under 10 reps and want one tool that finds prospects, verifies emails, and writes the first touch, [try SalesOS free](https://salesos.alephwavex.io). No credit card, first email sent in under 2 minutes.
+Pick the tool built for your stage. Apollo, Instantly, Salesloft, and Outreach are all good at what they do — and all wrong for a founder running outbound between product calls. If you're under 10 reps and want one tool that finds prospects, verifies emails, and writes the first touch, [try OutReign free](https://salesos.alephwavex.io). No credit card, first email sent in under 2 minutes.
     `.trim(),
   },
   {
     slug: "best-b2b-lead-generation-tools",
-    title: "Best B2B Lead Generation Tools 2026: SalesOS vs Apollo vs Instantly",
-    description: "A deep-dive comparison of SalesOS, Apollo, and Instantly. How to pick a consolidated outbound stack instead of stitching three tools together.",
+    title: "Best B2B Lead Generation Tools 2026: OutReign vs Apollo vs Instantly",
+    description: "A deep-dive comparison of OutReign, Apollo, and Instantly. How to pick a consolidated outbound stack instead of stitching three tools together.",
     publishedAt: "2026-06-08",
     readingTime: "7 min read",
     category: "Comparisons",
     keywords: ["best b2b lead generation tools", "apollo alternative", "instantly alternative", "salesos vs apollo", "salesos vs instantly", "consolidated outbound stack"],
     content: `
-The best B2B lead generation tool in 2026 is the one that does the whole job — prospecting, verification, and outreach — in a single workflow. Most teams stitch Apollo for data, Instantly for sending, and a verifier in between. That stack works, but it's three logins, three bills, and three sources of truth. This guide compares **SalesOS**, **Apollo**, and **Instantly** so you can decide whether a consolidated stack fits your team.
+The best B2B lead generation tool in 2026 is the one that does the whole job — prospecting, verification, and outreach — in a single workflow. Most teams stitch Apollo for data, Instantly for sending, and a verifier in between. That stack works, but it's three logins, three bills, and three sources of truth. This guide compares **OutReign**, **Apollo**, and **Instantly** so you can decide whether a consolidated stack fits your team.
 
 ## Why Tool Sprawl Hurts Outbound
 
@@ -326,9 +326,9 @@ The hidden cost isn't the subscription. It's:
 
 A consolidated stack collapses that loop.
 
-## SalesOS vs Apollo vs Instantly: At a Glance
+## OutReign vs Apollo vs Instantly: At a Glance
 
-| Capability | SalesOS | Apollo | Instantly |
+| Capability | OutReign | Apollo | Instantly |
 | --- | --- | --- | --- |
 | Prospect database | Yes, plain-English search | Yes, boolean filters | No |
 | Email verification | Built-in, at send time | Add-on credits | Add-on |
@@ -349,17 +349,17 @@ Instantly is a sending and warmup platform. It doesn't have a prospect database 
 
 If you don't already have a verified list, Instantly is half a stack. You still need Apollo (or similar) for data and a verifier for hygiene.
 
-## SalesOS: The Consolidated Stack
+## OutReign: The Consolidated Stack
 
-SalesOS is built for the founder or small SDR team that wants one tool instead of three. The differentiator is **plain-English search**:
+OutReign is built for the founder or small SDR team that wants one tool instead of three. The differentiator is **plain-English search**:
 
 > "Heads of marketing at Series A B2B SaaS companies in North America, 20–100 employees, hiring content roles"
 
-That's the entire query. No filter trees, no boolean syntax. SalesOS parses intent, returns a ranked list with match scores, verifies emails before they enter your outreach, and generates the first personalized touch grounded in your business context.
+That's the entire query. No filter trees, no boolean syntax. OutReign parses intent, returns a ranked list with match scores, verifies emails before they enter your outreach, and generates the first personalized touch grounded in your business context.
 
-What you don't get: massive sending volume, an SDR-team CRM, or a dialer. SalesOS is opinionated about staying lean.
+What you don't get: massive sending volume, an SDR-team CRM, or a dialer. OutReign is opinionated about staying lean.
 
-### When SalesOS Wins
+### When OutReign Wins
 - You're a founder doing your own outbound
 - Team is under 10 reps
 - You want one bill, one login, one source of truth
@@ -381,14 +381,14 @@ A quick decision tree:
 
 | If you need... | Pick |
 | --- | --- |
-| Find + verify + send in one flow | SalesOS |
+| Find + verify + send in one flow | OutReign |
 | Large database + dialer + CRM | Apollo |
 | Pure sending + warmup at scale | Instantly |
-| To stop maintaining three tools | SalesOS |
+| To stop maintaining three tools | OutReign |
 
 ## The Bottom Line
 
-Apollo and Instantly are excellent at what they do — and both expect you to bring the other half of the stack. SalesOS is the consolidated alternative: plain-English prospecting, built-in verification, and AI outreach grounded in your business, all in one workflow. If you're tired of the CSV-export shuffle, [try SalesOS free](https://salesos.alephwavex.io). First email sent in under 2 minutes, no credit card required.
+Apollo and Instantly are excellent at what they do — and both expect you to bring the other half of the stack. OutReign is the consolidated alternative: plain-English prospecting, built-in verification, and AI outreach grounded in your business, all in one workflow. If you're tired of the CSV-export shuffle, [try OutReign free](https://salesos.alephwavex.io). First email sent in under 2 minutes, no credit card required.
     `.trim(),
   },
   {
@@ -543,7 +543,7 @@ A 1–2 percentage point lift on a single line, applied across your whole sequen
 
 End every B2B sales email with one specific, low-friction question that gives the prospect permission to say no. Skip the open-ended "thoughts?" and the double-ask. Match the closing line to the touchpoint — interest check for cold, pattern-interrupt for follow-up, two-option close for meetings.
 
-If you'd rather have AI draft outbound emails that already follow this structure — grounded in your business and the prospect's real company context — [try SalesOS free](https://salesos.alephwavex.io). First email sent in under 2 minutes, no credit card.
+If you'd rather have AI draft outbound emails that already follow this structure — grounded in your business and the prospect's real company context — [try OutReign free](https://salesos.alephwavex.io). First email sent in under 2 minutes, no credit card.
     `.trim(),
   },
 ];

@@ -184,7 +184,7 @@ const ClientPortal = () => {
             )}
             <span className="text-base font-semibold text-foreground">{data.agencyName}</span>
           </div>
-          <span className="text-xs text-muted-foreground">Powered by SalesOS</span>
+          <span className="text-xs text-muted-foreground">Powered by OutReign</span>
         </div>
       </header>
 
@@ -254,7 +254,7 @@ const ClientPortal = () => {
       <footer className="border-t mt-12">
         <div className="max-w-5xl mx-auto px-6 py-4 text-center">
           <p className="text-xs text-muted-foreground">
-            Report powered by {data.agencyName} · SalesOS
+            Report powered by {data.agencyName} · OutReign
           </p>
         </div>
       </footer>

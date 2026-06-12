@@ -14,7 +14,7 @@ const enqueueAlert = async (supabase: any, to: string, subject: string, html: st
     queue_name: 'transactional_emails',
     payload: {
       message_id: messageId, to,
-      from: `SalesOS Security <noreply@notify.bdotindustries.com>`,
+      from: `OutReign Security <noreply@notify.bdotindustries.com>`,
       sender_domain: 'notify.bdotindustries.com',
       subject, html, text: subject,
       purpose: 'transactional', label,
@@ -130,7 +130,7 @@ serve(async (req) => {
               ${suspiciousPatterns.map(p => `<div class="alert-box"><strong>${p.severity.toUpperCase()}</strong><h3>${p.type.replace(/_/g, ' ').toUpperCase()}</h3><p>${p.description}</p></div>`).join('')}
               <h3>Recommended Actions:</h3>
               <ul><li>Review your recent audit logs</li><li>Check team member permissions</li><li>Rotate API keys if needed</li><li>Contact support if needed</li></ul>
-              <p style="text-align: center; font-size: 12px; color: #6b7280; margin-top: 30px;">Automated security alert from SalesOS</p>
+              <p style="text-align: center; font-size: 12px; color: #6b7280; margin-top: 30px;">Automated security alert from OutReign</p>
             </div>
           </div>
         </body></html>`;

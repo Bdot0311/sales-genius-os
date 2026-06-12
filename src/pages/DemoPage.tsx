@@ -637,7 +637,7 @@ const LeadsChapter = ({ active }: { active: boolean }) => (
 const outreachLines = [
   "Hey Jordan — noticed Northline is hiring SDRs and growing the sales team in NYC.",
   "That usually means more pressure to build a repeatable prospecting workflow fast.",
-  "SalesOS helps teams find better-fit leads and move into outreach in a single session.",
+  "OutReign helps teams find better-fit leads and move into outreach in a single session.",
 ];
 
 const OutreachChapter = ({ active }: { active: boolean }) => {
@@ -983,8 +983,8 @@ export default function DemoPage() {
   return (
     <div style={{ background: "hsl(261 75% 2%)" }} className="text-white">
       <SEOHead
-        title="See SalesOS in Action | Product Demo"
-        description="Watch how SalesOS takes you from ICP to ranked prospects with verified emails and AI-drafted outreach — in under 2 minutes."
+        title="See OutReign in Action | Product Demo"
+        description="Watch how OutReign takes you from ICP to ranked prospects with verified emails and AI-drafted outreach — in under 2 minutes."
       />
       <Navbar />
 
@@ -1084,7 +1084,7 @@ export default function DemoPage() {
             className={`mb-10 max-w-[22rem] text-base font-light leading-relaxed transition-all duration-700 delay-150 sm:max-w-xl sm:text-xl ${heroVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
             style={{ color: "hsl(0 0% 100% / 0.7)" }}
           >
-            Four steps. One session. Scroll to see how SalesOS takes you from a targeting idea to personalized outreach.
+            Four steps. One session. Scroll to see how OutReign takes you from a targeting idea to personalized outreach.
           </p>
 
           <div

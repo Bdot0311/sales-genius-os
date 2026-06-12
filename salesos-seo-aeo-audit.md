@@ -1,4 +1,4 @@
-# SalesOS SEO / AEO Audit
+# OutReign SEO / AEO Audit
 **Site:** https://salesos.alephwavex.io  
 **Audited:** 2026-05-12  
 **Auditor:** Claude Code (codebase audit — live site returned 403, all findings are from source)
@@ -9,7 +9,7 @@
 
 1. **Duplicate JSON-LD schemas** — the static `@graph` block in `index.html` and the React `StructuredData.tsx` components both render Organization, WebSite, SoftwareApplication, and FAQPage schemas. When JavaScript executes, Googlebot sees every schema type twice. This dilutes signal and risks confusing validators.
 2. **OG image URL mismatch** — `index.html` references a Google Cloud Storage bucket URL for the og:image; `SEOHead.tsx` defaults to the canonical `/salesos-og.png`. These should be the same absolute URL pointing to the hosted asset.
-3. **Zero content for organic/informational keywords** — no blog, no comparison pages, no "how to" articles. The ICP (founder-led outbound, 0–10 person B2B teams) searches questions like "how to find B2B leads without boolean search" and "Apollo alternative for founders." SalesOS has no content for any of these.
+3. **Zero content for organic/informational keywords** — no blog, no comparison pages, no "how to" articles. The ICP (founder-led outbound, 0–10 person B2B teams) searches questions like "how to find B2B leads without boolean search" and "Apollo alternative for founders." OutReign has no content for any of these.
 4. **Strong AEO foundation but incomplete entity signals** — Organization schema lacks `legalName`, founder schema lacks a full name, and there are no external citation signals (press, G2 profile, or product hunt listing) linkable via `sameAs`.
 5. **SPA architecture creates a structural SEO ceiling** — all inner pages (Pricing, Help, Demo) serve the same `index.html` to non-JS crawlers. Googlebot can handle this via JS rendering, but it introduces a crawl budget cost and means social share previews for inner pages show homepage OG tags to non-JS sharers.
 
@@ -37,10 +37,10 @@
 
 | Element | Value | Status |
 |---------|-------|--------|
-| Title | `SalesOS — Find Who to Sell To. Then Actually Sell to Them.` (60 chars) | ✅ |
+| Title | `OutReign — Find Who to Sell To. Then Actually Sell to Them.` (60 chars) | ✅ |
 | Meta description | `Describe your ideal customer in plain English, find qualified B2B leads…` (148 chars) | ✅ |
 | Canonical | `https://salesos.alephwavex.io/` | ✅ |
-| H1 (static) | `SalesOS — Plain-English B2B Lead Discovery` | ✅ |
+| H1 (static) | `OutReign — Plain-English B2B Lead Discovery` | ✅ |
 | H1 (React) | `Find who to sell to.` + `Then actually sell to them.` (split spans) | ⚠️ Split across two `<span>` — Google reads as one H1 but semantic hierarchy is flat |
 | og:title | Set twice (static + SEOHead) — same value | ⚠️ Redundant but not harmful on homepage |
 | og:image (static) | GCS bucket URL | ❌ Mismatch with SEOHead default |
@@ -98,7 +98,7 @@ All entries show `lastmod: 2026-05-06`. Site has been updated since then. Google
 **Fix:** Update all entries to `2026-05-12` (today). Automate lastmod in a deploy script going forward.
 
 #### HIGH-2: SPA Inner Pages Lack Independent OG/Twitter Tags for Non-JS Scrapers
-When Slack, Discord, WhatsApp, or LinkedIn unfurl a link to `/pricing` or `/demo`, they fetch raw HTML without executing JavaScript. They will see the homepage og:title ("SalesOS — Find Who to Sell To...") for every page.
+When Slack, Discord, WhatsApp, or LinkedIn unfurl a link to `/pricing` or `/demo`, they fetch raw HTML without executing JavaScript. They will see the homepage og:title ("OutReign — Find Who to Sell To...") for every page.
 
 **Fix:** This requires SSR (Next.js/Remix) or a prerender service. Short-term mitigation: ensure the SEOHead dynamic tags are as specific as possible per page (already done). Long-term: add prerendering.
 
@@ -140,7 +140,7 @@ When Slack, Discord, WhatsApp, or LinkedIn unfurl a link to `/pricing` or `/demo
 
 | Check | Status | Detail |
 |-------|--------|--------|
-| Title | ✅ | "SalesOS Pricing - Choose the Right Outbound Plan" |
+| Title | ✅ | "OutReign Pricing - Choose the Right Outbound Plan" |
 | Description | ✅ | Includes price range |
 | Keyword "pricing" in title | ✅ | |
 | BreadcrumbSchema | ⚠️ | Imported but need to verify it's rendered in JSX |
@@ -170,26 +170,26 @@ When Slack, Discord, WhatsApp, or LinkedIn unfurl a link to `/pricing` or `/demo
 ### ✅ Strong
 
 - **FAQPage schema**: Present (via FAQSchema component + static in index.html — remove static version)
-- **HowTo schema**: Implemented in `Index.tsx` with 5-step workflow — excellent for "how to use SalesOS" queries
+- **HowTo schema**: Implemented in `Index.tsx` with 5-step workflow — excellent for "how to use OutReign" queries
 - **ItemList schema**: Features listed as ItemList — good for feature discovery queries
 - **SoftwareApplication schema**: Present with pricing, featureList, applicationCategory
 - **Organization with sameAs**: Twitter, two LinkedIn URLs — solid entity signals
 - **Speakable schema**: Implemented for H1, H2, H3, #hero-heading, #faq-heading
 - **llms.txt**: Present and well-structured — covers description, features, pricing, FAQ, contact. Good for LLM context injection
 - **static-content div**: Hidden div with crawlable H1/H2/FAQ structure for non-JS crawlers and LLMs — well executed
-- **Definition block**: First paragraph of static-content div defines SalesOS in plain language within first 150 words ✅
+- **Definition block**: First paragraph of static-content div defines OutReign in plain language within first 150 words ✅
 
 ### ❌ Gaps
 
 #### AEO-1: No Comparison Content
-AI answer engines frequently surface comparison results ("SalesOS vs Apollo", "Apollo alternatives for founders"). SalesOS has zero content targeting these queries. The `DifferentiationSection.tsx` makes the comparison in copy but no schema or page targets it.
+AI answer engines frequently surface comparison results ("OutReign vs Apollo", "Apollo alternatives for founders"). OutReign has zero content targeting these queries. The `DifferentiationSection.tsx` makes the comparison in copy but no schema or page targets it.
 
 The `ComparisonSchema` component exists in `StructuredData.tsx` but is never used on any page.
 
 **Fix:** Create `/vs-apollo`, `/vs-instantly`, `/vs-clay` pages with structured comparison content and `ComparisonSchema`. Minimum viable: add a comparison table to the homepage with `ComparisonSchema` markup.
 
 #### AEO-2: Organization Schema Missing `legalName`
-`StructuredData.tsx` OrganizationSchema has `"name": "SalesOS"` but no `legalName: "BDØT Industries LLC"`. LLMs need the legal entity name to correctly attribute and cite the publisher.
+`StructuredData.tsx` OrganizationSchema has `"name": "OutReign"` but no `legalName: "BDØT Industries LLC"`. LLMs need the legal entity name to correctly attribute and cite the publisher.
 
 **Fix:** Add `"legalName": "BDØT Industries LLC"` to OrganizationSchema.
 
@@ -215,7 +215,7 @@ No Product Hunt listing, G2 profile, or Capterra page detectable. These provide 
 **Fix:** Submit to Product Hunt, G2, Capterra. Then add their URLs to `sameAs` in OrganizationSchema.
 
 #### AEO-6: "Answer-Ready" Paragraphs Missing from Body Copy
-LLMs extract featured snippets from paragraphs that lead with a direct answer. Current landing copy is persuasive/marketing style ("Three steps. One workflow.") not answer-first. Example gap: no paragraph that directly answers "What is SalesOS?" in the visible body copy.
+LLMs extract featured snippets from paragraphs that lead with a direct answer. Current landing copy is persuasive/marketing style ("Three steps. One workflow.") not answer-first. Example gap: no paragraph that directly answers "What is OutReign?" in the visible body copy.
 
 The static-content div partially covers this for crawlers, but for JS-rendered content visible to Googlebot, the answer-ready copy is absent.
 
@@ -243,15 +243,15 @@ The static-content div partially covers this for crawlers, but for JS-rendered c
 | # | Keyword | Notes |
 |---|---------|-------|
 | 1 | Apollo alternative for founders | High intent; Apollo is the explicit competitor named in copy |
-| 2 | SalesOS vs Apollo | Branded comparison — worth a page |
+| 2 | OutReign vs Apollo | Branded comparison — worth a page |
 | 3 | Instantly alternative | High volume; Instantly is the #1 cold email tool |
-| 4 | Clay alternative for small teams | Clay is expensive; SalesOS targets the same use case |
+| 4 | Clay alternative for small teams | Clay is expensive; OutReign targets the same use case |
 | 5 | best cold email tool for early-stage startup | Decision-stage query; no content |
 
 ### Pages Targeting Too-Broad Keywords
 
 - **Homepage** targets "B2B lead generation" — extremely competitive. Should be supplemented by long-tail content targeting founder-specific variants.
-- **Pricing page** title "Choose the Right Outbound Plan" — too generic. Should be "SalesOS Pricing: Outbound Sales Plans for Founders & SDRs" to capture intent.
+- **Pricing page** title "Choose the Right Outbound Plan" — too generic. Should be "OutReign Pricing: Outbound Sales Plans for Founders & SDRs" to capture intent.
 
 ---
 
@@ -265,7 +265,7 @@ The static-content div partially covers this for crawlers, but for JS-rendered c
 | P1 | Stale sitemap lastmod | All | Low | Med | Update all `<lastmod>` to `2026-05-12` in `sitemap.xml` |
 | P2 | Demo page sitemap priority too high | `/demo` | Low | Med | Change `/demo` priority from 0.9 → 0.6 in `sitemap.xml` |
 | P2 | No comparison content | None | Med | High | Create `/vs-apollo` page with comparison table + ComparisonSchema |
-| P2 | Pricing page title too generic | `/pricing` | Low | Med | Update title to "SalesOS Pricing — Outbound Plans for Founders & SDR Teams" |
+| P2 | Pricing page title too generic | `/pricing` | Low | Med | Update title to "OutReign Pricing — Outbound Plans for Founders & SDR Teams" |
 | P2 | ComparisonSchema unused | `/` | Low | Med | Add ComparisonSchema to homepage DifferentiationSection with Apollo/Clay/spreadsheet comparison |
 | P2 | No AggregateRating schema | `/` | Low (after reviews) | High | Add AggregateRatingSchema once G2/Capterra reviews exist |
 | P3 | linkedin:owner non-standard meta | All | Low | Low | Remove `<meta property="linkedin:owner">` from SEOHead |
@@ -285,10 +285,10 @@ The static-content div partially covers this for crawlers, but for JS-rendered c
   "@context": "https://schema.org",
   "@type": "Organization",
   "@id": "https://salesos.alephwavex.io/#organization",
-  "name": "SalesOS",
+  "name": "OutReign",
   "legalName": "BDØT Industries LLC",
-  "alternateName": ["Sales OS", "SalesOS Platform"],
-  "description": "SalesOS is a B2B lead discovery and outbound email platform. Describe your ideal customer in plain English, get ranked prospects with SMTP-verified emails, and send AI-drafted first-touch emails — all from one workflow.",
+  "alternateName": ["Sales OS", "OutReign Platform"],
+  "description": "OutReign is a B2B lead discovery and outbound email platform. Describe your ideal customer in plain English, get ranked prospects with SMTP-verified emails, and send AI-drafted first-touch emails — all from one workflow.",
   "url": "https://salesos.alephwavex.io",
   "logo": {
     "@type": "ImageObject",
@@ -318,8 +318,8 @@ The static-content div partially covers this for crawlers, but for JS-rendered c
 {
   "@context": "https://schema.org",
   "@type": "ItemList",
-  "name": "SalesOS vs Traditional Sales Tools",
-  "description": "How SalesOS compares to Apollo and traditional outbound methods",
+  "name": "OutReign vs Traditional Sales Tools",
+  "description": "How OutReign compares to Apollo and traditional outbound methods",
   "numberOfItems": 4,
   "itemListElement": [
     {
@@ -327,7 +327,7 @@ The static-content div partially covers this for crawlers, but for JS-rendered c
       "position": 1,
       "item": {
         "@type": "Product",
-        "name": "SalesOS",
+        "name": "OutReign",
         "description": "Ranked prospects scored by ICP fit, plain English search, from search to sent email in one workflow"
       }
     },
@@ -349,7 +349,7 @@ The static-content div partially covers this for crawlers, but for JS-rendered c
 {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  "name": "SalesOS",
+  "name": "OutReign",
   "aggregateRating": {
     "@type": "AggregateRating",
     "ratingValue": 4.8,

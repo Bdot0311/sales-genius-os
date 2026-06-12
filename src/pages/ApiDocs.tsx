@@ -355,9 +355,9 @@ const ApiDocs = () => {
   return (
     <>
       <SEOHead
-        title="API Documentation – SalesOS Developer Portal"
-        description="Complete SalesOS REST API reference with code examples in JavaScript, Python, PHP & cURL. Manage leads, deals, contacts, workflows & outreach programmatically."
-        keywords="SalesOS API, sales API, lead generation API, CRM API, REST API documentation, webhook integration"
+        title="API Documentation – OutReign Developer Portal"
+        description="Complete OutReign REST API reference with code examples in JavaScript, Python, PHP & cURL. Manage leads, deals, contacts, workflows & outreach programmatically."
+        keywords="OutReign API, sales API, lead generation API, CRM API, REST API documentation, webhook integration"
       />
       <BreadcrumbSchema items={[
         { name: "Home", url: "https://salesos.alephwavex.io" },
@@ -513,7 +513,7 @@ const ApiDocs = () => {
             <div className="rounded-2xl overflow-hidden" style={cardStyle}>
               <div className="px-5 sm:px-6 py-4" style={{ borderBottom: "1px solid hsl(261 75% 50% / 0.12)" }}>
                 <h2 className="font-semibold" style={{ color: "hsl(0 0% 90%)" }}>Webhook Signature Verification</h2>
-                <p className="text-sm mt-0.5" style={{ color: "hsl(0 0% 100% / 0.7)" }}>Securely verify incoming webhook deliveries from SalesOS</p>
+                <p className="text-sm mt-0.5" style={{ color: "hsl(0 0% 100% / 0.7)" }}>Securely verify incoming webhook deliveries from OutReign</p>
               </div>
               <div className="px-5 sm:px-6 py-5">
                 <p className="text-sm mb-4" style={{ color: "hsl(0 0% 100% / 0.55)" }}>
@@ -531,13 +531,13 @@ const ApiDocs = () => {
             <div className="rounded-2xl overflow-hidden" style={cardStyle}>
               <div className="px-5 sm:px-6 py-4" style={{ borderBottom: "1px solid hsl(261 75% 50% / 0.12)" }}>
                 <h2 className="font-semibold" style={{ color: "hsl(0 0% 90%)" }}>Third-Party Integration Quick Start</h2>
-                <p className="text-sm mt-0.5" style={{ color: "hsl(0 0% 100% / 0.7)" }}>Connect SalesOS with popular automation tools</p>
+                <p className="text-sm mt-0.5" style={{ color: "hsl(0 0% 100% / 0.7)" }}>Connect OutReign with popular automation tools</p>
               </div>
               <div className="px-5 sm:px-6 py-5 space-y-4">
                 {[
                   { title: "Zapier / Make / n8n", body: <>Use a generic HTTP / Webhook module. Set the base URL above, add your <InlineCode>X-API-Key</InlineCode> header, and call any endpoint listed in this documentation.</> },
                   { title: "Python / Node.js Scripts", body: <>Use the code examples above directly. The bulk import endpoint (<InlineCode>POST /leads/bulk</InlineCode>) is optimized for importing leads from AI tools, CSV processors, and enrichment pipelines.</> },
-                  { title: "External Lead Tools", body: <>Export leads from external tools as JSON, then push them into SalesOS using the bulk import endpoint. Trigger enrichment and scoring via <InlineCode>POST /leads/:id/enrich</InlineCode> and <InlineCode>POST /leads/:id/score</InlineCode>.</> },
+                  { title: "External Lead Tools", body: <>Export leads from external tools as JSON, then push them into OutReign using the bulk import endpoint. Trigger enrichment and scoring via <InlineCode>POST /leads/:id/enrich</InlineCode> and <InlineCode>POST /leads/:id/score</InlineCode>.</> },
                 ].map(({ title, body }) => (
                   <div key={title}>
                     <h3 className="font-semibold mb-1.5" style={{ color: "hsl(0 0% 85%)" }}>{title}</h3>

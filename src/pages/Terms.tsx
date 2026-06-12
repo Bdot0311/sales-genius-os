@@ -9,9 +9,9 @@ const Terms = () => {
   return (
     <>
       <SEOHead
-        title="Terms of Service - User Agreement & Policies | SalesOS"
-        description="Review the SalesOS Terms of Service. Understand your rights and responsibilities when using our AI-powered sales platform."
-        keywords="SalesOS terms of service, terms and conditions, user agreement, service agreement"
+        title="Terms of Service - User Agreement & Policies | OutReign"
+        description="Review the OutReign Terms of Service. Understand your rights and responsibilities when using our AI-powered sales platform."
+        keywords="OutReign terms of service, terms and conditions, user agreement, service agreement"
         ogImage="https://salesos.alephwavex.io/salesos-og.png"
       />
       <BreadcrumbSchema items={[
@@ -83,7 +83,7 @@ const Terms = () => {
                 <time dateTime="2025-01">January 2025</time>
               </p>
               <p>
-                These Terms of Service ("Terms") govern your access to and use of SalesOS, an AI-powered sales operating system operated by BDØT Industries LLC ("Company," "we," "our," or "us").
+                These Terms of Service ("Terms") govern your access to and use of OutReign, an AI-powered sales operating system operated by BDØT Industries LLC ("Company," "we," "our," or "us").
               </p>
 
               {[
@@ -92,7 +92,7 @@ const Terms = () => {
                   title: "Acceptance of Terms",
                   content: (
                     <p>
-                      By accessing or using SalesOS, you agree to be bound by these Terms. If you do not agree to these Terms, do not use our services.
+                      By accessing or using OutReign, you agree to be bound by these Terms. If you do not agree to these Terms, do not use our services.
                     </p>
                   ),
                 },
@@ -103,7 +103,7 @@ const Terms = () => {
                     <>
                       <h3 className="text-xl font-semibold mb-3 mt-4" style={{ color: "hsl(0 0% 85%)" }}>Eligibility</h3>
                       <p className="mb-4">
-                        You must be at least 18 years old to use SalesOS. By using our services, you represent that you meet this age requirement.
+                        You must be at least 18 years old to use OutReign. By using our services, you represent that you meet this age requirement.
                       </p>
                       <h3 className="text-xl font-semibold mb-3 mt-4" style={{ color: "hsl(0 0% 85%)" }}>Account Registration</h3>
                       <p className="mb-4">You must create an account to use certain features. You are responsible for:</p>
@@ -153,10 +153,10 @@ const Terms = () => {
                   content: (
                     <>
                       <p className="mb-4">
-                        SalesOS and its original content, features, and functionality are owned by BDØT Industries LLC and are protected by international copyright, trademark, and other intellectual property laws.
+                        OutReign and its original content, features, and functionality are owned by BDØT Industries LLC and are protected by international copyright, trademark, and other intellectual property laws.
                       </p>
                       <p>
-                        You retain all rights to the data and content you upload to SalesOS. By using our service, you grant us a limited license to use, store, and process your content solely to provide our services.
+                        You retain all rights to the data and content you upload to OutReign. By using our service, you grant us a limited license to use, store, and process your content solely to provide our services.
                       </p>
                     </>
                   ),
@@ -166,7 +166,7 @@ const Terms = () => {
                   title: "Subscription and Billing",
                   content: (
                     <>
-                      <p className="mb-4">Some features of SalesOS require a paid subscription. By subscribing, you agree to:</p>
+                      <p className="mb-4">Some features of OutReign require a paid subscription. By subscribing, you agree to:</p>
                       <ul className="space-y-2 ml-4 mb-4">
                         {[
                           "Pay all fees associated with your chosen plan",
@@ -188,7 +188,7 @@ const Terms = () => {
                   title: "AI-Generated Content",
                   content: (
                     <p>
-                      SalesOS uses artificial intelligence to generate insights, recommendations, and content. While we strive for accuracy, AI-generated content may contain errors or inaccuracies. You are responsible for reviewing and validating all AI-generated content before use.
+                      OutReign uses artificial intelligence to generate insights, recommendations, and content. While we strive for accuracy, AI-generated content may contain errors or inaccuracies. You are responsible for reviewing and validating all AI-generated content before use.
                     </p>
                   ),
                 },
@@ -197,7 +197,7 @@ const Terms = () => {
                   title: "Third-Party Integrations",
                   content: (
                     <p>
-                      SalesOS may integrate with third-party services (e.g., Google Calendar, Gmail). Your use of these integrations is subject to the third party's terms of service and privacy policies. We are not responsible for the practices of third-party services.
+                      OutReign may integrate with third-party services (e.g., Google Calendar, Gmail). Your use of these integrations is subject to the third party's terms of service and privacy policies. We are not responsible for the practices of third-party services.
                     </p>
                   ),
                 },

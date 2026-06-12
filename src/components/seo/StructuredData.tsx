@@ -75,8 +75,8 @@ const JsonLdScript = ({ schema }: { schema: object }) => (
 
 // Organization Schema for brand recognition - Enhanced for AEO
 export const OrganizationSchema = ({
-  name = "SalesOS",
-  description = "SalesOS is a B2B lead discovery and outbound email platform. Describe your ideal customer in plain English, get ranked prospects with SMTP-verified emails, and send AI-drafted first-touch emails — all from one workflow.",
+  name = "OutReign",
+  description = "OutReign is a B2B lead discovery and outbound email platform. Describe your ideal customer in plain English, get ranked prospects with SMTP-verified emails, and send AI-drafted first-touch emails — all from one workflow.",
   url = BASE_URL,
   logo = "https://salesos.alephwavex.io/salesos-logo.webp"
 }: OrganizationSchemaProps) => {
@@ -86,7 +86,7 @@ export const OrganizationSchema = ({
     "@id": `${BASE_URL}/#organization`,
     "name": name,
     "legalName": "BDØT Industries LLC",
-    "alternateName": ["Sales OS", "SalesOS Platform"],
+    "alternateName": ["Sales OS", "OutReign Platform"],
     "description": description,
     "url": url,
     "logo": {
@@ -150,12 +150,12 @@ export const SoftwareApplicationSchema = () => {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
     "@id": `${BASE_URL}/#software`,
-    "name": "SalesOS",
-    "alternateName": "SalesOS Lead Discovery Platform",
+    "name": "OutReign",
+    "alternateName": "OutReign Lead Discovery Platform",
     "applicationCategory": "BusinessApplication",
     "applicationSubCategory": "B2B Lead Generation Software",
     "operatingSystem": "Web Browser (Chrome, Firefox, Safari, Edge)",
-    "description": "SalesOS turns your ICP into ranked prospects with SMTP-verified contact data and AI-drafted first-touch emails — in under 2 minutes. Describe your ideal customer in plain English: no boolean search, no list building, no manual scoring.",
+    "description": "OutReign turns your ICP into ranked prospects with SMTP-verified contact data and AI-drafted first-touch emails — in under 2 minutes. Describe your ideal customer in plain English: no boolean search, no list building, no manual scoring.",
     "url": BASE_URL,
     "downloadUrl": `${BASE_URL}/auth`,
     "screenshot": "https://salesos.alephwavex.io/salesos-og.png",
@@ -252,7 +252,7 @@ export const ProductSchema = ({ name, description, price, priceCurrency = "USD" 
     "description": description,
     "brand": {
       "@type": "Brand",
-      "name": "SalesOS",
+      "name": "OutReign",
       "logo": "https://salesos.alephwavex.io/salesos-logo.webp"
     },
     "offers": {
@@ -277,10 +277,10 @@ export const WebSiteSchema = () => {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "@id": `${BASE_URL}/#website`,
-    "name": "SalesOS",
-    "alternateName": "SalesOS - AI Sales Platform",
+    "name": "OutReign",
+    "alternateName": "OutReign - AI Sales Platform",
     "url": BASE_URL,
-    "description": "SalesOS is a B2B lead discovery and outbound email platform. Describe your ideal customer in plain English, get ranked prospects with SMTP-verified emails, and send AI-drafted first-touch emails from one workflow.",
+    "description": "OutReign is a B2B lead discovery and outbound email platform. Describe your ideal customer in plain English, get ranked prospects with SMTP-verified emails, and send AI-drafted first-touch emails from one workflow.",
     "publisher": {
       "@type": "Organization",
       "@id": `${BASE_URL}/#organization`
@@ -426,7 +426,7 @@ export const ArticleSchema = ({
     "publisher": {
       "@type": "Organization",
       "@id": `${BASE_URL}/#organization`,
-      "name": "SalesOS",
+      "name": "OutReign",
       "logo": {
         "@type": "ImageObject",
         "url": "https://storage.googleapis.com/gpt-engineer-file-uploads/ZFJK1zezovOpOdjy9TptFukIhhc2/uploads/1761024288225-image 2.png"
@@ -491,7 +491,7 @@ export const BlogPostingSchema = ({
     "publisher": {
       "@type": "Organization",
       "@id": `${BASE_URL}/#organization`,
-      "name": "SalesOS",
+      "name": "OutReign",
       "logo": {
         "@type": "ImageObject",
         "url": "https://storage.googleapis.com/gpt-engineer-file-uploads/ZFJK1zezovOpOdjy9TptFukIhhc2/uploads/1761024288225-image 2.png"
@@ -590,14 +590,14 @@ export const AggregateRatingSchema = ({
   return <JsonLdScript schema={schema} />;
 };
 
-// Service Schema - Great for describing what SalesOS offers
+// Service Schema - Great for describing what OutReign offers
 export const ServiceSchema = () => {
   const schema = {
     "@context": "https://schema.org",
     "@type": "Service",
     "@id": `${BASE_URL}/#service`,
     "serviceType": "Sales Automation Software",
-    "name": "SalesOS Sales Automation Platform",
+    "name": "OutReign Sales Automation Platform",
     "description": "Comprehensive AI-powered sales automation service including lead generation, email automation, pipeline management, and AI coaching for B2B SaaS companies.",
     "provider": {
       "@type": "Organization",
@@ -609,7 +609,7 @@ export const ServiceSchema = () => {
     },
     "hasOfferCatalog": {
       "@type": "OfferCatalog",
-      "name": "SalesOS Plans",
+      "name": "OutReign Plans",
       "itemListElement": [
         {
           "@type": "Offer",
@@ -693,15 +693,15 @@ export const ComparisonSchema = ({
   const schema = {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    "name": "SalesOS Pricing Plans Comparison",
-    "description": "Compare SalesOS pricing plans to find the right fit for your sales team",
+    "name": "OutReign Pricing Plans Comparison",
+    "description": "Compare OutReign pricing plans to find the right fit for your sales team",
     "numberOfItems": plans.length,
     "itemListElement": plans.map((plan, index) => ({
       "@type": "ListItem",
       "position": index + 1,
       "item": {
         "@type": "Product",
-        "name": `SalesOS ${plan.name}`,
+        "name": `OutReign ${plan.name}`,
         "description": plan.features.join(", "),
         "offers": {
           "@type": "Offer",

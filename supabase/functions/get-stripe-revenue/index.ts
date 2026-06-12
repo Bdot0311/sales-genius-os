@@ -7,7 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// SalesOS specific product and price IDs
+// OutReign specific product and price IDs
 const SALESOS_PRODUCT_IDS = [
   // Current product IDs
   'prod_U78FZoAWovU1rX', // starter monthly
@@ -102,7 +102,7 @@ serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: '2025-08-27.basil' });
 
-    // Fetch invoices for SalesOS products only (total all-time revenue)
+    // Fetch invoices for OutReign products only (total all-time revenue)
     let totalRevenue = 0;
     let hasMore = true;
     let startingAfter: string | undefined;
@@ -118,7 +118,7 @@ serve(async (req) => {
       });
 
       for (const invoice of invoices.data) {
-        let isSalesOSInvoice = false;
+        let isOutReignInvoice = false;
 
         if (invoice.lines?.data) {
           for (const lineItem of invoice.lines.data) {
@@ -128,13 +128,13 @@ serve(async (req) => {
               : lineItem.price?.product?.id;
 
             if (SALESOS_PRICE_IDS.includes(priceId || '') || SALESOS_PRODUCT_IDS.includes(productId || '')) {
-              isSalesOSInvoice = true;
+              isOutReignInvoice = true;
               break;
             }
           }
         }
 
-        if (isSalesOSInvoice && invoice.amount_paid > 0) {
+        if (isOutReignInvoice && invoice.amount_paid > 0) {
           totalRevenue += invoice.amount_paid;
         }
       }
@@ -165,7 +165,7 @@ serve(async (req) => {
       });
 
       for (const subscription of subscriptions.data) {
-        let isSalesOSSub = false;
+        let isOutReignSub = false;
         let subMonthlyAmount = 0;
 
         for (const item of subscription.items.data) {
@@ -175,7 +175,7 @@ serve(async (req) => {
             : item.price?.product?.id;
 
           if (SALESOS_PRICE_IDS.includes(priceId || '') || SALESOS_PRODUCT_IDS.includes(productId || '')) {
-            isSalesOSSub = true;
+            isOutReignSub = true;
             const amount = item.price.unit_amount ?? 0;
             const interval = item.price.recurring?.interval;
             const intervalCount = item.price.recurring?.interval_count ?? 1;
@@ -186,7 +186,7 @@ serve(async (req) => {
           }
         }
 
-        if (isSalesOSSub) {
+        if (isOutReignSub) {
           activeSubscriptions++;
           monthlyRevenue += subMonthlyAmount;
         }
@@ -200,7 +200,7 @@ serve(async (req) => {
 
     logStep('MRR from active subscriptions', { activeSubscriptions, monthlyRevenue: monthlyRevenue / 100 });
 
-    // Get unique customers with SalesOS subscriptions
+    // Get unique customers with OutReign subscriptions
     let salesOSCustomerIds = new Set<string>();
     hasMore = true;
     startingAfter = undefined;
@@ -235,7 +235,7 @@ serve(async (req) => {
     }
 
     const totalCustomers = salesOSCustomerIds.size;
-    logStep('SalesOS customers counted', { totalCustomers });
+    logStep('OutReign customers counted', { totalCustomers });
 
     const result = {
       total_revenue: totalRevenue / 100, // Convert from cents to dollars
@@ -244,7 +244,7 @@ serve(async (req) => {
       total_customers: totalCustomers,
       currency: 'usd',
       last_updated: new Date().toISOString(),
-      filtered_by: 'SalesOS products only',
+      filtered_by: 'OutReign products only',
     };
 
     logStep('Returning revenue data', result);

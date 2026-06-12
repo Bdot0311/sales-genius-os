@@ -101,7 +101,7 @@ serve(async (req) => {
             ${details ? `<pre style="background: #f3f4f6; padding: 10px; border-radius: 4px; overflow-x: auto; font-size: 12px;">${JSON.stringify(details, null, 2)}</pre>` : ''}
           </div>
           <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">Event detected at: ${new Date().toISOString()}</p>
-          <p style="text-align: center; font-size: 12px; color: #6b7280; margin-top: 30px;">Automated security alert from SalesOS</p>
+          <p style="text-align: center; font-size: 12px; color: #6b7280; margin-top: 30px;">Automated security alert from OutReign</p>
         </div>
       </div>
     </body></html>`;
@@ -121,7 +121,7 @@ serve(async (req) => {
         payload: {
           message_id: messageId,
           to: recipient,
-          from: `SalesOS Security <noreply@notify.bdotindustries.com>`,
+          from: `OutReign Security <noreply@notify.bdotindustries.com>`,
           sender_domain: 'notify.bdotindustries.com',
           subject: `🚨 [${severity.toUpperCase()}] Security Alert: ${event_type.replace(/_/g, ' ')}`,
           html: emailHtml,

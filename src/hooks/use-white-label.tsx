@@ -72,7 +72,7 @@ export const useWhiteLabel = () => {
       // ── Custom domain ──────────────────────────────────────────────────────
       // When the app is served from app.theiragency.com (a verified custom domain
       // set by an agency owner), load that agency's branding globally — regardless
-      // of who is logged in. SalesOS branding is completely hidden on these domains.
+      // of who is logged in. OutReign branding is completely hidden on these domains.
       if (isAgencyDomain) {
         const { data: domainWl } = await supabase
           .from("white_label_settings")

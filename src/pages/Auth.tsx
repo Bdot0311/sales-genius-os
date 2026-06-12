@@ -249,7 +249,7 @@ const Auth = () => {
     <div className="min-h-screen w-full flex items-center justify-center px-[var(--mobile-page-gutter)] pt-20 pb-8 sm:p-6 relative">
       <SEOHead
         title="Sign in or create your account"
-        description="Sign in to SalesOS or create an account to start finding qualified B2B leads with AI-drafted outreach."
+        description="Sign in to OutReign or create an account to start finding qualified B2B leads with AI-drafted outreach."
         noIndex
       />
       <AnimatedBackground />
@@ -267,7 +267,7 @@ const Auth = () => {
       </Button>
 
       <div className="relative z-10 w-full max-w-md mx-auto space-y-4">
-        {/* Show agency branding on custom domains, SalesOS branding on own domain */}
+        {/* Show agency branding on custom domains, OutReign branding on own domain */}
         {isCustomDomain && wlSettings ? (
           <div className="flex flex-col items-center gap-3 mb-2">
             {wlSettings.logo_url ? (
@@ -290,7 +290,7 @@ const Auth = () => {
             Already have access? Sign in below. New here? You can explore the workflow first, then choose the plan that fits your outbound needs.
           </p>
           <p className="text-xs text-muted-foreground/80 max-w-sm mx-auto leading-relaxed">
-            If your account needs a paid plan to continue, SalesOS will point you to pricing during setup.
+            If your account needs a paid plan to continue, OutReign will point you to pricing during setup.
           </p>
         </div>
         <AuthForm />

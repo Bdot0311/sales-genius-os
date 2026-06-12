@@ -75,7 +75,7 @@ const OutreachPreview = () => (
           Hey Jordan — saw Northline is scaling the sales team in NYC. That usually means more pressure to build pipeline fast.
         </p>
         <p className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.65)" }}>
-          SalesOS helps teams like yours find better-fit leads and move into outreach in one session. No list-building, no copy-paste.
+          OutReign helps teams like yours find better-fit leads and move into outreach in one session. No list-building, no copy-paste.
         </p>
       </div>
       {/* Quality bar */}
@@ -398,7 +398,7 @@ export const ModulesSection = () => {
                     <div key={i} className="w-2.5 h-2.5 rounded-full" style={{ background: bg }} />
                   ))}
                   <span className="ml-3 text-[11px] font-medium" style={{ color: "hsl(0 0% 100% / 0.2)" }}>
-                    SalesOS — {modules[activeIndex].title}
+                    OutReign — {modules[activeIndex].title}
                   </span>
                 </div>
 

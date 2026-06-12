@@ -84,7 +84,7 @@ const Confirmation = () => {
           currency: 'USD',
           items: [{
             item_id: verifiedPlan || plan,
-            item_name: `SalesOS ${(verifiedPlan || plan).charAt(0).toUpperCase() + (verifiedPlan || plan).slice(1)} Plan`,
+            item_name: `OutReign ${(verifiedPlan || plan).charAt(0).toUpperCase() + (verifiedPlan || plan).slice(1)} Plan`,
             price: planPrices[verifiedPlan || plan] || 149,
             quantity: 1
           }]
@@ -155,7 +155,7 @@ const Confirmation = () => {
     {
       icon: CheckCircle,
       title: "Confirm your plan",
-      description: "SalesOS is activating your plan and preparing your account access."
+      description: "OutReign is activating your plan and preparing your account access."
     },
     {
       icon: Users,
@@ -178,7 +178,7 @@ const Confirmation = () => {
     <div className="min-h-screen bg-gradient-hero">
       <SEOHead
         title="Subscription confirmed"
-        description="Your SalesOS subscription is confirmed. Jump into your dashboard to start finding and contacting qualified leads."
+        description="Your OutReign subscription is confirmed. Jump into your dashboard to start finding and contacting qualified leads."
         noIndex
       />
       {/* Background decoration */}
@@ -202,7 +202,7 @@ const Confirmation = () => {
           
           <div className="space-y-2 sm:space-y-3">
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-fade-in px-4">
-              {isVerifying ? "Processing Payment..." : subscriptionVerified ? "Welcome to SalesOS!" : "Almost There!"}
+              {isVerifying ? "Processing Payment..." : subscriptionVerified ? "Welcome to OutReign!" : "Almost There!"}
             </h1>
             <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
               {isVerifying

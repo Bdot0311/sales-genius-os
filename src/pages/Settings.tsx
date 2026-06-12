@@ -251,7 +251,7 @@ const Settings = () => {
     <DashboardLayout>
       <SEOHead
         title="Account Settings"
-        description="Manage your SalesOS profile, billing, integrations, and team preferences."
+        description="Manage your OutReign profile, billing, integrations, and team preferences."
         noIndex
       />
       <PageHeader title="Settings" description="Account, preferences, and billing" />

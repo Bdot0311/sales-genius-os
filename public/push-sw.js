@@ -1,4 +1,4 @@
-// Push notification service worker for SalesOS
+// Push notification service worker for OutReign
 // This SW only handles push events; it does NOT cache app assets.
 
 self.addEventListener('install', (event) => {
@@ -14,10 +14,10 @@ self.addEventListener('push', (event) => {
   try {
     data = event.data ? event.data.json() : {};
   } catch (_e) {
-    data = { title: 'SalesOS', body: event.data ? event.data.text() : '' };
+    data = { title: 'OutReign', body: event.data ? event.data.text() : '' };
   }
 
-  const title = data.title || 'SalesOS';
+  const title = data.title || 'OutReign';
   const options = {
     body: data.body || '',
     icon: data.icon || '/pwa-192x192.png',

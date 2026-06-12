@@ -39,14 +39,14 @@ interface SEOHeadProps {
 const DEFAULT_OG_IMAGE = 'https://salesos.alephwavex.io/salesos-og.png';
 
 export const SEOHead = ({
-  title = "SalesOS — B2B Lead Discovery & AI Outreach Platform",
-  description = "Describe your ideal customer in plain English. SalesOS returns ranked B2B prospects with SMTP-verified emails and an AI-drafted first-touch message — in under 2 minutes.",
+  title = "OutReign — B2B Lead Discovery & AI Outreach Platform",
+  description = "Describe your ideal customer in plain English. OutReign returns ranked B2B prospects with SMTP-verified emails and an AI-drafted first-touch message — in under 2 minutes.",
   canonicalUrl,
   ogImage = DEFAULT_OG_IMAGE,
   ogType = "website",
   noIndex = false,
   keywords = "sales automation, AI sales, lead generation, CRM, sales intelligence, email automation, sales coaching, SaaS sales, B2B sales, sales pipeline, AI lead scoring, sales productivity, outreach automation",
-  author = "SalesOS",
+  author = "OutReign",
   publishedTime,
   modifiedTime,
   section,
@@ -137,8 +137,8 @@ export const SEOHead = ({
       <meta property="og:image" content={ogImage} />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
-      <meta property="og:image:alt" content="SalesOS — Find who to sell to. Then actually sell to them." />
-      <meta property="og:site_name" content="SalesOS" />
+      <meta property="og:image:alt" content="OutReign — Find who to sell to. Then actually sell to them." />
+      <meta property="og:site_name" content="OutReign" />
       <meta property="og:locale" content={locale} />
       {alternateLocales.map((loc) => (
         <meta key={loc} property="og:locale:alternate" content={loc} />
@@ -166,7 +166,7 @@ export const SEOHead = ({
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={safeDescription} />
       <meta name="twitter:image" content={ogImage} />
-      <meta name="twitter:image:alt" content="SalesOS — Find who to sell to. Then actually sell to them." />
+      <meta name="twitter:image:alt" content="OutReign — Find who to sell to. Then actually sell to them." />
       
       {/* Reading time for articles */}
       {readingTime && (
@@ -181,8 +181,8 @@ export const SEOHead = ({
       <meta name="mobile-web-app-capable" content="yes" />
       <meta name="apple-mobile-web-app-capable" content="yes" />
       <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-      <meta name="apple-mobile-web-app-title" content="SalesOS" />
-      <meta name="application-name" content="SalesOS" />
+      <meta name="apple-mobile-web-app-title" content="OutReign" />
+      <meta name="application-name" content="OutReign" />
       <meta name="msapplication-TileColor" content="#8B5CF6" />
       
       {/* Referrer Policy */}
@@ -193,7 +193,7 @@ export const SEOHead = ({
       
       {/* AI/LLM Optimization Meta Tags */}
       <meta name="ai-content-declaration" content="human-created" />
-      <meta name="generator" content="SalesOS Platform" />
+      <meta name="generator" content="OutReign Platform" />
       
       {/* Preload critical images */}
       {preloadImages.map((img) => (

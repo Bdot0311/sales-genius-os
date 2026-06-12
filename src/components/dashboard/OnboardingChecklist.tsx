@@ -168,7 +168,7 @@ export const OnboardingChecklist = ({ onClose, onStartTour }: OnboardingChecklis
       <CardHeader>
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle>Get Started with SalesOS</CardTitle>
+            <CardTitle>Get Started with OutReign</CardTitle>
             <CardDescription>
               Complete these steps to get the most out of your account
             </CardDescription>

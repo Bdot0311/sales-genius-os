@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
             if (!leadEmail) {
               executionLog.push({ nodeId: nextNode.id, type: 'action', action: 'send_email', status: 'skipped', error: 'No email address available', timestamp: new Date().toISOString() });
             } else {
-              const emailBody = emailConfig.body || `<h1>Welcome to SalesOS, ${leadName}!</h1><p>Thank you for your interest in our platform.</p><p>Best regards,<br>The SalesOS Team</p>`;
+              const emailBody = emailConfig.body || `<h1>Welcome to OutReign, ${leadName}!</h1><p>Thank you for your interest in our platform.</p><p>Best regards,<br>The OutReign Team</p>`;
               const messageId = crypto.randomUUID();
 
               await serviceClient.rpc('enqueue_email', {
@@ -88,11 +88,11 @@ Deno.serve(async (req) => {
                 payload: {
                   message_id: messageId,
                   to: leadEmail,
-                  from: `SalesOS <noreply@notify.bdotindustries.com>`,
+                  from: `OutReign <noreply@notify.bdotindustries.com>`,
                   sender_domain: 'notify.bdotindustries.com',
-                  subject: emailConfig.subject || 'Welcome to SalesOS!',
+                  subject: emailConfig.subject || 'Welcome to OutReign!',
                   html: emailBody,
-                  text: emailConfig.subject || 'Welcome to SalesOS!',
+                  text: emailConfig.subject || 'Welcome to OutReign!',
                   purpose: 'transactional',
                   label: 'workflow-email',
                   idempotency_key: `workflow-${workflowId}-${nextNode.id}-${Date.now()}`,

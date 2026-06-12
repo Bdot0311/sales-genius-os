@@ -230,7 +230,7 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
     
     setLoading(true);
     try {
-      // Search functionality now uses SalesOS Lead Intelligence Network
+      // Search functionality now uses OutReign Lead Intelligence Network
       toast({
         title: "Use Lead Finder",
         description: "Search for leads using the main Leads page search functionality",
@@ -467,7 +467,7 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
                   <SelectValue placeholder="Select source" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="SalesOS">SalesOS Lead Intelligence</SelectItem>
+                  <SelectItem value="OutReign">OutReign Lead Intelligence</SelectItem>
                   <SelectItem value="LinkedIn">LinkedIn</SelectItem>
                   <SelectItem value="Manual Import">Manual Import</SelectItem>
                   <SelectItem value="Other">Other</SelectItem>
@@ -639,7 +639,7 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
               ) : (
                 <div className="space-y-4">
                   <p className="text-sm text-muted-foreground text-center py-8">
-                    Use CSV upload or the SalesOS Lead Intelligence Network to import leads.
+                    Use CSV upload or the OutReign Lead Intelligence Network to import leads.
                   </p>
                 </div>
               )}
