@@ -106,7 +106,11 @@ export const SEOHead = ({
     : typeof author === 'string' 
       ? [{ name: author }]
       : [author];
-  
+
+  // Cache-bust social images so scrapers (X, LinkedIn, Facebook) treat
+  // a bumped SOCIAL_CARD_VERSION as a brand-new URL and re-fetch.
+  const versionedOgImage = withSocialVersion(ogImage);
+
   // React 19 renders head elements directly - they are hoisted automatically
   return (
     <>
