@@ -7,8 +7,8 @@ import { corsHeaders } from "../_shared/internal-auth.ts";
 // - Cool-down: don't email the same user more than once every 30 days (bypassed for manual sends)
 // - Hard cap per run to avoid bursts
 // - Records every attempt to public.re_engagement_log
-const INACTIVE_DAYS = 14;
-const COOLDOWN_DAYS = 30;
+const INACTIVE_DAYS = 2;
+const COOLDOWN_DAYS = 7;
 const MAX_PER_RUN = 100;
 const TEMPLATE_NAME = 're-engagement-email';
 
