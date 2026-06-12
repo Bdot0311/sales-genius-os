@@ -81,7 +81,7 @@ const steps = [
           </span>
         </div>
         <div className="px-4 py-3 space-y-1.5">
-          <p className="text-[11px]" style={{ color: "hsl(0 0% 100% / 0.3)" }}>
+          <p className="text-[11px]" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
             Subject: Quick idea for Northline's outbound push
           </p>
           <p className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.6)" }}>

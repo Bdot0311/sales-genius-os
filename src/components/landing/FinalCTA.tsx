@@ -114,7 +114,7 @@ export const FinalCTA = () => {
 
             <p
               className="mt-4 text-xs"
-              style={{ color: "hsl(0 0% 100% / 0.2)" }}
+              style={{ color: "hsl(0 0% 100% / 0.55)" }}
             >
               No credit card required · Cancel anytime · 30-day money-back
             </p>

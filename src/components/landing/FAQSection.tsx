@@ -175,7 +175,7 @@ export const FAQSection = () => {
             }`}
             style={{ transitionDelay: "300ms" }}
           >
-            <p className="text-sm" style={{ color: "hsl(0 0% 100% / 0.3)" }}>
+            <p className="text-sm" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
               Still have questions?{" "}
               <a
                 href="/help"

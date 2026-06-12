@@ -120,7 +120,7 @@ export const FooterSection = () => {
                 <img src="https://nicklaunches.com/badges/featured-dark.svg" alt="OutReign on Nick Launches" className="h-10 w-auto" width={244} height={56} loading="lazy" />
               </a>
             </div>
-            <p className="text-sm text-center" style={{ color: "hsl(0 0% 100% / 0.3)" }}>
+            <p className="text-sm text-center" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
               © {new Date().getFullYear()} BDØT Industries LLC. All rights reserved.
             </p>
           </div>

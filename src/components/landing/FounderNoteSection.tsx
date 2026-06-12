@@ -191,7 +191,7 @@ export const FounderNoteSection = () => {
             <button
               onClick={() => navigate("/pricing")}
               className="text-sm transition-colors duration-200"
-              style={{ color: "hsl(0 0% 100% / 0.3)" }}
+              style={{ color: "hsl(0 0% 100% / 0.6)" }}
               onMouseEnter={(e) =>
                 (e.currentTarget.style.color = "hsl(0 0% 100% / 0.6)")
               }
