@@ -196,7 +196,7 @@ export const FounderNoteSection = () => {
                 (e.currentTarget.style.color = "hsl(0 0% 100% / 0.6)")
               }
               onMouseLeave={(e) =>
-                (e.currentTarget.style.color = "hsl(0 0% 100% / 0.3)")
+                (e.currentTarget.style.color = "hsl(0 0% 100% / 0.6)")
               }
             >
               View plans →
