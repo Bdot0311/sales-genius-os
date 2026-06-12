@@ -65,7 +65,7 @@ const steps = [
   {
     number: "03",
     title: "Send something worth reading.",
-    body: "SalesOS builds a first-touch email from the prospect's real context: their company news, open roles, and recent growth signals. Edit in 30 seconds.",
+    body: "OutReign builds a first-touch email from the prospect's real context: their company news, open roles, and recent growth signals. Edit in 30 seconds.",
     visual: (
       <div
         className="mt-5 rounded-xl overflow-hidden"

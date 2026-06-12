@@ -60,7 +60,7 @@ export const LeadAssignmentDialog = ({ open, onOpenChange, selectedLeads }: Lead
         body: {
           to: teamMembers?.find(m => m.member_user_id === selectedMember)?.member_email,
           subject: `You've been assigned ${selectedLeads.length} new lead(s)`,
-          html: `<p>You have been assigned ${selectedLeads.length} new lead(s) in SalesOS. Please check your dashboard to review them.</p>`,
+          html: `<p>You have been assigned ${selectedLeads.length} new lead(s) in OutReign. Please check your dashboard to review them.</p>`,
         },
       });
 

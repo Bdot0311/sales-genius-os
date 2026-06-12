@@ -32,7 +32,7 @@ export const EmailChangeEmail = ({
     <Preview>Confirm your email change for {siteName}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Text style={logo}>SalesOS</Text>
+        <Text style={logo}>OutReign</Text>
         <Heading style={h1}>Confirm your email change</Heading>
         <Text style={text}>
           You requested to change your email for {siteName} from{' '}

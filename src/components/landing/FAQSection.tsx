@@ -11,17 +11,17 @@ const faqs = [
   {
     question: "Do I need boolean search or SQL to use this?",
     answer:
-      "No. You type who you want in plain English, like 'VP of Sales at NYC SaaS companies with 50–200 employees.' SalesOS handles the rest.",
+      "No. You type who you want in plain English, like 'VP of Sales at NYC SaaS companies with 50–200 employees.' OutReign handles the rest.",
   },
   {
     question: "What happens after I find a lead?",
     answer:
-      "SalesOS enriches the contact with a verified business email, scores them by ICP fit, and drafts a first-touch email using their company context. You review, edit, and send from the same screen.",
+      "OutReign enriches the contact with a verified business email, scores them by ICP fit, and drafts a first-touch email using their company context. You review, edit, and send from the same screen.",
   },
   {
     question: "How is this different from just buying a contact list?",
     answer:
-      "A contact list gives you 10,000 names. SalesOS gives you 50 that are actually worth emailing, ranked by fit, with a draft already written for each one. Volume without qualification is just noise.",
+      "A contact list gives you 10,000 names. OutReign gives you 50 that are actually worth emailing, ranked by fit, with a draft already written for each one. Volume without qualification is just noise.",
   },
   {
     question: "How does the free plan work?",
@@ -29,24 +29,24 @@ const faqs = [
       "The free plan lets you explore the full workflow with real sample data. No credit card, no auto-charge, no surprise fees. When you're ready to run live prospecting at volume, you upgrade.",
   },
   {
-    question: "How does SalesOS verify email addresses?",
+    question: "How does OutReign verify email addresses?",
     answer:
       "Every business email goes through SMTP handshake verification plus multi-source enrichment before it reaches you. We don't deliver addresses we haven't confirmed. Bounced emails hurt your sender reputation, and we treat accuracy as non-negotiable.",
   },
   {
-    question: "Is SalesOS only for email outreach?",
+    question: "Is OutReign only for email outreach?",
     answer:
-      "Yes. SalesOS is built around email outreach. We score your leads, enrich their verified business email, and help you write a first-touch message worth reading. No cold calling, no phone numbers, no SMS.",
+      "Yes. OutReign is built around email outreach. We score your leads, enrich their verified business email, and help you write a first-touch message worth reading. No cold calling, no phone numbers, no SMS.",
   },
   {
     question: "How does the AI email drafting work?",
     answer:
-      "SalesOS pulls the prospect's role, company context, and growth signals (recent hires, funding, open roles) and uses that to write a first-touch email that references something real. You see the draft, edit it in seconds, and send. It's not a template with a name swapped in.",
+      "OutReign pulls the prospect's role, company context, and growth signals (recent hires, funding, open roles) and uses that to write a first-touch email that references something real. You see the draft, edit it in seconds, and send. It's not a template with a name swapped in.",
   },
   {
-    question: "Can I connect SalesOS to my existing tools?",
+    question: "Can I connect OutReign to my existing tools?",
     answer:
-      "Yes. SalesOS integrates with Gmail, HubSpot, Salesforce, Slack, Calendly, and Zapier. Leads and replies stay in sync with your CRM without manual exports.",
+      "Yes. OutReign integrates with Gmail, HubSpot, Salesforce, Slack, Calendly, and Zapier. Leads and replies stay in sync with your CRM without manual exports.",
   },
 ];
 

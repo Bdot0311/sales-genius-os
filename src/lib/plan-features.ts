@@ -1,4 +1,4 @@
-// Plan-based feature gating configuration for SalesOS
+// Plan-based feature gating configuration for OutReign
 // All features remain visible - plans control capacity, depth, and throughput
 
 export const PLAN_FEATURES = {

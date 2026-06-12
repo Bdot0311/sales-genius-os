@@ -54,9 +54,9 @@ const PricingPage = () => {
   return (
     <>
       <SEOHead
-        title="SalesOS Pricing — Outbound Plans for Founders & SDR Teams"
-        description="SalesOS plans from $0 to $179/month. Find B2B leads, verify emails, and draft outreach without the tool sprawl. No credit card to start."
-        keywords="SalesOS pricing, outbound sales software pricing, lead generation pricing, B2B prospecting tool cost, Apollo alternative pricing, cold email tool pricing"
+        title="OutReign Pricing — Outbound Plans for Founders & SDR Teams"
+        description="OutReign plans from $0 to $179/month. Find B2B leads, verify emails, and draft outreach without the tool sprawl. No credit card to start."
+        keywords="OutReign pricing, outbound sales software pricing, lead generation pricing, B2B prospecting tool cost, Apollo alternative pricing, cold email tool pricing"
         ogImage="https://salesos.alephwavex.io/salesos-og.png"
       />
       <BreadcrumbSchema items={[
@@ -138,7 +138,7 @@ const PricingPage = () => {
                 </h1>
 
                 <p className="mb-4 max-w-2xl text-base leading-relaxed text-white/80 sm:text-lg">
-                  SalesOS is built for founder-led teams, outbound agencies, and
+                  OutReign is built for founder-led teams, outbound agencies, and
                   B2B sales teams that want a faster path from ICP definition to
                   live outreach.
                 </p>
@@ -163,7 +163,7 @@ const PricingPage = () => {
                 Why buy now?
               </h2>
               <p className="text-white/80 leading-relaxed text-sm sm:text-base">
-                If SalesOS saves your team even a few hours a week on list
+                If OutReign saves your team even a few hours a week on list
                 building, lead prioritization, and first-touch drafting, it pays
                 for itself fast. The right plan is about how much prospecting
                 volume and workflow support you need.
@@ -181,7 +181,7 @@ const PricingPage = () => {
           >
             <div className="container mx-auto px-5 sm:px-6 relative z-10">
               <p className="font-serif italic font-thin text-base text-center text-purple-500 mb-5">
-                Why teams pick SalesOS
+                Why teams pick OutReign
               </p>
               <h2
                 className="font-display text-center mb-10 sm:mb-12"
@@ -268,7 +268,7 @@ const PricingPage = () => {
           >
             <div className="container mx-auto px-5 sm:px-6">
               <p className="mb-5 text-center text-[10px] uppercase tracking-[0.25em] text-white/70">
-                Learn more about SalesOS
+                Learn more about OutReign
               </p>
               <nav aria-label="Related pages">
                 <ul className="flex flex-wrap justify-center gap-x-8 gap-y-3 text-sm">

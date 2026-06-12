@@ -117,7 +117,7 @@ const Analytics = () => {
   const handleExportPDF = () => {
     const date = new Date().toISOString().split('T')[0];
     const csvRows = [
-      ['SalesOS Agency Report', `Generated: ${new Date().toLocaleDateString()}`],
+      ['OutReign Agency Report', `Generated: ${new Date().toLocaleDateString()}`],
       [''],
       ['--- Summary ---'],
       ['Metric', 'Value'],

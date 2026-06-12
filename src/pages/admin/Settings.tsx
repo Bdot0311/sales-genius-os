@@ -465,7 +465,7 @@ const AdminSettings = () => {
                 <Label htmlFor="email-name">Sender Name</Label>
                 <Input
                   id="email-name"
-                  placeholder="SalesOS"
+                  placeholder="OutReign"
                   value={(getSettingValue("email_from_name") as string) || ""}
                   onChange={(e) => debouncedUpdateSetting("email_from_name", e.target.value)}
                   disabled={saving}

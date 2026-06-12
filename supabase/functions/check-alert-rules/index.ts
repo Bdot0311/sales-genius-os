@@ -99,7 +99,7 @@ serve(async (req) => {
             payload: {
               message_id: messageId,
               to: rule.profiles.email,
-              from: `SalesOS Alerts <noreply@notify.bdotindustries.com>`,
+              from: `OutReign Alerts <noreply@notify.bdotindustries.com>`,
               sender_domain: 'notify.bdotindustries.com',
               subject: `⚠️ Alert: ${rule.name}`,
               html: emailHtml,

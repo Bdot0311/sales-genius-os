@@ -134,9 +134,9 @@ export const HeroSection = () => {
             href="/demo"
             className="inline-flex h-11 items-center justify-center gap-1.5 px-5 text-sm text-white/85 transition-colors duration-200 hover:text-white sm:h-[52px]"
             whileHover={{ x: 3 }}
-            aria-label="Watch the SalesOS product walkthrough"
+            aria-label="Watch the OutReign product walkthrough"
           >
-            Watch SalesOS product walkthrough
+            Watch OutReign product walkthrough
             <ArrowRight className="h-3.5 w-3.5 ml-0.5" aria-hidden="true" />
           </motion.a>
         </motion.div>

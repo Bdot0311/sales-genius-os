@@ -4,7 +4,7 @@ import {
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
 
-const SITE_NAME = "SalesOS"
+const SITE_NAME = "OutReign"
 const APP_URL = "https://salesos.alephwavex.io"
 
 interface ReEngagementEmailProps {

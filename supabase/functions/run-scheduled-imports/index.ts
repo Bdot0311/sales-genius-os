@@ -90,7 +90,7 @@ serve(async (req) => {
 
         let importedLeads: any[] = [];
         
-        // Generate sample leads from SalesOS Lead Intelligence Network
+        // Generate sample leads from OutReign Lead Intelligence Network
         const sampleCompanies = [
           { name: 'TechVenture Solutions', industry: 'Technology', size: '51-200' },
           { name: 'DataFlow Analytics', industry: 'Technology', size: '11-50' },
@@ -118,7 +118,7 @@ serve(async (req) => {
         const formattedLeads = importedLeads.map((lead: any) => {
           const mappedLead: any = {
             user_id: schedule.user_id,
-            source: 'SalesOS'
+            source: 'OutReign'
           };
 
           // Apply custom field mappings or use defaults
@@ -157,7 +157,7 @@ serve(async (req) => {
         // Log import history
         await supabase.from('import_history').insert({
           user_id: schedule.user_id,
-          source: 'SalesOS',
+          source: 'OutReign',
           leads_count: formattedLeads.length,
           success_count: successCount,
           failed_count: failedCount,

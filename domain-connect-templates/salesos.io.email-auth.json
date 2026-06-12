@@ -1,11 +1,11 @@
 {
   "providerId": "salesos.io",
-  "providerName": "SalesOS",
+  "providerName": "OutReign",
   "serviceId": "email-auth",
-  "serviceName": "SalesOS Email Authentication (SPF + DMARC)",
+  "serviceName": "OutReign Email Authentication (SPF + DMARC)",
   "version": 1,
   "logoUrl": "https://salesos.alephwavex.io/logo.png",
-  "description": "Sets up SPF and DMARC records so cold email sent through SalesOS lands in the inbox.",
+  "description": "Sets up SPF and DMARC records so cold email sent through OutReign lands in the inbox.",
   "syncBlock": false,
   "records": [
     {

@@ -33,7 +33,7 @@ serve(async (req) => {
         payload: {
           message_id: messageId,
           to,
-          from: `SalesOS <noreply@notify.bdotindustries.com>`,
+          from: `OutReign <noreply@notify.bdotindustries.com>`,
           sender_domain: 'notify.bdotindustries.com',
           subject,
           html,
@@ -59,7 +59,7 @@ serve(async (req) => {
         if (!sub?.trial_warning_7d_sent) {
           try {
             await sendEmail(trial.email, "Your Trial Expires in 7 Days",
-              `<h1>Hi ${trial.full_name || 'there'}!</h1><p>Your SalesOS trial will expire in <strong>7 days</strong> on ${new Date(trial.trial_end_date).toLocaleDateString()}.</p><p>To continue using SalesOS, please upgrade your account.</p><p><a href="${upgradeUrl}" style="background-color: #8B5CF6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Upgrade Now</a></p><p>Best regards,<br>The SalesOS Team</p>`,
+              `<h1>Hi ${trial.full_name || 'there'}!</h1><p>Your OutReign trial will expire in <strong>7 days</strong> on ${new Date(trial.trial_end_date).toLocaleDateString()}.</p><p>To continue using OutReign, please upgrade your account.</p><p><a href="${upgradeUrl}" style="background-color: #8B5CF6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Upgrade Now</a></p><p>Best regards,<br>The OutReign Team</p>`,
               'trial-warning-7d');
             await supabaseClient.from('subscriptions').update({ trial_warning_7d_sent: true }).eq('user_id', trial.user_id);
             totalSent++;
@@ -76,7 +76,7 @@ serve(async (req) => {
         if (!sub?.trial_warning_3d_sent) {
           try {
             await sendEmail(trial.email, "⚠️ Your Trial Expires in 3 Days",
-              `<h1>Hi ${trial.full_name || 'there'}!</h1><p>Your SalesOS trial will expire in <strong>3 days</strong> on ${new Date(trial.trial_end_date).toLocaleDateString()}.</p><p>Don't lose access! Upgrade now.</p><p><a href="${upgradeUrl}" style="background-color: #8B5CF6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Upgrade Now</a></p><p>Best regards,<br>The SalesOS Team</p>`,
+              `<h1>Hi ${trial.full_name || 'there'}!</h1><p>Your OutReign trial will expire in <strong>3 days</strong> on ${new Date(trial.trial_end_date).toLocaleDateString()}.</p><p>Don't lose access! Upgrade now.</p><p><a href="${upgradeUrl}" style="background-color: #8B5CF6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Upgrade Now</a></p><p>Best regards,<br>The OutReign Team</p>`,
               'trial-warning-3d');
             await supabaseClient.from('subscriptions').update({ trial_warning_3d_sent: true }).eq('user_id', trial.user_id);
             totalSent++;
@@ -93,7 +93,7 @@ serve(async (req) => {
         if (!sub?.trial_warning_1d_sent) {
           try {
             await sendEmail(trial.email, "🚨 Final Notice: Your Trial Expires Tomorrow",
-              `<h1>Hi ${trial.full_name || 'there'}!</h1><p>Your SalesOS trial will expire <strong>tomorrow</strong> on ${new Date(trial.trial_end_date).toLocaleDateString()}.</p><p>This is your last chance to upgrade!</p><p><a href="${upgradeUrl}" style="background-color: #DC2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Upgrade Now - Last Chance!</a></p><p>Best regards,<br>The SalesOS Team</p>`,
+              `<h1>Hi ${trial.full_name || 'there'}!</h1><p>Your OutReign trial will expire <strong>tomorrow</strong> on ${new Date(trial.trial_end_date).toLocaleDateString()}.</p><p>This is your last chance to upgrade!</p><p><a href="${upgradeUrl}" style="background-color: #DC2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Upgrade Now - Last Chance!</a></p><p>Best regards,<br>The OutReign Team</p>`,
               'trial-warning-1d');
             await supabaseClient.from('subscriptions').update({ trial_warning_1d_sent: true }).eq('user_id', trial.user_id);
             totalSent++;

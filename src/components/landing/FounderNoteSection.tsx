@@ -93,7 +93,7 @@ export const FounderNoteSection = () => {
               className="text-base leading-relaxed"
               style={{ color: "hsl(0 0% 100% / 0.7)" }}
             >
-              I built SalesOS because no single tool did all of it. Describe who you want, see who fits, draft the email, track the thread. That's the whole job. That's the whole product.
+              I built OutReign because no single tool did all of it. Describe who you want, see who fits, draft the email, track the thread. That's the whole job. That's the whole product.
             </p>
           </div>
 
@@ -111,7 +111,7 @@ export const FounderNoteSection = () => {
               {/* Founder avatar — swap src for a real photo when ready */}
               <img
                 src={founderAvatar}
-                alt="Brandon, Founder of SalesOS"
+                alt="Brandon, Founder of OutReign"
                 width={40}
                 height={40}
                 className="w-10 h-10 rounded-full shrink-0 object-cover"
@@ -124,7 +124,7 @@ export const FounderNoteSection = () => {
                     className="text-sm font-medium"
                     style={{ color: "hsl(0 0% 70%)" }}
                   >
-                    Brandon, Founder of SalesOS
+                    Brandon, Founder of OutReign
                   </p>
                   <a
                     href="https://www.linkedin.com/in/buildwitbrandon"

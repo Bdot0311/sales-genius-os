@@ -114,7 +114,7 @@ serve(async (req) => {
       throw new Error('Admin access required');
     }
 
-    console.log('Building SalesOS Lead Network with params:', { industries, countries, title_keywords, employee_buckets, max_records_per_run });
+    console.log('Building OutReign Lead Network with params:', { industries, countries, title_keywords, employee_buckets, max_records_per_run });
 
     let totalProcessed = 0;
     let totalAdded = 0;
@@ -224,7 +224,7 @@ serve(async (req) => {
                 email: email,
                 job_title: title,
                 country: country,
-                source: 'SalesOS',
+                source: 'OutReign',
                 lead_status: 'discovered',
               })
               .select()

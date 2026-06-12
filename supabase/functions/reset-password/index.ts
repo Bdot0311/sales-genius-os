@@ -149,7 +149,7 @@ serve(async (req) => {
                       <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                         <tr>
                           <td align="center">
-                            <img src="${logoUrl}" alt="SalesOS" width="56" height="56" style="display: block; border-radius: 12px; margin-bottom: 16px;" />
+                            <img src="${logoUrl}" alt="OutReign" width="56" height="56" style="display: block; border-radius: 12px; margin-bottom: 16px;" />
                           </td>
                         </tr>
                         <tr>
@@ -204,9 +204,9 @@ serve(async (req) => {
         payload: {
           message_id: crypto.randomUUID(),
           to: email,
-          from: 'SalesOS <noreply@notify.bdotindustries.com>',
+          from: 'OutReign <noreply@notify.bdotindustries.com>',
           sender_domain: 'notify.bdotindustries.com',
-          subject: 'Reset Your SalesOS Password',
+          subject: 'Reset Your OutReign Password',
           html: resetHtml,
           text: `We received a request to reset your password. Visit this link to reset: ${resetLink}. If you didn't request this, ignore this email.`,
           purpose: 'transactional',

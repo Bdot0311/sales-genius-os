@@ -55,7 +55,7 @@ const RequestIntegration = () => {
     <div className="min-h-screen flex flex-col overflow-x-hidden" style={{ background: "hsl(261 75% 2%)" }}>
       <SEOHead
         title="Request a new integration"
-        description="Tell us which tool you'd like SalesOS to integrate with. We prioritize integrations based on customer demand."
+        description="Tell us which tool you'd like OutReign to integrate with. We prioritize integrations based on customer demand."
       />
       <Navbar />
 
@@ -97,7 +97,7 @@ const RequestIntegration = () => {
               </span>
             </h1>
             <p style={{ color: "hsl(0 0% 100% / 0.55)" }}>
-              Tell us which tool you'd like to integrate with SalesOS and we'll prioritize it in our roadmap.
+              Tell us which tool you'd like to integrate with OutReign and we'll prioritize it in our roadmap.
             </p>
           </div>
 

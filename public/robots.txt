@@ -1,4 +1,4 @@
-# SalesOS Robots.txt
+# OutReign Robots.txt
 # https://sales-genius-os.lovable.app/robots.txt
 # Optimized for SEO and AI Search Engines (AEO)
 

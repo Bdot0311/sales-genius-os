@@ -97,7 +97,7 @@ serve(async (req) => {
                     <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                       <tr>
                         <td align="center">
-                          <img src="${logoUrl}" alt="SalesOS" width="56" height="56" style="display: block; border-radius: 12px; margin-bottom: 16px;" />
+                          <img src="${logoUrl}" alt="OutReign" width="56" height="56" style="display: block; border-radius: 12px; margin-bottom: 16px;" />
                         </td>
                       </tr>
                       <tr>
@@ -111,7 +111,7 @@ serve(async (req) => {
                 <tr>
                   <td bgcolor="#141414" style="background-color: #141414; padding: 40px 36px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
                     <p style="color: #a1a1aa; line-height: 1.7; margin: 0 0 28px 0; font-size: 16px;">
-                      Your SalesOS account admin sent you a password reset. Click the button below to create a new password:
+                      Your OutReign account admin sent you a password reset. Click the button below to create a new password:
                     </p>
                     <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#141414" style="background-color: #141414;">
                       <tr>
@@ -152,11 +152,11 @@ serve(async (req) => {
       payload: {
         message_id: crypto.randomUUID(),
         to: email,
-        from: "SalesOS <noreply@notify.bdotindustries.com>",
+        from: "OutReign <noreply@notify.bdotindustries.com>",
         sender_domain: "notify.bdotindustries.com",
-        subject: "Reset Your SalesOS Password",
+        subject: "Reset Your OutReign Password",
         html: resetHtml,
-        text: `Your SalesOS admin sent you a password reset. Visit this link to reset: ${resetLink}. If you weren't expecting this, ignore this email.`,
+        text: `Your OutReign admin sent you a password reset. Visit this link to reset: ${resetLink}. If you weren't expecting this, ignore this email.`,
         purpose: "transactional",
         label: "admin-password-reset",
         idempotency_key: `admin-password-reset-${email}-${Date.now()}`,

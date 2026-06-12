@@ -86,12 +86,12 @@ export const Navbar = () => {
               role="link"
               tabIndex={0}
               onKeyDown={(e) => e.key === 'Enter' && navigate('/')}
-              aria-label="SalesOS home"
+              aria-label="OutReign home"
             >
               <>
                 <img
                   src={LOGO_URL}
-                  alt="SalesOS Logo"
+                  alt="OutReign Logo"
                   className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-contain"
                   width={32}
                   height={32}

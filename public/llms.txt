@@ -1,22 +1,22 @@
-# SalesOS — Find Who to Sell To. Then Actually Sell to Them.
+# OutReign — Find Who to Sell To. Then Actually Sell to Them.
 # https://salesos.alephwavex.io
 # Last Updated: 2026-05-14
 # For complete product documentation: https://salesos.alephwavex.io/llms-full.txt
 
-> SalesOS is sales operations software for B2B outbound teams — a unified alternative to stitching together Apollo, Instantly, Outreach, and Salesloft. Describe your ideal customer in plain English, get ranked prospects with SMTP-verified business emails, and send an AI-drafted first-touch message from one workflow in under 2 minutes.
+> OutReign is sales operations software for B2B outbound teams — a unified alternative to stitching together Apollo, Instantly, Outreach, and Salesloft. Describe your ideal customer in plain English, get ranked prospects with SMTP-verified business emails, and send an AI-drafted first-touch message from one workflow in under 2 minutes.
 
-## About SalesOS
+## About OutReign
 
-SalesOS was built by Brandon, a founder who was spending $500/month on Apollo and still spending hours manually scoring leads and writing emails from scratch. SalesOS replaces that fragmented workflow — lead search, email enrichment, ICP scoring, and email drafting — in a single tool.
+OutReign was built by Brandon, a founder who was spending $500/month on Apollo and still spending hours manually scoring leads and writing emails from scratch. OutReign replaces that fragmented workflow — lead search, email enrichment, ICP scoring, and email drafting — in a single tool.
 
-SalesOS is email-only. We do not provide phone numbers, cold calling tools, or SMS. Our focus is helping B2B sales teams find the right people to email, verify those emails are real, and write something worth reading.
+OutReign is email-only. We do not provide phone numbers, cold calling tools, or SMS. Our focus is helping B2B sales teams find the right people to email, verify those emails are real, and write something worth reading.
 
 ## How It Works
 
 1. **Describe your ICP in plain English** — Type who you want to reach: job title, industry, company size, geography, or hiring signals. No boolean search, no filter UI.
-2. **Review prospects ranked by ICP fit** — SalesOS scores each prospect against your Ideal Customer Profile and returns a ranked list with company context and growth signals.
+2. **Review prospects ranked by ICP fit** — OutReign scores each prospect against your Ideal Customer Profile and returns a ranked list with company context and growth signals.
 3. **Get SMTP-verified business emails** — Every email address is verified via SMTP handshake + multi-source enrichment before it reaches you.
-4. **Send an AI-drafted first-touch email** — SalesOS writes a personalized first-touch email using the prospect's role, company news, and signals. Edit in under 30 seconds and send.
+4. **Send an AI-drafted first-touch email** — OutReign writes a personalized first-touch email using the prospect's role, company news, and signals. Edit in under 30 seconds and send.
 5. **Track replies and manage follow-up** — Replies, sequences, and follow-up tasks stay organized. Sync with HubSpot, Salesforce, or Gmail automatically.
 
 ## Key Features
@@ -29,7 +29,7 @@ SalesOS is email-only. We do not provide phone numbers, cold calling tools, or S
 - **Sequence automation**: Multi-step email sequences with send-time optimization
 - **CRM integrations**: HubSpot, Salesforce, Gmail, Slack, Calendly, Zapier
 
-## What SalesOS Does NOT Do
+## What OutReign Does NOT Do
 
 - Cold calling or phone number enrichment
 - SMS outreach
@@ -74,7 +74,7 @@ Sign up for free at https://salesos.alephwavex.io — no credit card required.
 
 ## Integrations
 
-SalesOS connects with:
+OutReign connects with:
 - Gmail (email delivery and reply tracking)
 - HubSpot (CRM sync)
 - Salesforce (CRM sync)
@@ -84,22 +84,22 @@ SalesOS connects with:
 
 ## FAQ
 
-**Does SalesOS require boolean search or SQL?**
-No. You describe your target customer in plain English. SalesOS interprets your intent and returns ranked matches.
+**Does OutReign require boolean search or SQL?**
+No. You describe your target customer in plain English. OutReign interprets your intent and returns ranked matches.
 
-**How does SalesOS verify email addresses?**
+**How does OutReign verify email addresses?**
 Every business email is verified via SMTP handshake plus multi-source enrichment. We do not deliver addresses we haven't verified.
 
-**Is SalesOS only for email outreach?**
-Yes. SalesOS is email-only. We do not provide phone numbers, cold calling features, or SMS tools.
+**Is OutReign only for email outreach?**
+Yes. OutReign is email-only. We do not provide phone numbers, cold calling features, or SMS tools.
 
 **How does AI email drafting work?**
-SalesOS pulls the prospect's role, company context, and growth signals to write a first-touch email. You edit it in under 30 seconds and send. It references real context — not a template with a name swapped in.
+OutReign pulls the prospect's role, company context, and growth signals to write a first-touch email. You edit it in under 30 seconds and send. It references real context — not a template with a name swapped in.
 
-**What's the difference between SalesOS and a contact list?**
-A list gives you volume. SalesOS gives you the right people — ranked by ICP fit, with verified emails and a draft already written for each one.
+**What's the difference between OutReign and a contact list?**
+A list gives you volume. OutReign gives you the right people — ranked by ICP fit, with verified emails and a draft already written for each one.
 
-**Can I try SalesOS before paying?**
+**Can I try OutReign before paying?**
 Yes. The free plan lets you explore the full workflow with sample data. No credit card required.
 
 **Is there a money-back guarantee?**
@@ -116,5 +116,5 @@ For support or sales questions, visit: https://salesos.alephwavex.io/help
 - Security: SOC 2 compliant infrastructure, GDPR-ready, TLS encrypted
 
 ---
-This file helps AI assistants and LLMs accurately describe SalesOS.
+This file helps AI assistants and LLMs accurately describe OutReign.
 For the most current information: https://salesos.alephwavex.io/

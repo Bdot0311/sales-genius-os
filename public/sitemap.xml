@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- SalesOS Sitemap - Last Updated: 2026-06-01 -->
+<!-- OutReign Sitemap - Last Updated: 2026-06-01 -->
 <!-- Ping Google after updates: https://www.google.com/ping?sitemap=https://sales-genius-os.lovable.app/sitemap.xml -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -15,7 +15,7 @@
     <priority>1.0</priority>
     <image:image>
       <image:loc>https://sales-genius-os.lovable.app/salesos-og.png</image:loc>
-      <image:title>SalesOS — Find Who to Sell To. Then Actually Sell to Them.</image:title>
+      <image:title>OutReign — Find Who to Sell To. Then Actually Sell to Them.</image:title>
       <image:caption>B2B lead discovery with SMTP-verified emails and AI-drafted outreach</image:caption>
     </image:image>
   </url>

@@ -22,7 +22,7 @@ const NotFound = () => {
     <>
       <SEOHead 
         title="Page Not Found - 404"
-        description="The page you're looking for doesn't exist. Navigate back to SalesOS homepage or explore our popular pages."
+        description="The page you're looking for doesn't exist. Navigate back to OutReign homepage or explore our popular pages."
         noIndex={true}
       />
       

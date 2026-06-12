@@ -9,9 +9,9 @@ const Privacy = () => {
   return (
     <>
       <SEOHead
-        title="Privacy Policy - Data Protection & GDPR Compliance | SalesOS"
-        description="Learn how SalesOS collects, uses, and protects your personal data. We're committed to transparency and GDPR/CCPA compliance."
-        keywords="SalesOS privacy policy, data protection, GDPR compliance, CCPA compliance, personal data"
+        title="Privacy Policy - Data Protection & GDPR Compliance | OutReign"
+        description="Learn how OutReign collects, uses, and protects your personal data. We're committed to transparency and GDPR/CCPA compliance."
+        keywords="OutReign privacy policy, data protection, GDPR compliance, CCPA compliance, personal data"
         ogImage="https://salesos.alephwavex.io/salesos-og.png"
       />
       <BreadcrumbSchema items={[
@@ -83,7 +83,7 @@ const Privacy = () => {
                 <time dateTime="2025-01">January 2025</time>
               </p>
               <p>
-                This Privacy Policy describes how SalesOS ("we," "our," or "us") collects, uses, and shares your personal information when you use our AI-powered sales operating system.
+                This Privacy Policy describes how OutReign ("we," "our," or "us") collects, uses, and shares your personal information when you use our AI-powered sales operating system.
               </p>
 
               {[
