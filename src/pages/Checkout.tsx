@@ -90,7 +90,8 @@ const Checkout = () => {
           </div>
           <img
             src="/salesos-logo-small.webp"
-            alt="OutReign Logo"
+            alt="OutReign product logo"
+
             className="h-8 w-auto hidden sm:block"
           />
         </div>

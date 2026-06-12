@@ -192,7 +192,11 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 <>
                   <img src={salesosLogo} alt="OutReign Logo" className="w-8 h-8 rounded-lg flex-shrink-0" />
                   {!sidebarCollapsed && (
-                    <span className="text-xl font-bold">{whiteLabelSettings?.company_name || "OutReign"}</span>
+                    whiteLabelSettings?.company_name
+                      ? <span className="text-xl font-semibold">{whiteLabelSettings.company_name}</span>
+                      : <span className="text-xl font-semibold">
+                          <span className="text-foreground">Out</span><span className="text-primary">Reign</span>
+                        </span>
                   )}
                 </>
               )}

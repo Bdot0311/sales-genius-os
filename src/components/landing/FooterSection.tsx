@@ -31,8 +31,8 @@ export const FooterSection = () => {
               <div className="flex items-center gap-2.5 mb-4">
                 <img 
                   src={salesosLogo} 
-                  alt="OutReign Logo" 
-                  className="w-8 h-8 rounded-lg" 
+                  alt="OutReign Logo"
+                  className="w-8 h-8 rounded-lg"
                   width={32}
                   height={32}
                 />

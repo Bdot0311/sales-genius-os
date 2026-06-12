@@ -112,16 +112,7 @@ const Unsubscribe = () => {
             <MailX className="h-6 w-6 text-primary" />
           </div>
           <h1 className="font-display text-2xl text-white">
-            Email{" "}
-            <span
-              className="bg-clip-text text-transparent"
-              style={{
-                backgroundImage:
-                  "linear-gradient(135deg, hsl(261 75% 72%) 0%, hsl(280 70% 70%) 100%)",
-              }}
-            >
-              Preferences
-            </span>
+            Email <span className="text-primary">Preferences</span>
           </h1>
         </div>
 

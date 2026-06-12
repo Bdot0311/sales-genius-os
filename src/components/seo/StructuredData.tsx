@@ -86,7 +86,7 @@ export const OrganizationSchema = ({
     "@id": `${BASE_URL}/#organization`,
     "name": name,
     "legalName": "BDØT Industries LLC",
-    "alternateName": ["Sales OS", "OutReign Platform"],
+    "alternateName": ["OutReign Platform"],
     "description": description,
     "url": url,
     "logo": {

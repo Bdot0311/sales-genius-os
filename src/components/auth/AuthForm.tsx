@@ -297,14 +297,15 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
           >
             <img 
               src={salesosLogo} 
-              alt="OutReign Logo" 
+              alt="OutReign product logo"
 
-
-              className="w-10 h-10 transition-transform duration-300 hover:scale-110" 
+              className="w-10 h-10 transition-transform duration-300 hover:scale-110"
             />
-            <span className="text-2xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">OutReign</span>
+            <span className="text-2xl font-semibold">
+              <span className="text-foreground">Out</span><span className="text-primary">Reign</span>
+            </span>
           </div>
-          <h2 
+          <h2
             className="text-2xl font-bold mb-2 animate-fade-in"
             style={{ animationDelay: '0.2s', animationFillMode: 'both' }}
           >

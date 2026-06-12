@@ -41,7 +41,9 @@ export function AdminSidebar() {
             </div>
             {open && (
               <div>
-                <h2 className="font-bold text-lg">OutReign</h2>
+                <h2 className="font-semibold text-lg">
+                  <span className="text-foreground">Out</span><span className="text-primary">Reign</span>
+                </h2>
                 <p className="text-xs text-muted-foreground">Admin Panel</p>
               </div>
             )}
