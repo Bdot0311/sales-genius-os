@@ -119,6 +119,9 @@ export const FooterSection = () => {
               <a href="https://nicklaunches.com/products/salesos/?utm_source=salesos.alephwavex.io&utm_medium=badge&utm_campaign=featured" target="_blank" rel="noopener">
                 <img src="https://nicklaunches.com/badges/featured-dark.svg" alt="OutReign on Nick Launches" className="h-10 w-auto" width={244} height={56} loading="lazy" />
               </a>
+              <a href="https://rankinpublic.xyz/products/salesos.alephwavex.io" target="_blank" rel="noopener noreferrer">
+                <img src="https://rankinpublic.xyz/api/badges/badge-featured.png?site=salesos.alephwavex.io" alt="Featured on RankInPublic" title="Featured on RankInPublic" className="h-10 w-auto" width={125} height={40} loading="lazy" />
+              </a>
             </div>
             <p className="text-sm text-center" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
               © {new Date().getFullYear()} BDØT Industries LLC. All rights reserved.
