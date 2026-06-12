@@ -271,7 +271,7 @@ const Auth = () => {
         {isCustomDomain && wlSettings ? (
           <div className="flex flex-col items-center gap-3 mb-2">
             {wlSettings.logo_url ? (
-              <img src={wlSettings.logo_url} alt={wlSettings.company_name || "Logo"} className="h-10 object-contain" />
+              <img src={wlSettings.logo_url} alt={`${wlSettings.company_name || "OutReign"} company logo`} className="h-10 object-contain" />
             ) : (
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-lg"
