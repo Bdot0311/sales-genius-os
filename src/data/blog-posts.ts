@@ -812,7 +812,7 @@ In or out?
 
 Hi {{first_name}},
 
-I'm looking at sponsoring {{event_name}} in {{month}} — {{specific_audience}} is exactly our ICP. The ${{sponsor_tier_cost}} tier is more than I want to commit solo.
+I'm looking at sponsoring {{event_name}} in {{month}} — {{specific_audience}} is exactly our ICP. The \${{sponsor_tier_cost}} tier is more than I want to commit solo.
 
 Would {{their_company}} want to split a co-sponsorship? Shared booth, shared lead list, your logo on our materials and vice versa. Roughly $\{{half_cost}} each.
 
