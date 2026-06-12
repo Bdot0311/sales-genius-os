@@ -26,7 +26,7 @@ const faqs = [
   {
     question: "How does the free plan work?",
     answer:
-      "The free plan lets you explore the full workflow with real sample data. No credit card, no auto-charge, no surprise fees. When you're ready to run live prospecting at volume, you upgrade.",
+      "The free plan gives you 10 real, verified leads — no credit card, no auto-charge, no surprise fees. Run the full workflow: find contacts, review their fit scores, and draft your first outreach. When you're ready to prospect at volume, you upgrade.",
   },
   {
     question: "How does OutReign verify email addresses?",

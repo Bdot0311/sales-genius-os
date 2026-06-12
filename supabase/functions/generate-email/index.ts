@@ -597,7 +597,7 @@ serve(async (req) => {
     const customInstruction   = typeof requestData.customInstruction   === 'string' ? requestData.customInstruction.slice(0, 8000)         : '';
     const senderName          = typeof requestData.senderName          === 'string' ? requestData.senderName.trim().slice(0, 100)           : '';
     const senderCompany       = typeof requestData.senderCompany       === 'string' ? requestData.senderCompany.trim().slice(0, 100)        : '';
-    const strictMode          = requestData.strict_mode !== false; // default true
+    const strictMode          = requestData.strict_mode === true; // default false — strict mode is opt-in only
 
     const validationErrors = validateEmailInputs({ lead, tone, goal });
     if (validationErrors.length > 0) {
@@ -773,7 +773,7 @@ specific_observation: ${triggerContext || 'not provided — infer from company c
 company_signal: ${companySignalParts || 'not provided — use industry and role context'}
 sender_name: ${senderName || 'Sender'}
 sender_company: ${senderCompany || (businessDescription ? businessDescription.split(/[\s\n]/)[0] : 'OutReign')}
-verified_proof: ${socialProof || 'none — do not cite any customers, metrics, or percentages in the solution line; describe the product benefit in plain terms only'}
+verified_proof: ${socialProof || (businessDescription ? `product capabilities from sender: ${businessDescription}` : 'none — do not cite any customers, metrics, or percentages in the solution line; describe the product benefit in plain terms only')}
 strict_mode: ${strictMode ? 'true' : 'false'}`;
 
     } else {

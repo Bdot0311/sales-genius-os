@@ -138,7 +138,7 @@ export const HowItWorks = () => {
             viewport={{ once: true, margin: "-10% 0px" }}
             transition={{ type: "spring", stiffness: 60, damping: 18, delay: 0.08 }}
           >
-            Three steps.
+            From ICP to first email.
             <br />
             <span
               className="animate-shiny"
@@ -151,7 +151,7 @@ export const HowItWorks = () => {
                 filter: "url(#c3-noise)",
               }}
             >
-              One workflow.
+              Under 20 minutes.
             </span>
           </motion.h2>
 
@@ -195,7 +195,7 @@ export const HowItWorks = () => {
           </div>
 
           <motion.div
-            className="pt-10"
+            className="pt-10 flex flex-col items-center gap-3"
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true, margin: "-10% 0px" }}
@@ -203,13 +203,20 @@ export const HowItWorks = () => {
           >
             <motion.button
               onClick={() => navigate("/auth")}
-              className="text-sm font-medium inline-flex items-center gap-1.5"
-              style={{ color: "hsl(261 75% 65%)" }}
-              whileHover={{ x: 3, color: "hsl(261 75% 80%)" }}
+              className="px-6 py-3 rounded-xl text-sm font-semibold"
+              style={{
+                background: "linear-gradient(135deg, hsl(261 75% 55%), hsl(280 80% 60%))",
+                color: "hsl(0 0% 98%)",
+                boxShadow: "0 0 24px hsl(261 75% 55% / 0.3)",
+              }}
+              whileHover={{ boxShadow: "0 0 36px hsl(261 75% 55% / 0.5)" }}
               transition={{ type: "spring", stiffness: 400, damping: 20 }}
             >
-              Try it with your own ICP →
+              Try it free — 10 real leads, no card required
             </motion.button>
+            <p className="text-xs" style={{ color: "hsl(0 0% 100% / 0.35)" }}>
+              No credit card. No demo call. Start in 60 seconds.
+            </p>
           </motion.div>
         </div>
       </div>
