@@ -546,6 +546,133 @@ End every B2B sales email with one specific, low-friction question that gives th
 If you'd rather have AI draft outbound emails that already follow this structure — grounded in your business and the prospect's real company context — [try OutReign free](https://salesos.alephwavex.io). First email sent in under 2 minutes, no credit card.
     `.trim(),
   },
+  {
+    slug: "b2b-prospecting-guide",
+    title: "B2B Prospecting in 2026: A Practical Guide for Lean Teams",
+    description: "Modern B2B prospecting for founders and small sales teams: ICP scoring, signal-based targeting, verified emails, and AI-drafted outreach without the manual grind.",
+    publishedAt: "2026-06-12",
+    readingTime: "9 min read",
+    category: "Lead Generation",
+    keywords: ["B2B prospecting", "how to generate B2B leads", "B2B prospecting strategies", "ICP scoring", "AI outreach", "lean sales teams"],
+    content: `
+B2B prospecting is the work of identifying the right companies and decision-makers to sell to, verifying you can actually reach them, and starting a conversation worth their time. For a founder or a 2-3 person sales team, the bottleneck is rarely a lack of contact data — it's the hours spent stitching that data together into something you can act on this afternoon.
+
+This guide is for lean teams. No 12-person SDR org, no RevOps function, no $50k/year tooling budget. Just a clear, repeatable workflow you can run on a Tuesday morning.
+
+## What "Modern" B2B Prospecting Actually Means
+
+Old-school prospecting was a numbers game: scrape a list of 5,000 names, blast a generic email, hope for a 1% reply rate. That math doesn't work anymore. Inboxes are crowded, spam filters are smarter, and buyers have been trained to ignore anything that smells like a template.
+
+Modern B2B prospecting flips the equation. Smaller lists, better fit, more relevance per send. The four shifts that matter:
+
+**1. ICP-first, not volume-first.** Define who you sell to before you go looking for them. A tight ICP (Ideal Customer Profile) shrinks your universe from 50,000 possible companies to maybe 800. That's a feature, not a bug.
+
+**2. Signal-based targeting.** Hiring data, funding rounds, tech stack changes, leadership moves — these tell you when a company is ready to buy, not just whether they fit on paper.
+
+**3. Verified contact data.** A 30% bounce rate on cold email tanks your sender reputation in a week. SMTP verification before send is non-negotiable.
+
+**4. Personalization at the first-touch.** "Hey {{first_name}}" is dead. The minimum bar is now a sentence that references the prospect's role, company, or a real signal — and AI makes that doable at scale.
+
+## Step 1: Build an ICP You Can Actually Search
+
+Most ICPs read like marketing decks: "B2B SaaS companies in growth mode." That's not a search. A useful ICP has concrete, filterable criteria:
+
+- **Company stage and size**: Series A–C, 25–250 employees
+- **Industry**: B2B SaaS in HR tech, fintech, or developer tools
+- **Geography**: US and Canada (so you can hop on a call without a 9-hour time delta)
+- **Buying signals**: Hired 2+ sales reps in the last 90 days, raised funding in the last 6 months, or recently launched a new product
+
+The signals are the unlock. A 75-employee Series B SaaS that hired three SDRs last month has both the budget and the intent. That same company without the hiring signal is a 6-month nurture, not a this-week conversation.
+
+Write your ICP in one paragraph, in plain English. If you can't describe it in two sentences, it's not specific enough.
+
+## Step 2: Find Prospects Without Boolean Hell
+
+This is the step that historically eats four hours. Old tools force you to build searches like *(VP OR "Vice President") AND (Sales OR Revenue) AND ("Series B" OR "Series C")*. Get one operator wrong and you get either zero results or ten thousand.
+
+Modern lead discovery — including [OutReign](https://salesos.alephwavex.io) — parses your plain-English ICP and returns ranked matches. You describe the prospect; the system filters, scores, and ranks by fit.
+
+What you should expect from a good prospecting workflow:
+
+- A ranked list, not a raw dump
+- An ICP fit score per prospect (so you know who to email first)
+- Company context inline (recent news, funding, headcount changes)
+- Verified business emails, not catch-alls
+
+If you're still copy-pasting names from LinkedIn into a spreadsheet, you're paying the boolean tax even without the boolean.
+
+## Step 3: Score Leads by ICP Fit Before You Touch Them
+
+Not every prospect on a 200-name list deserves the same effort. ICP scoring lets you triage:
+
+- **90–100% fit**: Send a personalized email today. These are your A-tier.
+- **70–89% fit**: Worth a touch, but don't burn your best email opener on them.
+- **<70% fit**: Park them. Either they don't match closely enough or your ICP is too broad and needs tightening.
+
+The math is simple — assign weights to your ICP criteria (company stage = 30%, role = 25%, signal = 25%, industry = 20%, etc.) and score each prospect against them. Or use a tool that does it automatically. The point is to make a deliberate choice about where your attention goes, not to email everyone equally.
+
+## Step 4: Verify Emails Before You Send
+
+A bounced email is worse than a deleted one. Bounces above ~5% degrade your sender reputation; above 10% and your domain starts landing in spam for everyone. Two safeguards:
+
+1. **SMTP verification** at list-build time. Catches dead inboxes, role aliases, and obvious typos before they hit your sequence.
+2. **A separate sending domain** for cold outbound. Never burn your primary business domain. Use a near-match (e.g. `getacme.com` if your primary is `acme.com`) with SPF, DKIM, and DMARC set up correctly.
+
+Tools like OutReign verify emails as part of the search workflow, so you don't ship unverified addresses into your sequence.
+
+## Step 5: Draft the First Touch With AI — But Ground It in Real Context
+
+A blank-page first email is where most prospecting workflows stall. The reply-rate ceiling on a generic template is roughly 1–2%. The reply-rate ceiling on a personalized, relevant email referencing real company context is 8–15%.
+
+The trick: AI drafting works when it's grounded in real signals (their role, recent company news, hiring data, your value prop), not when it's writing in a vacuum. A prompt like *"write a cold email to John, VP of Sales at Acme, who just hired three SDRs and is rolling out a new outbound motion"* produces something you can edit in 30 seconds. *"Write a cold email"* produces fluff you'll rewrite from scratch.
+
+The workflow that actually moves fast:
+
+1. Describe ICP → get ranked prospects with verified emails (5 minutes)
+2. Pick your top 20 by ICP fit score (2 minutes)
+3. Generate AI first-touch drafts grounded in each prospect's company context (5 minutes)
+4. Edit each draft for 30 seconds (10 minutes)
+5. Send
+
+Twenty personalized, well-targeted emails out the door in under 25 minutes. That's the new baseline.
+
+## Step 6: Follow Up Without Being a Pest
+
+Reply rates on the first email are usually 5-10%. The next 20-30% of replies come from follow-ups 2 through 4. Three rules:
+
+- **Space them out.** Day 1 → Day 4 → Day 9 → Day 16. Daily follow-ups read as desperate.
+- **Add value each time.** A case study link, a different angle on the pain point, a relevant data point. Never just "bumping this."
+- **Stop at 4-5 touches.** If they haven't replied by then, park them. Re-engage in 3-6 months when something changes.
+
+## Common B2B Prospecting Mistakes (and How to Avoid Them)
+
+**Mistake 1: Buying a 50,000-row list.** Bigger lists feel productive. They're not. A 200-row list with 90%+ ICP fit beats a 50,000-row list with 5% fit every time.
+
+**Mistake 2: Skipping email verification.** Saves an hour on day one, costs you your sender domain by week three.
+
+**Mistake 3: Personalizing with the wrong signal.** "I see you went to Stanford" is creepy. "I saw you just hired three SDRs" is relevant. Stick to professional signals.
+
+**Mistake 4: Treating prospecting as a one-time push.** It's a weekly habit. Block two hours every Monday. Build 50 prospects, send 20-30 emails, follow up on last week's batch. Compounding beats sprints.
+
+**Mistake 5: No system for tracking what works.** If you can't tell which ICP slices reply best, you can't double down. Even a simple spreadsheet beats nothing.
+
+## A Realistic Weekly Workflow for a Lean Team
+
+Here's what a 2-3 person team running modern B2B prospecting actually does in a week:
+
+- **Monday (2 hours)**: Refresh ICP, generate 100-200 prospects, score by fit, draft top 20 first-touch emails, send.
+- **Tuesday-Friday (30 min/day)**: Send follow-ups on yesterday's batch, reply to inbound, log meetings.
+- **Friday (30 min)**: Review reply rates by ICP slice. What's working? What isn't? Adjust next week's targeting.
+
+That's 4-5 hours of prospecting per week, producing 80-100 personalized cold emails and (if your ICP is tight) 8-12 booked meetings per month. Scale this with one SDR, not five.
+
+## The Bottom Line
+
+B2B prospecting in 2026 isn't about doing more — it's about being more deliberate. Define a tight ICP, target by signal, verify before you send, personalize from real context, and follow up with discipline. The tooling exists to make this a 5-hour-per-week habit instead of a full-time job.
+
+If you want a workflow that handles ICP search, verified emails, fit scoring, and AI-drafted first-touch in one place, [try OutReign free](https://salesos.alephwavex.io). Describe your ideal customer in plain English, send your first email in under 2 minutes — no credit card.
+    `.trim(),
+  },
 ];
 
 export function getPostBySlug(slug: string): BlogPost | undefined {
