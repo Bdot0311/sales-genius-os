@@ -159,8 +159,9 @@ This engine operates in strict mode by default. Strict mode enforces research qu
 Pre-generation validation — run in order, fail fast:
 
 CHECK 1 — Required inputs present
-  Required: first_name, prospect_company, specific_observation, company_signal, sender_name, sender_company, verified_proof
-  If any are missing, empty, or contain placeholder text ("TBD", "n/a", "unknown", "[insert here]"), HALT.
+  Required: first_name, prospect_company, specific_observation, company_signal, sender_name, sender_company
+  Optional: verified_proof — "none" is a valid value meaning no social proof is available; adjust claims accordingly.
+  If any required field is missing, empty, or contains placeholder text ("TBD", "n/a", "unknown", "[insert here]"), HALT.
 
 CHECK 2 — specific_observation quality gate
   The observation must be:
