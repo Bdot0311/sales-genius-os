@@ -48,7 +48,7 @@ const ApolloAlternative = () => {
         title="Apollo Alternative for Founders & Lean Sales Teams | OutReign"
         description="The Apollo alternative: plain-English lead search, verified emails, ICP scoring, and AI outreach from $0. No boolean filters required."
         keywords="apollo alternative, apollo.io alternative, apollo io alternative, alternative to apollo, apollo competitors, apollo replacement, instantly alternative, salesloft alternative, outreach alternative"
-        ogImage="https://salesos.alephwavex.io/salesos-og.png"
+        ogImage="https://salesos.alephwavex.io/outreign-og.png"
       />
       <BreadcrumbSchema items={[
         { name: "Home", url: "https://salesos.alephwavex.io" },

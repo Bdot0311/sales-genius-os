@@ -158,7 +158,7 @@ export const SoftwareApplicationSchema = () => {
     "description": "OutReign turns your ICP into ranked prospects with SMTP-verified contact data and AI-drafted first-touch emails — in under 2 minutes. Describe your ideal customer in plain English: no boolean search, no list building, no manual scoring.",
     "url": BASE_URL,
     "downloadUrl": `${BASE_URL}/auth`,
-    "screenshot": "https://outreign.io/salesos-og.png",
+    "screenshot": "https://outreign.io/outreign-og.png",
     "offers": {
       "@type": "AggregateOffer",
       "lowPrice": "0",

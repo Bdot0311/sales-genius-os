@@ -15,7 +15,7 @@ const Security = () => {
         title="Security & Data Protection | OutReign"
         description="Learn about OutReign security practices. Enterprise-grade data protection with encryption, SOC 2 compliance, GDPR/CCPA compliance, and 24/7 monitoring."
         keywords="OutReign security, data encryption, SOC 2, GDPR compliance, enterprise security, data protection"
-        ogImage="https://salesos.alephwavex.io/salesos-og.png"
+        ogImage="https://salesos.alephwavex.io/outreign-og.png"
       />
       <BreadcrumbSchema items={[
         { name: "Home", url: "https://salesos.alephwavex.io" },
