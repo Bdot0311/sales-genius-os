@@ -140,7 +140,10 @@ export const SEOHead = ({
       <meta property="og:url" content={fullCanonicalUrl} />
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={safeDescription} />
-      <meta property="og:image" content={ogImage} />
+      <meta property="og:image" content={versionedOgImage} />
+      <meta property="og:image:secure_url" content={versionedOgImage} />
+      <meta property="og:image:type" content="image/jpeg" />
+      <meta property="og:updated_time" content={String(SOCIAL_CARD_VERSION)} />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
       <meta property="og:image:alt" content="OutReign — Find who to sell to. Then actually sell to them." />
