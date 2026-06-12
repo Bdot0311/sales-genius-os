@@ -101,9 +101,9 @@ const Install = () => {
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)} aria-label="Go back">
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <img src={salesosLogo} alt="SalesOS product logo" className="w-8 h-8 rounded-lg" />
+          <img src={salesosLogo} alt="OutReign product logo" className="w-8 h-8 rounded-lg" />
 
-          <span className="text-lg font-bold">Install SalesOS</span>
+          <span className="text-lg font-bold">Install OutReign</span>
         </div>
       </header>
 
@@ -114,10 +114,10 @@ const Install = () => {
             <Download className="w-10 h-10 text-primary" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight">
-            Get SalesOS on Your Device
+            Get OutReign on Your Device
           </h1>
           <p className="text-muted-foreground text-lg max-w-md mx-auto">
-            Install SalesOS for instant access to your sales tools, right from your home screen.
+            Install OutReign for instant access to your sales tools, right from your home screen.
           </p>
         </div>
 
@@ -131,7 +131,7 @@ const Install = () => {
               <div>
                 <h3 className="font-semibold text-accent">Already Installed!</h3>
                 <p className="text-sm text-muted-foreground">
-                  SalesOS is installed on this device. Open it from your home screen for the best experience.
+                  OutReign is installed on this device. Open it from your home screen for the best experience.
                 </p>
               </div>
             </CardContent>
@@ -144,11 +144,11 @@ const Install = () => {
             <CardContent className="p-6 text-center space-y-4">
               <h2 className="text-xl font-semibold">Ready to Install</h2>
               <p className="text-muted-foreground">
-                Click the button below to install SalesOS on your device.
+                Click the button below to install OutReign on your device.
               </p>
               <Button size="lg" onClick={handleInstall} className="gap-2">
                 <Download className="w-5 h-5" />
-                Install SalesOS
+                Install OutReign
               </Button>
             </CardContent>
           </Card>
@@ -192,7 +192,7 @@ const Install = () => {
                   <div>
                     <p className="font-medium">Tap "Add"</p>
                     <p className="text-sm text-muted-foreground">
-                      SalesOS will appear on your home screen
+                      OutReign will appear on your home screen
                     </p>
                   </div>
                 </div>
@@ -207,7 +207,7 @@ const Install = () => {
             <CardContent className="p-6 text-center space-y-3">
               <h2 className="text-xl font-semibold">Install from Your Browser</h2>
               <p className="text-muted-foreground">
-                Open SalesOS in <strong>Chrome</strong>, <strong>Edge</strong>, or <strong>Safari</strong> and look for the install option in your browser's menu.
+                Open OutReign in <strong>Chrome</strong>, <strong>Edge</strong>, or <strong>Safari</strong> and look for the install option in your browser's menu.
               </p>
             </CardContent>
           </Card>

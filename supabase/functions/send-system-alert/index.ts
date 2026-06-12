@@ -28,7 +28,7 @@ serve(async (req) => {
       );
     }
 
-    const subject = `[SalesOS ${String(severity).toUpperCase()}] ${category}`;
+    const subject = `[OutReign ${String(severity).toUpperCase()}] ${category}`;
     const html = `
       <div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#0f172a">
         <h2 style="color:#7c3aed;margin:0 0 12px">System alert: ${category}</h2>
@@ -48,7 +48,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "SalesOS Alerts <alerts@salesos.alephwavex.io>",
+        from: "OutReign Alerts <alerts@salesos.alephwavex.io>",
         to: [SUPPORT_EMAIL],
         subject,
         html,

@@ -64,7 +64,7 @@ serve(async (req) => {
             <p>${isExceeded ? `Your API key has exceeded its ${limitType} rate limit.` : `Your API key is at ${percentage}% of its ${limitType} rate limit.`}</p>
           </div>
           <p>Usage: <strong>${usage.toLocaleString()}</strong> / ${limit.toLocaleString()} (${percentage}%)</p>
-          <p style="margin-top: 30px; font-size: 12px; color: #6b7280;">Automated alert from SalesOS API monitoring.</p>
+          <p style="margin-top: 30px; font-size: 12px; color: #6b7280;">Automated alert from OutReign API monitoring.</p>
         </div>
       </div>
     </body></html>`;
@@ -76,7 +76,7 @@ serve(async (req) => {
       payload: {
         message_id: messageId,
         to: profile.email,
-        from: `SalesOS <noreply@notify.bdotindustries.com>`,
+        from: `OutReign <noreply@notify.bdotindustries.com>`,
         sender_domain: 'notify.bdotindustries.com',
         subject,
         html: emailHtml,

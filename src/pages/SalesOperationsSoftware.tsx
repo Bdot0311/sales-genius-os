@@ -16,9 +16,9 @@ const SectionLoader = () => (
 
 const faqs = [
   { question: "What is sales operations software?", answer: "Sales operations software is the tooling layer revenue teams use to find prospects, score them against an Ideal Customer Profile, enrich contact data, run outbound sequences, and manage replies — without stitching together five disconnected tools." },
-  { question: "How is SalesOS different from a CRM?", answer: "A CRM stores deals you already have. Sales operations software like SalesOS generates the pipeline that fills the CRM — prospect discovery, ICP fit scoring, verified email enrichment, and AI-drafted first-touch outreach in one workflow." },
-  { question: "Do I need separate tools for prospecting, enrichment, and sequences?", answer: "No. SalesOS replaces the typical sales ops stack — Apollo for search, ZoomInfo for enrichment, Instantly or Salesloft for sequences — with one platform built around plain-English ICP search." },
-  { question: "Is this a fit for sales operations planning (S&OP)?", answer: "No. SalesOS is built for B2B outbound sales operations — pipeline generation, prospecting, and outreach. It is not inventory or supply-chain S&OP software." },
+  { question: "How is OutReign different from a CRM?", answer: "A CRM stores deals you already have. Sales operations software like OutReign generates the pipeline that fills the CRM — prospect discovery, ICP fit scoring, verified email enrichment, and AI-drafted first-touch outreach in one workflow." },
+  { question: "Do I need separate tools for prospecting, enrichment, and sequences?", answer: "No. OutReign replaces the typical sales ops stack — Apollo for search, ZoomInfo for enrichment, Instantly or Salesloft for sequences — with one platform built around plain-English ICP search." },
+  { question: "Is this a fit for sales operations planning (S&OP)?", answer: "No. OutReign is built for B2B outbound sales operations — pipeline generation, prospecting, and outreach. It is not inventory or supply-chain S&OP software." },
   { question: "Can I try it before paying?", answer: "Yes. The free tier lets you explore the full workflow with sample data. No credit card required." },
 ];
 
@@ -35,8 +35,8 @@ const SalesOperationsSoftware = () => {
   return (
     <>
       <SEOHead
-        title="Sales Operations Software for B2B Outbound Teams | SalesOS"
-        description="SalesOS is sales operations software built for outbound B2B teams. Plain-English lead search, SMTP-verified emails, AI drafting, and reply management in one platform."
+        title="Sales Operations Software for B2B Outbound Teams | OutReign"
+        description="OutReign is sales operations software built for outbound B2B teams. Plain-English lead search, SMTP-verified emails, AI drafting, and reply management in one platform."
         keywords="sales operations software, sales operations, sales ops, sales management software, sales productivity software, sales operations platform, sales operations tools, B2B sales operations software, outbound sales operations"
         ogImage="https://salesos.alephwavex.io/salesos-og.png"
       />
@@ -82,7 +82,7 @@ const SalesOperationsSoftware = () => {
                 className="text-lg font-light max-w-2xl mx-auto mb-10"
                 style={{ color: "hsl(0 0% 100% / 0.7)" }}
               >
-                SalesOS replaces the prospecting tool, the enrichment tool, the sequencer, and the reply inbox — so revenue teams ship outbound in minutes, not weeks.
+                OutReign replaces the prospecting tool, the enrichment tool, the sequencer, and the reply inbox — so revenue teams ship outbound in minutes, not weeks.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Link
@@ -121,7 +121,7 @@ const SalesOperationsSoftware = () => {
                 Why sales ops teams are consolidating
               </h2>
               <p className="text-center max-w-2xl mx-auto mb-12" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
-                The average B2B outbound stack runs 5–7 tools. Each has its own seat fee, its own data model, and its own broken hand-off. SalesOS replaces the core four with one platform.
+                The average B2B outbound stack runs 5–7 tools. Each has its own seat fee, its own data model, and its own broken hand-off. OutReign replaces the core four with one platform.
               </p>
               <div className="grid sm:grid-cols-2 gap-5">
                 {features.map((f) => (
@@ -152,7 +152,7 @@ const SalesOperationsSoftware = () => {
                   color: "hsl(0 0% 95%)",
                 }}
               >
-                What SalesOS replaces
+                What OutReign replaces
               </h2>
               <ul className="space-y-4 max-w-xl mx-auto">
                 {[
@@ -176,7 +176,7 @@ const SalesOperationsSoftware = () => {
                   onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 80%)")}
                   onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")}
                 >
-                  Compare SalesOS vs Apollo →
+                  Compare OutReign vs Apollo →
                 </Link>
               </div>
             </div>

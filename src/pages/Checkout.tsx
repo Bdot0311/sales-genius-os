@@ -90,7 +90,7 @@ const Checkout = () => {
           </div>
           <img
             src="/salesos-logo-small.webp"
-            alt="SalesOS product logo"
+            alt="OutReign product logo"
 
             className="h-8 w-auto hidden sm:block"
           />
@@ -102,7 +102,7 @@ const Checkout = () => {
         <div className="mb-6 rounded-2xl border border-border/40 bg-card/60 p-5">
           <h2 className="text-base font-semibold text-foreground mb-2">What happens next</h2>
           <p className="text-sm text-muted-foreground leading-relaxed mb-3">
-            After checkout, SalesOS will confirm your plan and guide you into account setup or sign-in. If anything looks off, you can return to pricing or contact support.
+            After checkout, OutReign will confirm your plan and guide you into account setup or sign-in. If anything looks off, you can return to pricing or contact support.
           </p>
           <p className="text-xs text-muted-foreground/80">
             14-day trial where applicable • Cancel anytime • 30-day money-back guarantee

@@ -142,9 +142,9 @@ const ApiStatus = () => {
   return (
     <>
       <SEOHead
-        title="API Status & System Uptime - SalesOS Developer Platform"
-        description="Real-time SalesOS API status, system uptime monitoring, and incident history. Check REST API, GraphQL, webhooks, and edge function availability."
-        keywords="SalesOS API status, system uptime, API monitoring, developer platform, service status"
+        title="API Status & System Uptime - OutReign Developer Platform"
+        description="Real-time OutReign API status, system uptime monitoring, and incident history. Check REST API, GraphQL, webhooks, and edge function availability."
+        keywords="OutReign API status, system uptime, API monitoring, developer platform, service status"
         canonicalUrl="https://salesos.alephwavex.io/api-status"
         noIndex={false}
       />

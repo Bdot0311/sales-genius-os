@@ -31,14 +31,14 @@ export const FooterSection = () => {
               <div className="flex items-center gap-2.5 mb-4">
                 <img 
                   src={salesosLogo} 
-                  alt="SalesOS Logo" 
-                  className="w-8 h-8 rounded-lg" 
+                  alt="OutReign Logo"
+                  className="w-8 h-8 rounded-lg"
                   width={32}
                   height={32}
                 />
                 <span className="text-lg font-semibold">
-                  <span style={{ color: "hsl(0 0% 92%)" }}>Sales</span>
-                  <span style={{ color: "hsl(261 75% 65%)" }}>OS</span>
+                  <span style={{ color: "hsl(0 0% 92%)" }}>Out</span>
+                  <span style={{ color: "hsl(261 75% 65%)" }}>Reign</span>
                 </span>
               </div>
               <p className="text-sm max-w-xs leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.7)" }}>

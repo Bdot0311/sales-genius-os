@@ -36,13 +36,13 @@ export const helpCategories: HelpCategoryInfo[] = [
   {
     id: 'features',
     title: 'Features & How-To',
-    description: 'Master all SalesOS features and capabilities',
+    description: 'Master all OutReign features and capabilities',
     icon: 'Sparkles'
   },
   {
     id: 'integrations',
     title: 'Integrations',
-    description: 'Connect SalesOS with your favorite tools',
+    description: 'Connect OutReign with your favorite tools',
     icon: 'Plug'
   },
   {
@@ -66,11 +66,11 @@ export const helpArticles: HelpArticle[] = [
     slug: 'create-first-lead',
     title: 'How to Create Your First Lead',
     category: 'getting-started',
-    description: 'Learn how to add and manage leads in SalesOS',
+    description: 'Learn how to add and manage leads in OutReign',
     content: `
 ## Creating Your First Lead
 
-Adding leads to SalesOS is simple and can be done in multiple ways.
+Adding leads to OutReign is simple and can be done in multiple ways.
 
 ### Method 1: Manual Entry
 
@@ -96,7 +96,7 @@ Adding leads to SalesOS is simple and can be done in multiple ways.
 1. Navigate to **Dashboard → Leads**
 2. Click **"Import Leads"**
 3. Upload your CSV file
-4. Map the columns to SalesOS fields
+4. Map the columns to OutReign fields
 5. Click **"Import"**
 
 ### Tips for Better Lead Management
@@ -119,7 +119,7 @@ Adding leads to SalesOS is simple and can be done in multiple ways.
     content: `
 ## Importing Leads from CSV
 
-SalesOS supports bulk importing leads from CSV files for quick data migration.
+OutReign supports bulk importing leads from CSV files for quick data migration.
 
 ### Preparing Your CSV File
 
@@ -137,13 +137,13 @@ Your CSV should include columns for:
 1. **Navigate to Leads** - Go to Dashboard → Leads
 2. **Click Import** - Select "Import Leads" from the actions menu
 3. **Upload File** - Drag and drop or browse for your CSV
-4. **Map Fields** - Match your CSV columns to SalesOS fields
+4. **Map Fields** - Match your CSV columns to OutReign fields
 5. **Review** - Check the preview for any issues
 6. **Import** - Click "Import" to add the leads
 
 ### Common Issues
 
-- **Duplicate Detection**: SalesOS automatically detects duplicates by email
+- **Duplicate Detection**: OutReign automatically detects duplicates by email
 - **Encoding**: Use UTF-8 encoding for special characters
 - **File Size**: Maximum 10MB or 10,000 rows per import
 
@@ -169,7 +169,7 @@ Your sales pipeline represents the journey from lead to closed deal.
 
 ### Default Pipeline Stages
 
-SalesOS comes with these default stages:
+OutReign comes with these default stages:
 1. **Lead** - Initial contact, not yet qualified
 2. **Qualified** - Confirmed fit and interest
 3. **Meeting** - Demo or discovery scheduled
@@ -203,11 +203,11 @@ Currently, pipeline stages are managed through the settings:
     slug: 'configure-email-integration',
     title: 'Configuring Email Integration',
     category: 'getting-started',
-    description: 'Connect your email account to send messages from SalesOS',
+    description: 'Connect your email account to send messages from OutReign',
     content: `
 ## Configuring Email Integration
 
-Connect your Gmail account to send personalized emails directly from SalesOS.
+Connect your Gmail account to send personalized emails directly from OutReign.
 
 ### Connecting Gmail
 
@@ -216,7 +216,7 @@ Connect your Gmail account to send personalized emails directly from SalesOS.
 3. Click **"Connect"**
 4. Sign in with your Google account
 5. Grant the required permissions
-6. Return to SalesOS
+6. Return to OutReign
 
 ### What Permissions Are Needed?
 
@@ -234,7 +234,7 @@ Connect your Gmail account to send personalized emails directly from SalesOS.
 ### Email Limits
 
 - Gmail allows 500 emails per day
-- SalesOS tracks your daily usage
+- OutReign tracks your daily usage
 - Credits are separate from Gmail limits
 
 ### Troubleshooting
@@ -254,11 +254,11 @@ If emails aren't sending:
     slug: 'understanding-dashboard',
     title: 'Understanding Your Dashboard',
     category: 'getting-started',
-    description: 'Navigate the SalesOS dashboard and key features',
+    description: 'Navigate the OutReign dashboard and key features',
     content: `
 ## Understanding Your Dashboard
 
-The SalesOS dashboard is your command center for sales operations.
+The OutReign dashboard is your command center for sales operations.
 
 ### Dashboard Sections
 
@@ -307,7 +307,7 @@ The main dashboard shows:
     content: `
 ## Changing Your Plan
 
-You can upgrade or downgrade your SalesOS subscription at any time.
+You can upgrade or downgrade your OutReign subscription at any time.
 
 ### How to Change Plans
 
@@ -361,7 +361,7 @@ For custom pricing and dedicated support, contact sales@bdotindustries.com
     content: `
 ## Managing Team Members
 
-Collaborate with your team by adding members to your SalesOS workspace.
+Collaborate with your team by adding members to your OutReign workspace.
 
 ### Adding Team Members
 
@@ -468,7 +468,7 @@ Purchase from **Settings → Credits & Usage → Buy Credits**
     content: `
 ## Canceling Your Subscription
 
-You can cancel your SalesOS subscription at any time.
+You can cancel your OutReign subscription at any time.
 
 ### How to Cancel
 
@@ -569,7 +569,7 @@ If a payment fails:
     content: `
 ## Using AI Email Generation
 
-SalesOS AI writes personalized cold emails using proven frameworks.
+OutReign AI writes personalized cold emails using proven frameworks.
 
 ### The 4-Sentence Email Framework
 
@@ -754,21 +754,21 @@ Keep your sales activities synchronized with Google Calendar.
 
 ### What Syncs?
 
-| SalesOS Activity | Google Calendar |
+| OutReign Activity | Google Calendar |
 |------------------|-----------------|
 | Meetings | ✅ Syncs both ways |
 | Calls | ✅ Syncs both ways |
-| Tasks | ✅ One-way (SalesOS → Google) |
-| Follow-ups | ✅ One-way (SalesOS → Google) |
+| Tasks | ✅ One-way (OutReign → Google) |
+| Follow-ups | ✅ One-way (OutReign → Google) |
 
 ### Creating Synced Events
 
-1. Create an activity in SalesOS
+1. Create an activity in OutReign
 2. Select "Add to Calendar"
 3. Activity appears in Google Calendar
 4. Changes sync automatically
 
-### Calendar View in SalesOS
+### Calendar View in OutReign
 
 - Access from **Calendar** in sidebar
 - See all activities in day/week/month view
@@ -860,7 +860,7 @@ Set up weekly email reports in Settings → Notifications
     content: `
 ## CRM Integration Guide
 
-Connect SalesOS with your existing CRM for seamless data sync.
+Connect OutReign with your existing CRM for seamless data sync.
 
 ### Supported CRMs
 
@@ -897,12 +897,12 @@ Connect SalesOS with your existing CRM for seamless data sync.
 | Option | Description |
 |--------|-------------|
 | Two-way | Changes sync both directions |
-| SalesOS → CRM | Push to CRM only |
-| CRM → SalesOS | Pull from CRM only |
+| OutReign → CRM | Push to CRM only |
+| CRM → OutReign | Pull from CRM only |
 
 ### Field Mapping
 
-- Map SalesOS fields to CRM fields
+- Map OutReign fields to CRM fields
 - Create custom field mappings
 - Set default values for missing data
 
@@ -921,21 +921,21 @@ Connect SalesOS with your existing CRM for seamless data sync.
     slug: 'zapier-workflows',
     title: 'Setting Up Zapier Workflows',
     category: 'integrations',
-    description: 'Connect SalesOS to 5000+ apps with Zapier',
+    description: 'Connect OutReign to 5000+ apps with Zapier',
     content: `
 ## Zapier Integration
 
-Connect SalesOS to thousands of apps through Zapier.
+Connect OutReign to thousands of apps through Zapier.
 
 ### Getting Started
 
 1. Create a Zapier account at zapier.com
-2. Search for "SalesOS" in Zapier
+2. Search for "OutReign" in Zapier
 3. Create a new Zap
 
 ### Available Triggers
 
-When these happen in SalesOS:
+When these happen in OutReign:
 - New lead created
 - Lead status changed
 - New deal created
@@ -944,7 +944,7 @@ When these happen in SalesOS:
 
 ### Available Actions
 
-SalesOS can do these:
+OutReign can do these:
 - Create a new lead
 - Update a lead
 - Create a deal
@@ -954,13 +954,13 @@ SalesOS can do these:
 ### Example Zaps
 
 **Lead from Form:**
-Typeform → SalesOS (Create Lead)
+Typeform → OutReign (Create Lead)
 
 **Slack Notification:**
-SalesOS (New Deal) → Slack (Send Message)
+OutReign (New Deal) → Slack (Send Message)
 
 **Spreadsheet Backup:**
-SalesOS (New Lead) → Google Sheets (Add Row)
+OutReign (New Lead) → Google Sheets (Add Row)
 
 ### Setting Up
 
@@ -990,12 +990,12 @@ SalesOS (New Lead) → Google Sheets (Add Row)
     content: `
 ## Google Calendar Integration
 
-Full sync between SalesOS activities and Google Calendar.
+Full sync between OutReign activities and Google Calendar.
 
 ### Prerequisites
 
 - Google account
-- SalesOS Pro plan or higher
+- OutReign Pro plan or higher
 
 ### Setup Steps
 
@@ -1020,11 +1020,11 @@ Full sync between SalesOS activities and Google Calendar.
 ### Using the Integration
 
 #### Create Events
-- Activities created in SalesOS appear in Google
+- Activities created in OutReign appear in Google
 - Include lead/deal info in event description
 
 #### View Events
-- Google events appear in SalesOS Calendar
+- Google events appear in OutReign Calendar
 - Filter by calendar source
 
 #### Update Events
@@ -1050,7 +1050,7 @@ Full sync between SalesOS activities and Google Calendar.
     content: `
 ## Email Provider Setup
 
-Connect your email account to send personalized outreach from SalesOS.
+Connect your email account to send personalized outreach from OutReign.
 
 ### Option 1: Gmail (Recommended)
 
@@ -1202,13 +1202,13 @@ Troubleshoot and fix common lead import problems.
 **Fix:**
 1. Check your field mapping
 2. Ensure required columns have data
-3. Map to correct SalesOS fields
+3. Map to correct OutReign fields
 
 #### "Duplicate entries skipped"
 
 **Cause:** Leads with same email already exist
 
-**This is normal behavior.** SalesOS prevents duplicates by email.
+**This is normal behavior.** OutReign prevents duplicates by email.
 
 **Options:**
 - Skip duplicates (default)
@@ -1486,11 +1486,11 @@ For higher limits:
     slug: 'api-documentation',
     title: 'API Documentation Overview',
     category: 'api',
-    description: 'Getting started with the SalesOS API',
+    description: 'Getting started with the OutReign API',
     content: `
 ## API Documentation Overview
 
-Build powerful integrations with the SalesOS REST API.
+Build powerful integrations with the OutReign REST API.
 
 ### Quick Links
 

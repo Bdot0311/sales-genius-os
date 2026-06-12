@@ -50,7 +50,7 @@ export default function NotificationsTab() {
     try {
       const { data, error } = await supabase.functions.invoke("send-push-notification", {
         body: {
-          title: "SalesOS test notification",
+          title: "OutReign test notification",
           body: "If you can see this, push notifications are working.",
           url: "/dashboard",
         },

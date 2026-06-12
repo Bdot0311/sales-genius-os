@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
   const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const LOVABLE = Deno.env.get("LOVABLE_API_KEY");
   const RESEND = Deno.env.get("RESEND_API_KEY");
-  const FROM = "SalesOS SEO Monitor <noreply@bdotindustries.com>";
+  const FROM = "OutReign SEO Monitor <noreply@bdotindustries.com>";
 
   if (!LOVABLE || !RESEND) return json({ success: false, error: "Email gateway not configured" });
 
@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
         </div>
       </div>
       <div style="padding:16px 24px;background:#f8fafc;font-size:11px;color:#64748b;text-align:center;border-top:1px solid #e5e7eb;">
-        SalesOS SEO Monitor · automated weekly digest
+        OutReign SEO Monitor · automated weekly digest
       </div>
     </div></body></html>`;
 

@@ -80,7 +80,7 @@ serve(async (req) => {
       contact_email: `contact${index + 1}@${company.domain}`,
       industry: company.industry,
       company_size: company.size,
-      source: 'SalesOS',
+      source: 'OutReign',
       job_title: sampleTitles[index % sampleTitles.length],
       lead_status: 'discovered',
       company_website: `https://${company.domain}`,

@@ -10,7 +10,7 @@ Outbound-focused B2B operators who are actively selling: founder-led sales teams
 
 ## Product Purpose
 
-SalesOS removes the dead time between "I know who to target" and "I have a qualified, verified contact with a draft email ready to send." The workflow that matters — ICP → qualified prospects → verified email → personalized first-touch → sent — has always lived across 4+ tools. SalesOS is that workflow, unified. Success looks like an outbound rep going from zero to first-touch sent in under 2 minutes with no tab-switching.
+OutReign removes the dead time between "I know who to target" and "I have a qualified, verified contact with a draft email ready to send." The workflow that matters — ICP → qualified prospects → verified email → personalized first-touch → sent — has always lived across 4+ tools. OutReign is that workflow, unified. Success looks like an outbound rep going from zero to first-touch sent in under 2 minutes with no tab-switching.
 
 ## Brand Personality
 

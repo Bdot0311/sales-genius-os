@@ -59,7 +59,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    console.log('Starting SalesOS Lead Network refresh, batch size:', batch_size);
+    console.log('Starting OutReign Lead Network refresh, batch size:', batch_size);
 
     // Find LeadIndex records not refreshed in 30+ days
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();

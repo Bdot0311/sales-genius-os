@@ -16,10 +16,10 @@ const SectionLoader = () => (
 
 const faqs = [
   { question: "Why look for an Apollo alternative?", answer: "Apollo is powerful but priced and built for full SDR teams running boolean searches across enormous filter sets. Founders and lean outbound teams typically need plain-English search, ICP scoring, and AI drafting in one place — without the seat economics." },
-  { question: "Is SalesOS cheaper than Apollo?", answer: "SalesOS plans start at $0 and top out at $179/month with prospect, enrichment, and outreach included. Apollo's comparable bundles typically run higher once you add data credits and engagement seats." },
-  { question: "Does SalesOS verify emails like Apollo?", answer: "Yes. Every business email is verified via SMTP handshake plus multi-source enrichment before it reaches your list — the same standard Apollo's verified tier offers." },
-  { question: "Can I import my Apollo lists?", answer: "Yes. Export from Apollo as CSV and import into SalesOS. Your ICP scores and outreach drafts are generated on the SalesOS side." },
-  { question: "Do I have to learn boolean search?", answer: "No. SalesOS is built around plain-English ICP descriptions, not boolean filter trees. That is the core difference for non-technical founders and growth teams." },
+  { question: "Is OutReign cheaper than Apollo?", answer: "OutReign plans start at $0 and top out at $179/month with prospect, enrichment, and outreach included. Apollo's comparable bundles typically run higher once you add data credits and engagement seats." },
+  { question: "Does OutReign verify emails like Apollo?", answer: "Yes. Every business email is verified via SMTP handshake plus multi-source enrichment before it reaches your list — the same standard Apollo's verified tier offers." },
+  { question: "Can I import my Apollo lists?", answer: "Yes. Export from Apollo as CSV and import into OutReign. Your ICP scores and outreach drafts are generated on the OutReign side." },
+  { question: "Do I have to learn boolean search?", answer: "No. OutReign is built around plain-English ICP descriptions, not boolean filter trees. That is the core difference for non-technical founders and growth teams." },
 ];
 
 const compareRows: { feature: string; salesos: string | boolean; apollo: string | boolean }[] = [
@@ -45,8 +45,8 @@ const ApolloAlternative = () => {
   return (
     <>
       <SEOHead
-        title="Apollo Alternative for Founders & Lean Sales Teams | SalesOS"
-        description="Looking for an Apollo alternative? SalesOS bundles plain-English lead search, SMTP-verified emails, ICP scoring, and AI outreach from $0. No boolean filters required."
+        title="Apollo Alternative for Founders & Lean Sales Teams | OutReign"
+        description="Looking for an Apollo alternative? OutReign bundles plain-English lead search, SMTP-verified emails, ICP scoring, and AI outreach from $0. No boolean filters required."
         keywords="apollo alternative, apollo.io alternative, apollo io alternative, alternative to apollo, apollo competitors, apollo replacement, instantly alternative, salesloft alternative, outreach alternative"
         ogImage="https://salesos.alephwavex.io/salesos-og.png"
       />
@@ -98,7 +98,7 @@ const ApolloAlternative = () => {
                   className="inline-flex items-center justify-center px-7 py-3 rounded-full font-semibold text-sm text-white transition-opacity hover:opacity-90"
                   style={{ background: "linear-gradient(135deg, hsl(261 75% 60%), hsl(261 75% 50%))" }}
                 >
-                  Try SalesOS free
+                  Try OutReign free
                 </Link>
                 <Link
                   to="/pricing"
@@ -126,7 +126,7 @@ const ApolloAlternative = () => {
                   color: "hsl(0 0% 95%)",
                 }}
               >
-                SalesOS vs Apollo
+                OutReign vs Apollo
               </h2>
               <div
                 className="overflow-x-auto rounded-xl"
@@ -136,7 +136,7 @@ const ApolloAlternative = () => {
                   <thead style={{ background: "hsl(261 75% 50% / 0.06)" }}>
                     <tr>
                       <th className="p-4 text-sm font-semibold" style={{ color: "hsl(0 0% 85%)" }}>Feature</th>
-                      <th className="p-4 text-sm font-semibold text-center" style={{ color: "hsl(261 75% 65%)" }}>SalesOS</th>
+                      <th className="p-4 text-sm font-semibold text-center" style={{ color: "hsl(261 75% 65%)" }}>OutReign</th>
                       <th className="p-4 text-sm font-semibold text-center" style={{ color: "hsl(0 0% 55%)" }}>Apollo</th>
                     </tr>
                   </thead>
@@ -170,7 +170,7 @@ const ApolloAlternative = () => {
                   color: "hsl(0 0% 95%)",
                 }}
               >
-                Who switches to SalesOS
+                Who switches to OutReign
               </h2>
               <ul className="space-y-4">
                 {[

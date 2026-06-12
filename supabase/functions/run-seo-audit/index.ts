@@ -83,7 +83,7 @@ async function runPageSpeed(url: string): Promise<Issue[]> {
 async function crawlPage(url: string): Promise<Issue[]> {
   const issues: Issue[] = [];
   try {
-    const res = await fetch(url, { redirect: "follow", headers: { "User-Agent": "SalesOS-SEO-Monitor/1.0" } });
+    const res = await fetch(url, { redirect: "follow", headers: { "User-Agent": "OutReign-SEO-Monitor/1.0" } });
     if (res.status >= 400) {
       issues.push({
         fingerprint: `crawl:${res.status}:${url}`,

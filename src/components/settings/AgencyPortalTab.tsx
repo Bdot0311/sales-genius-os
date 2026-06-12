@@ -143,7 +143,7 @@ export const AgencyPortalTab = () => {
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          Your clients sign up through your invite link and use the platform <strong>fully branded as your company</strong> — your logo, name, and colors, with no SalesOS branding visible. Set up your branding first in the{" "}
+          Your clients sign up through your invite link and use the platform <strong>fully branded as your company</strong> — your logo, name, and colors, with no OutReign branding visible. Set up your branding first in the{" "}
           <button className="underline font-medium" onClick={() => navigate("/settings?tab=white-label")}>
             White Label tab
           </button>.
@@ -204,7 +204,7 @@ export const AgencyPortalTab = () => {
             Your Platform Invite Link
           </CardTitle>
           <CardDescription>
-            Anyone who signs up via this link will see <strong>your branding only</strong>. They won't know it's built on SalesOS.
+            Anyone who signs up via this link will see <strong>your branding only</strong>. They won't know it's built on OutReign.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -221,7 +221,7 @@ export const AgencyPortalTab = () => {
             </p>
           )}
           <p className="text-xs text-muted-foreground">
-            Revenue split: <span className="font-medium text-green-600">50% to you</span> · 50% to SalesOS.
+            Revenue split: <span className="font-medium text-green-600">50% to you</span> · 50% to OutReign.
             Connect your Stripe account below to receive automatic monthly payouts. For any issues email <a href="mailto:support@bdotindustries.com" className="underline">support@bdotindustries.com</a>.
           </p>
         </CardContent>

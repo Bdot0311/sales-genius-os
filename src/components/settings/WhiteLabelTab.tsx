@@ -260,7 +260,7 @@ export const WhiteLabelTab = () => {
               placeholder="Your Company Name"
             />
             <p className="text-xs text-muted-foreground">
-              This will replace "SalesOS" throughout the dashboard
+              This will replace "OutReign" throughout the dashboard
             </p>
           </div>
 

@@ -12,9 +12,9 @@ const Security = () => {
   return (
     <>
       <SEOHead
-        title="Security Practices & Data Protection - Enterprise Grade | SalesOS"
-        description="Learn about SalesOS security practices. Enterprise-grade data protection with encryption, SOC 2 compliance, GDPR/CCPA compliance, and 24/7 monitoring."
-        keywords="SalesOS security, data encryption, SOC 2, GDPR compliance, enterprise security, data protection"
+        title="Security Practices & Data Protection - Enterprise Grade | OutReign"
+        description="Learn about OutReign security practices. Enterprise-grade data protection with encryption, SOC 2 compliance, GDPR/CCPA compliance, and 24/7 monitoring."
+        keywords="OutReign security, data encryption, SOC 2, GDPR compliance, enterprise security, data protection"
         ogImage="https://salesos.alephwavex.io/salesos-og.png"
       />
       <BreadcrumbSchema items={[
@@ -80,7 +80,7 @@ const Security = () => {
                     filter: "url(#c3-noise)",
                   }}
                 >
-                  SalesOS
+                  OutReign
                 </span>
               </h1>
               <p className="text-lg max-w-2xl" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
@@ -105,14 +105,14 @@ const Security = () => {
                     "Email bodies and reply content are never used to train AI models, shared with advertisers, or sold",
                     "AI drafting calls send only the minimum prompt context required and run through privacy-respecting model providers (no training on customer data)",
                     "Disconnect a mailbox at any time — tokens are revoked and stored copies of message metadata become inaccessible",
-                    "We do not read your inbox; sync is limited to threads tied to outreach you sent through SalesOS",
+                    "We do not read your inbox; sync is limited to threads tied to outreach you sent through OutReign",
                   ],
                 },
                 {
                   Icon: Lock,
                   id: "encryption",
                   title: "Data Encryption",
-                  body: "All data transmitted to and from SalesOS is encrypted using industry-standard TLS 1.3 protocol. Data at rest is encrypted using AES-256 encryption.",
+                  body: "All data transmitted to and from OutReign is encrypted using industry-standard TLS 1.3 protocol. Data at rest is encrypted using AES-256 encryption.",
                   items: ["End-to-end encryption for sensitive data", "Encrypted backups and disaster recovery", "Secure key management practices"],
                 },
                 {

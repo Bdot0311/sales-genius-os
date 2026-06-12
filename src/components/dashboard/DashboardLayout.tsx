@@ -190,12 +190,12 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 <img src={whiteLabelSettings.logo_url} alt={whiteLabelSettings.company_name || "Logo"} className="h-8" />
               ) : (
                 <>
-                  <img src={salesosLogo} alt="SalesOS Logo" className="w-8 h-8 rounded-lg flex-shrink-0" />
+                  <img src={salesosLogo} alt="OutReign Logo" className="w-8 h-8 rounded-lg flex-shrink-0" />
                   {!sidebarCollapsed && (
                     whiteLabelSettings?.company_name
                       ? <span className="text-xl font-semibold">{whiteLabelSettings.company_name}</span>
                       : <span className="text-xl font-semibold">
-                          <span className="text-foreground">Sales</span><span className="text-primary">OS</span>
+                          <span className="text-foreground">Out</span><span className="text-primary">Reign</span>
                         </span>
                   )}
                 </>

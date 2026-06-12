@@ -191,7 +191,7 @@ const HelpCenter = () => {
       <HelpCanvas>
         <SEOHead
           title={`Search: ${searchQuery} - Help Center`}
-          description={`Search results for "${searchQuery}" in SalesOS Help Center`}
+          description={`Search results for "${searchQuery}" in OutReign Help Center`}
           canonicalUrl="https://salesos.alephwavex.io/help"
         />
         <main className="flex-1 pt-28 sm:pt-32 pb-16 container mx-auto px-5 sm:px-6">
@@ -271,9 +271,9 @@ const HelpCenter = () => {
   return (
     <HelpCanvas>
       <SEOHead
-        title="Help Center - SalesOS Support & Documentation"
-        description="Get instant answers to your SalesOS questions. Browse guides, troubleshooting tips, API documentation, and contact our support team."
-        keywords="SalesOS help, support, documentation, guides, troubleshooting, FAQ"
+        title="Help Center - OutReign Support & Documentation"
+        description="Get instant answers to your OutReign questions. Browse guides, troubleshooting tips, API documentation, and contact our support team."
+        keywords="OutReign help, support, documentation, guides, troubleshooting, FAQ"
         ogImage="https://salesos.alephwavex.io/salesos-og.png"
       />
       <BreadcrumbSchema
@@ -349,7 +349,7 @@ const HelpCenter = () => {
                 </span>
               </h1>
               <p className="text-base sm:text-lg text-white/60 mb-8 max-w-xl mx-auto">
-                Guides, documentation, and answers to get the most out of SalesOS.
+                Guides, documentation, and answers to get the most out of OutReign.
               </p>
               <HelpSearch className="max-w-2xl mx-auto w-full" />
             </div>
@@ -474,7 +474,7 @@ const HelpCenter = () => {
         >
           <div className="container mx-auto px-5 sm:px-6">
             <p className="mb-5 text-center text-[10px] uppercase tracking-[0.25em] text-white/70">
-              Explore SalesOS
+              Explore OutReign
             </p>
             <nav aria-label="Related pages">
               <ul className="flex flex-wrap justify-center gap-x-8 gap-y-3 text-sm">

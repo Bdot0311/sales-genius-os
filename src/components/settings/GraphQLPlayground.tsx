@@ -130,7 +130,7 @@ export const GraphQLPlayground = () => {
         <CardHeader>
           <CardTitle>GraphQL Playground</CardTitle>
           <CardDescription>
-            Test GraphQL queries against your SalesOS data
+            Test GraphQL queries against your OutReign data
           </CardDescription>
         </CardHeader>
         <CardContent>

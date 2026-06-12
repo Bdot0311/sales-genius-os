@@ -85,7 +85,7 @@ export const ProblemSection = () => {
             transition={{ duration: 0.55, ease, delay: 0.38 }}
           >
             Most outbound teams spend more time building lists than running calls.
-            SalesOS cuts the research from 2+ hours to under 20 minutes, with every
+            OutReign cuts the research from 2+ hours to under 20 minutes, with every
             contact verified before it ever reaches your queue.
           </motion.p>
 

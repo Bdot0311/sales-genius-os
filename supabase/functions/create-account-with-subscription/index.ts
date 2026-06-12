@@ -140,14 +140,14 @@ serve(async (req) => {
                 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="540" bgcolor="#141414" style="max-width: 540px; background-color: #141414; border-radius: 16px; border: 1px solid #2a2a2a;">
                   <tr>
                     <td bgcolor="#9b6dff" align="center" style="background: linear-gradient(135deg, #9b6dff 0%, #7c3aed 100%); padding: 32px 40px; border-radius: 16px 16px 0 0;">
-                      <img src="${logoUrl}" alt="SalesOS" width="56" height="56" style="display: block; border-radius: 12px; margin-bottom: 16px;" />
-                      <h1 style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">Welcome to SalesOS!</h1>
+                      <img src="${logoUrl}" alt="OutReign" width="56" height="56" style="display: block; border-radius: 12px; margin-bottom: 16px;" />
+                      <h1 style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">Welcome to OutReign!</h1>
                     </td>
                   </tr>
                   <tr>
                     <td bgcolor="#141414" style="background-color: #141414; padding: 40px 36px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
                       <p style="color: #a1a1aa; line-height: 1.7; margin: 0 0 28px 0; font-size: 16px;">
-                        Thank you for choosing SalesOS. Your subscription has been activated and your account is ready to use.
+                        Thank you for choosing OutReign. Your subscription has been activated and your account is ready to use.
                       </p>
                       <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#1a1a1a" style="background-color: #1a1a1a; border-radius: 12px; border: 1px solid #2a2a2a; border-left: 4px solid #9b6dff; margin-bottom: 28px;">
                         <tr>
@@ -199,11 +199,11 @@ serve(async (req) => {
         payload: {
           message_id: crypto.randomUUID(),
           to: email,
-          from: 'SalesOS <noreply@notify.bdotindustries.com>',
+          from: 'OutReign <noreply@notify.bdotindustries.com>',
           sender_domain: 'notify.bdotindustries.com',
-          subject: 'Welcome to SalesOS - Your Account Credentials',
+          subject: 'Welcome to OutReign - Your Account Credentials',
           html: credentialsHtml,
-          text: `Welcome to SalesOS! Email: ${email}, Temporary Password: ${tempPassword}. Sign in at ${appUrl}/auth. Please change your password after first login.`,
+          text: `Welcome to OutReign! Email: ${email}, Temporary Password: ${tempPassword}. Sign in at ${appUrl}/auth. Please change your password after first login.`,
           purpose: 'transactional',
           label: 'account-credentials',
           idempotency_key: `account-creds-${userData.user?.id}-${Date.now()}`,

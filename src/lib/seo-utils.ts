@@ -1,4 +1,4 @@
-// SEO Utility Functions for SalesOS
+// SEO Utility Functions for OutReign
 // Canonical domain for all absolute URLs
 export const CANONICAL_DOMAIN = 'https://salesos.alephwavex.io';
 
@@ -80,7 +80,7 @@ export function truncateText(text: string, maxLength: number): string {
 /**
  * Generate page title with site name suffix
  */
-export function formatPageTitle(title: string, siteName = 'SalesOS'): string {
+export function formatPageTitle(title: string, siteName = 'OutReign'): string {
   if (title.toLowerCase().includes(siteName.toLowerCase())) {
     return title;
   }

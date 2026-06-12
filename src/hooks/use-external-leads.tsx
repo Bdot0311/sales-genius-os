@@ -125,7 +125,7 @@ export function useExternalLeads() {
       ) {
         toast({
           title: 'Search Credits Exhausted',
-          description: 'Your SalesOS search credits have been used up. Contact support or add more credits to continue searching.',
+          description: 'Your OutReign search credits have been used up. Contact support or add more credits to continue searching.',
           variant: 'destructive',
           duration: 10000,
         });
@@ -241,7 +241,7 @@ export function useExternalLeads() {
             linkedin_url: lead.linkedin_url,
             country: lead.country,
             lead_status: 'active',
-            source: 'SalesOS',
+            source: 'OutReign',
           })
           .select('id')
           .single();
@@ -280,7 +280,7 @@ export function useExternalLeads() {
           job_title: lead.job_title,
           linkedin_url: lead.linkedin_url,
           company_website: lead.company_domain ? `https://${lead.company_domain}` : undefined,
-          source: 'SalesOS',
+          source: 'OutReign',
           lead_status: 'active',
           icp_score: lead.scores.overall_score,
           enrichment_status: 'enriched',

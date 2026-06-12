@@ -12,15 +12,15 @@ serve(async (req) => {
 
   const today = new Date().toISOString().split('T')[0];
 
-  const content = `# SalesOS - Find Leads That Actually Convert
+  const content = `# OutReign - Find Leads That Actually Convert
 # https://salesos.alephwavex.io
 # Last Updated: ${today}
 
-> SalesOS is an AI-powered lead discovery platform that helps B2B sales teams find and convert high-quality leads. Describe your ideal customer in plain English, get ranked matches with enriched profiles. Your first lead in under 2 minutes.
+> OutReign is an AI-powered lead discovery platform that helps B2B sales teams find and convert high-quality leads. Describe your ideal customer in plain English, get ranked matches with enriched profiles. Your first lead in under 2 minutes.
 
-## About SalesOS
+## About OutReign
 
-SalesOS is a comprehensive sales automation platform designed for SaaS companies and B2B sales teams. The platform combines AI-powered lead scoring, intelligent email automation, visual pipeline management, and real-time sales coaching to help teams increase close rates and revenue.
+OutReign is a comprehensive sales automation platform designed for SaaS companies and B2B sales teams. The platform combines AI-powered lead scoring, intelligent email automation, visual pipeline management, and real-time sales coaching to help teams increase close rates and revenue.
 
 ## How It Works
 
@@ -47,7 +47,7 @@ SalesOS is a comprehensive sales automation platform designed for SaaS companies
 
 ## Pricing
 
-SalesOS offers five pricing tiers:
+OutReign offers five pricing tiers:
 - **Free**: $0/forever - Explore the platform with view-only dashboard access. No credit card required.
 - **Starter**: $39/month - 1,000 verified prospects/month, 100/day limit, prospect search, verified email data, AI email generator.
 - **Growth**: $89/month - 2,500 verified prospects/month, 250/day limit, advanced filters, bulk export, unified inbox.
@@ -76,7 +76,7 @@ All paid plans include a 14-day free trial. Save ~20% with annual billing. No cr
 
 ## Integrations
 
-SalesOS connects with:
+OutReign connects with:
 - Google Workspace (Gmail, Calendar, Drive)
 - Slack
 - Calendly
@@ -106,7 +106,7 @@ For sales inquiries or support, visit our help center at https://salesos.alephwa
 - Security: SOC 2 Type II compliant, GDPR compliant, encrypted data at rest and in transit
 
 ---
-This file helps AI assistants and LLMs understand SalesOS for accurate information retrieval.
+This file helps AI assistants and LLMs understand OutReign for accurate information retrieval.
 For the most current information, always refer to: https://salesos.alephwavex.io/
 `;
 
