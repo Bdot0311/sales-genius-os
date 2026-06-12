@@ -32,12 +32,15 @@ serve(async (req) => {
 
   try {
     const { priceId } = await req.json();
-    
-    if (!priceId) {
-      throw new Error('Price ID is required');
+
+    if (!priceId || typeof priceId !== 'string' || !(priceId in planMap)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid price ID' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
     }
 
-    const planName = planMap[priceId] || 'growth';
+    const planName = planMap[priceId];
 
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', { 
       apiVersion: '2025-08-27.basil' 
