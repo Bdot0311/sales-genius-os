@@ -83,7 +83,7 @@ const Index = () => {
           muted
           loop
           playsInline
-          preload="auto"
+          preload="metadata"
           disablePictureInPicture
           disableRemotePlayback
           controls={false}
