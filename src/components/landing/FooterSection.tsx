@@ -37,8 +37,8 @@ export const FooterSection = () => {
                   height={32}
                 />
                 <span className="text-lg font-semibold">
-                  <span style={{ color: "hsl(0 0% 92%)" }}>Sales</span>
-                  <span style={{ color: "hsl(261 75% 65%)" }}>OS</span>
+                  <span style={{ color: "hsl(0 0% 92%)" }}>Out</span>
+                  <span style={{ color: "hsl(261 75% 65%)" }}>Reign</span>
                 </span>
               </div>
               <p className="text-sm max-w-xs leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
