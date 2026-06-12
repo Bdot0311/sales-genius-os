@@ -36,15 +36,15 @@ serve(async (req) => {
 
     const token = authHeader.replace('Bearer ', '');
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
+    if (userError) throw new Error(`auth: ${userError.message}`);
     const user = userData.user;
-    if (!user?.email) throw new Error('User not authenticated or email not available');
+    if (!user?.email) throw new Error('auth: not authenticated');
     logStep('User authenticated', { userId: user.id, email: user.email });
 
     const stripe = new Stripe(stripeKey, { apiVersion: '2025-08-27.basil' });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     if (customers.data.length === 0) {
-      throw new Error('No Stripe customer found for this user');
+      throw new Error('no_customer');
     }
     const customerId = customers.data[0].id;
     logStep('Found Stripe customer', { customerId });
@@ -63,9 +63,11 @@ serve(async (req) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep('ERROR in customer-portal', { message: errorMessage });
-    return new Response(JSON.stringify({ error: errorMessage }), {
+    const isAuth = errorMessage.startsWith('auth:') || errorMessage.includes('Authentication') || errorMessage.includes('not authenticated');
+    const clientMsg = isAuth ? 'Authentication required' : 'Unable to open billing portal';
+    return new Response(JSON.stringify({ error: clientMsg }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
+      status: isAuth ? 401 : 500,
     });
   }
 });
