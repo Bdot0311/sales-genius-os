@@ -2,6 +2,22 @@
 // Canonical domain for all absolute URLs
 export const CANONICAL_DOMAIN = 'https://salesos.alephwavex.io';
 
+// Social card cache-buster. Bump this whenever the social image or
+// social metadata (og:title/og:description/og:image) changes so that
+// X/Facebook/LinkedIn re-scrape instead of serving a stale preview.
+export const SOCIAL_CARD_VERSION = '4';
+
+/**
+ * Append the social card version as a `?v=` query param to a URL.
+ * Used on og:image / twitter:image so cache layers (and X's scraper)
+ * treat a bumped version as a brand-new URL.
+ */
+export function withSocialVersion(url: string, version: string = SOCIAL_CARD_VERSION): string {
+  if (!url) return url;
+  const sep = url.includes('?') ? '&' : '?';
+  return `${url}${sep}v=${version}`;
+}
+
 // Query params to strip from canonical URLs (tracking/duplicate content)
 const TRACKING_PARAMS = [
   'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',

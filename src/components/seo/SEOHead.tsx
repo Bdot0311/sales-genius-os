@@ -6,6 +6,8 @@ import {
   calculateReadingTime,
   formatSchemaDate,
   shouldIndexPage,
+  withSocialVersion,
+  SOCIAL_CARD_VERSION,
   CANONICAL_DOMAIN 
 } from '@/lib/seo-utils';
 
@@ -104,7 +106,11 @@ export const SEOHead = ({
     : typeof author === 'string' 
       ? [{ name: author }]
       : [author];
-  
+
+  // Cache-bust social images so scrapers (X, LinkedIn, Facebook) treat
+  // a bumped SOCIAL_CARD_VERSION as a brand-new URL and re-fetch.
+  const versionedOgImage = withSocialVersion(ogImage);
+
   // React 19 renders head elements directly - they are hoisted automatically
   return (
     <>
@@ -134,7 +140,10 @@ export const SEOHead = ({
       <meta property="og:url" content={fullCanonicalUrl} />
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={safeDescription} />
-      <meta property="og:image" content={ogImage} />
+      <meta property="og:image" content={versionedOgImage} />
+      <meta property="og:image:secure_url" content={versionedOgImage} />
+      <meta property="og:image:type" content="image/jpeg" />
+      <meta property="og:updated_time" content={String(SOCIAL_CARD_VERSION)} />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
       <meta property="og:image:alt" content="OutReign — Find who to sell to. Then actually sell to them." />
@@ -165,7 +174,7 @@ export const SEOHead = ({
       <meta name="twitter:creator" content="@salesos" />
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={safeDescription} />
-      <meta name="twitter:image" content={ogImage} />
+      <meta name="twitter:image" content={versionedOgImage} />
       <meta name="twitter:image:alt" content="OutReign — Find who to sell to. Then actually sell to them." />
       
       {/* Reading time for articles */}
