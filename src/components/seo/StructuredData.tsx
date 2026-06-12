@@ -78,7 +78,7 @@ export const OrganizationSchema = ({
   name = "OutReign",
   description = "OutReign is a B2B lead discovery and outbound email platform. Describe your ideal customer in plain English, get ranked prospects with SMTP-verified emails, and send AI-drafted first-touch emails — all from one workflow.",
   url = BASE_URL,
-  logo = "https://salesos.alephwavex.io/salesos-logo.webp"
+  logo = "https://outreign.io/outreign-logo.webp"
 }: OrganizationSchemaProps) => {
   const schema = {
     "@context": "https://schema.org",
@@ -158,7 +158,7 @@ export const SoftwareApplicationSchema = () => {
     "description": "OutReign turns your ICP into ranked prospects with SMTP-verified contact data and AI-drafted first-touch emails — in under 2 minutes. Describe your ideal customer in plain English: no boolean search, no list building, no manual scoring.",
     "url": BASE_URL,
     "downloadUrl": `${BASE_URL}/auth`,
-    "screenshot": "https://salesos.alephwavex.io/salesos-og.png",
+    "screenshot": "https://outreign.io/salesos-og.png",
     "offers": {
       "@type": "AggregateOffer",
       "lowPrice": "0",
@@ -253,7 +253,7 @@ export const ProductSchema = ({ name, description, price, priceCurrency = "USD" 
     "brand": {
       "@type": "Brand",
       "name": "OutReign",
-      "logo": "https://salesos.alephwavex.io/salesos-logo.webp"
+      "logo": "https://outreign.io/outreign-logo.webp"
     },
     "offers": {
       "@type": "Offer",

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
-import salesosLogo from "@/assets/salesos-logo.webp";
+import outReignLogo from "@/assets/outreign-logo.webp";
 
 import {
   Dialog,
@@ -296,7 +296,7 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
             style={{ animationDelay: '0.1s', animationFillMode: 'both' }}
           >
             <img 
-              src={salesosLogo} 
+              src={outReignLogo} 
               alt="OutReign product logo"
 
               className="w-10 h-10 transition-transform duration-300 hover:scale-110"

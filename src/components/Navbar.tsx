@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 
 // Use public path for maximum compatibility across all devices
-const LOGO_URL = "/salesos-logo-small.webp";
+const LOGO_URL = "/outreign-logo-small.webp";
 
 export const Navbar = () => {
   const navigate = useNavigate();

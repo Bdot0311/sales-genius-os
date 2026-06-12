@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import salesosLogo from "@/assets/salesos-logo-64.webp";
+import outReignLogo from "@/assets/outreign-logo-64.webp";
 import {
   LayoutDashboard,
   Users,
@@ -190,7 +190,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 <img src={whiteLabelSettings.logo_url} alt={whiteLabelSettings.company_name || "Logo"} className="h-8" />
               ) : (
                 <>
-                  <img src={salesosLogo} alt="OutReign Logo" className="w-8 h-8 rounded-lg flex-shrink-0" />
+                  <img src={outReignLogo} alt="OutReign Logo" className="w-8 h-8 rounded-lg flex-shrink-0" />
                   {!sidebarCollapsed && (
                     whiteLabelSettings?.company_name
                       ? <span className="text-xl font-semibold">{whiteLabelSettings.company_name}</span>
