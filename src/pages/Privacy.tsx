@@ -12,7 +12,7 @@ const Privacy = () => {
         title="Privacy Policy - Data Protection & GDPR Compliance | OutReign"
         description="Learn how OutReign collects, uses, and protects your personal data. We're committed to transparency and GDPR/CCPA compliance."
         keywords="OutReign privacy policy, data protection, GDPR compliance, CCPA compliance, personal data"
-        ogImage="https://salesos.alephwavex.io/salesos-og.png"
+        ogImage="https://salesos.alephwavex.io/outreign-og.png"
       />
       <BreadcrumbSchema items={[
         { name: "Home", url: "https://salesos.alephwavex.io" },

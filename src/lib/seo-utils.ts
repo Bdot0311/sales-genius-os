@@ -180,7 +180,7 @@ export function shouldIndexPage(path: string): boolean {
  * OG Image URL - returns page-specific or default
  */
 export function getOGImageUrl(pageName?: string): string {
-  const defaultOG = 'https://salesos.alephwavex.io/salesos-og.png';
+  const defaultOG = 'https://salesos.alephwavex.io/outreign-og.png';
   
   // Add custom OG images here as they're created
   const ogImages: Record<string, string> = {
