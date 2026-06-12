@@ -301,7 +301,9 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
 
               className="w-10 h-10 transition-transform duration-300 hover:scale-110" 
             />
-            <span className="text-2xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">SalesOS</span>
+            <span className="text-2xl font-semibold">
+              <span className="text-foreground">Sales</span><span className="text-primary">OS</span>
+            </span>
           </div>
           <h2 
             className="text-2xl font-bold mb-2 animate-fade-in"

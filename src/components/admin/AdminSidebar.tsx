@@ -40,7 +40,9 @@ export function AdminSidebar() {
             </div>
             {open && (
               <div>
-                <h2 className="font-bold text-lg">SalesOS</h2>
+                <h2 className="font-semibold text-lg">
+                  <span className="text-foreground">Sales</span><span className="text-primary">OS</span>
+                </h2>
                 <p className="text-xs text-muted-foreground">Admin Panel</p>
               </div>
             )}
