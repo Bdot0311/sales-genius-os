@@ -174,7 +174,7 @@ export const SEOHead = ({
       <meta name="twitter:creator" content="@salesos" />
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={safeDescription} />
-      <meta name="twitter:image" content={ogImage} />
+      <meta name="twitter:image" content={versionedOgImage} />
       <meta name="twitter:image:alt" content="OutReign — Find who to sell to. Then actually sell to them." />
       
       {/* Reading time for articles */}
