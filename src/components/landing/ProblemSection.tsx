@@ -84,9 +84,9 @@ export const ProblemSection = () => {
             viewport={{ once: true, margin: "-10% 0px" }}
             transition={{ duration: 0.55, ease, delay: 0.38 }}
           >
-            Most outbound teams spend more time building lists than running calls.
-            OutReign cuts the research from 2+ hours to under 20 minutes, with every
-            contact verified before it ever reaches your queue.
+            The typical SDR spends 2+ hours building a list before sending a single email.
+            OutReign collapses that to under 20 minutes, with every contact verified
+            before it reaches your queue.
           </motion.p>
 
           <motion.div

@@ -134,32 +134,32 @@ const AgentFeedPreview = ({ visible }: { visible: boolean }) => {
 const capabilities = [
   {
     icon: "📬",
-    title: "Monitors your inbox",
+    title: "Never miss a hot reply",
     desc: "Reads every reply from active prospects across Gmail threads, around the clock.",
   },
   {
     icon: "🧠",
-    title: "Classifies intent",
+    title: "Know who's ready before you do",
     desc: "Interest, objection, meeting request, unsubscribe. Always knows what's what.",
   },
   {
     icon: "✍️",
-    title: "Writes & sends replies",
-    desc: "Uses your persona, tone, and value props to craft replies that sound like you.",
+    title: "Replies that sound like you",
+    desc: "Uses your persona, tone, and value props to craft replies that move conversations forward.",
   },
   {
     icon: "📅",
-    title: "Books meetings",
+    title: "Books meetings automatically",
     desc: "Sends your Calendly link the moment a prospect asks for a call.",
   },
   {
     icon: "🛡️",
-    title: "Handles objections",
+    title: "Objections answered, deals saved",
     desc: "Responds to common objections using playbooks you define. No hallucinations, no drift.",
   },
   {
     icon: "⚙️",
-    title: "Fully configurable",
+    title: "You control what it does",
     desc: "Set daily reply limits, delay windows, and which actions are fully autonomous.",
   },
 ];
