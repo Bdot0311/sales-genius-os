@@ -1,5 +1,5 @@
 # OutReign Robots.txt
-# https://outreign.lovable.app/robots.txt
+# https://outreign.io/robots.txt
 # Optimized for SEO and AI Search Engines (AEO)
 
 # Main Search Engine Crawlers
@@ -149,7 +149,7 @@ Allow: /llms.txt
 Allow: /llms-full.txt
 
 # Sitemap location
-Sitemap: https://outreign.lovable.app/sitemap.xml
+Sitemap: https://outreign.io/sitemap.xml
 
 # LLMs.txt for AI crawlers (emerging standard)
 # Provides structured context for LLMs to understand the site
