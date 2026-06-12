@@ -339,7 +339,7 @@ export const AISdrSection = () => {
                     {["hsl(0 70% 55% / 0.5)", "hsl(45 90% 55% / 0.5)", "hsl(142 60% 50% / 0.5)"].map((bg, i) => (
                       <div key={i} className="w-2.5 h-2.5 rounded-full" style={{ background: bg }} />
                     ))}
-                    <span className="ml-2 text-[11px] font-medium" style={{ color: "hsl(0 0% 100% / 0.2)" }}>
+                    <span className="ml-2 text-[11px] font-medium" style={{ color: "hsl(0 0% 100% / 0.55)" }}>
                       OutReign — AI SDR · Activity Feed
                     </span>
                   </div>
@@ -366,7 +366,7 @@ export const AISdrSection = () => {
               </div>
 
               {/* Caption below preview */}
-              <p className="text-center text-xs mt-4" style={{ color: "hsl(0 0% 100% / 0.3)" }}>
+              <p className="text-center text-xs mt-4" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
                 Simulated preview — connects to your real Gmail inbox
               </p>
             </div>
