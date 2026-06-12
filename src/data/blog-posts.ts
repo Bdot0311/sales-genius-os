@@ -616,7 +616,7 @@ The math is simple — assign weights to your ICP criteria (company stage = 30%,
 A bounced email is worse than a deleted one. Bounces above ~5% degrade your sender reputation; above 10% and your domain starts landing in spam for everyone. Two safeguards:
 
 1. **SMTP verification** at list-build time. Catches dead inboxes, role aliases, and obvious typos before they hit your sequence.
-2. **A separate sending domain** for cold outbound. Never burn your primary business domain. Use a near-match (e.g. `getacme.com` if your primary is `acme.com`) with SPF, DKIM, and DMARC set up correctly.
+2. **A separate sending domain** for cold outbound. Never burn your primary business domain. Use a near-match (e.g. "getacme.com" if your primary is "acme.com") with SPF, DKIM, and DMARC set up correctly.
 
 Tools like OutReign verify emails as part of the search workflow, so you don't ship unverified addresses into your sequence.
 
