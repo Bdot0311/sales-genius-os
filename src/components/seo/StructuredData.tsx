@@ -1,4 +1,4 @@
-const BASE_URL = 'https://salesos.alephwavex.io';
+const BASE_URL = 'https://outreign.io';
 
 interface FAQItem {
   question: string;
@@ -97,8 +97,8 @@ export const OrganizationSchema = ({
     },
     "image": logo,
     "sameAs": [
-      "https://twitter.com/salesos",
-      "https://www.linkedin.com/company/salesos",
+      "https://twitter.com/outreign",
+      "https://www.linkedin.com/company/outreign",
       "https://www.linkedin.com/in/buildwitbrandon"
     ],
     "contactPoint": [
