@@ -36,7 +36,7 @@ interface SEOHeadProps {
   articleContent?: string; // For reading time calculation
 }
 
-const DEFAULT_OG_IMAGE = 'https://salesos.alephwavex.io/outreign-og.png';
+const DEFAULT_OG_IMAGE = 'https://outreign.io/outreign-social-card.jpg';
 
 export const SEOHead = ({
   title = "OutReign — B2B Lead Discovery & AI Outreach Platform",
