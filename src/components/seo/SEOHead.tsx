@@ -40,7 +40,7 @@ const DEFAULT_OG_IMAGE = 'https://salesos.alephwavex.io/salesos-og.png';
 
 export const SEOHead = ({
   title = "OutReign — B2B Lead Discovery & AI Outreach Platform",
-  description = "Describe your ideal customer in plain English. OutReign returns ranked B2B prospects with SMTP-verified emails and an AI-drafted first-touch message — in under 2 minutes.",
+  description = "Describe your ideal customer in plain English. OutReign returns ranked B2B prospects with verified emails and AI-drafted outreach in under 2 minutes.",
   canonicalUrl,
   ogImage = DEFAULT_OG_IMAGE,
   ogType = "website",
