@@ -18,7 +18,7 @@ const Blog = () => {
         title="OutReign Blog — Outbound Sales for Founders & B2B Teams"
         description="Practical guides on B2B lead generation, ICP scoring, cold email, and outbound sales for founders and small SDR teams."
         keywords="B2B lead generation tips, outbound sales for founders, cold email guides, ICP scoring, sales prospecting"
-        ogImage="https://salesos.alephwavex.io/salesos-og.png"
+        ogImage="https://salesos.alephwavex.io/outreign-og.png"
       />
       <BreadcrumbSchema items={[
         { name: "Home", url: "https://salesos.alephwavex.io" },
