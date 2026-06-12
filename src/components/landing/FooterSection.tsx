@@ -1,4 +1,4 @@
-import salesosLogo from "@/assets/salesos-logo.webp";
+import outReignLogo from "@/assets/outreign-logo.webp";
 import { Link } from "react-router-dom";
 
 const footerLinks = {
@@ -30,7 +30,7 @@ export const FooterSection = () => {
             <div className="lg:col-span-2">
               <div className="flex items-center gap-2.5 mb-4">
                 <img 
-                  src={salesosLogo} 
+                  src={outReignLogo} 
                   alt="OutReign Logo"
                   className="w-8 h-8 rounded-lg"
                   width={32}

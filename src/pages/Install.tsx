@@ -14,7 +14,7 @@ import {
   Check,
   Monitor,
 } from "lucide-react";
-import salesosLogo from "@/assets/salesos-logo-64.webp";
+import outReignLogo from "@/assets/outreign-logo-64.webp";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -101,7 +101,7 @@ const Install = () => {
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)} aria-label="Go back">
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <img src={salesosLogo} alt="OutReign product logo" className="w-8 h-8 rounded-lg" />
+          <img src={outReignLogo} alt="OutReign product logo" className="w-8 h-8 rounded-lg" />
 
           <span className="text-lg font-bold">Install OutReign</span>
         </div>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Search, Mail, BarChart3, TrendingUp, Target, MessageSquare, Brain } from "lucide-react";
-import logoSmall from "@/assets/salesos-logo-64.webp";
+import logoSmall from "@/assets/outreign-logo-64.webp";
 
 const StaticNumber = ({ value, suffix = "" }: { value: number; suffix?: string }) => (
   <span>{value}{suffix}</span>
