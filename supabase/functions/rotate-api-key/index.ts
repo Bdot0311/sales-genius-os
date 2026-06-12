@@ -121,8 +121,15 @@ serve(async (req) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR", { message: errorMessage });
+    const safeErrors: Record<string, string> = {
+      "No authorization header": "Authentication required",
+      "User not authenticated": "Authentication failed",
+      "API key not found": "API key not found",
+      "Old key ID is required": "Key ID is required",
+    };
+    const clientMessage = safeErrors[errorMessage] ?? "Failed to rotate API key";
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: clientMessage }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,

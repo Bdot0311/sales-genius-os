@@ -64,7 +64,7 @@ export const HeroSection = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease }}
         >
-          <span className="inline-flex max-w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[11px] leading-tight text-white/60 sm:flex-nowrap sm:gap-2.5 sm:px-4 sm:text-xs">
+          <span className="inline-flex max-w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[11px] leading-tight text-white/85 sm:flex-nowrap sm:gap-2.5 sm:px-4 sm:text-xs">
             <span className="relative flex h-1.5 w-1.5 shrink-0">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-75" />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-violet-500" />
@@ -81,15 +81,10 @@ export const HeroSection = () => {
           className="font-display mb-5 max-w-[13ch] text-balance sm:mb-8 sm:max-w-none"
           style={{ fontSize: "clamp(2.05rem, 6.4vw, 5.25rem)", lineHeight: 1.02, letterSpacing: "-0.01em", fontWeight: 800 }}
         >
-          <motion.span
-            className="block text-white"
-            initial={{ opacity: 0, y: 32 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ type: "spring", stiffness: 60, damping: 18, delay: 0.1 }}
-          >
+          <span className="block text-white">
             Find who to sell to.
-          </motion.span>
-          <motion.span
+          </span>
+          <span
             className="block font-display italic animate-shiny"
             style={{
               fontStyle: "italic",
@@ -101,12 +96,9 @@ export const HeroSection = () => {
               backgroundClip: "text",
               filter: "url(#c3-noise)",
             }}
-            initial={{ opacity: 0, y: 32 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ type: "spring", stiffness: 60, damping: 18, delay: 0.24 }}
           >
             Then close them.
-          </motion.span>
+          </span>
         </h1>
 
         {/* Subhead */}
@@ -142,9 +134,10 @@ export const HeroSection = () => {
             href="/demo"
             className="inline-flex h-11 items-center justify-center gap-1.5 px-5 text-sm text-white/85 transition-colors duration-200 hover:text-white sm:h-[52px]"
             whileHover={{ x: 3 }}
+            aria-label="Watch the OutReign product walkthrough"
           >
-            See how it works
-            <ArrowRight className="h-3.5 w-3.5 ml-0.5" />
+            Watch OutReign product walkthrough
+            <ArrowRight className="h-3.5 w-3.5 ml-0.5" aria-hidden="true" />
           </motion.a>
         </motion.div>
 
@@ -170,12 +163,12 @@ export const HeroSection = () => {
         transition={{ duration: 0.6, delay: 1.1 }}
         aria-hidden="true"
       >
-        <span className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-medium">scroll</span>
+        <span className="text-[10px] uppercase tracking-[0.2em] text-white/70 font-medium">scroll</span>
         <motion.div
           animate={{ y: [0, 5, 0] }}
           transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
         >
-          <ChevronDown className="h-4 w-4 text-white/30" />
+          <ChevronDown className="h-4 w-4 text-white/70" />
         </motion.div>
       </motion.div>
     </section>

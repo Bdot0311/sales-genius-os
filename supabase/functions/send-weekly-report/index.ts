@@ -13,6 +13,15 @@ const logStep = (step: string, details?: any) => {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  if (!token || !serviceKey || token !== serviceKey) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401,
+    });
+  }
+
   try {
     logStep("Function started");
     const supabaseClient = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "", { auth: { persistSession: false } });

@@ -68,7 +68,7 @@ const OutreachPreview = () => (
         </span>
       </div>
       <div className="px-4 py-4 flex-1 space-y-3">
-        <p className="text-[11px]" style={{ color: "hsl(0 0% 100% / 0.3)" }}>
+        <p className="text-[11px]" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
           Subject: Quick idea for Northline's outbound push
         </p>
         <p className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.65)" }}>
@@ -397,7 +397,7 @@ export const ModulesSection = () => {
                   {["hsl(0 70% 55% / 0.5)", "hsl(45 90% 55% / 0.5)", "hsl(142 60% 50% / 0.5)"].map((bg, i) => (
                     <div key={i} className="w-2.5 h-2.5 rounded-full" style={{ background: bg }} />
                   ))}
-                  <span className="ml-3 text-[11px] font-medium" style={{ color: "hsl(0 0% 100% / 0.2)" }}>
+                  <span className="ml-3 text-[11px] font-medium" style={{ color: "hsl(0 0% 100% / 0.55)" }}>
                     OutReign — {modules[activeIndex].title}
                   </span>
                 </div>

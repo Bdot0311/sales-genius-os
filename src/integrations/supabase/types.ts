@@ -3227,11 +3227,20 @@ export type Database = {
           total_users: number
         }[]
       }
+      admin_get_realtime_status: {
+        Args: never
+        Returns: {
+          in_publication: boolean
+          replica_identity: string
+          table_name: string
+        }[]
+      }
       admin_get_seo_dashboard: { Args: never; Returns: Json }
       admin_lock_user: {
         Args: { _reason?: string; _user_id: string }
         Returns: undefined
       }
+      admin_realtime_heartbeat: { Args: never; Returns: string }
       admin_set_trial: {
         Args: { _trial_days?: number; _user_id: string }
         Returns: undefined
@@ -3424,6 +3433,7 @@ export type Database = {
         Returns: undefined
       }
       reset_daily_email_counters: { Args: never; Returns: undefined }
+      touch_last_active: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "user"

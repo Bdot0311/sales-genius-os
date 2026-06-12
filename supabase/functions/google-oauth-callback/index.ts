@@ -161,7 +161,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error in google-oauth-callback:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      JSON.stringify({ error: "Google connection failed. Please try again." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

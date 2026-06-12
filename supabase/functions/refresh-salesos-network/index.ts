@@ -52,8 +52,18 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  if (!token || !serviceKey || token !== serviceKey) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401,
+    });
+  }
+
   try {
-    const { batch_size = 100 } = await req.json().catch(() => ({}));
+    const body = await req.json().catch(() => ({}));
+    const batch_size = Math.min(Math.max(Number(body.batch_size) || 100, 1), 100);
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;

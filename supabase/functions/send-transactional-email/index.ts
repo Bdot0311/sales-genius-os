@@ -33,6 +33,34 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders })
   }
 
+  // Restrict to service_role callers only. verify_jwt = true accepts any anon
+  // JWT (which is publicly known), so we must additionally verify the caller's
+  // role claim equals 'service_role' to prevent spam abuse.
+  const authHeader = req.headers.get('Authorization') ?? ''
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim()
+  if (!token) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+  try {
+    const payloadPart = token.split('.')[1]
+    const padded = payloadPart + '='.repeat((4 - (payloadPart.length % 4)) % 4)
+    const claims = JSON.parse(atob(padded.replace(/-/g, '+').replace(/_/g, '/')))
+    if (claims?.role !== 'service_role') {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+  } catch {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 

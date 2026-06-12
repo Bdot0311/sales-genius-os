@@ -75,7 +75,7 @@ export const ExitIntentModal = () => {
 
             <button
               onClick={close}
-              className="absolute right-4 top-4 rounded-full p-1.5 text-white/40 transition-colors hover:bg-white/5 hover:text-white/80"
+              className="absolute right-4 top-4 rounded-full p-1.5 text-white/75 transition-colors hover:bg-white/5 hover:text-white"
               aria-label="Close"
             >
               <X className="h-4 w-4" />
@@ -91,7 +91,7 @@ export const ExitIntentModal = () => {
             >
               See OutReign find real leads in 60 seconds.
             </h2>
-            <p className="mb-7 text-sm leading-relaxed text-white/55">
+            <p className="mb-7 text-sm leading-relaxed text-white/80">
               Watch how plain-English search returns ranked, SMTP-verified prospects with a first-touch email already drafted.
             </p>
 
@@ -112,7 +112,7 @@ export const ExitIntentModal = () => {
               </button>
               <button
                 onClick={close}
-                className="h-10 text-xs text-white/40 transition-colors hover:text-white/70"
+                className="h-10 text-xs text-white/75 transition-colors hover:text-white"
               >
                 No thanks, I'll keep browsing
               </button>

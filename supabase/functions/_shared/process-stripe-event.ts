@@ -34,9 +34,9 @@ const log = (s: string, d?: unknown) => console.log(`[STRIPE-EVT] ${s}${d ? ' - 
 
 const generateTempPassword = () => {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%";
-  let p = "";
-  for (let i = 0; i < 12; i++) p += chars.charAt(Math.floor(Math.random() * chars.length));
-  return p;
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes).map((b) => chars[b % chars.length]).join("");
 };
 
 async function findUserId(supabase: SupabaseClient, email: string): Promise<string | null> {

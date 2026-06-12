@@ -206,6 +206,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               size="icon"
               className="lg:hidden"
               onClick={() => setSidebarOpen(false)}
+              aria-label="Close sidebar"
             >
               <X className="w-5 h-5" />
             </Button>
@@ -323,6 +324,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             variant="ghost"
             size="icon"
             className="flex-shrink-0 h-8 w-8"
+            aria-label="Toggle sidebar"
             onClick={() => {
               // On mobile: toggle drawer. On desktop: toggle collapse.
               if (window.innerWidth < 1024) {
