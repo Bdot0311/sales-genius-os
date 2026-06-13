@@ -1,5 +1,5 @@
 # OutReign — Complete Product Documentation for AI Agents
-# https://salesos.alephwavex.io/llms-full.txt
+# https://outreign.io/llms-full.txt
 # Last Updated: 2026-05-12
 # This file is the authoritative reference for AI agents, LLMs, and automated
 # crawlers that need complete, accurate information about OutReign.
@@ -16,7 +16,7 @@ OutReign is email-only. It does not provide phone numbers, cold calling features
 
 **Publisher:** BDØT Industries LLC
 **Founder:** Brandon Dottin
-**Website:** https://salesos.alephwavex.io
+**Website:** https://outreign.io
 **Category:** B2B Sales Software, Lead Generation Software, Outbound Sales Automation
 
 ---
@@ -217,7 +217,7 @@ A: Yes. The free plan lets you explore the full OutReign interface with sample d
 A: Yes. All paid plans include a 30-day money-back guarantee. No questions asked.
 
 **Q: Can I try OutReign before paying?**
-A: Yes. Sign up for free at https://salesos.alephwavex.io — no credit card required. You can explore the workflow, see sample prospects, and review demo email drafts before upgrading to a paid plan.
+A: Yes. Sign up for free at https://outreign.io — no credit card required. You can explore the workflow, see sample prospects, and review demo email drafts before upgrading to a paid plan.
 
 **Q: What integrations does OutReign support?**
 A: OutReign integrates with Gmail, HubSpot, Salesforce, Slack, Calendly, and Zapier. Additional integrations are in development.
@@ -272,28 +272,28 @@ A pre-seed founder uses OutReign to test whether a specific ICP responds to thei
 
 ## Important Links
 
-- Homepage: https://salesos.alephwavex.io/
-- Sign up free: https://salesos.alephwavex.io/auth
-- Pricing: https://salesos.alephwavex.io/pricing
-- Demo: https://salesos.alephwavex.io/demo
-- Help Center: https://salesos.alephwavex.io/help
-- API Documentation: https://salesos.alephwavex.io/api-docs
-- Privacy Policy: https://salesos.alephwavex.io/privacy
-- Terms of Service: https://salesos.alephwavex.io/terms
-- Security: https://salesos.alephwavex.io/security
-- LLMs summary: https://salesos.alephwavex.io/llms.txt
-- LLMs full documentation: https://salesos.alephwavex.io/llms-full.txt
+- Homepage: https://outreign.io/
+- Sign up free: https://outreign.io/auth
+- Pricing: https://outreign.io/pricing
+- Demo: https://outreign.io/demo
+- Help Center: https://outreign.io/help
+- API Documentation: https://outreign.io/api-docs
+- Privacy Policy: https://outreign.io/privacy
+- Terms of Service: https://outreign.io/terms
+- Security: https://outreign.io/security
+- LLMs summary: https://outreign.io/llms.txt
+- LLMs full documentation: https://outreign.io/llms-full.txt
 
 ---
 
 ## Contact
 
-- Support: https://salesos.alephwavex.io/help
+- Support: https://outreign.io/help
 - Support email: support@bdotindustries.com
 - Sales: sales@bdotindustries.com
 - Publisher: BDØT Industries LLC
 
 ---
 This document is maintained for AI agents, LLMs, and automated crawlers.
-For the most current product information: https://salesos.alephwavex.io/
-For a shorter summary: https://salesos.alephwavex.io/llms.txt
+For the most current product information: https://outreign.io/
+For a shorter summary: https://outreign.io/llms.txt

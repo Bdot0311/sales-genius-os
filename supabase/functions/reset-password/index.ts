@@ -34,7 +34,7 @@ serve(async (req) => {
   }
 
   // Always use the production custom domain for password reset links
-  const APP_URL = "https://salesos.alephwavex.io";
+  const APP_URL = Deno.env.get("APP_URL") ?? "https://outreign.io";
 
   try {
     // Get client IP for rate limiting
@@ -73,8 +73,6 @@ serve(async (req) => {
       } catch (_) { /* not an admin call, continue normally */ }
     }
 
-    );
-    
     // Admin requests bypass rate limiting; normal requests are rate-limited
     if (!isAdminRequest && !checkRateLimit(clientIP)) {
       console.log("Rate limit exceeded for password reset, IP:", clientIP);

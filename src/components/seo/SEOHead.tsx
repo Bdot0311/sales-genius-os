@@ -93,7 +93,6 @@ export const SEOHead = ({
   // so Google doesn't mark those URLs as "Alternate pages with proper canonical tag"
   const onNonCanonicalDomain = typeof window !== 'undefined' &&
     window.location.hostname !== 'outreign.io' &&
-    window.location.hostname !== 'salesos.alephwavex.io' &&
     window.location.hostname !== 'localhost' &&
     !window.location.hostname.startsWith('127.');
 

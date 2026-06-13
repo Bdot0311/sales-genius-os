@@ -4,7 +4,7 @@
   "serviceId": "email-auth",
   "serviceName": "OutReign Email Authentication (SPF + DMARC)",
   "version": 1,
-  "logoUrl": "https://salesos.alephwavex.io/logo.png",
+  "logoUrl": "https://outreign.io/outreign-logo.webp",
   "description": "Sets up SPF and DMARC records so cold email sent through OutReign lands in the inbox.",
   "syncBlock": false,
   "records": [

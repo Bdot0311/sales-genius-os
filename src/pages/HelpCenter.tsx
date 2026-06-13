@@ -87,7 +87,7 @@ const HelpCenter = () => {
         <SEOHead
           title={`${article.title} - Help Center`}
           description={article.description}
-          canonicalUrl={`https://salesos.alephwavex.io/help/article/${article.slug}`}
+          canonicalUrl={`https://outreign.io/help/article/${article.slug}`}
         />
         <main className="flex-1 pt-28 sm:pt-32 pb-16 container mx-auto px-5 sm:px-6">
           <HelpArticleComponent article={article} />
@@ -127,7 +127,7 @@ const HelpCenter = () => {
         <SEOHead
           title={`${categoryInfo.title} - Help Center`}
           description={categoryInfo.description}
-          canonicalUrl={`https://salesos.alephwavex.io/help/category/${category}`}
+          canonicalUrl={`https://outreign.io/help/category/${category}`}
         />
         <main className="flex-1 pt-28 sm:pt-32 pb-16 container mx-auto px-5 sm:px-6">
           <nav className="flex items-center gap-2 text-sm text-white/75 mb-6">
@@ -192,7 +192,7 @@ const HelpCenter = () => {
         <SEOHead
           title={`Search: ${searchQuery} - Help Center`}
           description={`Search results for "${searchQuery}" in OutReign Help Center`}
-          canonicalUrl="https://salesos.alephwavex.io/help"
+          canonicalUrl="https://outreign.io/help"
         />
         <main className="flex-1 pt-28 sm:pt-32 pb-16 container mx-auto px-5 sm:px-6">
           <button
@@ -278,8 +278,8 @@ const HelpCenter = () => {
       />
       <BreadcrumbSchema
         items={[
-          { name: "Home", url: "https://salesos.alephwavex.io" },
-          { name: "Help Center", url: "https://salesos.alephwavex.io/help" },
+          { name: "Home", url: "https://outreign.io" },
+          { name: "Help Center", url: "https://outreign.io/help" },
         ]}
       />
 

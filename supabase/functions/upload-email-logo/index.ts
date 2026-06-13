@@ -41,7 +41,7 @@ serve(async (req) => {
       );
     }
 
-    const logoSourceUrl = "https://salesos.alephwavex.io/salesos-logo.webp";
+    const logoSourceUrl = "https://outreign.io/outreign-logo.webp";
     const logoResponse = await fetch(logoSourceUrl);
     if (!logoResponse.ok) {
       throw new Error(`Failed to fetch logo: ${logoResponse.status}`);

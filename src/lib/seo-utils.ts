@@ -2,17 +2,24 @@
 // Canonical domain for all absolute URLs
 export const CANONICAL_DOMAIN = 'https://outreign.io';
 
-// Social card version — kept for API compatibility but withSocialVersion
-// no longer appends query params (static hosts may not serve file.jpg?v=N)
-export const SOCIAL_CARD_VERSION = '4';
+// Social card version. Bump this when the social preview image changes so
+// X/LinkedIn/Facebook see a brand-new og:image URL and re-scrape it.
+export const SOCIAL_CARD_VERSION = '5';
 
 /**
- * Returns the URL unchanged. Query params on static image URLs cause
- * issues with some CDNs and don't reliably force X/Twitter to re-fetch.
- * Use the Twitter Card Validator to bust X's cache manually.
+ * Appends a stable version query param to social images for cache busting.
  */
-export function withSocialVersion(url: string, _version?: string): string {
-  return url;
+export function withSocialVersion(url: string, version = SOCIAL_CARD_VERSION): string {
+  if (!url || !version) return url;
+
+  try {
+    const parsed = new URL(url, CANONICAL_DOMAIN);
+    parsed.searchParams.set('v', version);
+    return parsed.toString();
+  } catch {
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}v=${encodeURIComponent(version)}`;
+  }
 }
 
 // Query params to strip from canonical URLs (tracking/duplicate content)

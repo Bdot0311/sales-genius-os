@@ -5,7 +5,7 @@ import {
 import type { TemplateEntry } from './registry.ts'
 
 const SITE_NAME = "OutReign"
-const APP_URL = "https://salesos.alephwavex.io"
+const APP_URL = Deno.env.get("APP_URL") ?? "https://outreign.io"
 
 interface ReEngagementEmailProps {
   name?: string

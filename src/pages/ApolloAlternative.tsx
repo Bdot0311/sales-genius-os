@@ -51,8 +51,8 @@ const ApolloAlternative = () => {
         ogImage="https://outreign.io/outreign-social-card.jpg"
       />
       <BreadcrumbSchema items={[
-        { name: "Home", url: "https://salesos.alephwavex.io" },
-        { name: "Apollo Alternative", url: "https://salesos.alephwavex.io/apollo-alternative" }
+        { name: "Home", url: "https://outreign.io" },
+        { name: "Apollo Alternative", url: "https://outreign.io/apollo-alternative" }
       ]} />
       <FAQSchema faqs={faqs} />
 

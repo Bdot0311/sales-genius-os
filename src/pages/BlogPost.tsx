@@ -148,7 +148,7 @@ function renderInline(text: string): React.ReactNode {
     const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
     if (linkMatch) {
       const [, label, href] = linkMatch;
-      const isInternal = href.startsWith("/") || href.includes("salesos.alephwavex.io");
+      const isInternal = href.startsWith("/") || href.includes("outreign.io");
       return (
         <a
           key={i}
@@ -177,7 +177,7 @@ const BlogPost = () => {
   }
   if (post === null) return <Navigate to="/blog" replace />;
 
-  const canonicalUrl = `https://salesos.alephwavex.io/blog/${post.slug}`;
+  const canonicalUrl = `https://outreign.io/blog/${post.slug}`;
 
   return (
     <>
@@ -199,8 +199,8 @@ const BlogPost = () => {
         keywords={post.keywords}
       />
       <BreadcrumbSchema items={[
-        { name: "Home", url: "https://salesos.alephwavex.io" },
-        { name: "Blog", url: "https://salesos.alephwavex.io/blog" },
+        { name: "Home", url: "https://outreign.io" },
+        { name: "Blog", url: "https://outreign.io/blog" },
         { name: post.title, url: canonicalUrl },
       ]} />
 

@@ -15,8 +15,8 @@ const Privacy = () => {
         ogImage="https://outreign.io/outreign-social-card.jpg"
       />
       <BreadcrumbSchema items={[
-        { name: "Home", url: "https://salesos.alephwavex.io" },
-        { name: "Privacy Policy", url: "https://salesos.alephwavex.io/privacy" }
+        { name: "Home", url: "https://outreign.io" },
+        { name: "Privacy Policy", url: "https://outreign.io/privacy" }
       ]} />
 
       <div className="min-h-screen overflow-x-hidden" style={{ background: "hsl(261 75% 2%)" }}>

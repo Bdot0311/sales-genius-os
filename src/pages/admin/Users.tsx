@@ -205,7 +205,7 @@ const AdminUsers = () => {
       // Use Supabase's native resetPasswordForEmail — triggers auth-email-hook
       // which sends the branded RecoveryEmail template immediately (no queue).
       const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-        redirectTo: 'https://salesos.alephwavex.io/auth?type=recovery',
+        redirectTo: 'https://outreign.io/auth?type=recovery',
       });
       if (error) throw error;
       toast.success(`Password reset email sent to ${user.email}`);

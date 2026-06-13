@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
         ` : ""}
 
         <div style="margin-top:32px;text-align:center;">
-          <a href="https://salesos.alephwavex.io/admin/analytics?tab=seo" style="display:inline-block;background:#7c3aed;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600;">Open SEO Monitor</a>
+          <a href="https://outreign.io/admin/analytics?tab=seo" style="display:inline-block;background:#7c3aed;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600;">Open SEO Monitor</a>
         </div>
       </div>
       <div style="padding:16px 24px;background:#f8fafc;font-size:11px;color:#64748b;text-align:center;border-top:1px solid #e5e7eb;">

@@ -18,8 +18,8 @@ const Security = () => {
         ogImage="https://outreign.io/outreign-social-card.jpg"
       />
       <BreadcrumbSchema items={[
-        { name: "Home", url: "https://salesos.alephwavex.io" },
-        { name: "Security", url: "https://salesos.alephwavex.io/security" }
+        { name: "Home", url: "https://outreign.io" },
+        { name: "Security", url: "https://outreign.io/security" }
       ]} />
 
       <div className="min-h-screen overflow-x-hidden" style={{ background: "hsl(261 75% 2%)" }}>
