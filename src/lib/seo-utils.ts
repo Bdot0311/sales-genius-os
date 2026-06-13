@@ -1,21 +1,18 @@
 // SEO Utility Functions for OutReign
 // Canonical domain for all absolute URLs
-export const CANONICAL_DOMAIN = 'https://salesos.alephwavex.io';
+export const CANONICAL_DOMAIN = 'https://outreign.io';
 
-// Social card cache-buster. Bump this whenever the social image or
-// social metadata (og:title/og:description/og:image) changes so that
-// X/Facebook/LinkedIn re-scrape instead of serving a stale preview.
+// Social card version — kept for API compatibility but withSocialVersion
+// no longer appends query params (static hosts may not serve file.jpg?v=N)
 export const SOCIAL_CARD_VERSION = '4';
 
 /**
- * Append the social card version as a `?v=` query param to a URL.
- * Used on og:image / twitter:image so cache layers (and X's scraper)
- * treat a bumped version as a brand-new URL.
+ * Returns the URL unchanged. Query params on static image URLs cause
+ * issues with some CDNs and don't reliably force X/Twitter to re-fetch.
+ * Use the Twitter Card Validator to bust X's cache manually.
  */
-export function withSocialVersion(url: string, version: string = SOCIAL_CARD_VERSION): string {
-  if (!url) return url;
-  const sep = url.includes('?') ? '&' : '?';
-  return `${url}${sep}v=${version}`;
+export function withSocialVersion(url: string, _version?: string): string {
+  return url;
 }
 
 // Query params to strip from canonical URLs (tracking/duplicate content)
@@ -196,7 +193,7 @@ export function shouldIndexPage(path: string): boolean {
  * OG Image URL - returns page-specific or default
  */
 export function getOGImageUrl(pageName?: string): string {
-  const defaultOG = 'https://salesos.alephwavex.io/outreign-og.png';
+  const defaultOG = 'https://outreign.io/outreign-social-card.jpg';
   
   // Add custom OG images here as they're created
   const ogImages: Record<string, string> = {
