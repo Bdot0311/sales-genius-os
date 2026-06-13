@@ -15,8 +15,8 @@ const Terms = () => {
         ogImage="https://outreign.io/outreign-social-card.jpg"
       />
       <BreadcrumbSchema items={[
-        { name: "Home", url: "https://salesos.alephwavex.io" },
-        { name: "Terms of Service", url: "https://salesos.alephwavex.io/terms" }
+        { name: "Home", url: "https://outreign.io" },
+        { name: "Terms of Service", url: "https://outreign.io/terms" }
       ]} />
 
       <div className="min-h-screen overflow-x-hidden" style={{ background: "hsl(261 75% 2%)" }}>

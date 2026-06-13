@@ -145,12 +145,12 @@ const ApiStatus = () => {
         title="API Status & System Uptime - OutReign Developer Platform"
         description="Real-time OutReign API status, system uptime monitoring, and incident history. Check REST API, GraphQL, webhooks, and edge function availability."
         keywords="OutReign API status, system uptime, API monitoring, developer platform, service status"
-        canonicalUrl="https://salesos.alephwavex.io/api-status"
+        canonicalUrl="https://outreign.io/api-status"
         noIndex={false}
       />
       <BreadcrumbSchema items={[
-        { name: "Home", url: "https://salesos.alephwavex.io" },
-        { name: "API Status", url: "https://salesos.alephwavex.io/api-status" }
+        { name: "Home", url: "https://outreign.io" },
+        { name: "API Status", url: "https://outreign.io/api-status" }
       ]} />
 
       <div className="min-h-screen flex flex-col overflow-x-hidden" style={{ background: "hsl(261 75% 2%)" }}>

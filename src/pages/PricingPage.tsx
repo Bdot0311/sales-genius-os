@@ -60,8 +60,8 @@ const PricingPage = () => {
         ogImage="https://outreign.io/outreign-social-card.jpg"
       />
       <BreadcrumbSchema items={[
-        { name: "Home", url: "https://salesos.alephwavex.io" },
-        { name: "Pricing", url: "https://salesos.alephwavex.io/pricing" }
+        { name: "Home", url: "https://outreign.io" },
+        { name: "Pricing", url: "https://outreign.io/pricing" }
       ]} />
       <FAQSchema faqs={pricingFAQs} />
 

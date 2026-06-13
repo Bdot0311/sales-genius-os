@@ -41,8 +41,8 @@ const SalesOperationsSoftware = () => {
         ogImage="https://outreign.io/outreign-social-card.jpg"
       />
       <BreadcrumbSchema items={[
-        { name: "Home", url: "https://salesos.alephwavex.io" },
-        { name: "Sales Operations Software", url: "https://salesos.alephwavex.io/sales-operations-software" }
+        { name: "Home", url: "https://outreign.io" },
+        { name: "Sales Operations Software", url: "https://outreign.io/sales-operations-software" }
       ]} />
       <FAQSchema faqs={faqs} />
 

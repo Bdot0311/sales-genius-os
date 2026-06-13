@@ -21,8 +21,8 @@ const Blog = () => {
         ogImage="https://outreign.io/outreign-social-card.jpg"
       />
       <BreadcrumbSchema items={[
-        { name: "Home", url: "https://salesos.alephwavex.io" },
-        { name: "Blog", url: "https://salesos.alephwavex.io/blog" },
+        { name: "Home", url: "https://outreign.io" },
+        { name: "Blog", url: "https://outreign.io/blog" },
       ]} />
 
       <div className="min-h-screen overflow-x-hidden" style={{ background: "hsl(261 75% 2%)" }}>

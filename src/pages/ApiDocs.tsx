@@ -360,8 +360,8 @@ const ApiDocs = () => {
         keywords="OutReign API, sales API, lead generation API, CRM API, REST API documentation, webhook integration"
       />
       <BreadcrumbSchema items={[
-        { name: "Home", url: "https://salesos.alephwavex.io" },
-        { name: "API Documentation", url: "https://salesos.alephwavex.io/api-docs" },
+        { name: "Home", url: "https://outreign.io" },
+        { name: "API Documentation", url: "https://outreign.io/api-docs" },
       ]} />
 
       <div className="min-h-screen flex flex-col overflow-x-hidden" style={{ background: "hsl(261 75% 2%)" }}>
