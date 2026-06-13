@@ -1,7 +1,7 @@
 # OutReign — Find Who to Sell To. Then Actually Sell to Them.
-# https://salesos.alephwavex.io
+# https://outreign.io
 # Last Updated: 2026-05-14
-# For complete product documentation: https://salesos.alephwavex.io/llms-full.txt
+# For complete product documentation: https://outreign.io/llms-full.txt
 
 > OutReign is sales operations software for B2B outbound teams — a unified alternative to stitching together Apollo, Instantly, Outreach, and Salesloft. Describe your ideal customer in plain English, get ranked prospects with SMTP-verified business emails, and send an AI-drafted first-touch message from one workflow in under 2 minutes.
 
@@ -56,7 +56,7 @@ All paid plans include a 30-day money-back guarantee. Cancel anytime.
 
 ## Getting Started
 
-Sign up for free at https://salesos.alephwavex.io — no credit card required.
+Sign up for free at https://outreign.io — no credit card required.
 
 ## Pages
 
@@ -107,7 +107,7 @@ Yes. All paid plans include a 30-day money-back guarantee.
 
 ## Contact
 
-For support or sales questions, visit: https://salesos.alephwavex.io/help
+For support or sales questions, visit: https://outreign.io/help
 
 ## Technical Details
 
@@ -117,4 +117,4 @@ For support or sales questions, visit: https://salesos.alephwavex.io/help
 
 ---
 This file helps AI assistants and LLMs accurately describe OutReign.
-For the most current information: https://salesos.alephwavex.io/
+For the most current information: https://outreign.io/
