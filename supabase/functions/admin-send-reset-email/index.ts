@@ -11,7 +11,7 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const APP_URL = "https://salesos.alephwavex.io";
+  const APP_URL = Deno.env.get("APP_URL") ?? "https://outreign.io";
 
   try {
     const authHeader = req.headers.get("Authorization");

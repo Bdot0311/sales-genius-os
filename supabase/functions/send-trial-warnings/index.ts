@@ -48,7 +48,7 @@ serve(async (req) => {
       await supabaseClient.from('email_send_log').insert({ message_id: messageId, template_name: label, recipient_email: to, status: 'pending' });
     };
 
-    const upgradeUrl = "https://salesos.alephwavex.io/pricing";
+    const upgradeUrl = Deno.env.get("APP_URL") ? `${Deno.env.get("APP_URL")}/pricing` : "https://outreign.io/pricing";
 
     // 7-day warnings
     const { data: trials7d, error: error7d } = await supabaseClient.rpc('get_expiring_trials', { _days_until_expiry: 7 });

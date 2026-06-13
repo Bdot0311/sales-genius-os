@@ -73,7 +73,7 @@ serve(async (req) => {
 <td style="text-align:center;background:#f3f4f6;border-radius:8px;"><div style="font-size:28px;font-weight:bold;color:#8B5CF6;">${meetingRequests?.length||0}</div><div style="font-size:11px;color:#6b7280;">MEETING REQUESTS</div><div style="font-size:9px;color:#9CA3AF;">${meetingRate}% of emails sent</div></td>
 <td style="text-align:center;background:#f3f4f6;border-radius:8px;"><div style="font-size:28px;font-weight:bold;color:#10B981;">${positiveReplies?.length||0}</div><div style="font-size:11px;color:#6b7280;">HIGH-INTENT REPLIES</div><div style="font-size:9px;color:#9CA3AF;">respond today</div></td>
 </tr></table>
-<p style="text-align:center;margin-top:30px;"><a href="https://salesos.alephwavex.io/analytics" style="background:#8B5CF6;color:white;padding:12px 30px;text-decoration:none;border-radius:6px;">View Full Analytics →</a></p>
+<p style="text-align:center;margin-top:30px;"><a href="https://outreign.io/analytics" style="background:#8B5CF6;color:white;padding:12px 30px;text-decoration:none;border-radius:6px;">View Full Analytics →</a></p>
 </div></div></body></html>`;
 
         const messageId = crypto.randomUUID();

@@ -118,7 +118,7 @@ export async function processStripeEvent(
       log("created user", { userId });
 
       try {
-        const appUrl = "https://salesos.alephwavex.io";
+        const appUrl = Deno.env.get("APP_URL") ?? "https://outreign.io";
         await supabase.rpc('enqueue_email', {
           queue_name: 'transactional_emails',
           payload: {
