@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { X, ArrowRight } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
-const STORAGE_KEY = "salesos-exit-intent-shown";
+const STORAGE_KEY = "outreign-exit-intent-shown";
 
 export const ExitIntentModal = () => {
   const [open, setOpen] = useState(false);

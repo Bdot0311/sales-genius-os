@@ -64,7 +64,7 @@ serve(async (req) => {
       customerId = customers.data[0].id;
     }
 
-    const origin = req.headers.get("origin") || "https://sales-genius-os.lovable.app";
+    const origin = req.headers.get("origin") || "https://outreign.lovable.app";
 
     // Create one-time payment checkout session
     const session = await stripe.checkout.sessions.create({

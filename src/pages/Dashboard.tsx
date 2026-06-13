@@ -26,7 +26,7 @@ const Dashboard = () => {
   });
 
   useEffect(() => {
-    if (!localStorage.getItem('salesos_quickstart_done')) {
+    if (!localStorage.getItem('outreign_quickstart_done')) {
       setShowWizard(true);
     }
   }, []);
@@ -195,7 +195,7 @@ const Dashboard = () => {
       <QuickStartWizard
         open={showWizard}
         onOpenChange={(open) => {
-          if (!open) localStorage.setItem('salesos_quickstart_done', '1');
+          if (!open) localStorage.setItem('outreign_quickstart_done', '1');
           setShowWizard(open);
         }}
       />

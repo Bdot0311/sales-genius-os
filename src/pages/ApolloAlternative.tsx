@@ -22,15 +22,15 @@ const faqs = [
   { question: "Do I have to learn boolean search?", answer: "No. OutReign is built around plain-English ICP descriptions, not boolean filter trees. That is the core difference for non-technical founders and growth teams." },
 ];
 
-const compareRows: { feature: string; salesos: string | boolean; apollo: string | boolean }[] = [
-  { feature: "Plain-English ICP search", salesos: true, apollo: false },
-  { feature: "Boolean / filter-based search", salesos: false, apollo: true },
-  { feature: "SMTP-verified business emails", salesos: true, apollo: true },
-  { feature: "AI-drafted first-touch emails", salesos: true, apollo: "Add-on" },
-  { feature: "ICP fit scoring out of the box", salesos: true, apollo: false },
-  { feature: "Reply inbox + auto-classification", salesos: true, apollo: "Add-on" },
-  { feature: "Free tier", salesos: "Yes — full UI with sample data", apollo: "Limited credits" },
-  { feature: "Entry paid plan", salesos: "$39/mo", apollo: "$59/mo (varies)" },
+const compareRows: { feature: string; outreign: string | boolean; apollo: string | boolean }[] = [
+  { feature: "Plain-English ICP search", outreign: true, apollo: false },
+  { feature: "Boolean / filter-based search", outreign: false, apollo: true },
+  { feature: "SMTP-verified business emails", outreign: true, apollo: true },
+  { feature: "AI-drafted first-touch emails", outreign: true, apollo: "Add-on" },
+  { feature: "ICP fit scoring out of the box", outreign: true, apollo: false },
+  { feature: "Reply inbox + auto-classification", outreign: true, apollo: "Add-on" },
+  { feature: "Free tier", outreign: "Yes — full UI with sample data", apollo: "Limited credits" },
+  { feature: "Entry paid plan", outreign: "$39/mo", apollo: "$59/mo (varies)" },
 ];
 
 const renderCell = (v: string | boolean) => {
@@ -144,7 +144,7 @@ const ApolloAlternative = () => {
                     {compareRows.map((row) => (
                       <tr key={row.feature} style={{ borderTop: "1px solid hsl(261 75% 50% / 0.1)" }}>
                         <td className="p-4 text-sm" style={{ color: "hsl(0 0% 80%)" }}>{row.feature}</td>
-                        <td className="p-4 text-center">{renderCell(row.salesos)}</td>
+                        <td className="p-4 text-center">{renderCell(row.outreign)}</td>
                         <td className="p-4 text-center">{renderCell(row.apollo)}</td>
                       </tr>
                     ))}

@@ -89,7 +89,7 @@ export const SEOHead = ({
     "revenue operations software"
   ].join(', ');
 
-  // Noindex when served from a preview/staging domain (e.g. sales-genius-os.lovable.app)
+  // Noindex when served from a preview/staging domain (e.g. outreign.lovable.app)
   // so Google doesn't mark those URLs as "Alternate pages with proper canonical tag"
   const onNonCanonicalDomain = typeof window !== 'undefined' &&
     window.location.hostname !== 'outreign.io' &&

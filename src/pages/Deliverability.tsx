@@ -766,7 +766,7 @@ function DeliverabilityHealthThresholds({ mailboxCount, metrics }: { mailboxCoun
     {
       label: "Domain Isolation",
       level: "yellow",
-      message: "Never send cold email from your primary business domain. Use secondary sending domains only (e.g. trysalesos.com).",
+      message: "Never send cold email from your primary business domain. Use secondary sending domains only (e.g. tryoutreign.com).",
     },
   ];
 

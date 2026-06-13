@@ -369,7 +369,7 @@ const ApiStatus = () => {
                 className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-mono"
                 style={{ background: "hsl(261 75% 50% / 0.06)", border: "1px solid hsl(261 75% 50% / 0.14)", color: "hsl(261 75% 72%)" }}
               >
-                https://status.salesos.com/feed.rss
+                https://status.outreign.io/feed.rss
               </div>
             </div>
 

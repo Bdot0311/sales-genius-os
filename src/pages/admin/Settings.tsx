@@ -454,7 +454,7 @@ const AdminSettings = () => {
                 <Input
                   id="email-from"
                   type="email"
-                  placeholder="noreply@salesos.io"
+                  placeholder="noreply@outreign.io"
                   value={(getSettingValue("email_from_address") as string) || ""}
                   onChange={(e) => debouncedUpdateSetting("email_from_address", e.target.value)}
                   disabled={saving}

@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 // OutReign specific product and price IDs
-const SALESOS_PRODUCT_IDS = [
+const OUTREIGN_PRODUCT_IDS = [
   // Current product IDs
   'prod_U78FZoAWovU1rX', // starter monthly
   'prod_U78FC92stOkRxS', // starter yearly
@@ -28,7 +28,7 @@ const SALESOS_PRODUCT_IDS = [
   'prod_TOrod7SaIV2D7s',
 ];
 
-const SALESOS_PRICE_IDS = [
+const OUTREIGN_PRICE_IDS = [
   // Current monthly prices
   'price_1T8tywFTerosS6hi0fHQuybr', // starter monthly
   'price_1T8tyyFTerosS6hiTsTXkWDa', // growth monthly
@@ -127,7 +127,7 @@ serve(async (req) => {
               ? lineItem.price.product
               : lineItem.price?.product?.id;
 
-            if (SALESOS_PRICE_IDS.includes(priceId || '') || SALESOS_PRODUCT_IDS.includes(productId || '')) {
+            if (OUTREIGN_PRICE_IDS.includes(priceId || '') || OUTREIGN_PRODUCT_IDS.includes(productId || '')) {
               isOutReignInvoice = true;
               break;
             }
@@ -174,7 +174,7 @@ serve(async (req) => {
             ? item.price.product
             : item.price?.product?.id;
 
-          if (SALESOS_PRICE_IDS.includes(priceId || '') || SALESOS_PRODUCT_IDS.includes(productId || '')) {
+          if (OUTREIGN_PRICE_IDS.includes(priceId || '') || OUTREIGN_PRODUCT_IDS.includes(productId || '')) {
             isOutReignSub = true;
             const amount = item.price.unit_amount ?? 0;
             const interval = item.price.recurring?.interval;
@@ -201,7 +201,7 @@ serve(async (req) => {
     logStep('MRR from active subscriptions', { activeSubscriptions, monthlyRevenue: monthlyRevenue / 100 });
 
     // Get unique customers with OutReign subscriptions
-    let salesOSCustomerIds = new Set<string>();
+    let outreignCustomerIds = new Set<string>();
     hasMore = true;
     startingAfter = undefined;
 
@@ -219,9 +219,9 @@ serve(async (req) => {
             ? item.price.product 
             : item.price?.product?.id;
           
-          if (SALESOS_PRICE_IDS.includes(priceId || '') || SALESOS_PRODUCT_IDS.includes(productId || '')) {
+          if (OUTREIGN_PRICE_IDS.includes(priceId || '') || OUTREIGN_PRODUCT_IDS.includes(productId || '')) {
             if (typeof subscription.customer === 'string') {
-              salesOSCustomerIds.add(subscription.customer);
+              outreignCustomerIds.add(subscription.customer);
             }
             break;
           }
@@ -234,7 +234,7 @@ serve(async (req) => {
       }
     }
 
-    const totalCustomers = salesOSCustomerIds.size;
+    const totalCustomers = outreignCustomerIds.size;
     logStep('OutReign customers counted', { totalCustomers });
 
     const result = {

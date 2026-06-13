@@ -272,7 +272,7 @@ serve(async (req) => {
 
           // Record the provider event
           await supabase.from('data_provider_events').insert({
-            provider_name: 'salesos_network',
+            provider_name: 'outreign_network',
             query_hash: queryHash,
             user_id: user.id,
             results_count: numProspects,
@@ -298,7 +298,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in build-salesos-network function:', error);
+    console.error('Error in build-outreign-network function:', error);
     return new Response(
       JSON.stringify({ 
         error: error instanceof Error ? error.message : 'Unknown error occurred',

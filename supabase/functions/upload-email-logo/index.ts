@@ -51,7 +51,7 @@ serve(async (req) => {
 
     const { data, error } = await supabaseAdmin.storage
       .from("email-assets")
-      .upload("salesos-logo.webp", logoUint8Array, {
+      .upload("outreign-logo.webp", logoUint8Array, {
         contentType: "image/webp",
         upsert: true,
       });
@@ -60,7 +60,7 @@ serve(async (req) => {
 
     const { data: publicUrlData } = supabaseAdmin.storage
       .from("email-assets")
-      .getPublicUrl("salesos-logo.webp");
+      .getPublicUrl("outreign-logo.webp");
 
     return new Response(
       JSON.stringify({ success: true, path: data.path, publicUrl: publicUrlData.publicUrl }),

@@ -61,7 +61,7 @@ serve(async (req) => {
       });
     }
 
-    const logoUrl = "https://ghgfjnepvxvxrncmskys.supabase.co/storage/v1/object/public/email-assets/salesos-logo.webp";
+    const logoUrl = "https://ghgfjnepvxvxrncmskys.supabase.co/storage/v1/object/public/email-assets/outreign-logo.webp";
     const redirectUrl = `${APP_URL}/auth?type=recovery`;
 
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
