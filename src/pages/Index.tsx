@@ -72,7 +72,7 @@ const Index = () => {
         description="Describe your ideal customer in plain English. OutReign returns ranked B2B prospects with verified emails and AI-drafted outreach in under 2 minutes."
 
         keywords="B2B lead generation, lead discovery, outbound email software, ICP scoring, SMTP verified emails, plain English lead search, B2B prospecting, AI email drafting, email enrichment, outbound sales automation, find B2B leads, lead scoring software, B2B email outreach"
-        ogImage="https://salesos.alephwavex.io/outreign-og.png"
+        ogImage="https://outreign.io/outreign-social-card.jpg"
       />
 
       {/* Fixed cinematic video background with purple tint */}

@@ -188,7 +188,7 @@ const BlogPost = () => {
         ogType="article"
         canonicalUrl={canonicalUrl}
         publishedTime={post.publishedAt}
-        ogImage="https://salesos.alephwavex.io/outreign-og.png"
+        ogImage="https://outreign.io/outreign-social-card.jpg"
       />
       <ArticleSchema
         headline={post.title}

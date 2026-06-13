@@ -274,7 +274,7 @@ const HelpCenter = () => {
         title="Help Center - OutReign Support & Documentation"
         description="Get instant answers to your OutReign questions. Browse guides, troubleshooting tips, API documentation, and contact our support team."
         keywords="OutReign help, support, documentation, guides, troubleshooting, FAQ"
-        ogImage="https://salesos.alephwavex.io/outreign-og.png"
+        ogImage="https://outreign.io/outreign-social-card.jpg"
       />
       <BreadcrumbSchema
         items={[

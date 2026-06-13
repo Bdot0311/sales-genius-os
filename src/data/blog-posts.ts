@@ -66,7 +66,7 @@ Tools like OutReign do all four steps in one workflow. The alternative is Apollo
 
 Boolean search is a skill worth skipping. Describe who you want, let the software match you to real prospects, and spend your time writing and sending — not querying.
 
-If you want to try this approach: [OutReign is free to start](https://salesos.alephwavex.io) — describe your ICP and see ranked matches before you commit to anything.
+If you want to try this approach: [OutReign is free to start](https://outreign.io) — describe your ICP and see ranked matches before you commit to anything.
     `.trim(),
   },
   {
@@ -139,7 +139,7 @@ You use ICP scoring to decide who to contact. You use lead scoring to decide who
 
 Manual qualification is the most common time sink in outbound sales. ICP scoring eliminates it by automating the judgment call at scale. Instead of reading 200 LinkedIn profiles to find 20 good ones, you describe your ICP once and get a ranked list with scores already applied.
 
-OutReign uses ICP scoring to rank every prospect returned from a plain-English search. [Try it free](https://salesos.alephwavex.io) — describe your ICP and see match scores on real prospects.
+OutReign uses ICP scoring to rank every prospect returned from a plain-English search. [Try it free](https://outreign.io) — describe your ICP and see match scores on real prospects.
     `.trim(),
   },
   {
@@ -200,7 +200,7 @@ Apollo wins if:
 
 If you're a founder, first sales hire, or small SDR team without ops support, Apollo's power comes at a cost in time and complexity that makes it a poor fit. A tool designed around your workflow — describe ICP, get ranked prospects, send verified personalized emails — is a better match.
 
-[OutReign is free to try](https://salesos.alephwavex.io) — no credit card, no setup. Describe your ICP and have your first email sent in under 2 minutes.
+[OutReign is free to try](https://outreign.io) — no credit card, no setup. Describe your ICP and have your first email sent in under 2 minutes.
     `.trim(),
   },
   {
@@ -299,7 +299,7 @@ That's the gap [OutReign](/sales-operations-software) was built for. Describe yo
 
 ## The Bottom Line
 
-Pick the tool built for your stage. Apollo, Instantly, Salesloft, and Outreach are all good at what they do — and all wrong for a founder running outbound between product calls. If you're under 10 reps and want one tool that finds prospects, verifies emails, and writes the first touch, [try OutReign free](https://salesos.alephwavex.io). No credit card, first email sent in under 2 minutes.
+Pick the tool built for your stage. Apollo, Instantly, Salesloft, and Outreach are all good at what they do — and all wrong for a founder running outbound between product calls. If you're under 10 reps and want one tool that finds prospects, verifies emails, and writes the first touch, [try OutReign free](https://outreign.io). No credit card, first email sent in under 2 minutes.
     `.trim(),
   },
   {
@@ -388,7 +388,7 @@ A quick decision tree:
 
 ## The Bottom Line
 
-Apollo and Instantly are excellent at what they do — and both expect you to bring the other half of the stack. OutReign is the consolidated alternative: plain-English prospecting, built-in verification, and AI outreach grounded in your business, all in one workflow. If you're tired of the CSV-export shuffle, [try OutReign free](https://salesos.alephwavex.io). First email sent in under 2 minutes, no credit card required.
+Apollo and Instantly are excellent at what they do — and both expect you to bring the other half of the stack. OutReign is the consolidated alternative: plain-English prospecting, built-in verification, and AI outreach grounded in your business, all in one workflow. If you're tired of the CSV-export shuffle, [try OutReign free](https://outreign.io). First email sent in under 2 minutes, no credit card required.
     `.trim(),
   },
   {
@@ -543,7 +543,7 @@ A 1–2 percentage point lift on a single line, applied across your whole sequen
 
 End every B2B sales email with one specific, low-friction question that gives the prospect permission to say no. Skip the open-ended "thoughts?" and the double-ask. Match the closing line to the touchpoint — interest check for cold, pattern-interrupt for follow-up, two-option close for meetings.
 
-If you'd rather have AI draft outbound emails that already follow this structure — grounded in your business and the prospect's real company context — [try OutReign free](https://salesos.alephwavex.io). First email sent in under 2 minutes, no credit card.
+If you'd rather have AI draft outbound emails that already follow this structure — grounded in your business and the prospect's real company context — [try OutReign free](https://outreign.io). First email sent in under 2 minutes, no credit card.
     `.trim(),
   },
   {
@@ -590,7 +590,7 @@ Write your ICP in one paragraph, in plain English. If you can't describe it in t
 
 This is the step that historically eats four hours. Old tools force you to build searches like *(VP OR "Vice President") AND (Sales OR Revenue) AND ("Series B" OR "Series C")*. Get one operator wrong and you get either zero results or ten thousand.
 
-Modern lead discovery — including [OutReign](https://salesos.alephwavex.io) — parses your plain-English ICP and returns ranked matches. You describe the prospect; the system filters, scores, and ranks by fit.
+Modern lead discovery — including [OutReign](https://outreign.io) — parses your plain-English ICP and returns ranked matches. You describe the prospect; the system filters, scores, and ranks by fit.
 
 What you should expect from a good prospecting workflow:
 
@@ -670,7 +670,7 @@ That's 4-5 hours of prospecting per week, producing 80-100 personalized cold ema
 
 B2B prospecting in 2026 isn't about doing more — it's about being more deliberate. Define a tight ICP, target by signal, verify before you send, personalize from real context, and follow up with discipline. The tooling exists to make this a 5-hour-per-week habit instead of a full-time job.
 
-If you want a workflow that handles ICP search, verified emails, fit scoring, and AI-drafted first-touch in one place, [try OutReign free](https://salesos.alephwavex.io). Describe your ideal customer in plain English, send your first email in under 2 minutes — no credit card.
+If you want a workflow that handles ICP search, verified emails, fit scoring, and AI-drafted first-touch in one place, [try OutReign free](https://outreign.io). Describe your ideal customer in plain English, send your first email in under 2 minutes — no credit card.
     `.trim(),
   },
   {
@@ -918,7 +918,7 @@ Three habits that compound:
 
 Partnership emails work when they're specific, asymmetric in the recipient's favor, and end with one concrete ask. Templates are scaffolding — they save you 20 minutes of staring at a blank page, but the 10 minutes of research that fills the brackets is where the reply comes from.
 
-If you'd rather have AI draft partnership and outbound emails that already follow this structure — grounded in real company context, not generic placeholders — [try OutReign free](https://salesos.alephwavex.io). First email in under 2 minutes, no credit card.
+If you'd rather have AI draft partnership and outbound emails that already follow this structure — grounded in real company context, not generic placeholders — [try OutReign free](https://outreign.io). First email in under 2 minutes, no credit card.
     `.trim(),
   },
 ];

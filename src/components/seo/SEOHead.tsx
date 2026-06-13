@@ -92,6 +92,7 @@ export const SEOHead = ({
   // Noindex when served from a preview/staging domain (e.g. sales-genius-os.lovable.app)
   // so Google doesn't mark those URLs as "Alternate pages with proper canonical tag"
   const onNonCanonicalDomain = typeof window !== 'undefined' &&
+    window.location.hostname !== 'outreign.io' &&
     window.location.hostname !== 'salesos.alephwavex.io' &&
     window.location.hostname !== 'localhost' &&
     !window.location.hostname.startsWith('127.');
@@ -170,8 +171,8 @@ export const SEOHead = ({
       
       {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:site" content="@salesos" />
-      <meta name="twitter:creator" content="@salesos" />
+      <meta name="twitter:site" content="@outreign" />
+      <meta name="twitter:creator" content="@outreign" />
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={safeDescription} />
       <meta name="twitter:image" content={versionedOgImage} />

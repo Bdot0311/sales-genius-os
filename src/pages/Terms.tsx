@@ -12,7 +12,7 @@ const Terms = () => {
         title="Terms of Service - User Agreement & Policies | OutReign"
         description="Review the OutReign Terms of Service. Understand your rights and responsibilities when using our AI-powered sales platform."
         keywords="OutReign terms of service, terms and conditions, user agreement, service agreement"
-        ogImage="https://salesos.alephwavex.io/outreign-og.png"
+        ogImage="https://outreign.io/outreign-social-card.jpg"
       />
       <BreadcrumbSchema items={[
         { name: "Home", url: "https://salesos.alephwavex.io" },

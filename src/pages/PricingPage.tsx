@@ -57,7 +57,7 @@ const PricingPage = () => {
         title="OutReign Pricing — Outbound Plans for Founders & SDR Teams"
         description="OutReign plans from $0 to $179/month. Find B2B leads, verify emails, and draft outreach without the tool sprawl. No credit card to start."
         keywords="OutReign pricing, outbound sales software pricing, lead generation pricing, B2B prospecting tool cost, Apollo alternative pricing, cold email tool pricing"
-        ogImage="https://salesos.alephwavex.io/outreign-og.png"
+        ogImage="https://outreign.io/outreign-social-card.jpg"
       />
       <BreadcrumbSchema items={[
         { name: "Home", url: "https://salesos.alephwavex.io" },
