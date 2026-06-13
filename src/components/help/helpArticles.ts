@@ -1649,10 +1649,10 @@ Verify webhook authenticity using HMAC signatures.
 
 Every webhook includes a signature header:
 \`\`\`
-X-OutReign-Signature: sha256=abc123...
+X-Webhook-Signature: abc123...
 \`\`\`
 
-This is an HMAC-SHA256 hash of the payload using your webhook secret.
+This is an HMAC-SHA256 hash of the payload (as a hex string) using your webhook secret. The webhook event type is also sent in the \`X-Webhook-Event\` header.
 
 ### Getting Your Secret
 
@@ -1672,13 +1672,13 @@ function verifySignature(payload, signature, secret) {
     .createHmac('sha256', secret)
     .update(payload, 'utf8')
     .digest('hex');
-  
-  return \`sha256=\${expected}\` === signature;
+
+  return expected === signature;
 }
 
 // In your endpoint
 app.post('/webhook', (req, res) => {
-  const signature = req.headers['x-outreign-signature'];
+  const signature = req.headers['x-webhook-signature'];
   const isValid = verifySignature(
     JSON.stringify(req.body),
     signature,
@@ -1706,7 +1706,7 @@ def verify_signature(payload, signature, secret):
         payload.encode(),
         hashlib.sha256
     ).hexdigest()
-    return f"sha256={expected}" == signature
+    return expected == signature
 \`\`\`
 
 ### Security Best Practices
