@@ -11,7 +11,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const SITE = "https://salesos.alephwavex.io";
+const SITE = Deno.env.get("APP_URL") ?? "https://outreign.io";
 const SITEMAP_URL = `${SITE}/sitemap.xml`;
 const VAPID_PUBLIC = "BLnZWkSds4tox8rY3fVPQ5ZJ5VQGKjBpJS3tsWp_wTASDBIvLmr_zWkkbKKygDz64EFAPT-uY0uoql7v5_KqVb8";
 

@@ -13,7 +13,7 @@ serve(async (req) => {
   const today = new Date().toISOString().split('T')[0];
 
   const content = `# OutReign - Find Leads That Actually Convert
-# https://salesos.alephwavex.io
+# https://outreign.io
 # Last Updated: ${today}
 
 > OutReign is an AI-powered lead discovery platform that helps B2B sales teams find and convert high-quality leads. Describe your ideal customer in plain English, get ranked matches with enriched profiles. Your first lead in under 2 minutes.
@@ -58,7 +58,7 @@ All paid plans include a 14-day free trial. Save ~20% with annual billing. No cr
 
 ## Getting Started
 
-1. Sign up for free at https://salesos.alephwavex.io
+1. Sign up for free at https://outreign.io
 2. Describe your ideal customer in plain English
 3. Get ranked matches with enriched profiles
 4. Export to outreach or push into your workflow
@@ -66,13 +66,13 @@ All paid plans include a 14-day free trial. Save ~20% with annual billing. No cr
 
 ## Important Pages
 
-- Homepage: https://salesos.alephwavex.io/
-- Pricing: https://salesos.alephwavex.io/pricing
-- API Documentation: https://salesos.alephwavex.io/api-docs
-- Help Center: https://salesos.alephwavex.io/help
-- Privacy Policy: https://salesos.alephwavex.io/privacy
-- Terms of Service: https://salesos.alephwavex.io/terms
-- Security: https://salesos.alephwavex.io/security
+- Homepage: https://outreign.io/
+- Pricing: https://outreign.io/pricing
+- API Documentation: https://outreign.io/api-docs
+- Help Center: https://outreign.io/help
+- Privacy Policy: https://outreign.io/privacy
+- Terms of Service: https://outreign.io/terms
+- Security: https://outreign.io/security
 
 ## Integrations
 
@@ -97,7 +97,7 @@ Yes. Enterprise-grade encryption (AES-256 at rest, TLS 1.3 in transit), SOC 2 Ty
 
 ## Contact
 
-For sales inquiries or support, visit our help center at https://salesos.alephwavex.io/help
+For sales inquiries or support, visit our help center at https://outreign.io/help
 
 ## Technical Details
 
@@ -107,7 +107,7 @@ For sales inquiries or support, visit our help center at https://salesos.alephwa
 
 ---
 This file helps AI assistants and LLMs understand OutReign for accurate information retrieval.
-For the most current information, always refer to: https://salesos.alephwavex.io/
+For the most current information, always refer to: https://outreign.io/
 `;
 
   return new Response(content, {

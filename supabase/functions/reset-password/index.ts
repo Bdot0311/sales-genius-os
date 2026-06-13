@@ -34,7 +34,7 @@ serve(async (req) => {
   }
 
   // Always use the production custom domain for password reset links
-  const APP_URL = "https://salesos.alephwavex.io";
+  const APP_URL = Deno.env.get("APP_URL") ?? "https://outreign.io";
 
   try {
     // Get client IP for rate limiting
