@@ -98,7 +98,7 @@ const Analytics = () => {
       const exportData = { exportDate: new Date().toISOString(), summary: stats, dealsByStage, leadsOverTime, leads: leads || [], deals: deals || [] };
       const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = `salesos-analytics-${new Date().toISOString().split('T')[0]}.json`; a.click(); URL.revokeObjectURL(url);
+      const a = document.createElement('a'); a.href = url; a.download = `outreign-analytics-${new Date().toISOString().split('T')[0]}.json`; a.click(); URL.revokeObjectURL(url);
     } catch (error) { console.error('Export failed:', error); }
   };
 
@@ -111,7 +111,7 @@ const Analytics = () => {
     const csvRows = [['Metric', 'Value'], ['Total Leads', stats.totalLeads.toString()], ['Total Deals', stats.totalDeals.toString()], ['Pipeline Value', `$${stats.totalValue.toLocaleString()}`], ['Avg Deal Size', `$${Math.round(stats.avgDealSize).toLocaleString()}`], [''], ['Stage', 'Deal Count'], ...dealsByStage.map(d => [d.stage, d.count.toString()])];
     const blob = new Blob([csvRows.map(row => row.join(',')).join('\n')], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `salesos-report-${new Date().toISOString().split('T')[0]}.csv`; a.click(); URL.revokeObjectURL(url);
+    const a = document.createElement('a'); a.href = url; a.download = `outreign-report-${new Date().toISOString().split('T')[0]}.csv`; a.click(); URL.revokeObjectURL(url);
   };
 
   const handleExportPDF = () => {
@@ -138,7 +138,7 @@ const Analytics = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `salesos-agency-report-${date}.csv`;
+    a.download = `outreign-agency-report-${date}.csv`;
     a.click();
     URL.revokeObjectURL(url);
     toast.success('Agency report downloaded');

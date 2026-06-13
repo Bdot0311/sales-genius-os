@@ -39,8 +39,8 @@ interface Integration {
 }
 
 const OAUTH_PROVIDERS = new Set(["google", "hubspot", "calendly"]);
-const PUBLISHED_OAUTH_ORIGIN = "https://sales-genius-os.lovable.app";
-const OAUTH_MESSAGE_TYPE = "salesos-oauth-message";
+const PUBLISHED_OAUTH_ORIGIN = "https://outreign.lovable.app";
+const OAUTH_MESSAGE_TYPE = "outreign-oauth-message";
 
 const isEmbeddedPreview = () => {
   try {

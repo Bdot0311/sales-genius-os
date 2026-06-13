@@ -32,7 +32,7 @@ const WelcomeEmail = ({ name }: WelcomeEmailProps) => (
           <Text style={stepText}><strong>3.</strong> Launch your first email sequence</Text>
         </Section>
         <Section style={ctaSection}>
-          <Button style={button} href="https://sales-genius-os.lovable.app/dashboard">
+          <Button style={button} href="https://outreign.lovable.app/dashboard">
             Go to Dashboard →
           </Button>
         </Section>

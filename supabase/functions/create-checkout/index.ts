@@ -72,7 +72,7 @@ serve(async (req) => {
       }
     }
 
-    const origin = req.headers.get('origin') || 'https://sales-genius-os.lovable.app';
+    const origin = req.headers.get('origin') || 'https://outreign.lovable.app';
 
     const sessionParams: any = {
       line_items: [

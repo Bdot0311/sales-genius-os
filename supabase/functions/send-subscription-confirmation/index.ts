@@ -42,7 +42,7 @@ serve(async (req) => {
     const planName = plan || "Growth";
     const planAmount = amount || "$29";
     const appUrl = Deno.env.get("APP_URL") ?? "https://outreign.io";
-    const logoUrl = "https://ghgfjnepvxvxrncmskys.supabase.co/storage/v1/object/public/email-assets/salesos-logo.webp";
+    const logoUrl = "https://ghgfjnepvxvxrncmskys.supabase.co/storage/v1/object/public/email-assets/outreign-logo.webp";
 
     const planFeatures: Record<string, string[]> = {
       starter: ["1,000 prospect credits per month", "Basic lead enrichment", "AI email generator", "Email support"],

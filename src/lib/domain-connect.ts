@@ -14,7 +14,7 @@
 // Our registered DomainConnect service provider + service template identifiers.
 // Update these once the template PR is merged into the registry.
 export const SERVICE_PROVIDER_ID =
-  import.meta.env.VITE_DOMAINCONNECT_PROVIDER_ID || "salesos.io";
+  import.meta.env.VITE_DOMAINCONNECT_PROVIDER_ID || "outreign.io";
 export const SERVICE_ID =
   import.meta.env.VITE_DOMAINCONNECT_SERVICE_ID || "email-auth";
 

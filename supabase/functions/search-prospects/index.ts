@@ -93,7 +93,7 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         prospects,
-        source: 'salesos_intelligence'
+        source: 'outreign_intelligence'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

@@ -104,7 +104,7 @@ serve(async (req) => {
 
     console.log("Processing password reset for email:", email);
 
-    const logoUrl = "https://ghgfjnepvxvxrncmskys.supabase.co/storage/v1/object/public/email-assets/salesos-logo.webp";
+    const logoUrl = "https://ghgfjnepvxvxrncmskys.supabase.co/storage/v1/object/public/email-assets/outreign-logo.webp";
     const redirectUrl = `${APP_URL}/auth?type=recovery`;
     
     console.log("Redirect URL:", redirectUrl);

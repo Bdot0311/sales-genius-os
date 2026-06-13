@@ -1303,7 +1303,7 @@ Troubleshoot API authentication problems.
 Use this curl command:
 
 \`\`\`bash
-curl -X GET "https://api.salesos.com/v1/leads" \\
+curl -X GET "https://api.outreign.io/v1/leads" \\
   -H "X-API-Key: YOUR_API_KEY"
 \`\`\`
 
@@ -1500,7 +1500,7 @@ Build powerful integrations with the OutReign REST API.
 ### Base URL
 
 \`\`\`
-https://api.salesos.com/v1
+https://api.outreign.io/v1
 \`\`\`
 
 ### Authentication
@@ -1508,7 +1508,7 @@ https://api.salesos.com/v1
 All requests require an API key:
 
 \`\`\`bash
-curl -X GET "https://api.salesos.com/v1/leads" \\
+curl -X GET "https://api.outreign.io/v1/leads" \\
   -H "X-API-Key: sos_your_api_key"
 \`\`\`
 
@@ -1618,7 +1618,7 @@ When issues occur:
 Monitor programmatically:
 
 \`\`\`bash
-curl https://api.salesos.com/health
+curl https://api.outreign.io/health
 \`\`\`
 
 Response:
@@ -1649,7 +1649,7 @@ Verify webhook authenticity using HMAC signatures.
 
 Every webhook includes a signature header:
 \`\`\`
-X-Salesos-Signature: sha256=abc123...
+X-OutReign-Signature: sha256=abc123...
 \`\`\`
 
 This is an HMAC-SHA256 hash of the payload using your webhook secret.
@@ -1678,7 +1678,7 @@ function verifySignature(payload, signature, secret) {
 
 // In your endpoint
 app.post('/webhook', (req, res) => {
-  const signature = req.headers['x-salesos-signature'];
+  const signature = req.headers['x-outreign-signature'];
   const isValid = verifySignature(
     JSON.stringify(req.body),
     signature,

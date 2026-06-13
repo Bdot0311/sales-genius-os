@@ -191,7 +191,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in refresh-salesos-network function:', error);
+    console.error('Error in refresh-outreign-network function:', error);
     return new Response(
       JSON.stringify({ 
         error: error instanceof Error ? error.message : 'Unknown error occurred',
