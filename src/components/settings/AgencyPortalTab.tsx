@@ -25,7 +25,7 @@ interface AgencyClient {
   created_at: string;
 }
 
-const SITE = "https://salesos.alephwavex.io";
+const SITE = "https://outreign.io";
 
 export const AgencyPortalTab = () => {
   const navigate = useNavigate();

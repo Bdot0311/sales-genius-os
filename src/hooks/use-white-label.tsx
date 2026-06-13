@@ -50,7 +50,7 @@ const applyWhiteLabel = (data: WhiteLabelSettings) => {
   }
 };
 
-const OWN_DOMAINS = ["outreign.io", "salesos.alephwavex.io", "localhost", "127.0.0.1"];
+const OWN_DOMAINS = ["outreign.io", "localhost", "127.0.0.1"];
 
 export const useWhiteLabel = () => {
   const [settings, setSettings] = useState<WhiteLabelSettings | null>(null);
