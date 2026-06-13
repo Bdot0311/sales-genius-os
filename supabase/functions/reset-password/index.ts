@@ -73,8 +73,6 @@ serve(async (req) => {
       } catch (_) { /* not an admin call, continue normally */ }
     }
 
-    );
-    
     // Admin requests bypass rate limiting; normal requests are rate-limited
     if (!isAdminRequest && !checkRateLimit(clientIP)) {
       console.log("Rate limit exceeded for password reset, IP:", clientIP);
