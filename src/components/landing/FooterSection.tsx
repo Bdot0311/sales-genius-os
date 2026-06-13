@@ -119,6 +119,9 @@ export const FooterSection = () => {
               <a href="https://nicklaunches.com/products/salesos/?utm_source=outreign.io&utm_medium=badge&utm_campaign=featured" target="_blank" rel="noopener">
                 <img src="https://nicklaunches.com/badges/featured-dark.svg" alt="OutReign on Nick Launches" className="h-10 w-auto" width={244} height={56} loading="lazy" />
               </a>
+              <a href="https://plugyourbuild.com/listing/outreign-b8ad99" rel="dofollow">
+                <img src="https://plugyourbuild.com/api/badge/outreign-b8ad99?style=dark" alt="Listed on Plug Your Build" className="h-10 w-auto" width={180} height={40} loading="lazy" />
+              </a>
               <a href="https://rankinpublic.xyz/products/outreign.io" target="_blank" rel="noopener noreferrer">
                 <img src="https://rankinpublic.xyz/api/badges/badge-featured.png?site=outreign.io" alt="Featured on RankInPublic" title="Featured on RankInPublic" className="h-10 w-auto" width={125} height={40} loading="lazy" />
               </a>
