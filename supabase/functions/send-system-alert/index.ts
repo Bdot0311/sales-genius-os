@@ -57,7 +57,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "OutReign Alerts <alerts@salesos.alephwavex.io>",
+        from: "OutReign Alerts <alerts@notify.bdotindustries.com>",
         to: [SUPPORT_EMAIL],
         subject,
         html,
