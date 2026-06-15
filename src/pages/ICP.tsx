@@ -16,8 +16,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { Slider } from "@/components/ui/slider";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, Target, Plus, Trash2, X, Save, Building2, Users, Activity, Ban, Lightbulb, Sparkles, BarChart3 } from "lucide-react";
+import { AlertCircle, Target, Plus, Trash2, X, Save, Building2, Users, Activity, Ban, Lightbulb, Sparkles, BarChart3, Search } from "lucide-react";
 import { toast } from "sonner";
+import { ICPLookalikesDialog } from "@/components/dashboard/ICPLookalikesDialog";
 
 // ─── Option catalogs ─────────────────────────────────────────────────────────
 const INDUSTRY_OPTIONS = [
@@ -196,8 +197,16 @@ const ICP = () => {
   const { hasFeature, gateModalOpen, setGateModalOpen, gatedFeature, currentPlan, gatedAction, features } = usePlanFeatures();
   const [editing, setEditing] = useState<Partial<ICPProfile> | null>(null);
   const [isNew, setIsNew] = useState(false);
+  const [lookalikeProfile, setLookalikeProfile] = useState<ICPProfile | null>(null);
 
   const icpGated = !hasFeature('icpBuilder');
+  const lookalikeGated = !hasFeature('icpLookalike');
+
+  const openLookalikes = (p: ICPProfile, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (lookalikeGated) { gatedAction('icpLookalike', () => {}); return; }
+    setLookalikeProfile(p);
+  };
 
   const openNew = () => {
     if (icpGated) { gatedAction('icpBuilder', () => {}); return; }
@@ -295,6 +304,17 @@ const ICP = () => {
                         {p.target_titles.length > 3 && <Badge variant="outline" className="text-xs">+{p.target_titles.length - 3}</Badge>}
                       </div>
                     )}
+                    <div className="pt-2 border-t">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={(e) => openLookalikes(p, e)}
+                      >
+                        <Search className="w-3.5 h-3.5 mr-1.5" />
+                        Find Lookalikes
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               );
@@ -677,6 +697,13 @@ const ICP = () => {
           )}
         </SheetContent>
       </Sheet>
+
+      <ICPLookalikesDialog
+        open={!!lookalikeProfile}
+        onOpenChange={(o) => { if (!o) setLookalikeProfile(null); }}
+        profile={lookalikeProfile}
+      />
+
 
       {gatedFeature && (
         <FeatureGateModal
