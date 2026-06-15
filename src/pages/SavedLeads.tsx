@@ -526,7 +526,7 @@ const SavedLeads = () => {
                     Enriching leads... {bulkProgress.current}/{bulkProgress.total}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    ✓ {bulkProgress.succeeded} enriched · ✗ {bulkProgress.failed} failed
+                    ✓ {bulkProgress.succeeded} enriched · ↻ {bulkProgress.skipped} up-to-date · ✗ {bulkProgress.failed} failed
                   </span>
                 </div>
                 <Progress value={(bulkProgress.current / bulkProgress.total) * 100} className="h-2" />
