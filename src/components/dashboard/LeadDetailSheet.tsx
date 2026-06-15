@@ -11,6 +11,23 @@ import { PresenceIndicator } from "@/components/realtime/PresenceIndicator";
 import { format } from "date-fns";
 import { useState } from "react";
 
+function toValidLinkedInUrl(raw: string | null | undefined, kind: 'profile' | 'company' = 'profile'): string | null {
+  if (!raw) return null;
+  let s = raw.trim();
+  if (!s || s.toLowerCase() === 'linkedin') return null;
+  if (!/^https?:\/\//i.test(s)) s = `https://${s}`;
+  try {
+    const u = new URL(s);
+    if (!u.hostname.includes('linkedin.com')) return null;
+    const path = u.pathname.replace(/\/+$/, '');
+    const expected = kind === 'company' ? /^\/(company|school)\/[^/]+/ : /^\/(in|pub)\/[^/]+/;
+    if (!expected.test(path)) return null;
+    return `https://www.linkedin.com${path}`;
+  } catch {
+    return null;
+  }
+}
+
 interface Lead {
   id: string;
   company_name: string;
@@ -291,12 +308,12 @@ export const LeadDetailSheet = ({
                     <a href={`tel:${lead.contact_phone}`} className="text-primary hover:underline">{lead.contact_phone}</a>
                   </div>
                 )}
-                {lead.linkedin_url && (
+                {(() => { const u = toValidLinkedInUrl(lead.linkedin_url, 'profile'); return u && (
                   <div className="flex items-center gap-2">
                     <Linkedin className="w-4 h-4 text-muted-foreground" />
-                    <a href={lead.linkedin_url.startsWith('http') ? lead.linkedin_url : `https://${lead.linkedin_url}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">LinkedIn Profile</a>
+                    <a href={u} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">LinkedIn Profile</a>
                   </div>
-                )}
+                ); })()}
                 {lead.job_title && (
                   <div className="flex items-center gap-2"><Briefcase className="w-4 h-4 text-muted-foreground" /><span>{lead.job_title}</span></div>
                 )}
@@ -330,9 +347,9 @@ export const LeadDetailSheet = ({
                 {lead.company_website && (
                   <div className="flex items-center gap-2"><Globe className="w-4 h-4 text-muted-foreground" /><a href={lead.company_website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{lead.company_website}</a></div>
                 )}
-                {lead.company_linkedin && (
-                  <div className="flex items-center gap-2"><Linkedin className="w-4 h-4 text-muted-foreground" /><a href={lead.company_linkedin} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Company LinkedIn</a></div>
-                )}
+                {(() => { const u = toValidLinkedInUrl(lead.company_linkedin, 'company'); return u && (
+                  <div className="flex items-center gap-2"><Linkedin className="w-4 h-4 text-muted-foreground" /><a href={u} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Company LinkedIn</a></div>
+                ); })()}
                 {lead.industry && (
                   <div className="flex items-center gap-2"><Briefcase className="w-4 h-4 text-muted-foreground" /><span>{lead.industry}</span></div>
                 )}

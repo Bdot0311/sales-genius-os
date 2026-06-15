@@ -25,17 +25,20 @@ function isJobTitle(name: string): boolean {
   return false;
 }
 
-function normalizeLinkedInUrl(url: string | null): string | null {
+function normalizeLinkedInUrl(url: string | null, kind: 'profile' | 'company' = 'profile'): string | null {
   if (!url) return null;
   let cleaned = url.trim();
+  if (!cleaned || cleaned.toLowerCase() === 'linkedin') return null;
   if (!cleaned.startsWith('http')) cleaned = 'https://' + cleaned;
   try {
     const parsed = new URL(cleaned);
-    if (!parsed.hostname.includes('linkedin.com')) return cleaned;
+    if (!parsed.hostname.includes('linkedin.com')) return null;
     const path = parsed.pathname.replace(/\/+$/, '');
+    const expected = kind === 'company' ? /^\/(company|school)\/[^/]+/ : /^\/(in|pub)\/[^/]+/;
+    if (!expected.test(path)) return null;
     return `https://www.linkedin.com${path}`;
   } catch {
-    return cleaned;
+    return null;
   }
 }
 
@@ -194,7 +197,8 @@ serve(async (req) => {
       if (p.job_title || p.title) enrichmentData.job_title = p.job_title ?? p.title;
       if (p.seniority) enrichmentData.seniority = p.seniority;
       if (p.linkedin_url || p.linkedInUrl) {
-        enrichmentData.linkedin_url = normalizeLinkedInUrl(p.linkedin_url ?? p.linkedInUrl);
+        const norm = normalizeLinkedInUrl(p.linkedin_url ?? p.linkedInUrl, 'profile');
+        if (norm) enrichmentData.linkedin_url = norm;
       }
       if (p.phone || p.phone_number || p.mobile_phone) {
         enrichmentData.contact_phone = p.phone ?? p.phone_number ?? p.mobile_phone;
@@ -213,7 +217,8 @@ serve(async (req) => {
       const size = c.size ?? c.employee_count ?? c.employeeRange ?? root.company_size;
       if (size) enrichmentData.employee_count = String(size);
       if (c.linkedin_url || c.linkedInUrl) {
-        enrichmentData.company_linkedin = normalizeLinkedInUrl(c.linkedin_url ?? c.linkedInUrl);
+        const norm = normalizeLinkedInUrl(c.linkedin_url ?? c.linkedInUrl, 'company');
+        if (norm) enrichmentData.company_linkedin = norm;
       }
       const desc = c.description ?? root.company_description;
       if (desc) enrichmentData.company_description = desc;
