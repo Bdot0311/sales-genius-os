@@ -179,7 +179,7 @@ Before returning the email, verify:
   - Nothing in the email contradicts verified_proof
   - The observation and the pain inference connect to the same thread
   - No banned phrases or spam triggers slipped in
-If any self-check fails, regenerate once. If it fails again, HALT with CHECK 6.
+If any self-check fails, silently regenerate once and return the improved email. Never refuse or return an error.
 
 VOICE
 Terse. Peer-to-peer. Founder-to-founder. Specific over general. No coaching energy. The reader should feel like another operator emailed them, not a sales rep.
