@@ -236,12 +236,15 @@ serve(async (req) => {
 
     let noMatchReason = '';
     if (enrichedFields.length === 0) {
-      enrichmentData.enrichment_status = 'failed';
+      const alreadyEnriched = lead.enrichment_status === 'enriched' || !!lead.enriched_at;
+      enrichmentData.enrichment_status = alreadyEnriched ? 'enriched' : 'failed';
       const hasEmail = !!lead.contact_email;
       const hasLinkedin = !!lead.linkedin_url;
       const hasRealName = !nameIsTitle && lead.contact_name?.trim().split(/\s+/).length >= 2;
 
-      if (!hasEmail && !hasLinkedin && !hasRealName) {
+      if (alreadyEnriched) {
+        noMatchReason = 'Lead is already up-to-date. No new enrichment fields were found.';
+      } else if (!hasEmail && !hasLinkedin && !hasRealName) {
         noMatchReason = 'Not enough identifying data. Add a full name, email address, or LinkedIn URL and try again.';
       } else if (nameIsTitle && !hasEmail && !hasLinkedin) {
         noMatchReason = `"${lead.contact_name}" looks like a job title. Add an email or LinkedIn URL to identify this contact.`;
@@ -293,6 +296,7 @@ serve(async (req) => {
         message: enrichedFields.length > 0 ? 'Lead enriched successfully' : noMatchReason,
         enrichedFields,
         noMatch: enrichedFields.length === 0,
+        alreadyUpToDate: enrichedFields.length === 0 && (lead.enrichment_status === 'enriched' || !!lead.enriched_at),
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
