@@ -78,7 +78,7 @@ const SavedLeads = () => {
   const [enrichmentHistory, setEnrichmentHistory] = useState<any[]>([]);
   const [isEnriching, setIsEnriching] = useState(false);
   const [bulkEnriching, setBulkEnriching] = useState(false);
-  const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0, succeeded: 0, failed: 0 });
+  const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0, succeeded: 0, failed: 0, skipped: 0 });
   const [filterIntentLabel, setFilterIntentLabel] = useState<string>("all");
   const [filterIndustry, setFilterIndustry] = useState<string>("all");
   const [filterCompanySize, setFilterCompanySize] = useState<string>("all");
