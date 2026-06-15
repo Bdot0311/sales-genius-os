@@ -36,8 +36,11 @@ function MatchRow({ label, icon: Icon, matched }: { label: string; icon: React.C
 
 export const ICPScoreBreakdown = ({ lead, score }: ICPScoreBreakdownProps) => {
   const { profiles } = useICPProfiles();
-  const displayScore = score ?? lead.icp_score ?? 0;
   const breakdown = calculateICPMatch(lead, profiles);
+  // When ICP profiles exist, the breakdown drives the score so the number
+  // always matches the visible Job / Industry / Size / Tech checkmarks below.
+  // Without profiles we fall back to the AI-assigned score stored on the lead.
+  const displayScore = breakdown ? breakdown.score : (score ?? lead.icp_score ?? 0);
 
   const getScoreBadgeVariant = (s: number): "default" | "secondary" | "destructive" => {
     if (s >= 71) return "default";

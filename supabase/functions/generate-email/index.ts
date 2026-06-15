@@ -588,31 +588,39 @@ serve(async (req) => {
       jobTitle: string | null,
       industry: string | null,
       website: string | null,
+      contactName: string | null,
+      leadId: string | null,
+      bypassCache: boolean,
     ): Promise<string> => {
       try {
         if (!companyName || companyName === 'your company') return '';
-        const cacheKey = `lead_research:${companyName.toLowerCase().slice(0, 80)}:${(jobTitle || '').toLowerCase().slice(0, 40)}`;
+        // Cache per (lead, company, role) so two contacts at the same company
+        // each get research focused on their own role rather than recycling
+        // the first one we ran.
+        const cacheKey = `lead_research_v2:${(leadId || '').slice(0, 40)}:${companyName.toLowerCase().slice(0, 60)}:${(jobTitle || '').toLowerCase().slice(0, 40)}`;
 
-        // 1. Cache hit?
-        const { data: cached } = await serviceClient
-          .from('api_cache')
-          .select('cache_value, expires_at')
-          .eq('cache_key', cacheKey)
-          .maybeSingle();
-        if (cached && cached.expires_at && new Date(cached.expires_at) > new Date()) {
-          const v = (cached.cache_value as any)?.research;
-          if (typeof v === 'string' && v.length > 0) return v;
+        // 1. Cache hit? (skip when caller asks for a fresh angle, e.g. variant regen)
+        if (!bypassCache) {
+          const { data: cached } = await serviceClient
+            .from('api_cache')
+            .select('cache_value, expires_at')
+            .eq('cache_key', cacheKey)
+            .maybeSingle();
+          if (cached && cached.expires_at && new Date(cached.expires_at) > new Date()) {
+            const v = (cached.cache_value as any)?.research;
+            if (typeof v === 'string' && v.length > 0) return v;
+          }
         }
 
         // 2. Live grounded research via Gemini google_search tool
-        const researchPrompt = `Research the company "${companyName}"${jobTitle ? ` for the role of ${jobTitle}` : ''}${industry ? ` in the ${industry} industry` : ''}${website ? ` (website: ${website})` : ''}.
+        const researchPrompt = `Research the company "${companyName}"${jobTitle ? ` specifically for someone in the ${jobTitle} role` : ''}${contactName ? ` (target contact: ${contactName})` : ''}${industry ? ` in the ${industry} industry` : ''}${website ? ` (website: ${website})` : ''}.
 
-Return 3–5 SPECIFIC, RECENT, VERIFIABLE facts that would be useful for a cold email opener. Prioritize:
+Return 3–5 SPECIFIC, RECENT, VERIFIABLE facts useful for a cold email opener that is unique to THIS company and THIS role. Prioritize:
 - Recent product launches, features, or platform changes (last 12 months)
 - Funding rounds, acquisitions, partnerships (last 18 months)
-- Recent senior hires or leadership changes
+- Recent senior hires or leadership changes${jobTitle ? ` — especially anything that intersects the ${jobTitle} function` : ''}
 - Public initiatives, customer wins, expansion into new markets/segments
-- Publicly stated operational details (e.g. "they run founder-led sales", their tech stack from job posts)
+- Publicly stated operational details (their tech stack from job posts, GTM motion, etc.)
 
 STRICT RULES:
 - Only state facts you can confirm from search results. NO speculation, NO inferences.
@@ -620,7 +628,8 @@ STRICT RULES:
 - Each fact on its own line, prefixed with "- ".
 - Keep each fact under 25 words.
 - Do NOT include URLs in the fact lines.
-- Do NOT make up metrics, percentages, or customer counts.`;
+- Do NOT make up metrics, percentages, or customer counts.
+- The facts must be specific enough that they could NOT plausibly apply to a different company.`;
 
         const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
@@ -665,6 +674,7 @@ STRICT RULES:
         return '';
       }
     };
+
 
     const sanitizedContactName     = sanitizeString(lead.contact_name || 'there', 100);
     const firstName                = sanitizedContactName.split(' ')[0];
@@ -711,17 +721,25 @@ STRICT RULES:
         sanitizedJobTitle,
         sanitizedIndustry,
         (lead.company_website || lead.website || null) as string | null,
+        sanitizedContactName,
+        (lead.id || null) as string | null,
+        variantNum > 0, // variant regenerations bypass cache so the angle actually changes
       );
     }
 
     const researchBlock = verifiedResearch
-      ? `\n\nVERIFIED RESEARCH (web-grounded, treat as the ONLY source of external facts about this prospect — do not invent anything beyond this):\n${verifiedResearch}`
+      ? `\n\nVERIFIED RESEARCH for ${sanitizedContactName} at ${sanitizedCompanyName} (web-grounded, treat as the ONLY source of external facts about this prospect — do not invent anything beyond this):\n${verifiedResearch}`
       : `\n\nVERIFIED RESEARCH: none available. You MUST NOT invent any external facts about this prospect. Stick to the provided lead fields (role, industry, size, tech stack) and operational inferences a peer in this space could reasonably make from role/industry alone. NEVER claim a funding round, launch, hire, customer, metric, or initiative.`;
 
     const NO_HALLUCINATION_RULE = `\n\nNO-HALLUCINATION RULE — non-negotiable:
 - The ONLY facts you may state about the prospect or their company are: (a) the lead fields above, and (b) items in VERIFIED RESEARCH.
 - Do NOT invent funding events, product launches, hires, customer names, revenue, headcount, or any percentage/metric.
-- If VERIFIED RESEARCH is empty, write a relevance-based opener grounded in role + industry only — never fabricate a "recent signal".`;
+- If VERIFIED RESEARCH is empty, write a relevance-based opener grounded in role + industry only — never fabricate a "recent signal".
+
+UNIQUENESS RULE — non-negotiable:
+- This email is for ${sanitizedContactName} at ${sanitizedCompanyName}${sanitizedJobTitle ? ` (${sanitizedJobTitle})` : ''}. The opener, the inferred pain, and the CTA must read like they could not be sent verbatim to a different prospect.
+- Do NOT recycle a generic structure that would work for any company in the industry. Anchor the email in this contact's specific company and role.`;
+
 
     let systemPrompt: string;
     let userPrompt: string;
