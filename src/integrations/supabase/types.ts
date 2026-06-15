@@ -77,6 +77,7 @@ export type Database = {
           setting_key: string
           setting_value: Json
           updated_at: string
+          updated_by: string | null
         }
         Insert: {
           category?: string
@@ -86,6 +87,7 @@ export type Database = {
           setting_key: string
           setting_value?: Json
           updated_at?: string
+          updated_by?: string | null
         }
         Update: {
           category?: string
@@ -95,6 +97,7 @@ export type Database = {
           setting_key?: string
           setting_value?: Json
           updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }
