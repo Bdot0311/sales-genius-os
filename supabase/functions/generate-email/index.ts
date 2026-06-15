@@ -702,11 +702,33 @@ STRICT RULES:
       return lines.join('\n');
     };
 
+    // ─── Run lead research (skip for precision edits — they don't need new context) ──
+    const isPrecisionEditPre = goal === 'custom' && typeof requestData.customInstruction === 'string' && requestData.customInstruction.length > 0;
+    let verifiedResearch = '';
+    if (!isPrecisionEditPre) {
+      verifiedResearch = await researchLead(
+        sanitizedCompanyName,
+        sanitizedJobTitle,
+        sanitizedIndustry,
+        (lead.company_website || lead.website || null) as string | null,
+      );
+    }
+
+    const researchBlock = verifiedResearch
+      ? `\n\nVERIFIED RESEARCH (web-grounded, treat as the ONLY source of external facts about this prospect — do not invent anything beyond this):\n${verifiedResearch}`
+      : `\n\nVERIFIED RESEARCH: none available. You MUST NOT invent any external facts about this prospect. Stick to the provided lead fields (role, industry, size, tech stack) and operational inferences a peer in this space could reasonably make from role/industry alone. NEVER claim a funding round, launch, hire, customer, metric, or initiative.`;
+
+    const NO_HALLUCINATION_RULE = `\n\nNO-HALLUCINATION RULE — non-negotiable:
+- The ONLY facts you may state about the prospect or their company are: (a) the lead fields above, and (b) items in VERIFIED RESEARCH.
+- Do NOT invent funding events, product launches, hires, customer names, revenue, headcount, or any percentage/metric.
+- If VERIFIED RESEARCH is empty, write a relevance-based opener grounded in role + industry only — never fabricate a "recent signal".`;
+
     let systemPrompt: string;
     let userPrompt: string;
 
     // ─── Branch by goal ────────────────────────────────────────────────────────
     if (goal === 'subject_only') {
+
       systemPrompt = SUBJECT_SYSTEM_PROMPT;
 
       const emailPurpose = templateDescription || templateGoal;
