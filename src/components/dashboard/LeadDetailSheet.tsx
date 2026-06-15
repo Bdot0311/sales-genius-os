@@ -28,6 +28,14 @@ function toValidLinkedInUrl(raw: string | null | undefined, kind: 'profile' | 'c
   }
 }
 
+// Safari blocks anchor navigations to LinkedIn from pages with COOP via
+// "Navigation was blocked by Cross-Origin-Opener-Policy". Opening through
+// window.open with explicit noopener,noreferrer features bypasses the bug.
+function openExternal(url: string) {
+  const win = window.open(url, '_blank', 'noopener,noreferrer');
+  if (win) win.opener = null;
+}
+
 interface Lead {
   id: string;
   company_name: string;
