@@ -296,8 +296,8 @@ const ICP = () => {
                     )}
                     <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                       <span>{p.company_size_min}–{p.company_size_max} employees</span>
-                      {p.business_model && <span>• {p.business_model}</span>}
-                      {p.deal_size_range && <span>• {p.deal_size_range} ACV</span>}
+                      {p.business_model && p.business_model.length > 0 && <span>• {p.business_model.join(", ")}</span>}
+                      {p.deal_size_range && p.deal_size_range.length > 0 && <span>• {p.deal_size_range.join(", ")} ACV</span>}
                     </div>
                     {p.target_titles.length > 0 && (
                       <div className="flex flex-wrap gap-1">
