@@ -15,12 +15,22 @@ interface ScoreBreakdown {
   size: boolean;
   tech: boolean;
   score: number;
+  // true = had data but didn't match; false = matched; null = no data to evaluate
+  titleEval: boolean | null;
+  industryEval: boolean | null;
+  sizeEval: boolean | null;
+  techEval: boolean | null;
+  hasEnoughData: boolean;
 }
 
 export function calculateICPMatch(lead: Lead, profiles: ICPProfile[]): ScoreBreakdown | null {
   if (!profiles.length) return null;
 
-  let bestScore: ScoreBreakdown = { title: false, industry: false, size: false, tech: false, score: 0 };
+  let bestScore: ScoreBreakdown = {
+    title: false, industry: false, size: false, tech: false, score: 0,
+    titleEval: null, industryEval: null, sizeEval: null, techEval: null,
+    hasEnoughData: false,
+  };
 
   for (const profile of profiles) {
     let titleMatch = false;
@@ -28,30 +38,42 @@ export function calculateICPMatch(lead: Lead, profiles: ICPProfile[]): ScoreBrea
     let sizeMatch = false;
     let techMatch = false;
 
+    // null = no data to evaluate; true/false = evaluated
+    let titleEval: boolean | null = null;
+    let industryEval: boolean | null = null;
+    let sizeEval: boolean | null = null;
+    let techEval: boolean | null = null;
+
     // Title match
     if (lead.job_title && profile.target_titles.length > 0) {
       const lower = lead.job_title.toLowerCase();
       titleMatch = profile.target_titles.some(
         (t) => lower.includes(t.toLowerCase()) || t.toLowerCase().includes(lower)
       );
+      titleEval = titleMatch;
+    } else if (lead.job_title && profile.target_titles.length === 0) {
+      titleEval = null; // profile has no titles to match against
     }
 
     // Industry match
     if (lead.industry && profile.industries.length > 0) {
       const lower = lead.industry.toLowerCase();
       industryMatch = profile.industries.some((i) => lower.includes(i.toLowerCase()));
+      industryEval = industryMatch;
     }
 
     // Size match
     const empCount = parseInt(lead.employee_count || lead.company_size || "0", 10);
     if (empCount > 0) {
       sizeMatch = empCount >= profile.company_size_min && empCount <= profile.company_size_max;
+      sizeEval = sizeMatch;
     }
 
     // Tech match
     if (lead.technologies && lead.technologies.length > 0 && profile.tech_stack.length > 0) {
       const leadTech = lead.technologies.map((t) => t.toLowerCase());
       techMatch = profile.tech_stack.some((t) => leadTech.includes(t.toLowerCase()));
+      techEval = techMatch;
     }
 
     const w = (profile as any).scoring_weights || { title: 25, industry: 25, size: 25, tech: 25 };
@@ -60,9 +82,14 @@ export function calculateICPMatch(lead: Lead, profiles: ICPProfile[]): ScoreBrea
       (industryMatch ? w.industry : 0) +
       (sizeMatch ? w.size : 0) +
       (techMatch ? w.tech : 0);
+    const evaluatedCount = [titleEval, industryEval, sizeEval, techEval].filter(v => v !== null).length;
 
-    if (score > bestScore.score) {
-      bestScore = { title: titleMatch, industry: industryMatch, size: sizeMatch, tech: techMatch, score };
+    if (score > bestScore.score || (score === bestScore.score && evaluatedCount > [bestScore.titleEval, bestScore.industryEval, bestScore.sizeEval, bestScore.techEval].filter(v => v !== null).length)) {
+      bestScore = {
+        title: titleMatch, industry: industryMatch, size: sizeMatch, tech: techMatch, score,
+        titleEval, industryEval, sizeEval, techEval,
+        hasEnoughData: evaluatedCount >= 2,
+      };
     }
   }
 

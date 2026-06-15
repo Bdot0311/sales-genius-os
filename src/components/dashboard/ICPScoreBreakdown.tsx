@@ -1,8 +1,8 @@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Target, Building2, Users, Code, TrendingUp } from "lucide-react";
+import { CheckCircle, XCircle, Minus, Target, Building2, Users, Code, TrendingUp } from "lucide-react";
 import { calculateICPMatch, getScoreColor } from "@/lib/icp-scoring";
-import { useICPProfiles, type ICPProfile } from "@/hooks/use-icp-profiles";
+import { useICPProfiles } from "@/hooks/use-icp-profiles";
 
 interface Lead {
   job_title?: string | null;
@@ -18,17 +18,27 @@ interface ICPScoreBreakdownProps {
   score?: number | null;
 }
 
-function MatchRow({ label, icon: Icon, matched }: { label: string; icon: React.ComponentType<{ className?: string }>; matched: boolean }) {
+function MatchRow({
+  label,
+  icon: Icon,
+  evaluated,
+}: {
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  evaluated: boolean | null; // true=match, false=no match, null=no data
+}) {
   return (
     <div className="flex items-center justify-between py-1.5">
       <div className="flex items-center gap-2 text-sm">
         <Icon className="w-3.5 h-3.5 text-muted-foreground" />
-        <span>{label}</span>
+        <span className={evaluated === null ? "text-muted-foreground" : ""}>{label}</span>
       </div>
-      {matched ? (
+      {evaluated === true ? (
         <CheckCircle className="w-4 h-4 text-green-500" />
-      ) : (
+      ) : evaluated === false ? (
         <XCircle className="w-4 h-4 text-red-500" />
+      ) : (
+        <Minus className="w-4 h-4 text-muted-foreground/50" title="No data available" />
       )}
     </div>
   );
@@ -36,17 +46,19 @@ function MatchRow({ label, icon: Icon, matched }: { label: string; icon: React.C
 
 export const ICPScoreBreakdown = ({ lead, score }: ICPScoreBreakdownProps) => {
   const { profiles } = useICPProfiles();
+  // Always use the stored AI score as the authoritative display value.
+  // The live profile-based recalculation drives the criteria rows only.
+  const displayScore = score ?? lead.icp_score ?? 0;
   const breakdown = calculateICPMatch(lead, profiles);
-  // When ICP profiles exist, the breakdown drives the score so the number
-  // always matches the visible Job / Industry / Size / Tech checkmarks below.
-  // Without profiles we fall back to the AI-assigned score stored on the lead.
-  const displayScore = breakdown ? breakdown.score : (score ?? lead.icp_score ?? 0);
 
   const getScoreBadgeVariant = (s: number): "default" | "secondary" | "destructive" => {
     if (s >= 71) return "default";
     if (s >= 41) return "secondary";
     return "destructive";
   };
+
+  const showProfileBreakdown = breakdown && breakdown.hasEnoughData;
+  const showDataWarning = breakdown && !breakdown.hasEnoughData && displayScore > 0;
 
   return (
     <Popover>
@@ -55,7 +67,7 @@ export const ICPScoreBreakdown = ({ lead, score }: ICPScoreBreakdownProps) => {
           variant={getScoreBadgeVariant(displayScore)}
           className="cursor-pointer hover:opacity-80 transition-opacity"
         >
-          {displayScore}
+          {displayScore}% ICP
         </Badge>
       </PopoverTrigger>
       <PopoverContent className="w-72 p-0" align="start">
@@ -70,24 +82,43 @@ export const ICPScoreBreakdown = ({ lead, score }: ICPScoreBreakdownProps) => {
           </div>
         </div>
 
-        {breakdown ? (
+        {profiles.length === 0 ? (
+          <div className="p-4">
+            <p className="text-sm text-muted-foreground">
+              No ICP profiles configured. Create one in the ICP Builder to see match breakdowns.
+            </p>
+          </div>
+        ) : showProfileBreakdown ? (
           <div className="p-4 space-y-0.5">
-            <MatchRow label="Job Title Match" icon={TrendingUp} matched={breakdown.title} />
-            <MatchRow label="Industry Match" icon={Building2} matched={breakdown.industry} />
-            <MatchRow label="Company Size Match" icon={Users} matched={breakdown.size} />
-            <MatchRow label="Tech Stack Match" icon={Code} matched={breakdown.tech} />
-            <div className="pt-3 mt-2 border-t border-border">
+            <MatchRow label="Job Title Match" icon={TrendingUp} evaluated={breakdown.titleEval} />
+            <MatchRow label="Industry Match" icon={Building2} evaluated={breakdown.industryEval} />
+            <MatchRow label="Company Size Match" icon={Users} evaluated={breakdown.sizeEval} />
+            <MatchRow label="Tech Stack Match" icon={Code} evaluated={breakdown.techEval} />
+            <div className="pt-3 mt-2 border-t border-border space-y-1">
               <p className="text-xs text-muted-foreground">
                 Each criterion contributes 25 points. Score is based on your best-matching ICP profile.
               </p>
+              {breakdown.titleEval === null || breakdown.industryEval === null || breakdown.sizeEval === null ? (
+                <p className="text-xs text-muted-foreground/70">
+                  — means the lead is missing that field's data.
+                </p>
+              ) : null}
             </div>
           </div>
         ) : (
-          <div className="p-4">
-            <p className="text-sm text-muted-foreground">
-              {profiles.length === 0
-                ? "No ICP profiles configured. Create one in the ICP Builder to see match breakdowns."
-                : "Score was set by AI lead scoring. Create an ICP profile for detailed matching."}
+          <div className="p-4 space-y-2">
+            {showDataWarning && (
+              <div className="space-y-0.5 opacity-60">
+                <MatchRow label="Job Title Match" icon={TrendingUp} evaluated={breakdown.titleEval} />
+                <MatchRow label="Industry Match" icon={Building2} evaluated={breakdown.industryEval} />
+                <MatchRow label="Company Size Match" icon={Users} evaluated={breakdown.sizeEval} />
+                <MatchRow label="Tech Stack Match" icon={Code} evaluated={breakdown.techEval} />
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground pt-1">
+              Score of {displayScore} was set by AI during lead discovery. Most profile criteria
+              can't be evaluated — enrich this lead to populate industry, company size, and tech
+              stack data.
             </p>
           </div>
         )}
