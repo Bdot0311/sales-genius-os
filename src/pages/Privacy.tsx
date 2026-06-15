@@ -163,6 +163,75 @@ const Privacy = () => {
                   ),
                 },
                 {
+                  id: "gmail-data-use",
+                  title: "Google User Data & Gmail API Usage",
+                  content: (
+                    <>
+                      <p className="mb-4">
+                        OutReign integrates with Google Gmail to enable email outreach features. This section details exactly what Gmail data we access, how we use it, and the safeguards in place.
+                      </p>
+                      <h3 className="text-sm font-semibold mb-2 mt-4" style={{ color: "hsl(0 0% 85%)" }}>What Gmail data we access</h3>
+                      <ul className="space-y-2 ml-4 mb-4">
+                        {[
+                          <><strong style={{ color: "hsl(0 0% 85%)" }}>Send emails:</strong> We access your Gmail account to send outbound emails composed through OutReign on your behalf</>,
+                          <><strong style={{ color: "hsl(0 0% 85%)" }}>Read replies:</strong> We detect and read replies to your sent emails to track response status and update campaign analytics</>,
+                          <><strong style={{ color: "hsl(0 0% 85%)" }}>Thread data:</strong> We access email thread metadata (subject lines, timestamps, participants) to associate replies with the correct outreach sequence</>,
+                          <><strong style={{ color: "hsl(0 0% 85%)" }}>Label data:</strong> We may read or apply Gmail labels (e.g., marking sent items) for organizational purposes</>,
+                        ].map((item, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm">
+                            <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: "hsl(261 75% 55% / 0.6)" }} />
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <h3 className="text-sm font-semibold mb-2 mt-4" style={{ color: "hsl(0 0% 85%)" }}>How we use Gmail data</h3>
+                      <p className="mb-4">
+                        Gmail data is used exclusively to power OutReign's outbound email features:
+                      </p>
+                      <ul className="space-y-2 ml-4 mb-4">
+                        {[
+                          "Send personalized outbound emails from your connected Gmail account",
+                          "Track reply rates and engagement metrics for your outreach campaigns",
+                          "Detect open events via embedded tracking pixels (1x1 transparent GIFs) in sent emails",
+                          "Update campaign status (e.g., mark as 'replied' or 'bounced') based on thread activity",
+                          "Sync sent email status back to your OutReign dashboard in real time",
+                        ].map((item, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm">
+                            <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: "hsl(261 75% 55% / 0.6)" }} />
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <h3 className="text-sm font-semibold mb-2 mt-4" style={{ color: "hsl(0 0% 85%)" }}>Data sharing and retention</h3>
+                      <p className="mb-4">
+                        We do not share Gmail data with any third parties beyond what is necessary to deliver the service. Gmail data is not used for advertising, is not sold to data brokers, and is not used to train general-purpose AI models. We retain Gmail thread metadata only for as long as your account is active and you maintain the Gmail connection. Upon disconnecting Gmail or deleting your account, thread metadata is removed within 30 days. Raw email content is never permanently stored — only aggregated campaign statistics (reply count, open rate) are retained for reporting.
+                      </p>
+                      <h3 className="text-sm font-semibold mb-2 mt-4" style={{ color: "hsl(0 0% 85%)" }}>Google Limited Use compliance</h3>
+                      <p className="mb-4">
+                        Our use and transfer of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer" className="underline" style={linkStyle}>Google API Services User Data Policy</a>, including the Limited Use requirements. Specifically:
+                      </p>
+                      <ul className="space-y-2 ml-4 mb-4">
+                        {[
+                          "We do not use Gmail data to serve advertisements",
+                          "We do not sell Gmail data to third parties",
+                          "We do not use Gmail data to train or improve general-purpose AI/ML models outside your account",
+                          "No human reads your emails — all processing is automated and scoped to your account only",
+                          "We only access the minimum Gmail scopes required for the stated functionality",
+                        ].map((item, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm">
+                            <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: "hsl(261 75% 55% / 0.6)" }} />
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <h3 className="text-sm font-semibold mb-2 mt-4" style={{ color: "hsl(0 0% 85%)" }}>Revoking access</h3>
+                      <p>
+                        You can revoke OutReign's access to your Gmail data at any time by visiting your <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer" className="underline" style={linkStyle}>Google Account permissions</a> and removing OutReign, or by disconnecting the Gmail integration in your OutReign account settings. Revocation takes effect immediately and OutReign will no longer be able to access your Gmail data.
+                      </p>
+                    </>
+                  ),
+                },
+                {
                   id: "your-rights",
                   title: "Your Rights",
                   content: (
