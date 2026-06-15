@@ -69,7 +69,7 @@ serve(async (req) => {
   } catch (error: any) {
     console.error("Upload error:", error);
     return new Response(
-      JSON.stringify({ error: error?.message ?? "Unknown error" }),
+      JSON.stringify({ error: "Logo upload failed. Please try again." }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
   }

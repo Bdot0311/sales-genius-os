@@ -80,30 +80,50 @@ Deno.serve(async (req) => {
             if (!leadEmail) {
               executionLog.push({ nodeId: nextNode.id, type: 'action', action: 'send_email', status: 'skipped', error: 'No email address available', timestamp: new Date().toISOString() });
             } else {
-              const emailBody = emailConfig.body || `<h1>Welcome to OutReign, ${leadName}!</h1><p>Thank you for your interest in our platform.</p><p>Best regards,<br>The OutReign Team</p>`;
-              const messageId = crypto.randomUUID();
+              const normalizedEmail = leadEmail.toLowerCase().trim();
 
-              await serviceClient.rpc('enqueue_email', {
-                queue_name: 'transactional_emails',
-                payload: {
-                  message_id: messageId,
-                  to: leadEmail,
-                  from: `OutReign <noreply@notify.bdotindustries.com>`,
-                  sender_domain: 'notify.bdotindustries.com',
-                  subject: emailConfig.subject || 'Welcome to OutReign!',
-                  html: emailBody,
-                  text: emailConfig.subject || 'Welcome to OutReign!',
-                  purpose: 'transactional',
-                  label: 'workflow-email',
-                  idempotency_key: `workflow-${workflowId}-${nextNode.id}-${Date.now()}`,
-                  queued_at: new Date().toISOString(),
-                },
-              });
+              // Compliance: skip suppressed and opted-out recipients
+              const { data: suppressed } = await serviceClient
+                .from('suppressed_emails')
+                .select('id')
+                .eq('email', normalizedEmail)
+                .maybeSingle();
 
-              await serviceClient.from('email_send_log').insert({ message_id: messageId, template_name: 'workflow-email', recipient_email: leadEmail, status: 'pending' });
+              const { data: optedOut } = await serviceClient
+                .from('email_unsubscribe_tokens')
+                .select('id')
+                .eq('email', normalizedEmail)
+                .not('used_at', 'is', null)
+                .maybeSingle();
 
-              console.log('Email enqueued successfully');
-              executionLog.push({ nodeId: nextNode.id, type: 'action', action: 'send_email', status: 'executed', to: leadEmail, timestamp: new Date().toISOString() });
+              if (suppressed || optedOut) {
+                executionLog.push({ nodeId: nextNode.id, type: 'action', action: 'send_email', status: 'skipped', error: 'Recipient is suppressed or opted out', timestamp: new Date().toISOString() });
+              } else {
+                const emailBody = emailConfig.body || `<h1>Welcome to OutReign, ${leadName}!</h1><p>Thank you for your interest in our platform.</p><p>Best regards,<br>The OutReign Team</p>`;
+                const messageId = crypto.randomUUID();
+
+                await serviceClient.rpc('enqueue_email', {
+                  queue_name: 'transactional_emails',
+                  payload: {
+                    message_id: messageId,
+                    to: normalizedEmail,
+                    from: `OutReign <noreply@notify.bdotindustries.com>`,
+                    sender_domain: 'notify.bdotindustries.com',
+                    subject: emailConfig.subject || 'Welcome to OutReign!',
+                    html: emailBody,
+                    text: emailConfig.subject || 'Welcome to OutReign!',
+                    purpose: 'transactional',
+                    label: 'workflow-email',
+                    idempotency_key: `workflow-${workflowId}-${nextNode.id}-${Date.now()}`,
+                    queued_at: new Date().toISOString(),
+                  },
+                });
+
+                await serviceClient.from('email_send_log').insert({ message_id: messageId, template_name: 'workflow-email', recipient_email: normalizedEmail, status: 'pending' });
+
+                console.log('Email enqueued successfully');
+                executionLog.push({ nodeId: nextNode.id, type: 'action', action: 'send_email', status: 'executed', to: normalizedEmail, timestamp: new Date().toISOString() });
+              }
             }
           } catch (error: any) {
             console.error('Failed to send email:', error);
