@@ -472,45 +472,27 @@ const ICP = () => {
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-2">
                             <Label>Annual Revenue</Label>
-                            <Select value={editing.revenue_range || ""} onValueChange={(v) => update({ revenue_range: v })}>
-                              <SelectTrigger><SelectValue placeholder="Select range" /></SelectTrigger>
-                              <SelectContent>{REVENUE_OPTIONS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
-                            </Select>
+                            <MultiSelect options={REVENUE_OPTIONS} value={editing.revenue_range || []} onChange={(v) => update({ revenue_range: v })} />
                           </div>
                           <div className="space-y-2">
                             <Label>Business Model</Label>
-                            <Select value={editing.business_model || ""} onValueChange={(v) => update({ business_model: v })}>
-                              <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                              <SelectContent>{BUSINESS_MODELS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
-                            </Select>
+                            <MultiSelect options={BUSINESS_MODELS} value={editing.business_model || []} onChange={(v) => update({ business_model: v })} />
                           </div>
                           <div className="space-y-2">
                             <Label>Growth Stage</Label>
-                            <Select value={editing.growth_stage || ""} onValueChange={(v) => update({ growth_stage: v })}>
-                              <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                              <SelectContent>{GROWTH_STAGES.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
-                            </Select>
+                            <MultiSelect options={GROWTH_STAGES} value={editing.growth_stage || []} onChange={(v) => update({ growth_stage: v })} />
                           </div>
                           <div className="space-y-2">
                             <Label>Company Age</Label>
-                            <Select value={editing.company_age_range || ""} onValueChange={(v) => update({ company_age_range: v })}>
-                              <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                              <SelectContent>{COMPANY_AGE.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
-                            </Select>
+                            <MultiSelect options={COMPANY_AGE} value={editing.company_age_range || []} onChange={(v) => update({ company_age_range: v })} />
                           </div>
                           <div className="space-y-2">
                             <Label>Deal Size (ACV)</Label>
-                            <Select value={editing.deal_size_range || ""} onValueChange={(v) => update({ deal_size_range: v })}>
-                              <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                              <SelectContent>{DEAL_SIZES.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
-                            </Select>
+                            <MultiSelect options={DEAL_SIZES} value={editing.deal_size_range || []} onChange={(v) => update({ deal_size_range: v })} />
                           </div>
                           <div className="space-y-2">
                             <Label>Sales Cycle</Label>
-                            <Select value={editing.sales_cycle || ""} onValueChange={(v) => update({ sales_cycle: v })}>
-                              <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                              <SelectContent>{SALES_CYCLES.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
-                            </Select>
+                            <MultiSelect options={SALES_CYCLES} value={editing.sales_cycle || []} onChange={(v) => update({ sales_cycle: v })} />
                           </div>
                         </div>
 
