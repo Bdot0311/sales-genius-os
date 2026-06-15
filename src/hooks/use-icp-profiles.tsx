@@ -16,7 +16,7 @@ export interface ICPProfile {
   industries: string[];
   company_size_min: number;
   company_size_max: number;
-  revenue_range: string | null;
+  revenue_range: string[];
   geographies: string[];
   target_titles: string[];
   tech_stack: string[];
@@ -25,16 +25,16 @@ export interface ICPProfile {
   disqualifiers: string | null;
   notes: string | null;
   // Advanced firmographics
-  business_model: string | null;
+  business_model: string[];
   funding_stages: string[];
-  growth_stage: string | null;
-  company_age_range: string | null;
-  deal_size_range: string | null;
-  sales_cycle: string | null;
+  growth_stage: string[];
+  company_age_range: string[];
+  deal_size_range: string[];
+  sales_cycle: string[];
   // People
   departments: string[];
   seniority_levels: string[];
-  budget_authority: string | null;
+  budget_authority: string[];
   // Signals
   event_triggers: string[];
   intent_keywords: string[];
