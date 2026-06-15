@@ -107,6 +107,39 @@ export const FooterSection = () => {
             </div>
           </div>
 
+          {/* Google API Disclosure */}
+          <div id="google-api-disclosure" className="mb-8 p-6 rounded-xl border" style={{ background: "hsl(240 30% 10%)", borderColor: "hsl(261 75% 50% / 0.25)" }}>
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: "hsl(0 0% 92%)" }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "hsl(261 75% 65%)" }}><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+              How OutReign Uses Google User Data
+            </h3>
+            <div className="text-sm space-y-3" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
+              <p>
+                OutReign requests access to your Gmail data solely to enable outbound email features within the platform. Specifically, we access your Gmail account to:
+              </p>
+              <ul className="space-y-1.5 ml-4">
+                <li className="flex items-start gap-2">
+                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: "hsl(261 75% 55% / 0.6)" }} />
+                  <span><strong style={{ color: "hsl(0 0% 85%)" }}>Send outbound emails</strong> — messages composed and sent through OutReign on your behalf</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: "hsl(261 75% 55% / 0.6)" }} />
+                  <span><strong style={{ color: "hsl(0 0% 85%)" }}>Read reply data</strong> — detect replies to your outreach for tracking and analytics</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: "hsl(261 75% 55% / 0.6)" }} />
+                  <span><strong style={{ color: "hsl(0 0% 85%)" }}>Detect open events</strong> — tracking pixels to measure engagement with your sent emails</span>
+                </li>
+              </ul>
+              <p>
+                Our use of Google user data complies with the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: "hsl(261 75% 65%)" }}>Google API Services User Data Policy</a>, including the <strong style={{ color: "hsl(0 0% 85%)" }}>Limited Use</strong> requirements. We do not use Gmail data for advertising, we do not sell it to third parties, we do not use it to train AI models outside your account, and no human reads your messages.
+              </p>
+              <p>
+                You can revoke OutReign's access to your Gmail data at any time via your <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: "hsl(261 75% 65%)" }}>Google Account permissions</a> or by disconnecting the integration in your OutReign settings.
+              </p>
+            </div>
+          </div>
+
           {/* Bottom */}
           <div className="pt-8 border-t flex flex-col items-center gap-4" style={{ borderColor: "hsl(261 75% 50% / 0.18)" }}>
             <div className="flex flex-wrap items-center justify-center gap-6">
