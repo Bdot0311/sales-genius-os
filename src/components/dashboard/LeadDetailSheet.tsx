@@ -11,6 +11,23 @@ import { PresenceIndicator } from "@/components/realtime/PresenceIndicator";
 import { format } from "date-fns";
 import { useState } from "react";
 
+function toValidLinkedInUrl(raw: string | null | undefined, kind: 'profile' | 'company' = 'profile'): string | null {
+  if (!raw) return null;
+  let s = raw.trim();
+  if (!s || s.toLowerCase() === 'linkedin') return null;
+  if (!/^https?:\/\//i.test(s)) s = `https://${s}`;
+  try {
+    const u = new URL(s);
+    if (!u.hostname.includes('linkedin.com')) return null;
+    const path = u.pathname.replace(/\/+$/, '');
+    const expected = kind === 'company' ? /^\/(company|school)\/[^/]+/ : /^\/(in|pub)\/[^/]+/;
+    if (!expected.test(path)) return null;
+    return `https://www.linkedin.com${path}`;
+  } catch {
+    return null;
+  }
+}
+
 interface Lead {
   id: string;
   company_name: string;
