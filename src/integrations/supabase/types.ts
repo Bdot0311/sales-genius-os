@@ -1214,58 +1214,127 @@ export type Database = {
       }
       icp_profiles: {
         Row: {
+          budget_authority: string | null
+          business_model: string | null
           buying_signals: Json | null
+          company_age_range: string | null
           company_size_max: number | null
           company_size_min: number | null
+          competitor_tools: Json | null
           created_at: string
+          customer_examples: string | null
+          deal_size_range: string | null
+          departments: Json | null
           disqualifiers: string | null
+          event_triggers: Json | null
+          exclude_industries: Json | null
+          exclude_keywords: Json | null
+          exclude_titles: Json | null
+          funding_stages: Json | null
           geographies: Json | null
+          growth_stage: string | null
+          hiring_signals: Json | null
           id: string
           industries: Json | null
+          intent_keywords: Json | null
           name: string
           notes: string | null
+          objections: Json | null
           pain_points: Json | null
+          preferred_channels: Json | null
           revenue_range: string | null
+          sales_cycle: string | null
+          scoring_weights: Json | null
+          seniority_levels: Json | null
+          success_metrics: Json | null
           target_titles: Json | null
           tech_stack: Json | null
           updated_at: string
+          use_cases: Json | null
           user_id: string
+          value_proposition: string | null
         }
         Insert: {
+          budget_authority?: string | null
+          business_model?: string | null
           buying_signals?: Json | null
+          company_age_range?: string | null
           company_size_max?: number | null
           company_size_min?: number | null
+          competitor_tools?: Json | null
           created_at?: string
+          customer_examples?: string | null
+          deal_size_range?: string | null
+          departments?: Json | null
           disqualifiers?: string | null
+          event_triggers?: Json | null
+          exclude_industries?: Json | null
+          exclude_keywords?: Json | null
+          exclude_titles?: Json | null
+          funding_stages?: Json | null
           geographies?: Json | null
+          growth_stage?: string | null
+          hiring_signals?: Json | null
           id?: string
           industries?: Json | null
+          intent_keywords?: Json | null
           name: string
           notes?: string | null
+          objections?: Json | null
           pain_points?: Json | null
+          preferred_channels?: Json | null
           revenue_range?: string | null
+          sales_cycle?: string | null
+          scoring_weights?: Json | null
+          seniority_levels?: Json | null
+          success_metrics?: Json | null
           target_titles?: Json | null
           tech_stack?: Json | null
           updated_at?: string
+          use_cases?: Json | null
           user_id: string
+          value_proposition?: string | null
         }
         Update: {
+          budget_authority?: string | null
+          business_model?: string | null
           buying_signals?: Json | null
+          company_age_range?: string | null
           company_size_max?: number | null
           company_size_min?: number | null
+          competitor_tools?: Json | null
           created_at?: string
+          customer_examples?: string | null
+          deal_size_range?: string | null
+          departments?: Json | null
           disqualifiers?: string | null
+          event_triggers?: Json | null
+          exclude_industries?: Json | null
+          exclude_keywords?: Json | null
+          exclude_titles?: Json | null
+          funding_stages?: Json | null
           geographies?: Json | null
+          growth_stage?: string | null
+          hiring_signals?: Json | null
           id?: string
           industries?: Json | null
+          intent_keywords?: Json | null
           name?: string
           notes?: string | null
+          objections?: Json | null
           pain_points?: Json | null
+          preferred_channels?: Json | null
           revenue_range?: string | null
+          sales_cycle?: string | null
+          scoring_weights?: Json | null
+          seniority_levels?: Json | null
+          success_metrics?: Json | null
           target_titles?: Json | null
           tech_stack?: Json | null
           updated_at?: string
+          use_cases?: Json | null
           user_id?: string
+          value_proposition?: string | null
         }
         Relationships: []
       }

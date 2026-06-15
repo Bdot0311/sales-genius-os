@@ -54,7 +54,12 @@ export function calculateICPMatch(lead: Lead, profiles: ICPProfile[]): ScoreBrea
       techMatch = profile.tech_stack.some((t) => leadTech.includes(t.toLowerCase()));
     }
 
-    const score = (titleMatch ? 25 : 0) + (industryMatch ? 25 : 0) + (sizeMatch ? 25 : 0) + (techMatch ? 25 : 0);
+    const w = (profile as any).scoring_weights || { title: 25, industry: 25, size: 25, tech: 25 };
+    const score =
+      (titleMatch ? w.title : 0) +
+      (industryMatch ? w.industry : 0) +
+      (sizeMatch ? w.size : 0) +
+      (techMatch ? w.tech : 0);
 
     if (score > bestScore.score) {
       bestScore = { title: titleMatch, industry: industryMatch, size: sizeMatch, tech: techMatch, score };
