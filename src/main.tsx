@@ -43,9 +43,15 @@ Sentry.init({
   beforeSend(event, hint) {
     const ex: any = hint?.originalException;
     const msg = typeof ex === "string" ? ex : ex?.message || event.message || "";
-    if (typeof msg === "string" && /Object Not Found Matching Id|MethodName:(update|getProperty)/i.test(msg)) {
+    if (typeof msg === "string" && /Object Not Found Matching|MethodName:(update|getProperty)|Non-Error promise rejection/i.test(msg)) {
       return null;
     }
+    // Drop events from browser extensions regardless of message content
+    const frames = event.exception?.values?.[0]?.stacktrace?.frames ?? [];
+    const fromExtension = frames.some(f =>
+      /chrome-extension:|moz-extension:|safari-extension:|safari-web-extension:/.test(f.filename ?? "")
+    );
+    if (fromExtension) return null;
     return event;
   },
 });
