@@ -574,7 +574,98 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    // ─── Sanitize lead fields ──────────────────────────────────────────────────
+    // Service-role client for caching research results
+    const serviceClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    // ─── Lead Research (web-grounded) ──────────────────────────────────────────
+    // Pulls 3–5 verifiable, citation-backed facts about the lead's company so the
+    // email writer never invents proof. Cached per company for 24h to control cost.
+    const researchLead = async (
+      companyName: string,
+      jobTitle: string | null,
+      industry: string | null,
+      website: string | null,
+    ): Promise<string> => {
+      try {
+        if (!companyName || companyName === 'your company') return '';
+        const cacheKey = `lead_research:${companyName.toLowerCase().slice(0, 80)}:${(jobTitle || '').toLowerCase().slice(0, 40)}`;
+
+        // 1. Cache hit?
+        const { data: cached } = await serviceClient
+          .from('api_cache')
+          .select('cache_value, expires_at')
+          .eq('cache_key', cacheKey)
+          .maybeSingle();
+        if (cached && cached.expires_at && new Date(cached.expires_at) > new Date()) {
+          const v = (cached.cache_value as any)?.research;
+          if (typeof v === 'string' && v.length > 0) return v;
+        }
+
+        // 2. Live grounded research via Gemini google_search tool
+        const researchPrompt = `Research the company "${companyName}"${jobTitle ? ` for the role of ${jobTitle}` : ''}${industry ? ` in the ${industry} industry` : ''}${website ? ` (website: ${website})` : ''}.
+
+Return 3–5 SPECIFIC, RECENT, VERIFIABLE facts that would be useful for a cold email opener. Prioritize:
+- Recent product launches, features, or platform changes (last 12 months)
+- Funding rounds, acquisitions, partnerships (last 18 months)
+- Recent senior hires or leadership changes
+- Public initiatives, customer wins, expansion into new markets/segments
+- Publicly stated operational details (e.g. "they run founder-led sales", their tech stack from job posts)
+
+STRICT RULES:
+- Only state facts you can confirm from search results. NO speculation, NO inferences.
+- If you find nothing concrete, return exactly: NO_VERIFIED_SIGNALS
+- Each fact on its own line, prefixed with "- ".
+- Keep each fact under 25 words.
+- Do NOT include URLs in the fact lines.
+- Do NOT make up metrics, percentages, or customer counts.`;
+
+        const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            messages: [
+              { role: "system", content: "You are a B2B sales researcher. You return ONLY verifiable, source-grounded facts. You never speculate, never infer, never hallucinate. If a fact cannot be confirmed, you omit it." },
+              { role: "user", content: researchPrompt },
+            ],
+            temperature: 0.1,
+            tools: [{ type: "function", function: { name: "google_search", description: "Web search", parameters: { type: "object", properties: {} } } }],
+          }),
+        });
+
+        if (!resp.ok) {
+          console.warn("Research call failed:", resp.status);
+          return '';
+        }
+        const rj = await resp.json();
+        let text = (rj.choices?.[0]?.message?.content || '').trim();
+        if (!text || text === 'NO_VERIFIED_SIGNALS') text = '';
+        // Strip any inline URLs the model still emits
+        text = text.replace(/https?:\/\/\S+/g, '').replace(/[ \t]+\n/g, '\n').trim();
+
+        // 3. Cache (24h)
+        if (text) {
+          const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+          await serviceClient.from('api_cache').upsert({
+            cache_key: cacheKey,
+            cache_value: { research: text },
+            ttl_seconds: 86400,
+            expires_at: expiresAt,
+          }, { onConflict: 'cache_key' });
+        }
+        return text;
+      } catch (err) {
+        console.warn("researchLead error:", err);
+        return '';
+      }
+    };
+
     const sanitizedContactName     = sanitizeString(lead.contact_name || 'there', 100);
     const firstName                = sanitizedContactName.split(' ')[0];
     const sanitizedCompanyName     = sanitizeString(lead.company_name || 'your company', 100);
