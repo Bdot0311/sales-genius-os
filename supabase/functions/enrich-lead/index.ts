@@ -25,17 +25,20 @@ function isJobTitle(name: string): boolean {
   return false;
 }
 
-function normalizeLinkedInUrl(url: string | null): string | null {
+function normalizeLinkedInUrl(url: string | null, kind: 'profile' | 'company' = 'profile'): string | null {
   if (!url) return null;
   let cleaned = url.trim();
+  if (!cleaned || cleaned.toLowerCase() === 'linkedin') return null;
   if (!cleaned.startsWith('http')) cleaned = 'https://' + cleaned;
   try {
     const parsed = new URL(cleaned);
-    if (!parsed.hostname.includes('linkedin.com')) return cleaned;
+    if (!parsed.hostname.includes('linkedin.com')) return null;
     const path = parsed.pathname.replace(/\/+$/, '');
+    const expected = kind === 'company' ? /^\/(company|school)\/[^/]+/ : /^\/(in|pub)\/[^/]+/;
+    if (!expected.test(path)) return null;
     return `https://www.linkedin.com${path}`;
   } catch {
-    return cleaned;
+    return null;
   }
 }
 
