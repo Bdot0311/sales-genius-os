@@ -306,10 +306,11 @@ const SavedLeads = () => {
     if (leadIds.length === 0) return;
     
     setBulkEnriching(true);
-    setBulkProgress({ current: 0, total: leadIds.length, succeeded: 0, failed: 0 });
+    setBulkProgress({ current: 0, total: leadIds.length, succeeded: 0, failed: 0, skipped: 0 });
     
     let succeeded = 0;
     let failed = 0;
+    let skipped = 0;
     
     for (let i = 0; i < leadIds.length; i++) {
       setBulkProgress(prev => ({ ...prev, current: i + 1 }));
@@ -317,8 +318,11 @@ const SavedLeads = () => {
         const { data, error } = await supabase.functions.invoke('enrich-lead', {
           body: { leadId: leadIds[i] }
         });
-        if (error || data?.error || data?.noMatch) {
+        if (error || data?.error) {
           failed++;
+        } else if (data?.noMatch) {
+          // Lead has no new data to add (already enriched or no match found)
+          skipped++;
         } else {
           succeeded++;
         }
@@ -327,13 +331,17 @@ const SavedLeads = () => {
       }
     }
     
-    setBulkProgress({ current: leadIds.length, total: leadIds.length, succeeded, failed });
+    setBulkProgress({ current: leadIds.length, total: leadIds.length, succeeded, failed, skipped });
     await fetchLeads();
     
+    const parts: string[] = [];
+    if (succeeded) parts.push(`${succeeded} enriched`);
+    if (skipped) parts.push(`${skipped} already up-to-date`);
+    if (failed) parts.push(`${failed} failed`);
     toast({
       title: "Bulk enrichment complete",
-      description: `${succeeded} enriched, ${failed} failed out of ${leadIds.length} leads`,
-      variant: failed === leadIds.length ? "destructive" : "default",
+      description: parts.join(" · ") + ` (of ${leadIds.length} leads)`,
+      variant: failed === leadIds.length && succeeded === 0 && skipped === 0 ? "destructive" : "default",
     });
     
     setBulkEnriching(false);
