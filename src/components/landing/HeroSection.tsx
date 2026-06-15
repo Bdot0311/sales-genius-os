@@ -111,20 +111,6 @@ export const HeroSection = () => {
           OutReign is a B2B lead intelligence and outbound sales platform. Teams use it to find ranked prospects, verify business emails, draft personalized outreach, send Gmail-based outbound messages, and track replies in one workflow.
         </motion.p>
 
-        <motion.div
-          className="mb-7 w-full max-w-2xl rounded-2xl border px-4 py-3 text-left sm:mb-10 sm:px-5"
-          style={{ background: "hsl(261 75% 5% / 0.72)", borderColor: "hsl(261 75% 60% / 0.24)" }}
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.65, ease, delay: 0.44 }}
-        >
-          <p className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.78)" }}>
-            <strong style={{ color: "hsl(0 0% 92%)" }}>Google/Gmail access purpose:</strong> when a user connects Google, OutReign uses Gmail only to send user-approved outbound emails, read replies and thread metadata for outreach tracking, and show campaign engagement in the user's dashboard. Gmail data is not sold, used for ads, or used to train general-purpose AI models.
-          </p>
-          <a href="/privacy#gmail-data-use" className="mt-2 inline-flex text-sm underline" style={{ color: "hsl(261 75% 70%)" }}>
-            Read the Gmail data usage disclosure in our Privacy Policy
-          </a>
-        </motion.div>
 
         {/* CTAs */}
         <motion.div
