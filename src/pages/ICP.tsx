@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 
 import { Slider } from "@/components/ui/slider";
@@ -69,11 +69,11 @@ const SECTION_ICONS = {
 
 const emptyProfile: Partial<ICPProfile> = {
   name: "", industries: [], company_size_min: 1, company_size_max: 10000,
-  revenue_range: null, geographies: [], target_titles: [], tech_stack: [],
+  revenue_range: [], geographies: [], target_titles: [], tech_stack: [],
   buying_signals: [], pain_points: [], disqualifiers: null, notes: null,
-  business_model: null, funding_stages: [], growth_stage: null, company_age_range: null,
-  deal_size_range: null, sales_cycle: null,
-  departments: [], seniority_levels: [], budget_authority: null,
+  business_model: [], funding_stages: [], growth_stage: [], company_age_range: [],
+  deal_size_range: [], sales_cycle: [],
+  departments: [], seniority_levels: [], budget_authority: [],
   event_triggers: [], intent_keywords: [], hiring_signals: [], competitor_tools: [],
   exclude_industries: [], exclude_titles: [], exclude_keywords: [],
   value_proposition: null, use_cases: [], objections: [], success_metrics: [],
@@ -174,19 +174,19 @@ function getCompletionScore(p: Partial<ICPProfile>): number {
     p.name,
     (p.industries || []).length > 0,
     p.company_size_min !== undefined,
-    p.revenue_range,
+    (p.revenue_range || []).length > 0,
     (p.geographies || []).length > 0,
     (p.target_titles || []).length > 0,
     (p.tech_stack || []).length > 0,
     (p.buying_signals || []).length > 0,
     (p.pain_points || []).length > 0,
     p.disqualifiers,
-    p.business_model,
+    (p.business_model || []).length > 0,
     (p.departments || []).length > 0,
     (p.seniority_levels || []).length > 0,
     p.value_proposition,
     (p.use_cases || []).length > 0,
-    p.deal_size_range,
+    (p.deal_size_range || []).length > 0,
     (p.preferred_channels || []).length > 0,
     p.customer_examples,
   ];
@@ -296,8 +296,8 @@ const ICP = () => {
                     )}
                     <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                       <span>{p.company_size_min}–{p.company_size_max} employees</span>
-                      {p.business_model && <span>• {p.business_model}</span>}
-                      {p.deal_size_range && <span>• {p.deal_size_range} ACV</span>}
+                      {p.business_model && p.business_model.length > 0 && <span>• {p.business_model.join(", ")}</span>}
+                      {p.deal_size_range && p.deal_size_range.length > 0 && <span>• {p.deal_size_range.join(", ")} ACV</span>}
                     </div>
                     {p.target_titles.length > 0 && (
                       <div className="flex flex-wrap gap-1">
@@ -472,45 +472,27 @@ const ICP = () => {
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-2">
                             <Label>Annual Revenue</Label>
-                            <Select value={editing.revenue_range || ""} onValueChange={(v) => update({ revenue_range: v })}>
-                              <SelectTrigger><SelectValue placeholder="Select range" /></SelectTrigger>
-                              <SelectContent>{REVENUE_OPTIONS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
-                            </Select>
+                            <MultiSelect options={REVENUE_OPTIONS} value={editing.revenue_range || []} onChange={(v) => update({ revenue_range: v })} />
                           </div>
                           <div className="space-y-2">
                             <Label>Business Model</Label>
-                            <Select value={editing.business_model || ""} onValueChange={(v) => update({ business_model: v })}>
-                              <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                              <SelectContent>{BUSINESS_MODELS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
-                            </Select>
+                            <MultiSelect options={BUSINESS_MODELS} value={editing.business_model || []} onChange={(v) => update({ business_model: v })} />
                           </div>
                           <div className="space-y-2">
                             <Label>Growth Stage</Label>
-                            <Select value={editing.growth_stage || ""} onValueChange={(v) => update({ growth_stage: v })}>
-                              <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                              <SelectContent>{GROWTH_STAGES.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
-                            </Select>
+                            <MultiSelect options={GROWTH_STAGES} value={editing.growth_stage || []} onChange={(v) => update({ growth_stage: v })} />
                           </div>
                           <div className="space-y-2">
                             <Label>Company Age</Label>
-                            <Select value={editing.company_age_range || ""} onValueChange={(v) => update({ company_age_range: v })}>
-                              <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                              <SelectContent>{COMPANY_AGE.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
-                            </Select>
+                            <MultiSelect options={COMPANY_AGE} value={editing.company_age_range || []} onChange={(v) => update({ company_age_range: v })} />
                           </div>
                           <div className="space-y-2">
                             <Label>Deal Size (ACV)</Label>
-                            <Select value={editing.deal_size_range || ""} onValueChange={(v) => update({ deal_size_range: v })}>
-                              <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                              <SelectContent>{DEAL_SIZES.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
-                            </Select>
+                            <MultiSelect options={DEAL_SIZES} value={editing.deal_size_range || []} onChange={(v) => update({ deal_size_range: v })} />
                           </div>
                           <div className="space-y-2">
                             <Label>Sales Cycle</Label>
-                            <Select value={editing.sales_cycle || ""} onValueChange={(v) => update({ sales_cycle: v })}>
-                              <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                              <SelectContent>{SALES_CYCLES.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
-                            </Select>
+                            <MultiSelect options={SALES_CYCLES} value={editing.sales_cycle || []} onChange={(v) => update({ sales_cycle: v })} />
                           </div>
                         </div>
 
@@ -558,10 +540,7 @@ const ICP = () => {
 
                         <div className="space-y-2">
                           <Label>Budget Authority</Label>
-                          <Select value={editing.budget_authority || ""} onValueChange={(v) => update({ budget_authority: v })}>
-                            <SelectTrigger><SelectValue placeholder="Who can sign the contract?" /></SelectTrigger>
-                            <SelectContent>{BUDGET_AUTHORITY.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
-                          </Select>
+                          <MultiSelect options={BUDGET_AUTHORITY} value={editing.budget_authority || []} onChange={(v) => update({ budget_authority: v })} />
                         </div>
                       </AccordionContent>
                     </AccordionItem>
