@@ -721,17 +721,25 @@ STRICT RULES:
         sanitizedJobTitle,
         sanitizedIndustry,
         (lead.company_website || lead.website || null) as string | null,
+        sanitizedContactName,
+        (lead.id || null) as string | null,
+        variantNum > 0, // variant regenerations bypass cache so the angle actually changes
       );
     }
 
     const researchBlock = verifiedResearch
-      ? `\n\nVERIFIED RESEARCH (web-grounded, treat as the ONLY source of external facts about this prospect — do not invent anything beyond this):\n${verifiedResearch}`
+      ? `\n\nVERIFIED RESEARCH for ${sanitizedContactName} at ${sanitizedCompanyName} (web-grounded, treat as the ONLY source of external facts about this prospect — do not invent anything beyond this):\n${verifiedResearch}`
       : `\n\nVERIFIED RESEARCH: none available. You MUST NOT invent any external facts about this prospect. Stick to the provided lead fields (role, industry, size, tech stack) and operational inferences a peer in this space could reasonably make from role/industry alone. NEVER claim a funding round, launch, hire, customer, metric, or initiative.`;
 
     const NO_HALLUCINATION_RULE = `\n\nNO-HALLUCINATION RULE — non-negotiable:
 - The ONLY facts you may state about the prospect or their company are: (a) the lead fields above, and (b) items in VERIFIED RESEARCH.
 - Do NOT invent funding events, product launches, hires, customer names, revenue, headcount, or any percentage/metric.
-- If VERIFIED RESEARCH is empty, write a relevance-based opener grounded in role + industry only — never fabricate a "recent signal".`;
+- If VERIFIED RESEARCH is empty, write a relevance-based opener grounded in role + industry only — never fabricate a "recent signal".
+
+UNIQUENESS RULE — non-negotiable:
+- This email is for ${sanitizedContactName} at ${sanitizedCompanyName}${sanitizedJobTitle ? ` (${sanitizedJobTitle})` : ''}. The opener, the inferred pain, and the CTA must read like they could not be sent verbatim to a different prospect.
+- Do NOT recycle a generic structure that would work for any company in the industry. Anchor the email in this contact's specific company and role.`;
+
 
     let systemPrompt: string;
     let userPrompt: string;
