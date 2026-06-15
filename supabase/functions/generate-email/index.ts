@@ -731,7 +731,7 @@ company_signal: ${companySignalParts || 'not provided — use industry and role 
 sender_name: ${senderName || 'Sender'}
 sender_company: ${senderCompany || (businessDescription ? businessDescription.split(/[\s\n]/)[0] : 'OutReign')}
 verified_proof: ${socialProof || (businessDescription ? `product capabilities from sender: ${businessDescription}` : 'none — do not cite any customers, metrics, or percentages in the solution line; describe the product benefit in plain terms only')}
-strict_mode: ${strictMode ? 'true' : 'false'}`;
+`;
 
     } else {
       // Standard generation
