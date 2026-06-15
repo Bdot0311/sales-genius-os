@@ -308,12 +308,12 @@ export const LeadDetailSheet = ({
                     <a href={`tel:${lead.contact_phone}`} className="text-primary hover:underline">{lead.contact_phone}</a>
                   </div>
                 )}
-                {lead.linkedin_url && (
+                {(() => { const u = toValidLinkedInUrl(lead.linkedin_url, 'profile'); return u && (
                   <div className="flex items-center gap-2">
                     <Linkedin className="w-4 h-4 text-muted-foreground" />
-                    <a href={lead.linkedin_url.startsWith('http') ? lead.linkedin_url : `https://${lead.linkedin_url}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">LinkedIn Profile</a>
+                    <a href={u} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">LinkedIn Profile</a>
                   </div>
-                )}
+                ); })()}
                 {lead.job_title && (
                   <div className="flex items-center gap-2"><Briefcase className="w-4 h-4 text-muted-foreground" /><span>{lead.job_title}</span></div>
                 )}
