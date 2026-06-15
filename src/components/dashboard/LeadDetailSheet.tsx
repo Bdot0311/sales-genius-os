@@ -319,7 +319,7 @@ export const LeadDetailSheet = ({
                 {(() => { const u = toValidLinkedInUrl(lead.linkedin_url, 'profile'); return u && (
                   <div className="flex items-center gap-2">
                     <Linkedin className="w-4 h-4 text-muted-foreground" />
-                    <a href={u} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">LinkedIn Profile</a>
+                    <a href={u} onClick={(e) => { e.preventDefault(); openExternal(u); }} className="text-primary hover:underline cursor-pointer">LinkedIn Profile</a>
                   </div>
                 ); })()}
                 {lead.job_title && (
