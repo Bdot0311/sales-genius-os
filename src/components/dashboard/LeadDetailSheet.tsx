@@ -28,6 +28,14 @@ function toValidLinkedInUrl(raw: string | null | undefined, kind: 'profile' | 'c
   }
 }
 
+// Safari blocks anchor navigations to LinkedIn from pages with COOP via
+// "Navigation was blocked by Cross-Origin-Opener-Policy". Opening through
+// window.open with explicit noopener,noreferrer features bypasses the bug.
+function openExternal(url: string) {
+  const win = window.open(url, '_blank', 'noopener,noreferrer');
+  if (win) win.opener = null;
+}
+
 interface Lead {
   id: string;
   company_name: string;
@@ -311,7 +319,7 @@ export const LeadDetailSheet = ({
                 {(() => { const u = toValidLinkedInUrl(lead.linkedin_url, 'profile'); return u && (
                   <div className="flex items-center gap-2">
                     <Linkedin className="w-4 h-4 text-muted-foreground" />
-                    <a href={u} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">LinkedIn Profile</a>
+                    <a href={u} onClick={(e) => { e.preventDefault(); openExternal(u); }} className="text-primary hover:underline cursor-pointer">LinkedIn Profile</a>
                   </div>
                 ); })()}
                 {lead.job_title && (
@@ -348,7 +356,7 @@ export const LeadDetailSheet = ({
                   <div className="flex items-center gap-2"><Globe className="w-4 h-4 text-muted-foreground" /><a href={lead.company_website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{lead.company_website}</a></div>
                 )}
                 {(() => { const u = toValidLinkedInUrl(lead.company_linkedin, 'company'); return u && (
-                  <div className="flex items-center gap-2"><Linkedin className="w-4 h-4 text-muted-foreground" /><a href={u} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Company LinkedIn</a></div>
+                  <div className="flex items-center gap-2"><Linkedin className="w-4 h-4 text-muted-foreground" /><a href={u} onClick={(e) => { e.preventDefault(); openExternal(u); }} className="text-primary hover:underline cursor-pointer">Company LinkedIn</a></div>
                 ); })()}
                 {lead.industry && (
                   <div className="flex items-center gap-2"><Briefcase className="w-4 h-4 text-muted-foreground" /><span>{lead.industry}</span></div>
