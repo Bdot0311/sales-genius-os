@@ -2,6 +2,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+export interface ScoringWeights {
+  title: number;
+  industry: number;
+  size: number;
+  tech: number;
+}
+
 export interface ICPProfile {
   id: string;
   user_id: string;
@@ -17,6 +24,35 @@ export interface ICPProfile {
   pain_points: string[];
   disqualifiers: string | null;
   notes: string | null;
+  // Advanced firmographics
+  business_model: string | null;
+  funding_stages: string[];
+  growth_stage: string | null;
+  company_age_range: string | null;
+  deal_size_range: string | null;
+  sales_cycle: string | null;
+  // People
+  departments: string[];
+  seniority_levels: string[];
+  budget_authority: string | null;
+  // Signals
+  event_triggers: string[];
+  intent_keywords: string[];
+  hiring_signals: string[];
+  competitor_tools: string[];
+  // Exclusions
+  exclude_industries: string[];
+  exclude_titles: string[];
+  exclude_keywords: string[];
+  // Strategy
+  value_proposition: string | null;
+  use_cases: string[];
+  objections: string[];
+  success_metrics: string[];
+  preferred_channels: string[];
+  customer_examples: string | null;
+  // Scoring
+  scoring_weights: ScoringWeights;
   created_at: string;
   updated_at: string;
 }
