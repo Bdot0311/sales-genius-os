@@ -347,9 +347,9 @@ export const LeadDetailSheet = ({
                 {lead.company_website && (
                   <div className="flex items-center gap-2"><Globe className="w-4 h-4 text-muted-foreground" /><a href={lead.company_website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{lead.company_website}</a></div>
                 )}
-                {lead.company_linkedin && (
-                  <div className="flex items-center gap-2"><Linkedin className="w-4 h-4 text-muted-foreground" /><a href={lead.company_linkedin} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Company LinkedIn</a></div>
-                )}
+                {(() => { const u = toValidLinkedInUrl(lead.company_linkedin, 'company'); return u && (
+                  <div className="flex items-center gap-2"><Linkedin className="w-4 h-4 text-muted-foreground" /><a href={u} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Company LinkedIn</a></div>
+                ); })()}
                 {lead.industry && (
                   <div className="flex items-center gap-2"><Briefcase className="w-4 h-4 text-muted-foreground" /><span>{lead.industry}</span></div>
                 )}
