@@ -266,7 +266,12 @@ const SavedLeads = () => {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      if (data?.noMatch) {
+      if (data?.alreadyUpToDate) {
+        toast({
+          title: "Lead already up-to-date",
+          description: data.message || "No new enrichment fields were found.",
+        });
+      } else if (data?.noMatch) {
         toast({
           title: "No match found",
           description: data.message || "Not enough identifying data. Add an email or LinkedIn URL and try again.",
