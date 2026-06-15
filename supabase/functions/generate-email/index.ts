@@ -861,10 +861,16 @@ ${businessDescription ? `\nWhat we do: ${businessDescription}` : ''}
 Write the email body. Start with "Hi ${firstName}," and end with just the sender's name on its own line.`;
     }
 
+    // Inject web-grounded research + no-hallucination rule into every non-precision-edit prompt.
     const isPrecisionEdit = goal === 'custom' && !!customInstruction;
+    if (!isPrecisionEdit) {
+      userPrompt = `${userPrompt}${researchBlock}${NO_HALLUCINATION_RULE}`;
+    }
+
     const isFrameworkGoal = FRAMEWORK_GOALS.has(goal);
     // Framework emails use temp 0.5 (as per 3-prompt pipeline spec); precision edits use 0.3
     const temperature = isPrecisionEdit ? 0.3 : (isFrameworkGoal ? (variantNum > 0 ? 0.7 : 0.5) : (variantNum > 0 ? 1.0 : 0.85));
+
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
