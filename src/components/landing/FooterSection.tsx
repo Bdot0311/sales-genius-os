@@ -107,6 +107,58 @@ export const FooterSection = () => {
             </div>
           </div>
 
+          {/* Google API Services User Data Disclosure */}
+          <div
+            id="google-api-disclosure"
+            className="mb-10 p-6 rounded-xl border"
+            style={{
+              background: "hsl(261 75% 6% / 0.6)",
+              borderColor: "hsl(261 75% 50% / 0.25)",
+            }}
+          >
+            <h3 className="text-sm font-semibold mb-3" style={{ color: "hsl(0 0% 92%)" }}>
+              How OutReign Uses Google User Data
+            </h3>
+            <p className="text-xs leading-relaxed mb-2" style={{ color: "hsl(0 0% 100% / 0.75)" }}>
+              OutReign is a B2B lead discovery and outbound sales platform. When you connect a Google Workspace or
+              Gmail account, OutReign requests access to your Gmail data <strong>solely</strong> to send your
+              outbound emails from your address, track replies to your outreach sequences inside OutReign's inbox,
+              and detect opens and engagement on emails you sent through OutReign.
+            </p>
+            <p className="text-xs leading-relaxed mb-2" style={{ color: "hsl(0 0% 100% / 0.75)" }}>
+              OutReign's use and transfer of information received from Google APIs to any other app will adhere
+              to the{" "}
+              <a
+                href="https://developers.google.com/terms/api-services-user-data-policy"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: "hsl(261 75% 70%)" }}
+              >
+                Google API Services User Data Policy
+              </a>
+              , including the Limited Use requirements. We do not sell Google user data, do not use it for
+              advertising, do not use it to train generalized AI models, and do not allow humans to read it
+              except where explicitly authorized by you, for security, to comply with law, or as required for
+              support with your consent.
+            </p>
+            <p className="text-xs leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.75)" }}>
+              You can revoke OutReign's access at any time from your{" "}
+              <a
+                href="https://myaccount.google.com/permissions"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: "hsl(261 75% 70%)" }}
+              >
+                Google Account permissions page
+              </a>
+              . For full details, see our{" "}
+              <Link to="/privacy" style={{ color: "hsl(261 75% 70%)" }}>
+                Privacy Policy
+              </Link>
+              .
+            </p>
+          </div>
+
           {/* Bottom */}
           <div className="pt-8 border-t flex flex-col items-center gap-4" style={{ borderColor: "hsl(261 75% 50% / 0.18)" }}>
             <div className="flex flex-wrap items-center justify-center gap-6">
