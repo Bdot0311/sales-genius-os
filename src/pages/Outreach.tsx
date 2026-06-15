@@ -648,7 +648,14 @@ const Outreach = () => {
       .replace(/width=["']150["']/gi, 'width="320"')
       .replace(/max-width:\s*150px/gi, 'max-width:320px');
 
-    const signatureForEmail = useFirstTouch ? stripHtmlToText(rawSignature) : rawSignature;
+    // First-touch mode strips HTML for better inbox placement, but if the
+    // signature is image-only (e.g. just a logo) stripping yields an empty
+    // string and the signature disappears entirely. Fall back to the raw HTML
+    // signature in that case so users always see their signature appended.
+    const strippedSignature = stripHtmlToText(rawSignature);
+    const signatureForEmail = useFirstTouch
+      ? (strippedSignature.trim().length > 0 ? strippedSignature : rawSignature)
+      : rawSignature;
 
     const signatureText = signatureForEmail
       .replace(/<[^>]+>/g, ' ')
