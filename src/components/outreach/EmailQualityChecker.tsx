@@ -211,18 +211,32 @@ function computeMeToYouRatio(body: string): CheckResult {
 
 function computeCTAPlacement(body: string): CheckResult {
   const lines = body.split('\n').map(l => l.trim()).filter(Boolean);
-  const signOffRegex = /^(best|regards|thanks|thank you|sincerely|cheers)[\s,!.:-]*$/i;
+  const signOffRegex = /^(best|regards|thanks|thank you|sincerely|cheers|talk soon|speak soon|warmly|all the best)[\s,!.:-]*$/i;
+  // P.S. lines are addenda — treat them as not the "main CTA position"
+  const psRegex = /^p\.?\s*s\.?[\s:.\-—]/i;
   let lastContentIdx = lines.length - 1;
-  while (lastContentIdx > 0 && (signOffRegex.test(lines[lastContentIdx]) || lines[lastContentIdx].length < 20)) {
+  while (
+    lastContentIdx > 0 &&
+    (signOffRegex.test(lines[lastContentIdx]) ||
+      psRegex.test(lines[lastContentIdx]) ||
+      lines[lastContentIdx].length < 15)
+  ) {
     lastContentIdx--;
   }
   const lastContentLine = lines[lastContentIdx] || '';
+  // Accept question as CTA if it appears anywhere in the last content line/paragraph
   const hasQuestion = lastContentLine.includes('?');
 
   if (hasQuestion) return { label: "CTA position", status: "green", message: "Question is last — good placement", score: 100 };
 
+  // Check if question lives in the line right before sign-off/PS — still acceptable
+  const nearLast = lines.slice(Math.max(0, lastContentIdx - 1), lastContentIdx + 1).join(' ');
+  if (nearLast.includes('?')) {
+    return { label: "CTA position", status: "green", message: "Question is near the end — good placement", score: 95 };
+  }
+
   const anyQuestion = body.includes('?');
-  if (anyQuestion) return { label: "CTA position", status: "yellow", message: "CTA question buried — move it to the last line", score: 55 };
+  if (anyQuestion) return { label: "CTA position", status: "yellow", message: "CTA question buried — move it closer to the end", score: 55 };
   return { label: "CTA position", status: "red", message: "No question detected — add a CTA", score: 20 };
 }
 
