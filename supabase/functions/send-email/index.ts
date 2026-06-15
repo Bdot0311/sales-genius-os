@@ -137,13 +137,13 @@ serve(async (req) => {
       
       const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
           client_id: googleClientId,
           client_secret: googleClientSecret,
           refresh_token: config.refreshToken,
           grant_type: 'refresh_token',
-        }),
+        }).toString(),
       });
 
       if (tokenResponse.ok) {
@@ -164,9 +164,15 @@ serve(async (req) => {
         
         console.log('Token refreshed successfully');
       } else {
-        console.error('Failed to refresh token');
+        const errBody = await tokenResponse.text();
+        console.error('Failed to refresh token:', tokenResponse.status, errBody);
+        const isInvalidGrant = errBody.includes('invalid_grant');
         return new Response(
-          JSON.stringify({ error: 'Failed to refresh access token. Please reconnect Gmail.' }),
+          JSON.stringify({
+            error: isInvalidGrant
+              ? 'Gmail authorization expired or revoked. Please reconnect Gmail.'
+              : 'Failed to refresh access token. Please reconnect Gmail.',
+          }),
           { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
