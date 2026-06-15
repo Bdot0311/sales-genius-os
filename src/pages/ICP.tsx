@@ -197,8 +197,16 @@ const ICP = () => {
   const { hasFeature, gateModalOpen, setGateModalOpen, gatedFeature, currentPlan, gatedAction, features } = usePlanFeatures();
   const [editing, setEditing] = useState<Partial<ICPProfile> | null>(null);
   const [isNew, setIsNew] = useState(false);
+  const [lookalikeProfile, setLookalikeProfile] = useState<ICPProfile | null>(null);
 
   const icpGated = !hasFeature('icpBuilder');
+  const lookalikeGated = !hasFeature('icpLookalike');
+
+  const openLookalikes = (p: ICPProfile, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (lookalikeGated) { gatedAction('icpLookalike', () => {}); return; }
+    setLookalikeProfile(p);
+  };
 
   const openNew = () => {
     if (icpGated) { gatedAction('icpBuilder', () => {}); return; }
