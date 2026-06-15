@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+
 import { Slider } from "@/components/ui/slider";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -445,12 +446,27 @@ const ICP = () => {
                         </div>
 
                         <div className="space-y-2">
-                          <Label>Company Size: {editing.company_size_min}–{editing.company_size_max} employees</Label>
-                          <Slider
-                            min={1} max={10000} step={10}
-                            value={[editing.company_size_min || 1, editing.company_size_max || 10000]}
-                            onValueChange={([min, max]) => update({ company_size_min: min, company_size_max: max })}
-                          />
+                          <Label>Company Size (employees)</Label>
+                          <div className="flex items-center gap-3">
+                            <Input
+                              type="number"
+                              min={1}
+                              value={editing.company_size_min || ""}
+                              onChange={(e) => update({ company_size_min: Math.max(1, parseInt(e.target.value) || 0) })}
+                              placeholder="Min"
+                              className="w-28"
+                            />
+                            <span className="text-muted-foreground text-sm">to</span>
+                            <Input
+                              type="number"
+                              min={1}
+                              value={editing.company_size_max || ""}
+                              onChange={(e) => update({ company_size_max: Math.max(1, parseInt(e.target.value) || 0) })}
+                              placeholder="Max"
+                              className="w-28"
+                            />
+                            <span className="text-muted-foreground text-sm">employees</span>
+                          </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
