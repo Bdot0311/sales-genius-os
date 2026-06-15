@@ -107,7 +107,7 @@ export function useICPProfiles() {
 
       const { data, error } = await supabase
         .from("icp_profiles")
-        .insert({ ...profile, user_id: user.id, name: profile.name || "New ICP" })
+        .insert({ ...(profile as any), user_id: user.id, name: profile.name || "New ICP" })
         .select()
         .single();
 
@@ -125,7 +125,7 @@ export function useICPProfiles() {
     mutationFn: async ({ id, ...updates }: Partial<ICPProfile> & { id: string }) => {
       const { data, error } = await supabase
         .from("icp_profiles")
-        .update(updates)
+        .update(updates as any)
         .eq("id", id)
         .select()
         .single();
