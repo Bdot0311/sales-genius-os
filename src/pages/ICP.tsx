@@ -304,6 +304,17 @@ const ICP = () => {
                         {p.target_titles.length > 3 && <Badge variant="outline" className="text-xs">+{p.target_titles.length - 3}</Badge>}
                       </div>
                     )}
+                    <div className="pt-2 border-t">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={(e) => openLookalikes(p, e)}
+                      >
+                        <Search className="w-3.5 h-3.5 mr-1.5" />
+                        Find Lookalikes
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               );
