@@ -698,6 +698,13 @@ const ICP = () => {
         </SheetContent>
       </Sheet>
 
+      <ICPLookalikesDialog
+        open={!!lookalikeProfile}
+        onOpenChange={(o) => { if (!o) setLookalikeProfile(null); }}
+        profile={lookalikeProfile}
+      />
+
+
       {gatedFeature && (
         <FeatureGateModal
           open={gateModalOpen}
