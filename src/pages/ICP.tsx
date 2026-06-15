@@ -540,10 +540,7 @@ const ICP = () => {
 
                         <div className="space-y-2">
                           <Label>Budget Authority</Label>
-                          <Select value={editing.budget_authority || ""} onValueChange={(v) => update({ budget_authority: v })}>
-                            <SelectTrigger><SelectValue placeholder="Who can sign the contract?" /></SelectTrigger>
-                            <SelectContent>{BUDGET_AUTHORITY.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
-                          </Select>
+                          <MultiSelect options={BUDGET_AUTHORITY} value={editing.budget_authority || []} onChange={(v) => update({ budget_authority: v })} />
                         </div>
                       </AccordionContent>
                     </AccordionItem>
