@@ -783,11 +783,27 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
     const data = await response.json();
     let email = data.choices[0].message.content.trim();
 
-    // Detect HALT from strict mode validation — return as structured error
+    // Safety net: if the model still emits a HALT-style refusal, retry once without strict framing
     if (email.startsWith('INSUFFICIENT_RESEARCH')) {
-      return new Response(JSON.stringify({ error: email, halted: true }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      const retry = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: systemPrompt + "\n\nNEVER refuse. NEVER output INSUFFICIENT_RESEARCH. Always produce an email using the best available context, inferring missing details from industry and role." },
+            { role: "user", content: userPrompt },
+          ],
+          temperature: 0.9,
+        }),
       });
+      if (retry.ok) {
+        const retryData = await retry.json();
+        email = (retryData.choices?.[0]?.message?.content || '').trim();
+      }
     }
 
     // Introduction emails include Subject line — preserve it; all others strip it
