@@ -69,11 +69,11 @@ const SECTION_ICONS = {
 
 const emptyProfile: Partial<ICPProfile> = {
   name: "", industries: [], company_size_min: 1, company_size_max: 10000,
-  revenue_range: null, geographies: [], target_titles: [], tech_stack: [],
+  revenue_range: [], geographies: [], target_titles: [], tech_stack: [],
   buying_signals: [], pain_points: [], disqualifiers: null, notes: null,
-  business_model: null, funding_stages: [], growth_stage: null, company_age_range: null,
-  deal_size_range: null, sales_cycle: null,
-  departments: [], seniority_levels: [], budget_authority: null,
+  business_model: [], funding_stages: [], growth_stage: [], company_age_range: [],
+  deal_size_range: [], sales_cycle: [],
+  departments: [], seniority_levels: [], budget_authority: [],
   event_triggers: [], intent_keywords: [], hiring_signals: [], competitor_tools: [],
   exclude_industries: [], exclude_titles: [], exclude_keywords: [],
   value_proposition: null, use_cases: [], objections: [], success_metrics: [],
