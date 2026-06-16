@@ -131,10 +131,10 @@ const ReplyPreview = () => (
 
 const PipelinePreview = () => {
   const stages = [
-    { label: "Contacted",  count: 124, pct: 100 },
-    { label: "Replied",    count:  52, pct:  42 },
-    { label: "Qualified",  count:  28, pct:  23 },
-    { label: "Closed",     count:  11, pct:   9 },
+    { label: "Contacted",  count: 200, pct: 100 },
+    { label: "Replied",    count:  18, pct:   9 },
+    { label: "Qualified",  count:   7, pct:   4 },
+    { label: "Closed",     count:   2, pct:   1 },
   ];
   return (
     <div className="w-full h-full flex flex-col gap-4 p-6">
@@ -149,7 +149,7 @@ const PipelinePreview = () => {
             <div
               className="h-full rounded-full"
               style={{
-                width: `${pct}%`,
+                width: `${Math.max(pct, 8)}%`,
                 background: "linear-gradient(to right, hsl(261 75% 55%), hsl(280 80% 65%))",
                 opacity: 0.4 + (pct / 100) * 0.6,
               }}
@@ -159,7 +159,7 @@ const PipelinePreview = () => {
       ))}
       {/* Metric row */}
       <div className="flex gap-3 mt-2">
-        {[["32%", "Reply rate"], ["$89K", "Pipeline"], ["11", "Closed"]].map(([val, lbl]) => (
+        {[["9%", "Reply rate"], ["$24K", "Pipeline"], ["2", "Closed"]].map(([val, lbl]) => (
           <div
             key={lbl}
             className="flex-1 rounded-xl p-3"
@@ -208,7 +208,7 @@ const modules = [
 const alsoIncluded = [
   "Multi-step sequences",
   "Deliverability monitoring",
-  "Sales coaching tools",
+  "AI Roleplay Coach (Growth & Pro)",
   "Zapier & API automation",
   "White-label client portal",
   "Agency reporting",

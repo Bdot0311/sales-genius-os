@@ -114,8 +114,8 @@ const PLAYBOOKS: Playbook[] = [
   {
     id: 'multi-channel',
     name: 'Multi-Channel Sequencing',
-    tagline: 'Email + LinkedIn + phone in one cadence',
-    description: 'Buyers don\'t live in one channel. The most effective outbound in 2025-2026 combines email, LinkedIn, and phone in a coordinated sequence. Multi-channel sequences see 2-3× higher response rates than email-only.',
+    tagline: 'Email + LinkedIn + video meeting in one cadence',
+    description: 'Buyers don\'t live in one channel. The most effective outbound combines email, LinkedIn touches, and a video meeting invite in a coordinated sequence. Layering channels around your email keeps you top of mind and drives more booked meetings than email alone.',
     bestFor: 'Teams targeting mid-market and enterprise where deals justify the effort',
     icon: '🔗',
     color: 'border-l-blue-500',
@@ -161,18 +161,18 @@ const PLAYBOOKS: Playbook[] = [
         tips: 'The LinkedIn engagement makes your name familiar. When they see your email, it\'s not from a stranger anymore.',
       },
       {
-        title: 'Day 7-14: Phone + Final Touches',
-        description: 'If they\'ve opened emails but not replied, add a phone call. Close with a breakup email.',
+        title: 'Day 7-14: Video Meeting Invite + Final Touches',
+        description: 'If they\'ve opened emails but not replied, invite them to a short video call with a direct booking link. Close with a breakup email.',
         keyActions: [
-          'Day 7: Call attempt (leave a voicemail referencing your email)',
+          'Day 7: Send a booking link for a 15-min video call, referencing your earlier email',
           'Day 10: Send a LinkedIn DM with a different resource or question',
           'Day 14: Breakup email — give them an easy out',
         ],
         examples: [
-          'Voicemail: "Hey Sarah, [Name] here. Sent you a note about scaling outbound — wanted to put a voice to the name. If it\'s relevant, I\'m at [number]. If not, no worries at all."',
+          'Booking nudge: "Hey Sarah, sent you a note about scaling outbound. If it\'s relevant, here\'s my calendar for a quick 15-min video call: [booking link]. If not, no worries at all."',
           'Breakup: "I\'ll take the hint 😄 If outbound data becomes a priority later, I\'m easy to find. Wishing you luck with the hiring push."',
         ],
-        tips: 'The breakup email often gets the highest reply rate in a sequence. People respond to scarcity and respect.',
+        tips: 'A one-click booking link removes friction. Pair it with the breakup email — that combination often gets the highest reply rate in a sequence.',
       },
     ],
   },
@@ -304,7 +304,7 @@ const PLAYBOOKS: Playbook[] = [
           'Offer a choice: meeting or async (send a Loom video)',
         ],
         examples: [
-          '"I\'ve shared a few things over the past couple weeks and had a few ideas specific to HealthBridge. Would it make sense to jump on a 15-min call, or would you prefer I send a quick video walkthrough?"',
+          '"I\'ve shared a few things over the past couple weeks and had a few ideas specific to HealthBridge. Would it make sense to jump on a 15-min video call, or would you prefer I send a quick video walkthrough?"',
         ],
         tips: 'By this point, you\'re not cold anymore. You\'re a helpful person they recognize. Meeting conversion is usually much better than a truly cold ask once they recognize your name and context.',
       },

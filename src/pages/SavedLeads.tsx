@@ -15,6 +15,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Analytics } from "@/lib/analytics";
 
 type SortField = "created_at" | "icp_score" | "intent_score" | "company_name" | "company_size";
 type SortOrder = "asc" | "desc";
@@ -253,6 +254,7 @@ const SavedLeads = () => {
 
   const handleLeadClick = async (lead: Lead) => {
     setSelectedLead(lead);
+    Analytics.firstLeadViewed(lead.id);
     await fetchEnrichmentHistory(lead.id);
   };
 

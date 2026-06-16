@@ -104,11 +104,11 @@ export const FinalCTA = () => {
                 height: "56px",
                 background: "linear-gradient(135deg, hsl(261 75% 60%) 0%, hsl(261 75% 50%) 100%)",
               }}
-              aria-label="Find your first leads free"
+              aria-label="Get 10 free leads"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              Find your first leads free
+              Get 10 free leads
               <ArrowRight className="w-4 h-4" />
             </motion.button>
 

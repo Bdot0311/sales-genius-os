@@ -17,6 +17,7 @@ import { useExternalLeads, ExternalLeadFilters } from "@/hooks/use-external-lead
 import { useSubscriptionStatus } from "@/hooks/use-subscription-status";
 import { useSearchCredits } from "@/hooks/use-search-credits";
 import { useRealtimeTable } from "@/hooks/use-realtime-table";
+import { Analytics } from "@/lib/analytics";
 
 
 const Leads = () => {
@@ -204,6 +205,7 @@ const Leads = () => {
                   
                   setExternalFilters(newFilters);
                   fetchExternalLeads(newFilters);
+                  Analytics.firstSearchRun();
                 } catch (error) {
                   console.error('AI parsing failed, using fallback:', error);
                   const lowerQuery = query.toLowerCase();
