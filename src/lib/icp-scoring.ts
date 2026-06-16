@@ -7,6 +7,10 @@ interface Lead {
   company_size?: string | null;
   employee_count?: string | null;
   technologies?: string[] | null;
+  department?: string | null;
+  seniority?: string | null;
+  company_description?: string | null;
+  annual_revenue?: string | null;
 }
 
 interface ScoreBreakdown {
@@ -21,6 +25,20 @@ interface ScoreBreakdown {
   sizeEval: boolean | null;
   techEval: boolean | null;
   hasEnoughData: boolean;
+}
+
+function revenueToApproxEmployees(revenue: string): number {
+  const cleaned = revenue.replace(/[^0-9.KkMmBb]/g, "");
+  const lower = revenue.toLowerCase();
+  let millions = 0;
+  const num = parseFloat(cleaned);
+  if (!num) return 0;
+  if (lower.includes("b")) millions = num * 1000;
+  else if (lower.includes("m")) millions = num;
+  else if (lower.includes("k")) millions = num / 1000;
+  else millions = num / 1_000_000; // raw dollar amount
+  // rough $200K revenue per employee
+  return Math.round((millions * 1_000_000) / 200_000);
 }
 
 export function calculateICPMatch(lead: Lead, profiles: ICPProfile[]): ScoreBreakdown | null {
@@ -44,36 +62,56 @@ export function calculateICPMatch(lead: Lead, profiles: ICPProfile[]): ScoreBrea
     let sizeEval: boolean | null = null;
     let techEval: boolean | null = null;
 
-    // Title match
-    if (lead.job_title && profile.target_titles.length > 0) {
-      const lower = lead.job_title.toLowerCase();
-      titleMatch = profile.target_titles.some(
-        (t) => lower.includes(t.toLowerCase()) || t.toLowerCase().includes(lower)
-      );
-      titleEval = titleMatch;
-    } else if (lead.job_title && profile.target_titles.length === 0) {
+    // Title match — primary: job_title; fallback: seniority + department
+    if (profile.target_titles.length > 0) {
+      const titleTokens = [lead.job_title, lead.seniority, lead.department]
+        .filter(Boolean)
+        .map((s) => s!.toLowerCase())
+        .join(" ");
+      if (titleTokens) {
+        titleMatch = profile.target_titles.some(
+          (t) => titleTokens.includes(t.toLowerCase()) || t.toLowerCase().split(" ").some((word) => titleTokens.includes(word))
+        );
+        titleEval = titleMatch;
+      }
+    } else if (lead.job_title || lead.seniority || lead.department) {
       titleEval = null; // profile has no titles to match against
     }
 
-    // Industry match
-    if (lead.industry && profile.industries.length > 0) {
-      const lower = lead.industry.toLowerCase();
-      industryMatch = profile.industries.some((i) => lower.includes(i.toLowerCase()));
-      industryEval = industryMatch;
+    // Industry match — primary: industry; fallback: company_description keyword scan
+    if (profile.industries.length > 0) {
+      const industryText = [lead.industry, lead.company_description]
+        .filter(Boolean)
+        .map((s) => s!.toLowerCase())
+        .join(" ");
+      if (industryText) {
+        industryMatch = profile.industries.some((i) => industryText.includes(i.toLowerCase()));
+        industryEval = industryMatch;
+      }
     }
 
-    // Size match
-    const empCount = parseInt(lead.employee_count || lead.company_size || "0", 10);
+    // Size match — primary: employee_count / company_size; fallback: annual_revenue proxy
+    let empCount = parseInt(lead.employee_count || lead.company_size || "0", 10);
+    if (empCount <= 0 && lead.annual_revenue) {
+      empCount = revenueToApproxEmployees(lead.annual_revenue);
+    }
     if (empCount > 0) {
       sizeMatch = empCount >= profile.company_size_min && empCount <= profile.company_size_max;
       sizeEval = sizeMatch;
     }
 
-    // Tech match
-    if (lead.technologies && lead.technologies.length > 0 && profile.tech_stack.length > 0) {
-      const leadTech = lead.technologies.map((t) => t.toLowerCase());
-      techMatch = profile.tech_stack.some((t) => leadTech.includes(t.toLowerCase()));
-      techEval = techMatch;
+    // Tech match — primary: technologies array; fallback: company_description keyword scan
+    if (profile.tech_stack.length > 0) {
+      const techTokens = [
+        ...(lead.technologies ?? []),
+        ...(lead.company_description ? [lead.company_description] : []),
+      ].map((s) => s.toLowerCase());
+      if (techTokens.length > 0) {
+        techMatch = profile.tech_stack.some((t) =>
+          techTokens.some((tok) => tok.includes(t.toLowerCase()))
+        );
+        techEval = techMatch;
+      }
     }
 
     const w = (profile as any).scoring_weights || { title: 25, industry: 25, size: 25, tech: 25 };

@@ -11,6 +11,10 @@ interface Lead {
   employee_count?: string | null;
   technologies?: string[] | null;
   icp_score?: number | null;
+  department?: string | null;
+  seniority?: string | null;
+  company_description?: string | null;
+  annual_revenue?: string | null;
 }
 
 interface ICPScoreBreakdownProps {
