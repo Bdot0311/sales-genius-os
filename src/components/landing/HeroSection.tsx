@@ -123,11 +123,11 @@ export const HeroSection = () => {
             onClick={() => navigate("/auth")}
             className="cta-pill-glow inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-full px-8 text-sm font-semibold text-white group sm:w-auto"
             style={{ background: "linear-gradient(135deg, hsl(261 75% 60%) 0%, hsl(261 75% 50%) 100%)" }}
-            aria-label="Find your first lead free"
+            aria-label="Get 10 free leads"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            Find your first lead free
+            Get 10 free leads
             <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
           </motion.button>
 
