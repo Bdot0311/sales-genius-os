@@ -108,7 +108,7 @@ export const HeroSection = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.65, ease, delay: 0.38 }}
         >
-          OutReign is a B2B lead intelligence and outbound sales platform. Teams use it to find ranked prospects, verify business emails, draft personalized outreach, send Gmail-based outbound messages, and track replies in one workflow.
+          Know exactly who's ready to buy. OutReign scores every prospect by fit and intent, verifies their inbox, and drafts the opener, so your team focuses on closing.
         </motion.p>
 
 
