@@ -123,21 +123,21 @@ export const HeroSection = () => {
             onClick={() => navigate("/auth")}
             className="cta-pill-glow inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-full px-8 text-sm font-semibold text-white group sm:w-auto"
             style={{ background: "linear-gradient(135deg, hsl(261 75% 60%) 0%, hsl(261 75% 50%) 100%)" }}
-            aria-label="Start for free"
+            aria-label="Find your first lead free"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            Get 10 Free Leads Now
+            Find your first lead free
             <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
           </motion.button>
 
           <motion.a
-            href="/demo"
+            href="#how-it-works"
             className="inline-flex h-11 items-center justify-center gap-1.5 px-5 text-sm text-white/85 transition-colors duration-200 hover:text-white sm:h-[52px]"
             whileHover={{ x: 3 }}
-            aria-label="Watch the OutReign product walkthrough"
+            aria-label="See how OutReign works"
           >
-            Watch OutReign product walkthrough
+            See how it works
             <ArrowRight className="h-3.5 w-3.5 ml-0.5" aria-hidden="true" />
           </motion.a>
         </motion.div>

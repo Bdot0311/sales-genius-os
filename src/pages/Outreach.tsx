@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { Analytics } from "@/lib/analytics";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -1047,6 +1048,7 @@ const Outreach = () => {
       if (error) throw error;
       const emailBody = appendSenderLine(sanitizeGeneratedEmailBody(data.email), resolvedSender);
       setGeneratedEmail(emailBody);
+      Analytics.firstEmailGenerated();
       toast({
         title: "Email generated",
         description: "AI created a personalized sales email designed to book meetings",
@@ -1397,6 +1399,7 @@ Return ONLY the corrected email body. No subject line. No explanation. No "Here 
         technologies: lead.technologies,
       };
       
+      Analytics.firstSequenceSent();
       toast({
         title: "Email sent!",
         description: `Email sent to ${lead.contact_name} at ${lead.contact_email}`,

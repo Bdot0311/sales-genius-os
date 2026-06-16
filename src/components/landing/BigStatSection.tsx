@@ -64,48 +64,20 @@ export const BigStatSection = () => {
             ICP to sent email. One tool, one workflow.
           </motion.p>
 
-          {/* Supporting stats — staggered */}
+          {/* Supporting stat */}
           <motion.div
-            className="flex flex-col sm:flex-row items-center gap-6 sm:gap-12"
-            initial="hidden"
-            whileInView="show"
+            className="text-center"
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-10% 0px" }}
-            variants={{
-              hidden: {},
-              show: { transition: { staggerChildren: 0.09, delayChildren: 0.28 } },
-            }}
+            transition={{ duration: 0.65, ease, delay: 0.28 }}
           >
-            <motion.div
-              className="text-center"
-              variants={{
-                hidden: { opacity: 0, y: 16 },
-                show: { opacity: 1, y: 0, transition: { duration: 0.6, ease } },
-              }}
-            >
-              <span className="block font-display font-bold" style={{ fontSize: "1.75rem", color: "hsl(0 0% 78%)", letterSpacing: "-0.02em" }}>
-                10.7%
-              </span>
-              <span className="block text-xs mt-1" style={{ color: "hsl(0 0% 100% / 0.28)" }}>
-                avg reply rate on intent-triggered outreach
-              </span>
-            </motion.div>
-
-            <div className="hidden sm:block w-px h-12" style={{ background: "hsl(261 75% 50% / 0.18)" }} />
-
-            <motion.div
-              className="text-center"
-              variants={{
-                hidden: { opacity: 0, y: 16 },
-                show: { opacity: 1, y: 0, transition: { duration: 0.65, ease } },
-              }}
-            >
-              <span className="block font-display font-bold" style={{ fontSize: "1.75rem", color: "hsl(0 0% 78%)", letterSpacing: "-0.02em" }}>
-                1 tool
-              </span>
-              <span className="block text-xs mt-1" style={{ color: "hsl(0 0% 100% / 0.28)" }}>
-                instead of Apollo + Clay + Gmail + spreadsheet
-              </span>
-            </motion.div>
+            <span className="block font-display font-bold" style={{ fontSize: "1.75rem", color: "hsl(0 0% 78%)", letterSpacing: "-0.02em" }}>
+              1 tool
+            </span>
+            <span className="block text-xs mt-1" style={{ color: "hsl(0 0% 100% / 0.28)" }}>
+              instead of Apollo + Clay + Gmail + spreadsheet
+            </span>
           </motion.div>
 
         </div>

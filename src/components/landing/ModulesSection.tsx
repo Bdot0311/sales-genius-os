@@ -208,7 +208,7 @@ const modules = [
 const alsoIncluded = [
   "Multi-step sequences",
   "Deliverability monitoring",
-  "Sales coaching tools",
+  "AI Roleplay Coach (Growth & Pro)",
   "Zapier & API automation",
   "White-label client portal",
   "Agency reporting",
