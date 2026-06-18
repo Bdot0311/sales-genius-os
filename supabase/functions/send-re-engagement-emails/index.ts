@@ -134,7 +134,10 @@ serve(async (req) => {
 
     // ---- Cron / bulk eligibility sweep ----
     const inactiveBefore = new Date(Date.now() - INACTIVE_DAYS * 86400_000).toISOString();
-    const cooldownSince = new Date(Date.now() - COOLDOWN_DAYS * 86400_000).toISOString();
+    // "Already sent/attempted today" cooldown — start of current UTC day
+    const startOfUtcDay = new Date();
+    startOfUtcDay.setUTCHours(0, 0, 0, 0);
+    const cooldownSince = startOfUtcDay.toISOString();
 
     const { data: candidates, error } = await supabase
       .from('profiles')
