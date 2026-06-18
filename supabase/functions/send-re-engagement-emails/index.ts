@@ -185,7 +185,7 @@ serve(async (req) => {
         continue;
       }
 
-      const result = await sendOne(user as any, { manual: false, reason: 'inactive_14d_no_cooldown' });
+      const result = await sendOne(user as any, { manual: false, reason: 'no_signin_today' });
       if (result.ok) sent++;
       else errors.push(`${user.email}: ${result.error}`);
     }
