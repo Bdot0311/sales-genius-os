@@ -177,7 +177,7 @@ serve(async (req) => {
           days_inactive: user.last_sign_in_at
             ? Math.floor((Date.now() - new Date(user.last_sign_in_at).getTime()) / 86400_000)
             : null,
-          eligibility_reason: 'cooldown_active',
+          eligibility_reason: 'already_sent_today',
           status: 'skipped',
           triggered_manually: false,
           triggered_by: null,
