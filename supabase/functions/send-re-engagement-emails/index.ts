@@ -7,9 +7,10 @@ import { corsHeaders } from "../_shared/internal-auth.ts";
 // - Cool-down: don't email the same user more than once every 30 days (bypassed for manual sends)
 // - Hard cap per run to avoid bursts
 // - Records every attempt to public.re_engagement_log
-const INACTIVE_DAYS = 2;
-const COOLDOWN_DAYS = 7;
-const MAX_PER_RUN = 100;
+// Send a re-engagement nudge every day the user hasn't signed in that calendar day (UTC).
+// Cooldown is "already attempted today" — not a multi-day quiet period.
+const INACTIVE_DAYS = 1;
+const MAX_PER_RUN = 500;
 const TEMPLATE_NAME = 're-engagement-email';
 
 const log = (step: string, details?: unknown) => {
@@ -133,7 +134,10 @@ serve(async (req) => {
 
     // ---- Cron / bulk eligibility sweep ----
     const inactiveBefore = new Date(Date.now() - INACTIVE_DAYS * 86400_000).toISOString();
-    const cooldownSince = new Date(Date.now() - COOLDOWN_DAYS * 86400_000).toISOString();
+    // "Already sent/attempted today" cooldown — start of current UTC day
+    const startOfUtcDay = new Date();
+    startOfUtcDay.setUTCHours(0, 0, 0, 0);
+    const cooldownSince = startOfUtcDay.toISOString();
 
     const { data: candidates, error } = await supabase
       .from('profiles')
@@ -173,7 +177,7 @@ serve(async (req) => {
           days_inactive: user.last_sign_in_at
             ? Math.floor((Date.now() - new Date(user.last_sign_in_at).getTime()) / 86400_000)
             : null,
-          eligibility_reason: 'cooldown_active',
+          eligibility_reason: 'already_sent_today',
           status: 'skipped',
           triggered_manually: false,
           triggered_by: null,
@@ -181,7 +185,7 @@ serve(async (req) => {
         continue;
       }
 
-      const result = await sendOne(user as any, { manual: false, reason: 'inactive_14d_no_cooldown' });
+      const result = await sendOne(user as any, { manual: false, reason: 'no_signin_today' });
       if (result.ok) sent++;
       else errors.push(`${user.email}: ${result.error}`);
     }
