@@ -142,27 +142,27 @@ export const FooterSection = () => {
 
           {/* Bottom */}
           <div className="pt-8 border-t flex flex-col items-center gap-4" style={{ borderColor: "hsl(261 75% 50% / 0.18)" }}>
-            <div className="flex flex-wrap items-center justify-center gap-6">
+            <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3 [&_a]:flex [&_a]:h-10 [&_a]:items-center [&_img]:max-h-10 [&_img]:w-auto [&_img]:object-contain">
               <a href="https://sellwithboost.com" target="_blank" rel="noopener noreferrer">
-                <img src="https://sellwithboost.com/badge/listing-dark.svg" alt="Listed on Sell With Boost" className="h-10 w-auto" width={160} height={40} loading="lazy" />
+                <img src="https://sellwithboost.com/badge/listing-dark.svg" alt="Listed on Sell With Boost" width={160} height={40} loading="lazy" />
               </a>
               <a href="https://landingboost.app/badges/top-1" target="_blank" rel="noopener noreferrer">
-                <img src="https://landingboost.app/badges/top1-dark.svg" alt="Top 1% Landing Page — Verified by LandingBoost" className="h-10 w-auto" width={200} height={40} loading="lazy" />
+                <img src="https://landingboost.app/badges/top1-dark.svg" alt="Top 1% Landing Page — Verified by LandingBoost" width={200} height={40} loading="lazy" />
               </a>
               <a href="https://nicklaunches.com/products/salesos/?utm_source=outreign.io&utm_medium=badge&utm_campaign=featured" target="_blank" rel="noopener">
-                <img src="https://nicklaunches.com/badges/featured-dark.svg" alt="OutReign on Nick Launches" className="h-10 w-auto" width={244} height={56} loading="lazy" />
+                <img src="https://nicklaunches.com/badges/featured-dark.svg" alt="OutReign on Nick Launches" width={244} height={56} loading="lazy" />
               </a>
               <a href="https://plugyourbuild.com/listing/outreign-b8ad99" rel="dofollow">
-                <img src="https://plugyourbuild.com/api/badge/outreign-b8ad99?style=dark" alt="Listed on Plug Your Build" className="h-10 w-auto" width={180} height={40} loading="lazy" />
+                <img src="https://plugyourbuild.com/api/badge/outreign-b8ad99?style=dark" alt="Listed on Plug Your Build" width={180} height={40} loading="lazy" />
               </a>
               <a href="https://rankinpublic.xyz/products/outreign.io" target="_blank" rel="noopener noreferrer">
-                <img src="https://rankinpublic.xyz/api/badges/badge-featured.png?site=outreign.io" alt="Featured on RankInPublic" title="Featured on RankInPublic" className="h-10 w-auto" width={125} height={40} loading="lazy" />
+                <img src="https://rankinpublic.xyz/api/badges/badge-featured.png?site=outreign.io" alt="Featured on RankInPublic" title="Featured on RankInPublic" width={125} height={40} loading="lazy" />
               </a>
               <a href="https://www.producthunt.com/products/outreign-io?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-outreign-io" target="_blank" rel="noopener noreferrer">
-                <img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1174023&theme=dark&t=1781681273997" alt="OutReign.io - Find who to sell to then close them. | Product Hunt" className="h-10 w-auto" width={250} height={54} loading="lazy" />
+                <img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1174023&theme=dark&t=1781681273997" alt="OutReign.io - Find who to sell to then close them. | Product Hunt" width={250} height={54} loading="lazy" />
               </a>
               <a href="https://launchllama.co?utm_source=badge&utm_medium=referral" target="_blank" rel="noopener">
-                <img src="https://speaktechenglish.com/wp-content/uploads/2026/04/Screenshot_2026-04-09_at_17.40.44-removebg-preview.png" alt="Featured on Launch Llama" className="h-10 w-auto" width={200} height={50} loading="lazy" />
+                <img src="https://speaktechenglish.com/wp-content/uploads/2026/04/Screenshot_2026-04-09_at_17.40.44-removebg-preview.png" alt="Featured on Launch Llama" width={200} height={50} loading="lazy" />
               </a>
             </div>
             <p className="text-sm text-center" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
