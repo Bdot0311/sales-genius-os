@@ -161,6 +161,9 @@ export const FooterSection = () => {
               <a href="https://www.producthunt.com/products/outreign-io?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-outreign-io" target="_blank" rel="noopener noreferrer">
                 <img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1174023&theme=dark&t=1781681273997" alt="OutReign.io - Find who to sell to then close them. | Product Hunt" className="h-10 w-auto" width={250} height={54} loading="lazy" />
               </a>
+              <a href="https://launchllama.co?utm_source=badge&utm_medium=referral" target="_blank" rel="noopener">
+                <img src="https://speaktechenglish.com/wp-content/uploads/2026/04/Screenshot_2026-04-09_at_17.40.44-removebg-preview.png" alt="Featured on Launch Llama" className="h-10 w-auto" width={200} height={50} loading="lazy" />
+              </a>
             </div>
             <p className="text-sm text-center" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
               © {new Date().getFullYear()} BDØT Industries LLC. All rights reserved.
