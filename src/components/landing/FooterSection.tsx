@@ -143,7 +143,7 @@ export const FooterSection = () => {
           {/* Bottom */}
           <div className="pt-8 border-t flex flex-col items-center gap-4" style={{ borderColor: "hsl(261 75% 50% / 0.18)" }}>
             <div
-              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 w-full max-w-5xl [&_a]:flex [&_a]:h-12 [&_a]:items-center [&_a]:justify-center [&_a]:rounded-lg [&_a]:px-3 [&_a]:transition-colors [&_a]:duration-150 [&_img]:max-h-7 [&_img]:w-auto [&_img]:object-contain"
+              className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full max-w-4xl [&_a]:flex [&_a]:h-14 [&_a]:items-center [&_a]:justify-center [&_a]:rounded-lg [&_a]:px-3 [&_a]:transition-colors [&_a]:duration-150 [&_img]:max-h-8 [&_img]:w-auto [&_img]:object-contain"
               style={{ ["--chip-bg" as any]: "hsl(240 30% 10%)", ["--chip-border" as any]: "hsl(261 75% 50% / 0.18)" }}
             >
               {[
@@ -154,6 +154,7 @@ export const FooterSection = () => {
                 { href: "https://rankinpublic.xyz/products/outreign.io", src: "https://rankinpublic.xyz/api/badges/badge-featured.png?site=outreign.io", alt: "Featured on RankInPublic", w: 125, h: 40 },
                 { href: "https://www.producthunt.com/products/outreign-io?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-outreign-io", src: "https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1174023&theme=dark&t=1781681273997", alt: "OutReign.io - Find who to sell to then close them. | Product Hunt", w: 250, h: 54 },
                 { href: "https://launchllama.co?utm_source=badge&utm_medium=referral", src: "https://speaktechenglish.com/wp-content/uploads/2026/04/Screenshot_2026-04-09_at_17.40.44-removebg-preview.png", alt: "Featured on Launch Llama", w: 200, h: 50 },
+                { href: "https://launchigniter.com/product/outreign-io?ref=badge-outreign-io", src: "https://launchigniter.com/api/badge/outreign-io?theme=dark", alt: "Featured on LaunchIgniter", w: 212, h: 55 },
               ].map((b) => (
                 <a
                   key={b.href}
