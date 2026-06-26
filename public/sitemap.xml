@@ -44,6 +44,23 @@
     <priority>0.9</priority>
   </url>
 
+  <!-- Comparison: OutReign vs Apollo -->
+  <url>
+    <loc>https://outreign.io/vs-apollo</loc>
+    <lastmod>2026-06-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Comparison: OutReign vs Instantly -->
+  <url>
+    <loc>https://outreign.io/vs-instantly</loc>
+    <lastmod>2026-06-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+
   <!-- Guide: Email Warmup -->
   <url>
     <loc>https://outreign.io/guides/email-warmup</loc>
