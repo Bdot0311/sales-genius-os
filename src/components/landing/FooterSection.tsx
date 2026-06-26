@@ -10,6 +10,7 @@ const footerLinks = {
   resources: [
     { label: "Blog", href: "/blog" },
     { label: "Help Center", href: "/help" },
+    { label: "Partners", href: "/partners" },
     { label: "API Docs", href: "/api-docs" },
     { label: "API Status", href: "/api-status" },
   ],

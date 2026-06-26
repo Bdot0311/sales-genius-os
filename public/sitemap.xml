@@ -78,6 +78,14 @@
     <priority>0.8</priority>
   </url>
 
+  <!-- Partners -->
+  <url>
+    <loc>https://outreign.io/partners</loc>
+    <lastmod>2026-06-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
   <!-- Blog Posts -->
   <url>
     <loc>https://outreign.io/blog/how-to-find-b2b-leads-without-boolean-search</loc>
