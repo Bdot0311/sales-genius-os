@@ -65,7 +65,7 @@ const rows = [
   },
   {
     feature: "Starting price",
-    apollo: "TODO: verify current Apollo pricing before publishing",
+    apollo: "$49/user/mo (Basic) — paid annually; free plan with limited credits",
     outreign: "$39/mo (Starter) or free to explore with 10 searches/month",
     advantage: "neutral",
   },
