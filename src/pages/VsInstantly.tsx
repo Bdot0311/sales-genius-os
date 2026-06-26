@@ -104,6 +104,15 @@ export default function VsInstantly() {
         description="Honest comparison of OutReign and Instantly. Instantly is a sender. OutReign is a sender that first tells you who's worth emailing."
         canonicalUrl="https://outreign.io/vs-instantly"
       />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: faqs.map(({ q, a }) => ({
+          "@type": "Question",
+          name: q,
+          acceptedAnswer: { "@type": "Answer", text: a },
+        })),
+      }) }} />
 
       <div
         className="min-h-screen"
