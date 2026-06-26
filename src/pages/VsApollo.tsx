@@ -104,6 +104,15 @@ export default function VsApollo() {
         description="Honest comparison of OutReign and Apollo. Apollo gives you a database. OutReign tells you who to email first. See where each tool wins."
         canonicalUrl="https://outreign.io/vs-apollo"
       />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: faqs.map(({ q, a }) => ({
+          "@type": "Question",
+          name: q,
+          acceptedAnswer: { "@type": "Answer", text: a },
+        })),
+      }) }} />
 
       <div
         className="min-h-screen"
