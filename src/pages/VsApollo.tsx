@@ -171,9 +171,6 @@ export default function VsApollo() {
             ))}
           </div>
 
-          <p className="text-xs mt-3 text-center" style={{ color: "hsl(0 0% 100% / 0.35)" }}>
-            Rows marked TODO contain pricing or feature details that need verification before publishing.
-          </p>
         </div>
 
         {/* Frame */}
