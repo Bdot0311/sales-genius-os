@@ -65,7 +65,7 @@ const rows = [
   },
   {
     feature: "Starting price",
-    instantly: "TODO: verify current Instantly pricing before publishing",
+    instantly: "$37/mo (Growth) — paid monthly; higher tiers for warmup at scale",
     outreign: "$39/mo (Starter) or free with 10 searches/month",
     advantage: "neutral",
   },
@@ -104,6 +104,15 @@ export default function VsInstantly() {
         description="Honest comparison of OutReign and Instantly. Instantly is a sender. OutReign is a sender that first tells you who's worth emailing."
         canonicalUrl="https://outreign.io/vs-instantly"
       />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: faqs.map(({ q, a }) => ({
+          "@type": "Question",
+          name: q,
+          acceptedAnswer: { "@type": "Answer", text: a },
+        })),
+      }) }} />
 
       <div
         className="min-h-screen"
@@ -170,9 +179,6 @@ export default function VsInstantly() {
             ))}
           </div>
 
-          <p className="text-xs mt-3 text-center" style={{ color: "hsl(0 0% 100% / 0.35)" }}>
-            Rows marked TODO contain pricing or feature details that need verification before publishing.
-          </p>
         </div>
 
         {/* Frame */}

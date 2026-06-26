@@ -65,7 +65,7 @@ const rows = [
   },
   {
     feature: "Starting price",
-    apollo: "TODO: verify current Apollo pricing before publishing",
+    apollo: "$49/user/mo (Basic) — paid annually; free plan with limited credits",
     outreign: "$39/mo (Starter) or free to explore with 10 searches/month",
     advantage: "neutral",
   },
@@ -104,6 +104,15 @@ export default function VsApollo() {
         description="Honest comparison of OutReign and Apollo. Apollo gives you a database. OutReign tells you who to email first. See where each tool wins."
         canonicalUrl="https://outreign.io/vs-apollo"
       />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: faqs.map(({ q, a }) => ({
+          "@type": "Question",
+          name: q,
+          acceptedAnswer: { "@type": "Answer", text: a },
+        })),
+      }) }} />
 
       <div
         className="min-h-screen"
@@ -171,9 +180,6 @@ export default function VsApollo() {
             ))}
           </div>
 
-          <p className="text-xs mt-3 text-center" style={{ color: "hsl(0 0% 100% / 0.35)" }}>
-            Rows marked TODO contain pricing or feature details that need verification before publishing.
-          </p>
         </div>
 
         {/* Frame */}
