@@ -65,7 +65,7 @@ const rows = [
   },
   {
     feature: "Starting price",
-    instantly: "TODO: verify current Instantly pricing before publishing",
+    instantly: "$37/mo (Growth) — paid monthly; higher tiers for warmup at scale",
     outreign: "$39/mo (Starter) or free with 10 searches/month",
     advantage: "neutral",
   },
