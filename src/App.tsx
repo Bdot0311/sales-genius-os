@@ -9,7 +9,7 @@ const PUBLIC_LANDING_PREFIXES = [
   "/", "/pricing", "/demo", "/api-docs", "/api-status", "/request-integration",
   "/privacy", "/terms", "/security", "/help", "/install", "/unsubscribe", "/blog",
   "/sales-operations-software", "/apollo-alternative", "/guides",
-  "/vs-apollo", "/vs-instantly",
+  "/vs-apollo", "/vs-instantly", "/partners",
 ];
 const isPublicLandingPath = (pathname: string) => {
   if (pathname === "/") return true;
@@ -39,6 +39,7 @@ const SalesOperationsSoftware = lazy(() => import("./pages/SalesOperationsSoftwa
 const ApolloAlternative = lazy(() => import("./pages/ApolloAlternative"));
 const VsApollo = lazy(() => import("./pages/VsApollo"));
 const VsInstantly = lazy(() => import("./pages/VsInstantly"));
+const Partners = lazy(() => import("./pages/Partners"));
 const EmailWarmupGuide = lazy(() => import("./pages/EmailWarmupGuide"));
 const ApiDocs = lazy(() => import("./pages/ApiDocs"));
 const ApiStatus = lazy(() => import("./pages/ApiStatus"));
@@ -285,6 +286,7 @@ const App = () => (
               <Route path="/apollo-alternative" element={<ApolloAlternative />} />
               <Route path="/vs-apollo" element={<VsApollo />} />
               <Route path="/vs-instantly" element={<VsInstantly />} />
+              <Route path="/partners" element={<Partners />} />
               <Route path="/guides/email-warmup" element={<EmailWarmupGuide />} />
               <Route path="/demo" element={<DemoPage />} />
               <Route path="/api-docs" element={<ApiDocs />} />
