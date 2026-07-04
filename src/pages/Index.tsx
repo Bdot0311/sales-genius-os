@@ -74,6 +74,7 @@ const Index = () => {
         keywords="B2B lead generation, lead discovery, outbound email software, ICP scoring, SMTP verified emails, plain English lead search, B2B prospecting, AI email drafting, email enrichment, outbound sales automation, find B2B leads, lead scoring software, B2B email outreach"
         ogImage="https://outreign.io/outreign-social-card.jpg"
       />
+      <SoftwareApplicationSchema />
 
       {/* Fixed cinematic video background with purple tint */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none" aria-hidden="true">
