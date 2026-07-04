@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useRef, type ReactNode } from "react";
 import { Navbar } from "@/components/Navbar";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { ProductShowcase } from "@/components/landing/ProductShowcase";
-import { SEOHead } from "@/components/seo";
+import { SEOHead, SoftwareApplicationSchema } from "@/components/seo";
 
 const HowItWorks = lazy(() => import("@/components/landing/HowItWorks").then(m => ({ default: m.HowItWorks })));
 const ProblemSection = lazy(() => import("@/components/landing/ProblemSection").then(m => ({ default: m.ProblemSection })));
