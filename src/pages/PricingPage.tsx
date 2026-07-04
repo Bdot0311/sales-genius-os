@@ -64,6 +64,7 @@ const PricingPage = () => {
         { name: "Pricing", url: "https://outreign.io/pricing" }
       ]} />
       <FAQSchema faqs={pricingFAQs} />
+      <SoftwareApplicationSchema />
 
       <div
         className="min-h-screen text-foreground overflow-x-hidden"
