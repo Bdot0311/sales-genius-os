@@ -1,6 +1,6 @@
 import { Navbar } from "@/components/Navbar";
 import { Pricing } from "@/components/Pricing";
-import { SEOHead, BreadcrumbSchema, FAQSchema } from "@/components/seo";
+import { SEOHead, BreadcrumbSchema, FAQSchema, SoftwareApplicationSchema } from "@/components/seo";
 import { Link } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { Check, Shield, Zap, Users, Headphones } from "lucide-react";
@@ -64,6 +64,7 @@ const PricingPage = () => {
         { name: "Pricing", url: "https://outreign.io/pricing" }
       ]} />
       <FAQSchema faqs={pricingFAQs} />
+      <SoftwareApplicationSchema />
 
       <div
         className="min-h-screen text-foreground overflow-x-hidden"
