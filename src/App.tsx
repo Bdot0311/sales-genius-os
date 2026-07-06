@@ -232,38 +232,54 @@ const MaintenancePage = ({ message }: { message: string }) => {
 // Wraps app-only routes (dashboard, settings, etc.) — not landing or admin.
 // Reads maintenance status via a security-definer RPC so any user can query it.
 // Fails open: if the RPC doesn't exist yet (migration not run), lets users through.
+type MaintenanceState = { loading: boolean; active: boolean; message: string; isAdmin: boolean };
+const MAINT_TTL_MS = 60_000;
+let maintCache: { at: number; state: MaintenanceState } | null = null;
+let maintInflight: Promise<MaintenanceState> | null = null;
+
+const fetchMaintenance = async (): Promise<MaintenanceState> => {
+  if (maintCache && Date.now() - maintCache.at < MAINT_TTL_MS) return maintCache.state;
+  if (maintInflight) return maintInflight;
+  maintInflight = (async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const [{ data: active }, { data: msg }, { data: roles }] = await Promise.all([
+        supabase.rpc('get_maintenance_status'),
+        supabase.rpc('get_maintenance_message'),
+        user
+          ? supabase.from('user_roles').select('role').eq('user_id', user.id).eq('role', 'admin').limit(1)
+          : Promise.resolve({ data: [] as { role: string }[] }),
+      ]);
+      const next: MaintenanceState = {
+        loading: false,
+        active: active === true,
+        message: typeof msg === 'string' ? msg.replace(/^"|"$/g, '') : "We're performing scheduled maintenance.",
+        isAdmin: !!(roles?.length),
+      };
+      maintCache = { at: Date.now(), state: next };
+      return next;
+    } catch {
+      const next: MaintenanceState = { loading: false, active: false, message: '', isAdmin: false };
+      maintCache = { at: Date.now(), state: next };
+      return next;
+    } finally {
+      maintInflight = null;
+    }
+  })();
+  return maintInflight;
+};
+
 const MaintenanceGuard = ({ children }: { children: ReactNode }) => {
-  const [state, setState] = useState<{ loading: boolean; active: boolean; message: string; isAdmin: boolean }>({
-    loading: true, active: false, message: "We're performing scheduled maintenance. We'll be back shortly.", isAdmin: false,
-  });
+  // If we already have a cached result, use it synchronously — no spinner flash on navigation.
+  const [state, setState] = useState<MaintenanceState>(() =>
+    maintCache && Date.now() - maintCache.at < MAINT_TTL_MS
+      ? maintCache.state
+      : { loading: true, active: false, message: "We're performing scheduled maintenance. We'll be back shortly.", isAdmin: false }
+  );
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      try {
-        // Get the current authenticated user first so we check THEIR role
-        const { data: { user } } = await supabase.auth.getUser();
-
-        const [{ data: active }, { data: msg }, { data: roles }] = await Promise.all([
-          supabase.rpc('get_maintenance_status'),
-          supabase.rpc('get_maintenance_message'),
-          user
-            ? supabase.from('user_roles').select('role').eq('user_id', user.id).eq('role', 'admin').limit(1)
-            : Promise.resolve({ data: [] }),
-        ]);
-        if (cancelled) return;
-        const isAdmin = !!(roles?.length);
-        setState({
-          loading: false,
-          active: active === true,
-          message: typeof msg === 'string' ? msg.replace(/^"|"$/g, '') : "We're performing scheduled maintenance.",
-          isAdmin,
-        });
-      } catch {
-        // Migration not run yet or network error — fail open (don't block users)
-        if (!cancelled) setState(s => ({ ...s, loading: false }));
-      }
-    })();
+    fetchMaintenance().then(next => { if (!cancelled) setState(next); });
     return () => { cancelled = true; };
   }, []);
 

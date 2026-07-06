@@ -47,22 +47,38 @@ serve(async (req) => {
     const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
     const alerts: any[] = [];
 
-    // PATTERN 1: Multiple failed logins
-    const { data: failedLogins } = await supabaseClient.from("login_history").select("user_email, ip_address, created_at").eq("status", "failed").gte("created_at", fifteenMinutesAgo);
+    // PATTERN 1: Multiple failed logins (login_history no longer has user_email — resolve via profiles)
+    const { data: failedLogins } = await supabaseClient
+      .from("login_history")
+      .select("user_id, ip_address, created_at")
+      .eq("status", "failed")
+      .gte("created_at", fifteenMinutesAgo);
+
+    const failedUserIds = Array.from(new Set((failedLogins || []).map((l: any) => l.user_id).filter(Boolean)));
+    let emailByUserId: Record<string, string> = {};
+    if (failedUserIds.length > 0) {
+      const { data: emailRows } = await supabaseClient
+        .from("profiles")
+        .select("id, email")
+        .in("id", failedUserIds);
+      emailByUserId = Object.fromEntries((emailRows || []).map((r: any) => [r.id, r.email]));
+    }
+
     const loginAttemptsByEmail: Record<string, { count: number; ips: Set<string>; lastAttempt: string }> = {};
     const loginAttemptsByIp: Record<string, { count: number; emails: Set<string>; lastAttempt: string }> = {};
 
     for (const login of failedLogins || []) {
-      if (login.user_email) {
-        if (!loginAttemptsByEmail[login.user_email]) loginAttemptsByEmail[login.user_email] = { count: 0, ips: new Set(), lastAttempt: '' };
-        loginAttemptsByEmail[login.user_email].count++;
-        if (login.ip_address) loginAttemptsByEmail[login.user_email].ips.add(login.ip_address);
-        loginAttemptsByEmail[login.user_email].lastAttempt = login.created_at;
+      const email = login.user_id ? emailByUserId[login.user_id] : null;
+      if (email) {
+        if (!loginAttemptsByEmail[email]) loginAttemptsByEmail[email] = { count: 0, ips: new Set(), lastAttempt: '' };
+        loginAttemptsByEmail[email].count++;
+        if (login.ip_address) loginAttemptsByEmail[email].ips.add(login.ip_address);
+        loginAttemptsByEmail[email].lastAttempt = login.created_at;
       }
       if (login.ip_address) {
         if (!loginAttemptsByIp[login.ip_address]) loginAttemptsByIp[login.ip_address] = { count: 0, emails: new Set(), lastAttempt: '' };
         loginAttemptsByIp[login.ip_address].count++;
-        if (login.user_email) loginAttemptsByIp[login.ip_address].emails.add(login.user_email);
+        if (email) loginAttemptsByIp[login.ip_address].emails.add(email);
         loginAttemptsByIp[login.ip_address].lastAttempt = login.created_at;
       }
     }
