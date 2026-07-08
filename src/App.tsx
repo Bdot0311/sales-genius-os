@@ -393,6 +393,7 @@ const App = () => {
       </BrowserRouter>
     </DeferredUIShell>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;
