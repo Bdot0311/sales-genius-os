@@ -288,7 +288,48 @@ const MaintenanceGuard = ({ children }: { children: ReactNode }) => {
   return <>{children}</>;
 };
 
-const App = () => (
+// One-time sanity check: if a stored session has a JWT without a `sub` claim
+// (stale token from a prior auth-config change / signing-key rotation), Supabase
+// Auth rejects every /user call with 403 bad_jwt and the client falls back to
+// anon, breaking has_role/get_user_plan and every RLS-protected query. Detect
+// this and force a clean sign-out so the user can re-authenticate.
+let jwtSanityRan = false;
+const useJwtSanityCheck = () => {
+  useEffect(() => {
+    if (jwtSanityRan) return;
+    jwtSanityRan = true;
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) return;
+        let hasSub = false;
+        try {
+          const payload = JSON.parse(atob(session.access_token.split('.')[1] ?? ''));
+          hasSub = typeof payload?.sub === 'string' && payload.sub.length > 0;
+        } catch { hasSub = false; }
+        if (!hasSub) {
+          try { await supabase.auth.signOut(); } catch { /* noop */ }
+          try {
+            Object.keys(localStorage)
+              .filter(k => k.startsWith('sb-') && k.endsWith('-auth-token'))
+              .forEach(k => localStorage.removeItem(k));
+          } catch { /* noop */ }
+          return;
+        }
+        // Token has a sub — confirm the server accepts it. If not (bad_jwt),
+        // clear the stale session rather than looping into permission errors.
+        const { error } = await supabase.auth.getUser();
+        if (error && /jwt|claim|sub/i.test(error.message || '')) {
+          try { await supabase.auth.signOut(); } catch { /* noop */ }
+        }
+      } catch { /* noop */ }
+    })();
+  }, []);
+};
+
+const App = () => {
+  useJwtSanityCheck();
+  return (
   <QueryClientProvider client={queryClient}>
     <DeferredUIShell>
       <BrowserRouter>
