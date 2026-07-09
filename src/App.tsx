@@ -346,6 +346,7 @@ const App = () => {
               <Route path="/vs-instantly" element={<VsInstantly />} />
               <Route path="/partners" element={<Partners />} />
               <Route path="/guides/email-warmup" element={<EmailWarmupGuide />} />
+              <Route path="/guides/icp-criteria-revenue-operations" element={<IcpCriteriaGuide />} />
               <Route path="/demo" element={<DemoPage />} />
               <Route path="/api-docs" element={<ApiDocs />} />
               <Route path="/api-status" element={<ApiStatus />} />
