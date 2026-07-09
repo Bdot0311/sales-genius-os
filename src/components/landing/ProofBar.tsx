@@ -35,7 +35,7 @@ export const ProofBar = ({ metrics }: ProofBarProps) => {
             </span>
           </div>
         ))}
-        <p className="w-full text-center text-xs mt-2" style={{ color: "hsl(0 0% 100% / 0.35)" }}>
+        <p className="w-full text-center text-xs mt-2" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
           Built in public by a founder running real outbound daily.{" "}
           <a
             href={BRAND.founderX}

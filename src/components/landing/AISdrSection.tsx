@@ -81,7 +81,7 @@ const AgentFeedPreview = ({ visible }: { visible: boolean }) => {
           {[["12", "threads"], ["5", "replied"], ["1", "meeting"]].map(([val, lbl]) => (
             <div key={lbl} className="text-center">
               <p className="text-xs font-bold" style={{ color: "hsl(261 75% 68%)" }}>{val}</p>
-              <p className="text-[9px]" style={{ color: "hsl(0 0% 100% / 0.4)" }}>{lbl}</p>
+              <p className="text-[9px]" style={{ color: "hsl(0 0% 100% / 0.6)" }}>{lbl}</p>
             </div>
           ))}
         </div>
@@ -108,7 +108,7 @@ const AgentFeedPreview = ({ visible }: { visible: boolean }) => {
                 <span className="text-xs font-semibold" style={{ color: "hsl(0 0% 90%)" }}>
                   {item.prospect}
                 </span>
-                <span className="text-[10px]" style={{ color: "hsl(0 0% 100% / 0.35)" }}>
+                <span className="text-[10px]" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
                   · {item.company}
                 </span>
               </div>
