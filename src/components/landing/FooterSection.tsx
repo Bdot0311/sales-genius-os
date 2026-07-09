@@ -82,7 +82,7 @@ export const FooterSection = () => {
 
             {/* Compare */}
             <div>
-              <h4 className="font-semibold text-sm mb-4" style={{ color: "hsl(0 0% 92%)" }}>Why Switch</h4>
+              <h4 className="font-semibold text-sm mb-4" style={{ color: "hsl(0 0% 92%)" }}>Compare</h4>
               <ul className="space-y-3">
                 {footerLinks.compare.map((link) => (
                   <li key={link.label}>
