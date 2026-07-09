@@ -214,7 +214,7 @@ export const HowItWorks = () => {
             >
               Try it free — 10 real leads, no card required
             </motion.button>
-            <p className="text-xs" style={{ color: "hsl(0 0% 100% / 0.35)" }}>
+            <p className="text-xs" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
               No credit card. No demo call. Start in 60 seconds.
             </p>
           </motion.div>

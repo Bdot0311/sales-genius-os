@@ -354,7 +354,7 @@ export const ModulesSection = () => {
                 </p>
                 <div className="flex flex-wrap gap-x-4 gap-y-2">
                   {alsoIncluded.map((item) => (
-                    <span key={item} className="text-xs" style={{ color: "hsl(0 0% 100% / 0.32)" }}>
+                    <span key={item} className="text-xs" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
                       {item}
                     </span>
                   ))}
