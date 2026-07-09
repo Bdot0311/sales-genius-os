@@ -56,7 +56,7 @@ const ApolloAlternative = () => {
       />
       <BreadcrumbSchema items={[
         { name: "Home", url: "https://outreign.io" },
-        { name: "Apollo Alternative", url: "https://outreign.io/apollo-alternative" }
+        { name: "Why Switch", url: "https://outreign.io/apollo-alternative" }
       ]} />
       <FAQSchema faqs={faqs} />
 
