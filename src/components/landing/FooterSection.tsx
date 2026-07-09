@@ -7,6 +7,13 @@ const footerLinks = {
     { label: "Pricing", href: "/pricing" },
     { label: "Integrations", href: "/pricing" },
   ],
+  compare: [
+    { label: "vs Apollo", href: "/vs-apollo" },
+    { label: "vs Instantly", href: "/vs-instantly" },
+    { label: "vs Lusha", href: "/vs-lusha" },
+    { label: "vs ZoomInfo", href: "/vs-zoominfo" },
+    { label: "Apollo alternative", href: "/apollo-alternative" },
+  ],
   resources: [
     { label: "Blog", href: "/blog" },
     { label: "Help Center", href: "/help" },
@@ -26,7 +33,7 @@ export const FooterSection = () => {
     <footer className="py-16 md:py-20 border-t" style={{ background: "hsl(261 75% 2% / 0.88)", borderColor: "hsl(261 75% 50% / 0.18)" }}>
       <div className="container mx-auto px-6">
         <div className="max-w-[1120px] mx-auto">
-          <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-12 mb-12">
+          <div className="grid md:grid-cols-2 lg:grid-cols-6 gap-12 mb-12">
             {/* Brand */}
             <div className="lg:col-span-2">
               <div className="flex items-center gap-2.5 mb-4">
@@ -68,6 +75,23 @@ export const FooterSection = () => {
                         {link.label}
                       </a>
                     )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Compare */}
+            <div>
+              <h4 className="font-semibold text-sm mb-4" style={{ color: "hsl(0 0% 92%)" }}>Compare</h4>
+              <ul className="space-y-3">
+                {footerLinks.compare.map((link) => (
+                  <li key={link.label}>
+                    <Link
+                      to={link.href}
+                      className="text-sm transition-colors duration-150" style={{ color: "hsl(0 0% 100% / 0.7)" }} onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")} onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.7)")}
+                    >
+                      {link.label}
+                    </Link>
                   </li>
                 ))}
               </ul>
