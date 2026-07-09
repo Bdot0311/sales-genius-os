@@ -130,6 +130,8 @@ export default function VsApollo() {
         className="min-h-screen"
         style={{ background: "hsl(261 75% 2%)", color: "hsl(0 0% 92%)" }}
       >
+        <Navbar />
+
         {/* Hero */}
         <div className="max-w-3xl mx-auto px-6 pt-24 pb-16 text-center">
           <p className="font-serif italic text-base mb-4" style={{ color: "hsl(261 75% 65%)" }}>
