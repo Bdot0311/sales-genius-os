@@ -41,7 +41,7 @@ const VsApollo = lazy(() => import("./pages/VsApollo"));
 const VsInstantly = lazy(() => import("./pages/VsInstantly"));
 const Partners = lazy(() => import("./pages/Partners"));
 const EmailWarmupGuide = lazy(() => import("./pages/EmailWarmupGuide"));
-const IcpCriteriaGuide = lazy(() => import("./pages/IcpCriteriaGuide"));
+
 const ApiDocs = lazy(() => import("./pages/ApiDocs"));
 const ApiStatus = lazy(() => import("./pages/ApiStatus"));
 const RequestIntegration = lazy(() => import("./pages/RequestIntegration"));
