@@ -75,7 +75,7 @@ const ApolloAlternative = () => {
             />
             <div className="container mx-auto px-5 sm:px-6 max-w-4xl text-center relative z-10">
               <p className="font-serif italic font-thin text-base text-purple-500 mb-5">
-                Apollo Alternative
+                Why Switch
               </p>
               <h1
                 id="apollo-heading"
