@@ -287,6 +287,10 @@ export default function VsApollo() {
             <ArrowRight className="h-4 w-4" />
           </button>
         </div>
+
+        <Suspense fallback={<SectionLoader />}>
+          <FooterSection />
+        </Suspense>
       </div>
     </>
   );
