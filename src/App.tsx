@@ -306,11 +306,19 @@ const useJwtSanityCheck = () => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.access_token) return;
         let hasSub = false;
+        let decodeFailed = false;
         try {
-          const payload = JSON.parse(atob(session.access_token.split('.')[1] ?? ''));
+          const seg = session.access_token.split('.')[1] ?? '';
+          // JWT payload is base64url — convert to base64 before atob().
+          const b64url = seg.replace(/-/g, '+').replace(/_/g, '/');
+          const padded = b64url + '='.repeat((4 - (b64url.length % 4)) % 4);
+          const payload = JSON.parse(atob(padded));
           hasSub = typeof payload?.sub === 'string' && payload.sub.length > 0;
-        } catch { hasSub = false; }
-        if (!hasSub) {
+        } catch { decodeFailed = true; }
+        // Only force sign-out when we successfully decoded and confirmed `sub`
+        // is missing. If decoding itself failed, do NOT wipe a potentially
+        // valid session — let the server-side getUser() check below decide.
+        if (!hasSub && !decodeFailed) {
           try { await supabase.auth.signOut(); } catch { /* noop */ }
           try {
             Object.keys(localStorage)
