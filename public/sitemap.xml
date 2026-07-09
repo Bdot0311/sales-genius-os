@@ -60,6 +60,22 @@
     <priority>0.8</priority>
   </url>
 
+  <!-- Comparison: OutReign vs Lusha -->
+  <url>
+    <loc>https://outreign.io/vs-lusha</loc>
+    <lastmod>2026-07-09</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Comparison: OutReign vs ZoomInfo -->
+  <url>
+    <loc>https://outreign.io/vs-zoominfo</loc>
+    <lastmod>2026-07-09</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
 
   <!-- Guide: Email Warmup -->
   <url>
