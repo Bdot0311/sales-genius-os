@@ -41,6 +41,7 @@ const VsApollo = lazy(() => import("./pages/VsApollo"));
 const VsInstantly = lazy(() => import("./pages/VsInstantly"));
 const Partners = lazy(() => import("./pages/Partners"));
 const EmailWarmupGuide = lazy(() => import("./pages/EmailWarmupGuide"));
+const IcpCriteriaGuide = lazy(() => import("./pages/IcpCriteriaGuide"));
 const ApiDocs = lazy(() => import("./pages/ApiDocs"));
 const ApiStatus = lazy(() => import("./pages/ApiStatus"));
 const RequestIntegration = lazy(() => import("./pages/RequestIntegration"));
@@ -345,6 +346,7 @@ const App = () => {
               <Route path="/vs-instantly" element={<VsInstantly />} />
               <Route path="/partners" element={<Partners />} />
               <Route path="/guides/email-warmup" element={<EmailWarmupGuide />} />
+              <Route path="/guides/icp-criteria-revenue-operations" element={<IcpCriteriaGuide />} />
               <Route path="/demo" element={<DemoPage />} />
               <Route path="/api-docs" element={<ApiDocs />} />
               <Route path="/api-status" element={<ApiStatus />} />
