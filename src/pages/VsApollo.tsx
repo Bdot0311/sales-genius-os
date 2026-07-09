@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Check, Minus, ArrowRight } from "lucide-react";
 import { SEOHead } from "@/components/seo/SEOHead";
 
