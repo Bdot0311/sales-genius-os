@@ -66,7 +66,7 @@ const HelpCenter = () => {
               <h1 className="font-display text-3xl sm:text-4xl mb-4">
                 Article not found
               </h1>
-              <p className="mb-6" style={{ color: "hsl(0 0% 100% / 0.55)" }}>
+              <p className="mb-6" style={{ color: "hsl(0 0% 100% / 0.75)" }}>
                 The article you're looking for doesn't exist.
               </p>
               <Link
@@ -170,7 +170,7 @@ const HelpCenter = () => {
                       {article.readTime} min
                     </div>
                   </div>
-                  <p className="text-sm mt-1" style={{ color: "hsl(0 0% 100% / 0.55)" }}>
+                  <p className="text-sm mt-1" style={{ color: "hsl(0 0% 100% / 0.75)" }}>
                     {article.description}
                   </p>
                 </div>
@@ -209,7 +209,7 @@ const HelpCenter = () => {
           <h1 className="font-display text-2xl sm:text-3xl mb-2" style={{ fontWeight: 800, letterSpacing: "-0.02em", color: "hsl(0 0% 92%)" }}>
             Search results
           </h1>
-          <p className="mb-8" style={{ color: "hsl(0 0% 100% / 0.55)" }}>
+          <p className="mb-8" style={{ color: "hsl(0 0% 100% / 0.75)" }}>
             {results.length} result{results.length !== 1 ? "s" : ""} for "{searchQuery}"
           </p>
 
@@ -235,7 +235,7 @@ const HelpCenter = () => {
                       </span>
                     </div>
                     <h3 className="font-medium" style={{ color: "hsl(0 0% 92%)" }}>{article.title}</h3>
-                    <p className="text-sm mt-1" style={{ color: "hsl(0 0% 100% / 0.55)" }}>
+                    <p className="text-sm mt-1" style={{ color: "hsl(0 0% 100% / 0.75)" }}>
                       {article.description}
                     </p>
                   </div>
@@ -244,7 +244,7 @@ const HelpCenter = () => {
             </div>
           ) : (
             <div className="text-center py-12">
-              <p className="mb-4" style={{ color: "hsl(0 0% 100% / 0.55)" }}>
+              <p className="mb-4" style={{ color: "hsl(0 0% 100% / 0.75)" }}>
                 No articles found for your search.
               </p>
               <p className="text-sm" style={{ color: "hsl(0 0% 100% / 0.65)" }}>
@@ -446,7 +446,7 @@ const HelpCenter = () => {
                     <ChevronRight className="h-4 w-4 flex-shrink-0 transition-transform duration-200" style={{ color: "hsl(261 75% 55% / 0.6)" }} />
                   </summary>
                   <div className="pb-4" style={{ borderTop: "1px solid hsl(261 75% 50% / 0.1)" }}>
-                    <p className="pt-3 text-sm leading-relaxed mb-3" style={{ color: "hsl(0 0% 100% / 0.55)" }}>
+                    <p className="pt-3 text-sm leading-relaxed mb-3" style={{ color: "hsl(0 0% 100% / 0.75)" }}>
                       {article.description}
                     </p>
                     <Link

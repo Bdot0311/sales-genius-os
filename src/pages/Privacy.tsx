@@ -321,7 +321,7 @@ const Privacy = () => {
                   ].map(({ href, label, sub }) => (
                     <li key={href}>
                       <a href={href} className="hover:underline font-medium" style={linkStyle}>{label}</a>
-                      <span style={{ color: "hsl(0 0% 100% / 0.55)" }}> – {sub}</span>
+                      <span style={{ color: "hsl(0 0% 100% / 0.75)" }}> – {sub}</span>
                     </li>
                   ))}
                 </ul>

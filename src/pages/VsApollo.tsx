@@ -153,7 +153,7 @@ export default function VsApollo() {
               className="grid grid-cols-3 text-sm font-semibold py-4 px-6"
               style={{ background: "hsl(261 75% 50% / 0.1)", borderBottom: "1px solid hsl(261 75% 50% / 0.15)" }}
             >
-              <span style={{ color: "hsl(0 0% 100% / 0.5)" }}>Feature</span>
+              <span style={{ color: "hsl(0 0% 100% / 0.7)" }}>Feature</span>
               <span style={{ color: "hsl(0 0% 78%)" }}>Apollo</span>
               <span style={{ color: "hsl(261 75% 70%)" }}>OutReign</span>
             </div>
@@ -168,11 +168,11 @@ export default function VsApollo() {
                 }}
               >
                 <span className="font-medium" style={{ color: "hsl(0 0% 88%)" }}>{feature}</span>
-                <span style={{ color: advantage === "apollo" ? "hsl(0 0% 88%)" : "hsl(0 0% 100% / 0.5)" }}>
+                <span style={{ color: advantage === "apollo" ? "hsl(0 0% 88%)" : "hsl(0 0% 100% / 0.7)" }}>
                   {advantage === "apollo" && <Check className="inline w-3.5 h-3.5 mr-1 text-green-500" />}
                   {apollo}
                 </span>
-                <span style={{ color: advantage === "outreign" ? "hsl(261 75% 72%)" : "hsl(0 0% 100% / 0.5)" }}>
+                <span style={{ color: advantage === "outreign" ? "hsl(261 75% 72%)" : "hsl(0 0% 100% / 0.7)" }}>
                   {advantage === "outreign" && <Check className="inline w-3.5 h-3.5 mr-1 text-green-500" />}
                   {outreign}
                 </span>

@@ -96,7 +96,7 @@ const RequestIntegration = () => {
                 integration
               </span>
             </h1>
-            <p style={{ color: "hsl(0 0% 100% / 0.55)" }}>
+            <p style={{ color: "hsl(0 0% 100% / 0.75)" }}>
               Tell us which tool you'd like to integrate with OutReign and we'll prioritize it in our roadmap.
             </p>
           </div>
@@ -212,14 +212,14 @@ const RequestIntegration = () => {
 
           <div className="rounded-2xl p-5 sm:p-6" style={cardStyle}>
             <h2 className="font-semibold mb-3" style={{ color: "hsl(0 0% 90%)" }}>Need Help?</h2>
-            <p className="text-sm mb-2" style={{ color: "hsl(0 0% 100% / 0.55)" }}>
+            <p className="text-sm mb-2" style={{ color: "hsl(0 0% 100% / 0.75)" }}>
               Visit our{" "}
               <a href="/help" className="hover:underline font-medium" style={{ color: "hsl(261 75% 65%)" }}>
                 Help Center
               </a>{" "}
               for guides on setting up integrations.
             </p>
-            <p className="text-sm" style={{ color: "hsl(0 0% 100% / 0.55)" }}>
+            <p className="text-sm" style={{ color: "hsl(0 0% 100% / 0.75)" }}>
               Need immediate assistance? Reach out to{" "}
               <a href="mailto:support@bdotindustries.com" className="hover:underline font-medium" style={{ color: "hsl(261 75% 65%)" }}>
                 support@bdotindustries.com
