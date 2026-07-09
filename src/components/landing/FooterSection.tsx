@@ -7,6 +7,13 @@ const footerLinks = {
     { label: "Pricing", href: "/pricing" },
     { label: "Integrations", href: "/pricing" },
   ],
+  compare: [
+    { label: "vs Apollo", href: "/vs-apollo" },
+    { label: "vs Instantly", href: "/vs-instantly" },
+    { label: "vs Lusha", href: "/vs-lusha" },
+    { label: "vs ZoomInfo", href: "/vs-zoominfo" },
+    { label: "Apollo alternative", href: "/apollo-alternative" },
+  ],
   resources: [
     { label: "Blog", href: "/blog" },
     { label: "Help Center", href: "/help" },
