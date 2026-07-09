@@ -140,6 +140,12 @@ export default function VsApollo() {
             Try OutReign free
             <ArrowRight className="h-4 w-4" />
           </button>
+          <p className="mt-6 text-sm" style={{ color: "hsl(0 0% 100% / 0.55)" }}>
+            Already thinking about switching?{" "}
+            <Link to="/apollo-alternative" className="font-semibold underline" style={{ color: "hsl(261 75% 72%)" }}>
+              Read the Apollo migration guide →
+            </Link>
+          </p>
         </div>
 
         {/* Comparison table */}
