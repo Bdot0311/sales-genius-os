@@ -74,7 +74,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/pwa-192x192.png" />
     
     <!-- Preload LCP hero image for faster paint -->
-    <link rel="preload" as="image" href="/outreign-logo-small.webp" type="image/webp" />
+    <link rel="preload" as="image" href="/outreign-logo-small.webp" type="image/webp" fetchpriority="high" />
 
     <!-- Premium display font for hero headlines — italic 800 only, non-blocking -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -83,9 +83,11 @@
       rel="preload"
       as="style"
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,700;0,800;0,900;1,700;1,800;1,900&display=swap"
+      fetchpriority="high"
       onload="this.onload=null;this.rel='stylesheet'"
     />
     <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,700;0,800;0,900;1,700;1,800;1,900&display=swap" rel="stylesheet" /></noscript>
+
 
     <!-- Homepage JSON-LD: Organization, WebSite, FAQPage (mirrors #static-content FAQs) -->
     <script type="application/ld+json">
