@@ -219,13 +219,12 @@ const MaintenancePage = ({ message }: { message: string }) => {
         <h1 className="text-2xl font-bold tracking-tight">Under Maintenance</h1>
         <p className="text-muted-foreground">{message}</p>
         <p className="text-xs text-muted-foreground/60">
-          Admin?{" "}
           <button
             type="button"
             onClick={handleAdminSignIn}
             className="underline hover:text-muted-foreground cursor-pointer"
           >
-            Sign in here.
+            Admin sign in
           </button>
         </p>
       </div>
