@@ -12,7 +12,7 @@ const footerLinks = {
     { label: "vs Instantly", href: "/vs-instantly" },
     { label: "vs Lusha", href: "/vs-lusha" },
     { label: "vs ZoomInfo", href: "/vs-zoominfo" },
-    { label: "Apollo alternative", href: "/apollo-alternative" },
+    { label: "Why Switch", href: "/apollo-alternative" },
   ],
   resources: [
     { label: "Blog", href: "/blog" },
