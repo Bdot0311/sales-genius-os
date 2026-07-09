@@ -203,7 +203,7 @@ export default function Partners() {
                         <p
                           className="mt-4 pt-4 text-sm leading-relaxed"
                           style={{
-                            color: "hsl(0 0% 100% / 0.55)",
+                            color: "hsl(0 0% 100% / 0.75)",
                             borderTop: "1px solid hsl(261 75% 50% / 0.12)",
                           }}
                         >

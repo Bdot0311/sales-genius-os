@@ -116,7 +116,7 @@ const NotFound = () => {
                     border: "1px solid hsl(261 75% 50% / 0.14)",
                   }}
                 >
-                  <page.icon className="h-5 w-5 mt-0.5 transition-colors" style={{ color: "hsl(0 0% 100% / 0.5)" }} />
+                  <page.icon className="h-5 w-5 mt-0.5 transition-colors" style={{ color: "hsl(0 0% 100% / 0.7)" }} />
                   <div>
                     <div className="font-medium text-white transition-colors">
                       {page.name}
