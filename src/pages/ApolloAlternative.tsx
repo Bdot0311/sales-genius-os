@@ -48,7 +48,7 @@ const ApolloAlternative = () => {
   return (
     <>
       <SEOHead
-        title="Apollo Alternative for Founders & Lean Sales Teams | OutReign"
+        title="Why Switch from Apollo | OutReign"
         description="Switching from Apollo? Here's why lean teams leave, how to migrate in under an hour, and what OutReign does differently. From $0."
         keywords="apollo alternative, apollo.io alternative, apollo io alternative, alternative to apollo, apollo competitors, apollo replacement, switch from apollo, migrate from apollo"
         ogImage="https://outreign.io/outreign-social-card.jpg"
@@ -56,7 +56,7 @@ const ApolloAlternative = () => {
       />
       <BreadcrumbSchema items={[
         { name: "Home", url: "https://outreign.io" },
-        { name: "Apollo Alternative", url: "https://outreign.io/apollo-alternative" }
+        { name: "Why Switch", url: "https://outreign.io/apollo-alternative" }
       ]} />
       <FAQSchema faqs={faqs} />
 
@@ -75,7 +75,7 @@ const ApolloAlternative = () => {
             />
             <div className="container mx-auto px-5 sm:px-6 max-w-4xl text-center relative z-10">
               <p className="font-serif italic font-thin text-base text-purple-500 mb-5">
-                Apollo Alternative
+                Why Switch
               </p>
               <h1
                 id="apollo-heading"
