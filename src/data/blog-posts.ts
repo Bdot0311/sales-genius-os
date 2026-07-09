@@ -921,6 +921,77 @@ Partnership emails work when they're specific, asymmetric in the recipient's fav
 If you'd rather have AI draft partnership and outbound emails that already follow this structure — grounded in real company context, not generic placeholders — [try OutReign free](https://outreign.io). First email in under 2 minutes, no credit card.
     `.trim(),
   },
+  {
+    slug: "icp-criteria-revenue-operations",
+    title: "ICP Criteria for Revenue Operations: The Complete 2026 Guide",
+    description: "How B2B revenue operations teams define, score, and refresh an Ideal Customer Profile — firmographic filters, intent signals, and a normalized scoring framework.",
+    publishedAt: "2026-07-09",
+    readingTime: "8 min read",
+    category: "Revenue Operations",
+    keywords: ["icp criteria for revenue operations", "ideal customer profile", "revenue operations", "icp scoring", "b2b lead scoring", "firmographic scoring", "intent-based scoring", "revops icp"],
+    content: `
+Marketing sourced the lead. Sales closed the deal. But the definition of who belongs in the pipeline — and who never should have entered it — sits with revenue operations. This is the framework RevOps teams use to move from a written ICP to a live scoring model.
+
+## Why RevOps owns the ICP
+
+RevOps is the only function that touches every system the ICP feeds: the CRM, the enrichment layer, the scoring engine, routing, forecasting, and quota planning. When those systems disagree on what a good-fit account looks like, the pipeline fills with noise and win rate collapses.
+
+A clear ICP is a written definition, not a shared instinct. It lists the firmographic filters that decide qualification, the signals that increase or decrease priority, and the thresholds that trigger routing. Everything else in the RevOps stack is downstream of that document.
+
+## Step 1 — Start with firmographic filters
+
+Firmographics are the hard filters. Any account that misses one should not enter the qualified pipeline, regardless of intent. Keep the list short: three to five filters is enough to describe most B2B ICPs.
+
+- **Industry** — Use NAICS or SIC codes rather than free text. Free text drifts across enrichment providers and breaks downstream reports.
+- **Company size** — Employee count is more reliable than revenue for private companies; combine both when you can.
+- **Geography** — Filter on the legal HQ, not the billing address. Sales tax, GDPR, and support coverage all follow the HQ.
+- **Funding or growth stage** — A Series B SaaS company buys differently to a bootstrapped agency. Bucket accounts into two or three growth tiers.
+- **Business model** — B2B versus B2C, subscription versus transactional, self-serve versus sales-led. This filter alone eliminates the most misrouted deals.
+
+## Step 2 — Layer technographic and behavioral signals
+
+Firmographics tell you who qualifies. Technographics and behaviour tell you who to call first. These are weighted signals, not hard filters — they move a qualified account up or down the priority list.
+
+- **Installed tools** — The presence (or absence) of a competitor, a complementary product, or a required integration.
+- **Hiring signals** — Roles that own your category. A company posting a Head of Revenue Operations role is buying a RevOps stack in the next two quarters.
+- **Funding events** — Fresh capital shortens sales cycles. A Series A within the last 90 days is a strong compounding signal.
+- **Product or web behaviour** — Pricing page visits, demo requests, documentation reads, and repeat sessions.
+- **Third-party intent** — Topic surges from intent data providers. Weight recency: a surge from the last 14 days is worth much more than a 90-day average.
+
+## Step 3 — Move from filters to a normalized score
+
+A binary "in ICP / out of ICP" decision is easy to build and impossible to prioritize. Convert every signal into a normalized 0–100 score so routing rules can act on tiers instead of thresholds.
+
+- **Tier 1 (80–100):** Named-account motion, human outreach within 24h.
+- **Tier 2 (55–79):** Automated sequence + SDR review.
+- **Tier 3 (30–54):** Nurture, retarget, revisit next quarter.
+- **Out (< 30):** Suppress from outbound, exclude from forecast.
+
+Weights are opinions, not facts. Start with equal weights across firmographic, technographic, and intent categories, then calibrate quarterly against closed-won and closed-lost data.
+
+## Step 4 — Refresh the ICP on a fixed cadence
+
+An ICP that never changes is an ICP nobody trusts. Set a recurring quarterly review with the same three inputs each time:
+
+- **Closed-won analysis** — What firmographic and behavioural attributes did the last 90 days of new customers share?
+- **Closed-lost analysis** — Which accounts scored Tier 1 or 2 but never converted, and why?
+- **Rep feedback** — Which criteria did reps ignore or override, and where were they right to do so?
+
+Trigger an off-cycle refresh whenever win rate on Tier 1 drops more than 15% quarter over quarter, average contract value shifts materially, or the sales motion changes (new segment, new region, new product line).
+
+## Common mistakes RevOps teams make
+
+- Stacking ten hard filters and wondering why the pipeline is empty.
+- Treating intent data as a filter instead of a weighted signal.
+- Scoring in the CRM with formula fields nobody can audit.
+- Refreshing the ICP once a year at kickoff and then leaving it untouched.
+- Letting marketing, sales, and RevOps each keep a private version of the ICP.
+
+## Operationalize your ICP with OutReign
+
+OutReign combines enrichment, ICP match scoring, and routing in one workflow so RevOps teams can move from a written ICP to a live scoring model without gluing three tools together. Define the criteria once, and every new account gets enriched, scored, and routed automatically. [Start free](https://outreign.io) — no credit card required.
+    `.trim(),
+  },
 ];
 
 
