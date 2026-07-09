@@ -1,6 +1,18 @@
 import { useNavigate, Link } from "react-router-dom";
 import { Check, Minus, ArrowRight } from "lucide-react";
 import { SEOHead } from "@/components/seo/SEOHead";
+import { Navbar } from "@/components/Navbar";
+import { lazy, Suspense } from "react";
+
+const FooterSection = lazy(() =>
+  import("@/components/landing/FooterSection").then((m) => ({ default: m.FooterSection }))
+);
+
+const SectionLoader = () => (
+  <div className="py-16 flex items-center justify-center">
+    <div className="w-6 h-6 rounded-full border-2 animate-spin" style={{ borderColor: "hsl(261 75% 50% / 0.3)", borderTopColor: "hsl(261 75% 65%)" }} />
+  </div>
+);
 
 const rows = [
   {
