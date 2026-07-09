@@ -90,3 +90,7 @@ const button = { backgroundColor: '#7c3aed', color: '#ffffff', padding: '12px 32
 const hr = { borderColor: '#e5e7eb', margin: '32px 0' }
 const footer = { fontSize: '13px', color: '#9ca3af', lineHeight: '1.5', margin: '0 0 8px' }
 const footerLink = { color: '#7c3aed', textDecoration: 'none' }
+const offerSection = { backgroundColor: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: '8px', padding: '20px 24px', margin: '0 0 24px' }
+const offerTitle = { fontSize: '15px', fontWeight: '700' as const, color: '#5b21b6', margin: '0 0 8px' }
+const offerText = { fontSize: '14px', color: '#374151', lineHeight: '1.6', margin: '0' }
+
