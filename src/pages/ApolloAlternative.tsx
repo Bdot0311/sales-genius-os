@@ -2,7 +2,7 @@ import { Navbar } from "@/components/Navbar";
 import { SEOHead, BreadcrumbSchema, FAQSchema } from "@/components/seo";
 import { Link } from "react-router-dom";
 import { lazy, Suspense } from "react";
-import { Check, X } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 const FooterSection = lazy(() =>
   import("@/components/landing/FooterSection").then((m) => ({ default: m.FooterSection }))
@@ -15,29 +15,32 @@ const SectionLoader = () => (
 );
 
 const faqs = [
-  { question: "Why look for an Apollo alternative?", answer: "Apollo is powerful but priced and built for full SDR teams running boolean searches across enormous filter sets. Founders and lean outbound teams typically need plain-English search, ICP scoring, and AI drafting in one place — without the seat economics." },
-  { question: "Is OutReign cheaper than Apollo?", answer: "OutReign plans start at $0 and top out at $179/month with prospect, enrichment, and outreach included. Apollo's comparable bundles typically run higher once you add data credits and engagement seats." },
-  { question: "Does OutReign verify emails like Apollo?", answer: "Yes. Every business email is verified via SMTP handshake plus multi-source enrichment before it reaches your list — the same standard Apollo's verified tier offers." },
-  { question: "Can I import my Apollo lists?", answer: "Yes. Export from Apollo as CSV and import into OutReign. Your ICP scores and outreach drafts are generated on the OutReign side." },
-  { question: "Do I have to learn boolean search?", answer: "No. OutReign is built around plain-English ICP descriptions, not boolean filter trees. That is the core difference for non-technical founders and growth teams." },
+  { question: "Why do people leave Apollo?", answer: "Three reasons come up over and over: the seat + credit pricing gets expensive fast for small teams, boolean search has a learning curve non-technical founders don't want, and the workflow assumes you already have a full SDR stack (dialer, CRM sync, sequencer) — which most lean teams don't." },
+  { question: "How long does it take to migrate off Apollo?", answer: "Most teams are running in under an hour. Export your Apollo contacts as CSV, import into OutReign, and your ICP scores + first-touch drafts are generated automatically. Sequences you had in Apollo need to be recreated — OutReign uses AI drafting instead of static templates, so a direct copy usually isn't what you want anyway." },
+  { question: "Will I lose my Apollo data if I switch?", answer: "No. Apollo lets you export contacts, lists, and sequence history as CSV. You keep everything. OutReign only reads what you import — nothing is pulled from Apollo automatically." },
+  { question: "Is OutReign cheaper than Apollo in practice?", answer: "For solo operators and teams under 5 users, yes — meaningfully. OutReign is $0 to start and $39/mo for the entry paid plan with prospect, enrichment, and outreach included. Apollo's comparable bundle usually runs higher once you add data credits and engagement seats. For 20+ seat SDR orgs the math changes — Apollo's scale pricing can win there." },
+  { question: "What if I need the exact Apollo features?", answer: "OutReign doesn't try to replace every Apollo module. It does prospect search, enrichment, ICP scoring, AI drafting, sending, and reply inbox. If your workflow depends on Apollo's dialer, deep CRM integrations, or their intent data, keep Apollo for those and use OutReign alongside — many teams do." },
+  { question: "Can I try before I commit?", answer: "Yes. The free plan lets you use the full UI with sample data. No credit card, no time limit. When you're ready to run against real leads, the entry paid plan is $39/mo." },
 ];
 
-const compareRows: { feature: string; outreign: string | boolean; apollo: string | boolean }[] = [
-  { feature: "Plain-English ICP search", outreign: true, apollo: false },
-  { feature: "Boolean / filter-based search", outreign: false, apollo: true },
-  { feature: "SMTP-verified business emails", outreign: true, apollo: true },
-  { feature: "AI-drafted first-touch emails", outreign: true, apollo: "Add-on" },
-  { feature: "ICP fit scoring out of the box", outreign: true, apollo: false },
-  { feature: "Reply inbox + auto-classification", outreign: true, apollo: "Add-on" },
-  { feature: "Free tier", outreign: "Yes — full UI with sample data", apollo: "Limited credits" },
-  { feature: "Entry paid plan", outreign: "$39/mo", apollo: "$59/mo (varies)" },
+const painPoints = [
+  {
+    title: "Seat pricing that punishes small teams",
+    body: "Apollo is priced for orgs with dedicated SDRs. A founder running outbound solo pays the same per-seat rate as a 50-person sales team — plus data credits on top. For lean teams the per-lead economics rarely work out.",
+  },
+  {
+    title: "Boolean search you have to learn",
+    body: "Apollo's power comes from stacking filters — job title contains X, company size between Y and Z, technology equals W, excluded industry, and so on. It's genuinely powerful once you master it. Most founders don't want to master it.",
+  },
+  {
+    title: "A stack that assumes you have a stack",
+    body: "Apollo works best when it plugs into an existing setup: your CRM, your dialer, your sequencer, your inbox routing. If you don't have those, half of Apollo is dark. You end up paying for a platform and using it like a database.",
+  },
+  {
+    title: "Volume-first, prioritization-later",
+    body: "Apollo hands you 10,000 contacts and expects you to figure out who's worth emailing first. That triage work is where lean teams lose the week — and it's the exact thing an ICP-scored feed is supposed to solve.",
+  },
 ];
-
-const renderCell = (v: string | boolean) => {
-  if (v === true) return <Check className="w-5 h-5 mx-auto" style={{ color: "hsl(261 75% 65%)" }} />;
-  if (v === false) return <X className="w-5 h-5 mx-auto" style={{ color: "hsl(0 0% 100% / 0.2)" }} />;
-  return <span className="text-sm" style={{ color: "hsl(0 0% 100% / 0.6)" }}>{v}</span>;
-};
 
 const divider = { borderTop: "1px solid hsl(261 75% 50% / 0.18)" } as const;
 
@@ -46,9 +49,10 @@ const ApolloAlternative = () => {
     <>
       <SEOHead
         title="Apollo Alternative for Founders & Lean Sales Teams | OutReign"
-        description="The Apollo alternative: plain-English lead search, verified emails, ICP scoring, and AI outreach from $0. No boolean filters required."
-        keywords="apollo alternative, apollo.io alternative, apollo io alternative, alternative to apollo, apollo competitors, apollo replacement, instantly alternative, salesloft alternative, outreach alternative"
+        description="Switching from Apollo? Here's why lean teams leave, how to migrate in under an hour, and what OutReign does differently. From $0."
+        keywords="apollo alternative, apollo.io alternative, apollo io alternative, alternative to apollo, apollo competitors, apollo replacement, switch from apollo, migrate from apollo"
         ogImage="https://outreign.io/outreign-social-card.jpg"
+        canonicalUrl="https://outreign.io/apollo-alternative"
       />
       <BreadcrumbSchema items={[
         { name: "Home", url: "https://outreign.io" },
@@ -84,13 +88,13 @@ const ApolloAlternative = () => {
                   color: "hsl(0 0% 95%)",
                 }}
               >
-                The Apollo alternative built for founders, not SDR armies.
+                Leaving Apollo? Here's what actually changes.
               </h1>
               <p
                 className="text-lg font-light max-w-2xl mx-auto mb-10"
                 style={{ color: "hsl(0 0% 100% / 0.7)" }}
               >
-                Plain-English lead search, SMTP-verified emails, ICP scoring, and AI-drafted outreach in one workflow — from $0. No boolean filters, no five-tool stack.
+                Apollo is built for full SDR teams. If you're a founder or a lean outbound crew, the seat pricing, boolean search, and multi-tool stack are usually the reason you're looking. This page is about the switch — not another feature grid.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Link
@@ -101,24 +105,25 @@ const ApolloAlternative = () => {
                   Try OutReign free
                 </Link>
                 <Link
-                  to="/pricing"
-                  className="inline-flex items-center justify-center px-7 py-3 rounded-full text-sm font-medium transition-colors"
+                  to="/vs-apollo"
+                  className="inline-flex items-center justify-center gap-2 px-7 py-3 rounded-full text-sm font-medium transition-colors"
                   style={{ border: "1px solid hsl(261 75% 50% / 0.3)", color: "hsl(0 0% 80%)" }}
                   onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "hsl(261 75% 50% / 0.5)")}
                   onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "hsl(261 75% 50% / 0.3)")}
                 >
-                  Compare pricing
+                  See feature-by-feature comparison
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
             </div>
           </section>
 
-          {/* Comparison table */}
-          <section className="py-16 sm:py-20" style={divider} aria-labelledby="table-heading">
+          {/* Why people leave */}
+          <section className="py-16 sm:py-20" style={divider} aria-labelledby="pain-heading">
             <div className="container mx-auto px-5 sm:px-6 max-w-4xl">
               <h2
-                id="table-heading"
-                className="font-display text-center mb-10"
+                id="pain-heading"
+                className="font-display text-center mb-3"
                 style={{
                   fontSize: "clamp(1.8rem, 4vw, 2.8rem)",
                   fontWeight: 800,
@@ -126,34 +131,94 @@ const ApolloAlternative = () => {
                   color: "hsl(0 0% 95%)",
                 }}
               >
-                OutReign vs Apollo
+                The four reasons people leave Apollo
               </h2>
-              <div
-                className="overflow-x-auto rounded-xl"
-                style={{ border: "1px solid hsl(261 75% 50% / 0.2)" }}
-              >
-                <table className="w-full text-left">
-                  <thead style={{ background: "hsl(261 75% 50% / 0.06)" }}>
-                    <tr>
-                      <th className="p-4 text-sm font-semibold" style={{ color: "hsl(0 0% 85%)" }}>Feature</th>
-                      <th className="p-4 text-sm font-semibold text-center" style={{ color: "hsl(261 75% 65%)" }}>OutReign</th>
-                      <th className="p-4 text-sm font-semibold text-center" style={{ color: "hsl(0 0% 55%)" }}>Apollo</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {compareRows.map((row) => (
-                      <tr key={row.feature} style={{ borderTop: "1px solid hsl(261 75% 50% / 0.1)" }}>
-                        <td className="p-4 text-sm" style={{ color: "hsl(0 0% 80%)" }}>{row.feature}</td>
-                        <td className="p-4 text-center">{renderCell(row.outreign)}</td>
-                        <td className="p-4 text-center">{renderCell(row.apollo)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <p className="text-xs mt-4 text-center" style={{ color: "hsl(0 0% 100% / 0.25)" }}>
-                Apollo pricing and feature availability change. Verify on Apollo's site before deciding.
+              <p className="text-center text-sm mb-12 max-w-2xl mx-auto" style={{ color: "hsl(0 0% 100% / 0.55)" }}>
+                Apollo is a legitimate tool. These aren't complaints — they're mismatches. If none of them are true for you, Apollo is probably the right fit.
               </p>
+              <div className="grid sm:grid-cols-2 gap-5">
+                {painPoints.map((p) => (
+                  <div
+                    key={p.title}
+                    className="p-6 rounded-xl"
+                    style={{ background: "hsl(261 75% 50% / 0.04)", border: "1px solid hsl(261 75% 50% / 0.14)" }}
+                  >
+                    <p className="font-semibold mb-2 text-base" style={{ color: "hsl(0 0% 92%)" }}>{p.title}</p>
+                    <p className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.65)" }}>{p.body}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* Migration */}
+          <section className="py-16 sm:py-20" style={divider} aria-labelledby="migrate-heading">
+            <div className="container mx-auto px-5 sm:px-6 max-w-3xl">
+              <h2
+                id="migrate-heading"
+                className="font-display text-center mb-3"
+                style={{
+                  fontSize: "clamp(1.8rem, 4vw, 2.8rem)",
+                  fontWeight: 800,
+                  letterSpacing: "-0.02em",
+                  color: "hsl(0 0% 95%)",
+                }}
+              >
+                Migrating from Apollo, step by step
+              </h2>
+              <p className="text-center text-sm mb-12" style={{ color: "hsl(0 0% 100% / 0.55)" }}>
+                Most teams finish in under an hour. No connector, no data pipeline.
+              </p>
+              <ol className="space-y-6">
+                {[
+                  { n: "1", t: "Export from Apollo", b: "In Apollo: Search → your saved lists → Export as CSV. You own the contacts you already paid to enrich." },
+                  { n: "2", t: "Import into OutReign", b: "Drag the CSV onto the Leads page. OutReign maps standard columns automatically and flags anything unusual." },
+                  { n: "3", t: "Let ICP scoring run", b: "Describe your ideal customer in plain English once. Every imported contact gets a fit score, ranked from best to worst — no manual sorting." },
+                  { n: "4", t: "Draft outreach with AI", b: "First-touch emails are generated per contact using real company signals — news, hiring, growth. You review and edit, not write from scratch." },
+                  { n: "5", t: "Send and manage replies", b: "Connect your inbox, send from your own domain, and get replies auto-classified in a built-in inbox. No separate sequencer needed." },
+                ].map((s) => (
+                  <li key={s.n} className="flex gap-4">
+                    <span
+                      className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-full text-sm font-semibold"
+                      style={{ background: "hsl(261 75% 50% / 0.15)", color: "hsl(261 75% 72%)", border: "1px solid hsl(261 75% 50% / 0.3)" }}
+                    >
+                      {s.n}
+                    </span>
+                    <div>
+                      <p className="font-semibold mb-1" style={{ color: "hsl(0 0% 92%)" }}>{s.t}</p>
+                      <p className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.65)" }}>{s.b}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </section>
+
+          {/* Comparison callout */}
+          <section className="py-14" style={divider}>
+            <div className="container mx-auto px-5 sm:px-6 max-w-3xl">
+              <div
+                className="p-8 rounded-2xl text-center"
+                style={{ background: "hsl(261 75% 50% / 0.06)", border: "1px solid hsl(261 75% 50% / 0.2)" }}
+              >
+                <p className="font-serif italic text-sm mb-2" style={{ color: "hsl(261 75% 65%)" }}>Want the detail?</p>
+                <h3 className="font-display font-bold mb-3" style={{ fontSize: "clamp(1.3rem, 2.5vw, 1.8rem)", color: "hsl(0 0% 95%)" }}>
+                  See OutReign vs Apollo, feature by feature
+                </h3>
+                <p className="text-sm mb-6 max-w-lg mx-auto" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
+                  Database size, verification, dialer, CRM depth, pricing — the honest side-by-side, including where Apollo wins.
+                </p>
+                <Link
+                  to="/vs-apollo"
+                  className="inline-flex items-center gap-2 text-sm font-semibold transition-colors"
+                  style={{ color: "hsl(261 75% 72%)" }}
+                  onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 85%)")}
+                  onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 72%)")}
+                >
+                  Open the OutReign vs Apollo comparison
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
             </div>
           </section>
 
@@ -170,21 +235,27 @@ const ApolloAlternative = () => {
                   color: "hsl(0 0% 95%)",
                 }}
               >
-                Who switches to OutReign
+                Who actually switches
               </h2>
               <ul className="space-y-4">
                 {[
-                  "Founders running outbound themselves who don't want to learn boolean search",
+                  "Founders running outbound themselves who don't want to learn boolean filters",
                   "Lean sales teams paying for Apollo plus a separate sequencer plus a separate inbox tool",
                   "Outbound agencies that need ICP scoring per client without standing up a custom stack",
                   "Operators who want one bill, one data model, and one workflow",
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-3">
-                    <Check className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: "hsl(261 75% 65%)" }} />
+                    <span
+                      className="mt-2 h-1.5 w-1.5 rounded-full flex-shrink-0"
+                      style={{ background: "hsl(261 75% 65%)" }}
+                    />
                     <span className="text-base" style={{ color: "hsl(0 0% 100% / 0.7)" }}>{item}</span>
                   </li>
                 ))}
               </ul>
+              <p className="text-sm mt-8 text-center italic" style={{ color: "hsl(0 0% 100% / 0.5)" }}>
+                If you're a 20+ seat SDR org with a working Apollo setup, don't switch. It works.
+              </p>
             </div>
           </section>
 
@@ -201,7 +272,7 @@ const ApolloAlternative = () => {
                   color: "hsl(0 0% 95%)",
                 }}
               >
-                Apollo alternative FAQ
+                Questions people ask before switching
               </h2>
               <div className="space-y-3">
                 {faqs.map((f) => (
@@ -222,15 +293,12 @@ const ApolloAlternative = () => {
           <section className="py-12" style={divider}>
             <div className="container mx-auto px-5 sm:px-6 max-w-3xl text-center">
               <p className="text-sm mb-3" style={{ color: "hsl(0 0% 100% / 0.6)" }}>Comparing more than just Apollo?</p>
-              <a
-                href="/blog/apollo-vs-instantly-vs-salesloft"
-                className="inline-flex items-center gap-2 text-base font-semibold transition-colors"
-                style={{ color: "hsl(261 75% 65%)" }}
-                onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 80%)")}
-                onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")}
-              >
-                Read: Apollo vs Instantly vs Salesloft — which one to actually use →
-              </a>
+              <div className="flex flex-wrap gap-x-6 gap-y-2 justify-center text-sm font-semibold">
+                <Link to="/vs-apollo" style={{ color: "hsl(261 75% 65%)" }}>OutReign vs Apollo</Link>
+                <Link to="/vs-instantly" style={{ color: "hsl(261 75% 65%)" }}>OutReign vs Instantly</Link>
+                <Link to="/vs-lusha" style={{ color: "hsl(261 75% 65%)" }}>OutReign vs Lusha</Link>
+                <Link to="/vs-zoominfo" style={{ color: "hsl(261 75% 65%)" }}>OutReign vs ZoomInfo</Link>
+              </div>
             </div>
           </section>
 
