@@ -48,7 +48,7 @@ const ApolloAlternative = () => {
   return (
     <>
       <SEOHead
-        title="Apollo Alternative for Founders & Lean Sales Teams | OutReign"
+        title="Why Switch from Apollo | OutReign"
         description="Switching from Apollo? Here's why lean teams leave, how to migrate in under an hour, and what OutReign does differently. From $0."
         keywords="apollo alternative, apollo.io alternative, apollo io alternative, alternative to apollo, apollo competitors, apollo replacement, switch from apollo, migrate from apollo"
         ogImage="https://outreign.io/outreign-social-card.jpg"
