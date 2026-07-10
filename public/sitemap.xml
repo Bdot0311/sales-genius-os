@@ -77,6 +77,14 @@
   </url>
 
 
+  <!-- Guides hub -->
+  <url>
+    <loc>https://outreign.io/guides</loc>
+    <lastmod>2026-07-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
   <!-- Guide: Email Warmup -->
   <url>
     <loc>https://outreign.io/guides/email-warmup</loc>
