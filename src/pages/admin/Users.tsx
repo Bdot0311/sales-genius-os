@@ -217,33 +217,17 @@ const AdminUsers = () => {
 
   const toggleAdminStatus = async (userId: string, currentlyAdmin: boolean) => {
     try {
-      if (currentlyAdmin) {
-        const { error } = await supabase
-          .from('user_roles')
-          .delete()
-          .eq('user_id', userId)
-          .eq('role', 'admin');
-        if (error) throw error;
-        await supabase
-          .from('subscriptions')
-          .update({ account_status: 'active' })
-          .eq('user_id', userId);
-        toast.success('Admin privileges removed');
-      } else {
-        const { error } = await supabase
-          .from('user_roles')
-          .insert({ user_id: userId, role: 'admin' });
-        if (error) throw error;
-        await supabase
-          .from('subscriptions')
-          .update({ account_status: 'admin' })
-          .eq('user_id', userId);
-        toast.success('Admin privileges granted');
-      }
+      const { error } = await supabase.rpc('admin_set_admin', {
+        _user_id: userId,
+        _make_admin: !currentlyAdmin,
+      });
+      if (error) throw error;
+      toast.success(currentlyAdmin ? 'Admin privileges removed' : 'Admin privileges granted');
       loadSubscriptions();
       loadUserRoles();
-    } catch (error) {
-      toast.error('Failed to update admin status');
+    } catch (error: any) {
+      console.error('toggleAdminStatus error:', error);
+      toast.error(error?.message || 'Failed to update admin status');
     }
   };
 
