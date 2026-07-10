@@ -1070,6 +1070,165 @@ The goal is steady, predictable growth. Inbox providers reward gradual escalatio
 OutReign pairs SMTP-verified leads with built-in sending discipline so you ramp from zero to inbox without juggling a warmup tool, a verifier, and a sequencer. [Start free](https://outreign.io) — no credit card required.
     `.trim(),
   },
+  {
+    slug: "b2b-icp-criteria-template",
+    title: "B2B ICP Criteria & Template: A RevOps Guide to the Ideal Customer Profile",
+    description:
+      "The complete guide to defining a B2B Ideal Customer Profile. ICP criteria for revenue operations, tiering, scoring, buying triggers, and a copy-paste template.",
+    publishedAt: "2026-07-10",
+    readingTime: "12 min read",
+    category: "ICP & Targeting",
+    keywords: [
+      "icp criteria for revenue operations",
+      "b2b icp template",
+      "ideal customer profile b2b",
+      "icp criteria",
+      "icp scoring",
+      "revenue operations icp",
+      "b2b ideal customer profile template",
+      "sales ideal customer profile",
+    ],
+    content: `
+Your Ideal Customer Profile is a written definition of the *account* most likely to buy, expand, and stay. It is not a wish list, not a persona, and not the market you serve today — it is the narrow subset of that market where your product wins on repeat.
+
+Get it wrong and every downstream RevOps decision compounds the mistake: territories are drawn around the wrong accounts, SDRs prospect the wrong logos, CS scrambles to save contracts that should never have been signed. Get it right and outbound reply rates, win rate, and net retention move together.
+
+## ICP criteria for revenue operations
+
+Four layers, in this order. Skip a layer and your ICP fails silently — it looks complete on paper but doesn't filter anything in the CRM.
+
+### 1. Firmographics
+- Industry / sub-industry (be specific: "B2B SaaS, Series B–D", not "tech")
+- Employee count band (100–500 is very different from 500–2,000)
+- Annual revenue or ARR
+- Geography and regulatory jurisdiction
+- Business model (subscription, marketplace, transactional)
+
+### 2. Technographics
+- CRM (Salesforce vs HubSpot signals GTM maturity and buying power)
+- Sales engagement platform in use
+- Data / enrichment providers
+- Marketing automation stack
+
+### 3. Operational signals
+- Dedicated RevOps, Sales Ops, or Marketing Ops function on LinkedIn
+- Quota-carrying rep headcount (>= 10 is a common inflection point)
+- Who owns the pipeline number — sales, marketing, or shared
+- Stated go-to-market motion (PLG, outbound, hybrid)
+
+### 4. Buying triggers
+- Recent funding (last 6 months)
+- New CRO, VP Sales, or Head of RevOps in the last 90 days
+- CRM migration in the last 12 months
+- Public hiring surge for SDRs / AEs
+- Executive posts describing the exact problem you solve
+
+## Tier your ICP — no more than three
+
+| Tier | Fit | Motion |
+|------|-----|--------|
+| 1 — Bullseye | Every criterion matches | Weekly outbound, named-account plays |
+| 2 — Strong | Most criteria match, 1–2 relaxed | Monthly outbound, sequence-driven |
+| 3 — Opportunistic | Inbound only | Nurture, do not spend outbound cycles |
+
+## Score every account 0–100
+
+A tiered ICP is the strategy. Scoring is how it survives contact with the CRM. Assign point weights per criterion category, sum them, and let the score decide the motion — not a rep's gut.
+
+- Firmographic match — 40 points
+- Technographic match — 20 points
+- Buying trigger fired — 25 points
+- Persona identified in-account — 15 points
+
+Score >= 80 → Tier 1. Score 60–79 → Tier 2. Score < 60 → nurture only. Rebuild the weights quarterly against closed-won data.
+
+## Copy-paste ICP template
+
+Fill in the bracketed values, share it with sales and marketing, and treat it as a living document.
+
+\`\`\`
+# Ideal Customer Profile — [Your Company]
+
+## Tier 1 (Bullseye)
+
+### Firmographics
+- Industry:            [e.g. B2B SaaS, Series B–D]
+- Employee count:      [e.g. 100–500]
+- Annual revenue:      [e.g. $10M–$75M ARR]
+- Headquarters region: [e.g. North America, EU-27]
+- Business model:      [e.g. subscription, mid-market SaaS]
+
+### Technographics
+- CRM:                 [e.g. Salesforce or HubSpot]
+- Sales engagement:    [e.g. Outreach, Salesloft, Apollo]
+- Data / enrichment:   [e.g. ZoomInfo, Clearbit, Apollo]
+- Marketing automation:[e.g. Marketo, HubSpot]
+
+### Operational signals
+- Dedicated RevOps or Sales Ops role
+- Sales team size >= 10 quota-carrying reps
+- Marketing team owns pipeline number
+- Publicly-stated go-to-market motion (PLG, outbound, hybrid)
+
+### Buying triggers
+- Recent funding round (last 6 months)
+- New VP of Sales, CRO, or Head of RevOps in the last 90 days
+- Migrated CRM in the last 12 months
+- Hiring 3+ SDRs / AEs in the last 60 days
+- Public complaints about current stack
+
+### Disqualifiers
+- Fewer than 25 employees
+- No dedicated sales function
+- Regulated industries we cannot sell into
+- Existing multi-year contract with a direct competitor
+
+## Tier 2 (Strong Fit)
+[Same categories — relax 1–2 criteria, usually company size or tech stack.]
+
+## Tier 3 (Opportunistic)
+[Only if inbound. Do not spend outbound cycles here.]
+
+## Personas inside the ICP account
+- Economic buyer:  [e.g. CRO, VP Sales]
+- Champion:        [e.g. Head of RevOps, Director of Sales Ops]
+- End user:        [e.g. SDR Manager, Sales Ops Analyst]
+- Blocker to watch:[e.g. IT / Security review]
+
+## How we score an account (0–100)
+- Firmographic match:   40 pts
+- Technographic match:  20 pts
+- Buying trigger fired: 25 pts
+- Persona identified:   15 pts
+
+Score >= 80  → Tier 1, outbound weekly
+Score 60–79  → Tier 2, outbound monthly
+Score < 60   → Nurture only
+\`\`\`
+
+## Common ICP mistakes
+
+- Writing an ICP so wide it doesn't disqualify anyone.
+- Confusing the ICP (the account) with a persona (the person).
+- Skipping technographics because the data feels hard to source.
+- No explicit disqualifiers — every account looks "kind of" fit.
+- Never reviewing it against closed-won and closed-lost data.
+
+## FAQ
+
+**What is a B2B Ideal Customer Profile (ICP)?** A written definition of the company most likely to buy, expand, and stay. Firmographics + technographics + operational signals + buying triggers. Not a persona — personas describe individuals; the ICP describes the account.
+
+**How is an ICP different from a buyer persona?** The ICP defines the account; the persona defines the person inside it. You need both, but the ICP comes first.
+
+**How many ICP tiers should I have?** Two or three, no more. Anything beyond Tier 3 is a distraction.
+
+**How often should the ICP be updated?** Review quarterly against closed-won and closed-lost. Rewrite when Tier 1 win rate drops below 25% or the sales cycle stretches by more than 30%.
+
+## Turn your ICP into a targeted lead list
+
+OutReign filters lead searches by the same firmographics, technographics, and triggers you just wrote down — so the accounts hitting your CRM already match the profile. [Start free](https://outreign.io) — no credit card required.
+    \`.trim(),
+  },
 ];
 
 
