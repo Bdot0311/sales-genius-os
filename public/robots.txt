@@ -5,20 +5,53 @@
 # Main Search Engine Crawlers
 User-agent: Googlebot
 Allow: /
+Disallow: /dashboard
+Disallow: /dashboard/*
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /settings
+Disallow: /settings/*
+Disallow: /auth
+Disallow: /pipeline
+Disallow: /leads
+Disallow: /analytics
+Disallow: /automations
+Disallow: /outreach
+Disallow: /calendar
+Disallow: /coach
+Disallow: /coach/*
+Disallow: /saved-leads
+Disallow: /integrations
+Disallow: /confirmation
 Crawl-delay: 0
 
 User-agent: Googlebot-Image
 Allow: /
+Disallow: /dashboard/*
+Disallow: /admin/*
 
 User-agent: Googlebot-Video
 Allow: /
+Disallow: /dashboard/*
+Disallow: /admin/*
 
 User-agent: Bingbot
 Allow: /
+Disallow: /dashboard
+Disallow: /dashboard/*
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /settings
+Disallow: /settings/*
+Disallow: /coach
+Disallow: /coach/*
 Crawl-delay: 1
 
 User-agent: msnbot
 Allow: /
+Disallow: /dashboard/*
+Disallow: /admin/*
+
 
 # AI Search Engines and LLM Crawlers
 User-agent: GPTBot
@@ -115,9 +148,13 @@ User-agent: *
 Allow: /
 Crawl-delay: 2
 
-# Disallow admin and authenticated areas
+# Disallow admin and authenticated areas (applies to User-agent: * above)
 Disallow: /dashboard
 Disallow: /dashboard/*
+Disallow: /dashboard/leads
+Disallow: /dashboard/leads/*
+Disallow: /dashboard/coach
+Disallow: /dashboard/coach/*
 Disallow: /admin
 Disallow: /admin/*
 Disallow: /settings
@@ -130,9 +167,11 @@ Disallow: /automations
 Disallow: /outreach
 Disallow: /calendar
 Disallow: /coach
+Disallow: /coach/*
 Disallow: /saved-leads
 Disallow: /integrations
 Disallow: /confirmation
+
 
 # Allow public pages
 Allow: /
