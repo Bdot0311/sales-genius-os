@@ -171,14 +171,16 @@ serve(async (req) => {
       });
     }
 
-    // Log admin action
-    await supabaseAdmin.rpc("log_audit_event", {
-      _user_id: caller.id,
-      _action: "admin_password_reset_sent",
-      _entity_type: "user",
-      _entity_id: targetUserId || null,
-      _details: { email, sent_by: caller.email },
-    }).catch(() => {});
+    // Log admin action (direct insert — no log_audit_event RPC exists)
+    await supabaseAdmin.from("audit_logs").insert({
+      user_id: caller.id,
+      action: "admin_password_reset_sent",
+      entity_type: "user",
+      entity_id: targetUserId || null,
+      metadata: { email, sent_by: caller.email },
+    }).then(({ error }) => {
+      if (error) console.error("audit_logs insert failed:", error);
+    });
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
