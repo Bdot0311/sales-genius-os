@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Check, X, HelpCircle, Coins, Zap, ArrowRight, Bot } from "lucide-react";
 import { STRIPE_PRICE_IDS } from "@/lib/stripe-config";
 import { useSearchCredits } from "@/hooks/use-search-credits";
