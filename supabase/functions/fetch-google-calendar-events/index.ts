@@ -114,13 +114,22 @@ serve(async (req) => {
     );
 
     if (!calResponse.ok) {
-      if (calResponse.status === 401) {
+      const bodyText = await calResponse.text().catch(() => "");
+      console.error("Google Calendar API error", {
+        status: calResponse.status,
+        body: bodyText.slice(0, 500),
+      });
+      if (calResponse.status === 401 || calResponse.status === 403) {
         return new Response(
           JSON.stringify({ events: [], connected: false, needsReconnect: true }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      throw new Error("Failed to fetch calendar events");
+      // Fail soft: return 200 so the UI renders an empty calendar instead of crashing
+      return new Response(
+        JSON.stringify({ events: [], connected: true, error: `Google Calendar: ${calResponse.status}` }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const calData = await calResponse.json();
@@ -141,9 +150,10 @@ serve(async (req) => {
     );
   } catch (error: any) {
     console.error("Error fetching Google Calendar events:", error);
+    // Fail soft: 200 with error field per project convention
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ events: [], connected: false, error: error?.message || "unknown" }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
