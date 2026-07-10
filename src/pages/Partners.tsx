@@ -32,6 +32,26 @@ const partners: Partner[] = [
     monogram: "K",
     logoUrl: "https://logo.clearbit.com/koldmail.io",
   },
+  {
+    name: "SalesEQ",
+    url: "https://www.saleseq.ai",
+    category: "Conversation intelligence",
+    pitch:
+      "Decode the 93% of communication that never makes it into the call transcript. SalesEQ reads tone, body language, and emotional signals, then writes deal insights back to your CRM.",
+    fit: "OutReign gets the meeting booked. SalesEQ helps you understand what actually happened in it, so follow-up and forecasting reflect buyer intent, not just call notes.",
+    monogram: "S",
+    logoUrl: "https://logo.clearbit.com/saleseq.ai",
+  },
+  {
+    name: "GoodLeads",
+    url: "https://goodleads.club",
+    category: "Formation-grade leads",
+    pitch:
+      "Reach new businesses the week they file, before they hit every other database. GoodLeads turns fresh state filings into verified decision-maker contacts with reachability scoring.",
+    fit: "OutReign handles your outbound workflow; GoodLeads is a signal layer for brand-new businesses that haven't been called yet, ideal for high-intent first-mover campaigns.",
+    monogram: "G",
+    logoUrl: "https://logo.clearbit.com/goodleads.club",
+  },
 ];
 
 /** Logo tile: real logo on a light chip, gradient monogram if it can't load. */
