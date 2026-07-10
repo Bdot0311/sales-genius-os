@@ -24,14 +24,6 @@ const GUIDES: Guide[] = [
     category: "ICP & Targeting",
     readingTime: "12 min read",
   },
-  {
-    slug: "email-warmup",
-    title: "Email Warmup: The Complete Playbook",
-    description:
-      "How to warm up new sending domains and mailboxes without burning deliverability — schedules, volumes, and monitoring.",
-    category: "Deliverability",
-    readingTime: "9 min read",
-  },
 ];
 
 const divider = { borderTop: "1px solid hsl(261 75% 50% / 0.18)" } as const;

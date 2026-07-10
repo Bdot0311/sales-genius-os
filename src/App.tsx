@@ -1,6 +1,6 @@
 import { Component, Suspense, lazy, useState, useEffect, type ComponentType, type ErrorInfo, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index";
 
@@ -42,7 +42,6 @@ const VsInstantly = lazy(() => import("./pages/VsInstantly"));
 const VsLusha = lazy(() => import("./pages/VsLusha"));
 const VsZoomInfo = lazy(() => import("./pages/VsZoomInfo"));
 const Partners = lazy(() => import("./pages/Partners"));
-const EmailWarmupGuide = lazy(() => import("./pages/EmailWarmupGuide"));
 const B2BICPCriteriaGuide = lazy(() => import("./pages/B2BICPCriteriaGuide"));
 const Guides = lazy(() => import("./pages/Guides"));
 
@@ -360,7 +359,7 @@ const App = () => {
               <Route path="/vs-zoominfo" element={<VsZoomInfo />} />
               <Route path="/partners" element={<Partners />} />
               <Route path="/guides" element={<Guides />} />
-              <Route path="/guides/email-warmup" element={<EmailWarmupGuide />} />
+              <Route path="/guides/email-warmup" element={<Navigate to="/blog/email-warmup" replace />} />
               <Route path="/guides/b2b-icp-criteria-template" element={<B2BICPCriteriaGuide />} />
               
               <Route path="/demo" element={<DemoPage />} />

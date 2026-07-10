@@ -85,9 +85,9 @@
     <priority>0.85</priority>
   </url>
 
-  <!-- Guide: Email Warmup -->
+  <!-- Blog: Email Warmup -->
   <url>
-    <loc>https://outreign.io/guides/email-warmup</loc>
+    <loc>https://outreign.io/blog/email-warmup</loc>
     <lastmod>2026-06-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
