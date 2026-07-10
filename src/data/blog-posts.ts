@@ -1227,7 +1227,7 @@ Score < 60   → Nurture only
 ## Turn your ICP into a targeted lead list
 
 OutReign filters lead searches by the same firmographics, technographics, and triggers you just wrote down — so the accounts hitting your CRM already match the profile. [Start free](https://outreign.io) — no credit card required.
-    \`.trim(),
+    `.trim(),
   },
 ];
 
