@@ -30,7 +30,7 @@ const partners: Partner[] = [
       "Scale cold email without dealing with domains, inboxes, or setup. KoldMail handles the infrastructure so you can focus on booking more meetings.",
     fit: "OutReign finds, scores, and drafts who to reach. KoldMail gives you the sending infrastructure to run that outreach at volume, without managing domains and inboxes yourself.",
     monogram: "K",
-    logoUrl: "https://icons.duckduckgo.com/ip3/koldmail.io.ico",
+    logoUrl: "https://vibe.filesafe.space/meta/1774925500935621577/favicon.png",
   },
   {
     name: "SalesEQ",
@@ -40,7 +40,7 @@ const partners: Partner[] = [
       "Decode the 93% of communication that never makes it into the call transcript. SalesEQ reads tone, body language, and emotional signals, then writes deal insights back to your CRM.",
     fit: "OutReign gets the meeting booked. SalesEQ helps you understand what actually happened in it, so follow-up and forecasting reflect buyer intent, not just call notes.",
     monogram: "S",
-    logoUrl: "https://icons.duckduckgo.com/ip3/www.saleseq.ai.ico",
+    logoUrl: "https://www.saleseq.ai/favicon.ico",
   },
   {
     name: "GoodLeads",
@@ -50,7 +50,7 @@ const partners: Partner[] = [
       "Reach new businesses the week they file, before they hit every other database. GoodLeads turns fresh state filings into verified decision-maker contacts with reachability scoring.",
     fit: "OutReign handles your outbound workflow; GoodLeads is a signal layer for brand-new businesses that haven't been called yet, ideal for high-intent first-mover campaigns.",
     monogram: "G",
-    logoUrl: "https://icons.duckduckgo.com/ip3/goodleads.club.ico",
+    logoUrl: "https://goodleads.club/favicon.png",
   },
   {
     name: "PulseAI",
@@ -60,7 +60,7 @@ const partners: Partner[] = [
       "Turn one headshot and one script into a batch of personalized videos for every outbound send. Built for founders who sell before they hire a sales team.",
     fit: "OutReign finds the right contacts and writes the message. PulseAI adds a personalized video layer to that outreach, increasing reply rates on high-value prospects.",
     monogram: "P",
-    logoUrl: "https://icons.duckduckgo.com/ip3/www.pulseai.pro.ico",
+    logoUrl: "https://framerusercontent.com/images/39fyEOtCcOB32LXhx9xwQSSs.png",
   },
 ];
 
