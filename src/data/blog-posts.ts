@@ -1068,7 +1068,7 @@ The goal is steady, predictable growth. Inbox providers reward gradual escalatio
 ## Skip the spreadsheet — let OutReign handle deliverability
 
 OutReign pairs SMTP-verified leads with built-in sending discipline so you ramp from zero to inbox without juggling a warmup tool, a verifier, and a sequencer. [Start free](https://outreign.io) — no credit card required.
-    \`.trim(),
+    `.trim(),
   },
 ];
 
