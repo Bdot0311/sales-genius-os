@@ -46,6 +46,17 @@ Sentry.init({
     if (typeof msg === "string" && /Object Not Found Matching|MethodName:(update|getProperty)|Non-Error promise rejection/i.test(msg)) {
       return null;
     }
+    // Drop empty-object promise rejections — no stack, no message, not actionable.
+    // Typically thrown by third-party scripts or aborted fetches that reject with `{}`.
+    if (
+      ex &&
+      typeof ex === "object" &&
+      !(ex instanceof Error) &&
+      !msg &&
+      Object.keys(ex).length === 0
+    ) {
+      return null;
+    }
     // Drop events from browser extensions regardless of message content
     const frames = event.exception?.values?.[0]?.stacktrace?.frames ?? [];
     const fromExtension = frames.some(f =>
@@ -54,6 +65,7 @@ Sentry.init({
     if (fromExtension) return null;
     return event;
   },
+
 });
 
 // Self-heal stale chunk references after a redeploy. When a dynamic import
@@ -81,8 +93,13 @@ window.addEventListener("error", (e) => {
   if (e?.message && isChunkLoadError(e.message)) tryReload();
 });
 window.addEventListener("unhandledrejection", (e) => {
-  const msg = String((e as PromiseRejectionEvent)?.reason?.message || (e as PromiseRejectionEvent)?.reason || "");
-  if (isChunkLoadError(msg)) tryReload();
+  const reason: any = (e as PromiseRejectionEvent)?.reason;
+  const msg = String(reason?.message || reason || "");
+  if (isChunkLoadError(msg)) { tryReload(); return; }
+  // Suppress empty-object rejections (non-actionable, typically from third-party scripts).
+  if (reason && typeof reason === "object" && !(reason instanceof Error) && !msg.length && Object.keys(reason).length === 0) {
+    e.preventDefault();
+  }
 });
 // Clean up legacy PWA caches/SWs, but preserve our push notification SW
 // (registered at /push-sw.js with scope /push-sw/).
