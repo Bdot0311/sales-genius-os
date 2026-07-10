@@ -601,8 +601,8 @@ export const Pricing = () => {
               </thead>
               <tbody>
                 {comparisonCategories.map((category, catIndex) => (
-                  <>
-                    <tr key={`cat-${catIndex}`} style={{ borderBottom: `1px solid ${hairline}`, borderTop: catIndex > 0 ? `1px solid ${hairline}` : undefined }}>
+                  <React.Fragment key={`cat-${catIndex}`}>
+                    <tr style={{ borderBottom: `1px solid ${hairline}`, borderTop: catIndex > 0 ? `1px solid ${hairline}` : undefined }}>
                       <td colSpan={6} className="py-3 px-4 sm:px-5">
                         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider" style={{ color: accentPurple }}>
                           <Coins className="w-3.5 h-3.5 flex-shrink-0" />
