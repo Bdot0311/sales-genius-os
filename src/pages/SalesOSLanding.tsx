@@ -54,7 +54,7 @@ const SectionEyebrow = ({ label, tag }: SectionEyebrowProps) => (
     <span className="w-1.5 h-1.5 rounded-full bg-white" />
     <span className="text-xs text-white/60 font-medium">{label}</span>
     {tag && (
-      <span className="px-2 py-0.5 rounded-full border border-white/10 text-white/50 text-xs">{tag}</span>
+      <span className="px-2 py-0.5 rounded-full border border-white/10 text-white/80 text-xs">{tag}</span>
     )}
   </div>
 );
@@ -135,7 +135,7 @@ const Hero = () => (
       className="mt-10 flex flex-col items-center gap-3"
     >
       <AppleButton label="Start free" />
-      <span className="text-xs text-white/40">Web-based — no download needed</span>
+      <span className="text-xs text-white/75">Web-based — no download needed</span>
     </motion.div>
   </section>
 );
@@ -215,7 +215,7 @@ const PipelineMockup = () => (
           <span className="w-3 h-3 rounded-full" style={{ background: '#febc2e' }} />
           <span className="w-3 h-3 rounded-full" style={{ background: '#28c840' }} />
         </div>
-        <span className="text-xs text-white/50">OutReign — All Deals</span>
+        <span className="text-xs text-white/80">OutReign — All Deals</span>
         <div className="w-14" />
       </div>
 
@@ -239,15 +239,15 @@ const PipelineMockup = () => (
                 <Icon className="w-3.5 h-3.5 shrink-0" />
                 <span className="flex-1 truncate">{label}</span>
                 {count != null && (
-                  <span className={`text-[10px] ${active ? 'text-white/70' : 'text-white/40'}`}>{count}</span>
+                  <span className={`text-[10px] ${active ? 'text-white/70' : 'text-white/75'}`}>{count}</span>
                 )}
               </div>
             ))}
           </div>
           <div className="mt-3 pt-3 border-t border-white/10">
-            <p className="text-[9px] uppercase tracking-widest text-white/30 mb-2">Segments</p>
+            <p className="text-[9px] uppercase tracking-widest text-white/70 mb-2">Segments</p>
             {sidebarLabels.map(({ label, color }) => (
-              <div key={label} className="flex items-center gap-2 py-1 text-xs text-white/50 cursor-default">
+              <div key={label} className="flex items-center gap-2 py-1 text-xs text-white/80 cursor-default">
                 <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
                 {label}
               </div>
@@ -258,8 +258,8 @@ const PipelineMockup = () => (
         {/* Deal list — col 4–7 */}
         <div className="col-span-4 border-r border-white/10 flex flex-col overflow-hidden">
           <div className="flex items-center gap-2 px-3 py-2 border-b border-white/10 bg-black/10 shrink-0">
-            <Search className="w-3 h-3 text-white/30 shrink-0" />
-            <span className="text-xs text-white/30">Search deals</span>
+            <Search className="w-3 h-3 text-white/70 shrink-0" />
+            <span className="text-xs text-white/70">Search deals</span>
           </div>
           <div className="flex-1 overflow-y-auto">
             {deals.map((deal, i) => (
@@ -273,12 +273,12 @@ const PipelineMockup = () => (
                   <span className={`text-xs truncate ${deal.unread ? 'font-semibold text-white' : 'font-medium text-white/70'}`}>
                     {deal.company}
                   </span>
-                  <span className="text-[10px] text-white/40 shrink-0">{deal.time}</span>
+                  <span className="text-[10px] text-white/75 shrink-0">{deal.time}</span>
                 </div>
                 <div className="text-[11px] text-white/70 truncate mt-0.5">{deal.title}</div>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-[10px] text-white/40 truncate flex-1">{deal.preview}</span>
-                  <span className="text-[9px] text-white/30 shrink-0 font-medium">{deal.value}</span>
+                  <span className="text-[10px] text-white/75 truncate flex-1">{deal.preview}</span>
+                  <span className="text-[9px] text-white/70 shrink-0 font-medium">{deal.value}</span>
                 </div>
               </div>
             ))}
@@ -291,12 +291,12 @@ const PipelineMockup = () => (
             <div className="flex items-center gap-1">
               {([Reply, Forward, Archive, Trash2] as const).map((Icon, i) => (
                 <button key={i} className="w-7 h-7 rounded-md hover:bg-white/5 flex items-center justify-center">
-                  <Icon className="w-3.5 h-3.5 text-white/50" />
+                  <Icon className="w-3.5 h-3.5 text-white/80" />
                 </button>
               ))}
             </div>
             <button className="w-7 h-7 rounded-md hover:bg-white/5 flex items-center justify-center">
-              <MoreHorizontal className="w-3.5 h-3.5 text-white/50" />
+              <MoreHorizontal className="w-3.5 h-3.5 text-white/80" />
             </button>
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -311,9 +311,9 @@ const PipelineMockup = () => (
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-xs font-medium text-white/90">Acme Corp</div>
-                <div className="text-[10px] text-white/40">Sarah Chen · $84,000 · 9:41 AM</div>
+                <div className="text-[10px] text-white/75">Sarah Chen · $84,000 · 9:41 AM</div>
               </div>
-              <span className="text-[9px] px-1.5 py-0.5 rounded-full border border-white/10 text-white/50 shrink-0">Proposal</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded-full border border-white/10 text-white/80 shrink-0">Proposal</span>
             </div>
 
             <div className="liquid-glass rounded-lg p-3">
@@ -338,12 +338,12 @@ const PipelineMockup = () => (
                 over by end of day. We're targeting signature by Friday.
               </p>
               <p>Looking forward to getting this finalized and moving to onboarding next week.</p>
-              <p className="text-white/50">— Sarah Chen, VP Engineering, Acme Corp</p>
+              <p className="text-white/80">— Sarah Chen, VP Engineering, Acme Corp</p>
             </div>
 
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/10 bg-white/[0.03] w-fit">
-              <Paperclip className="w-3 h-3 text-white/40 shrink-0" />
-              <span className="text-[11px] text-white/50">contract-v2-final.pdf</span>
+              <Paperclip className="w-3 h-3 text-white/75 shrink-0" />
+              <span className="text-[11px] text-white/80">contract-v2-final.pdf</span>
             </div>
           </div>
         </div>
@@ -398,17 +398,17 @@ const FeaturePipeline = () => (
         transition={{ duration: 0.7, delay: 0.1 }}
         className="liquid-glass rounded-2xl p-5"
       >
-        <p className="text-xs text-white/40 mb-4">Today · 18 deals analyzed</p>
+        <p className="text-xs text-white/75 mb-4">Today · 18 deals analyzed</p>
         <div className="flex flex-col gap-3">
           {triage.map(({ label, count, color, items }) => (
             <div key={label} className="liquid-glass rounded-lg p-3">
               <div className="flex items-center gap-2 mb-2">
                 <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
                 <span className="text-xs font-medium text-white/80">{label}</span>
-                <span className="text-[10px] text-white/40 ml-auto">{count}</span>
+                <span className="text-[10px] text-white/75 ml-auto">{count}</span>
               </div>
               {items.map((item) => (
-                <p key={item} className="text-[11px] text-white/50 leading-[1.6] ml-4">{item}</p>
+                <p key={item} className="text-[11px] text-white/80 leading-[1.6] ml-4">{item}</p>
               ))}
             </div>
           ))}
@@ -424,7 +424,7 @@ const logos = ['Linear', 'Vercel', 'Figma', 'Stripe', 'Ramp', 'Notion', 'Loom', 
 
 const LogoCloud = () => (
   <section className="max-w-6xl mx-auto px-6 py-16 md:py-20">
-    <p className="text-center text-xs uppercase tracking-widest text-white/40">
+    <p className="text-center text-xs uppercase tracking-widest text-white/75">
       Trusted by the world's most ambitious revenue teams
     </p>
     <div className="mt-10 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-6">
@@ -437,7 +437,7 @@ const LogoCloud = () => (
           transition={{ delay: i * 0.05 }}
           className="flex items-center justify-center"
         >
-          <span className="text-sm font-semibold tracking-tight text-white/50 hover:text-white transition-colors cursor-default">
+          <span className="text-sm font-semibold tracking-tight text-white/80 hover:text-white transition-colors cursor-default">
             {logo}
           </span>
         </motion.div>
@@ -484,7 +484,7 @@ const Testimonials = () => (
           <blockquote className="text-sm text-white/80 leading-[1.6]">"{quote}"</blockquote>
           <figcaption className="mt-6 pt-5 border-t border-white/10">
             <p className="text-sm font-semibold text-white">{name}</p>
-            <p className="text-xs text-white/50">{role}</p>
+            <p className="text-xs text-white/80">{role}</p>
             <p className="text-xs text-white font-semibold tracking-wide uppercase mt-0.5">{company}</p>
           </figcaption>
         </motion.figure>
