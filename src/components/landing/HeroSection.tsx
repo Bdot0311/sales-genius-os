@@ -64,13 +64,13 @@ export const HeroSection = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease }}
         >
-          <span className="inline-flex max-w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[11px] leading-tight text-white/85 sm:flex-nowrap sm:gap-2.5 sm:px-4 sm:text-xs">
+          <span className="inline-flex max-w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[11px] leading-tight text-white/95 sm:flex-nowrap sm:gap-2.5 sm:px-4 sm:text-xs">
             <span className="relative flex h-1.5 w-1.5 shrink-0">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-75" />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-violet-500" />
             </span>
-            <span className="font-medium text-white/80">New</span>
-            <span className="text-white/70">·</span>
+            <span className="font-medium text-white/95">New</span>
+            <span className="text-white/85">·</span>
             <span>AI SDR now live · see who's ready to buy before you reach out</span>
           </span>
         </motion.div>
@@ -103,7 +103,7 @@ export const HeroSection = () => {
 
         {/* Subhead */}
         <motion.p
-          className="mb-5 max-w-[22rem] text-base font-light leading-relaxed text-white/80 sm:max-w-2xl sm:text-xl"
+          className="mb-5 max-w-[22rem] text-base font-light leading-relaxed text-white/95 sm:max-w-2xl sm:text-xl"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.65, ease, delay: 0.38 }}
@@ -143,7 +143,7 @@ export const HeroSection = () => {
         </motion.div>
 
         <motion.p
-          className="mb-3 flex max-w-[21rem] flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-xs leading-tight text-white/70 sm:flex-nowrap"
+          className="mb-3 flex max-w-[21rem] flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-xs leading-tight text-white/90 sm:flex-nowrap"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.65 }}
