@@ -46,6 +46,17 @@ Sentry.init({
     if (typeof msg === "string" && /Object Not Found Matching|MethodName:(update|getProperty)|Non-Error promise rejection/i.test(msg)) {
       return null;
     }
+    // Drop empty-object promise rejections — no stack, no message, not actionable.
+    // Typically thrown by third-party scripts or aborted fetches that reject with `{}`.
+    if (
+      ex &&
+      typeof ex === "object" &&
+      !(ex instanceof Error) &&
+      !msg &&
+      Object.keys(ex).length === 0
+    ) {
+      return null;
+    }
     // Drop events from browser extensions regardless of message content
     const frames = event.exception?.values?.[0]?.stacktrace?.frames ?? [];
     const fromExtension = frames.some(f =>
@@ -54,6 +65,7 @@ Sentry.init({
     if (fromExtension) return null;
     return event;
   },
+
 });
 
 // Self-heal stale chunk references after a redeploy. When a dynamic import
