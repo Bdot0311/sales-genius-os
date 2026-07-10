@@ -234,7 +234,7 @@ const B2BICPCriteriaGuide = () => {
               <h3 className="text-xl font-display mt-6 mb-2 text-foreground">3. Operational signals</h3>
               <ul className="list-disc pl-6 space-y-2">
                 <li>Dedicated RevOps, Sales Ops, or Marketing Ops function on LinkedIn</li>
-                <li>Quota-carrying rep headcount (>= 10 is a common inflection point)</li>
+                <li>Quota-carrying rep headcount (&gt;= 10 is a common inflection point)</li>
                 <li>Who owns the pipeline number — sales, marketing, or shared</li>
                 <li>Stated go-to-market motion (PLG, outbound, hybrid)</li>
               </ul>
