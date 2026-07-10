@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Check, X, HelpCircle, Coins, Zap, ArrowRight, Bot } from "lucide-react";
 import { STRIPE_PRICE_IDS } from "@/lib/stripe-config";
 import { useSearchCredits } from "@/hooks/use-search-credits";
@@ -601,8 +601,8 @@ export const Pricing = () => {
               </thead>
               <tbody>
                 {comparisonCategories.map((category, catIndex) => (
-                  <>
-                    <tr key={`cat-${catIndex}`} style={{ borderBottom: `1px solid ${hairline}`, borderTop: catIndex > 0 ? `1px solid ${hairline}` : undefined }}>
+                  <React.Fragment key={`cat-${catIndex}`}>
+                    <tr style={{ borderBottom: `1px solid ${hairline}`, borderTop: catIndex > 0 ? `1px solid ${hairline}` : undefined }}>
                       <td colSpan={6} className="py-3 px-4 sm:px-5">
                         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider" style={{ color: accentPurple }}>
                           <Coins className="w-3.5 h-3.5 flex-shrink-0" />
@@ -623,7 +623,7 @@ export const Pricing = () => {
                         <td className="py-3 px-2 sm:px-3 text-center">{renderFeatureValue(feature.agency)}</td>
                       </tr>
                     ))}
-                  </>
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>
