@@ -77,14 +77,6 @@
   </url>
 
 
-  <!-- Guides hub -->
-  <url>
-    <loc>https://outreign.io/guides</loc>
-    <lastmod>2026-07-10</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.85</priority>
-  </url>
-
   <!-- Blog: Email Warmup -->
   <url>
     <loc>https://outreign.io/blog/email-warmup</loc>
@@ -93,9 +85,9 @@
     <priority>0.8</priority>
   </url>
 
-  <!-- Guide: B2B ICP Criteria & Template -->
+  <!-- Blog: B2B ICP Criteria & Template -->
   <url>
-    <loc>https://outreign.io/guides/b2b-icp-criteria-template</loc>
+    <loc>https://outreign.io/blog/b2b-icp-criteria-template</loc>
     <lastmod>2026-07-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
