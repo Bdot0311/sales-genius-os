@@ -3313,6 +3313,10 @@ export type Database = {
         Returns: undefined
       }
       admin_realtime_heartbeat: { Args: never; Returns: string }
+      admin_set_admin: {
+        Args: { _make_admin: boolean; _user_id: string }
+        Returns: undefined
+      }
       admin_set_trial: {
         Args: { _trial_days?: number; _user_id: string }
         Returns: undefined
