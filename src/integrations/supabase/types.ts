@@ -3313,6 +3313,10 @@ export type Database = {
         Returns: undefined
       }
       admin_realtime_heartbeat: { Args: never; Returns: string }
+      admin_set_admin: {
+        Args: { _make_admin: boolean; _user_id: string }
+        Returns: undefined
+      }
       admin_set_trial: {
         Args: { _trial_days?: number; _user_id: string }
         Returns: undefined
@@ -3324,6 +3328,10 @@ export type Database = {
           _status?: string
           _user_id: string
         }
+        Returns: undefined
+      }
+      admin_upsert_vault_secret: {
+        Args: { _name: string; _secret: string }
         Returns: undefined
       }
       apply_stripe_event_to_subscription: {
