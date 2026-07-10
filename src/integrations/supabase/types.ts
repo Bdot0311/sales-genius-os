@@ -3330,6 +3330,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_upsert_vault_secret: {
+        Args: { _name: string; _secret: string }
+        Returns: undefined
+      }
       apply_stripe_event_to_subscription: {
         Args: {
           _event_created_at: string
