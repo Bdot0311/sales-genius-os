@@ -44,6 +44,7 @@ const VsZoomInfo = lazy(() => import("./pages/VsZoomInfo"));
 const Partners = lazy(() => import("./pages/Partners"));
 const EmailWarmupGuide = lazy(() => import("./pages/EmailWarmupGuide"));
 const B2BICPCriteriaGuide = lazy(() => import("./pages/B2BICPCriteriaGuide"));
+const Guides = lazy(() => import("./pages/Guides"));
 
 const ApiDocs = lazy(() => import("./pages/ApiDocs"));
 const ApiStatus = lazy(() => import("./pages/ApiStatus"));
