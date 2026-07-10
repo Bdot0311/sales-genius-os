@@ -359,7 +359,7 @@ const App = () => {
               <Route path="/vs-zoominfo" element={<VsZoomInfo />} />
               <Route path="/partners" element={<Partners />} />
               <Route path="/guides" element={<Guides />} />
-              <Route path="/guides/email-warmup" element={<EmailWarmupGuide />} />
+              <Route path="/guides/email-warmup" element={<Navigate to="/blog/email-warmup" replace />} />
               <Route path="/guides/b2b-icp-criteria-template" element={<B2BICPCriteriaGuide />} />
               
               <Route path="/demo" element={<DemoPage />} />
