@@ -42,8 +42,6 @@ const VsInstantly = lazy(() => import("./pages/VsInstantly"));
 const VsLusha = lazy(() => import("./pages/VsLusha"));
 const VsZoomInfo = lazy(() => import("./pages/VsZoomInfo"));
 const Partners = lazy(() => import("./pages/Partners"));
-const B2BICPCriteriaGuide = lazy(() => import("./pages/B2BICPCriteriaGuide"));
-const Guides = lazy(() => import("./pages/Guides"));
 
 const ApiDocs = lazy(() => import("./pages/ApiDocs"));
 const ApiStatus = lazy(() => import("./pages/ApiStatus"));
@@ -358,9 +356,9 @@ const App = () => {
               <Route path="/vs-lusha" element={<VsLusha />} />
               <Route path="/vs-zoominfo" element={<VsZoomInfo />} />
               <Route path="/partners" element={<Partners />} />
-              <Route path="/guides" element={<Guides />} />
+              <Route path="/guides" element={<Navigate to="/blog" replace />} />
               <Route path="/guides/email-warmup" element={<Navigate to="/blog/email-warmup" replace />} />
-              <Route path="/guides/b2b-icp-criteria-template" element={<B2BICPCriteriaGuide />} />
+              <Route path="/guides/b2b-icp-criteria-template" element={<Navigate to="/blog/b2b-icp-criteria-template" replace />} />
               
               <Route path="/demo" element={<DemoPage />} />
               <Route path="/api-docs" element={<ApiDocs />} />

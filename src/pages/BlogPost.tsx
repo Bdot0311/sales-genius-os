@@ -21,6 +21,32 @@ function renderMarkdown(content: string): JSX.Element[] {
 
     if (!line.trim()) { i++; continue; }
 
+    // Fenced code block: ```
+    if (line.startsWith("```")) {
+      i++;
+      const codeLines: string[] = [];
+      while (i < lines.length && !lines[i].startsWith("```")) {
+        codeLines.push(lines[i]);
+        i++;
+      }
+      if (i < lines.length) i++; // consume closing fence
+      elements.push(
+        <pre
+          key={key++}
+          className="my-6 overflow-x-auto rounded-lg p-4 text-xs sm:text-sm font-mono"
+          style={{
+            background: "hsl(261 75% 4%)",
+            border: "1px solid hsl(261 75% 50% / 0.15)",
+            color: "hsl(0 0% 85%)",
+            lineHeight: 1.55,
+          }}
+        >
+          <code>{codeLines.join("\n")}</code>
+        </pre>
+      );
+      continue;
+    }
+
     // H2
     if (line.startsWith("## ")) {
       elements.push(
