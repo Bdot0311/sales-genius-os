@@ -148,9 +148,13 @@ User-agent: *
 Allow: /
 Crawl-delay: 2
 
-# Disallow admin and authenticated areas
+# Disallow admin and authenticated areas (applies to User-agent: * above)
 Disallow: /dashboard
 Disallow: /dashboard/*
+Disallow: /dashboard/leads
+Disallow: /dashboard/leads/*
+Disallow: /dashboard/coach
+Disallow: /dashboard/coach/*
 Disallow: /admin
 Disallow: /admin/*
 Disallow: /settings
@@ -163,9 +167,11 @@ Disallow: /automations
 Disallow: /outreach
 Disallow: /calendar
 Disallow: /coach
+Disallow: /coach/*
 Disallow: /saved-leads
 Disallow: /integrations
 Disallow: /confirmation
+
 
 # Allow public pages
 Allow: /
