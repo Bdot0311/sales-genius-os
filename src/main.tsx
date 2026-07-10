@@ -93,8 +93,13 @@ window.addEventListener("error", (e) => {
   if (e?.message && isChunkLoadError(e.message)) tryReload();
 });
 window.addEventListener("unhandledrejection", (e) => {
-  const msg = String((e as PromiseRejectionEvent)?.reason?.message || (e as PromiseRejectionEvent)?.reason || "");
-  if (isChunkLoadError(msg)) tryReload();
+  const reason: any = (e as PromiseRejectionEvent)?.reason;
+  const msg = String(reason?.message || reason || "");
+  if (isChunkLoadError(msg)) { tryReload(); return; }
+  // Suppress empty-object rejections (non-actionable, typically from third-party scripts).
+  if (reason && typeof reason === "object" && !(reason instanceof Error) && !msg.length && Object.keys(reason).length === 0) {
+    e.preventDefault();
+  }
 });
 // Clean up legacy PWA caches/SWs, but preserve our push notification SW
 // (registered at /push-sw.js with scope /push-sw/).
