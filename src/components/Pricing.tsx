@@ -623,7 +623,7 @@ export const Pricing = () => {
                         <td className="py-3 px-2 sm:px-3 text-center">{renderFeatureValue(feature.agency)}</td>
                       </tr>
                     ))}
-                  </>
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>
