@@ -44,6 +44,7 @@ const VsZoomInfo = lazy(() => import("./pages/VsZoomInfo"));
 const Partners = lazy(() => import("./pages/Partners"));
 const EmailWarmupGuide = lazy(() => import("./pages/EmailWarmupGuide"));
 const B2BICPCriteriaGuide = lazy(() => import("./pages/B2BICPCriteriaGuide"));
+const Guides = lazy(() => import("./pages/Guides"));
 
 const ApiDocs = lazy(() => import("./pages/ApiDocs"));
 const ApiStatus = lazy(() => import("./pages/ApiStatus"));
@@ -358,6 +359,7 @@ const App = () => {
               <Route path="/vs-lusha" element={<VsLusha />} />
               <Route path="/vs-zoominfo" element={<VsZoomInfo />} />
               <Route path="/partners" element={<Partners />} />
+              <Route path="/guides" element={<Guides />} />
               <Route path="/guides/email-warmup" element={<EmailWarmupGuide />} />
               <Route path="/guides/b2b-icp-criteria-template" element={<B2BICPCriteriaGuide />} />
               
