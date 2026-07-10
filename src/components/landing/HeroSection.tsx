@@ -69,8 +69,8 @@ export const HeroSection = () => {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-75" />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-violet-500" />
             </span>
-            <span className="font-medium text-white/80">New</span>
-            <span className="text-white/70">·</span>
+            <span className="font-medium text-white/95">New</span>
+            <span className="text-white/85">·</span>
             <span>AI SDR now live · see who's ready to buy before you reach out</span>
           </span>
         </motion.div>
