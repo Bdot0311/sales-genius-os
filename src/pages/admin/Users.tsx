@@ -384,6 +384,13 @@ const AdminUsers = () => {
         user={selectedUser}
         onSet={() => { setSelectedUser(null); loadSubscriptions(); }}
       />
+
+      <EditUserDialog
+        open={editUserOpen}
+        onOpenChange={setEditUserOpen}
+        user={selectedUser}
+        onSaved={() => { setSelectedUser(null); loadSubscriptions(); }}
+      />
     </div>
   );
 };
