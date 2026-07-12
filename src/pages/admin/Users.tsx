@@ -14,6 +14,7 @@ import { UserTable } from "@/components/admin/UserTable";
 import { CreateUserDialog } from "@/components/admin/CreateUserDialog";
 import { DeleteUserDialog } from "@/components/admin/DeleteUserDialog";
 import { TrialDialog } from "@/components/admin/TrialDialog";
+import { EditUserDialog } from "@/components/admin/EditUserDialog";
 
 export interface UserSubscription {
   user_id: string;
