@@ -70,7 +70,7 @@ const NotFound = () => {
             <h2 className="text-2xl font-semibold text-white mb-2">
               Page not found
             </h2>
-            <p className="text-white/55 max-w-md mx-auto">
+            <p className="text-white/80 max-w-md mx-auto">
               The page you're looking for doesn't exist or has been moved. Let's
               get you back on track.
             </p>
@@ -121,7 +121,7 @@ const NotFound = () => {
                     <div className="font-medium text-white transition-colors">
                       {page.name}
                     </div>
-                    <div className="text-sm text-white/55">
+                    <div className="text-sm text-white/80">
                       {page.description}
                     </div>
                   </div>
@@ -135,7 +135,7 @@ const NotFound = () => {
             <Button
               variant="ghost"
               onClick={() => window.history.back()}
-              className="gap-2 text-white/55 hover:text-white hover:bg-white/5"
+              className="gap-2 text-white/80 hover:text-white hover:bg-white/5"
             >
               <ArrowLeft className="h-4 w-4" />
               Go back

@@ -103,7 +103,7 @@ export const ICPScoreBreakdown = ({ lead, score }: ICPScoreBreakdownProps) => {
                 Each criterion contributes 25 points. Score is based on your best-matching ICP profile.
               </p>
               {breakdown.titleEval === null || breakdown.industryEval === null || breakdown.sizeEval === null ? (
-                <p className="text-xs text-muted-foreground/70">
+                <p className="text-xs text-muted-foreground">
                   — means the lead is missing that field's data.
                 </p>
               ) : null}

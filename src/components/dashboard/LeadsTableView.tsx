@@ -60,21 +60,21 @@ export const LeadsTableView = ({
       <Table>
         <TableHeader>
           <TableRow className="border-b border-border/60 hover:bg-transparent">
-            <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground/70 font-medium py-2.5 px-4 w-12">
+            <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium py-2.5 px-4 w-12">
               <Checkbox
                 checked={selectedLeads.length === leads.length && leads.length > 0}
                 onCheckedChange={onSelectAll}
               />
             </TableHead>
-            <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground/70 font-medium py-2.5 px-4">Company</TableHead>
-            <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground/70 font-medium py-2.5 px-4">Contact</TableHead>
-            <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground/70 font-medium py-2.5 px-4">Status</TableHead>
-            <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground/70 font-medium py-2.5 px-4">Industry</TableHead>
-            <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground/70 font-medium py-2.5 px-4">ICP</TableHead>
-            <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground/70 font-medium py-2.5 px-4">Intent</TableHead>
-            <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground/70 font-medium py-2.5 px-4">Source</TableHead>
-            <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground/70 font-medium py-2.5 px-4">Added</TableHead>
-            <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground/70 font-medium py-2.5 px-4 w-32">Action</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium py-2.5 px-4">Company</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium py-2.5 px-4">Contact</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium py-2.5 px-4">Status</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium py-2.5 px-4">Industry</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium py-2.5 px-4">ICP</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium py-2.5 px-4">Intent</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium py-2.5 px-4">Source</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium py-2.5 px-4">Added</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium py-2.5 px-4 w-32">Action</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
