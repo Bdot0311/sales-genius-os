@@ -44,6 +44,7 @@ const AdminUsers = () => {
   const [createUserOpen, setCreateUserOpen] = useState(false);
   const [deleteUserOpen, setDeleteUserOpen] = useState(false);
   const [trialDialogOpen, setTrialDialogOpen] = useState(false);
+  const [editUserOpen, setEditUserOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserSubscription | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [resyncing, setResyncing] = useState(false);
