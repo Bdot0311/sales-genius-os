@@ -142,7 +142,10 @@ export default function Partners() {
           {/* Back button */}
           <div className="max-w-3xl mx-auto px-6 pt-24">
             <button
-              onClick={() => navigate(-1)}
+              onClick={() => {
+                if (window.history.length > 1) navigate(-1);
+                else navigate("/");
+              }}
               className="inline-flex items-center gap-1.5 text-sm transition-colors"
               style={{ color: "hsl(0 0% 100% / 0.6)" }}
               onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 70%)")}
