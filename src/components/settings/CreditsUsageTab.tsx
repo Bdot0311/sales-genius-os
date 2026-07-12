@@ -80,56 +80,56 @@ export const CreditsUsageTab = () => {
 
   // Set up realtime subscriptions
   useEffect(() => {
-    const setupRealtime = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+    let subscriptionChannel: ReturnType<typeof supabase.channel> | null = null;
+    let transactionChannel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
 
-      // Subscribe to subscription changes
-      const subscriptionChannel = supabase
-        .channel('credits-subscription-changes')
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || cancelled) return;
+
+      subscriptionChannel = supabase
+        .channel(`credits-subscription-changes-${session.user.id}`)
         .on(
           'postgres_changes',
           {
             event: '*',
             schema: 'public',
             table: 'subscriptions',
-            filter: `user_id=eq.${session.user.id}`
+            filter: `user_id=eq.${session.user.id}`,
           },
           () => {
-            // Refresh credits when subscription changes
             fetchCredits();
           }
         )
         .subscribe();
 
-      // Subscribe to transaction changes
-      const transactionChannel = supabase
-        .channel('credits-transaction-changes')
+      transactionChannel = supabase
+        .channel(`credits-transaction-changes-${session.user.id}`)
         .on(
           'postgres_changes',
           {
             event: 'INSERT',
             schema: 'public',
             table: 'search_transactions',
-            filter: `user_id=eq.${session.user.id}`
+            filter: `user_id=eq.${session.user.id}`,
           },
           (payload) => {
-            // Add new transaction to the list
             setTransactions(prev => [payload.new as Transaction, ...prev].slice(0, 50));
-            // Also refresh credits
             fetchCredits();
           }
         )
         .subscribe();
+    })();
 
-      return () => {
-        supabase.removeChannel(subscriptionChannel);
-        supabase.removeChannel(transactionChannel);
-      };
+    return () => {
+      cancelled = true;
+      if (subscriptionChannel) supabase.removeChannel(subscriptionChannel);
+      if (transactionChannel) supabase.removeChannel(transactionChannel);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    setupRealtime();
-  }, [fetchCredits]);
 
   if (loading) {
     return (
