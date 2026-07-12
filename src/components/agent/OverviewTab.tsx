@@ -135,11 +135,11 @@ export function OverviewTab({ actions, loading, config, gmailConnected }: Overvi
                           </p>
                         )}
                         {action.description && (
-                          <p className="text-xs text-muted-foreground/70 mt-0.5 line-clamp-2">
+                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
                             {action.description}
                           </p>
                         )}
-                        <p className="text-xs text-muted-foreground/50 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                           {formatDistanceToNow(new Date(action.created_at), { addSuffix: true })}
                         </p>
                       </div>
