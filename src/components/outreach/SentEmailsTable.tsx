@@ -206,7 +206,7 @@ export const SentEmailsTable = ({ onDeleted }: { onDeleted?: () => void }) => {
       >
         <span className="flex items-center gap-1">
           {children}
-          <Icon className={`w-3.5 h-3.5 ${active ? "text-primary" : "text-muted-foreground/50"}`} />
+          <Icon className={`w-3.5 h-3.5 ${active ? "text-primary" : "text-muted-foreground"}`} />
         </span>
       </TableHead>
     );

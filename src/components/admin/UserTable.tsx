@@ -91,7 +91,7 @@ export const UserTable = ({
                         <p className="font-medium text-sm truncate">{sub.full_name || 'No name'}</p>
                         <p className="text-xs text-muted-foreground truncate">{sub.email}</p>
                         {sub.signup_source && (
-                          <p className="text-[10px] text-muted-foreground/50 truncate mt-0.5" title={sub.signup_source}>
+                          <p className="text-[10px] text-muted-foreground truncate mt-0.5" title={sub.signup_source}>
                             via {sub.signup_source}
                           </p>
                         )}
@@ -121,7 +121,7 @@ export const UserTable = ({
                   <TableCell className="text-sm text-muted-foreground tabular-nums whitespace-nowrap">
                     {sub.created_at
                       ? <span title={format(new Date(sub.created_at), 'PPpp')}>{format(new Date(sub.created_at), 'MMM d, yyyy')}</span>
-                      : <span className="text-muted-foreground/40">—</span>}
+                      : <span className="text-muted-foreground">—</span>}
                   </TableCell>
                   <TableCell className="text-sm tabular-nums whitespace-nowrap">
                     {sub.last_sign_in_at ? (
@@ -132,7 +132,7 @@ export const UserTable = ({
                         {formatDistanceToNow(new Date(sub.last_sign_in_at), { addSuffix: true })}
                       </span>
                     ) : (
-                      <span className="text-muted-foreground/40 text-xs">Never recorded</span>
+                      <span className="text-muted-foreground text-xs">Never recorded</span>
                     )}
                   </TableCell>
                   <TableCell className="text-sm tabular-nums">

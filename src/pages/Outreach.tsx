@@ -2480,7 +2480,7 @@ For logos, use HTML:
                                       {String.fromCharCode(65 + index)}
                                     </Badge>
                                     {variant.label && (
-                                      <span className="text-[10px] text-muted-foreground/70 truncate">
+                                      <span className="text-[10px] text-muted-foreground truncate">
                                         {variant.label}
                                       </span>
                                     )}

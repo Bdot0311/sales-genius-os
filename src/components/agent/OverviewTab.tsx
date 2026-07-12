@@ -27,7 +27,7 @@ const ACTION_ICONS: Record<string, { icon: React.ReactNode; label: string }> = {
   reply_sent: { icon: <Mail className="w-4 h-4 text-blue-400" />, label: "Reply Sent" },
   meeting_booked: { icon: <Calendar className="w-4 h-4 text-green-400" />, label: "Meeting Booked" },
   unsubscribed: { icon: <XCircle className="w-4 h-4 text-red-400" />, label: "Unsubscribed" },
-  closed_thread: { icon: <X className="w-4 h-4 text-gray-400" />, label: "Thread Closed" },
+  closed_thread: { icon: <X className="w-4 h-4 text-muted-foreground" />, label: "Thread Closed" },
   skipped: { icon: <RefreshCw className="w-4 h-4 text-yellow-400" />, label: "Skipped" },
   error: { icon: <AlertTriangle className="w-4 h-4 text-red-500" />, label: "Error" },
   sync: { icon: <RefreshCw className="w-4 h-4 text-purple-400" />, label: "Synced" },
@@ -40,7 +40,7 @@ const CLASSIFICATION_BADGES: Record<string, { label: string; className: string }
   meeting_request: { label: "Meeting Request", className: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
   not_interested: { label: "Not Interested", className: "bg-red-500/20 text-red-400 border-red-500/30" },
   unsubscribe: { label: "Unsubscribe", className: "bg-red-500/20 text-red-400 border-red-500/30" },
-  out_of_office: { label: "Out of Office", className: "bg-gray-500/20 text-gray-400 border-gray-500/30" },
+  out_of_office: { label: "Out of Office", className: "bg-gray-500/20 text-muted-foreground border-gray-500/30" },
 };
 
 export function OverviewTab({ actions, loading, config, gmailConnected }: OverviewTabProps) {
@@ -94,9 +94,9 @@ export function OverviewTab({ actions, loading, config, gmailConnected }: Overvi
             </div>
           ) : actions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Brain className="w-10 h-10 text-muted-foreground/40 mb-3" />
+              <Brain className="w-10 h-10 text-muted-foreground mb-3" />
               <p className="text-sm text-muted-foreground">No activity yet.</p>
-              <p className="text-xs text-muted-foreground/60 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Enable the agent and run it to start tracking actions.
               </p>
             </div>
@@ -135,11 +135,11 @@ export function OverviewTab({ actions, loading, config, gmailConnected }: Overvi
                           </p>
                         )}
                         {action.description && (
-                          <p className="text-xs text-muted-foreground/70 mt-0.5 line-clamp-2">
+                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
                             {action.description}
                           </p>
                         )}
-                        <p className="text-xs text-muted-foreground/50 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                           {formatDistanceToNow(new Date(action.created_at), { addSuffix: true })}
                         </p>
                       </div>
@@ -169,13 +169,13 @@ function ChecklistItem({
       {done ? (
         <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
       ) : (
-        <XCircleIcon className="w-5 h-5 text-muted-foreground/40 flex-shrink-0 mt-0.5" />
+        <XCircleIcon className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-0.5" />
       )}
       <div>
         <p className={`text-sm font-medium ${done ? "text-foreground" : "text-muted-foreground"}`}>
           {label}
         </p>
-        <p className="text-xs text-muted-foreground/60 mt-0.5">{description}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
       </div>
     </div>
   );

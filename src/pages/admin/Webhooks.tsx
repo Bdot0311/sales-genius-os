@@ -359,7 +359,7 @@ const Step = ({
 };
 
 const Arrow = () => (
-  <span className="text-muted-foreground/50 text-sm">→</span>
+  <span className="text-muted-foreground text-sm">→</span>
 );
 
 const Field = ({ label, value, mono }: { label: string; value: string; mono?: boolean }) => (

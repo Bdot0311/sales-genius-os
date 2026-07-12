@@ -42,7 +42,7 @@ function MatchRow({
       ) : evaluated === false ? (
         <XCircle className="w-4 h-4 text-red-500" />
       ) : (
-        <span title="No data available"><Minus className="w-4 h-4 text-muted-foreground/50" /></span>
+        <span title="No data available"><Minus className="w-4 h-4 text-muted-foreground" /></span>
       )}
     </div>
   );
@@ -103,7 +103,7 @@ export const ICPScoreBreakdown = ({ lead, score }: ICPScoreBreakdownProps) => {
                 Each criterion contributes 25 points. Score is based on your best-matching ICP profile.
               </p>
               {breakdown.titleEval === null || breakdown.industryEval === null || breakdown.sizeEval === null ? (
-                <p className="text-xs text-muted-foreground/70">
+                <p className="text-xs text-muted-foreground">
                   — means the lead is missing that field's data.
                 </p>
               ) : null}

@@ -435,7 +435,7 @@ export const BulkSendDialog = ({
           {!bulkEnabled ? (
             <div className="flex-1 flex items-center justify-center text-center p-8">
               <div className="space-y-2">
-                <Users className="w-10 h-10 mx-auto text-muted-foreground/50" />
+                <Users className="w-10 h-10 mx-auto text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">
                   Turn on Bulk Sending above to select leads and send emails in volume.
                 </p>

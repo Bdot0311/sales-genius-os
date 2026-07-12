@@ -217,7 +217,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             {navSections.map((section) => (
               <div key={section.label} className="mb-1">
                 {!sidebarCollapsed && (
-                  <p className="px-3 pt-3 pb-1 text-[10px] font-semibold tracking-widest text-muted-foreground/50 uppercase select-none">
+                  <p className="px-3 pt-3 pb-1 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase select-none">
                     {section.label}
                   </p>
                 )}

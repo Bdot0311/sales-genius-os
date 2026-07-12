@@ -152,7 +152,7 @@ const HelpCenter = () => {
           <h1 className="font-display text-3xl sm:text-4xl mb-2" style={{ fontWeight: 800, letterSpacing: "-0.02em", color: "hsl(0 0% 92%)" }}>
             {categoryInfo.title}
           </h1>
-          <p className="text-white/55 mb-8">{categoryInfo.description}</p>
+          <p className="text-white/80 mb-8">{categoryInfo.description}</p>
 
           <div className="grid gap-3">
             {articles.map((article) => (
@@ -488,12 +488,12 @@ const HelpCenter = () => {
                   { to: "/terms", label: "Terms" },
                 ].map((item) => (
                   <li key={item.to}>
-                    <Link
-                      to={item.to}
-                      className="text-white/55 hover:text-white transition-colors"
-                    >
-                      {item.label}
-                    </Link>
+                  <Link
+                    to={item.to}
+                    className="text-white/80 hover:text-white transition-colors"
+                  >
+                    {item.label}
+                  </Link>
                   </li>
                 ))}
               </ul>

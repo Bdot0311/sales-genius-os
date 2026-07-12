@@ -153,7 +153,7 @@ const Unsubscribe = () => {
                 <CheckCircle className="h-7 w-7 text-green-400" />
               </div>
               <p className="text-white font-medium">You've been unsubscribed.</p>
-              <p className="text-sm text-white/55">
+              <p className="text-sm text-white/80">
                 You will no longer receive emails from us.
               </p>
             </div>
@@ -162,7 +162,7 @@ const Unsubscribe = () => {
           {status === "already_unsubscribed" && (
             <div className="flex flex-col items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/5 ring-1 ring-white/10">
-                <CheckCircle className="h-7 w-7 text-white/55" />
+                <CheckCircle className="h-7 w-7 text-white/80" />
               </div>
               <p className="text-white/80">You're already unsubscribed.</p>
             </div>
@@ -174,7 +174,7 @@ const Unsubscribe = () => {
                 <XCircle className="h-7 w-7 text-destructive" />
               </div>
               <p className="text-white/80">Invalid or expired link.</p>
-              <p className="text-sm text-white/55">
+              <p className="text-sm text-white/80">
                 This unsubscribe link is no longer valid.
               </p>
             </div>
@@ -186,7 +186,7 @@ const Unsubscribe = () => {
                 <XCircle className="h-7 w-7 text-destructive" />
               </div>
               <p className="text-white/80">Something went wrong.</p>
-              <p className="text-sm text-white/55">
+              <p className="text-sm text-white/80">
                 Please try again later or contact support.
               </p>
             </div>

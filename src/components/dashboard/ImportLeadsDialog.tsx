@@ -659,7 +659,7 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
                             {schedule.is_active ? (
                               <span className="text-xs bg-green-500/10 text-green-500 px-2 py-0.5 rounded">Active</span>
                             ) : (
-                              <span className="text-xs bg-gray-500/10 text-gray-500 px-2 py-0.5 rounded">Paused</span>
+                              <span className="text-xs bg-gray-500/10 text-muted-foreground px-2 py-0.5 rounded">Paused</span>
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground">

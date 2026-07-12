@@ -257,7 +257,7 @@ export const EmailTemplateManager = ({
               </div>
             ) : templates.length === 0 ? (
               <div className="text-center py-8">
-                <FolderOpen className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
+                <FolderOpen className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
                 <p className="text-muted-foreground">No saved templates yet</p>
                 <p className="text-sm text-muted-foreground mt-1">
                   Save your current configuration as a template to reuse later
