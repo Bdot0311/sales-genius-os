@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Mail, RefreshCw } from "lucide-react";
+import { AlertCircle, Loader2, Mail, RefreshCw } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface EmailLog {
@@ -42,27 +42,26 @@ export function EmailLogsPanel() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [templateFilter, setTemplateFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
+    setLoadError(null);
     const since = new Date(Date.now() - RANGES[range] * 24 * 60 * 60 * 1000).toISOString();
-    const { data, error } = await supabase
-      .from("email_send_log")
-      .select("id, message_id, template_name, recipient_email, status, error_message, created_at")
-      .gte("created_at", since)
-      .order("created_at", { ascending: false })
-      .limit(1000);
-    if (!error && data) {
-      // Dedupe by message_id keeping latest
-      const seen = new Set<string>();
-      const deduped: EmailLog[] = [];
-      for (const row of data as EmailLog[]) {
-        const key = row.message_id ?? row.id;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        deduped.push(row);
-      }
-      setLogs(deduped);
+    const { data, error } = await supabase.rpc("admin_get_email_send_logs", {
+      _since: since,
+      _limit: 1000,
+    });
+
+    if (error) {
+      console.error("Error loading email send logs:", error);
+      setLogs([]);
+      setLoadError(error.message || "Could not load email send logs");
+    } else {
+      const sorted = ((data || []) as EmailLog[]).sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      );
+      setLogs(sorted);
     }
     setLoading(false);
   };
@@ -161,6 +160,16 @@ export function EmailLogsPanel() {
             className="w-[220px]"
           />
         </div>
+
+        {loadError && (
+          <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+            <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+            <div>
+              <p className="font-medium">Email logs could not be loaded.</p>
+              <p className="text-xs opacity-90">{loadError}</p>
+            </div>
+          </div>
+        )}
 
         <div className="border rounded-lg overflow-x-auto">
           <Table className="min-w-[720px]">
