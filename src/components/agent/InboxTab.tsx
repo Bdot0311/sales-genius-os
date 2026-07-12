@@ -25,11 +25,11 @@ interface ThreadStatusConfig {
 }
 
 const THREAD_STATUS_MAP: Record<string, ThreadStatusConfig> = {
-  active: { label: "Active", className: "bg-gray-500/20 text-gray-400 border-gray-500/30" },
+  active: { label: "Active", className: "bg-gray-500/20 text-muted-foreground border-gray-500/30" },
   replied: { label: "Replied", className: "bg-green-500/20 text-green-400 border-green-500/30" },
   meeting_booked: { label: "Meeting Booked", className: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
   unsubscribed: { label: "Unsubscribed", className: "bg-red-500/20 text-red-400 border-red-500/30" },
-  closed: { label: "Closed", className: "bg-gray-500/20 text-gray-400 border-gray-500/30" },
+  closed: { label: "Closed", className: "bg-gray-500/20 text-muted-foreground border-gray-500/30" },
 };
 
 const CLASSIFICATION_MAP: Record<string, ThreadStatusConfig> = {
@@ -38,7 +38,7 @@ const CLASSIFICATION_MAP: Record<string, ThreadStatusConfig> = {
   meeting_request: { label: "Meeting Request", className: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
   not_interested: { label: "Not Interested", className: "bg-red-500/20 text-red-400 border-red-500/30" },
   unsubscribe: { label: "Unsubscribe", className: "bg-red-500/20 text-red-400 border-red-500/30" },
-  out_of_office: { label: "Out of Office", className: "bg-gray-500/20 text-gray-400 border-gray-500/30" },
+  out_of_office: { label: "Out of Office", className: "bg-gray-500/20 text-muted-foreground border-gray-500/30" },
 };
 
 function deriveThreadStatus(email: SentEmailRow): string {
