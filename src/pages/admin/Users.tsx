@@ -140,7 +140,7 @@ const AdminUsers = () => {
   // Analytics
   const stats = useMemo(() => {
     const total = subscriptions.length;
-    const admins = subscriptions.filter(s => isUserAdmin(s.user_id) || s.account_status === 'admin').length;
+    const admins = subscriptions.filter(s => isUserAdmin(s.user_id)).length;
     const trials = subscriptions.filter(s => s.account_status === 'trial').length;
     const locked = subscriptions.filter(s => s.account_status === 'locked').length;
     const paid = subscriptions.filter(s => s.plan !== 'free' && s.stripe_customer_id).length;

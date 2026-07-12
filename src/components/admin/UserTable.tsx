@@ -30,7 +30,7 @@ const getPlanBadgeClass = (plan: string) => {
 };
 
 const getAccountBadge = (userId: string, accountStatus: string, trialEndDate: string | null, isAdmin: boolean) => {
-  if (isAdmin || accountStatus === 'admin') {
+  if (isAdmin) {
     return <Badge className="gap-1 bg-primary/20 text-primary border border-primary/30 hover:bg-primary/30"><Shield className="h-3 w-3" />Admin</Badge>;
   }
   if (accountStatus === 'locked') {
@@ -136,7 +136,7 @@ export const UserTable = ({
                     )}
                   </TableCell>
                   <TableCell className="text-sm tabular-nums">
-                    {(admin || sub.account_status === 'admin' || sub.leads_limit >= 99999)
+                    {(admin || sub.leads_limit >= 99999)
                       ? <span className="text-xs text-primary font-medium">Unlimited</span>
                       : sub.leads_limit.toLocaleString()}
                   </TableCell>
