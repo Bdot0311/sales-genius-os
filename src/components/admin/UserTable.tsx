@@ -46,7 +46,7 @@ const getAccountBadge = (userId: string, accountStatus: string, trialEndDate: st
 
 export const UserTable = ({
   subscriptions, loading, isUserAdmin,
-  onUpdateSubscription, onLockUser, onUnlockUser, onToggleAdmin, onSetTrial, onDeleteUser, onResetPassword
+  onUpdateSubscription, onLockUser, onUnlockUser, onToggleAdmin, onSetTrial, onDeleteUser, onResetPassword, onEditUser
 }: UserTableProps) => {
   return (
     <div className="overflow-x-auto">
