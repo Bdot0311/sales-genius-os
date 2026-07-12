@@ -360,6 +360,7 @@ const AdminUsers = () => {
             onSetTrial={(user) => { setSelectedUser(user); setTrialDialogOpen(true); }}
             onDeleteUser={(user) => { setSelectedUser(user); setDeleteUserOpen(true); }}
             onResetPassword={sendResetPasswordEmail}
+            onEditUser={(user) => { setSelectedUser(user); setEditUserOpen(true); }}
           />
         </CardContent>
       </Card>
