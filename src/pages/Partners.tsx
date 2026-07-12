@@ -5,6 +5,8 @@ import { Navbar } from "@/components/Navbar";
 import { FooterSection } from "@/components/landing/FooterSection";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { BRAND } from "@/lib/brand";
+import saleseqLogo from "@/assets/saleseq-logo.png.asset.json";
+
 
 type Partner = {
   name: string;
@@ -40,7 +42,7 @@ const partners: Partner[] = [
       "Decode the 93% of communication that never makes it into the call transcript. SalesEQ reads tone, body language, and emotional signals, then writes deal insights back to your CRM.",
     fit: "OutReign gets the meeting booked. SalesEQ helps you understand what actually happened in it, so follow-up and forecasting reflect buyer intent, not just call notes.",
     monogram: "S",
-    logoUrl: "https://www.saleseq.ai/favicon.ico",
+    logoUrl: saleseqLogo.url,
   },
   {
     name: "GoodLeads",
@@ -140,7 +142,10 @@ export default function Partners() {
           {/* Back button */}
           <div className="max-w-3xl mx-auto px-6 pt-24">
             <button
-              onClick={() => navigate(-1)}
+              onClick={() => {
+                if (window.history.length > 1) navigate(-1);
+                else navigate("/");
+              }}
               className="inline-flex items-center gap-1.5 text-sm transition-colors"
               style={{ color: "hsl(0 0% 100% / 0.6)" }}
               onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 70%)")}
