@@ -2,7 +2,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Shield, Clock, Lock, Unlock, Trash2, KeyRound } from "lucide-react";
+import { Shield, Clock, Lock, Unlock, Trash2, KeyRound, Pencil } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import type { UserSubscription } from "@/pages/admin/Users";
 
@@ -17,6 +17,7 @@ interface UserTableProps {
   onSetTrial: (user: UserSubscription) => void;
   onDeleteUser: (user: UserSubscription) => void;
   onResetPassword: (user: UserSubscription) => void;
+  onEditUser: (user: UserSubscription) => void;
 }
 
 const getPlanBadgeClass = (plan: string) => {
@@ -45,7 +46,7 @@ const getAccountBadge = (userId: string, accountStatus: string, trialEndDate: st
 
 export const UserTable = ({
   subscriptions, loading, isUserAdmin,
-  onUpdateSubscription, onLockUser, onUnlockUser, onToggleAdmin, onSetTrial, onDeleteUser, onResetPassword
+  onUpdateSubscription, onLockUser, onUnlockUser, onToggleAdmin, onSetTrial, onDeleteUser, onResetPassword, onEditUser
 }: UserTableProps) => {
   return (
     <div className="overflow-x-auto">
@@ -142,6 +143,14 @@ export const UserTable = ({
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-0.5 justify-end opacity-60 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        size="sm" variant="ghost"
+                        className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                        onClick={() => onEditUser(sub)}
+                        title="Edit user"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
                       <Button
                         size="sm" variant="ghost"
                         className={`h-7 w-7 p-0 ${admin ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}

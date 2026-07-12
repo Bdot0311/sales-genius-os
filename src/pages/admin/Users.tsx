@@ -14,6 +14,7 @@ import { UserTable } from "@/components/admin/UserTable";
 import { CreateUserDialog } from "@/components/admin/CreateUserDialog";
 import { DeleteUserDialog } from "@/components/admin/DeleteUserDialog";
 import { TrialDialog } from "@/components/admin/TrialDialog";
+import { EditUserDialog } from "@/components/admin/EditUserDialog";
 
 export interface UserSubscription {
   user_id: string;
@@ -43,6 +44,7 @@ const AdminUsers = () => {
   const [createUserOpen, setCreateUserOpen] = useState(false);
   const [deleteUserOpen, setDeleteUserOpen] = useState(false);
   const [trialDialogOpen, setTrialDialogOpen] = useState(false);
+  const [editUserOpen, setEditUserOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserSubscription | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [resyncing, setResyncing] = useState(false);
@@ -358,6 +360,7 @@ const AdminUsers = () => {
             onSetTrial={(user) => { setSelectedUser(user); setTrialDialogOpen(true); }}
             onDeleteUser={(user) => { setSelectedUser(user); setDeleteUserOpen(true); }}
             onResetPassword={sendResetPasswordEmail}
+            onEditUser={(user) => { setSelectedUser(user); setEditUserOpen(true); }}
           />
         </CardContent>
       </Card>
@@ -380,6 +383,13 @@ const AdminUsers = () => {
         onOpenChange={setTrialDialogOpen}
         user={selectedUser}
         onSet={() => { setSelectedUser(null); loadSubscriptions(); }}
+      />
+
+      <EditUserDialog
+        open={editUserOpen}
+        onOpenChange={setEditUserOpen}
+        user={selectedUser}
+        onSaved={() => { setSelectedUser(null); loadSubscriptions(); }}
       />
     </div>
   );
