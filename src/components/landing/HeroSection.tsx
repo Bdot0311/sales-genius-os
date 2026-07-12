@@ -175,7 +175,7 @@ export const HeroSection = () => {
             alt="Smol Saas Top 3 Daily Winner"
             width={195}
             height={60}
-            loading="lazy"
+            fetchPriority="high"
             className="h-auto w-[195px]"
           />
         </motion.a>
