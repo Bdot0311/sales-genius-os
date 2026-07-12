@@ -27,7 +27,7 @@ const ACTION_ICONS: Record<string, { icon: React.ReactNode; label: string }> = {
   reply_sent: { icon: <Mail className="w-4 h-4 text-blue-400" />, label: "Reply Sent" },
   meeting_booked: { icon: <Calendar className="w-4 h-4 text-green-400" />, label: "Meeting Booked" },
   unsubscribed: { icon: <XCircle className="w-4 h-4 text-red-400" />, label: "Unsubscribed" },
-  closed_thread: { icon: <X className="w-4 h-4 text-gray-400" />, label: "Thread Closed" },
+  closed_thread: { icon: <X className="w-4 h-4 text-muted-foreground" />, label: "Thread Closed" },
   skipped: { icon: <RefreshCw className="w-4 h-4 text-yellow-400" />, label: "Skipped" },
   error: { icon: <AlertTriangle className="w-4 h-4 text-red-500" />, label: "Error" },
   sync: { icon: <RefreshCw className="w-4 h-4 text-purple-400" />, label: "Synced" },
@@ -40,7 +40,7 @@ const CLASSIFICATION_BADGES: Record<string, { label: string; className: string }
   meeting_request: { label: "Meeting Request", className: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
   not_interested: { label: "Not Interested", className: "bg-red-500/20 text-red-400 border-red-500/30" },
   unsubscribe: { label: "Unsubscribe", className: "bg-red-500/20 text-red-400 border-red-500/30" },
-  out_of_office: { label: "Out of Office", className: "bg-gray-500/20 text-gray-400 border-gray-500/30" },
+  out_of_office: { label: "Out of Office", className: "bg-gray-500/20 text-muted-foreground border-gray-500/30" },
 };
 
 export function OverviewTab({ actions, loading, config, gmailConnected }: OverviewTabProps) {
