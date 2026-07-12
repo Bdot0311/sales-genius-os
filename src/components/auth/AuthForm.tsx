@@ -250,24 +250,10 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
           });
         }
 
-        // Send welcome email in background
-        const displayName = data.user.user_metadata?.full_name || email.split('@')[0];
-        supabase.functions.invoke('send-welcome-email', {
-          body: { 
-            email: data.user.email,
-            name: displayName
-          }
-        }).catch(err => console.error('Welcome email error:', err));
-
-        // Send personal founder note in background
-        supabase.functions.invoke('send-transactional-email', {
-          body: {
-            templateName: 'founder-note',
-            recipientEmail: data.user.email,
-            idempotencyKey: `founder-note-${data.user.id}`,
-            templateData: { name: displayName },
-          }
-        }).catch(err => console.error('Founder note error:', err));
+        // Welcome email + founder note are sent server-side by the
+        // notify-new-signup edge function (triggered by the DB on new user).
+        // Client-side invocation was removed because it required a session
+        // that doesn't exist yet during signup (email confirmation pending).
 
         toast({
           title: "Account created!",
