@@ -3299,6 +3299,19 @@ export type Database = {
           total_users: number
         }[]
       }
+      admin_get_email_send_logs: {
+        Args: { _limit?: number; _since?: string }
+        Returns: {
+          created_at: string
+          error_message: string
+          id: string
+          message_id: string
+          metadata: Json
+          recipient_email: string
+          status: string
+          template_name: string
+        }[]
+      }
       admin_get_realtime_status: {
         Args: never
         Returns: {
