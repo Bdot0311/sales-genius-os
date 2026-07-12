@@ -91,7 +91,10 @@ function PartnerLogo({ partner }: { partner: Partner }) {
   return (
     <div
       className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl overflow-hidden"
-      style={{ background: "hsl(0 0% 100% / 0.94)", border: "1px solid hsl(0 0% 100% / 0.1)" }}
+      style={{
+        background: partner.darkTile ? "hsl(261 75% 10% / 0.95)" : "hsl(0 0% 100% / 0.94)",
+        border: `1px solid ${partner.darkTile ? "hsl(261 75% 40% / 0.25)" : "hsl(0 0% 100% / 0.1)"}`,
+      }}
     >
       <img
         src={partner.logoUrl}
