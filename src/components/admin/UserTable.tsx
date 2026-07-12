@@ -145,6 +145,14 @@ export const UserTable = ({
                     <div className="flex gap-0.5 justify-end opacity-60 group-hover:opacity-100 transition-opacity">
                       <Button
                         size="sm" variant="ghost"
+                        className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                        onClick={() => onEditUser(sub)}
+                        title="Edit user"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="sm" variant="ghost"
                         className={`h-7 w-7 p-0 ${admin ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
                         onClick={() => onToggleAdmin(sub.user_id, admin)}
                         title={admin ? 'Remove Admin' : 'Make Admin'}
