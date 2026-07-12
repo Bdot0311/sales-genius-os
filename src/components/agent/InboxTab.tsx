@@ -128,9 +128,9 @@ export function InboxTab() {
   if (threads.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <Mail className="w-12 h-12 text-muted-foreground/30 mb-4" />
+        <Mail className="w-12 h-12 text-muted-foreground mb-4" />
         <p className="text-sm font-medium text-muted-foreground">No active threads yet.</p>
-        <p className="text-xs text-muted-foreground/60 mt-1 max-w-xs">
+        <p className="text-xs text-muted-foreground mt-1 max-w-xs">
           Send emails to prospects to start tracking conversations here.
         </p>
       </div>
