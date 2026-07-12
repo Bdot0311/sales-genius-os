@@ -42,7 +42,7 @@ const partners: Partner[] = [
       "Decode the 93% of communication that never makes it into the call transcript. SalesEQ reads tone, body language, and emotional signals, then writes deal insights back to your CRM.",
     fit: "OutReign gets the meeting booked. SalesEQ helps you understand what actually happened in it, so follow-up and forecasting reflect buyer intent, not just call notes.",
     monogram: "S",
-    logoUrl: "https://www.saleseq.ai/favicon.ico",
+    logoUrl: saleseqLogo.url,
   },
   {
     name: "GoodLeads",
