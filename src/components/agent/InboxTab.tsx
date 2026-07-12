@@ -162,7 +162,7 @@ export function InboxTab() {
                       {thread.to_email}
                     </span>
                     {thread.leads?.company_name && (
-                      <span className="text-xs text-muted-foreground/70">
+                      <span className="text-xs text-muted-foreground">
                         · {thread.leads.company_name}
                       </span>
                     )}
