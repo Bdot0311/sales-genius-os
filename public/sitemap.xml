@@ -85,6 +85,14 @@
     <priority>0.8</priority>
   </url>
 
+  <!-- Legacy redirect: Guides index -->
+  <url>
+    <loc>https://outreign.io/guides</loc>
+    <lastmod>2026-07-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
   <!-- Legacy redirect: Email Warmup Guide -->
   <url>
     <loc>https://outreign.io/guides/email-warmup</loc>
