@@ -85,6 +85,14 @@
     <priority>0.8</priority>
   </url>
 
+  <!-- Legacy redirect: Guides index -->
+  <url>
+    <loc>https://outreign.io/guides</loc>
+    <lastmod>2026-07-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
   <!-- Legacy redirect: Email Warmup Guide -->
   <url>
     <loc>https://outreign.io/guides/email-warmup</loc>
@@ -130,6 +138,30 @@
   </url>
   <url>
     <loc>https://outreign.io/dashboard/coach</loc>
+    <lastmod>2026-07-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://outreign.io/dashboard/coach/live</loc>
+    <lastmod>2026-07-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://outreign.io/dashboard/coach/playbooks</loc>
+    <lastmod>2026-07-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://outreign.io/dashboard/pipeline</loc>
+    <lastmod>2026-07-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://outreign.io/dashboard/outreach</loc>
     <lastmod>2026-07-10</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.4</priority>
