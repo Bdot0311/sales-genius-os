@@ -89,7 +89,7 @@ export const HelpSearch = ({ onSearch, placeholder = "Search for help articles..
               type="button"
               variant="ghost"
               size="icon"
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-white/55 hover:text-white hover:bg-white/10"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-white/80 hover:text-white hover:bg-white/10"
               onClick={() => {
                 setQuery("");
                 setResults([]);
@@ -123,7 +123,7 @@ export const HelpSearch = ({ onSearch, placeholder = "Search for help articles..
                   {getCategoryLabel(article.category)}
                 </span>
               </div>
-              <p className="text-sm text-white/55 mt-1 line-clamp-1">
+              <p className="text-sm text-white/70 mt-1 line-clamp-1">
                 {article.description}
               </p>
             </button>
@@ -148,7 +148,7 @@ export const HelpSearch = ({ onSearch, placeholder = "Search for help articles..
           }}
         >
           <p className="text-white/70">No articles found for "{query}"</p>
-          <p className="text-sm text-white/50 mt-1">
+          <p className="text-sm text-white/70 mt-1">
             Try different keywords or{" "}
             <a
               href="mailto:support@bdotindustries.com"

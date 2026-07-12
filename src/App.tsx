@@ -217,7 +217,7 @@ const MaintenancePage = ({ message }: { message: string }) => {
         </div>
         <h1 className="text-2xl font-bold tracking-tight">Under Maintenance</h1>
         <p className="text-muted-foreground">{message}</p>
-        <p className="text-xs text-muted-foreground/60">
+        <p className="text-xs text-muted-foreground">
           <button
             type="button"
             onClick={handleAdminSignIn}

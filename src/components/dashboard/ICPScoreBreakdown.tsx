@@ -42,7 +42,7 @@ function MatchRow({
       ) : evaluated === false ? (
         <XCircle className="w-4 h-4 text-red-500" />
       ) : (
-        <span title="No data available"><Minus className="w-4 h-4 text-muted-foreground/50" /></span>
+        <span title="No data available"><Minus className="w-4 h-4 text-muted-foreground" /></span>
       )}
     </div>
   );

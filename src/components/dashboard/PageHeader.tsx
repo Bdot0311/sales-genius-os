@@ -23,7 +23,7 @@ export function PageHeader({ title, description, breadcrumbs, actions }: PageHea
           <div className="flex items-center gap-1 mb-2">
             {breadcrumbs.map((crumb, i) => (
               <span key={i} className="flex items-center gap-1">
-                {i > 0 && <ChevronRight className="w-3 h-3 text-muted-foreground/50" />}
+                {i > 0 && <ChevronRight className="w-3 h-3 text-muted-foreground" />}
                 {crumb.href ? (
                   <button
                     onClick={() => navigate(crumb.href!)}

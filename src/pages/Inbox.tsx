@@ -181,8 +181,8 @@ const Inbox = () => {
                           </Badge>
                         </div>
                         <p className="text-xs text-muted-foreground truncate mt-1">{thread.subject}</p>
-                        <p className="text-xs text-muted-foreground/60 truncate">{(thread.reply_body || "").slice(0, 80)}</p>
-                        <p className="text-[10px] text-muted-foreground/40 mt-1">{formatDistanceToNow(new Date(thread.created_at), { addSuffix: true })}</p>
+                        <p className="text-xs text-muted-foreground truncate">{(thread.reply_body || "").slice(0, 80)}</p>
+                        <p className="text-[10px] text-muted-foreground mt-1">{formatDistanceToNow(new Date(thread.created_at), { addSuffix: true })}</p>
                       </button>
                     );
                   })

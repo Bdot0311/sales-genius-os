@@ -67,7 +67,7 @@ export const SEOBreadcrumb = ({
                 itemType="https://schema.org/ListItem"
               >
                 {index > 0 && (
-                  <ChevronRight className="h-4 w-4 mx-1 text-muted-foreground/50" aria-hidden="true" />
+                  <ChevronRight className="h-4 w-4 mx-1 text-muted-foreground" aria-hidden="true" />
                 )}
                 
                 {isLast ? (

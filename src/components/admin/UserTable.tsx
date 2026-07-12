@@ -91,7 +91,7 @@ export const UserTable = ({
                         <p className="font-medium text-sm truncate">{sub.full_name || 'No name'}</p>
                         <p className="text-xs text-muted-foreground truncate">{sub.email}</p>
                         {sub.signup_source && (
-                          <p className="text-[10px] text-muted-foreground/50 truncate mt-0.5" title={sub.signup_source}>
+                          <p className="text-[10px] text-muted-foreground truncate mt-0.5" title={sub.signup_source}>
                             via {sub.signup_source}
                           </p>
                         )}

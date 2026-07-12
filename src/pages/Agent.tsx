@@ -343,13 +343,13 @@ const Agent = () => {
           >
             <span
               className={`mr-1.5 inline-block w-1.5 h-1.5 rounded-full ${
-                isEnabled ? "bg-green-400" : "bg-muted-foreground/50"
+                isEnabled ? "bg-green-400" : "bg-muted-foreground"
               }`}
             />
             {isEnabled ? "Active" : "Inactive"}
           </Badge>
           {stats.lastRun && (
-            <span className="text-xs text-muted-foreground/60">
+            <span className="text-xs text-muted-foreground">
               Last run:{" "}
               {formatDistanceToNow(new Date(stats.lastRun), {
                 addSuffix: true,
