@@ -187,6 +187,30 @@ export default function Partners() {
               tools we partner with to handle the parts that sit next to it, picked because we'd
               actually use them ourselves.
             </p>
+
+            <a
+              href="https://smolsaas.com/projects/outreign"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center rounded-xl transition-all duration-200 hover:scale-[1.02] hover:brightness-110 mt-8"
+              style={{
+                background: "hsl(0 0% 100% / 0.03)",
+                border: "1px solid hsl(261 75% 50% / 0.18)",
+                padding: "0.75rem 1rem",
+              }}
+              onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "hsl(261 75% 55% / 0.4)")}
+              onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "hsl(261 75% 50% / 0.18)")}
+              aria-label="Smol Saas Top 3 Daily Winner"
+            >
+              <img
+                src="https://r2.direasy-multi-tenant.focusapps.app/uploads/616d0b1a-3979-4b8c-94d1-b4f1fedd3ead/1783046782431/gqxqtqpde6k/top3-dark.svg"
+                alt="Smol Saas Top 3 Daily Winner"
+                width={195}
+                height={60}
+                loading="lazy"
+                className="h-auto w-[195px]"
+              />
+            </a>
           </div>
 
           {/* Partner list */}
