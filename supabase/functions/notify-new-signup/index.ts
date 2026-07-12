@@ -41,11 +41,15 @@ serve(async (req) => {
     // Use Lovable's transactional email infrastructure
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    const { error } = await supabase.functions.invoke('send-transactional-email', {
+    const displayName = (record?.full_name || '').toString().trim() || userEmail.split('@')[0];
+    const userId = record?.id || userEmail;
+
+    // 1. Admin notification
+    const { error: notifyErr } = await supabase.functions.invoke('send-transactional-email', {
       body: {
         templateName: 'signup-notification',
         recipientEmail: NOTIFICATION_EMAIL,
-        idempotencyKey: `signup-notify-${record?.id || userEmail}-${Date.now()}`,
+        idempotencyKey: `signup-notify-${userId}`,
         templateData: {
           userName: fullName,
           userEmail: userEmail,
@@ -54,14 +58,29 @@ serve(async (req) => {
         },
       },
     });
+    if (notifyErr) console.error('signup-notification error:', notifyErr);
 
-    if (error) {
-      console.error('Error sending signup notification:', error);
-      return new Response(JSON.stringify({ success: false, error: error.message }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    // 2. Welcome email to the new user
+    const { error: welcomeErr } = await supabase.functions.invoke('send-transactional-email', {
+      body: {
+        templateName: 'welcome-email',
+        recipientEmail: userEmail,
+        idempotencyKey: `welcome-${userId}`,
+        templateData: { name: displayName },
+      },
+    });
+    if (welcomeErr) console.error('welcome-email error:', welcomeErr);
+
+    // 3. Personal founder note
+    const { error: founderErr } = await supabase.functions.invoke('send-transactional-email', {
+      body: {
+        templateName: 'founder-note',
+        recipientEmail: userEmail,
+        idempotencyKey: `founder-note-${userId}`,
+        templateData: { name: displayName },
+      },
+    });
+    if (founderErr) console.error('founder-note error:', founderErr);
 
     console.log('Signup notification queued for:', userEmail);
     return new Response(JSON.stringify({ success: true }), {
