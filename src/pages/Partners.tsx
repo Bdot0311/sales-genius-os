@@ -5,6 +5,8 @@ import { Navbar } from "@/components/Navbar";
 import { FooterSection } from "@/components/landing/FooterSection";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { BRAND } from "@/lib/brand";
+import saleseqLogo from "@/assets/saleseq-logo.png.asset.json";
+
 
 type Partner = {
   name: string;
