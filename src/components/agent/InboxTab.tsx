@@ -169,11 +169,11 @@ export function InboxTab() {
                   </div>
                   <p className="text-xs text-muted-foreground truncate mb-2">{thread.subject}</p>
                   {replyPreview && (
-                    <p className="text-xs text-muted-foreground/60 italic line-clamp-2 mb-2">
+                    <p className="text-xs text-muted-foreground italic line-clamp-2 mb-2">
                       "{replyPreview}"
                     </p>
                   )}
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground/50">
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                     {thread.sent_at && (
                       <span>
                         Sent {formatDistanceToNow(new Date(thread.sent_at), { addSuffix: true })}
