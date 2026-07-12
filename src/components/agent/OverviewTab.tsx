@@ -169,13 +169,13 @@ function ChecklistItem({
       {done ? (
         <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
       ) : (
-        <XCircleIcon className="w-5 h-5 text-muted-foreground/40 flex-shrink-0 mt-0.5" />
+        <XCircleIcon className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-0.5" />
       )}
       <div>
         <p className={`text-sm font-medium ${done ? "text-foreground" : "text-muted-foreground"}`}>
           {label}
         </p>
-        <p className="text-xs text-muted-foreground/60 mt-0.5">{description}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
       </div>
     </div>
   );
