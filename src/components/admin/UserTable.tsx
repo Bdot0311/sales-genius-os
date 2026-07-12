@@ -2,7 +2,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Shield, Clock, Lock, Unlock, Trash2, KeyRound } from "lucide-react";
+import { Shield, Clock, Lock, Unlock, Trash2, KeyRound, Pencil } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import type { UserSubscription } from "@/pages/admin/Users";
 
@@ -17,6 +17,7 @@ interface UserTableProps {
   onSetTrial: (user: UserSubscription) => void;
   onDeleteUser: (user: UserSubscription) => void;
   onResetPassword: (user: UserSubscription) => void;
+  onEditUser: (user: UserSubscription) => void;
 }
 
 const getPlanBadgeClass = (plan: string) => {
