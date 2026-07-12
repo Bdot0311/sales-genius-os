@@ -45,6 +45,7 @@ const partners: Partner[] = [
     fit: "OutReign gets the meeting booked. SalesEQ helps you understand what actually happened in it, so follow-up and forecasting reflect buyer intent, not just call notes.",
     monogram: "S",
     logoUrl: saleseqLogo.url,
+    darkTile: true,
   },
   {
     name: "GoodLeads",
