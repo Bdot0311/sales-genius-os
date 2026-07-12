@@ -94,9 +94,9 @@ export function OverviewTab({ actions, loading, config, gmailConnected }: Overvi
             </div>
           ) : actions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Brain className="w-10 h-10 text-muted-foreground/40 mb-3" />
+              <Brain className="w-10 h-10 text-muted-foreground mb-3" />
               <p className="text-sm text-muted-foreground">No activity yet.</p>
-              <p className="text-xs text-muted-foreground/60 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Enable the agent and run it to start tracking actions.
               </p>
             </div>
