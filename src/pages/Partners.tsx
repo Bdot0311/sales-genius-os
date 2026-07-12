@@ -21,6 +21,8 @@ type Partner = {
   monogram: string;
   /** Optional logo image; falls back to the monogram on load error */
   logoUrl?: string;
+  /** Use a dark tile background when the logo itself is dark */
+  darkTile?: boolean;
 };
 
 const partners: Partner[] = [
