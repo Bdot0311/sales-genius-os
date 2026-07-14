@@ -175,9 +175,11 @@ export const HeroSection = () => {
             alt="Smol LaunchPad Top 1 Daily Winner"
             width={195}
             height={60}
-            fetchPriority="high"
+            loading="lazy"
+            decoding="async"
             className="h-auto w-[195px]"
           />
+
         </motion.a>
       </div>
 
