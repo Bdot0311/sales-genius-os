@@ -156,7 +156,7 @@ export const HeroSection = () => {
         </motion.p>
 
         <motion.a
-          href="https://smolsaas.com/projects/outreign"
+          href="https://smollaunchpad.com/projects/outreign"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center justify-center rounded-xl transition-all duration-200 hover:scale-[1.02] hover:brightness-110"
@@ -168,11 +168,11 @@ export const HeroSection = () => {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.75 }}
-          aria-label="Smol Saas Top 3 Daily Winner"
+          aria-label="Smol LaunchPad Top 1 Daily Winner"
         >
           <img
-            src="https://r2.direasy-multi-tenant.focusapps.app/uploads/616d0b1a-3979-4b8c-94d1-b4f1fedd3ead/1783046782431/gqxqtqpde6k/top3-dark.svg"
-            alt="Smol Saas Top 3 Daily Winner"
+            src="https://r2.direasy-multi-tenant.focusapps.app/uploads/616d0b1a-3979-4b8c-94d1-b4f1fedd3ead/1783046766775/sjxeszczb3i/top1-dark.svg"
+            alt="Smol LaunchPad Top 1 Daily Winner"
             width={195}
             height={60}
             fetchPriority="high"
