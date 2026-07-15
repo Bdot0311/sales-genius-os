@@ -79,7 +79,7 @@ export const HeroSection = () => {
         <h1
           id="hero-heading"
           className="font-display mb-5 max-w-[13ch] text-balance sm:mb-8 sm:max-w-none"
-          style={{ fontSize: "clamp(2.05rem, 6.4vw, 5.25rem)", lineHeight: 1.02, letterSpacing: "-0.01em", fontWeight: 800 }}
+          style={{ fontSize: "clamp(3rem, 8vw, 5.25rem)", lineHeight: 1.02, letterSpacing: "-0.01em", fontWeight: 800 }}
         >
           <span className="block text-white">
             Find who to sell to.
