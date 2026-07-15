@@ -1229,7 +1229,187 @@ Score < 60   → Nurture only
 OutReign filters lead searches by the same firmographics, technographics, and triggers you just wrote down — so the accounts hitting your CRM already match the profile. [Start free](https://outreign.io) — no credit card required.
     `.trim(),
   },
+  {
+    slug: "b2b-buying-intent-signals",
+    title: "B2B Buying Intent Signals: How to Spot Who's Ready to Buy Before They Raise Their Hand",
+    description: "Technographic, hiring, funding, and news-based intent signals explained — plus how to automate discovery with an AI SDR so you reach prospects at the exact moment they're ready to buy.",
+    publishedAt: "2026-07-15",
+    readingTime: "7 min read",
+    category: "Sales Strategy",
+    keywords: [
+      "b2b buying intent signals",
+      "how to track sales intent",
+      "intent signals in b2b sales",
+      "sales intent data",
+      "AI SDR intent signals",
+      "buying intent signals examples",
+    ],
+    content: `
+B2B buying intent signals are the observable clues that a company is entering a buying cycle for your category of product. They show up before a prospect fills out a demo form or replies to a cold email. The teams that win outbound are the ones that detect these signals early and act on them first.
+
+This guide breaks down the four most reliable types of intent signals, how to track them without a full-time research team, and how OutReign's AI SDR surfaces them automatically so you can message the right accounts at the right moment.
+
+## What Are B2B Buying Intent Signals?
+
+A buying intent signal is any data point that indicates a prospect is likely to evaluate or purchase a solution like yours. It is not the same as a lead. A lead is a person. A signal is a context that makes that person worth contacting right now.
+
+Examples of intent signals include:
+
+- A company adds a new technology to its stack that complements or competes with yours
+- A hiring surge in a department your product serves
+- A fresh funding round, acquisition, or leadership change
+- Public executive posts, press releases, or earnings mentions about a problem you solve
+- Website visits to your pricing or comparison pages
+- Engagement with your LinkedIn content or competitor reviews
+
+The goal of intent-based outbound is to contact the account while the signal is fresh — usually within days, not weeks.
+
+## Why Intent Signals Beat Demographics Alone
+
+Firmographic targeting (industry, company size, role) tells you who could buy. Intent signals tell you who is buying now. A VP Sales at a 200-person SaaS company is a good fit forever. A VP Sales at a 200-person SaaS company that just raised Series B and is hiring 10 SDRs is a good fit *this month*.
+
+The difference is timing. Without intent signals, you spray and pray across a static list. With intent signals, you focus on accounts that have already started the conversation in their own organization.
+
+## The Four Main Types of Intent Signals
+
+### 1. Technographic intent
+
+Technographic signals come from the tools a company already uses. They reveal buying maturity, budget, and pain.
+
+Strong technographic signals include:
+
+- Installing a competitor's product — they're already budgeted for your category
+- Adding a tool adjacent to yours — e.g., a CRM migration creates data-quality needs
+- Dropping a legacy provider — churn signals dissatisfaction and an open evaluation
+- Stack expansions that create a gap you fill — e.g., new sales engagement without good data
+
+If you can identify which technologies an account uses, you can tailor the pitch to the exact limitation they're likely facing.
+
+### 2. Hiring intent
+
+Job postings are some of the most honest buying signals on the internet. A company only posts a role when it has real budget and immediate need.
+
+High-intent hiring signals:
+
+- Hiring multiple SDRs or AEs → likely needs lead data and outreach infrastructure
+- Hiring RevOps or Sales Ops → likely needs process, data, and tooling
+- Hiring roles you directly enable → e.g., a new CRM admin after a migration
+- Hiring in a new region or vertical → expansion budget, open to new vendors
+
+Hiring intent is especially powerful because it is public, structured, and frequently updated. You don't need to guess — the signal is right there on the careers page.
+
+### 3. Funding and growth intent
+
+Funding events, M&A, and executive changes all signal budget, change, and new priorities.
+
+Examples:
+
+- Announced funding round in the last 6 months → new capital, growth targets, new spend
+- New VP Sales, CRO, or Head of RevOps → new leader evaluating the current stack
+- Company expansion into a new market or product line → new processes, new tools
+- M&A activity → systems consolidation, vendor reviews
+
+These signals have a short window. The new CRO will evaluate the stack in the first 90 days. The funding announcement is old news after 90 days. Speed matters.
+
+### 4. News-based and social intent
+
+News-based signals come from public sources: press releases, earnings calls, LinkedIn posts, industry publications, and reviews.
+
+Useful signals include:
+
+- Executive posts describing the exact problem you solve
+- Earnings mentions of a new initiative or operational challenge
+- Product launches that require a new workflow or integration
+- Review activity on G2 or Capterra in your category
+- Complaints about current tools or processes on LinkedIn or Twitter
+
+Social intent is less structured than hiring or funding, but it is often the most emotionally charged. A post about a broken process is a real-time pain signal.
+
+## How to Track Sales Intent Without a Research Team
+
+Manual signal tracking is hard to scale. You can monitor LinkedIn, job boards, and press releases, but doing it across hundreds of accounts is a full-time job.
+
+A practical intent workflow has four layers:
+
+**1. Define the signals that matter for your product**
+Not every signal is relevant. If you sell email deliverability, hiring AEs matters less than new sending-tool adoption. If you sell CRM data hygiene, a CRM migration is the highest-value signal. Write down the top 5–10 signals that predict a deal for your ICP.
+
+**2. Build a target account list around your ICP**
+Intent only matters on accounts that fit your ideal customer profile. A 10-person services company that hires one SDR is not the same signal as a Series B SaaS company that hires ten. Layer intent on top of firmographics.
+
+**3. Automate signal collection**
+Use data providers, job-feed APIs, news alerts, and website-intent tools to collect signals. The best systems check daily and surface the most recent changes first.
+
+**4. Trigger outreach within 48 hours**
+Intent decays. The account that just posted a job or announced funding is actively thinking about the problem. A personalized email that references the specific signal converts at 2–3x the rate of a generic cold email.
+
+## How OutReign Automates Intent Signal Discovery
+
+OutReign is built to turn intent signals into ranked, ready-to-contact prospects. The AI SDR workflow works in three steps:
+
+**Describe your ICP in plain English**
+
+Tell OutReign who you sell to and which signals matter:
+
+> "VP Sales at Series B SaaS companies in the US that are hiring SDRs or AEs and have raised funding in the last 6 months"
+
+**Get ranked prospects with the signal surfaced**
+
+OutReign returns verified prospects with an ICP fit score and the exact signal that triggered the match — the job title, the funding round, the hiring surge, or the technology change.
+
+**Send personalized outreach automatically**
+
+For each prospect, OutReign drafts a first-touch email that references the real signal and ties it to your value prop. You review, edit, and send — or automate the full sequence.
+
+The result: you spend your time on the accounts that are already in-market, not on the long tail of "maybe someday" prospects.
+
+## Intent Signal Strategy: A Simple Playbook
+
+Here's a practical framework for building your first intent-based outbound campaign:
+
+**Step 1: Pick one primary signal**
+Start with the signal that most reliably predicts a deal. Hiring intent is usually the easiest to validate because job postings are public and structured.
+
+**Step 2: Define the role to contact**
+For each signal, know the right persona. A hiring signal for SDRs should lead to the VP Sales or SDR Manager. A funding signal should lead to the CFO or COO for budget and the VP of the affected function for need.
+
+**Step 3: Write the signal-aware email**
+The email should:
+
+- Mention the specific signal in the first sentence
+- Connect the signal to a known consequence
+- Offer a concrete, low-friction next step
+
+Example:
+
+> Saw {{Company}} is hiring 8 new SDRs this quarter. Scaling outbound without verified lead data usually creates a deliverability mess before month three. Worth a quick look at how we're handling that for similar teams, or is this already solved?
+
+**Step 4: Measure signal-to-reply conversion**
+Track which signals produce replies and pipeline. Within 30 days, you'll know which signals to double down on and which to drop.
+
+## Common Mistakes When Using Intent Signals
+
+**Mistake #1: Treating every signal equally**
+A company changing its website CMS is not the same as a company hiring 20 SDRs. Score signals by how strongly they predict a deal and weight your outreach accordingly.
+
+**Mistake #2: Ignoring negative signals**
+A hiring freeze, a recent layoff, or a competitor win can be a disqualifier. Intent works both ways.
+
+**Mistake #3: Contacting the wrong person**
+Funding news is exciting, but emailing the CEO about a tactical operations problem is usually a miss. Match the signal to the role that owns the outcome.
+
+**Mistake #4: Waiting too long to act**
+Intent has a half-life. A funding announcement is most valuable in the first two weeks. A job posting that stays open for 90 days is less fresh than one posted yesterday. Build a process that surfaces signals daily, not weekly.
+
+## The Bottom Line
+
+B2B buying intent signals are the closest thing sales teams have to a crystal ball. They won't replace a good ICP or a strong offer, but they will tell you which accounts to prioritize right now. The teams that build signal detection into their outbound workflow consistently outperform the teams that rely on static lists.
+
+OutReign's AI SDR surfaces the technographic, hiring, funding, and news signals that matter for your ICP — then turns them into ranked prospects and personalized first-touch emails. [Try it free](https://outreign.io) and find the accounts that are already looking for a solution like yours.
+    `.trim(),
+  },
 ];
+
 
 
 export function getPostBySlug(slug: string): BlogPost | undefined {
