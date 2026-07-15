@@ -109,6 +109,15 @@
     <priority>0.8</priority>
   </url>
 
+  <!-- Blog: B2B Buying Intent Signals -->
+  <url>
+    <loc>https://outreign.io/blog/b2b-buying-intent-signals</loc>
+    <lastmod>2026-07-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+
   <!-- Legacy redirect: B2B ICP Criteria Guide -->
   <url>
     <loc>https://outreign.io/guides/b2b-icp-criteria-template</loc>
