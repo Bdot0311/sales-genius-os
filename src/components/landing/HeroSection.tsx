@@ -103,10 +103,10 @@ export const HeroSection = () => {
 
         {/* Subhead */}
         <motion.p
-          className="mb-5 max-w-[22rem] text-base font-light leading-relaxed text-white/95 sm:max-w-2xl sm:text-xl"
+          className="mb-5 max-w-[22rem] text-base font-light leading-snug text-white/95 sm:max-w-2xl sm:text-xl sm:leading-relaxed"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.65, ease, delay: 0.38 }}
+          transition={{ duration: 0.65, ease, delay: 0 }}
         >
           Know exactly who's ready to buy. OutReign scores every prospect by fit and intent, verifies their inbox, and drafts the opener, so your team focuses on closing.
         </motion.p>
