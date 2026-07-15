@@ -39,8 +39,24 @@ export const useSubscription = () => {
     try {
       // Get basic plan info from RPC
       const { data, error } = await supabase.rpc('get_user_plan');
+
+      if (error) {
+        // Stale JWT (post signing-key rotation) falls back to anon, which lacks
+        // EXECUTE on get_user_plan. Force sign-out so the user re-authenticates
+        // with a fresh token rather than looping on permission errors.
+        const msg = (error.message || '').toLowerCase();
+        if (msg.includes('permission denied') || msg.includes('jwt') || msg.includes('claim')) {
+          console.warn('get_user_plan permission denied — clearing stale session');
+          try { await supabase.auth.signOut(); } catch { /* noop */ }
+          try {
+            Object.keys(localStorage)
+              .filter(k => k.startsWith('sb-') && k.endsWith('-auth-token'))
+              .forEach(k => localStorage.removeItem(k));
+          } catch { /* noop */ }
+        }
+        throw error;
+      }
       
-      if (error) throw error;
       
       // Get extended subscription details
       const { data: { user } } = await supabase.auth.getUser();
