@@ -1,6 +1,6 @@
 # OutReign — Find Who to Sell To. Then Actually Sell to Them.
 # https://outreign.io
-# Last Updated: 2026-05-14
+# Last Updated: 2026-07-15
 # For complete product documentation: https://outreign.io/llms-full.txt
 
 > OutReign is sales operations software for B2B outbound teams — a unified alternative to stitching together Apollo, Instantly, Outreach, and Salesloft. Describe your ideal customer in plain English, get ranked prospects with SMTP-verified business emails, and send an AI-drafted first-touch message from one workflow in under 2 minutes.
@@ -70,7 +70,9 @@ Sign up for free at https://outreign.io — no credit card required.
 - [Terms of Service](/terms): Acceptable use, billing terms, and legal agreements.
 - [Security](/security): Encryption, SOC 2 compliance, and infrastructure details.
 - [Blog](/blog): Articles on outbound sales, lead generation, and product updates.
+- [B2B Buying Intent Signals](/blog/b2b-buying-intent-signals): A guide to technographic, hiring, funding, and news-based intent signals and how to automate discovery.
 - [Install](/install): Progressive Web App (PWA) installation guide for iOS and Android.
+
 
 ## Integrations
 
