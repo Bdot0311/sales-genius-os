@@ -141,10 +141,18 @@ The warmup pool sends **real email between opted-in mailboxes**. Guardrails:
       per-account send attribution column.
 - [x] **Phase 4 — Spam checker engine** (`src/lib/spam-score.ts`): live,
       deterministic, shipped as a library (UI wiring next).
-- [ ] **Phase 2 — Auth & infra**: `check-domain-auth`, `verify-tracking-domain`,
-      `check-blacklists`, sending controls + enforcement in the send path.
-- [ ] **Phase 3 — Reputation + Command Center**: `compute-reputation`,
-      `deliverability-alerts-scan`, dashboard rebuild, history.
+- [x] **Phase 2 — Auth & infra (backend)**: `check-domain-auth`,
+      `verify-tracking-domain`, `check-blacklists` edge functions + typed client
+      (`src/lib/deliverability-api.ts`).
+- [x] **Phase 3 — Reputation engine (backend)**: `compute-reputation` and
+      `deliverability-alerts-scan` nightly jobs, `get_reputation_inputs` RPC, cron
+      schedules, per-account send attribution in `send-email`. Scores are null
+      below a 20-send floor (no fabricated numbers).
+- [ ] **Phase 3b — Command Center UI**: dashboard rebuild wiring the auth,
+      blacklist, tracking, reputation, alerts, spam checker, and sending controls
+      into one page with history + sparklines.
+- [ ] **Sending controls enforcement**: per-account limits, randomized delays,
+      rotation, hard-bounce auto-suppression in the send path.
 - [ ] **Phase 5 — Warmup orchestration**: pool join/leave, `warmup-orchestrator`,
       reply bot, health graph, auto-pause.
 - [ ] **Phase 6 — Placement testing**: Gmail seed flow; gated Outlook/Yahoo.
