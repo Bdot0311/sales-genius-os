@@ -11,6 +11,7 @@ import { Activity, Search, Filter, Download, User, LogIn, Settings, Database, Sh
 import { supabase } from "@/integrations/supabase/client";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 import { format } from "date-fns";
+import { LastCronRun } from "@/components/admin/LastCronRun";
 
 interface ActivityLog {
   id: string;
