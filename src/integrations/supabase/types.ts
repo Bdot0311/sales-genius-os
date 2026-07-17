@@ -3288,6 +3288,15 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_get_cron_runs: {
+        Args: { jobnames: string[] }
+        Returns: {
+          jobname: string
+          last_run: string
+          last_status: string
+          last_success: string
+        }[]
+      }
       admin_get_dashboard_stats: {
         Args: never
         Returns: {

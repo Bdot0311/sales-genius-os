@@ -5,6 +5,7 @@ import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 import { Users, UserCheck, Lock, TrendingUp, DollarSign, Clock, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { LastCronRun } from "@/components/admin/LastCronRun";
 
 interface DashboardStats {
   total_users: number;
@@ -184,7 +185,19 @@ export const AdminDashboard = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex justify-between items-start gap-4 flex-wrap">
+        <LastCronRun
+          label="Background jobs:"
+          jobs={[
+            "send-re-engagement-emails-weekly",
+            "detect-suspicious-activity-15min",
+            "lock-expired-trials-daily",
+            "send-trial-warnings-daily",
+            "process-scheduled-emails",
+            "retry-stripe-webhooks-every-2min",
+            "seo-audit-perf-daily",
+          ]}
+        />
         <Button 
           variant="outline" 
           size="sm" 

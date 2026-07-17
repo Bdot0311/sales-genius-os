@@ -11,6 +11,7 @@ import { Activity, Search, Filter, Download, User, LogIn, Settings, Database, Sh
 import { supabase } from "@/integrations/supabase/client";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 import { format } from "date-fns";
+import { LastCronRun } from "@/components/admin/LastCronRun";
 
 interface ActivityLog {
   id: string;
@@ -229,6 +230,7 @@ const AdminActivity = () => {
           <div>
             <h2 className="text-2xl font-bold">Activity Logs</h2>
             <p className="text-muted-foreground">Monitor user actions and system events in real-time</p>
+            <div className="mt-2"><LastCronRun jobs={["detect-suspicious-activity-15min"]} /></div>
           </div>
         </div>
         <div className="flex gap-2">

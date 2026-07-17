@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { RefreshCw, Send, Mail, CheckCircle2, XCircle, MinusCircle, Play } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import { LastCronRun } from "@/components/admin/LastCronRun";
 
 type Status = "sent" | "skipped" | "failed";
 
@@ -122,6 +123,7 @@ const AdminReEngagement = () => {
           <p className="text-sm text-muted-foreground mt-1">
             Daily audit log of every re-engagement email attempt. Manually resend to any user.
           </p>
+          <div className="mt-2"><LastCronRun jobs={["send-re-engagement-emails-weekly"]} /></div>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
