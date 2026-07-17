@@ -23,6 +23,8 @@ Disallow: /coach/*
 Disallow: /saved-leads
 Disallow: /integrations
 Disallow: /confirmation
+Disallow: /.lovable
+Disallow: /.lovable/*
 Crawl-delay: 0
 
 User-agent: Googlebot-Image
