@@ -1,4 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, type ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { ProductShowcase } from "@/components/landing/ProductShowcase";
@@ -24,6 +26,22 @@ const DeferredSection = ({ children }: { children: ReactNode }) => (
 
 const Index = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const navigate = useNavigate();
+
+  // If Google OAuth full-page redirect returned the user to `/` while an
+  // OAuth consent flow was pending, resume it once the session is available.
+  useEffect(() => {
+    const stored = sessionStorage.getItem("post_auth_next");
+    if (!stored || !stored.startsWith("/") || stored.startsWith("//")) return;
+    let active = true;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!active || !session) return;
+      sessionStorage.removeItem("post_auth_next");
+      navigate(stored, { replace: true });
+    });
+    return () => { active = false; };
+  }, [navigate]);
+
 
   useEffect(() => {
     const video = videoRef.current;

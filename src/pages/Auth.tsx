@@ -22,10 +22,21 @@ const Auth = () => {
   const inviteToken = useMemo(() => new URLSearchParams(location.search).get("invite"), [location.search]);
   const refCode = useMemo(() => new URLSearchParams(location.search).get("ref"), [location.search]);
 
+  // Post-auth return target (e.g. the OAuth consent URL). Same-origin relative paths only.
+  const nextPath = useMemo(() => {
+    const raw = new URLSearchParams(location.search).get("next");
+    if (!raw) return null;
+    if (!raw.startsWith("/") || raw.startsWith("//")) return null;
+    return raw;
+  }, [location.search]);
+
   useEffect(() => {
     if (inviteToken) sessionStorage.setItem("agency_invite_token", inviteToken);
     if (refCode) sessionStorage.setItem("agency_ref_code", refCode);
-  }, [inviteToken, refCode]);
+    // Persist the post-auth return target so full-page OAuth (Google) that lands
+    // on `/` can still bounce the user back to the consent screen.
+    if (nextPath) sessionStorage.setItem("post_auth_next", nextPath);
+  }, [inviteToken, refCode, nextPath]);
 
   // After sign-in or sign-up, attempt to link user to agency if params were present.
   const linkAgency = async (token: string) => {
@@ -81,10 +92,13 @@ const Auth = () => {
         return;
       }
 
-      // Normal flow: link agency if needed, then redirect to dashboard
+      // Normal flow: link agency if needed, then redirect to dashboard (or `next`)
       if (event === "SIGNED_IN" && session) {
         await linkAgency(session.access_token);
-        navigate("/dashboard");
+        const stored = sessionStorage.getItem("post_auth_next");
+        const target = nextPath ?? (stored && stored.startsWith("/") && !stored.startsWith("//") ? stored : null);
+        if (stored) sessionStorage.removeItem("post_auth_next");
+        navigate(target ?? "/dashboard");
       }
     });
 
@@ -100,12 +114,15 @@ const Auth = () => {
       }
 
       if (session) {
-        navigate("/dashboard");
+        const stored = sessionStorage.getItem("post_auth_next");
+        const target = nextPath ?? (stored && stored.startsWith("/") && !stored.startsWith("//") ? stored : null);
+        if (stored) sessionStorage.removeItem("post_auth_next");
+        navigate(target ?? "/dashboard");
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate, isRecoveryFlow]);
+  }, [navigate, isRecoveryFlow, nextPath]);
 
   const handlePasswordUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
