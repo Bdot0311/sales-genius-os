@@ -118,16 +118,29 @@ serve(async (req) => {
     console.log('Config keys:', Object.keys(config));
 
     // Resolve the sending_accounts row for this integration so each send is
-    // attributed per account (drives per-account reputation). Non-fatal.
+    // attributed per account (drives per-account reputation). Non-fatal for
+    // attribution, but a paused/disabled account blocks the send so that
+    // reputation auto-pause and manual pause actually take effect.
     let sendingAccountId: string | null = null;
     try {
       const { data: sa } = await supabase
         .from('sending_accounts')
-        .select('id')
+        .select('id, status, paused_reason')
         .eq('user_id', user.id)
         .eq('integration_id', integration.id)
         .maybeSingle();
       sendingAccountId = sa?.id ?? null;
+      if (sa && (sa.status === 'paused' || sa.status === 'disabled')) {
+        return new Response(
+          JSON.stringify({
+            error: sa.paused_reason
+              ? `Sending is paused for this mailbox: ${sa.paused_reason}`
+              : 'Sending is paused for this mailbox. Resume it from the Deliverability page.',
+            code: 'account_paused',
+          }),
+          { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     } catch (e) {
       console.warn('sending_account lookup failed (non-fatal):', e);
     }

@@ -148,11 +148,16 @@ The warmup pool sends **real email between opted-in mailboxes**. Guardrails:
       `deliverability-alerts-scan` nightly jobs, `get_reputation_inputs` RPC, cron
       schedules, per-account send attribution in `send-email`. Scores are null
       below a 20-send floor (no fabricated numbers).
-- [ ] **Phase 3b — Command Center UI**: dashboard rebuild wiring the auth,
-      blacklist, tracking, reputation, alerts, spam checker, and sending controls
-      into one page with history + sparklines.
-- [ ] **Sending controls enforcement**: per-account limits, randomized delays,
-      rotation, hard-bounce auto-suppression in the send path.
+- [x] **Phase 3b — Command Center UI**: `Deliverability.tsx` rebuilt into a real
+      dashboard — aggregate health, per-account reputation cards with trend
+      sparklines + pause/resume, active alerts, live SPF/DKIM/DMARC + blacklist
+      panel, and the spam checker wired to the live engine. `send-email` now
+      blocks sends from paused/disabled accounts so manual + auto pause take
+      effect.
+- [ ] **Sending controls enforcement (remaining)**: per-account daily limits,
+      randomized inter-send delays, account rotation, hard-bounce
+      auto-suppression, custom tracking domains.
+- [ ] **Phase 5 — Warmup orchestration** and **Phase 6 — Placement testing**.
 - [ ] **Phase 5 — Warmup orchestration**: pool join/leave, `warmup-orchestrator`,
       reply bot, health graph, auto-pause.
 - [ ] **Phase 6 — Placement testing**: Gmail seed flow; gated Outlook/Yahoo.
