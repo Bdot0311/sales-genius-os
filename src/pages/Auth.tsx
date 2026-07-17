@@ -95,7 +95,10 @@ const Auth = () => {
       // Normal flow: link agency if needed, then redirect to dashboard (or `next`)
       if (event === "SIGNED_IN" && session) {
         await linkAgency(session.access_token);
-        navigate(nextPath ?? "/dashboard");
+        const stored = sessionStorage.getItem("post_auth_next");
+        const target = nextPath ?? (stored && stored.startsWith("/") && !stored.startsWith("//") ? stored : null);
+        if (stored) sessionStorage.removeItem("post_auth_next");
+        navigate(target ?? "/dashboard");
       }
     });
 
@@ -111,7 +114,10 @@ const Auth = () => {
       }
 
       if (session) {
-        navigate(nextPath ?? "/dashboard");
+        const stored = sessionStorage.getItem("post_auth_next");
+        const target = nextPath ?? (stored && stored.startsWith("/") && !stored.startsWith("//") ? stored : null);
+        if (stored) sessionStorage.removeItem("post_auth_next");
+        navigate(target ?? "/dashboard");
       }
     });
 
