@@ -138,7 +138,7 @@ serve(async (req) => {
         results.push({ mailbox_id: mb.id, week: newWeek, sent: emailsSent, replied: emailsReplied });
       } catch (mbError) {
         console.error(`Error processing mailbox ${mb.email}:`, mbError);
-        results.push({ mailbox: mb.email, error: String(mbError) });
+        results.push({ mailbox_id: mb.id, error: String(mbError) });
       }
     }
 
