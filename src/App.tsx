@@ -68,6 +68,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const OnboardingStatus = lazy(() => import("./pages/OnboardingStatus"));
 const Agent = lazy(() => import("./pages/Agent"));
 const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
+const Connect = lazy(() => import("./pages/Connect"));
 
 const queryClient = new QueryClient();
 
@@ -350,6 +351,7 @@ const App = () => {
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
+              <Route path="/connect" element={<Connect />} />
               <Route path="/pricing" element={<PricingPage />} />
               <Route path="/sales-operations-software" element={<SalesOperationsSoftware />} />
               <Route path="/apollo-alternative" element={<ApolloAlternative />} />
