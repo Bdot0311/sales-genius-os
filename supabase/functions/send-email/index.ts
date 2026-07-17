@@ -339,6 +339,30 @@ serve(async (req) => {
       console.error('Failed to persist unsubscribe token', e);
     }
 
+    // Per-account daily limit + rotation counter (atomic). Only spend the
+    // account's quota once we're about to actually send. A null id (mailbox not
+    // migrated) returns true and defers to the user-level caps above.
+    if (sendingAccountId) {
+      try {
+        const { data: allowed, error: incErr } = await supabase.rpc('increment_account_send', {
+          p_account_id: sendingAccountId,
+        });
+        if (incErr) {
+          console.warn('increment_account_send failed (non-fatal):', incErr);
+        } else if (allowed === false) {
+          return new Response(
+            JSON.stringify({
+              error: 'This mailbox has reached its daily send limit. It resumes tomorrow, or raise the limit on the Deliverability page.',
+              code: 'account_daily_cap_reached',
+            }),
+            { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      } catch (e) {
+        console.warn('increment_account_send threw (non-fatal):', e);
+      }
+    }
+
     // Send email based on integration type
     if (integrationId === 'google' || !integrationId) {
       // Format body as proper HTML email if it's not already HTML
