@@ -23,21 +23,9 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const authHeader = req.headers.get("Authorization") ?? "";
-    const token = authHeader.replace(/^Bearer\s+/i, "");
-    if (!token) return json({ error: "Unauthorized" }, 401);
-
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-    );
-
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    if (userError || !user) {
-      return json({ error: "Unauthorized" }, 401);
-    }
-
-    const { domain } = await req.json();
+    // Parse first — the DNS checks below need no auth, so a missing/expired
+    // token must not stop the user from seeing results.
+    const { domain } = await req.json().catch(() => ({ domain: undefined }));
     if (!domain || !validateDomain(domain)) {
       return json({ error: "Invalid domain format" }, 400);
     }
@@ -103,22 +91,36 @@ serve(async (req) => {
       });
     }
 
-    // ---- Persist ----
-    const { error: upsertError } = await supabase
-      .from("sending_domains")
-      .upsert({
-        user_id: user.id,
-        domain: root,
-        spf_status: spfStatus,
-        dkim_status: dkimStatus,
-        dmarc_status: dmarcStatus,
-        dkim_selector: dkimSelector,
-        recommended_records: recommended,
-        last_checked_at: new Date().toISOString(),
-      }, { onConflict: "user_id,domain" });
-
-    if (upsertError) {
-      console.error("[check-domain-auth] upsert error:", upsertError);
+    // ---- Persist (best-effort; results are returned even if this fails) ----
+    // The client carries the caller's Authorization header so both getUser() and
+    // the RLS-protected upsert run as the authenticated user.
+    try {
+      const authHeader = req.headers.get("Authorization") ?? "";
+      const supabase = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+        { global: { headers: { Authorization: authHeader } } },
+      );
+      const { data: { user } } = authHeader ? await supabase.auth.getUser() : { data: { user: null } };
+      if (user) {
+        const { error: upsertError } = await supabase
+          .from("sending_domains")
+          .upsert({
+            user_id: user.id,
+            domain: root,
+            spf_status: spfStatus,
+            dkim_status: dkimStatus,
+            dmarc_status: dmarcStatus,
+            dkim_selector: dkimSelector,
+            recommended_records: recommended,
+            last_checked_at: new Date().toISOString(),
+          }, { onConflict: "user_id,domain" });
+        if (upsertError) console.error("[check-domain-auth] upsert error:", upsertError);
+      } else {
+        console.warn("[check-domain-auth] no authenticated user; returning results without saving");
+      }
+    } catch (persistErr) {
+      console.error("[check-domain-auth] persist step failed (non-fatal):", persistErr);
     }
 
     return json({
