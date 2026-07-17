@@ -58,6 +58,8 @@ export const AdminDashboard = () => {
     };
   }, []);
 
+  useAutoRefresh(() => { loadStats(); loadStripeRevenue(); }, 60_000);
+
   const loadStats = async () => {
     try {
       const { data, error } = await supabase.rpc('admin_get_dashboard_stats');
