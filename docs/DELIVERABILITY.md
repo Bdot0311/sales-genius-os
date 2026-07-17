@@ -154,9 +154,14 @@ The warmup pool sends **real email between opted-in mailboxes**. Guardrails:
       panel, and the spam checker wired to the live engine. `send-email` now
       blocks sends from paused/disabled accounts so manual + auto pause take
       effect.
-- [ ] **Sending controls enforcement (remaining)**: per-account daily limits,
-      randomized inter-send delays, account rotation, hard-bounce
-      auto-suppression, custom tracking domains.
+- [x] **Phase 4 — Sending controls**: per-account daily limit enforced atomically
+      at send time (`increment_account_send` RPC), rotation helper
+      (`pick_sending_account`), and a per-account controls dialog (limit, delays,
+      auto-pause threshold). Delays/rotation apply to automated sequences as they
+      adopt the helper.
+- [ ] **Remaining**: randomized inter-send delay + rotation wired into the
+      scheduled/sequence senders, hard-bounce auto-suppression, custom tracking
+      domains.
 - [ ] **Phase 5 — Warmup orchestration** and **Phase 6 — Placement testing**.
 - [ ] **Phase 5 — Warmup orchestration**: pool join/leave, `warmup-orchestrator`,
       reply bot, health graph, auto-pause.

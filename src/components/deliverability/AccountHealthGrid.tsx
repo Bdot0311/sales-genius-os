@@ -6,6 +6,7 @@ import { Mail, Pause, Play, Loader2 } from "lucide-react";
 import { reputationDisplay } from "@/lib/reputation";
 import { useUpdateAccount } from "@/hooks/use-deliverability";
 import { ReputationTrend } from "./ReputationTrend";
+import { SendingControlsDialog } from "./SendingControlsDialog";
 import type { SendingAccount, ReputationSnapshot } from "@/lib/deliverability-db";
 
 interface Props {
@@ -104,6 +105,12 @@ const AccountCard = ({ account, snapshots }: { account: SendingAccount; snapshot
           <p className="text-xs text-yellow-500">{account.paused_reason}</p>
         )}
 
+        {/* Daily usage */}
+        <p className="text-xs text-muted-foreground">
+          {account.sent_today_date === new Date().toISOString().slice(0, 10) ? account.sent_today : 0}
+          {" / "}{account.daily_limit} sent today
+        </p>
+
         {/* Controls */}
         <div className="flex items-center justify-between border-t border-border/50 pt-3">
           <div className="flex items-center gap-2">
@@ -114,15 +121,18 @@ const AccountCard = ({ account, snapshots }: { account: SendingAccount; snapshot
             />
             <span className="text-xs text-muted-foreground">Warmup</span>
           </div>
-          <Button size="sm" variant="outline" onClick={togglePause} disabled={update.isPending}>
-            {update.isPending ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : isPaused ? (
-              <><Play className="mr-1 h-3.5 w-3.5" /> Resume</>
-            ) : (
-              <><Pause className="mr-1 h-3.5 w-3.5" /> Pause</>
-            )}
-          </Button>
+          <div className="flex items-center gap-1">
+            <SendingControlsDialog account={account} />
+            <Button size="sm" variant="outline" onClick={togglePause} disabled={update.isPending}>
+              {update.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : isPaused ? (
+                <><Play className="mr-1 h-3.5 w-3.5" /> Resume</>
+              ) : (
+                <><Pause className="mr-1 h-3.5 w-3.5" /> Pause</>
+              )}
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>

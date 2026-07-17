@@ -89,7 +89,10 @@ export async function fetchSendingAccounts(): Promise<SendingAccount[]> {
 
 export async function updateSendingAccount(
   id: string,
-  patch: Partial<Pick<SendingAccount, "status" | "auto_pause_threshold" | "daily_limit" | "paused_reason" | "warmup_enabled">>,
+  patch: Partial<Pick<
+    SendingAccount,
+    "status" | "auto_pause_threshold" | "daily_limit" | "paused_reason" | "warmup_enabled" | "min_send_delay_seconds" | "max_send_delay_seconds"
+  >>,
 ): Promise<void> {
   const { error } = await sb.from("sending_accounts").update(patch).eq("id", id);
   if (error) throw error;
