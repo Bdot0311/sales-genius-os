@@ -199,23 +199,402 @@ var list_recent_sent_emails_default = defineTool5({
   }
 });
 
+// src/lib/mcp/tools/create-lead.ts
+import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z6 } from "npm:zod@^3.25.76";
+
+// src/lib/mcp/tools/_supabase.ts
+import { createClient as createClient6 } from "npm:@supabase/supabase-js@^2.76.1";
+function supabaseForUser6(ctx) {
+  return createClient6(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY,
+    {
+      global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
+      auth: { persistSession: false, autoRefreshToken: false }
+    }
+  );
+}
+function notAuthed() {
+  return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+}
+function err(message) {
+  return { content: [{ type: "text", text: message }], isError: true };
+}
+function ok(payload, key = "result") {
+  return {
+    content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
+    structuredContent: { [key]: payload }
+  };
+}
+
+// src/lib/mcp/tools/create-lead.ts
+var create_lead_default = defineTool6({
+  name: "create_lead",
+  title: "Create lead",
+  description: "Create a new lead in OutReign for the signed-in user. At minimum a company_name is required; contact_email is strongly recommended so the lead is reachable by sequences.",
+  inputSchema: {
+    company_name: z6.string().trim().min(1),
+    contact_name: z6.string().trim().optional(),
+    contact_email: z6.string().trim().email().optional(),
+    job_title: z6.string().trim().optional(),
+    company_website: z6.string().trim().optional(),
+    industry: z6.string().trim().optional(),
+    linkedin_url: z6.string().trim().optional(),
+    notes: z6.string().trim().optional(),
+    lead_status: z6.string().trim().optional().describe("e.g. new, contacted, qualified"),
+    source: z6.string().trim().optional().describe("Where the lead came from, e.g. 'mcp'")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  handler: async (input, ctx) => {
+    if (!ctx.isAuthenticated()) return notAuthed();
+    const supabase = supabaseForUser6(ctx);
+    const { data, error } = await supabase.from("leads").insert({
+      user_id: ctx.getUserId(),
+      source: input.source ?? "mcp",
+      lead_status: input.lead_status ?? "new",
+      company_name: input.company_name,
+      contact_name: input.contact_name,
+      contact_email: input.contact_email,
+      job_title: input.job_title,
+      company_website: input.company_website,
+      industry: input.industry,
+      linkedin_url: input.linkedin_url,
+      notes: input.notes
+    }).select("id, company_name, contact_name, contact_email, lead_status, created_at").single();
+    if (error) return err(error.message);
+    return ok(data, "lead");
+  }
+});
+
+// src/lib/mcp/tools/update-lead.ts
+import { defineTool as defineTool7 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z7 } from "npm:zod@^3.25.76";
+var update_lead_default = defineTool7({
+  name: "update_lead",
+  title: "Update lead",
+  description: "Update fields on an existing lead owned by the signed-in user. Pass the lead id and any subset of fields to change. Fields that are omitted are left unchanged.",
+  inputSchema: {
+    id: z7.string().uuid(),
+    company_name: z7.string().trim().optional(),
+    contact_name: z7.string().trim().optional(),
+    contact_email: z7.string().trim().email().optional(),
+    job_title: z7.string().trim().optional(),
+    company_website: z7.string().trim().optional(),
+    industry: z7.string().trim().optional(),
+    linkedin_url: z7.string().trim().optional(),
+    notes: z7.string().trim().optional(),
+    lead_status: z7.string().trim().optional()
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  handler: async ({ id, ...patch }, ctx) => {
+    if (!ctx.isAuthenticated()) return notAuthed();
+    const clean = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== void 0));
+    if (Object.keys(clean).length === 0) return err("No fields to update.");
+    const supabase = supabaseForUser6(ctx);
+    const { data, error } = await supabase.from("leads").update(clean).eq("id", id).eq("user_id", ctx.getUserId()).select("id, company_name, contact_name, contact_email, lead_status, updated_at").single();
+    if (error) return err(error.message);
+    return ok(data, "lead");
+  }
+});
+
+// src/lib/mcp/tools/enroll-lead.ts
+import { defineTool as defineTool8 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z8 } from "npm:zod@^3.25.76";
+var enroll_lead_default = defineTool8({
+  name: "enroll_lead_in_sequence",
+  title: "Enroll lead in sequence",
+  description: "Enroll one of the signed-in user's leads into one of their email sequences. Creates a sequence_enrollment row with current_step=0 so the outreach worker will send step 1 next.",
+  inputSchema: {
+    lead_id: z8.string().uuid(),
+    sequence_id: z8.string().uuid()
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  handler: async ({ lead_id, sequence_id }, ctx) => {
+    if (!ctx.isAuthenticated()) return notAuthed();
+    const supabase = supabaseForUser6(ctx);
+    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const { data, error } = await supabase.from("sequence_enrollments").insert({
+      user_id: ctx.getUserId(),
+      lead_id,
+      sequence_id,
+      current_step: 0,
+      status: "active",
+      enrolled_at: now,
+      next_action_at: now
+    }).select("id, sequence_id, lead_id, status, current_step, enrolled_at, next_action_at").single();
+    if (error) return err(error.message);
+    return ok(data, "enrollment");
+  }
+});
+
+// src/lib/mcp/tools/send-reply.ts
+import { defineTool as defineTool9 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z9 } from "npm:zod@^3.25.76";
+var send_reply_default = defineTool9({
+  name: "send_reply",
+  title: "Queue reply to an inbox thread",
+  description: "Queue an outbound reply to an existing inbox reply thread. Creates a sent_emails row in status='queued' linked to the original thread's lead so the outreach worker delivers it through the user's connected mailbox. Body is plain text; a simple HTML version is generated automatically.",
+  inputSchema: {
+    reply_thread_id: z9.string().uuid().describe("id from reply_threads that this message is a reply to."),
+    body: z9.string().trim().min(1).describe("Plain text body of the reply."),
+    subject: z9.string().trim().optional().describe("Override subject. Defaults to 'Re: <original subject>'.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+  handler: async ({ reply_thread_id, body, subject }, ctx) => {
+    if (!ctx.isAuthenticated()) return notAuthed();
+    const supabase = supabaseForUser6(ctx);
+    const { data: thread, error: tErr } = await supabase.from("reply_threads").select("id, lead_id, subject, sender_email").eq("id", reply_thread_id).eq("user_id", ctx.getUserId()).maybeSingle();
+    if (tErr) return err(tErr.message);
+    if (!thread) return err("Reply thread not found for this user.");
+    if (!thread.sender_email) return err("Reply thread has no sender_email to reply to.");
+    const finalSubject = subject ?? (thread.subject ? thread.subject.toLowerCase().startsWith("re:") ? thread.subject : `Re: ${thread.subject}` : "Re:");
+    const bodyHtml = body.split(/\n{2,}/).map((p) => `<p>${p.replace(/\n/g, "<br/>").replace(/</g, "&lt;")}</p>`).join("");
+    const { data, error } = await supabase.from("sent_emails").insert({
+      user_id: ctx.getUserId(),
+      lead_id: thread.lead_id,
+      to_email: thread.sender_email,
+      subject: finalSubject,
+      body_text: body,
+      body_html: bodyHtml,
+      status: "queued",
+      scheduled_at: (/* @__PURE__ */ new Date()).toISOString()
+    }).select("id, to_email, subject, status, scheduled_at, created_at").single();
+    if (error) return err(error.message);
+    return ok(data, "queued_email");
+  }
+});
+
+// src/lib/mcp/tools/list-deals.ts
+import { defineTool as defineTool10 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z10 } from "npm:zod@^3.25.76";
+var list_deals_default = defineTool10({
+  name: "list_deals",
+  title: "List pipeline deals",
+  description: "List the signed-in user's pipeline deals, optionally filtered by stage.",
+  inputSchema: {
+    limit: z10.number().int().min(1).max(100).optional(),
+    stage: z10.string().trim().optional().describe("Pipeline stage to filter by.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ limit, stage }, ctx) => {
+    if (!ctx.isAuthenticated()) return notAuthed();
+    const supabase = supabaseForUser6(ctx);
+    let q = supabase.from("deals").select("id, title, company_name, contact_name, value, stage, probability, expected_close_date, lead_id, updated_at").eq("user_id", ctx.getUserId()).order("updated_at", { ascending: false }).limit(Math.min(limit ?? 25, 100));
+    if (stage) q = q.eq("stage", stage);
+    const { data, error } = await q;
+    if (error) return err(error.message);
+    return ok(data ?? [], "deals");
+  }
+});
+
+// src/lib/mcp/tools/update-deal.ts
+import { defineTool as defineTool11 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z11 } from "npm:zod@^3.25.76";
+var update_deal_default = defineTool11({
+  name: "update_deal",
+  title: "Update deal",
+  description: "Update fields on an existing pipeline deal owned by the signed-in user.",
+  inputSchema: {
+    id: z11.string().uuid(),
+    title: z11.string().trim().optional(),
+    company_name: z11.string().trim().optional(),
+    contact_name: z11.string().trim().optional(),
+    value: z11.number().optional(),
+    stage: z11.string().trim().optional(),
+    probability: z11.number().int().min(0).max(100).optional(),
+    expected_close_date: z11.string().trim().optional().describe("YYYY-MM-DD"),
+    notes: z11.string().trim().optional()
+  },
+  annotations: { readOnlyHint: false, idempotentHint: true, openWorldHint: false },
+  handler: async ({ id, ...patch }, ctx) => {
+    if (!ctx.isAuthenticated()) return notAuthed();
+    const clean = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== void 0));
+    if (Object.keys(clean).length === 0) return err("No fields to update.");
+    const supabase = supabaseForUser6(ctx);
+    const { data, error } = await supabase.from("deals").update(clean).eq("id", id).eq("user_id", ctx.getUserId()).select("id, title, stage, value, probability, updated_at").single();
+    if (error) return err(error.message);
+    return ok(data, "deal");
+  }
+});
+
+// src/lib/mcp/tools/list-icp-profiles.ts
+import { defineTool as defineTool12 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z12 } from "npm:zod@^3.25.76";
+var list_icp_profiles_default = defineTool12({
+  name: "list_icp_profiles",
+  title: "List ICP profiles",
+  description: "List the signed-in user's Ideal Customer Profile definitions with their targeting fields.",
+  inputSchema: {
+    limit: z12.number().int().min(1).max(50).optional()
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ limit }, ctx) => {
+    if (!ctx.isAuthenticated()) return notAuthed();
+    const supabase = supabaseForUser6(ctx);
+    const { data, error } = await supabase.from("icp_profiles").select(
+      "id, name, industries, target_titles, departments, seniority_levels, geographies, company_size_min, company_size_max, revenue_range, tech_stack, buying_signals, intent_keywords, pain_points, value_proposition, disqualifiers, notes, updated_at"
+    ).eq("user_id", ctx.getUserId()).order("updated_at", { ascending: false }).limit(Math.min(limit ?? 20, 50));
+    if (error) return err(error.message);
+    return ok(data ?? [], "icp_profiles");
+  }
+});
+
+// src/lib/mcp/tools/update-icp-profile.ts
+import { defineTool as defineTool13 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z13 } from "npm:zod@^3.25.76";
+var update_icp_profile_default = defineTool13({
+  name: "update_icp_profile",
+  title: "Update ICP profile",
+  description: "Update fields on an existing Ideal Customer Profile owned by the signed-in user. Array fields (industries, target_titles, tech_stack, etc.) replace the previous value entirely when provided.",
+  inputSchema: {
+    id: z13.string().uuid(),
+    name: z13.string().trim().optional(),
+    industries: z13.array(z13.string()).optional(),
+    target_titles: z13.array(z13.string()).optional(),
+    departments: z13.array(z13.string()).optional(),
+    seniority_levels: z13.array(z13.string()).optional(),
+    geographies: z13.array(z13.string()).optional(),
+    tech_stack: z13.array(z13.string()).optional(),
+    buying_signals: z13.array(z13.string()).optional(),
+    intent_keywords: z13.array(z13.string()).optional(),
+    pain_points: z13.array(z13.string()).optional(),
+    company_size_min: z13.number().int().optional(),
+    company_size_max: z13.number().int().optional(),
+    revenue_range: z13.string().trim().optional(),
+    value_proposition: z13.string().trim().optional(),
+    disqualifiers: z13.string().trim().optional(),
+    notes: z13.string().trim().optional()
+  },
+  annotations: { readOnlyHint: false, idempotentHint: true, openWorldHint: false },
+  handler: async ({ id, ...patch }, ctx) => {
+    if (!ctx.isAuthenticated()) return notAuthed();
+    const clean = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== void 0));
+    if (Object.keys(clean).length === 0) return err("No fields to update.");
+    const supabase = supabaseForUser6(ctx);
+    const { data, error } = await supabase.from("icp_profiles").update(clean).eq("id", id).eq("user_id", ctx.getUserId()).select("id, name, updated_at").single();
+    if (error) return err(error.message);
+    return ok(data, "icp_profile");
+  }
+});
+
+// src/lib/mcp/tools/get-agent-stats.ts
+import { defineTool as defineTool14 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z14 } from "npm:zod@^3.25.76";
+var get_agent_stats_default = defineTool14({
+  name: "get_agent_stats",
+  title: "Get AI agent stats",
+  description: "Return the signed-in user's AI SDR agent configuration and recent activity: whether the agent is enabled, its persona/tone, and counts of agent actions in the last N days broken down by action_type and status.",
+  inputSchema: {
+    days: z14.number().int().min(1).max(90).optional().describe("Look-back window in days (default 7).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ days }, ctx) => {
+    if (!ctx.isAuthenticated()) return notAuthed();
+    const supabase = supabaseForUser6(ctx);
+    const window = days ?? 7;
+    const since = new Date(Date.now() - window * 24 * 60 * 60 * 1e3).toISOString();
+    const [configRes, actionsRes] = await Promise.all([
+      supabase.from("agent_configs").select(
+        "enabled, agent_name, persona, tone, can_reply_interested, can_handle_objections, can_book_meetings, max_daily_auto_replies, reply_delay_minutes, updated_at"
+      ).eq("user_id", ctx.getUserId()).maybeSingle(),
+      supabase.from("agent_actions").select("action_type, status, classification, created_at").eq("user_id", ctx.getUserId()).gte("created_at", since).limit(1e3)
+    ]);
+    if (configRes.error) return err(configRes.error.message);
+    if (actionsRes.error) return err(actionsRes.error.message);
+    const actions = actionsRes.data ?? [];
+    const byType = {};
+    const byStatus = {};
+    const byClassification = {};
+    for (const a of actions) {
+      byType[a.action_type ?? "unknown"] = (byType[a.action_type ?? "unknown"] ?? 0) + 1;
+      if (a.status) byStatus[a.status] = (byStatus[a.status] ?? 0) + 1;
+      if (a.classification) byClassification[a.classification] = (byClassification[a.classification] ?? 0) + 1;
+    }
+    return ok(
+      {
+        config: configRes.data ?? null,
+        window_days: window,
+        total_actions: actions.length,
+        by_action_type: byType,
+        by_status: byStatus,
+        by_classification: byClassification
+      },
+      "agent_stats"
+    );
+  }
+});
+
+// src/lib/mcp/tools/update-agent-config.ts
+import { defineTool as defineTool15 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z15 } from "npm:zod@^3.25.76";
+var update_agent_config_default = defineTool15({
+  name: "update_agent_config",
+  title: "Update AI agent config",
+  description: "Update the signed-in user's AI SDR agent configuration \u2014 toggle enabled, change persona/tone/signature, adjust reply capabilities and daily limits. Creates the row if it does not yet exist.",
+  inputSchema: {
+    enabled: z15.boolean().optional(),
+    agent_name: z15.string().trim().optional(),
+    persona: z15.string().trim().optional(),
+    tone: z15.string().trim().optional(),
+    company_context: z15.string().trim().optional(),
+    signature: z15.string().trim().optional(),
+    calendly_url: z15.string().trim().optional(),
+    can_reply_interested: z15.boolean().optional(),
+    can_handle_objections: z15.boolean().optional(),
+    can_book_meetings: z15.boolean().optional(),
+    max_daily_auto_replies: z15.number().int().min(0).max(500).optional(),
+    reply_delay_minutes: z15.number().int().min(0).max(1440).optional()
+  },
+  annotations: { readOnlyHint: false, idempotentHint: true, openWorldHint: false },
+  handler: async (patch, ctx) => {
+    if (!ctx.isAuthenticated()) return notAuthed();
+    const clean = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== void 0));
+    if (Object.keys(clean).length === 0) return err("No fields to update.");
+    const supabase = supabaseForUser6(ctx);
+    const userId = ctx.getUserId();
+    const { data: existing, error: exErr } = await supabase.from("agent_configs").select("id").eq("user_id", userId).maybeSingle();
+    if (exErr) return err(exErr.message);
+    if (existing) {
+      const { data: data2, error: error2 } = await supabase.from("agent_configs").update(clean).eq("user_id", userId).select("enabled, agent_name, persona, tone, updated_at").single();
+      if (error2) return err(error2.message);
+      return ok(data2, "agent_config");
+    }
+    const { data, error } = await supabase.from("agent_configs").insert({ user_id: userId, ...clean }).select("enabled, agent_name, persona, tone, updated_at").single();
+    if (error) return err(error.message);
+    return ok(data, "agent_config");
+  }
+});
+
 // src/lib/mcp/index.ts
 var projectRef = "ghgfjnepvxvxrncmskys";
 var mcp_default = defineMcp({
   name: "outreign-mcp",
   title: "OutReign",
-  version: "0.1.0",
-  instructions: "Tools for OutReign \u2014 an AI sales outreach and lead intelligence platform. Use these tools to read the signed-in user's leads, email sequences, sent emails, and inbox replies. All results are scoped to the authenticated user by row-level security.",
+  version: "0.2.0",
+  instructions: "Tools for OutReign \u2014 an AI sales outreach and lead intelligence platform. Read and manage the signed-in user's leads, sequences, deals, ICP profiles, AI agent, sent emails, and inbox replies. All operations are scoped to the authenticated user by row-level security.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated"
   }),
   tools: [
+    // Read
     list_leads_default,
     search_leads_default,
     list_sequences_default,
     list_recent_replies_default,
-    list_recent_sent_emails_default
+    list_recent_sent_emails_default,
+    list_deals_default,
+    list_icp_profiles_default,
+    get_agent_stats_default,
+    // Write / edit
+    create_lead_default,
+    update_lead_default,
+    enroll_lead_default,
+    send_reply_default,
+    update_deal_default,
+    update_icp_profile_default,
+    update_agent_config_default
   ]
 });
 

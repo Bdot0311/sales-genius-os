@@ -12,7 +12,7 @@
   "mcp": {
     "server": {
       "name": "outreign-mcp",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "title": "OutReign"
     },
     "tools": [
@@ -145,6 +145,468 @@
               "minimum": 1,
               "maximum": 50,
               "description": "Max results (default 20)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_deals",
+        "title": "List pipeline deals",
+        "description": "List the signed-in user's pipeline deals, optionally filtered by stage.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "stage": {
+              "type": "string",
+              "description": "Pipeline stage to filter by."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_icp_profiles",
+        "title": "List ICP profiles",
+        "description": "List the signed-in user's Ideal Customer Profile definitions with their targeting fields.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_agent_stats",
+        "title": "Get AI agent stats",
+        "description": "Return the signed-in user's AI SDR agent configuration and recent activity: whether the agent is enabled, its persona/tone, and counts of agent actions in the last N days broken down by action_type and status.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "days": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "description": "Look-back window in days (default 7)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_lead",
+        "title": "Create lead",
+        "description": "Create a new lead in OutReign for the signed-in user. At minimum a company_name is required; contact_email is strongly recommended so the lead is reachable by sequences.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "company_name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "contact_name": {
+              "type": "string"
+            },
+            "contact_email": {
+              "type": "string",
+              "format": "email"
+            },
+            "job_title": {
+              "type": "string"
+            },
+            "company_website": {
+              "type": "string"
+            },
+            "industry": {
+              "type": "string"
+            },
+            "linkedin_url": {
+              "type": "string"
+            },
+            "notes": {
+              "type": "string"
+            },
+            "lead_status": {
+              "type": "string",
+              "description": "e.g. new, contacted, qualified"
+            },
+            "source": {
+              "type": "string",
+              "description": "Where the lead came from, e.g. 'mcp'"
+            }
+          },
+          "required": [
+            "company_name"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_lead",
+        "title": "Update lead",
+        "description": "Update fields on an existing lead owned by the signed-in user. Pass the lead id and any subset of fields to change. Fields that are omitted are left unchanged.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "company_name": {
+              "type": "string"
+            },
+            "contact_name": {
+              "type": "string"
+            },
+            "contact_email": {
+              "type": "string",
+              "format": "email"
+            },
+            "job_title": {
+              "type": "string"
+            },
+            "company_website": {
+              "type": "string"
+            },
+            "industry": {
+              "type": "string"
+            },
+            "linkedin_url": {
+              "type": "string"
+            },
+            "notes": {
+              "type": "string"
+            },
+            "lead_status": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "enroll_lead_in_sequence",
+        "title": "Enroll lead in sequence",
+        "description": "Enroll one of the signed-in user's leads into one of their email sequences. Creates a sequence_enrollment row with current_step=0 so the outreach worker will send step 1 next.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "lead_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "sequence_id": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "required": [
+            "lead_id",
+            "sequence_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "send_reply",
+        "title": "Queue reply to an inbox thread",
+        "description": "Queue an outbound reply to an existing inbox reply thread. Creates a sent_emails row in status='queued' linked to the original thread's lead so the outreach worker delivers it through the user's connected mailbox. Body is plain text; a simple HTML version is generated automatically.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "reply_thread_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "id from reply_threads that this message is a reply to."
+            },
+            "body": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Plain text body of the reply."
+            },
+            "subject": {
+              "type": "string",
+              "description": "Override subject. Defaults to 'Re: <original subject>'."
+            }
+          },
+          "required": [
+            "reply_thread_id",
+            "body"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_deal",
+        "title": "Update deal",
+        "description": "Update fields on an existing pipeline deal owned by the signed-in user.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "title": {
+              "type": "string"
+            },
+            "company_name": {
+              "type": "string"
+            },
+            "contact_name": {
+              "type": "string"
+            },
+            "value": {
+              "type": "number"
+            },
+            "stage": {
+              "type": "string"
+            },
+            "probability": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "expected_close_date": {
+              "type": "string",
+              "description": "YYYY-MM-DD"
+            },
+            "notes": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_icp_profile",
+        "title": "Update ICP profile",
+        "description": "Update fields on an existing Ideal Customer Profile owned by the signed-in user. Array fields (industries, target_titles, tech_stack, etc.) replace the previous value entirely when provided.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "name": {
+              "type": "string"
+            },
+            "industries": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "target_titles": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "departments": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "seniority_levels": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "geographies": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "tech_stack": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "buying_signals": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "intent_keywords": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "pain_points": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "company_size_min": {
+              "type": "integer"
+            },
+            "company_size_max": {
+              "type": "integer"
+            },
+            "revenue_range": {
+              "type": "string"
+            },
+            "value_proposition": {
+              "type": "string"
+            },
+            "disqualifiers": {
+              "type": "string"
+            },
+            "notes": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_agent_config",
+        "title": "Update AI agent config",
+        "description": "Update the signed-in user's AI SDR agent configuration — toggle enabled, change persona/tone/signature, adjust reply capabilities and daily limits. Creates the row if it does not yet exist.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "agent_name": {
+              "type": "string"
+            },
+            "persona": {
+              "type": "string"
+            },
+            "tone": {
+              "type": "string"
+            },
+            "company_context": {
+              "type": "string"
+            },
+            "signature": {
+              "type": "string"
+            },
+            "calendly_url": {
+              "type": "string"
+            },
+            "can_reply_interested": {
+              "type": "boolean"
+            },
+            "can_handle_objections": {
+              "type": "boolean"
+            },
+            "can_book_meetings": {
+              "type": "boolean"
+            },
+            "max_daily_auto_replies": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 500
+            },
+            "reply_delay_minutes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1440
             }
           },
           "additionalProperties": false,
