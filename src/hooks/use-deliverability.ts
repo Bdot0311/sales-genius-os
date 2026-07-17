@@ -25,22 +25,27 @@ export function useUserId(): string | null {
   return id;
 }
 
+// Finite retry so a failing query (e.g. tables not migrated yet) settles into an
+// error state quickly instead of leaving the page on an endless loading skeleton.
+const QUERY_OPTS = { retry: 1, staleTime: 30_000 } as const;
+
 export function useSendingAccounts() {
-  return useQuery({ queryKey: ["sending-accounts"], queryFn: fetchSendingAccounts });
+  return useQuery({ queryKey: ["sending-accounts"], queryFn: fetchSendingAccounts, ...QUERY_OPTS });
 }
 
 export function useSendingDomains() {
-  return useQuery({ queryKey: ["sending-domains"], queryFn: fetchSendingDomains });
+  return useQuery({ queryKey: ["sending-domains"], queryFn: fetchSendingDomains, ...QUERY_OPTS });
 }
 
 export function useActiveAlerts() {
-  return useQuery({ queryKey: ["deliverability-alerts"], queryFn: fetchActiveAlerts });
+  return useQuery({ queryKey: ["deliverability-alerts"], queryFn: fetchActiveAlerts, ...QUERY_OPTS });
 }
 
 export function useReputationSnapshots(days = 30) {
   return useQuery({
     queryKey: ["reputation-snapshots", days],
     queryFn: () => fetchRecentSnapshots(days),
+    ...QUERY_OPTS,
   });
 }
 
