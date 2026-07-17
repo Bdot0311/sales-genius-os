@@ -33,7 +33,10 @@ const Auth = () => {
   useEffect(() => {
     if (inviteToken) sessionStorage.setItem("agency_invite_token", inviteToken);
     if (refCode) sessionStorage.setItem("agency_ref_code", refCode);
-  }, [inviteToken, refCode]);
+    // Persist the post-auth return target so full-page OAuth (Google) that lands
+    // on `/` can still bounce the user back to the consent screen.
+    if (nextPath) sessionStorage.setItem("post_auth_next", nextPath);
+  }, [inviteToken, refCode, nextPath]);
 
   // After sign-in or sign-up, attempt to link user to agency if params were present.
   const linkAgency = async (token: string) => {
