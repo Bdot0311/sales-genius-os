@@ -47,6 +47,8 @@ Disallow: /settings
 Disallow: /settings/*
 Disallow: /coach
 Disallow: /coach/*
+Disallow: /.lovable
+Disallow: /.lovable/*
 Crawl-delay: 1
 
 User-agent: msnbot
