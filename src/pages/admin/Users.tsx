@@ -107,6 +107,8 @@ const AdminUsers = () => {
     };
   }, []);
 
+  useAutoRefresh(() => { loadSubscriptions(); loadUserRoles(); }, 60_000);
+
   const loadSubscriptions = async () => {
     try {
       const { data, error } = await supabase.rpc('admin_get_all_subscriptions');
