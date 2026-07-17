@@ -89,10 +89,10 @@ const Auth = () => {
         return;
       }
 
-      // Normal flow: link agency if needed, then redirect to dashboard
+      // Normal flow: link agency if needed, then redirect to dashboard (or `next`)
       if (event === "SIGNED_IN" && session) {
         await linkAgency(session.access_token);
-        navigate("/dashboard");
+        navigate(nextPath ?? "/dashboard");
       }
     });
 
@@ -108,12 +108,12 @@ const Auth = () => {
       }
 
       if (session) {
-        navigate("/dashboard");
+        navigate(nextPath ?? "/dashboard");
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate, isRecoveryFlow]);
+  }, [navigate, isRecoveryFlow, nextPath]);
 
   const handlePasswordUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
