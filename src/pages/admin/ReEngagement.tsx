@@ -54,6 +54,8 @@ const AdminReEngagement = () => {
 
   useEffect(() => { load(); }, []);
 
+  useAutoRefresh(load, 60_000);
+
   const filtered = rows.filter((r) => {
     if (statusFilter !== "all" && r.status !== statusFilter) return false;
     if (search && !r.recipient_email.toLowerCase().includes(search.toLowerCase())) return false;
