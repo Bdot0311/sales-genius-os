@@ -30,6 +30,7 @@ import {
   Target,
   ShieldCheck,
   Bot,
+  Plug,
 } from "lucide-react";
 import { User } from "@supabase/supabase-js";
 import { useSubscription } from "@/hooks/use-subscription";
@@ -70,6 +71,7 @@ const navSections = [
       { name: "Deliverability", icon: ShieldCheck, href: "/dashboard/deliverability" },
       { name: "Automations", icon: Workflow, href: "/dashboard/automations" },
       { name: "Integrations", icon: Puzzle, href: "/integrations" },
+      { name: "Connect AI", icon: Plug, href: "/connect" },
       { name: "Settings", icon: Settings, href: "/settings" },
     ],
   },
