@@ -4,7 +4,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { ProductShowcase } from "@/components/landing/ProductShowcase";
-import { SEOHead, SoftwareApplicationSchema } from "@/components/seo";
+import { SEOHead, SoftwareApplicationSchema, FAQSchema } from "@/components/seo";
+
+const HOMEPAGE_FAQS = [
+  { question: "What is OutReign?", answer: "OutReign is a B2B prospecting and outreach platform that helps teams go from ICP definition to live outreach faster." },
+  { question: "Do I need boolean search skills to use it?", answer: "No. OutReign is built around plain-English targeting." },
+  { question: "Can I try it before paying?", answer: "Yes. You can start free and upgrade when you are ready." },
+  { question: "Who is OutReign best for?", answer: "It is strongest for founder-led sales teams, outbound agencies, SDR teams, and B2B operators running outbound motions." },
+  { question: "What integrations are available?", answer: "OutReign currently supports Google Workspace and is expanding support for tools like Slack, HubSpot, Salesforce, Calendly, and Zapier." },
+  { question: "Is OutReign a fit for every business?", answer: "No. It is generally not the right fit for e-commerce, B2C, or companies that do not run outbound." },
+];
 
 const HowItWorks = lazy(() => import("@/components/landing/HowItWorks").then(m => ({ default: m.HowItWorks })));
 const ProblemSection = lazy(() => import("@/components/landing/ProblemSection").then(m => ({ default: m.ProblemSection })));
@@ -93,6 +102,7 @@ const Index = () => {
         ogImage="https://outreign.io/outreign-social-card.jpg"
       />
       <SoftwareApplicationSchema />
+      <FAQSchema faqs={HOMEPAGE_FAQS} />
 
       {/* Fixed cinematic video background with purple tint */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none" aria-hidden="true">
