@@ -102,6 +102,7 @@ const Index = () => {
         ogImage="https://outreign.io/outreign-social-card.jpg"
       />
       <SoftwareApplicationSchema />
+      <FAQSchema faqs={HOMEPAGE_FAQS} />
 
       {/* Fixed cinematic video background with purple tint */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none" aria-hidden="true">
