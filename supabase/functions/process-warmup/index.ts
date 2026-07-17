@@ -15,6 +15,9 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const authFail = requireServiceRole(req);
+  if (authFail) return authFail;
+
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
