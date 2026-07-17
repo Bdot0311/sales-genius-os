@@ -139,6 +139,47 @@ export async function resolveAlert(id: string): Promise<void> {
   if (error) throw error;
 }
 
+// ---- Warmup pool ----
+export interface WarmupMessage {
+  id: string;
+  from_account_id: string | null;
+  to_account_id: string | null;
+  folder_detected: "inbox" | "spam" | "promotions" | "unknown" | null;
+  sent_at: string;
+  replied_at: string | null;
+}
+
+/** Toggle warmup: flips the account flag and joins/leaves the shared pool. */
+export async function setWarmupEnabled(
+  account: { id: string; user_id: string; email: string },
+  enabled: boolean,
+): Promise<void> {
+  const { error: aErr } = await sb.from("sending_accounts").update({ warmup_enabled: enabled }).eq("id", account.id);
+  if (aErr) throw aErr;
+  if (enabled) {
+    const { error } = await sb.from("warmup_pool").upsert(
+      { sending_account_id: account.id, user_id: account.user_id, email: account.email, active: true },
+      { onConflict: "sending_account_id" },
+    );
+    if (error) throw error;
+  } else {
+    const { error } = await sb.from("warmup_pool").update({ active: false }).eq("sending_account_id", account.id);
+    if (error) throw error;
+  }
+}
+
+/** Warmup messages involving the user's accounts, for the health view. */
+export async function fetchWarmupMessages(days = 30): Promise<WarmupMessage[]> {
+  const since = new Date(Date.now() - days * 86400000).toISOString();
+  const { data, error } = await sb
+    .from("warmup_messages")
+    .select("id, from_account_id, to_account_id, folder_detected, sent_at, replied_at")
+    .gte("sent_at", since)
+    .order("sent_at", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as WarmupMessage[];
+}
+
 // ---- Reputation snapshots (trend) ----
 export async function fetchRecentSnapshots(days = 30): Promise<ReputationSnapshot[]> {
   const since = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);

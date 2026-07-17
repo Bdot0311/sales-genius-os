@@ -6,10 +6,12 @@ import {
   fetchSendingDomains,
   fetchActiveAlerts,
   fetchRecentSnapshots,
+  fetchWarmupMessages,
   updateSendingAccount,
   upsertSendingDomain,
   deleteSendingDomain,
   resolveAlert,
+  setWarmupEnabled,
   type SendingAccount,
 } from "@/lib/deliverability-db";
 
@@ -46,6 +48,26 @@ export function useReputationSnapshots(days = 30) {
     queryKey: ["reputation-snapshots", days],
     queryFn: () => fetchRecentSnapshots(days),
     ...QUERY_OPTS,
+  });
+}
+
+export function useWarmupMessages(days = 30) {
+  return useQuery({
+    queryKey: ["warmup-messages", days],
+    queryFn: () => fetchWarmupMessages(days),
+    ...QUERY_OPTS,
+  });
+}
+
+export function useToggleWarmup() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (args: { account: { id: string; user_id: string; email: string }; enabled: boolean }) =>
+      setWarmupEnabled(args.account, args.enabled),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["sending-accounts"] });
+      qc.invalidateQueries({ queryKey: ["warmup-messages"] });
+    },
   });
 }
 

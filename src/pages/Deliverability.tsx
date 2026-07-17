@@ -8,6 +8,7 @@ import { Lock, ShieldCheck, AlertTriangle, RefreshCw } from "lucide-react";
 import { HealthOverview } from "@/components/deliverability/HealthOverview";
 import { AlertsPanel } from "@/components/deliverability/AlertsPanel";
 import { AccountHealthGrid } from "@/components/deliverability/AccountHealthGrid";
+import { WarmupPanel } from "@/components/deliverability/WarmupPanel";
 import { DomainAuthPanel } from "@/components/deliverability/DomainAuthPanel";
 import { SpamCheckerPanel } from "@/components/deliverability/SpamCheckerPanel";
 import {
@@ -113,6 +114,11 @@ const Deliverability = () => {
             <section>
               <SectionHeading title="Sending accounts" sub="Per-account reputation, updated nightly from real send data." />
               <AccountHealthGrid accounts={accounts} snapshots={snapshots} />
+            </section>
+
+            <section>
+              <SectionHeading title="Warmup" sub="Shared-pool warmup activity and inbox placement." />
+              <WarmupPanel accounts={accounts} />
             </section>
 
             <section>
