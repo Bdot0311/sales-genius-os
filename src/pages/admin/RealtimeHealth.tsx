@@ -84,6 +84,9 @@ export default function RealtimeHealth() {
     loadPublicationStatus();
   }, []);
 
+  useAutoRefresh(loadPublicationStatus, 60_000);
+
+
   // One combined channel that listens on every subscribed table.
   useEffect(() => {
     setChannelStatus("connecting");
