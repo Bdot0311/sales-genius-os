@@ -43,7 +43,28 @@ export interface TrackingVerifyResult {
 
 async function invoke<T>(fn: string, body: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.functions.invoke(fn, { body });
-  if (error) throw new Error(error.message || `${fn} failed`);
+  if (error) {
+    // supabase-js hides the function's own error behind a generic message.
+    // Pull the real status + body from the attached Response so the UI can
+    // show something actionable instead of "non-2xx status code".
+    let detail = error.message || `${fn} failed`;
+    const ctx = (error as { context?: Response }).context;
+    if (ctx && typeof ctx.text === "function") {
+      try {
+        const raw = await ctx.text();
+        try {
+          const parsed = JSON.parse(raw) as { error?: string };
+          if (parsed?.error) detail = parsed.error;
+        } catch {
+          if (raw) detail = raw.slice(0, 300);
+        }
+        if (ctx.status) detail = `${detail} (${ctx.status})`;
+      } catch {
+        /* keep the generic message */
+      }
+    }
+    throw new Error(detail);
+  }
   if (data && typeof data === "object" && "error" in data && (data as { error?: string }).error) {
     throw new Error((data as { error: string }).error);
   }
