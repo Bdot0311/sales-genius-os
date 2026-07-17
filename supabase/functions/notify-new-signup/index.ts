@@ -82,6 +82,17 @@ serve(async (req) => {
     });
     if (founderErr) console.error('founder-note error:', founderErr);
 
+    // 4. Nurturing onboarding offer — free help launching first campaign
+    const { error: onboardingErr } = await supabase.functions.invoke('send-transactional-email', {
+      body: {
+        templateName: 'onboarding-offer',
+        recipientEmail: userEmail,
+        idempotencyKey: `onboarding-offer-${userId}`,
+        templateData: { name: displayName },
+      },
+    });
+    if (onboardingErr) console.error('onboarding-offer error:', onboardingErr);
+
     console.log('Signup notification queued for:', userEmail);
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
