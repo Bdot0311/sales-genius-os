@@ -5,6 +5,7 @@ import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 import { Users, UserCheck, Lock, TrendingUp, DollarSign, Clock, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { LastCronRun } from "@/components/admin/LastCronRun";
 
 interface DashboardStats {
   total_users: number;
