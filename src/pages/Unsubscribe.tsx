@@ -120,7 +120,7 @@ const Unsubscribe = () => {
           {status === "loading" && (
             <div className="flex flex-col items-center gap-3">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-white/60">Validating your request...</p>
+              <p className="text-white/80">Validating your request...</p>
             </div>
           )}
 
