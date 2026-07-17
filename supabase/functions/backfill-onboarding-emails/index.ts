@@ -6,12 +6,16 @@ import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
+const INTERNAL_SECRET = Deno.env.get('INTERNAL_TRIGGER_SECRET') ?? '';
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
-  // Require service_role bearer
+  // Require internal trigger secret (or service role bearer)
   const auth = req.headers.get('Authorization') ?? '';
-  if (!auth.includes(SERVICE_ROLE)) {
+  const provided = req.headers.get('x-internal-secret') ?? '';
+  const okAuth = auth.includes(SERVICE_ROLE) || (INTERNAL_SECRET && provided === INTERNAL_SECRET);
+  if (!okAuth) {
     return new Response(JSON.stringify({ error: 'unauthorized' }), {
       status: 401,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
