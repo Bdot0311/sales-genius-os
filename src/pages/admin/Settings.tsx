@@ -73,6 +73,8 @@ const AdminSettings = () => {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
+  useAutoRefresh(() => { loadData(); }, 60_000);
+
   const loadData = async () => {
     setLoading(true);
     try {
