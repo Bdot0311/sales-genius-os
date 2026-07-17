@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -72,6 +73,9 @@ export default function AdminAlerts() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useAutoRefresh(load, 60_000);
+
 
   const stats = useMemo(() => {
     const byCat = (cat: string) =>

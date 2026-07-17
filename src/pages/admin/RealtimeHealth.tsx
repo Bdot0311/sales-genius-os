@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -82,6 +83,9 @@ export default function RealtimeHealth() {
   useEffect(() => {
     loadPublicationStatus();
   }, []);
+
+  useAutoRefresh(loadPublicationStatus, 60_000);
+
 
   // One combined channel that listens on every subscribed table.
   useEffect(() => {

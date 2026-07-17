@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
+import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 import { Users, UserCheck, Lock, TrendingUp, DollarSign, Clock, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -56,6 +57,8 @@ export const AdminDashboard = () => {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  useAutoRefresh(() => { loadStats(); loadStripeRevenue(); }, 60_000);
 
   const loadStats = async () => {
     try {

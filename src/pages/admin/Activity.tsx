@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Activity, Search, Filter, Download, User, LogIn, Settings, Database, Shield, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 import { format } from "date-fns";
 
 interface ActivityLog {
@@ -87,6 +88,9 @@ const AdminActivity = () => {
       supabase.removeChannel(systemChannel);
     };
   }, []);
+
+  // Auto-refresh every 60s (skipped while tab is hidden, plus refetch on focus)
+  useAutoRefresh(() => { loadAllData(); }, 60_000);
 
   const loadAllData = async () => {
     setLoading(true);

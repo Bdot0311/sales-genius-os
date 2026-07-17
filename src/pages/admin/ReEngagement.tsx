@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -52,6 +53,8 @@ const AdminReEngagement = () => {
   };
 
   useEffect(() => { load(); }, []);
+
+  useAutoRefresh(load, 60_000);
 
   const filtered = rows.filter((r) => {
     if (statusFilter !== "all" && r.status !== statusFilter) return false;
