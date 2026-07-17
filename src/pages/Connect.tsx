@@ -4,7 +4,7 @@ import { Copy, Check, ArrowLeft, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
-const MCP_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/mcp`;
+const MCP_URL = "https://mcp.outreign.io/mcp";
 
 function StepList({ items }: { items: React.ReactNode[] }) {
   return (
