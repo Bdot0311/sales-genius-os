@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, Ban, AlertTriangle, Activity, Plus, Trash2, RefreshCw, LogIn, Eye, ShieldAlert, Clock, Lock, Unlock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
 
