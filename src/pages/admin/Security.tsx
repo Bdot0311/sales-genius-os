@@ -222,10 +222,10 @@ const AdminSecurity = () => {
       )
       .subscribe();
 
-    // Auto-refresh every 30 seconds
+    // Auto-refresh full dataset every 60 seconds
     const refreshInterval = setInterval(() => {
-      loadStats();
-    }, 30000);
+      loadAllData();
+    }, 60_000);
 
     return () => {
       supabase.removeChannel(channel);
