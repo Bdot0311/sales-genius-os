@@ -89,6 +89,9 @@ const AdminActivity = () => {
     };
   }, []);
 
+  // Auto-refresh every 60s (skipped while tab is hidden, plus refetch on focus)
+  useAutoRefresh(() => { loadAllData(); }, 60_000);
+
   const loadAllData = async () => {
     setLoading(true);
     await Promise.all([loadActivities(), loadLoginEvents(), loadSystemEvents()]);
