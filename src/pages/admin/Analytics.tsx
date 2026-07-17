@@ -41,6 +41,8 @@ const AdminAnalytics = () => {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
+  useAutoRefresh(loadAllData, 60_000);
+
   const loadAllData = async () => {
     setLoading(true);
     await Promise.all([loadStats(), loadSubscriptionData()]);
