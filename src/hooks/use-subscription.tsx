@@ -41,11 +41,19 @@ export const useSubscription = () => {
       const { data, error } = await supabase.rpc('get_user_plan');
 
       if (error) {
-        // Stale JWT (post signing-key rotation) falls back to anon, which lacks
-        // EXECUTE on get_user_plan. Force sign-out so the user re-authenticates
-        // with a fresh token rather than looping on permission errors.
+        // Only force sign-out on a true permission-denied for get_user_plan,
+        // which happens when a stale JWT (post signing-key rotation) falls
+        // back to the anon role that lacks EXECUTE on this function.
+        // Do NOT sign out on transient "JWT expired" / "invalid JWT" /
+        // "missing sub claim" errors — the Supabase client auto-refreshes
+        // those on its own.
+        const code = (error as { code?: string }).code ?? '';
         const msg = (error.message || '').toLowerCase();
-        if (msg.includes('permission denied') || msg.includes('jwt') || msg.includes('claim')) {
+        const isPermissionDenied =
+          code === '42501' ||
+          msg.includes('permission denied for function') ||
+          msg.includes('permission denied for get_user_plan');
+        if (isPermissionDenied) {
           console.warn('get_user_plan permission denied — clearing stale session');
           try { await supabase.auth.signOut(); } catch { /* noop */ }
           try {
