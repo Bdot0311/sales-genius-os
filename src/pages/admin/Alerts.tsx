@@ -74,6 +74,9 @@ export default function AdminAlerts() {
     load();
   }, [load]);
 
+  useAutoRefresh(load, 60_000);
+
+
   const stats = useMemo(() => {
     const byCat = (cat: string) =>
       alerts.filter((a) => a.category === cat && !a.resolved).length;
