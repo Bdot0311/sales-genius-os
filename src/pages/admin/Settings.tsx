@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 import { Settings, CreditCard, Key, Mail, Flag, Plus, Pencil, Trash2, Loader2, Save, Info } from "lucide-react";
 import type { Json } from "@/integrations/supabase/types";
 import { EmailLogsPanel } from "@/components/admin/EmailLogsPanel";
