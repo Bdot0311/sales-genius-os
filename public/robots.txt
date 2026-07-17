@@ -171,6 +171,8 @@ Disallow: /coach/*
 Disallow: /saved-leads
 Disallow: /integrations
 Disallow: /confirmation
+Disallow: /.lovable
+Disallow: /.lovable/*
 
 
 # Allow public pages
