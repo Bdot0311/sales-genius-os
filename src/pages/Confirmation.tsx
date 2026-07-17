@@ -252,7 +252,7 @@ const Confirmation = () => {
                     <p className="text-xs sm:text-sm text-muted-foreground">{step.description}</p>
                   </div>
                   <div className="flex-shrink-0 flex items-center">
-                    <span className="text-2xl sm:text-3xl font-bold text-muted-foreground/20">
+                    <span className="text-2xl sm:text-3xl font-bold text-muted-foreground" aria-hidden="true">
                       {index + 1}
                     </span>
                   </div>
