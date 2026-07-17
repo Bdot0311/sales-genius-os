@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Pro users can view own webhook deliveries" ON public.webhook_deliveries;
