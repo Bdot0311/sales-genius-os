@@ -1,6 +1,10 @@
 project_id = "ghgfjnepvxvxrncmskys"
 
 [functions]
+  [functions.compute-reputation]
+    verify_jwt = false
+  [functions.deliverability-alerts-scan]
+    verify_jwt = false
   [functions.check-domain-auth]
     verify_jwt = true
   [functions.verify-tracking-domain]

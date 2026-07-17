@@ -116,7 +116,22 @@ serve(async (req) => {
 
     const config = integration.config as any;
     console.log('Config keys:', Object.keys(config));
-    
+
+    // Resolve the sending_accounts row for this integration so each send is
+    // attributed per account (drives per-account reputation). Non-fatal.
+    let sendingAccountId: string | null = null;
+    try {
+      const { data: sa } = await supabase
+        .from('sending_accounts')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('integration_id', integration.id)
+        .maybeSingle();
+      sendingAccountId = sa?.id ?? null;
+    } catch (e) {
+      console.warn('sending_account lookup failed (non-fatal):', e);
+    }
+
     // Get access token based on provider
     let accessToken = config.accessToken || config.provider_token;
     
@@ -447,6 +462,7 @@ ${unsubscribeFooterHtml}
           status: 'failed',
           sent_at: new Date().toISOString(),
           tracking_pixel_id: trackingPixelId,
+          sending_account_id: sendingAccountId,
         });
         
         if (gmailResponse.status === 401) {
@@ -476,6 +492,7 @@ ${unsubscribeFooterHtml}
         gmail_thread_id: gmailResult.threadId,
         sent_at: new Date().toISOString(),
         tracking_pixel_id: trackingPixelId,
+        sending_account_id: sendingAccountId,
       });
 
       if (insertError) {
