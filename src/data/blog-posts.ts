@@ -11,6 +11,114 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: "outreign-vs-instantly",
+    title: "OutReign vs Instantly: The Best Instantly Alternative for Prospect Discovery",
+    description: "Instantly is a powerful cold email sender. OutReign is a full outbound workflow that finds, scores, and drafts outreach to the right prospects first. Here's how to pick between them.",
+    publishedAt: "2026-07-17",
+    readingTime: "6 min read",
+    category: "Comparisons",
+    keywords: [
+      "instantly alternative",
+      "instantly vs outreign",
+      "outreign vs instantly",
+      "best instantly alternative",
+      "cold email tool with lead discovery",
+      "prospect discovery vs sending volume",
+    ],
+    content: `
+Instantly is one of the best-known names in cold email infrastructure. If your job is to push thousands of emails out through rotating inboxes with warmup, it's hard to beat. But if your job is to figure out *who* to email and *why* they'll care, Instantly leaves most of the work undone.
+
+OutReign was built for the second problem. It finds prospects in plain English, scores them by ICP fit, verifies deliverability, and drafts personalized first-touch emails before you send a single message. If you're comparing Instantly vs OutReign, the real question is whether you want a sending engine or a discovery-to-send workflow.
+
+## What Instantly Does Best
+
+Instantly's core strength is delivery infrastructure at scale:
+
+- **Unlimited sending accounts** and inbox rotation
+- **Built-in warmup network** to improve sender reputation
+- **High-volume cold email** with scheduling and follow-ups
+- **Template-based campaigns** with basic personalization variables
+
+For teams that already have a verified, qualified list and want to maximize delivery volume, Instantly is purpose-built. It is not, however, a prospecting tool.
+
+## Where Instantly Leaves Gaps
+
+The most common complaints from teams evaluating an Instantly alternative are:
+
+- **No prospect discovery.** You bring your own lead list. If you don't have one, you need Apollo, Lusha, or manual scraping first.
+- **No lead scoring.** Every contact has the same priority. There's no signal that tells you which 50 of your 5,000 contacts are worth a personal email.
+- **Weak personalization.** Spintax and merge tags help, but they don't reference real company signals.
+- **No reply intelligence.** Replies land in a shared inbox; you still triage and respond manually.
+
+Those gaps are exactly what OutReign was designed to close.
+
+## What OutReign Adds Before the Send
+
+OutReign is not just a sender. It is a prospect discovery layer that feeds a sending layer. The workflow looks like this:
+
+1. **Describe your ICP in plain English** — e.g., "VP of Sales at Series B SaaS companies in the US, 50–200 employees, hiring SDRs"
+2. **Get ranked prospects** with a match score based on your description
+3. **Verify emails at the SMTP level** before any outreach goes out
+4. **Review AI-drafted emails** that reference real company context per contact
+5. **Send and track replies** in one inbox with suggested responses
+
+The difference is timing: OutReign decides *who is worth emailing* before you write. Instantly assumes you already know.
+
+## OutReign vs Instantly: Side-by-Side
+
+| | Instantly | OutReign |
+|---|---|---|
+| Primary job | Send cold email at volume | Find and rank prospects, then send |
+| Prospect sourcing | Bring your own list | Plain-English ICP search with scored results |
+| Lead scoring | None | ICP fit score on every prospect |
+| Email verification | Basic format check | SMTP handshake verification |
+| Email drafting | Templates + merge tags | AI drafts from company signals |
+| Inbox warmup | Built-in network | Deliverability dashboard + warmup on Growth+ |
+| Reply management | Shared inbox | Reply inbox + AI-suggested responses |
+| Best for | High-volume senders with lists | Founders and teams who need discovery + send |
+| Starting price | $37/mo | Free, then $39/mo |
+
+## When to Choose Instantly
+
+Instantly is still the right call if:
+
+- You already have a large, verified lead list
+- You're sending 10,000+ emails per month and need inbox rotation
+- Warmup and deliverability infrastructure are your main bottlenecks
+- You have a separate process for finding and qualifying leads
+
+## When to Choose OutReign
+
+OutReign is the better fit if:
+
+- You want one tool to find *and* contact prospects
+- You'd rather describe your ICP than build boolean filters
+- You want every prospect scored before it enters a sequence
+- You're a founder or small team without an ops person to stitch tools together
+- You need AI-drafted emails that reference real signals, not just first names
+
+## The "Prospect Discovery vs Just Sending" Angle
+
+Most outbound teams fail before they send. They buy a sender, upload a scraped list, and wonder why reply rates are 0.1%. The real constraint is usually relevance: they're emailing people who were never a good fit to begin with.
+
+Instantly solves the *delivery* problem. OutReign solves the *relevance* problem first, then handles delivery. If your list is weak, no amount of warmup or inbox rotation will fix it. If your list is strong, a simpler sending layer is enough.
+
+That's the practical difference between "just sending" and "prospect discovery + sending." Instantly is optimized for the former. OutReign is optimized for the latter.
+
+## Can You Use Both?
+
+Yes. Some teams use OutReign for discovery, scoring, and drafting, then export a qualified list to Instantly for high-volume delivery. That's a valid stack. It does mean managing two tools and two bills, but it gives you the best of both worlds if pure volume is your priority.
+
+For most founders and small teams, OutReign's built-in sending is enough once the list is qualified. The time saved on discovery and personalization usually matters more than the last 10% of delivery optimization.
+
+## Bottom Line
+
+If you need an **instantly alternative** that handles lead discovery, scoring, and personalized drafting, OutReign is the closest fit. If you only need a high-volume sender and already own your lists, Instantly remains a strong choice. Pick the tool that matches where the bottleneck actually is in your outbound workflow.
+
+[Try OutReign free](https://outreign.io) — describe your ICP, see ranked prospects, and send your first personalized email in under two minutes.
+    `.trim(),
+  },
+  {
     slug: "how-to-find-b2b-leads-without-boolean-search",
     title: "How to Find B2B Leads Without Boolean Search",
     description: "You don't need to learn boolean syntax to build a qualified B2B lead list. Here's a faster method for founders and small SDR teams.",
