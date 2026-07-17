@@ -84,6 +84,8 @@ export const SEOMonitorTab = () => {
     };
   }, []);
 
+  useAutoRefresh(load, 60_000);
+
   const runNow = async (mode: "perf" | "crawl" | "both") => {
     setRunning(true);
     try {
