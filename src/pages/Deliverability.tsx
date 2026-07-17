@@ -4,7 +4,7 @@ import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Lock, ShieldCheck } from "lucide-react";
+import { Lock, ShieldCheck, AlertTriangle, RefreshCw } from "lucide-react";
 import { HealthOverview } from "@/components/deliverability/HealthOverview";
 import { AlertsPanel } from "@/components/deliverability/AlertsPanel";
 import { AccountHealthGrid } from "@/components/deliverability/AccountHealthGrid";
@@ -39,6 +39,13 @@ const Deliverability = () => {
   const snapshots = snapshotsQ.data ?? [];
 
   const loading = accountsQ.isLoading || alertsQ.isLoading || domainsQ.isLoading;
+  const errored = accountsQ.isError || alertsQ.isError || domainsQ.isError;
+  const retryAll = () => {
+    accountsQ.refetch();
+    alertsQ.refetch();
+    domainsQ.refetch();
+    snapshotsQ.refetch();
+  };
 
   return (
     <DashboardLayout>
@@ -67,6 +74,24 @@ const Deliverability = () => {
                 </p>
               </div>
               <Button onClick={() => triggerGate("deliverabilityDashboard")}>See plans</Button>
+            </CardContent>
+          </Card>
+        ) : errored ? (
+          <Card className="border-destructive/40">
+            <CardContent className="flex flex-col items-center gap-4 p-10 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+              </div>
+              <div>
+                <p className="font-semibold">Couldn't load deliverability data</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  This usually means the deliverability tables haven't been created in the database yet.
+                  Apply the latest migrations, then retry.
+                </p>
+              </div>
+              <Button variant="outline" onClick={retryAll}>
+                <RefreshCw className="mr-1 h-4 w-4" /> Retry
+              </Button>
             </CardContent>
           </Card>
         ) : loading ? (
