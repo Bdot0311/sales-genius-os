@@ -22,6 +22,14 @@ const Auth = () => {
   const inviteToken = useMemo(() => new URLSearchParams(location.search).get("invite"), [location.search]);
   const refCode = useMemo(() => new URLSearchParams(location.search).get("ref"), [location.search]);
 
+  // Post-auth return target (e.g. the OAuth consent URL). Same-origin relative paths only.
+  const nextPath = useMemo(() => {
+    const raw = new URLSearchParams(location.search).get("next");
+    if (!raw) return null;
+    if (!raw.startsWith("/") || raw.startsWith("//")) return null;
+    return raw;
+  }, [location.search]);
+
   useEffect(() => {
     if (inviteToken) sessionStorage.setItem("agency_invite_token", inviteToken);
     if (refCode) sessionStorage.setItem("agency_ref_code", refCode);
