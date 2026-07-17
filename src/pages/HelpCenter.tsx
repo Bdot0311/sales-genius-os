@@ -348,7 +348,7 @@ const HelpCenter = () => {
                   help you?
                 </span>
               </h1>
-              <p className="text-base sm:text-lg text-white/60 mb-8 max-w-xl mx-auto">
+              <p className="text-base sm:text-lg text-white/80 mb-8 max-w-xl mx-auto">
                 Guides, documentation, and answers to get the most out of OutReign.
               </p>
               <HelpSearch className="max-w-2xl mx-auto w-full" />
