@@ -1,57 +1,106 @@
 
+## Goal
 
-## Plan: OAuth Sign-In for All Integrations
+Stop losing signups to the black hole. Every new user gets scored on a 6-step activation funnel; the admin panel shows exactly where each user stalls, auto-classifies them into cohorts, and fires nudge emails when they get stuck.
 
-Currently only Google uses OAuth (sign-in button). The other integrations (Calendly, Slack, HubSpot, Salesforce) require users to manually find and paste API keys, which is a hassle. This plan converts all eligible integrations to use OAuth sign-in flows, matching the Google experience.
+## The activation funnel
 
-**Zapier stays webhook-based** — Zapier doesn't offer OAuth for this use case; it's inherently webhook-driven.
+Six milestones, tracked per user, timestamped:
 
----
+```
+1. verified_email     → clicked confirmation link
+2. completed_onboarding → finished onboarding wizard
+3. first_search       → ran a lead search
+4. first_lead_saved   → saved/enriched a lead
+5. mailbox_connected  → connected Gmail (highest paid-intent signal)
+6. first_email_sent   → sent first outreach email
+```
 
-### What Changes
+A 7th "activated" flag flips once a user hits ≥4 of the 6.
 
-**1. Create OAuth init edge functions** (one per provider)
-- `hubspot-oauth-init/index.ts` — builds HubSpot OAuth URL with scopes for CRM access
-- `hubspot-oauth-callback/index.ts` — exchanges code for tokens, stores in `integrations` table
-- `salesforce-oauth-init/index.ts` — builds Salesforce OAuth URL
-- `salesforce-oauth-callback/index.ts` — exchanges code for tokens
-- `calendly-oauth-init/index.ts` — builds Calendly OAuth URL
-- `calendly-oauth-callback/index.ts` — exchanges code for tokens
-- `slack-oauth-init/index.ts` — builds Slack OAuth URL with scopes for notifications
-- `slack-oauth-callback/index.ts` — exchanges code for tokens
+## Cohort auto-classification (evaluated at day 7)
 
-Each follows the same pattern as the existing `google-oauth-init` and `google-oauth-callback` functions: generate auth URL → redirect user → exchange code → save tokens to `integrations.config`.
+- **Tire-kicker** — 0–1 milestones. Signed up, poked around, left.
+- **Explorer** — 2–3 milestones. Interested but stalled.
+- **Active** — 4–5 milestones. Real user, likely to convert.
+- **Power user** — all 6. Prime upgrade target.
 
-**2. Add secrets for each provider's OAuth credentials**
-- `HUBSPOT_CLIENT_ID` + `HUBSPOT_CLIENT_SECRET`
-- `SALESFORCE_CLIENT_ID` + `SALESFORCE_CLIENT_SECRET`
-- `CALENDLY_CLIENT_ID` + `CALENDLY_CLIENT_SECRET`
-- `SLACK_CLIENT_ID` + `SLACK_CLIENT_SECRET`
+## What gets built
 
-You'll need to register OAuth apps on each provider's developer portal to obtain these.
+### 1. `user_activation` table + backfill
 
-**3. Update `src/pages/DashboardIntegrations.tsx`**
-- Remove `fields` from Calendly, Slack, HubSpot, Salesforce definitions (no more API key inputs)
-- Extend `handleConnect` to route each integration through its OAuth init edge function (same pattern as Google)
-- Extend `handleOAuthCallback` to detect which provider returned the code (via `state` parameter containing provider ID)
-- Remove the API-key form dialog for OAuth-based integrations
-- Keep Zapier as webhook-based (still uses the form dialog)
-- Show connected account email/name for each OAuth integration (like Google currently does)
+One row per user, columns for each milestone timestamp, current stage, cohort, `last_active_at`, `days_since_signup`, `stalled_at_stage`. Backfilled from existing data:
 
-**4. Update landing page CTA**
-- In `IntegrationsSection.tsx`, keep "Connect your tools" text — it now accurately describes OAuth sign-in
+- `verified_email_at` ← `auth.users.email_confirmed_at`
+- `completed_onboarding_at` ← `onboarding_progress` flags
+- `first_search_at` ← earliest `search_transactions` row
+- `first_lead_saved_at` ← earliest `leads` row
+- `mailbox_connected_at` ← earliest `integrations` row with Gmail
+- `first_email_sent_at` ← earliest `sent_emails` row
 
----
+### 2. Milestone triggers
 
-### What Stays the Same
-- Google OAuth flow (already working)
-- Zapier webhook integration
-- Database schema (`integrations` table with JSONB `config`)
-- Disconnect logic
-- Category filtering
+DB triggers on `search_transactions`, `leads`, `integrations`, `sent_emails`, `onboarding_progress` that update the matching timestamp column on `user_activation` (only if still NULL — first occurrence wins). Zero code changes needed in the app.
 
----
+### 3. Admin panel — Activation tab
 
-### User Action Required
-Before implementation, you'll need to create OAuth apps on each platform's developer console and provide the client ID + secret pairs. I'll prompt you for each one during implementation.
+New tab under `/admin` with three sections:
 
+**Funnel chart** — bar chart showing count + % conversion at each of the 6 steps, filterable by signup date range (7/30/90 days).
+
+```text
+Signed up      ████████████████████  100%  (240)
+Verified email ████████████████░░░░   82%  (196)
+Onboarded      █████████████░░░░░░░   68%  (163)
+First search   █████████░░░░░░░░░░░   47%  (113) ← biggest drop-off
+First lead     ██████░░░░░░░░░░░░░░   32%   (77)
+Mailbox conn.  ███░░░░░░░░░░░░░░░░░   16%   (39)
+First email    ██░░░░░░░░░░░░░░░░░░   11%   (26)
+```
+
+**Cohort breakdown** — count per cohort (Tire-kicker / Explorer / Active / Power) with % of signups.
+
+**User table** — every signup with columns: email, signup date, cohort, current stage, days stalled, last active. Click a row to open the timeline drawer.
+
+### 4. Per-user timeline drawer
+
+Chronological event log for a single user: signup, email verified, onboarding steps, each search run, each lead saved, mailbox connect, each email sent, each reply received. Pulled from existing tables (`search_transactions`, `leads`, `integrations`, `sent_emails`, `reply_threads`, `login_history`) unioned by timestamp.
+
+### 5. Drop-off alerts (admin)
+
+`system_alerts` rows fired by a daily cron for:
+- Signups stalled >3 days at "verified but no search"
+- Signups stalled >7 days with 0–1 milestones (dead cohort)
+- Any user who hit 5/6 milestones but hasn't upgraded to paid (hot lead)
+
+Shown in the existing admin alerts UI + one weekly email digest to the admin.
+
+### 6. Automated nudge emails to users
+
+Four new app-email templates + a daily cron that queues them once per user via existing `send-transactional-email`:
+
+| Day | Trigger | Template |
+|---|---|---|
+| 2 | Verified but no search | `nudge-run-first-search` — "Try a search in plain English" |
+| 4 | Search but no lead saved | `nudge-save-first-lead` — "Turn results into a shortlist" |
+| 6 | Leads saved but no mailbox | `nudge-connect-mailbox` — "You're one step from sending" |
+| 10 | Mailbox connected but no email sent | `nudge-send-first-email` — "Ready when you are — offer to draft it" |
+
+Each dedupes on `sent_emails` template name so users receive each nudge at most once. Suppressed/unsubscribed users skipped by existing infrastructure.
+
+## Technical notes
+
+- New table: `public.user_activation` (RLS: owner + admin SELECT, service role write).
+- New DB function: `admin_get_activation_funnel(_days int)` returns funnel counts + cohort breakdown.
+- New DB function: `admin_get_user_timeline(_user_id uuid)` returns unioned event stream.
+- New edge functions: `evaluate-user-cohorts` (daily), `send-activation-nudges` (daily).
+- New admin route: `/admin/activation` (tab in existing admin shell).
+- New drawer component: `UserTimelineDrawer.tsx`.
+- 4 new templates in `supabase/functions/_shared/transactional-email-templates/` + registry update.
+- Realtime not required — polls via existing 60s admin auto-refresh.
+
+## Out of scope
+
+- Tracking marketing-site page views (this is post-signup only).
+- Session replays / heatmaps.
+- Retroactively firing nudge emails to old stalled signups (can be a one-off backfill later if you want).
