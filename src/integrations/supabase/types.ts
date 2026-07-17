@@ -2899,6 +2899,57 @@ export type Database = {
         }
         Relationships: []
       }
+      user_activation: {
+        Row: {
+          cohort: string
+          completed_onboarding_at: string | null
+          current_stage: string
+          first_email_sent_at: string | null
+          first_lead_saved_at: string | null
+          first_search_at: string | null
+          last_nudge_sent: string | null
+          last_nudge_sent_at: string | null
+          mailbox_connected_at: string | null
+          milestones_hit: number
+          signed_up_at: string
+          updated_at: string
+          user_id: string
+          verified_email_at: string | null
+        }
+        Insert: {
+          cohort?: string
+          completed_onboarding_at?: string | null
+          current_stage?: string
+          first_email_sent_at?: string | null
+          first_lead_saved_at?: string | null
+          first_search_at?: string | null
+          last_nudge_sent?: string | null
+          last_nudge_sent_at?: string | null
+          mailbox_connected_at?: string | null
+          milestones_hit?: number
+          signed_up_at?: string
+          updated_at?: string
+          user_id: string
+          verified_email_at?: string | null
+        }
+        Update: {
+          cohort?: string
+          completed_onboarding_at?: string | null
+          current_stage?: string
+          first_email_sent_at?: string | null
+          first_lead_saved_at?: string | null
+          first_search_at?: string | null
+          last_nudge_sent?: string | null
+          last_nudge_sent_at?: string | null
+          mailbox_connected_at?: string | null
+          milestones_hit?: number
+          signed_up_at?: string
+          updated_at?: string
+          user_id?: string
+          verified_email_at?: string | null
+        }
+        Relationships: []
+      }
       user_email_templates: {
         Row: {
           created_at: string
@@ -3270,6 +3321,19 @@ export type Database = {
     }
     Functions: {
       admin_delete_user: { Args: { _user_id: string }; Returns: undefined }
+      admin_get_activation_dropoff_alerts: {
+        Args: never
+        Returns: {
+          alert_type: string
+          current_stage: string
+          days_since: number
+          email: string
+          milestones_hit: number
+          signed_up_at: string
+          user_id: string
+        }[]
+      }
+      admin_get_activation_funnel: { Args: { _days?: number }; Returns: Json }
       admin_get_all_subscriptions: {
         Args: never
         Returns: {
@@ -3330,6 +3394,35 @@ export type Database = {
         }[]
       }
       admin_get_seo_dashboard: { Args: never; Returns: Json }
+      admin_get_user_timeline: {
+        Args: { _user_id: string }
+        Returns: {
+          description: string
+          event_at: string
+          event_type: string
+          meta: Json
+        }[]
+      }
+      admin_list_activation_users: {
+        Args: { _cohort?: string; _days?: number; _limit?: number }
+        Returns: {
+          cohort: string
+          completed_onboarding_at: string
+          current_stage: string
+          days_since_signup: number
+          email: string
+          first_email_sent_at: string
+          first_lead_saved_at: string
+          first_search_at: string
+          full_name: string
+          mailbox_connected_at: string
+          milestones_hit: number
+          plan: string
+          signed_up_at: string
+          user_id: string
+          verified_email_at: string
+        }[]
+      }
       admin_lock_user: {
         Args: { _reason?: string; _user_id: string }
         Returns: undefined
@@ -3524,6 +3617,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      recompute_activation: { Args: { _user_id: string }; Returns: undefined }
       record_user_login: {
         Args: {
           p_ip_address?: string
@@ -3537,6 +3631,10 @@ export type Database = {
       }
       reset_daily_email_counters: { Args: never; Returns: undefined }
       touch_last_active: { Args: never; Returns: undefined }
+      trg_activation_ensure_row: {
+        Args: { _signed_up: string; _uid: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user"
