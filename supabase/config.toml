@@ -1,6 +1,12 @@
 project_id = "ghgfjnepvxvxrncmskys"
 
 [functions]
+  [functions.check-domain-auth]
+    verify_jwt = true
+  [functions.verify-tracking-domain]
+    verify_jwt = true
+  [functions.check-blacklists]
+    verify_jwt = true
   [functions.generate-blog-post]
     verify_jwt = false
   [functions.delete-sent-emails]
