@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { RefreshCw, Send, Mail, CheckCircle2, XCircle, MinusCircle, Play } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import { LastCronRun } from "@/components/admin/LastCronRun";
 
 type Status = "sent" | "skipped" | "failed";
 
