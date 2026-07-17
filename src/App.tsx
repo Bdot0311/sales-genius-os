@@ -348,6 +348,7 @@ const App = () => {
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
               <Route path="/pricing" element={<PricingPage />} />
               <Route path="/sales-operations-software" element={<SalesOperationsSoftware />} />
               <Route path="/apollo-alternative" element={<ApolloAlternative />} />
