@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +27,18 @@ export const PlacementPanel = ({ accounts }: { accounts: SendingAccount[] }) => 
   const [testId, setTestId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  // Guard against setState after unmount and clean up the pending auto-check
+  // timer — a timeout firing on an unmounted panel is what could blank the page.
+  const mounted = useRef(true);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      if (timer.current) clearTimeout(timer.current);
+    };
+  }, []);
+
   const selected = active.find((a) => a.id === accountId) ?? active[0];
 
   const run = async () => {
@@ -34,34 +46,39 @@ export const PlacementPanel = ({ accounts }: { accounts: SendingAccount[] }) => 
     setBusy(true);
     try {
       const res = await startPlacementTest(selected.id);
+      if (!mounted.current) return;
       setTestId(res.testId);
       setGmail("pending");
       setStatus("running");
       toast.success("Test email sent to the seed inbox. Checking placement…");
-      // Give it a moment to arrive, then collect once automatically.
-      setTimeout(() => collect(res.testId), 10000);
+      // Give it a moment to arrive, then auto-check once (silently — the manual
+      // "Check again" button surfaces errors; the background check shouldn't).
+      if (timer.current) clearTimeout(timer.current);
+      timer.current = setTimeout(() => collect(res.testId, true), 10000);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Placement test failed";
+      if (!mounted.current) return;
       if (msg.includes("seed_not_configured") || msg.toLowerCase().includes("seed inbox")) {
         setStatus("unconfigured");
       } else {
         toast.error(msg);
       }
     } finally {
-      setBusy(false);
+      if (mounted.current) setBusy(false);
     }
   };
 
-  const collect = async (id: string) => {
-    setBusy(true);
+  const collect = async (id: string, silent = false) => {
+    if (mounted.current) setBusy(true);
     try {
       const res = await collectPlacementTest(id);
+      if (!mounted.current) return;
       setGmail(res.gmail);
       if (res.gmail !== "pending" && res.gmail !== "missing") setStatus("done");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not read placement");
+      if (mounted.current && !silent) toast.error(e instanceof Error ? e.message : "Could not read placement");
     } finally {
-      setBusy(false);
+      if (mounted.current) setBusy(false);
     }
   };
 
