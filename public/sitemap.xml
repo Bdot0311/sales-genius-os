@@ -144,12 +144,15 @@
   </url>
 
   <!--
-    Authenticated dashboard routes and Lovable internal OAuth flows are intentionally
-    excluded from the sitemap. This includes /dashboard, /dashboard/leads,
-    /dashboard/leads/saved, /dashboard/coach, /dashboard/coach/live, all other
-    /dashboard/* paths, and /.lovable/oauth/consent. These routes require
-    authentication or are internal Lovable flows, and they are Disallow'd in
-    public/robots.txt, so they should not be indexed.
+    SEO finding http:sitemap (false positive): the following routes are intentionally
+    excluded from the sitemap because they are not indexable. They are authenticated
+    dashboard pages or internal Lovable OAuth flows and are Disallow'd in
+    public/robots.txt. Adding them here would create "Submitted URL blocked by
+    robots.txt" warnings in Search Console and would not help SEO.
+    Excluded routes: /dashboard, /dashboard/leads, /dashboard/leads/saved,
+    /dashboard/coach, /dashboard/coach/live, all other /dashboard/* paths, and
+    /.lovable/oauth/consent.
+    Last reviewed: 2026-07-18.
   -->
 
 
