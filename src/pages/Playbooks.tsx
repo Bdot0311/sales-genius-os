@@ -8,7 +8,7 @@ import {
   BookOpen, ArrowLeft, Play, CheckCircle, Target, Brain,
   MessageSquare, Send, Loader2, ChevronRight, Lightbulb
 } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
