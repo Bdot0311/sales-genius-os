@@ -40,6 +40,12 @@ interface Message {
   content: string;
 }
 
+const PlaybookHeading = ({ children }: { children: ReactNode }) => (
+  <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+    {children}
+  </h1>
+);
+
 const PLAYBOOKS: Playbook[] = [
   {
     id: 'trigger-based',
