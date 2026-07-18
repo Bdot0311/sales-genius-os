@@ -77,7 +77,11 @@ serve(async (req) => {
     // Service-role client for writes (placement_results has no user INSERT policy).
     const admin = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
 
-    const { action, sendingAccountId, testId } = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== "object") {
+      return json({ error: "Missing or invalid request body" }, 400);
+    }
+    const { action, sendingAccountId, testId } = body as { action?: string; sendingAccountId?: string; testId?: string };
 
     // ---------- START ----------
     if (action === "start") {
