@@ -212,9 +212,9 @@ const HelpCenter = () => {
             Back to help center
           </button>
 
-          <h1 className="font-display text-2xl sm:text-3xl mb-2" style={{ fontWeight: 800, letterSpacing: "-0.02em", color: "hsl(0 0% 92%)" }}>
+          <HelpHeading className="font-display text-2xl sm:text-3xl mb-2" style={{ fontWeight: 800, letterSpacing: "-0.02em", color: "hsl(0 0% 92%)" }}>
             Search results
-          </h1>
+          </HelpHeading>
           <p className="mb-8" style={{ color: "hsl(0 0% 100% / 0.75)" }}>
             {results.length} result{results.length !== 1 ? "s" : ""} for "{searchQuery}"
           </p>
