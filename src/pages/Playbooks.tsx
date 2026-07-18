@@ -506,10 +506,9 @@ Be encouraging but direct. Experienced outbound coaches don't sugarcoat.`;
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
-                <BookOpen className="w-7 h-7 text-primary" />
-                Outbound Playbooks
-              </h1>
+              <PlaybookHeading>
+                <BookOpen className="w-7 h-7 text-primary" /> Outbound Playbooks
+              </PlaybookHeading>
               <p className="text-muted-foreground text-sm">
                 Proven outbound strategies with step-by-step execution guides and AI practice sessions
               </p>
