@@ -18,7 +18,8 @@ export default defineConfig(({ mode }) => ({
     process.env.ANALYZE === "true" &&
       visualizer({
         open: false,
-        filename: "dist/stats.html",
+        filename: "dist/stats.json",
+        template: "raw-data",
         gzipSize: true,
         brotliSize: true,
       }),
