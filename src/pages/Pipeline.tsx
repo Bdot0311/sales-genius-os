@@ -139,7 +139,7 @@ const Pipeline = () => {
                   <p className="text-sm text-muted-foreground">Let deals move through stages automatically based on engagement signals.</p>
                 </div>
               </div>
-              <Button variant="outline" size="sm" onClick={() => triggerGate('automatedStageProgression')}>Learn More</Button>
+              <Button variant="outline" size="sm" onClick={() => triggerGate('automatedStageProgression')}>Learn about automated stage progression</Button>
             </div>
           </Card>
         )}

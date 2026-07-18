@@ -8,7 +8,7 @@ import {
   BookOpen, ArrowLeft, Play, CheckCircle, Target, Brain,
   MessageSquare, Send, Loader2, ChevronRight, Lightbulb
 } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,6 +39,12 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
 }
+
+const PlaybookHeading = ({ children }: { children: ReactNode }) => (
+  <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+    {children}
+  </h1>
+);
 
 const PLAYBOOKS: Playbook[] = [
   {
@@ -500,10 +506,9 @@ Be encouraging but direct. Experienced outbound coaches don't sugarcoat.`;
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
-                <BookOpen className="w-7 h-7 text-primary" />
-                Outbound Playbooks
-              </h1>
+              <PlaybookHeading>
+                <BookOpen className="w-7 h-7 text-primary" /> Outbound Playbooks
+              </PlaybookHeading>
               <p className="text-muted-foreground text-sm">
                 Proven outbound strategies with step-by-step execution guides and AI practice sessions
               </p>
@@ -556,10 +561,9 @@ Be encouraging but direct. Experienced outbound coaches don't sugarcoat.`;
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
-              <span className="text-2xl">{selectedPlaybook.icon}</span>
-              {selectedPlaybook.name}
-            </h1>
+            <PlaybookHeading>
+              <span className="text-2xl">{selectedPlaybook.icon}</span> {selectedPlaybook.name}
+            </PlaybookHeading>
             <p className="text-muted-foreground text-sm">{selectedPlaybook.tagline}</p>
           </div>
         </div>

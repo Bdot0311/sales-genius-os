@@ -1,7 +1,7 @@
 import { useParams, useSearchParams, Link } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { SEOHead, BreadcrumbSchema } from "@/components/seo";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, type ReactNode, type CSSProperties } from "react";
 import {
   HelpSearch,
   HelpCategoryCard,
@@ -50,6 +50,12 @@ const HelpCanvas = ({ children }: { children: React.ReactNode }) => (
   </div>
 );
 
+const HelpHeading = ({ children, className, style, id }: { children: ReactNode; className?: string; style?: CSSProperties; id?: string }) => (
+  <h1 id={id} className={className} style={style}>
+    {children}
+  </h1>
+);
+
 const HelpCenter = () => {
   const { category, slug } = useParams();
   const [searchParams] = useSearchParams();
@@ -63,9 +69,9 @@ const HelpCenter = () => {
         <HelpCanvas>
           <main className="flex-1 pt-32 pb-16 container mx-auto px-6">
             <div className="text-center py-16">
-              <h1 className="font-display text-3xl sm:text-4xl mb-4">
+              <HelpHeading className="font-display text-3xl sm:text-4xl mb-4">
                 Article not found
-              </h1>
+              </HelpHeading>
               <p className="mb-6" style={{ color: "hsl(0 0% 100% / 0.75)" }}>
                 The article you're looking for doesn't exist.
               </p>
@@ -106,9 +112,9 @@ const HelpCenter = () => {
         <HelpCanvas>
           <main className="flex-1 pt-32 pb-16 container mx-auto px-6">
             <div className="text-center py-16">
-              <h1 className="font-display text-3xl sm:text-4xl mb-4">
+              <HelpHeading className="font-display text-3xl sm:text-4xl mb-4">
                 Category not found
-              </h1>
+              </HelpHeading>
               <Link
                 to="/help"
                 className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold text-white transition-opacity hover:opacity-90"
@@ -149,9 +155,9 @@ const HelpCenter = () => {
             Back to help center
           </button>
 
-          <h1 className="font-display text-3xl sm:text-4xl mb-2" style={{ fontWeight: 800, letterSpacing: "-0.02em", color: "hsl(0 0% 92%)" }}>
+          <HelpHeading className="font-display text-3xl sm:text-4xl mb-2" style={{ fontWeight: 800, letterSpacing: "-0.02em", color: "hsl(0 0% 92%)" }}>
             {categoryInfo.title}
-          </h1>
+          </HelpHeading>
           <p className="text-white/80 mb-8">{categoryInfo.description}</p>
 
           <div className="grid gap-3">
@@ -206,9 +212,9 @@ const HelpCenter = () => {
             Back to help center
           </button>
 
-          <h1 className="font-display text-2xl sm:text-3xl mb-2" style={{ fontWeight: 800, letterSpacing: "-0.02em", color: "hsl(0 0% 92%)" }}>
+          <HelpHeading className="font-display text-2xl sm:text-3xl mb-2" style={{ fontWeight: 800, letterSpacing: "-0.02em", color: "hsl(0 0% 92%)" }}>
             Search results
-          </h1>
+          </HelpHeading>
           <p className="mb-8" style={{ color: "hsl(0 0% 100% / 0.75)" }}>
             {results.length} result{results.length !== 1 ? "s" : ""} for "{searchQuery}"
           </p>
@@ -328,7 +334,7 @@ const HelpCenter = () => {
                 Help center · Usually answers in seconds
               </span>
 
-              <h1
+              <HelpHeading
                 id="help-heading"
                 className="font-display mb-5 text-4xl leading-[1.05] sm:text-5xl md:text-6xl"
                 style={{ color: "hsl(0 0% 95%)", fontWeight: 800, letterSpacing: "-0.02em" }}
@@ -347,7 +353,7 @@ const HelpCenter = () => {
                 >
                   help you?
                 </span>
-              </h1>
+              </HelpHeading>
               <p className="text-base sm:text-lg text-white/80 mb-8 max-w-xl mx-auto">
                 Guides, documentation, and answers to get the most out of OutReign.
               </p>
