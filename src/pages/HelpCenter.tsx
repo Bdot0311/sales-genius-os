@@ -1,7 +1,7 @@
 import { useParams, useSearchParams, Link } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { SEOHead, BreadcrumbSchema } from "@/components/seo";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, type ReactNode, type CSSProperties } from "react";
 import {
   HelpSearch,
   HelpCategoryCard,
