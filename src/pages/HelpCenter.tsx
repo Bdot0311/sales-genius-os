@@ -69,9 +69,9 @@ const HelpCenter = () => {
         <HelpCanvas>
           <main className="flex-1 pt-32 pb-16 container mx-auto px-6">
             <div className="text-center py-16">
-              <h1 className="font-display text-3xl sm:text-4xl mb-4">
+              <HelpHeading className="font-display text-3xl sm:text-4xl mb-4">
                 Article not found
-              </h1>
+              </HelpHeading>
               <p className="mb-6" style={{ color: "hsl(0 0% 100% / 0.75)" }}>
                 The article you're looking for doesn't exist.
               </p>
