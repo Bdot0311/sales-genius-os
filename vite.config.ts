@@ -63,5 +63,6 @@ export default defineConfig(({ mode }) => ({
     target: 'es2020',
     // Reduce chunk size warnings threshold
     chunkSizeWarningLimit: 600,
+    sourcemap: true,
   },
 }));
