@@ -11,6 +11,115 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: "outreign-vs-rocketreach",
+    title: "OutReign vs RocketReach: The Best RocketReach Alternative for Outbound Teams",
+    description: "RocketReach is a powerful contact database. OutReign is a full outbound workflow that finds, scores, and drafts outreach to the right prospects. Here's how to choose.",
+    publishedAt: "2026-07-18",
+    readingTime: "6 min read",
+    category: "Comparisons",
+    keywords: [
+      "rocketreach alternatives",
+      "rocketreach alternative",
+      "outreign vs rocketreach",
+      "rocketreach vs outreign",
+      "best rocketreach alternative",
+      "outreach tool with ICP scoring",
+      "AI drafted outreach",
+    ],
+    content: `
+RocketReach is one of the most recognizable contact databases for sales and recruiting. If your job is to find email addresses and phone numbers for specific people, it is still a useful tool. But if your job is to figure out *who* to contact, *why* they'll care, and *what* to say, RocketReach leaves most of the work on your desk.
+
+OutReign was built for that second problem. It finds prospects in plain English, scores them by ICP fit, verifies deliverability, and drafts personalized first-touch emails before you send a single message. If you're comparing RocketReach vs OutReign, the real question is whether you want a contact lookup database or a discovery-to-send workflow.
+
+## What RocketReach Does Best
+
+RocketReach's core strength is contact data access:
+
+- **Massive contact database** with emails, phone numbers, and social profiles
+- **Person and company lookups** by name, title, company, or location
+- **Chrome extension** for finding contact details on LinkedIn and websites
+- **Database-centric filtering** by industry, role, seniority, and geography
+- **Useful for recruiting, sales, and research** where you already know the target
+
+For teams that know exactly who they need to reach and just need contact details, RocketReach is a solid lookup layer. It is not, however, an outreach or qualification tool.
+
+## Where RocketReach Leaves Gaps
+
+The most common complaints from teams evaluating a RocketReach alternative are:
+
+- **No lead qualification.** You get a contact list, not a ranked list of best-fit prospects.
+- **No scoring.** Every contact has the same priority. There's no signal that tells you which 50 of your 500 contacts are worth a personal email.
+- **No AI drafting.** You export data and write emails in a separate tool.
+- **No reply management.** Replies happen elsewhere; there's no inbox or thread intelligence.
+
+Those gaps are exactly what OutReign was designed to close.
+
+## What OutReign Adds Before the Send
+
+OutReign is not just a contact database. It is a prospect discovery layer that feeds a sending layer. The workflow looks like this:
+
+1. **Describe your ICP in plain English** — e.g., "VP of Sales at Series B SaaS companies in the US, 50–200 employees, hiring SDRs"
+2. **Get ranked prospects** with a match score based on your description
+3. **Verify emails at the SMTP level** before any outreach goes out
+4. **Review AI-drafted emails** that reference real company context per contact
+5. **Send and track replies** in one inbox with suggested responses
+
+The difference is timing: OutReign decides *who is worth emailing* before you write. RocketReach assumes you already know the person and just need their contact info.
+
+## OutReign vs RocketReach: Side-by-Side
+
+| | RocketReach | OutReign |
+|---|---|---|
+| Primary job | Contact lookup database | Find, rank, and draft outreach to prospects |
+| Search method | Database filters: name, company, title, location | Plain-English ICP description with scored results |
+| Lead scoring | None | ICP fit score on every prospect |
+| Email verification | Confidence scores on contact data | SMTP handshake verification |
+| Email drafting | Not included | AI drafts from company signals |
+| Outreach workflow | Export → separate sender | Integrated search → draft → send → reply |
+| Chrome extension | Yes | No — search happens inside the app |
+| Reply management | Not included | Built-in reply inbox with AI-suggested responses |
+| Best for | One-off contact lookups and data enrichment | Founders and teams who need discovery + send |
+| Starting price | ~$70–80/mo per user | Free, then $39/mo |
+
+## When to Choose RocketReach
+
+RocketReach is still the right call if:
+
+- You need a Chrome extension for quick LinkedIn contact lookups
+- You already have a qualified list and just need contact data appended
+- Your workflow is centered on one-off enrichment, not batch campaigns
+- You have a separate outreach and reply management tool you already like
+
+## When to Choose OutReign
+
+OutReign is the better fit if:
+
+- You want one tool to find *and* contact prospects
+- You'd rather describe your ICP than build boolean filters
+- You want every prospect scored before it enters a sequence
+- You're a founder or small team without an ops person to stitch tools together
+- You need AI-drafted emails that reference real signals, not just first names
+
+## The "Discovery vs Lookup" Angle
+
+Most outbound teams fail before they send. They buy a contact database, pull hundreds of names, and wonder why reply rates are low. The real constraint is usually relevance: they're emailing people who were never a good fit to begin with.
+
+RocketReach solves the *lookup* problem. OutReign solves the *relevance* problem first, then handles the send. If your list is weak, no amount of contact data will fix it. If your list is strong, a simpler sending layer is enough.
+
+That's the practical difference between a contact database and a prospect discovery workflow. RocketReach is optimized for finding individual contacts. OutReign is optimized for finding your next customers.
+
+## Can You Use Both?
+
+Yes. Some teams use RocketReach to fill in missing contact details for specific prospects, then use OutReign for discovery, scoring, and outreach. That said, OutReign's built-in contact data and verification are usually enough for a full campaign, so the extra lookup step often becomes unnecessary.
+
+## Bottom Line
+
+If you need a **RocketReach alternative** that handles lead discovery, scoring, and personalized drafting, OutReign is the closest fit. If you only need a contact lookup tool for one-off enrichment, RocketReach remains a strong choice. Pick the tool that matches where the bottleneck actually is in your outbound workflow.
+
+[Try OutReign free](https://outreign.io) — describe your ICP, see ranked prospects, and send your first personalized email in under two minutes.
+    `.trim(),
+  },
+  {
     slug: "outreign-vs-instantly",
     title: "OutReign vs Instantly: The Best Instantly Alternative for Prospect Discovery",
     description: "Instantly is a powerful cold email sender. OutReign is a full outbound workflow that finds, scores, and drafts outreach to the right prospects first. Here's how to pick between them.",
