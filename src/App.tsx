@@ -9,7 +9,7 @@ const PUBLIC_LANDING_PREFIXES = [
   "/", "/pricing", "/demo", "/api-docs", "/api-status", "/request-integration",
   "/privacy", "/terms", "/security", "/help", "/install", "/unsubscribe", "/blog",
   "/sales-operations-software", "/apollo-alternative", "/guides",
-  "/vs-apollo", "/vs-instantly", "/vs-lusha", "/vs-zoominfo", "/partners",
+  "/vs-apollo", "/vs-instantly", "/vs-lusha", "/vs-zoominfo", "/vs-rocketreach", "/partners",
 ];
 const isPublicLandingPath = (pathname: string) => {
   if (pathname === "/") return true;
@@ -41,6 +41,7 @@ const VsApollo = lazy(() => import("./pages/VsApollo"));
 const VsInstantly = lazy(() => import("./pages/VsInstantly"));
 const VsLusha = lazy(() => import("./pages/VsLusha"));
 const VsZoomInfo = lazy(() => import("./pages/VsZoomInfo"));
+const VsRocketReach = lazy(() => import("./pages/VsRocketReach"));
 const Partners = lazy(() => import("./pages/Partners"));
 
 const ApiDocs = lazy(() => import("./pages/ApiDocs"));
@@ -359,6 +360,7 @@ const App = () => {
               <Route path="/vs-instantly" element={<VsInstantly />} />
               <Route path="/vs-lusha" element={<VsLusha />} />
               <Route path="/vs-zoominfo" element={<VsZoomInfo />} />
+              <Route path="/vs-rocketreach" element={<VsRocketReach />} />
               <Route path="/partners" element={<Partners />} />
               <Route path="/guides" element={<Navigate to="/blog" replace />} />
               <Route path="/guides/email-warmup" element={<Navigate to="/blog/email-warmup" replace />} />
