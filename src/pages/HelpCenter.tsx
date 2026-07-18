@@ -155,9 +155,9 @@ const HelpCenter = () => {
             Back to help center
           </button>
 
-          <h1 className="font-display text-3xl sm:text-4xl mb-2" style={{ fontWeight: 800, letterSpacing: "-0.02em", color: "hsl(0 0% 92%)" }}>
+          <HelpHeading className="font-display text-3xl sm:text-4xl mb-2" style={{ fontWeight: 800, letterSpacing: "-0.02em", color: "hsl(0 0% 92%)" }}>
             {categoryInfo.title}
-          </h1>
+          </HelpHeading>
           <p className="text-white/80 mb-8">{categoryInfo.description}</p>
 
           <div className="grid gap-3">
