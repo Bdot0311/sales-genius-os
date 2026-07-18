@@ -40,11 +40,11 @@ async function accessTokenFromRefresh(refreshToken: string): Promise<string | nu
 
 // deno-lint-ignore no-explicit-any
 async function senderAccessToken(admin: any, integrationId: string): Promise<{ token: string; email: string } | null> {
-  const { data: integ } = await admin.from("integrations").select("id, config").eq("id", integrationId).maybeSingle();
+  const { data: integ } = await admin.from("integrations").select("id, config, connected_email").eq("id", integrationId).maybeSingle();
   if (!integ) return null;
   const config = (integ.config ?? {}) as Record<string, unknown>;
   let token = (config.accessToken as string) || (config.provider_token as string) || "";
-  const email = (config.connected_email as string) || "";
+  const email = (integ.connected_email as string) || (config.connected_email as string) || "";
   const expiresAt = config.expiresAt as number | undefined;
   const refreshToken = config.refreshToken as string | undefined;
   if (expiresAt && Date.now() >= expiresAt && refreshToken) {
