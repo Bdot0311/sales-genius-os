@@ -162,7 +162,14 @@ The warmup pool sends **real email between opted-in mailboxes**. Guardrails:
 - [ ] **Remaining**: randomized inter-send delay + rotation wired into the
       scheduled/sequence senders, hard-bounce auto-suppression, custom tracking
       domains.
-- [ ] **Phase 5 — Warmup orchestration** and **Phase 6 — Placement testing**.
+- [x] **Phase 5 — Warmup orchestration**: `warmup-orchestrator` worker (shared
+      cross-user pool; sends light natural mail between opted-in mailboxes,
+      replies to a share, detects placement and recovers spam-foldered warmup
+      mail), hourly cron, warmup toggle joins/leaves the pool, and a warmup
+      health panel (sends / reply rate / inbox placement). Idle until 2+ active
+      mailboxes are pooled — no filler traffic for a lone mailbox.
+- [ ] **Phase 6 — Placement testing**: Gmail seed inbox (real), gated
+      Outlook/Yahoo.
 - [ ] **Phase 5 — Warmup orchestration**: pool join/leave, `warmup-orchestrator`,
       reply bot, health graph, auto-pause.
 - [ ] **Phase 6 — Placement testing**: Gmail seed flow; gated Outlook/Yahoo.

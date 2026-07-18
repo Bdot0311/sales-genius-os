@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Mail, Pause, Play, Loader2 } from "lucide-react";
 import { reputationDisplay } from "@/lib/reputation";
-import { useUpdateAccount } from "@/hooks/use-deliverability";
+import { useUpdateAccount, useToggleWarmup } from "@/hooks/use-deliverability";
 import { ReputationTrend } from "./ReputationTrend";
 import { SendingControlsDialog } from "./SendingControlsDialog";
 import type { SendingAccount, ReputationSnapshot } from "@/lib/deliverability-db";
@@ -41,6 +41,7 @@ export const AccountHealthGrid = ({ accounts, snapshots }: Props) => {
 
 const AccountCard = ({ account, snapshots }: { account: SendingAccount; snapshots: ReputationSnapshot[] }) => {
   const update = useUpdateAccount();
+  const toggleWarmup = useToggleWarmup();
   const display = reputationDisplay(account.reputation_score);
   const latest = snapshots[snapshots.length - 1];
   const isPaused = account.status === "paused";
@@ -116,7 +117,13 @@ const AccountCard = ({ account, snapshots }: { account: SendingAccount; snapshot
           <div className="flex items-center gap-2">
             <Switch
               checked={account.warmup_enabled}
-              onCheckedChange={(v) => update.mutate({ id: account.id, patch: { warmup_enabled: v } })}
+              disabled={toggleWarmup.isPending}
+              onCheckedChange={(v) =>
+                toggleWarmup.mutate({
+                  account: { id: account.id, user_id: account.user_id, email: account.email },
+                  enabled: v,
+                })
+              }
               aria-label="Toggle warmup"
             />
             <span className="text-xs text-muted-foreground">Warmup</span>

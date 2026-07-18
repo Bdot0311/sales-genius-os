@@ -1,6 +1,8 @@
 project_id = "ghgfjnepvxvxrncmskys"
 
 [functions]
+  [functions.warmup-orchestrator]
+    verify_jwt = false
   [functions.compute-reputation]
     verify_jwt = false
   [functions.deliverability-alerts-scan]
