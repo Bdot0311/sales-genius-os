@@ -43,18 +43,36 @@ export default defineConfig(({ mode }) => ({
     // Reduce unused JS by splitting vendor chunks
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Only chunk vendors that are actually statically imported on the
-          // landing path. Radix dialog/popover/dropdown/select/tabs are only
-          // pulled in by dashboard/auth pages which are lazy — letting Vite
-          // bundle them into their owning route chunks avoids preloading
-          // ~74KB of unused JS on the marketing landing.
-          'vendor-react': ['react', 'react-dom'],
-          'vendor-router': ['react-router-dom'],
-          'vendor-query': ['@tanstack/react-query'],
-          // motion is used by both sync (HeroSection) and many lazy chunks —
-          // isolate it so Rollup never duplicates or mis-orders its initialisation
-          'vendor-motion': ['motion'],
+        manualChunks: (id) => {
+          // Vite aliases react/react-dom to local node_modules; match on the
+          // resolved path so the bulky CJS production builds actually move out
+          // of the main entry chunk.
+          if (id.includes("node_modules/react") || id.includes("node_modules/react-dom") || id.includes("node_modules/scheduler")) {
+            return "vendor-react";
+          }
+          if (id.includes("node_modules/react-router-dom") || id.includes("node_modules/@remix-run/router")) {
+            return "vendor-router";
+          }
+          if (id.includes("node_modules/@tanstack/react-query")) {
+            return "vendor-query";
+          }
+          if (id.includes("node_modules/motion") || id.includes("node_modules/framer-motion")) {
+            return "vendor-motion";
+          }
+          if (id.includes("node_modules/@supabase")) {
+            return "vendor-supabase";
+          }
+          if (id.includes("node_modules/@sentry")) {
+            return "vendor-sentry";
+          }
+          if (id.includes("node_modules/tailwind-merge") || id.includes("node_modules/class-variance-authority") || id.includes("node_modules/clsx")) {
+            return "vendor-ui-utils";
+          }
+          if (id.includes("node_modules/lucide-react")) {
+            return "vendor-icons";
+          }
+          // Keep app code in its owning chunk (route chunks or main entry).
+          return null;
         },
       },
     },
