@@ -248,7 +248,7 @@ const BlogPost = () => {
 
           {/* Header */}
           <header className="mb-12">
-            <p className="text-[10px] uppercase tracking-widest mb-4 font-medium" style={{ color: "hsl(261 75% 55%)" }}>
+            <p className="text-[10px] uppercase tracking-widest mb-4 font-medium text-primary">
               {post.category} · {post.readingTime}
             </p>
             <h1
