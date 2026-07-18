@@ -15,6 +15,13 @@ export default defineConfig(({ mode }) => ({
     react(),
     mcpPlugin(),
     mode === "development" && componentTagger(),
+    process.env.ANALYZE === "true" &&
+      visualizer({
+        open: false,
+        filename: "dist/stats.html",
+        gzipSize: true,
+        brotliSize: true,
+      }),
   ].filter(Boolean),
   resolve: {
     alias: {
