@@ -341,13 +341,13 @@ export const Pricing = () => {
               >
                 {interval === "monthly" ? "Monthly" : "Yearly"}
                 {interval === "yearly" && (
-                  <span
-                    className="text-xs font-semibold px-2 py-0.5 rounded-full"
-                    style={{ background: "hsl(261 75% 55% / 0.2)", color: accentPurple, border: "1px solid hsl(261 75% 50% / 0.25)" }}
-                  >
-                    Save 20%
-                  </span>
-                )}
+                    <span
+                      className="text-xs font-semibold px-2 py-0.5 rounded-full text-primary-foreground"
+                      style={{ background: "hsl(261 75% 55% / 0.2)", border: "1px solid hsl(261 75% 50% / 0.25)" }}
+                    >
+                      Save 20%
+                    </span>
+                  )}
               </button>
             ))}
           </div>
@@ -571,7 +571,7 @@ export const Pricing = () => {
           </div>
 
           <div className="lg:hidden text-center mb-3">
-            <p className="text-xs" style={{ color: "hsl(0 0% 100% / 0.3)" }}>← Scroll to compare →</p>
+            <p className="text-xs text-muted-foreground">← Scroll to compare →</p>
           </div>
 
           <div

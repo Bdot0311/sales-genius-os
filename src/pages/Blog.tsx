@@ -104,7 +104,7 @@ const Blog = () => {
                   className="py-10"
                   style={{ borderBottom: "1px solid hsl(261 75% 50% / 0.12)" }}
                 >
-                  <p className="text-[10px] uppercase tracking-widest mb-3 font-medium" style={{ color: "hsl(261 75% 55%)" }}>
+                  <p className="text-[10px] uppercase tracking-widest mb-3 font-medium text-primary">
                     <time dateTime={post.publishedAt}>
                       {new Date(post.publishedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
                     </time>
@@ -124,10 +124,7 @@ const Blog = () => {
                   </p>
                   <Link
                     to={`/blog/${post.slug}`}
-                    className="text-sm font-medium transition-colors duration-150"
-                    style={{ color: "hsl(261 75% 62%)" }}
-                    onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 78%)")}
-                    onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 62%)")}
+                    className="text-sm font-medium transition-colors duration-150 text-primary hover:text-primary-foreground"
                   >
                     Read article →
                   </Link>
