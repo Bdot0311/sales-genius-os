@@ -81,8 +81,7 @@ export const IntegrationStrip = ({
     >
       <p
         id={id ? `${id}-label` : undefined}
-        className="text-[10px] uppercase tracking-[0.22em] font-medium"
-        style={{ color: "hsl(0 0% 100% / 0.25)" }}
+        className="text-[10px] uppercase tracking-[0.22em] font-medium text-muted-foreground"
       >
         {label}
       </p>

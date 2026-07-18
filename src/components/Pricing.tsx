@@ -441,8 +441,7 @@ export const Pricing = () => {
                 {/* Plan name & price */}
                 <div className="mb-5">
                   <p
-                    className="text-[10px] uppercase tracking-[0.22em] font-medium mb-3"
-                    style={{ color: isHighlighted ? "hsl(261 75% 75%)" : "hsl(261 75% 60% / 0.7)" }}
+                    className={`text-[10px] uppercase tracking-[0.22em] font-medium mb-3 ${isHighlighted ? "text-primary-foreground" : "text-primary"}`}
                   >
                     {plan.name}
                   </p>
@@ -456,7 +455,7 @@ export const Pricing = () => {
                     <span className="text-sm" style={{ color: mutedText }}>{period}</span>
                   </div>
                   {billingNote && (
-                    <p className="text-xs mb-2" style={{ color: "hsl(0 0% 100% / 0.3)" }}>{billingNote}</p>
+                    <p className="text-xs mb-2 text-muted-foreground">{billingNote}</p>
                   )}
                   <p className="text-sm leading-relaxed" style={{ color: isHighlighted ? "hsl(0 0% 100% / 0.6)" : mutedText }}>
                     {plan.description}
@@ -494,7 +493,7 @@ export const Pricing = () => {
                       return (
                         <li key={i} className="flex items-center gap-2 mt-1 pt-2.5" style={{ borderTop: "1px solid hsl(261 75% 50% / 0.12)" }}>
                           <X className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "hsl(0 0% 100% / 0.2)" }} />
-                          <span className="text-xs" style={{ color: "hsl(0 0% 100% / 0.3)" }}>AI SDR Agent not included</span>
+                          <span className="text-xs text-muted-foreground">AI SDR Agent not included</span>
                         </li>
                       );
                     }
