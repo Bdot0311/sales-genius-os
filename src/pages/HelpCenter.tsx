@@ -334,7 +334,7 @@ const HelpCenter = () => {
                 Help center · Usually answers in seconds
               </span>
 
-              <h1
+              <HelpHeading
                 id="help-heading"
                 className="font-display mb-5 text-4xl leading-[1.05] sm:text-5xl md:text-6xl"
                 style={{ color: "hsl(0 0% 95%)", fontWeight: 800, letterSpacing: "-0.02em" }}
@@ -353,7 +353,7 @@ const HelpCenter = () => {
                 >
                   help you?
                 </span>
-              </h1>
+              </HelpHeading>
               <p className="text-base sm:text-lg text-white/80 mb-8 max-w-xl mx-auto">
                 Guides, documentation, and answers to get the most out of OutReign.
               </p>
