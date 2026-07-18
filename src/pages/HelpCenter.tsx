@@ -50,6 +50,12 @@ const HelpCanvas = ({ children }: { children: React.ReactNode }) => (
   </div>
 );
 
+const HelpHeading = ({ children, className, style, id }: { children: ReactNode; className?: string; style?: CSSProperties; id?: string }) => (
+  <h1 id={id} className={className} style={style}>
+    {children}
+  </h1>
+);
+
 const HelpCenter = () => {
   const { category, slug } = useParams();
   const [searchParams] = useSearchParams();
