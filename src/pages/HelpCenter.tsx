@@ -112,9 +112,9 @@ const HelpCenter = () => {
         <HelpCanvas>
           <main className="flex-1 pt-32 pb-16 container mx-auto px-6">
             <div className="text-center py-16">
-              <h1 className="font-display text-3xl sm:text-4xl mb-4">
+              <HelpHeading className="font-display text-3xl sm:text-4xl mb-4">
                 Category not found
-              </h1>
+              </HelpHeading>
               <Link
                 to="/help"
                 className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold text-white transition-opacity hover:opacity-90"
