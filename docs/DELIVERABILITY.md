@@ -168,8 +168,16 @@ The warmup pool sends **real email between opted-in mailboxes**. Guardrails:
       mail), hourly cron, warmup toggle joins/leaves the pool, and a warmup
       health panel (sends / reply rate / inbox placement). Idle until 2+ active
       mailboxes are pooled — no filler traffic for a lone mailbox.
-- [ ] **Phase 6 — Placement testing**: Gmail seed inbox (real), gated
-      Outlook/Yahoo.
+- [x] **Phase 6 — Placement testing**: `run-placement-test` sends a tagged test
+      from the user's mailbox to a Gmail seed inbox and reads where it landed
+      (inbox/spam/promotions). Real Gmail placement; Outlook/Yahoo reported as
+      `unsupported` until seed accounts exist. Shows an honest "not configured"
+      state until `DELIVERABILITY_SEED_GMAIL_*` are set — never a fabricated %.
+
+**Suite complete.** All six modules from the spec are built. The two features
+that send/measure real mail (warmup orchestration, placement testing) need
+Supabase-side validation with real mailboxes before production use, and the seed
+inbox must be configured for placement testing to return results.
 - [ ] **Phase 5 — Warmup orchestration**: pool join/leave, `warmup-orchestrator`,
       reply bot, health graph, auto-pause.
 - [ ] **Phase 6 — Placement testing**: Gmail seed flow; gated Outlook/Yahoo.

@@ -85,3 +85,23 @@ export function checkBlacklists(domain: string) {
 export function verifyTrackingDomain(domain: string) {
   return invoke<TrackingVerifyResult>("verify-tracking-domain", { domain });
 }
+
+export interface PlacementStartResult {
+  testId: string;
+  marker: string;
+  status: string;
+}
+export interface PlacementCollectResult {
+  testId: string;
+  gmail: "inbox" | "spam" | "promotions" | "missing" | "pending";
+}
+
+/** Send a placement test from a mailbox to the seed inbox. */
+export function startPlacementTest(sendingAccountId: string) {
+  return invoke<PlacementStartResult>("run-placement-test", { action: "start", sendingAccountId });
+}
+
+/** Read the seed inbox and record where this test's message landed. */
+export function collectPlacementTest(testId: string) {
+  return invoke<PlacementCollectResult>("run-placement-test", { action: "collect", testId });
+}

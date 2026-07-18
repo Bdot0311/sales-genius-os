@@ -10,6 +10,7 @@ import { AlertsPanel } from "@/components/deliverability/AlertsPanel";
 import { AccountHealthGrid } from "@/components/deliverability/AccountHealthGrid";
 import { WarmupPanel } from "@/components/deliverability/WarmupPanel";
 import { DomainAuthPanel } from "@/components/deliverability/DomainAuthPanel";
+import { PlacementPanel } from "@/components/deliverability/PlacementPanel";
 import { SpamCheckerPanel } from "@/components/deliverability/SpamCheckerPanel";
 import {
   useSendingAccounts,
@@ -124,6 +125,11 @@ const Deliverability = () => {
             <section>
               <SectionHeading title="Authentication & blacklists" sub="Live DNS checks for SPF, DKIM, DMARC, and domain blacklists." />
               <DomainAuthPanel />
+            </section>
+
+            <section>
+              <SectionHeading title="Inbox placement" sub="Send a seed test to see where your mail lands." />
+              <PlacementPanel accounts={accounts} />
             </section>
 
             <section>

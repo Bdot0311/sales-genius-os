@@ -1,6 +1,8 @@
 project_id = "ghgfjnepvxvxrncmskys"
 
 [functions]
+  [functions.run-placement-test]
+    verify_jwt = false
   [functions.warmup-orchestrator]
     verify_jwt = false
   [functions.compute-reputation]
