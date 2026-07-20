@@ -114,19 +114,36 @@ serve(async (req) => {
     const supabase = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
     const today = new Date().toISOString().slice(0, 10);
 
-    // Eligible pool accounts: active membership + active, warmup-enabled account with an integration.
-    const { data: pool } = await supabase
+    // Eligible pool accounts — two-step query (no embedded join) so a relationship
+    // hiccup can't silently return an empty pool.
+    const { data: poolRows, error: poolErr } = await supabase
       .from("warmup_pool")
-      .select("sending_account_id, user_id, email, daily_target, active, sending_accounts!inner(id, status, warmup_enabled, integration_id)")
+      .select("sending_account_id, user_id, email, daily_target")
       .eq("active", true);
+    if (poolErr) {
+      console.error("[warmup-orchestrator] pool query error:", poolErr);
+      return json({ error: "pool query failed", detail: poolErr.message }, 500);
+    }
+    const rows = poolRows ?? [];
+    const ids = rows.map((r: Record<string, unknown>) => r.sending_account_id as string).filter(Boolean);
 
-    const eligible: PoolAccount[] = (pool ?? [])
-      .filter((r: Record<string, unknown>) => {
-        const sa = r.sending_accounts as Record<string, unknown> | undefined;
-        return sa && sa.status === "active" && sa.warmup_enabled === true && sa.integration_id;
-      })
+    const accountsById = new Map<string, Record<string, unknown>>();
+    if (ids.length > 0) {
+      const { data: accts, error: acctErr } = await supabase
+        .from("sending_accounts")
+        .select("id, status, warmup_enabled, integration_id")
+        .in("id", ids);
+      if (acctErr) {
+        console.error("[warmup-orchestrator] sending_accounts query error:", acctErr);
+        return json({ error: "accounts query failed", detail: acctErr.message }, 500);
+      }
+      for (const a of accts ?? []) accountsById.set(a.id as string, a);
+    }
+
+    const eligible: PoolAccount[] = rows
       .map((r: Record<string, unknown>) => {
-        const sa = r.sending_accounts as Record<string, unknown>;
+        const sa = accountsById.get(r.sending_account_id as string);
+        if (!sa || sa.status !== "active" || sa.warmup_enabled !== true || !sa.integration_id) return null;
         return {
           account_id: r.sending_account_id as string,
           user_id: r.user_id as string,
@@ -134,11 +151,17 @@ serve(async (req) => {
           integration_id: sa.integration_id as string,
           daily_target: (r.daily_target as number) || 4,
         };
-      });
+      })
+      .filter((x): x is PoolAccount => x !== null);
 
     // Idle until the pool can actually pair. No fake traffic for a lone mailbox.
     if (eligible.length < 2) {
-      return json({ ok: true, idle: true, poolSize: eligible.length, note: "Warmup pool needs at least 2 active mailboxes." });
+      return json({
+        ok: true, idle: true,
+        poolRows: rows.length,
+        eligible: eligible.length,
+        note: "Warmup needs at least 2 active, warmup-enabled mailboxes in the pool.",
+      });
     }
 
     // Cache access tokens per account.
@@ -150,7 +173,11 @@ serve(async (req) => {
     }
     const sendable = eligible.filter((a) => tokens.has(a.account_id));
     if (sendable.length < 2) {
-      return json({ ok: true, idle: true, note: "Not enough mailboxes with a valid Gmail token." });
+      return json({
+        ok: true, idle: true,
+        poolRows: rows.length, eligible: eligible.length, tokened: sendable.length,
+        note: "Not enough mailboxes with a valid Gmail token — reconnect Gmail for the warmup accounts.",
+      });
     }
 
     let sent = 0, replied = 0, recovered = 0;
@@ -263,7 +290,7 @@ serve(async (req) => {
     }
 
     console.log(`[warmup-orchestrator] sent=${sent} replied=${replied} recovered=${recovered} pool=${sendable.length}`);
-    return json({ ok: true, poolSize: sendable.length, sent, replied, recovered });
+    return json({ ok: true, poolRows: rows.length, eligible: eligible.length, tokened: sendable.length, sent, replied, recovered });
   } catch (err) {
     console.error("[warmup-orchestrator] error:", err);
     return json({ error: "warmup orchestration failed" }, 500);
