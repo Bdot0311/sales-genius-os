@@ -562,7 +562,7 @@ async function fetchCachedResults(railwayBaseUrl: string): Promise<{ searches: a
 
 // Plan credit configuration - must match stripe-config.ts
 const PLAN_CREDITS = {
-  free: { monthlyCredits: 10, dailyLimit: 5, maxResultsPerSearch: 10 },
+  free: { monthlyCredits: 100, dailyLimit: 100, maxResultsPerSearch: 10 },
   starter: { monthlyCredits: 1000, dailyLimit: 100, maxResultsPerSearch: 25 },
   growth: { monthlyCredits: 2500, dailyLimit: 250, maxResultsPerSearch: 50 },
   pro: { monthlyCredits: 5000, dailyLimit: 500, maxResultsPerSearch: 100 },
@@ -670,7 +670,7 @@ serve(async (req) => {
         );
       }
 
-      // Check credits — free users get 10, paid users get their plan allotment.
+      // Check credits — free users get 100, paid users get their plan allotment.
       const remainingCredits = subscription?.search_credits_remaining ?? planConfig.monthlyCredits;
       if (remainingCredits <= 0) {
         const isFree = plan === 'free';
@@ -678,7 +678,7 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({
             error: isFree
-              ? 'You\'ve used your 10 free leads. Upgrade to a paid plan to keep finding prospects.'
+              ? 'You\'ve used your 100 free leads. Upgrade to a paid plan to keep finding prospects.'
               : 'Monthly search credits exhausted. Add more credits or wait for monthly reset.',
             error_code: 'credits_exhausted',
             upgrade_required: isFree,

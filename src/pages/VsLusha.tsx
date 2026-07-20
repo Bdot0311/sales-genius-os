@@ -72,7 +72,7 @@ const rows = [
   {
     feature: "Starting price",
     lusha: "Free plan with limited credits; paid from ~$36/user/mo billed annually",
-    outreign: "$39/mo (Starter) or free to explore with 10 searches/month",
+    outreign: "$39/mo (Starter) or free to explore with 100 searches/month",
     advantage: "neutral",
   },
 ];
@@ -96,7 +96,7 @@ const faqs = [
   },
   {
     q: "Can I try OutReign without a credit card?",
-    a: "Yes. The free plan gives you 10 lead searches per month with no card required.",
+    a: "Yes. The free plan gives you 100 lead searches per month with no card required.",
   },
 ];
 
@@ -257,7 +257,7 @@ export default function VsLusha() {
             Try it and decide for yourself.
           </h2>
           <p className="mb-8 text-sm" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
-            Free plan. No credit card. 10 lead searches included.
+            Free plan. No credit card. 100 lead searches included.
           </p>
           <button
             onClick={() => navigate("/auth")}

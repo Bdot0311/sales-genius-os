@@ -42,7 +42,7 @@ const Leads = () => {
     goToPage,
   } = useExternalLeads();
 
-  // Everyone can search — free users get 10 leads before hitting the upsell.
+  // Everyone can search — free users get 100 leads before hitting the upsell.
   // Out-of-credits state is handled by the upsell card below.
   const canAccessLeadGen = true;
   const isOutOfFreeLeads =
@@ -100,14 +100,14 @@ const Leads = () => {
       />
       <div className="px-6 py-6 space-y-6 max-w-[1400px] mx-auto">
 
-        {/* Free-leads exhausted upsell — shown only after the 10 free leads are used */}
+        {/* Free-leads exhausted upsell — shown only after the 100 free leads are used */}
         {isOutOfFreeLeads && (
           <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10">
             <CardContent className="flex flex-col items-center justify-center py-12 text-center">
               <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-5">
                 <Sparkles className="w-7 h-7 text-primary" />
               </div>
-              <h2 className="text-2xl font-bold mb-2">You've used your 10 free leads</h2>
+              <h2 className="text-2xl font-bold mb-2">You've used your 100 free leads</h2>
               <p className="text-muted-foreground max-w-md mb-6">
                 Nice work exploring the lead engine. Upgrade to a paid plan to unlock thousands of monthly searches and verified contact data.
               </p>
@@ -134,7 +134,7 @@ const Leads = () => {
                   toast({
                     title: isFreeExhausted ? "Free leads used up" : "Search limit reached",
                     description: isFreeExhausted
-                      ? "You've used your 10 free leads. Upgrade to keep finding prospects."
+                      ? "You've used your 100 free leads. Upgrade to keep finding prospects."
                       : credits?.remainingCredits === 0
                         ? "You've used all your search credits. Purchase a credit pack or upgrade your plan to continue."
                         : "You've reached your daily search limit. Try again tomorrow.",
