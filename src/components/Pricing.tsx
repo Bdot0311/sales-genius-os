@@ -553,6 +553,20 @@ export const Pricing = () => {
                   {plan.key === "free" ? "Explore the product" : "Choose this plan"}
                   <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
                 </button>
+
+                {plan.key === "free" && (
+                  <a
+                    href="mailto:support@bdotindustries.com?subject=Set%20up%20my%20first%20campaigns&body=Hi%20OutReign%20team%2C%0A%0AI%27d%20love%20help%20setting%20up%20my%20first%20few%20campaigns.%20Here%27s%20a%20bit%20about%20my%20business%3A%0A%0A-%20What%20we%20sell%3A%0A-%20Ideal%20customer%3A%0A-%20Goal%20for%20outbound%3A%0A%0AThanks!"
+                    className="mt-3 w-full h-11 rounded-full text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 group"
+                    style={{
+                      background: "linear-gradient(135deg, hsl(261 75% 60%), hsl(261 75% 50%))",
+                      color: "white",
+                    }}
+                  >
+                    <Bot className="w-3.5 h-3.5" />
+                    We'll set up your first campaigns
+                  </a>
+                )}
               </div>
             );
           })}
