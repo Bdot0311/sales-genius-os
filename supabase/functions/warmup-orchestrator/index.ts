@@ -231,8 +231,13 @@ serve(async (req) => {
     // ---- RECEIVE phase: placement detection, spam recovery, and replies ----
     for (const acct of sendable) {
       const token = tokens.get(acct.account_id)!;
-      // Find recent warmup messages in this mailbox (inbox + spam).
-      const listRes = await fetch(`${GMAIL_API}/messages?q=${encodeURIComponent(`"${MARKER}:" newer_than:3d`)}&maxResults=25&includeSpamTrash=true`, {
+      // Find warmup mail this mailbox RECEIVED (inbox/spam/promotions). Exclude
+      // -in:sent / -in:chats so we never classify or "reply to" our own sent
+      // copies — placement is only meaningful for received messages, and this
+      // also prevents self-replies. Received mail is detected on the run after
+      // it's delivered (delivery lags the same-invocation send).
+      const query = `"${MARKER}:" newer_than:3d -in:sent -in:chats`;
+      const listRes = await fetch(`${GMAIL_API}/messages?q=${encodeURIComponent(query)}&maxResults=25&includeSpamTrash=true`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!listRes.ok) continue;
