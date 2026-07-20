@@ -105,3 +105,20 @@ export function startPlacementTest(sendingAccountId: string) {
 export function collectPlacementTest(testId: string) {
   return invoke<PlacementCollectResult>("run-placement-test", { action: "collect", testId });
 }
+
+export interface WarmupRunResult {
+  ok?: boolean;
+  idle?: boolean;
+  poolRows?: number;
+  eligible?: number;
+  tokened?: number;
+  sent?: number;
+  replied?: number;
+  recovered?: number;
+  note?: string;
+}
+
+/** Trigger the shared warmup worker immediately (also runs hourly via cron). */
+export function runWarmupNow() {
+  return invoke<WarmupRunResult>("warmup-orchestrator", {});
+}
