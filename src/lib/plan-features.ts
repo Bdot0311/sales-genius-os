@@ -6,9 +6,9 @@ export const PLAN_FEATURES = {
     name: 'Free',
     price: 0,
     
-    // Credits — free trial allowance: 10 lead searches / month
-    monthlySearchCredits: 10,
-    dailySearchLimit: 10,
+    // Credits — free trial allowance: 100 lead searches / month
+    monthlySearchCredits: 100,
+    dailySearchLimit: 100,
     exportTier: 'none' as const,
     
     // Lead Intelligence Engine

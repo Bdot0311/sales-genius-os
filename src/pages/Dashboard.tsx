@@ -179,7 +179,7 @@ const Dashboard = () => {
               {stats.totalLeads > 0
                 ? `${stats.totalLeads} lead${stats.totalLeads > 1 ? 's' : ''}, ${stats.totalDeals} deal${stats.totalDeals !== 1 ? 's' : ''} worth $${stats.totalValue.toLocaleString()}. ${stats.meetingsThisWeek > 0 ? `${stats.meetingsThisWeek} meeting${stats.meetingsThisWeek > 1 ? 's' : ''} this week.` : 'No meetings this week yet.'}`
                 : isFreeTier
-                  ? 'Free plan: 10 lead searches and 10 outbound emails this month. Upgrade for unlimited capacity.'
+                  ? 'Free plan: 100 lead searches and 100 outbound emails this month. Upgrade for unlimited capacity.'
                   : 'Add your first lead to get AI-powered insights and coaching.'}
             </p>
             <button
