@@ -92,21 +92,29 @@ serve(async (req) => {
     }
 
     // ---- Persist (best-effort; results are returned even if this fails) ----
-    // The client carries the caller's Authorization header so both getUser() and
-    // the RLS-protected upsert run as the authenticated user.
+    // Validate the caller with an anon+JWT client (getUser with explicit token),
+    // then persist using the service role so RLS on sending_domains cannot drop
+    // the write if PostgREST doesn't apply the JWT as the authenticated role.
     try {
       const authHeader = req.headers.get("Authorization") ?? "";
-      const supabase = createClient(
-        Deno.env.get("SUPABASE_URL") ?? "",
-        Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-        { global: { headers: { Authorization: authHeader } } },
-      );
-      const { data: { user } } = authHeader ? await supabase.auth.getUser() : { data: { user: null } };
-      if (user) {
-        const { error: upsertError } = await supabase
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+      const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+      let userId: string | null = null;
+      if (authHeader) {
+        const authClient = createClient(supabaseUrl, anonKey, {
+          global: { headers: { Authorization: authHeader } },
+        });
+        const token = authHeader.replace(/^Bearer\s+/i, "");
+        const { data: { user } } = await authClient.auth.getUser(token);
+        userId = user?.id ?? null;
+      }
+      if (userId && serviceKey) {
+        const admin = createClient(supabaseUrl, serviceKey);
+        const { error: upsertError } = await admin
           .from("sending_domains")
           .upsert({
-            user_id: user.id,
+            user_id: userId,
             domain: root,
             spf_status: spfStatus,
             dkim_status: dkimStatus,
@@ -116,7 +124,7 @@ serve(async (req) => {
             last_checked_at: new Date().toISOString(),
           }, { onConflict: "user_id,domain" });
         if (upsertError) console.error("[check-domain-auth] upsert error:", upsertError);
-      } else {
+      } else if (!userId) {
         console.warn("[check-domain-auth] no authenticated user; returning results without saving");
       }
     } catch (persistErr) {
