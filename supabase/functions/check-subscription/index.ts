@@ -139,23 +139,12 @@ serve(async (req) => {
           });
         }
 
-        // No existing subscription, create default FREE plan (zero cost, zero credits)
-        logStep('Creating default free subscription');
-        const { error: upsertError } = await supabaseClient
-          .from('subscriptions')
-          .upsert({
-            user_id: userId,
-            plan: 'free',
-            status: 'active',
-            leads_limit: 0,
-            search_credits_base: 0,
-            search_credits_addon: 0,
-            search_credits_remaining: 0,
-          }, { onConflict: 'user_id' });
+        // No existing subscription row — insert default free plan.
+        // Do NOT upsert unconditionally: that would clobber the 100 free
+        // credits granted by the handle_new_user_subscription trigger on
+        // every login for legitimate free-tier users.
+        logStep('No subscription row found; leaving trigger-created default in place');
 
-        if (upsertError) {
-          logStep('Error creating default subscription', { error: upsertError });
-        }
       }
 
       return new Response(JSON.stringify({ 
