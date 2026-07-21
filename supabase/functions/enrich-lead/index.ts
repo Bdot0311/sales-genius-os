@@ -328,11 +328,15 @@ serve(async (req) => {
 
     console.log('Lead enriched successfully:', leadId, 'fields:', enrichedFields);
 
+    if (enrichedFields.length === 0) {
+      await refundCredit(noMatchReason || 'no_match');
+    }
+
     await supabase.from('enrichment_history').insert({
       lead_id: leadId,
       user_id: user.id,
       fields_enriched: enrichedFields,
-      source: 'prospeo',
+      source: 'railway',
       status: enrichedFields.length > 0 ? 'success' : 'no_match',
       error_message: noMatchReason || null,
     });
