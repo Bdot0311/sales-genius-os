@@ -46,7 +46,7 @@ const freePlan: FreePlan = {
   description: "100 lead searches per month to properly stress-test the platform",
   features: [
     "100 lead searches / month",
-    "Up to 5 results per search",
+    "Up to 25 results per search",
     "100 emails / month",
     "View-only dashboard access",
     "Summary analytics",
@@ -249,7 +249,7 @@ const creditFAQs = [
   { question: "What happens when I reach my limit?", answer: "You'll see a message letting you know you've reached your prospect limit. You can still access all your saved prospects, pipeline, and campaign features. Purchase a one-time credit pack or upgrade your plan to continue." },
   { question: "What about daily limits?", answer: "Each plan has a daily limit to ensure fair usage: Starter (100/day), Growth (250/day), Pro (500/day), Agency (1,500/day). If exceeded, you'll see a message asking you to try again tomorrow." },
   { question: "Can I purchase more verified prospects?", answer: "Yes. Purchase one-time credit packs anytime from your account settings or the pricing page. Choose from packs of 200, 400, or 600 prospects. No recurring commitment, just pay once." },
-  { question: "Is there a free plan?", answer: "Yes. The Explore plan includes 100 lead searches per month, up to 5 results per search, and 100 emails per month — enough to genuinely stress-test the platform before you upgrade." },
+  { question: "Is there a free plan?", answer: "Yes. The Explore plan includes 100 lead searches per month, up to 25 results per search, and 100 emails per month — enough to genuinely stress-test the platform before you upgrade." },
   { question: "Do you offer yearly billing?", answer: "Yes! Save ~20% with annual billing. With yearly plans, your full annual credit pool is granted upfront: Starter gets 12,000, Growth gets 30,000, and Pro gets 60,000 prospects. Monthly plans reset each billing cycle." },
   { question: "Do unused credits roll over?", answer: "On monthly plans, Starter credits reset each cycle while Growth and Pro credits roll over to the next month. On yearly plans, you receive your full annual pool upfront." },
   { question: "Can I upgrade, downgrade, or cancel anytime?", answer: "Yes. Upgrades happen instantly with your new allocation. Downgrades and cancellations apply at the end of your billing cycle." },
