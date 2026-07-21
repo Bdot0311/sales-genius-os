@@ -37,8 +37,19 @@ export const useSubscription = () => {
 
   const loadSubscription = async () => {
     try {
+      // Skip entirely when there is no active session — avoids calling
+      // get_user_plan / auth.getUser() on public marketing routes, which
+      // produces noisy 401/permission-denied errors in logs.
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setSubscription(null);
+        return;
+      }
+
       // Get basic plan info from RPC
       const { data, error } = await supabase.rpc('get_user_plan');
+
+
 
       if (error) {
         // Only force sign-out on a true permission-denied for get_user_plan,
