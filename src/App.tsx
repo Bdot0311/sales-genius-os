@@ -247,7 +247,9 @@ const fetchMaintenance = async (): Promise<MaintenanceState> => {
   if (maintInflight) return maintInflight;
   maintInflight = (async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session ? (await supabase.auth.getUser()).data.user : null;
+
       const [{ data: active }, { data: msg }, { data: roles }] = await Promise.all([
         supabase.rpc('get_maintenance_status'),
         supabase.rpc('get_maintenance_message'),
