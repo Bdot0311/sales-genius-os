@@ -18,6 +18,8 @@ import { template as nudgeRunFirstSearch } from './nudge-run-first-search.tsx'
 import { template as nudgeSaveFirstLead } from './nudge-save-first-lead.tsx'
 import { template as nudgeConnectMailbox } from './nudge-connect-mailbox.tsx'
 import { template as nudgeSendFirstEmail } from './nudge-send-first-email.tsx'
+import { template as campaignSetupRequest } from './campaign-setup-request.tsx'
+import { template as campaignSetupConfirmation } from './campaign-setup-confirmation.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'welcome-email': welcomeEmail,
@@ -29,4 +31,6 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'nudge-save-first-lead': nudgeSaveFirstLead,
   'nudge-connect-mailbox': nudgeConnectMailbox,
   'nudge-send-first-email': nudgeSendFirstEmail,
+  'campaign-setup-request': campaignSetupRequest,
+  'campaign-setup-confirmation': campaignSetupConfirmation,
 }
