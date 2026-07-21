@@ -23,7 +23,7 @@ const PricingPage = () => {
     { question: "What happens when I reach my limit?", answer: "You can still access saved prospects and pipeline features. Purchase a one-time credit pack or upgrade your plan to continue contacting new prospects." },
     { question: "Can I purchase more verified prospects?", answer: "Yes. Purchase one-time credit packs anytime: 200 prospects ($37.50), 400 prospects ($67.50), or 600 prospects ($90). No recurring commitment." },
     { question: "Do unused credits roll over?", answer: "On monthly plans, Starter credits reset each cycle while Growth and Pro credits roll over. Yearly plans grant your full annual pool upfront." },
-    { question: "Is there a free plan?", answer: "Yes. The Explore plan includes 100 lead searches per month, up to 5 results per search, and 100 emails per month — enough to genuinely stress-test the platform before you upgrade." },
+    { question: "Is there a free plan?", answer: "Yes. The Explore plan includes 100 lead searches per month, up to 25 results per search, and 100 emails per month — enough to genuinely stress-test the platform before you upgrade." },
     { question: "Can I upgrade, downgrade, or cancel anytime?", answer: "Yes. Upgrades are instant. Downgrades apply at end of billing cycle." },
     { question: "Is there a money-back guarantee?", answer: "Yes, 30-day money-back guarantee on all paid plans." },
   ];

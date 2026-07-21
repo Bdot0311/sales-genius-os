@@ -12,7 +12,7 @@ export const PLAN_FEATURES = {
     exportTier: 'none' as const,
     
     // Lead Intelligence Engine
-    maxResultsPerSearch: 5,
+    maxResultsPerSearch: 25,
     enrichmentLevel: 'none',
     advancedFilters: false,
     apiAccessLeads: false,
