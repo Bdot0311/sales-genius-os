@@ -90,6 +90,22 @@ serve(async (req) => {
 
     for (const email of scheduledEmails) {
       try {
+        // Compliance: skip recipients who unsubscribed after the email was queued.
+        const { data: optout } = await supabase
+          .from('email_optouts')
+          .select('id')
+          .eq('email', (email.to_email || '').toLowerCase().trim())
+          .maybeSingle();
+        if (optout) {
+          console.log(`Recipient ${email.to_email} unsubscribed, skipping ${email.id}`);
+          await supabase
+            .from('sent_emails')
+            .update({ status: 'failed', error_message: 'recipient_unsubscribed' } as any)
+            .eq('id', email.id);
+          failed++;
+          continue;
+        }
+
         // Check daily + monthly limits
         const ul = userLimits[email.user_id];
         if (ul && ul.dailySent >= ul.dailyLimit) {
@@ -118,6 +134,32 @@ serve(async (req) => {
             .eq("id", email.id);
           failed++;
           continue;
+        }
+
+        // Resolve sending account & respect per-mailbox pause + daily cap.
+        let sendingAccountId: string | null = null;
+        try {
+          const { data: sa } = await supabase
+            .from('sending_accounts')
+            .select('id, status, daily_limit, sent_today, sent_today_date')
+            .eq('user_id', email.user_id)
+            .eq('integration_id', integration.id)
+            .maybeSingle();
+          if (sa) {
+            sendingAccountId = sa.id;
+            if (sa.status === 'paused' || sa.status === 'disabled') {
+              console.log(`Mailbox ${sa.id} ${sa.status}, skipping ${email.id}`);
+              continue; // leave scheduled; will retry after resume
+            }
+            const today = new Date().toISOString().slice(0, 10);
+            const sentToday = sa.sent_today_date === today ? (sa.sent_today || 0) : 0;
+            if (sentToday >= (sa.daily_limit || 0)) {
+              console.log(`Mailbox ${sa.id} at daily cap, deferring ${email.id}`);
+              continue;
+            }
+          }
+        } catch (e) {
+          console.warn('sending_account lookup failed (non-fatal):', e);
         }
 
         const config = integration.config as any;
