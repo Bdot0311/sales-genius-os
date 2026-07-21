@@ -71,6 +71,49 @@ export function SequenceBuilder() {
     trigger_condition: "on_enroll",
   });
 
+  // If the user picked a template on the previous screen, materialize those
+  // steps into the DB once — otherwise selecting a template produced an empty
+  // sequence and the user had to rebuild it by hand.
+  useEffect(() => {
+    if (!id || stepsLoading) return;
+    const key = `sequence_template_${id}`;
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return;
+    if (steps.length > 0) {
+      sessionStorage.removeItem(key);
+      return;
+    }
+    sessionStorage.removeItem(key);
+    (async () => {
+      try {
+        const tplSteps = JSON.parse(raw) as Array<{
+          delay_days: number;
+          delay_hours: number;
+          subject_template: string;
+          body_template: string;
+          trigger_condition: string;
+        }>;
+        for (let i = 0; i < tplSteps.length; i++) {
+          const s = tplSteps[i];
+          await createStep.mutateAsync({
+            sequence_id: id,
+            step_number: i + 1,
+            delay_days: s.delay_days,
+            delay_hours: s.delay_hours,
+            subject_template: s.subject_template,
+            body_template: s.body_template,
+            step_type: 'email',
+            trigger_condition: s.trigger_condition,
+            is_active: true,
+          });
+        }
+      } catch (e) {
+        console.error('Failed to apply sequence template:', e);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, stepsLoading]);
+
   // Fetch sequence details
   const { data: sequence, isLoading: sequenceLoading } = useQuery({
     queryKey: ['sequence', id],
