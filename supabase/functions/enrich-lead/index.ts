@@ -73,6 +73,7 @@ serve(async (req) => {
       .maybeSingle();
     const isAdmin = adminRole?.role === 'admin';
 
+    let creditWasDeducted = false;
     if (!isAdmin) {
       const { data: subscription } = await supabase
         .from('subscriptions')
@@ -91,7 +92,8 @@ serve(async (req) => {
         );
       }
 
-      if ((subscription.search_credits_remaining || 0) <= 0) {
+      const remaining = subscription.search_credits_remaining || 0;
+      if (remaining <= 0) {
         return new Response(
           JSON.stringify({
             error: 'No search credits remaining. Add more credits to enrich leads.',
@@ -100,7 +102,52 @@ serve(async (req) => {
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
+
+      // Deduct 1 credit up-front; refunded below on no-match / failure.
+      const { error: deductError } = await supabase
+        .from('subscriptions')
+        .update({ search_credits_remaining: remaining - 1 })
+        .eq('user_id', user.id);
+      if (deductError) {
+        console.error('Enrich credit deduction failed:', deductError);
+        throw new Error('Failed to reserve credit for enrichment');
+      }
+      creditWasDeducted = true;
+      await supabase.from('search_transactions').insert({
+        user_id: user.id,
+        type: 'usage',
+        amount: -1,
+        balance_after: remaining - 1,
+        description: 'Lead enrichment',
+      });
     }
+
+    const refundCredit = async (reason: string) => {
+      if (!creditWasDeducted) return;
+      creditWasDeducted = false;
+      try {
+        const { data: sub } = await supabase
+          .from('subscriptions')
+          .select('search_credits_remaining')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (!sub) return;
+        const restored = (sub.search_credits_remaining || 0) + 1;
+        await supabase
+          .from('subscriptions')
+          .update({ search_credits_remaining: restored })
+          .eq('user_id', user.id);
+        await supabase.from('search_transactions').insert({
+          user_id: user.id,
+          type: 'refund',
+          amount: 1,
+          balance_after: restored,
+          description: `Enrichment refund: ${reason}`,
+        });
+      } catch (e) {
+        console.error('Enrich credit refund failed:', e);
+      }
+    };
 
     const { data: lead, error: leadError } = await supabase
       .from('leads')
@@ -109,7 +156,10 @@ serve(async (req) => {
       .eq('user_id', user.id)
       .single();
 
-    if (leadError || !lead) throw new Error('Lead not found');
+    if (leadError || !lead) {
+      await refundCredit('lead_not_found');
+      throw new Error('Lead not found');
+    }
 
     console.log('Enriching lead:', lead.contact_name, lead.company_name);
 
@@ -281,11 +331,15 @@ serve(async (req) => {
 
     console.log('Lead enriched successfully:', leadId, 'fields:', enrichedFields);
 
+    if (enrichedFields.length === 0) {
+      await refundCredit(noMatchReason || 'no_match');
+    }
+
     await supabase.from('enrichment_history').insert({
       lead_id: leadId,
       user_id: user.id,
       fields_enriched: enrichedFields,
-      source: 'prospeo',
+      source: 'railway',
       status: enrichedFields.length > 0 ? 'success' : 'no_match',
       error_message: noMatchReason || null,
     });
