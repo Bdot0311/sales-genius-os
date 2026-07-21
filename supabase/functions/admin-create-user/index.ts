@@ -66,9 +66,9 @@ serve(async (req) => {
     // Profile and subscription will be created by triggers
     // Set proper limits and credits per plan (matches admin_update_subscription logic)
     const planLimits: Record<string, number> = {
-      free: 0, starter: 1000, growth: 2500, pro: 5000, agency: 15000
+      free: 100, starter: 1000, growth: 2500, pro: 5000, agency: 15000
     };
-    const leadsLimit = planLimits[plan] ?? 0;
+    const leadsLimit = planLimits[plan] ?? 100;
     const credits = leadsLimit;
     await supabaseClient
       .from('subscriptions')
