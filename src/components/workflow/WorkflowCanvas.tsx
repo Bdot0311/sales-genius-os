@@ -125,9 +125,19 @@ export const WorkflowCanvas = ({
 
       if (error) throw error;
 
+      if (data?.success === false) {
+        toast({
+          title: "Cannot test",
+          description: data.message || "Workflow could not be executed",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const steps = data?.executionLog?.length ?? 0;
       toast({
         title: "Test completed",
-        description: `Workflow executed ${data.executionLog.length} steps successfully`,
+        description: `Workflow executed ${steps} steps successfully`,
       });
     } catch (error: any) {
       toast({
@@ -163,9 +173,19 @@ export const WorkflowCanvas = ({
 
       if (error) throw error;
 
+      if (data?.success === false) {
+        toast({
+          title: "Cannot run",
+          description: data.message || "Activate this workflow before running it with live data.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const steps = data?.executionLog?.length ?? 0;
       toast({
         title: "Workflow completed",
-        description: `Successfully executed ${data.executionLog.length} steps`,
+        description: `Successfully executed ${steps} steps`,
       });
     } catch (error: any) {
       toast({

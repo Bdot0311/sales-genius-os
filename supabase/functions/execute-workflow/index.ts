@@ -42,13 +42,14 @@ Deno.serve(async (req) => {
     );
 
     const { workflowId, testData } = await req.json();
-    console.log('Executing workflow:', workflowId);
+    const isTest = testData && testData.test === true;
+    console.log('Executing workflow:', workflowId, 'test:', isTest);
 
     // Use service client to load workflow (works for both DB-trigger and user-invoked calls).
     const { data: workflow, error: workflowError } = await serviceClient.from('workflows').select('*').eq('id', workflowId).single();
     if (workflowError) throw workflowError;
-    if (!workflow.active) {
-      return new Response(JSON.stringify({ success: false, message: 'Workflow is not active' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+    if (!workflow.active && !isTest) {
+      return new Response(JSON.stringify({ success: false, message: 'Workflow is not active', executionLog: [] }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
     }
 
     const nodes = workflow.nodes as WorkflowNode[];
