@@ -53,7 +53,7 @@ serve(async (req) => {
     // Pre-fetch daily + monthly limits for all unique users
     const userIds = [...new Set(scheduledEmails.map((e: any) => e.user_id))];
     const MONTHLY_EMAIL_LIMITS: Record<string, number> = {
-      free: 0, starter: 50000, growth: 250000, pro: 1000000, elite: 1000000, agency: -1,
+      free: 100, starter: 50000, growth: 250000, pro: 1000000, elite: 1000000, agency: -1,
     };
     const userLimits: Record<string, { dailyLimit: number; dailySent: number; monthlyLimit: number; monthlySent: number }> = {};
     for (const uid of userIds) {

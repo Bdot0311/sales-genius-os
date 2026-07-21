@@ -223,7 +223,7 @@ serve(async (req) => {
       .single();
 
     const MONTHLY_EMAIL_LIMITS: Record<string, number> = {
-      free: 0, starter: 50000, growth: 250000, pro: 1000000, elite: 1000000, agency: -1,
+      free: 100, starter: 50000, growth: 250000, pro: 1000000, elite: 1000000, agency: -1,
     };
 
     if (subscription) {
