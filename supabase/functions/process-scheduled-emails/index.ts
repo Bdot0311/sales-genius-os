@@ -282,8 +282,24 @@ serve(async (req) => {
               gmail_message_id: gmailResult.id,
               gmail_thread_id: gmailResult.threadId,
               tracking_pixel_id: trackingPixelId,
-            })
+              sending_account_id: sendingAccountId,
+            } as any)
             .eq("id", email.id);
+
+          // Bump per-mailbox daily counter (drives rotation + deliverability caps)
+          if (sendingAccountId) {
+            try {
+              const today = new Date().toISOString().slice(0, 10);
+              await supabase.rpc('increment_account_send', { p_account_id: sendingAccountId } as any);
+              // fallback direct update in case rpc auth fails
+              await supabase
+                .from('sending_accounts')
+                .update({ sent_today_date: today, last_sent_at: new Date().toISOString() } as any)
+                .eq('id', sendingAccountId);
+            } catch (e) {
+              console.warn('increment_account_send failed (non-fatal):', e);
+            }
+          }
 
           // Update lead's last_contacted_at
           if (email.lead_id) {
