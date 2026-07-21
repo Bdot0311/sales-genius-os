@@ -15,12 +15,21 @@ export const AdminProvider = ({ children }: { children: React.ReactNode }) => {
 
   const checkAdminStatus = useCallback(async () => {
     try {
+      // Skip getUser() when there is no local session — avoids /auth/v1/user
+      // 403 "bad_jwt: missing sub claim" spam on public marketing routes.
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setIsAdmin(false);
+        setLoading(false);
+        return;
+      }
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         setIsAdmin(false);
         setLoading(false);
         return;
       }
+
 
       // Heartbeat: keep "last login" fresh in the admin panel for any authenticated session.
       // auth.users.last_sign_in_at doesn't update on refresh-token activity, and the
