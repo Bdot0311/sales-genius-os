@@ -223,7 +223,21 @@
   </url>
 
   <url>
-    <loc>https://outreign.io/blog/b2b-email-verification-guide</loc>
+    <loc>https://outreign.io/blog/b2b-prospecting-guide</loc>
+    <lastmod>2026-06-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://outreign.io/blog/icp-criteria-revenue-operations</loc>
+    <lastmod>2026-06-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://outreign.io/blog/partnership-email-templates</loc>
     <lastmod>2026-06-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -242,6 +256,7 @@
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
+
 
 
   <!-- Demo Page -->
