@@ -354,7 +354,6 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in enrich-lead function:', error);
-    try { await refundCredit('function_error'); } catch (_) { /* ignore */ }
     const errorMsg = error instanceof Error ? error.message : '';
     const isAuthError = errorMsg.includes('authorization') || errorMsg.includes('token') || errorMsg.includes('No authorization');
     const isNotFound = errorMsg.includes('not found');
