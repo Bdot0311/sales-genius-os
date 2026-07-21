@@ -85,12 +85,19 @@ export const useAdmin = () => {
 
   const checkAdminStatus = useCallback(async () => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setIsAdmin(false);
+        setLoading(false);
+        return;
+      }
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         setIsAdmin(false);
         setLoading(false);
         return;
       }
+
 
       void supabase.rpc('touch_last_active');
 
