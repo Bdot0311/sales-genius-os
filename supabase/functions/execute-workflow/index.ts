@@ -135,11 +135,11 @@ Deno.serve(async (req) => {
           }
         } else if (actionType === 'create_task') {
           try {
-            const { data: { user } } = await supabaseClient.auth.getUser();
-            if (user) {
+            const ownerId = workflow.user_id;
+            if (ownerId) {
               const taskConfig = nextNode.data.config?.taskConfig || {};
-              const { error: taskError } = await supabaseClient.from('activities').insert({
-                user_id: user.id, lead_id: workflowData.id, type: 'task',
+              const { error: taskError } = await serviceClient.from('activities').insert({
+                user_id: ownerId, lead_id: workflowData.id, type: 'task',
                 subject: taskConfig.subject || 'Follow up with lead',
                 description: taskConfig.description || '',
                 due_date: taskConfig.dueDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
@@ -147,7 +147,7 @@ Deno.serve(async (req) => {
               if (taskError) throw taskError;
               executionLog.push({ nodeId: nextNode.id, type: 'action', action: 'create_task', status: 'executed', timestamp: new Date().toISOString() });
             } else {
-              executionLog.push({ nodeId: nextNode.id, type: 'action', action: 'create_task', status: 'skipped', error: 'No authenticated user', timestamp: new Date().toISOString() });
+              executionLog.push({ nodeId: nextNode.id, type: 'action', action: 'create_task', status: 'skipped', error: 'No workflow owner', timestamp: new Date().toISOString() });
             }
           } catch (error: any) {
             executionLog.push({ nodeId: nextNode.id, type: 'action', action: 'create_task', status: 'failed', error: error.message, timestamp: new Date().toISOString() });
