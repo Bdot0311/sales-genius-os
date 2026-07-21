@@ -4,6 +4,7 @@ import { STRIPE_PRICE_IDS } from "@/lib/stripe-config";
 import { useSearchCredits } from "@/hooks/use-search-credits";
 import { useNavigate } from "react-router-dom";
 import { QuickBuyCreditsDialog } from "@/components/dashboard/QuickBuyCreditsDialog";
+import { CampaignSetupDialog } from "@/components/CampaignSetupDialog";
 
 type BillingInterval = "monthly" | "yearly";
 
