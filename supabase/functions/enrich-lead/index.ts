@@ -156,7 +156,10 @@ serve(async (req) => {
       .eq('user_id', user.id)
       .single();
 
-    if (leadError || !lead) throw new Error('Lead not found');
+    if (leadError || !lead) {
+      await refundCredit('lead_not_found');
+      throw new Error('Lead not found');
+    }
 
     console.log('Enriching lead:', lead.contact_name, lead.company_name);
 
