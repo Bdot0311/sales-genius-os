@@ -100,6 +100,8 @@ project_id = "ghgfjnepvxvxrncmskys"
     verify_jwt = true
   [functions.send-security-alert]
     verify_jwt = false
+  [functions.backfill-campaign-setup-emails]
+    verify_jwt = false
   [functions.send-re-engagement-emails]
     verify_jwt = false
   [functions.send-subscription-confirmation]
