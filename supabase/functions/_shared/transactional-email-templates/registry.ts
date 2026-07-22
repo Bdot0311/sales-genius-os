@@ -35,4 +35,6 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'nudge-send-first-email': nudgeSendFirstEmail,
   'campaign-setup-request': campaignSetupRequest,
   'campaign-setup-confirmation': campaignSetupConfirmation,
+  'campaign-setup-invite': campaignSetupInvite,
+  'campaign-setup-winback': campaignSetupWinback,
 }
