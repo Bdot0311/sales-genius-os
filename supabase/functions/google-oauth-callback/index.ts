@@ -157,7 +157,7 @@ serve(async (req) => {
     if (googleEmail) {
       const { data: existingAccount } = await supabase
         .from("sending_accounts")
-        .select("id")
+        .select("id, status")
         .eq("user_id", user.id)
         .eq("email", googleEmail)
         .maybeSingle();
@@ -173,9 +173,19 @@ serve(async (req) => {
         });
         if (acctErr) console.warn("sending_accounts insert failed:", acctErr.message);
       } else if (integrationId) {
+        // Reconnecting Google must NOT silently override a paused or disabled
+        // mailbox — those are deliverability safeguards set by auto-pause or
+        // the user. Only flip to active if the account is already active.
+        const updatePayload: Record<string, unknown> = {
+          integration_id: integrationId,
+          updated_at: new Date().toISOString(),
+        };
+        if (existingAccount.status === "active") {
+          updatePayload.status = "active";
+        }
         await supabase
           .from("sending_accounts")
-          .update({ integration_id: integrationId, status: "active", updated_at: new Date().toISOString() })
+          .update(updatePayload)
           .eq("id", existingAccount.id);
       }
     }
