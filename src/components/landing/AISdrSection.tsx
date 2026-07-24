@@ -306,7 +306,7 @@ export const AISdrSection = () => {
                 </button>
                 <button
                   onClick={() => navigate("/pricing")}
-                  className="text-sm font-medium transition-colors duration-200"
+                  className="text-sm font-medium transition-colors duration-200 inline-flex items-center min-h-[40px] px-1"
                   style={{ color: "hsl(261 75% 65%)" }}
                   onMouseEnter={(e) => (e.currentTarget.style.color = "hsl(261 75% 80%)")}
                   onMouseLeave={(e) => (e.currentTarget.style.color = "hsl(261 75% 65%)")}
