@@ -136,7 +136,7 @@ export const DifferentiationSection = () => {
           >
             <motion.button
               onClick={() => navigate("/auth")}
-              className="inline-flex items-center gap-1.5 text-sm font-medium group"
+              className="inline-flex items-center gap-1.5 text-sm font-medium group min-h-[40px]"
               style={{ color: "hsl(261 75% 65%)" }}
               whileHover={{ x: 3, color: "hsl(261 75% 80%)" }}
               transition={{ type: "spring", stiffness: 400, damping: 20 }}

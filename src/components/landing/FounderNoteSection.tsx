@@ -177,7 +177,7 @@ export const FounderNoteSection = () => {
           >
             <button
               onClick={() => navigate("/auth")}
-              className="text-sm font-medium transition-colors duration-200"
+              className="text-sm font-medium transition-colors duration-200 inline-flex items-center min-h-[40px] px-1"
               style={{ color: "hsl(261 75% 65%)" }}
               onMouseEnter={(e) =>
                 (e.currentTarget.style.color = "hsl(261 75% 80%)")
@@ -190,7 +190,7 @@ export const FounderNoteSection = () => {
             </button>
             <button
               onClick={() => navigate("/pricing")}
-              className="text-sm transition-colors duration-200"
+              className="text-sm transition-colors duration-200 inline-flex items-center min-h-[40px] px-1"
               style={{ color: "hsl(0 0% 100% / 0.6)" }}
               onMouseEnter={(e) =>
                 (e.currentTarget.style.color = "hsl(0 0% 100% / 0.6)")
