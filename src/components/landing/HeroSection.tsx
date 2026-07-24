@@ -141,7 +141,7 @@ export const HeroSection = () => {
           >
             See how it works
             <ArrowRight className="h-3.5 w-3.5 ml-0.5" aria-hidden="true" />
-          </motion.button>
+          </motion.a>
         </motion.div>
 
         <motion.p
