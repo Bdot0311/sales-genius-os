@@ -179,7 +179,7 @@ export const FAQSection = () => {
               Still have questions?{" "}
               <a
                 href="/help"
-                className="transition-colors duration-150"
+                className="transition-colors duration-150 inline-flex items-center min-h-[40px] px-1"
                 style={{ color: "hsl(261 75% 65%)" }}
                 onMouseEnter={(e) =>
                   ((e.target as HTMLElement).style.color =
