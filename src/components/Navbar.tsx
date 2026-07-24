@@ -139,7 +139,7 @@ export const Navbar = () => {
               <button
                 className="hidden md:inline-flex items-center gap-1.5 px-5 rounded-full text-sm font-semibold text-white cta-pill-glow"
                 style={{
-                  height: '38px',
+                  height: '40px',
                   background: 'linear-gradient(135deg, hsl(261 75% 60%) 0%, hsl(261 75% 50%) 100%)',
                 }}
                 onClick={() => navigate("/auth")}
