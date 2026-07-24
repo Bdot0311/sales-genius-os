@@ -35,7 +35,22 @@ const DeferredSection = ({ children }: { children: ReactNode }) => (
 
 const Index = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [mountVideo, setMountVideo] = useState(false);
   const navigate = useNavigate();
+
+  // Defer the heavy background video until the browser is idle so it does
+  // not compete with hero paint / FCP.
+  useEffect(() => {
+    const idle = (window as unknown as { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number }).requestIdleCallback;
+    const handle = idle
+      ? idle(() => setMountVideo(true), { timeout: 2000 })
+      : window.setTimeout(() => setMountVideo(true), 1200);
+    return () => {
+      const cancel = (window as unknown as { cancelIdleCallback?: (h: number) => void }).cancelIdleCallback;
+      if (idle && cancel) cancel(handle as number);
+      else clearTimeout(handle as number);
+    };
+  }, []);
 
   // If Google OAuth full-page redirect returned the user to `/` while an
   // OAuth consent flow was pending, resume it once the session is available.
