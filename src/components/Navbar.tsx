@@ -152,7 +152,7 @@ export const Navbar = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="md:hidden w-9 h-9"
+                className="md:hidden w-10 h-10"
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 aria-expanded={isMenuOpen}
                 aria-label={isMenuOpen ? "Close menu" : "Open menu"}
