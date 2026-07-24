@@ -130,7 +130,7 @@ export const FounderNoteSection = () => {
                     href="https://www.linkedin.com/in/buildwitbrandon"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs transition-colors duration-200 inline-flex items-center min-h-[40px] px-2"
+                    className="text-xs transition-colors duration-200 inline-flex items-center min-h-[40px] min-w-[40px] justify-center px-2"
                     style={{ color: "hsl(261 75% 55% / 0.55)" }}
                     onMouseEnter={(e) =>
                       (e.currentTarget.style.color = "hsl(261 75% 72%)")
@@ -146,7 +146,7 @@ export const FounderNoteSection = () => {
                     href="https://x.com/buildwitbrandon"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs transition-colors duration-200 inline-flex items-center min-h-[40px] px-2"
+                    className="text-xs transition-colors duration-200 inline-flex items-center min-h-[40px] min-w-[40px] justify-center px-2"
                     style={{ color: "hsl(261 75% 55% / 0.55)" }}
                     onMouseEnter={(e) =>
                       (e.currentTarget.style.color = "hsl(261 75% 72%)")
