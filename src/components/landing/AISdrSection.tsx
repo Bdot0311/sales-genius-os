@@ -291,9 +291,10 @@ export const AISdrSection = () => {
                 className={`flex items-center gap-4 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
                 style={{ transitionDelay: "320ms" }}
               >
-                <button
-                  onClick={() => navigate("/auth")}
-                  className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200"
+                <a
+                  href="/auth"
+                  onClick={(e) => { e.preventDefault(); navigate("/auth"); }}
+                  className="inline-flex items-center px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200"
                   style={{
                     background: "linear-gradient(135deg, hsl(261 75% 55%), hsl(280 80% 60%))",
                     color: "hsl(0 0% 98%)",
@@ -303,16 +304,17 @@ export const AISdrSection = () => {
                   onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "0 0 24px hsl(261 75% 55% / 0.35)")}
                 >
                   Activate AI SDR
-                </button>
-                <button
-                  onClick={() => navigate("/pricing")}
+                </a>
+                <a
+                  href="/pricing"
+                  onClick={(e) => { e.preventDefault(); navigate("/pricing"); }}
                   className="text-sm font-medium transition-colors duration-200 inline-flex items-center min-h-[40px] px-1"
                   style={{ color: "hsl(261 75% 65%)" }}
                   onMouseEnter={(e) => (e.currentTarget.style.color = "hsl(261 75% 80%)")}
                   onMouseLeave={(e) => (e.currentTarget.style.color = "hsl(261 75% 65%)")}
                 >
                   See pricing →
-                </button>
+                </a>
               </div>
             </div>
 

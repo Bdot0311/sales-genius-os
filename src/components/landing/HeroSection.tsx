@@ -119,8 +119,9 @@ export const HeroSection = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, ease, delay: 0.5 }}
         >
-          <motion.button
-            onClick={() => navigate("/auth")}
+          <motion.a
+            href="/auth"
+            onClick={(e) => { e.preventDefault(); navigate("/auth"); }}
             className="cta-pill-glow inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-full px-8 text-sm font-semibold text-white group sm:w-auto"
             style={{ background: "linear-gradient(135deg, hsl(261 75% 60%) 0%, hsl(261 75% 50%) 100%)" }}
             aria-label="Get 10 free leads"
@@ -129,10 +130,11 @@ export const HeroSection = () => {
           >
             Get 10 free leads
             <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
-          </motion.button>
+          </motion.a>
 
-          <motion.button
-            onClick={() => navigate("/demo")}
+          <motion.a
+            href="/demo"
+            onClick={(e) => { e.preventDefault(); navigate("/demo"); }}
             className="inline-flex h-11 items-center justify-center gap-1.5 px-5 text-sm text-white/85 transition-colors duration-200 hover:text-white sm:h-[52px]"
             whileHover={{ x: 3 }}
             aria-label="See how OutReign works"

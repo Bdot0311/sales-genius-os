@@ -134,8 +134,9 @@ export const DifferentiationSection = () => {
             viewport={{ once: true, margin: "-10% 0px" }}
             transition={{ duration: 0.55, ease, delay: 0.38 }}
           >
-            <motion.button
-              onClick={() => navigate("/auth")}
+            <motion.a
+              href="/auth"
+              onClick={(e) => { e.preventDefault(); navigate("/auth"); }}
               className="inline-flex items-center gap-1.5 text-sm font-medium group min-h-[40px]"
               style={{ color: "hsl(261 75% 65%)" }}
               whileHover={{ x: 3, color: "hsl(261 75% 80%)" }}
@@ -143,7 +144,7 @@ export const DifferentiationSection = () => {
             >
               Start free, no card needed
               <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
-            </motion.button>
+            </motion.a>
             <p className="text-xs" style={{ color: "hsl(0 0% 100% / 0.25)" }}>
               Free plan available · Cancel anytime
             </p>
