@@ -68,6 +68,7 @@ const Index = () => {
 
 
   useEffect(() => {
+    if (!mountVideo) return;
     const video = videoRef.current;
     if (!video) return;
 
