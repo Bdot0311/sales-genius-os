@@ -126,7 +126,7 @@ export const Navbar = () => {
             <div className="flex items-center gap-3">
               {/* De-emphasized Login */}
               <button
-                className="hidden md:block text-sm transition-colors"
+                className="hidden md:inline-flex items-center min-h-[40px] px-2 text-sm transition-colors"
                 style={{ color: 'hsl(0 0% 100% / 0.65)' }}
                 onMouseEnter={e => (e.currentTarget.style.color = 'hsl(0 0% 100% / 0.75)')}
                 onMouseLeave={e => (e.currentTarget.style.color = 'hsl(0 0% 100% / 0.65)')}
