@@ -105,7 +105,7 @@ const Index = () => {
     };
     document.addEventListener("visibilitychange", handleVisibility);
     return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, []);
+  }, [mountVideo]);
 
 
   return (
