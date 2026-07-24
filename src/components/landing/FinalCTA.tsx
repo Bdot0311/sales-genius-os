@@ -97,8 +97,9 @@ export const FinalCTA = () => {
             viewport={{ once: true, margin: "-10% 0px" }}
             transition={{ duration: 0.5, ease, delay: 0.42 }}
           >
-            <motion.button
-              onClick={() => navigate("/auth")}
+            <motion.a
+              href="/auth"
+              onClick={(e) => { e.preventDefault(); navigate("/auth"); }}
               className="cta-pill-glow inline-flex items-center gap-2 px-10 rounded-full text-sm font-semibold text-white"
               style={{
                 height: "56px",
@@ -110,7 +111,7 @@ export const FinalCTA = () => {
             >
               Get 10 free leads
               <ArrowRight className="w-4 h-4" />
-            </motion.button>
+            </motion.a>
 
             <p
               className="mt-4 text-xs"

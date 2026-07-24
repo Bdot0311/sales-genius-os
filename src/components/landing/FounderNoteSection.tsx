@@ -175,8 +175,9 @@ export const FounderNoteSection = () => {
               isVisible ? "opacity-100" : "opacity-0"
             }`}
           >
-            <button
-              onClick={() => navigate("/auth")}
+            <a
+              href="/auth"
+              onClick={(e) => { e.preventDefault(); navigate("/auth"); }}
               className="text-sm font-medium transition-colors duration-200 inline-flex items-center min-h-[40px] px-1"
               style={{ color: "hsl(261 75% 65%)" }}
               onMouseEnter={(e) =>
@@ -187,9 +188,10 @@ export const FounderNoteSection = () => {
               }
             >
               Try it free →
-            </button>
-            <button
-              onClick={() => navigate("/pricing")}
+            </a>
+            <a
+              href="/pricing"
+              onClick={(e) => { e.preventDefault(); navigate("/pricing"); }}
               className="text-sm transition-colors duration-200 inline-flex items-center min-h-[40px] px-1"
               style={{ color: "hsl(0 0% 100% / 0.6)" }}
               onMouseEnter={(e) =>
@@ -200,7 +202,7 @@ export const FounderNoteSection = () => {
               }
             >
               View plans →
-            </button>
+            </a>
           </div>
         </div>
       </div>
