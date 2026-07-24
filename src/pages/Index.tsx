@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
@@ -35,7 +35,22 @@ const DeferredSection = ({ children }: { children: ReactNode }) => (
 
 const Index = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [mountVideo, setMountVideo] = useState(false);
   const navigate = useNavigate();
+
+  // Defer the heavy background video until the browser is idle so it does
+  // not compete with hero paint / FCP.
+  useEffect(() => {
+    const idle = (window as unknown as { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number }).requestIdleCallback;
+    const handle = idle
+      ? idle(() => setMountVideo(true), { timeout: 2000 })
+      : window.setTimeout(() => setMountVideo(true), 1200);
+    return () => {
+      const cancel = (window as unknown as { cancelIdleCallback?: (h: number) => void }).cancelIdleCallback;
+      if (idle && cancel) cancel(handle as number);
+      else clearTimeout(handle as number);
+    };
+  }, []);
 
   // If Google OAuth full-page redirect returned the user to `/` while an
   // OAuth consent flow was pending, resume it once the session is available.
@@ -53,6 +68,7 @@ const Index = () => {
 
 
   useEffect(() => {
+    if (!mountVideo) return;
     const video = videoRef.current;
     if (!video) return;
 
@@ -89,7 +105,7 @@ const Index = () => {
     };
     document.addEventListener("visibilitychange", handleVisibility);
     return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, []);
+  }, [mountVideo]);
 
 
   return (
@@ -106,27 +122,29 @@ const Index = () => {
 
       {/* Fixed cinematic video background with purple tint */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none" aria-hidden="true">
-        <video
-          ref={videoRef}
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          disablePictureInPicture
-          disableRemotePlayback
-          controls={false}
-          width="100%"
-          height="100%"
-          poster="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%3E%3Crect width='16' height='9' fill='%230a0612'/%3E%3C/svg%3E"
-          style={{ transition: "opacity 400ms ease" }}
-          className="absolute inset-0 h-full w-full object-cover"
-        >
-          <source
-            src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260508_064122_c4750c0e-7476-4b44-94a2-a85a65c63bf2.mp4"
-            type="video/mp4"
-          />
-        </video>
+        {mountVideo && (
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="none"
+            disablePictureInPicture
+            disableRemotePlayback
+            controls={false}
+            width="100%"
+            height="100%"
+            poster="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%3E%3Crect width='16' height='9' fill='%230a0612'/%3E%3C/svg%3E"
+            style={{ transition: "opacity 400ms ease", opacity: 0 }}
+            className="absolute inset-0 h-full w-full object-cover"
+          >
+            <source
+              src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260508_064122_c4750c0e-7476-4b44-94a2-a85a65c63bf2.mp4"
+              type="video/mp4"
+            />
+          </video>
+        )}
         {/* Purple-tinted overlay — light enough to keep the aura visible */}
         <div
           className="absolute inset-0"
