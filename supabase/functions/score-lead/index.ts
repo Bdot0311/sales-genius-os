@@ -22,6 +22,75 @@ interface ScoreResult {
   reasoning: string;
   recommendations: string[];
   buying_signals: string[];
+  signal_score: number;
+  signals: string[];
+  signal_layers: {
+    fundamentals: { score: number; tags: string[] };
+    decision_maker: { score: number; tags: string[] };
+    timing: { score: number; tags: string[] };
+  };
+}
+
+// ── 3-layer buying signal framework from the Cold Email Engine skill ──────────
+function computeSignalLayers(data: any): {
+  score: number;
+  tags: string[];
+  layers: ScoreResult['signal_layers'];
+} {
+  const fundTags: string[] = [];
+  const dmTags: string[] = [];
+  const timingTags: string[] = [];
+
+  const industry = (data.industry || '').toLowerCase();
+  const empCount = (() => {
+    const s = String(data.companySize || data.employeeCount || '').replace(/,/g, '').toLowerCase();
+    const range = s.match(/(\d+)\s*[-–]\s*(\d+)/);
+    if (range) return parseInt(range[1]);
+    const single = s.match(/\d+/);
+    return single ? parseInt(single[0]) : 0;
+  })();
+
+  // Layer 1 · Fundamentals
+  let fundScore = 0;
+  if (industry) { fundScore += 1; fundTags.push(`vertical:${industry.split(/\s+/)[0]}`); }
+  if (empCount >= 51 && empCount <= 1000) { fundScore += 2; fundTags.push('ideal-size'); }
+  else if (empCount >= 11) { fundScore += 1; fundTags.push('size-ok'); }
+  if (data.annualRevenue) { fundScore += 1; fundTags.push('revenue-known'); }
+
+  // Layer 2 · Decision-maker readiness
+  let dmScore = 0;
+  const jt = String(data.jobTitle || '').toLowerCase();
+  if (/founder|co-?founder|ceo|chief executive/.test(jt)) { dmScore += 2; dmTags.push('founder-or-ceo'); }
+  else if (/\bvp\b|vice president|chief|c[a-z]o\b|head of/.test(jt)) { dmScore += 2; dmTags.push('exec'); }
+  else if (/director|principal/.test(jt)) { dmScore += 1; dmTags.push('director'); }
+  if (/sales|revenue|growth|demand|marketing/.test(jt)) { dmScore += 1; dmTags.push('revenue-aligned'); }
+  const notesLower = String(data.notes || '').toLowerCase();
+  if (/new(ly)?\s+(hired|hire|appointed|joined)|recently\s+(joined|promoted)/.test(notesLower)) {
+    dmScore += 2; dmTags.push('new-in-seat');
+  }
+
+  // Layer 3 · Timing triggers (highest value)
+  let timingScore = 0;
+  const tech = Array.isArray(data.technologies) ? data.technologies.join(' ').toLowerCase() : '';
+  const scan = `${notesLower} ${tech}`;
+  if (/raised|series [a-e]|funding|seed round|preseed/.test(scan)) { timingScore += 2; timingTags.push('funding'); }
+  if (/hiring|open role|job posting|we're hiring/.test(scan)) { timingScore += 2; timingTags.push('hiring'); }
+  if (/migrat|switched to|moved off|replatform/.test(scan)) { timingScore += 2; timingTags.push('tech-migration'); }
+  if (/expand|new office|new market|launched|geographic/.test(scan)) { timingScore += 1; timingTags.push('expansion'); }
+  if (/left|departed|stepped down|new (cmo|vp|ceo|cfo|cro)/.test(scan)) { timingScore += 2; timingTags.push('leadership-change'); }
+  if (/re-?engag|closed lost|previous customer|former/.test(scan)) { timingScore += 1; timingTags.push('re-engagement'); }
+
+  const capped = (n: number, max: number) => Math.min(n, max);
+  const layers = {
+    fundamentals: { score: capped(fundScore, 4), tags: fundTags },
+    decision_maker: { score: capped(dmScore, 4), tags: dmTags },
+    timing: { score: capped(timingScore, 6), tags: timingTags },
+  };
+  // Normalize to 0-10
+  const raw = layers.fundamentals.score + layers.decision_maker.score + layers.timing.score;
+  const score = Math.max(0, Math.min(10, Math.round((raw / 14) * 10)));
+  const tags = [...timingTags, ...dmTags, ...fundTags]; // timing signals first (highest value)
+  return { score, tags, layers };
 }
 
 function parseEmployeeCount(str: string): number {
@@ -258,6 +327,8 @@ function scoreLead(data: {
   if (!email) legacyRecommendations.push('Add email address to unlock direct outreach');
   if (!data.linkedinUrl) legacyRecommendations.push('Add LinkedIn URL for better enrichment');
 
+  const layered = computeSignalLayers(data);
+
   return {
     score: intentScore,
     intent_score: intentScore,
@@ -271,6 +342,9 @@ function scoreLead(data: {
     reasoning: reasons.join(' · '),
     recommendations: legacyRecommendations.slice(0, 4),
     buying_signals: buyingSignals.length > 0 ? buyingSignals : ['Prospect'],
+    signal_score: layered.score,
+    signals: layered.tags,
+    signal_layers: layered.layers,
   };
 }
 
