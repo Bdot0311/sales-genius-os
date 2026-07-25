@@ -78,12 +78,34 @@ serve(async (req) => {
             .from("integrations")
             .update({ is_active: false })
             .eq("id", integration.id);
+          await adminClient.from("calendar_sync_logs").insert({
+            user_id: user.id,
+            integration_id: integration.id,
+            direction: "inbound",
+            action: "refresh_token",
+            status: "error",
+            attempt: 1,
+            http_status: tokenResponse.status,
+            error_code: "invalid_grant",
+            error_message: "Google access revoked or expired",
+          });
 
           return new Response(
             JSON.stringify({ events: [], connected: false, needsReconnect: true }),
             { headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
+        await adminClient.from("calendar_sync_logs").insert({
+          user_id: user.id,
+          integration_id: integration.id,
+          direction: "inbound",
+          action: "refresh_token",
+          status: "error",
+          attempt: 1,
+          http_status: tokenResponse.status,
+          error_code: err.error || "token_refresh_failed",
+          error_message: err.error_description || "Failed to refresh token",
+        });
         throw new Error(err.error_description || "Failed to refresh token");
       }
 
