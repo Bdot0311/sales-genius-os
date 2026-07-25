@@ -430,15 +430,19 @@ Output ONLY the reply body. No subject line or signature.`;
             meetingReply = await callGemini(meetingPrompt, meetingSystemPrompt);
           }
 
-          if (googleIntegrationId) {
-            await adminClient.functions.invoke("send-email", {
-              body: {
-                to: reply.fromEmail,
-                subject: `Re: ${reply.subject}`,
-                body: meetingReply,
-                integrationId: googleIntegrationId,
-              },
-            });
+          {
+            const replyIntegrationId = (reply as any).integrationRowId || fallbackGoogleIntegrationId;
+            if (replyIntegrationId) {
+              await adminClient.functions.invoke("send-email", {
+                body: {
+                  to: reply.fromEmail,
+                  subject: `Re: ${reply.subject}`,
+                  body: meetingReply,
+                  integrationId: "google",
+                  integrationRowId: replyIntegrationId,
+                },
+              });
+            }
           }
 
           await adminClient
