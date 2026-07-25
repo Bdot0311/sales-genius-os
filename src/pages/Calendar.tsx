@@ -51,31 +51,57 @@ const Calendar = () => {
     checkGoogleCalendarConnection();
   }, []);
 
-  const checkGoogleCalendarConnection = async () => {
+  const checkGoogleCalendarConnection = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setRefreshing(true);
     try {
       const { data, error } = await supabase.functions.invoke('fetch-google-calendar-events');
       if (error) {
         console.error('Error fetching Google Calendar events:', error);
-        setLoading(false);
+        setHasGoogleCalendar(false);
+        setCalendarStatus("error");
+        setCalendarStatusMessage(
+          "We couldn't reach Google Calendar. Check your connection and try again."
+        );
         return;
       }
       if (data?.connected) {
         setHasGoogleCalendar(true);
         setGoogleEvents(data.events || []);
+        if (data.error) {
+          setCalendarStatus("error");
+          setCalendarStatusMessage(
+            `Connected, but Google returned an error while fetching events: ${data.error}`
+          );
+        } else {
+          setCalendarStatus("connected");
+          setCalendarStatusMessage("");
+        }
       } else {
         setHasGoogleCalendar(false);
+        setGoogleEvents([]);
         if (data?.needsReconnect) {
-          toast({
-            title: "Google Calendar Disconnected",
-            description: "Please reconnect your Google account in Integrations.",
-            variant: "destructive",
-          });
+          setCalendarStatus("needs_reconnect");
+          setCalendarStatusMessage(
+            "Your Google Calendar access has expired or was revoked. Reconnect your Google account to resume syncing."
+          );
+        } else if (data?.error) {
+          setCalendarStatus("error");
+          setCalendarStatusMessage(`Google Calendar error: ${data.error}`);
+        } else {
+          setCalendarStatus("disconnected");
+          setCalendarStatusMessage("");
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error checking Google Calendar:', error);
+      setHasGoogleCalendar(false);
+      setCalendarStatus("error");
+      setCalendarStatusMessage(
+        error?.message || "Unexpected error while checking Google Calendar."
+      );
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
