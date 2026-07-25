@@ -31,8 +31,6 @@ import {
   ShieldCheck,
   Bot,
   Plug,
-  Wand2,
-  BookOpen,
 } from "lucide-react";
 import { User } from "@supabase/supabase-js";
 import { useSubscription } from "@/hooks/use-subscription";
@@ -62,8 +60,6 @@ const navSections = [
     items: [
       { name: "AI Agent", icon: Bot, href: "/dashboard/agent" },
       { name: "Outreach", icon: Mail, href: "/dashboard/outreach" },
-      { name: "Sequence Builder", icon: Wand2, href: "/dashboard/sequence-builder" },
-      { name: "Cold Email Playbook", icon: BookOpen, href: "/dashboard/playbook" },
       { name: "Calendar", icon: Calendar, href: "/dashboard/calendar" },
       { name: "Analytics", icon: BarChart3, href: "/dashboard/analytics" },
       { name: "Coach", icon: Mic, href: "/dashboard/coach" },
