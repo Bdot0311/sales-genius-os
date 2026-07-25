@@ -1,106 +1,88 @@
 
-## Goal
+## Cold Email Engine — Full Integration Plan
 
-Stop losing signups to the black hole. Every new user gets scored on a 6-step activation funnel; the admin panel shows exactly where each user stalls, auto-classifies them into cohorts, and fires nudge emails when they get stuck.
+Bake the skill's rules into every place OutReign touches cold email: AI prompts, quality checks, sequence generation, and lead scoring UI.
 
-## The activation funnel
+### 1. Generation prompts (`supabase/functions/generate-email/index.ts`)
 
-Six milestones, tracked per user, timestamped:
+Rewrite the system prompt for all goals (`reply`, `case_study`, `meeting`, `info`, `custom`) to enforce:
+- 50–75 words, 130 word ceiling
+- 3–4 sentences, 8th-grade reading level
+- One of the three canonical structures (Problem-First / Question-Led / Ultra-Short)
+- Named proof point with company + metric + timeframe
+- One low-friction CTA (question form)
+- Banned tokens list (best, amazing, revolutionary, leverage, optimize, streamline, synergy, cutting-edge, "hope this finds you well", "just checking in", em dashes, emojis)
+- Subject line: 2–5 words, <40 chars, colleague tone
 
-```
-1. verified_email     → clicked confirmation link
-2. completed_onboarding → finished onboarding wizard
-3. first_search       → ran a lead search
-4. first_lead_saved   → saved/enriched a lead
-5. mailbox_connected  → connected Gmail (highest paid-intent signal)
-6. first_email_sent   → sent first outreach email
-```
+Add a shared `_shared/cold-email-rules.ts` module so every function (generate-email, generate-followup-suggestion, ai-coach) pulls the same guardrails.
 
-A 7th "activated" flag flips once a user hits ≥4 of the 6.
+### 2. Quality Checker (`src/components/outreach/EmailQualityChecker.tsx` + new edge fn `score-email-quality`)
 
-## Cohort auto-classification (evaluated at day 7)
+Replace ad-hoc checks with the skill's 7-criteria rubric (0–10 each, 70 total):
+1. Authenticity
+2. Brevity (word count based)
+3. Clarity (jargon detection)
+4. Humanness
+5. CTA (single question, low friction)
+6. Proof (named company + metric + timeframe regex + AI judgment)
+7. Specificity (numbers, real names)
 
-- **Tire-kicker** — 0–1 milestones. Signed up, poked around, left.
-- **Explorer** — 2–3 milestones. Interested but stalled.
-- **Active** — 4–5 milestones. Real user, likely to convert.
-- **Power user** — all 6. Prime upgrade target.
+Deterministic checks (word count, banned tokens, em dashes, CTA count) run client-side. Subjective checks (authenticity, humanness) run through a lightweight AI call using `openai/gpt-5.5`. Show total score + per-criterion breakdown; "Fix this" targets the lowest-scoring criterion.
 
-## What gets built
+### 3. Campaign / Sequence Builder (new)
 
-### 1. `user_activation` table + backfill
+Add "Generate Sequence" action in Outreach Studio that produces a full 4-touch sequence:
+- Email 1 (Day 0): signal-based opener
+- Email 2 (Day 3–5): market/industry context
+- Email 3 (Day 7–10): timing/clarification
+- Email 4 (Day 14): polite breakup
 
-One row per user, columns for each milestone timestamp, current stage, cohort, `last_active_at`, `days_since_signup`, `stalled_at_stage`. Backfilled from existing data:
+Plus 3 subject line variations per email (curiosity / results / question).
 
-- `verified_email_at` ← `auth.users.email_confirmed_at`
-- `completed_onboarding_at` ← `onboarding_progress` flags
-- `first_search_at` ← earliest `search_transactions` row
-- `first_lead_saved_at` ← earliest `leads` row
-- `mailbox_connected_at` ← earliest `integrations` row with Gmail
-- `first_email_sent_at` ← earliest `sent_emails` row
+New edge fn `generate-sequence` returns structured JSON via AI SDK `Output.object`. New component `src/components/outreach/SequenceBuilder.tsx` renders touches as tabs, lets user copy/edit each, and can save as a workflow.
 
-### 2. Milestone triggers
+### 4. Signal-based targeting UI
 
-DB triggers on `search_transactions`, `leads`, `integrations`, `sent_emails`, `onboarding_progress` that update the matching timestamp column on `user_activation` (only if still NULL — first occurrence wins). Zero code changes needed in the app.
+`src/components/dashboard/LeadRow.tsx` (and lead detail sheet): add a **Signal Score** column (0–10) computed from the 3-layer framework:
+- Layer 1: company fundamentals (size, industry match)
+- Layer 2: decision-maker readiness (tenure, seniority)
+- Layer 3: timing triggers (new hire, funding, tech change, traffic drop)
 
-### 3. Admin panel — Activation tab
+Extend `score-lead` edge fn to compute `signal_score`, `signal_layers` (jsonb), and a `signals[]` array of tags (e.g. "new-CFO", "hiring", "tech-migration"). Add DB migration for those columns. Sort/filter leads by signal score in the lead table; badge 3+ signals as "hot".
 
-New tab under `/admin` with three sections:
+### 5. Copywriting reference doc
 
-**Funnel chart** — bar chart showing count + % conversion at each of the 6 steps, filterable by signup date range (7/30/90 days).
+Add `src/pages/CopyPlaybook.tsx` (linked from Outreach Studio "?" icon) surfacing the skill's rules to end users: banned words list, structure templates, example patterns. Read-only reference — no AI calls.
 
-```text
-Signed up      ████████████████████  100%  (240)
-Verified email ████████████████░░░░   82%  (196)
-Onboarded      █████████████░░░░░░░   68%  (163)
-First search   █████████░░░░░░░░░░░   47%  (113) ← biggest drop-off
-First lead     ██████░░░░░░░░░░░░░░   32%   (77)
-Mailbox conn.  ███░░░░░░░░░░░░░░░░░   16%   (39)
-First email    ██░░░░░░░░░░░░░░░░░░   11%   (26)
-```
+### Files touched
 
-**Cohort breakdown** — count per cohort (Tire-kicker / Explorer / Active / Power) with % of signups.
+Backend:
+- `supabase/functions/_shared/cold-email-rules.ts` (new)
+- `supabase/functions/generate-email/index.ts` (rewrite prompts)
+- `supabase/functions/generate-followup-suggestion/index.ts` (apply rules)
+- `supabase/functions/score-email-quality/index.ts` (new)
+- `supabase/functions/generate-sequence/index.ts` (new)
+- `supabase/functions/score-lead/index.ts` (add signal_score + signals)
+- Migration: `leads.signal_score int`, `leads.signals text[]`, `leads.signal_layers jsonb`
 
-**User table** — every signup with columns: email, signup date, cohort, current stage, days stalled, last active. Click a row to open the timeline drawer.
+Frontend:
+- `src/components/outreach/EmailQualityChecker.tsx` (7-criteria rubric)
+- `src/components/outreach/SequenceBuilder.tsx` (new)
+- `src/pages/Outreach.tsx` (wire sequence builder + new quality checker)
+- `src/components/dashboard/*` lead table (signal column, filters, hot badge)
+- `src/pages/CopyPlaybook.tsx` (new)
+- `src/App.tsx` (route)
 
-### 4. Per-user timeline drawer
+### Scope guardrails
+- No changes to billing, credits, or auth.
+- Sequence + quality-check calls debit existing AI credit meter.
+- All prompts stay server-side; `LOVABLE_API_KEY` never touches client.
 
-Chronological event log for a single user: signup, email verified, onboarding steps, each search run, each lead saved, mailbox connect, each email sent, each reply received. Pulled from existing tables (`search_transactions`, `leads`, `integrations`, `sent_emails`, `reply_threads`, `login_history`) unioned by timestamp.
+### Rollout order
+1. Shared rules module + prompt rewrite (fast win, no UI risk)
+2. Score-lead signal extension + migration
+3. Quality checker rubric
+4. Sequence builder
+5. Signal UI + Copy Playbook page
 
-### 5. Drop-off alerts (admin)
-
-`system_alerts` rows fired by a daily cron for:
-- Signups stalled >3 days at "verified but no search"
-- Signups stalled >7 days with 0–1 milestones (dead cohort)
-- Any user who hit 5/6 milestones but hasn't upgraded to paid (hot lead)
-
-Shown in the existing admin alerts UI + one weekly email digest to the admin.
-
-### 6. Automated nudge emails to users
-
-Four new app-email templates + a daily cron that queues them once per user via existing `send-transactional-email`:
-
-| Day | Trigger | Template |
-|---|---|---|
-| 2 | Verified but no search | `nudge-run-first-search` — "Try a search in plain English" |
-| 4 | Search but no lead saved | `nudge-save-first-lead` — "Turn results into a shortlist" |
-| 6 | Leads saved but no mailbox | `nudge-connect-mailbox` — "You're one step from sending" |
-| 10 | Mailbox connected but no email sent | `nudge-send-first-email` — "Ready when you are — offer to draft it" |
-
-Each dedupes on `sent_emails` template name so users receive each nudge at most once. Suppressed/unsubscribed users skipped by existing infrastructure.
-
-## Technical notes
-
-- New table: `public.user_activation` (RLS: owner + admin SELECT, service role write).
-- New DB function: `admin_get_activation_funnel(_days int)` returns funnel counts + cohort breakdown.
-- New DB function: `admin_get_user_timeline(_user_id uuid)` returns unioned event stream.
-- New edge functions: `evaluate-user-cohorts` (daily), `send-activation-nudges` (daily).
-- New admin route: `/admin/activation` (tab in existing admin shell).
-- New drawer component: `UserTimelineDrawer.tsx`.
-- 4 new templates in `supabase/functions/_shared/transactional-email-templates/` + registry update.
-- Realtime not required — polls via existing 60s admin auto-refresh.
-
-## Out of scope
-
-- Tracking marketing-site page views (this is post-signup only).
-- Session replays / heatmaps.
-- Retroactively firing nudge emails to old stalled signups (can be a one-off backfill later if you want).
+Ready to build in that order — reply "go" and I'll start with step 1.
