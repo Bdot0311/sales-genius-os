@@ -253,6 +253,50 @@ interface EmailDraft {
   leads?: { contact_name: string; company_name: string } | null;
 }
 
+const PLACEHOLDER_TOKEN_REGEX = /\[(?:name|company|first\s*name|full\s*name)\]|\{\{\s*(?:name|company|first\s*name|full\s*name)\s*\}\}|\{(?:name|company|first\s*name|full\s*name)\}|<(?:name|company|first\s*name|full\s*name)>/gi;
+
+function cleanLeadValue(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function buildLeadPersonalizationFact(lead?: any) {
+  const company = cleanLeadValue(lead?.company_name);
+  const jobTitle = cleanLeadValue(lead?.job_title);
+  const industry = cleanLeadValue(lead?.industry);
+  const employeeCount = cleanLeadValue(lead?.employee_count || lead?.company_size);
+
+  if (company && jobTitle && employeeCount) return `${jobTitle} at ${company} with a ${employeeCount}-person team`;
+  if (company && jobTitle) return `${jobTitle} at ${company}`;
+  if (company && industry) return `${company}'s ${industry} team`;
+  if (company) return company;
+  if (jobTitle && industry) return `${jobTitle} leaders in ${industry}`;
+  if (jobTitle) return `${jobTitle} leaders`;
+  if (industry) return `${industry} teams`;
+  return "this account";
+}
+
+function applyPersonalizationFixLocally(email: string, lead?: any) {
+  const company = cleanLeadValue(lead?.company_name);
+  const firstName = cleanLeadValue(lead?.contact_name).split(/\s+/)[0] || "there";
+  const leadFact = buildLeadPersonalizationFact(lead);
+  const teamReference = company ? `the team at ${company}` : leadFact;
+  const businessReference = company || leadFact;
+
+  return email
+    .replace(PLACEHOLDER_TOKEN_REGEX, (match) => {
+      const lower = match.toLowerCase();
+      if (lower.includes("first") || lower.includes("name")) return firstName;
+      if (lower.includes("company")) return businessReference;
+      return leadFact;
+    })
+    .replace(/\byour company\b/gi, businessReference)
+    .replace(/\byour business\b/gi, businessReference)
+    .replace(/\byour team\b/gi, teamReference)
+    .replace(/\bsomeone like you\b/gi, leadFact)
+    .replace(/\bcompanies like yours\b/gi, company ? `companies like ${company}` : leadFact)
+    .replace(/\bteams like yours\b/gi, company ? `teams like ${company}` : teamReference);
+}
+
 const Outreach = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("compose");
