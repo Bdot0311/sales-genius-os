@@ -122,8 +122,7 @@ serve(async (req) => {
           refreshToken: tokens.refresh_token || config.refreshToken,
         },
       })
-      .eq("user_id", user.id)
-      .eq("integration_id", "google");
+      .eq("id", integration.id);
 
     // Return success WITHOUT tokens — tokens stay server-side
     return new Response(
