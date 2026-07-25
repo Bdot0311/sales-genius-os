@@ -33,6 +33,7 @@ import { BarChart3, ListOrdered, Layout, Users } from "lucide-react";
 import { BulkSendDialog } from "@/components/outreach/BulkSendDialog";
 import { EmailQualityChecker, scoreEmailQuality } from "@/components/outreach/EmailQualityChecker";
 import { SequencesList, MessageBlocksList } from "@/components/sequences";
+import { AiSequenceBuilder } from "@/components/sequences/AiSequenceBuilder";
 import { generateComplianceFooter, validateSenderDomain, checkSendTimeCompliance, parseSpintax } from "@/lib/compliance";
 import { AlertCircle, Ban } from "lucide-react";
 
@@ -1927,6 +1928,10 @@ For logos, use HTML:
               <ListOrdered className="w-4 h-4" />
               Sequences
             </TabsTrigger>
+            <TabsTrigger value="ai-builder" className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4" />
+              AI Builder
+            </TabsTrigger>
             <TabsTrigger value="blocks" className="flex items-center gap-2">
               <Layout className="w-4 h-4" />
               Blocks
@@ -2792,6 +2797,10 @@ For logos, use HTML:
 
           <TabsContent value="sequences" className="mt-6">
             <SequencesList />
+          </TabsContent>
+
+          <TabsContent value="ai-builder" className="mt-6">
+            <AiSequenceBuilder />
           </TabsContent>
 
           <TabsContent value="blocks" className="mt-6">
