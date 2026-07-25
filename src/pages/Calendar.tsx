@@ -380,7 +380,7 @@ const Calendar = () => {
         )}
 
 
-        {/* Embedded Google Calendar for connected paid users */}
+        {/* Google Calendar events for connected paid users */}
         {!isFreeTier && hasGoogleCalendar && (
           <div>
             <div className="flex items-center justify-between mb-4">
@@ -397,21 +397,51 @@ const Calendar = () => {
                 Open in Google <ExternalLink className="w-3 h-3" />
               </a>
             </div>
-            <Card className="overflow-hidden p-0">
-              <iframe
-                title="Google Calendar"
-                src={`https://calendar.google.com/calendar/embed?src=${encodeURIComponent(googleEmail || "primary")}&ctz=local&mode=WEEK&showTitle=0&showPrint=0&showTabs=1&showCalendars=0&showTz=0`}
-                style={{ border: 0 }}
-                width="100%"
-                height="700"
-                frameBorder={0}
-                scrolling="no"
-              />
-            </Card>
-            {!googleEmail && (
-              <p className="text-xs text-muted-foreground mt-2">
-                Tip: your calendar must be shared publicly or you must be signed into this Google account in the browser for events to display in the embed.
-              </p>
+            {googleEvents.length === 0 ? (
+              <Card className="p-6 text-center text-sm text-muted-foreground">
+                No upcoming events on {googleEmail || "your calendar"}.
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {googleEvents.map((ev: any) => {
+                  const start = ev.start?.dateTime || ev.start?.date || ev.start;
+                  const end = ev.end?.dateTime || ev.end?.date || ev.end;
+                  const startDate = start ? new Date(start) : null;
+                  const endDate = end ? new Date(end) : null;
+                  return (
+                    <Card key={ev.id || `${ev.summary}-${start}`} className="p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 rounded-md bg-primary/10 flex-shrink-0">
+                          <CalendarIcon className="w-4 h-4 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm truncate">{ev.summary || "(No title)"}</div>
+                          {startDate && (
+                            <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {format(startDate, "MMM d, h:mm a")}
+                              {endDate && ` – ${format(endDate, "h:mm a")}`}
+                            </div>
+                          )}
+                          {ev.location && (
+                            <div className="text-xs text-muted-foreground mt-1 truncate">{ev.location}</div>
+                          )}
+                          {ev.htmlLink && (
+                            <a
+                              href={ev.htmlLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-primary hover:underline inline-flex items-center gap-1 mt-2"
+                            >
+                              Open <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
             )}
           </div>
         )}
