@@ -8,6 +8,9 @@ import { AddLeadDialog } from "@/components/dashboard/AddLeadDialog";
 import { ImportLeadsDialog } from "@/components/dashboard/ImportLeadsDialog";
 import { ExternalLeadsTable } from "@/components/dashboard/ExternalLeadsTable";
 import { AILeadCommand } from "@/components/dashboard/AILeadCommand";
+import { DomainICPBuilder } from "@/components/dashboard/DomainICPBuilder";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { buildExternalFilters, ParsedIcpFilters } from "@/lib/lead-filters";
 import { Sparkles, Loader2, Users, RefreshCw, Lock, CreditCard, ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -26,6 +29,7 @@ const Leads = () => {
   const [showExternalLeads, setShowExternalLeads] = useState(false);
   const [aiSearchQuery, setAiSearchQuery] = useState("");
   const [pageSize, setPageSize] = useState(10);
+  const [inputTab, setInputTab] = useState("describe");
   const { toast } = useToast();
   const navigate = useNavigate();
   const { status: subscriptionStatus, loading: subscriptionLoading } = useSubscriptionStatus();
@@ -80,6 +84,28 @@ const Leads = () => {
     onChange: () => fetchLeads(),
   });
 
+  // Run a search from a confirmed ICP produced by the "Analyze your website" tab.
+  // Reuses the exact same pipeline as the describe flow (buildExternalFilters →
+  // fetchExternalLeads), so results, cards, and metering are identical.
+  const handleDomainFindLeads = (aiFilters: ParsedIcpFilters, label: string) => {
+    if (!canSearch) {
+      const isFreeExhausted = !subscriptionStatus?.isPaidUser && (credits?.remainingCredits ?? 0) <= 0;
+      toast({
+        title: isFreeExhausted ? "Free leads used up" : "Search limit reached",
+        description: isFreeExhausted
+          ? "You've used your 100 free leads. Upgrade to keep finding prospects."
+          : "You've reached your search limit. Try again later.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setAiSearchQuery(label);
+    setShowExternalLeads(true);
+    const newFilters = buildExternalFilters(aiFilters, pageSize);
+    setExternalFilters(newFilters);
+    fetchExternalLeads(newFilters);
+    Analytics.firstSearchRun();
+  };
 
   return (
     <DashboardLayout>
@@ -126,6 +152,13 @@ const Leads = () => {
         {/* AI Command Interface - Hero Section (only show for paid users) */}
         {canAccessLeadGen && (
           <>
+            <Tabs value={inputTab} onValueChange={setInputTab} className="w-full">
+              <TabsList className="mb-4">
+                <TabsTrigger value="describe">Describe your ICP</TabsTrigger>
+                <TabsTrigger value="website">Analyze your website</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="describe">
             <AILeadCommand
               onSearch={async (query) => {
                 // Check if user can search
@@ -159,50 +192,9 @@ const Leads = () => {
                   
                   if (error) throw error;
                   
-                  const aiFilters = data?.filters || {};
-                  const newFilters: ExternalLeadFilters = {
-                    limit: pageSize,
-                  };
-                  
-                  // Use the first job title only — Railway doesn't support boolean OR syntax
-                  if (aiFilters.jobTitles?.length > 0) {
-                    newFilters.job_title = aiFilters.jobTitles[0];
-                  }
+                  const aiFilters = (data?.filters || {}) as ParsedIcpFilters;
+                  const newFilters = buildExternalFilters(aiFilters, pageSize);
 
-                  // Industry: ignore generic "B2B" (it kills recall in Railway)
-                  const rawIndustry = aiFilters.industries?.[0]?.trim();
-                  if (rawIndustry && !/^b2b$/i.test(rawIndustry)) {
-                    newFilters.industry = rawIndustry;
-                  } else if (rawIndustry) {
-                    newFilters.keywords = [...(newFilters.keywords || []), rawIndustry];
-                  }
-
-                  // Company size: only allow known buckets
-                  const rawSize = aiFilters.companySizes?.[0]?.trim();
-                  const allowedSizes = new Set(["1-10","11-50","51-200","201-500","501-1000","1000+"]);
-                  if (rawSize && allowedSizes.has(rawSize)) {
-                    newFilters.company_size = rawSize;
-                  }
-
-                  if (aiFilters.locations?.length > 0) {
-                    newFilters.country = aiFilters.locations[0];
-                  }
-                  
-                  // Pass keywords for fallback extraction in edge function
-                  if (aiFilters.keywords?.length > 0) {
-                    newFilters.keywords = aiFilters.keywords;
-                  }
-                  
-                  // If no job titles but keywords exist, try to build job_title from keywords
-                  if (!newFilters.job_title && aiFilters.keywords?.length > 0) {
-                    const jobKeywords = aiFilters.keywords.filter((k: string) =>
-                      /ceo|cto|cfo|founder|director|vp|head|manager|executive|owner/i.test(k)
-                    );
-                    if (jobKeywords.length > 0) {
-                      newFilters.job_title = jobKeywords[0]; // use first match only
-                    }
-                  }
-                  
                   setExternalFilters(newFilters);
                   fetchExternalLeads(newFilters);
                   Analytics.firstSearchRun();
@@ -310,6 +302,16 @@ const Leads = () => {
               resultsCount={externalLeads.length}
               showResults={showExternalLeads && externalLeads.length > 0 && !externalLoading}
             />
+              </TabsContent>
+
+              <TabsContent value="website">
+                <DomainICPBuilder
+                  onFindLeads={handleDomainFindLeads}
+                  onSwitchToDescribe={() => setInputTab("describe")}
+                  isSearching={externalLoading}
+                />
+              </TabsContent>
+            </Tabs>
 
             {/* AI-Discovered Leads Section */}
             {showExternalLeads && (
