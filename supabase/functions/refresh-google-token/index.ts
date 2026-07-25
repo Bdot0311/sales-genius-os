@@ -30,13 +30,15 @@ serve(async (req) => {
     // Use service role to access integration config
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { data: integration } = await adminClient
+    const { data: integrations } = await adminClient
       .from("integrations")
-      .select("config")
+      .select("id, config")
       .eq("user_id", user.id)
       .eq("integration_id", "google")
       .eq("is_active", true)
-      .single();
+      .order("updated_at", { ascending: false })
+      .limit(1);
+    const integration = integrations?.[0];
 
     if (!integration?.config) {
       return new Response(
