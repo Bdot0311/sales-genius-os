@@ -265,11 +265,111 @@ export function SequencesList() {
             Automated multi-step email campaigns
           </p>
         </div>
-        
-        <div className="flex items-center gap-4">
+
+        <div className="flex items-center gap-3">
           <Badge variant="outline" className="px-3 py-1">
             {activeSequences}/{formatLimit(maxSequences)} active
           </Badge>
+          <Dialog
+            open={isCreateOpen}
+            onOpenChange={(open) => {
+              setIsCreateOpen(open);
+              if (!open) setCreateMode("choose");
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button size="sm" disabled={!canCreateMore}>
+                <Plus className="w-4 h-4 mr-1.5" />
+                New Sequence
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>
+                  {createMode === "choose" ? "Create a sequence" : createMode === "template" ? "Pick a template" : "Start from scratch"}
+                </DialogTitle>
+                <DialogDescription>
+                  {createMode === "choose"
+                    ? "Start from a proven template or build your own from scratch."
+                    : createMode === "template"
+                    ? "We'll pre-populate the touches — you can edit everything after."
+                    : "Name your sequence, then add touches in the builder."}
+                </DialogDescription>
+              </DialogHeader>
+
+              {createMode === "choose" && (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <button
+                    onClick={() => setCreateMode("template")}
+                    className="text-left p-4 rounded-lg border border-border hover:border-primary/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <Zap className="w-4 h-4 text-primary" />
+                      <span className="font-medium text-sm">From template</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Proven multi-touch cadences you can tweak.</p>
+                  </button>
+                  <button
+                    onClick={() => setCreateMode("scratch")}
+                    className="text-left p-4 rounded-lg border border-border hover:border-primary/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <FileText className="w-4 h-4 text-primary" />
+                      <span className="font-medium text-sm">From scratch</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Build your own touches step by step.</p>
+                  </button>
+                </div>
+              )}
+
+              {createMode === "template" && (
+                <div className="grid gap-3">
+                  {SEQUENCE_TEMPLATES.map((t) => {
+                    const Icon = t.icon;
+                    return (
+                      <button
+                        key={t.id}
+                        onClick={() => handleCreateFromTemplate(t)}
+                        className="text-left p-4 rounded-lg border border-border hover:border-primary/50 transition-colors flex items-start gap-3"
+                      >
+                        <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <Icon className="w-4 h-4 text-primary" />
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium">{t.name}</div>
+                          <div className="text-xs text-muted-foreground">{t.description}</div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {createMode === "scratch" && (
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="seq-name">Name</Label>
+                    <Input id="seq-name" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="e.g. Q1 mid-market outbound" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="seq-desc">Description (optional)</Label>
+                    <Textarea id="seq-desc" rows={2} value={newDescription} onChange={(e) => setNewDescription(e.target.value)} />
+                  </div>
+                </div>
+              )}
+
+              <DialogFooter>
+                {createMode !== "choose" && (
+                  <Button variant="ghost" onClick={() => setCreateMode("choose")}>Back</Button>
+                )}
+                {createMode === "scratch" && (
+                  <Button onClick={handleCreate} disabled={!newName.trim() || createSequence.isPending}>
+                    Create sequence
+                  </Button>
+                )}
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -288,9 +388,13 @@ export function SequencesList() {
             <Mail className="w-5 h-5 text-muted-foreground" />
           </div>
           <h3 className="text-sm font-semibold mb-1">No sequences yet</h3>
-          <p className="text-xs text-muted-foreground max-w-[280px] leading-relaxed">
-            Use the AI Builder above to generate your first signal-based, 4-touch sequence.
+          <p className="text-xs text-muted-foreground max-w-[280px] leading-relaxed mb-4">
+            Create your first automated multi-touch cadence, or generate one with the AI Builder above.
           </p>
+          <Button size="sm" onClick={() => setIsCreateOpen(true)} disabled={!canCreateMore}>
+            <Plus className="w-4 h-4 mr-1.5" />
+            Create Sequence
+          </Button>
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
