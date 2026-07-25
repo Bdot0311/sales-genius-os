@@ -350,6 +350,8 @@ const Calendar = () => {
           </>
         )}
 
+        {!isFreeTier && <CalendarSyncLogPanel />}
+
         <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
