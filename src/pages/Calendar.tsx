@@ -105,20 +105,41 @@ const Calendar = () => {
         throw new Error("Description must be less than 1000 characters");
       }
 
-      const { error } = await supabase.from("activities").insert({
+      const { data: inserted, error } = await supabase.from("activities").insert({
         ...newActivity,
         user_id: user.id,
-      });
+      }).select("id").single();
       if (error) throw error;
 
       if (hasGoogleCalendar && newActivity.due_date) {
         try {
-          await supabase.functions.invoke('sync-to-google-calendar', {
-            body: { eventData: newActivity }
+          const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-to-google-calendar', {
+            body: { eventData: newActivity, activityId: inserted?.id }
           });
-          toast({ title: "Meeting scheduled", description: "Added to both calendars" });
-        } catch {
-          toast({ title: "Meeting scheduled", description: "Added locally. Google sync failed." });
+          if (syncError || syncData?.error) {
+            const msg = syncData?.error || syncError?.message || "Unknown error";
+            const attempts = syncData?.attempts ?? 1;
+            toast({
+              title: "Saved locally — Google sync failed",
+              description: syncData?.needsReconnect
+                ? "Google access expired. Reconnect Google in Integrations."
+                : `${msg}${attempts > 1 ? ` (after ${attempts} attempts)` : ""}. See Sync history for details.`,
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: "Meeting scheduled",
+              description: syncData?.attempts > 1
+                ? `Added to Google Calendar after ${syncData.attempts} attempts.`
+                : "Added to OutReign and Google Calendar.",
+            });
+          }
+        } catch (err: any) {
+          toast({
+            title: "Saved locally — Google sync failed",
+            description: `${err?.message || "Network error"}. See Sync history for details.`,
+            variant: "destructive",
+          });
         }
       } else {
         toast({ title: "Meeting scheduled", description: "Your meeting has been added" });
