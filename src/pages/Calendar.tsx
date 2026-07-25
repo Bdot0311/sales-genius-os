@@ -305,7 +305,78 @@ const Calendar = () => {
           </Dialog>
         </div>
 
-        
+        {/* Google Calendar connection status */}
+        {!isFreeTier && (
+          <Card
+            className={`p-4 border ${
+              calendarStatus === "connected"
+                ? "border-emerald-500/30 bg-emerald-500/5"
+                : calendarStatus === "needs_reconnect"
+                ? "border-amber-500/40 bg-amber-500/5"
+                : calendarStatus === "error"
+                ? "border-destructive/40 bg-destructive/5"
+                : "border-border bg-muted/30"
+            }`}
+            role="status"
+            aria-live="polite"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+              <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
+                <div className="shrink-0">
+                  {calendarStatus === "loading" ? (
+                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                  ) : calendarStatus === "connected" ? (
+                    <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                  ) : calendarStatus === "needs_reconnect" ? (
+                    <AlertTriangle className="w-5 h-5 text-amber-500" />
+                  ) : calendarStatus === "error" ? (
+                    <AlertTriangle className="w-5 h-5 text-destructive" />
+                  ) : (
+                    <Link2 className="w-5 h-5 text-muted-foreground" />
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold">
+                    {calendarStatus === "loading" && "Checking Google Calendar..."}
+                    {calendarStatus === "connected" && "Google Calendar connected"}
+                    {calendarStatus === "needs_reconnect" && "Reconnect Google Calendar"}
+                    {calendarStatus === "disconnected" && "Google Calendar not connected"}
+                    {calendarStatus === "error" && "Google Calendar sync issue"}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5 break-words">
+                    {calendarStatus === "connected" &&
+                      (calendarStatusMessage ||
+                        "New meetings you schedule here will sync to Google automatically.")}
+                    {calendarStatus === "needs_reconnect" && calendarStatusMessage}
+                    {calendarStatus === "disconnected" &&
+                      "Connect Google in Integrations to sync events both ways."}
+                    {calendarStatus === "error" && calendarStatusMessage}
+                    {calendarStatus === "loading" && "Verifying access to your Google account."}
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => checkGoogleCalendarConnection()}
+                  disabled={refreshing || calendarStatus === "loading"}
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${refreshing ? "animate-spin" : ""}`} />
+                  Refresh
+                </Button>
+                {(calendarStatus === "needs_reconnect" ||
+                  calendarStatus === "disconnected" ||
+                  calendarStatus === "error") && (
+                  <Button size="sm" onClick={() => navigate("/integrations")}>
+                    {calendarStatus === "needs_reconnect" ? "Reconnect Google" : "Connect Google"}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </Card>
+        )}
+
 
         {/* Google Calendar events for connected paid users */}
         {!isFreeTier && hasGoogleCalendar && googleEvents.length > 0 && (
