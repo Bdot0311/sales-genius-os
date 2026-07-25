@@ -68,6 +68,7 @@ const Calendar = () => {
       if (data?.connected) {
         setHasGoogleCalendar(true);
         setGoogleEvents(data.events || []);
+        setGoogleEmail(data.email || null);
         if (data.error) {
           setCalendarStatus("error");
           setCalendarStatusMessage(
