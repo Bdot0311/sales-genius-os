@@ -30,13 +30,15 @@ serve(async (req) => {
     // Use service role to access integration config
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { data: integration } = await adminClient
+    const { data: integrations } = await adminClient
       .from("integrations")
-      .select("config")
+      .select("id, config")
       .eq("user_id", user.id)
       .eq("integration_id", "google")
       .eq("is_active", true)
-      .single();
+      .order("updated_at", { ascending: false })
+      .limit(1);
+    const integration = integrations?.[0];
 
     if (!integration?.config) {
       return new Response(
@@ -92,8 +94,7 @@ serve(async (req) => {
         await adminClient
           .from("integrations")
           .update({ is_active: false })
-          .eq("user_id", user.id)
-          .eq("integration_id", "google");
+          .eq("id", integration.id);
 
         return new Response(
           JSON.stringify({
@@ -121,8 +122,7 @@ serve(async (req) => {
           refreshToken: tokens.refresh_token || config.refreshToken,
         },
       })
-      .eq("user_id", user.id)
-      .eq("integration_id", "google");
+      .eq("id", integration.id);
 
     // Return success WITHOUT tokens — tokens stay server-side
     return new Response(
