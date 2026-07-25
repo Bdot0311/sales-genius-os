@@ -301,7 +301,7 @@ function applyPersonalizationFixLocally(email: string, lead?: any) {
 
 const Outreach = () => {
   const { toast } = useToast();
-  const location = (typeof window !== "undefined" ? (window.history.state?.usr as any) : null);
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState("compose");
   const [leads, setLeads] = useState<any[]>([]);
   const [selectedLead, setSelectedLead] = useState("");
