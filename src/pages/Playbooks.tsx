@@ -371,7 +371,93 @@ const PLAYBOOKS: Playbook[] = [
       },
     ],
   },
+  {
+    id: 'cold-email-engine',
+    name: 'Cold Email Engine',
+    tagline: 'The house rules behind every OutReign draft',
+    description: 'A predictable pipeline system built on timing over volume, replies over clicks, credibility over hype, and specificity over claims. Every cold email OutReign generates follows these rules — this playbook shows you why, so you can edit drafts and write your own with the same discipline.',
+    bestFor: 'Founders and outbound teams who want short, human, signal-driven emails that actually get replies',
+    icon: '✉️',
+    color: 'border-l-primary',
+    steps: [
+      {
+        title: 'Copy rules — hard limits every email must pass',
+        description: 'Cold emails only work when they read like a note from a colleague. That means brutal brevity, one job per email, and zero marketing polish.',
+        keyActions: [
+          '50–75 words per email. 90 words is the absolute ceiling for complex offers.',
+          '3–4 sentences max. 8th-grade reading level.',
+          'Exactly one CTA — a low-friction question, never "book a meeting" on touch 1.',
+          'Named proof only: real company + specific metric + timeframe. No invented numbers.',
+          'Ban: "hope this finds you well", "just checking in", "reaching out because", em-dashes, emojis, superlatives (best/amazing/revolutionary), buzzwords (leverage/optimize/streamline/synergy).',
+        ],
+        examples: [
+          'Bad: "I hope this email finds you well. I wanted to reach out because we help companies leverage cutting-edge AI to streamline sales."',
+          'Good: "Noticed {{company}} just hired a new VP Sales. First 90 days usually means locking in new tools. Helped Acme go from 4 to 22 booked calls in 90 days. Worth a 15-min look?"',
+        ],
+        tips: 'Read every draft out loud. If you would not send it to a coworker on Slack, rewrite it.',
+      },
+      {
+        title: 'Pick one structure per email',
+        description: 'Three tested structures cover almost every cold email you need to write. Pick one, follow it, ship it.',
+        keyActions: [
+          'Problem-First — S1 notice problem · S2 quantify pain · S3 solution + named proof · S4 soft CTA question.',
+          'Question-Led — S1 personalized observation · S2 direct question about pain · S3 brief solution + metric · S4 curiosity-driven ask.',
+          'Ultra-Short — S1 their situation · S2 problem → solution → result · S3 yes/no question.',
+        ],
+        examples: [
+          'Question-Led: "Sarah, saw {{company}} runs on WordPress. Curious — is site speed hurting your paid landing pages? Fixed it for Vero (40% faster LCP in 6 weeks). Worth a quick screen share?"',
+        ],
+        tips: 'Mixing structures inside one email is where copy gets soggy. Pick one and stay inside it.',
+      },
+      {
+        title: 'Signal framework — target on 3+ overlapping signals',
+        description: 'The best prospects always have multiple buying signals stacked. Score every lead across three layers before you write anything.',
+        keyActions: [
+          'Layer 1 · Fundamentals — ICP fit, revenue band, geo, vertical.',
+          'Layer 2 · Decision-maker readiness — long CEO tenure, new hire in seat, prior exit, recent recap.',
+          'Layer 3 · Timing triggers (highest value) — new VP/Director, tech migration, SEO traffic drop, increased ad spend, leadership departure, geographic expansion, closed-lost re-engagement.',
+          'Sort your leads table by signal score. Work 3+ signal accounts first.',
+        ],
+        examples: [
+          'A 15-year CEO + newly hired CFO + operating in a consolidating market = a stacked target worth a 30-minute research pass.',
+        ],
+        tips: 'One weak signal is a coincidence. Three overlapping signals is a buying window.',
+      },
+      {
+        title: '4-touch sequence rhythm',
+        description: 'Over 60% of replies come from touches 2–4. Never resend the same message. Every touch adds context, never pressure.',
+        keyActions: [
+          'Day 0 — signal-based opener. Lead with the trigger + one named proof point + a soft CTA.',
+          'Day 3–5 — market or industry context. Different angle, no repeated info.',
+          'Day 7–10 — timing / clarification. Give them an alternative engagement option.',
+          'Day 14 — polite breakup. Leave the door open. Do not follow up more than 4 times.',
+        ],
+        examples: [
+          'Touch 3 example: "Timing might be off — happy to send a 2-page teardown of what we did at Acme instead. Want me to drop it in?"',
+        ],
+        tips: 'Use the AI Builder in Outreach → AI Builder to draft the whole cadence in one click. It follows every rule in this playbook.',
+      },
+      {
+        title: 'Self-check before you send',
+        description: 'Score every draft across seven criteria (0–10 each). Below 50 = rewrite. 50–59 = minor tweaks. 60–70 = ship it.',
+        keyActions: [
+          'Authenticity — would you actually send this to a colleague?',
+          'Brevity — can you read it in under 10 seconds?',
+          'Clarity — is the value clear without jargon?',
+          'Humanness — does it sound like a real person, not marketing copy?',
+          'CTA — one clear, low-friction next step?',
+          'Proof — named company + metric + timeframe?',
+          'Specificity — real numbers, not vague claims?',
+        ],
+        examples: [
+          'If you cannot point to which sentence is the CTA, there is no CTA — rewrite.',
+        ],
+        tips: 'The Outreach Studio quality checker runs this same 7-criteria rubric on every draft. Use "Fix this" to auto-repair failing dimensions.',
+      },
+    ],
+  },
 ];
+
 
 const Playbooks = () => {
   const { currentPlan, loading: planLoading, gateModalOpen, setGateModalOpen, gatedFeature } = usePlanFeatures();
