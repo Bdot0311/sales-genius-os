@@ -1071,24 +1071,29 @@ serve(async (req) => {
       return [];
     };
 
-    if (rawLeads.length === 0 && (requestBody.industry || requestBody.location)) {
-      // Retry 1: drop industry (keep location + job_title)
-      if (requestBody.industry) {
-        const noIndustry = { ...requestBody };
-        delete noIndustry.industry;
-        console.log('0 results — retrying without industry:', JSON.stringify(noIndustry));
+    if (rawLeads.length === 0 && (requestBody.industry || requestBody.location || requestBody.keywords || requestBody.company_size)) {
+      // Retry 1: drop the "soft" filters that most often over-constrain (industry +
+      // keywords), keep job_title + location + seniority + company_size. This is the
+      // common case for generated ICPs, which carry a non-canonical industry and a
+      // long keyword list with no location.
+      if (requestBody.industry || requestBody.keywords) {
+        const relaxed = { ...requestBody };
+        delete relaxed.industry;
+        delete relaxed.keywords;
+        console.log('0 results — retrying without industry/keywords:', JSON.stringify(relaxed));
         try {
-          const r = await fetch(railwayUrl, { method: 'POST', headers: railwayHeaders, body: JSON.stringify(noIndustry) });
+          const r = await fetch(railwayUrl, { method: 'POST', headers: railwayHeaders, body: JSON.stringify(relaxed) });
           if (r.ok) {
             const d = await r.json();
-            console.log('No-industry retry response (first 1000):', JSON.stringify(d).substring(0, 1000));
+            console.log('Relaxed retry response (first 1000):', JSON.stringify(d).substring(0, 1000));
             rawLeads = parseLeadsFromData(d);
           }
-        } catch (e) { console.log('No-industry retry failed:', e); }
+        } catch (e) { console.log('Relaxed retry failed:', e); }
       }
 
-      // Retry 2: if still 0, drop location too — just job_title + limit
-      if (rawLeads.length === 0 && requestBody.location) {
+      // Retry 2: if still 0, fall back to job_title (+ seniority) only. Fires even
+      // without a location, so title-only searches still surface leads.
+      if (rawLeads.length === 0 && (requestBody.job_title || requestBody.seniority)) {
         const jobOnly: Record<string, any> = { limit: requestBody.limit };
         if (requestBody.job_title) jobOnly.job_title = requestBody.job_title;
         if (requestBody.seniority) jobOnly.seniority = requestBody.seniority;
