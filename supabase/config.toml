@@ -1,6 +1,8 @@
 project_id = "ghgfjnepvxvxrncmskys"
 
 [functions]
+  [functions.analyze-domain]
+    verify_jwt = true
   [functions.run-placement-test]
     verify_jwt = false
   [functions.warmup-orchestrator]
