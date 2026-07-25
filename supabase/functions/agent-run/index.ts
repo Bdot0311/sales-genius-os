@@ -138,15 +138,19 @@ serve(async (req) => {
 
     const remainingReplies = config.max_daily_auto_replies - (dailyReplyCount ?? 0);
 
-    const { data: integration } = await adminClient
+    // Fallback Google integration when the reply's thread has no
+    // sending_account_id (legacy rows). Handles multi-account cleanly by
+    // ordering, so we never blow up on `.single()`.
+    const { data: fallbackIntegrations } = await adminClient
       .from("integrations")
       .select("id")
       .eq("user_id", user.id)
       .eq("integration_id", "google")
       .eq("is_active", true)
-      .single();
+      .order("updated_at", { ascending: false })
+      .limit(1);
 
-    const googleIntegrationId: string | null = integration?.id ?? null;
+    const fallbackGoogleIntegrationId: string | null = fallbackIntegrations?.[0]?.id ?? null;
 
     const syncRes = await fetch(`${supabaseUrl}/functions/v1/inbox-sync`, {
       method: "POST",
