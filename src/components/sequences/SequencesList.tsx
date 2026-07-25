@@ -270,125 +270,6 @@ export function SequencesList() {
           <Badge variant="outline" className="px-3 py-1">
             {activeSequences}/{formatLimit(maxSequences)} active
           </Badge>
-          
-          <Dialog open={isCreateOpen} onOpenChange={(open) => {
-            setIsCreateOpen(open);
-            if (!open) setCreateMode("choose");
-          }}>
-            <DialogTrigger asChild>
-              <Button disabled={!canCreateMore && sequences.some(s => s.status !== 'draft')}>
-                <Plus className="w-4 h-4 mr-2" />
-                New Sequence
-              </Button>
-            </DialogTrigger>
-            <DialogContent className={createMode === "template" ? "max-w-2xl" : ""}>
-              {createMode === "choose" && (
-                <>
-                  <DialogHeader>
-                    <DialogTitle>Create New Sequence</DialogTitle>
-                    <DialogDescription>
-                      Start from scratch or use a proven template.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid grid-cols-2 gap-4 py-4">
-                    <button
-                      onClick={() => setCreateMode("scratch")}
-                      className="flex flex-col items-center gap-3 p-6 border rounded-lg hover:bg-muted/50 transition-colors"
-                    >
-                      <FileText className="w-8 h-8 text-muted-foreground" />
-                      <div className="text-center">
-                        <p className="font-medium">Start from scratch</p>
-                        <p className="text-xs text-muted-foreground">Build your own sequence step by step</p>
-                      </div>
-                    </button>
-                    <button
-                      onClick={() => setCreateMode("template")}
-                      className="flex flex-col items-center gap-3 p-6 border rounded-lg hover:bg-muted/50 transition-colors"
-                    >
-                      <Zap className="w-8 h-8 text-primary" />
-                      <div className="text-center">
-                        <p className="font-medium">Use a template</p>
-                        <p className="text-xs text-muted-foreground">Pre-built sequences, ready to customize</p>
-                      </div>
-                    </button>
-                  </div>
-                </>
-              )}
-
-              {createMode === "scratch" && (
-                <>
-                  <DialogHeader>
-                    <DialogTitle>Create New Sequence</DialogTitle>
-                    <DialogDescription>
-                      Set up an automated email sequence to nurture your leads.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Sequence Name</Label>
-                      <Input
-                        id="name"
-                        placeholder="e.g., Cold Outreach - SaaS Founders"
-                        value={newName}
-                        onChange={(e) => setNewName(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="description">Description (optional)</Label>
-                      <Textarea
-                        id="description"
-                        placeholder="Describe the purpose of this sequence..."
-                        value={newDescription}
-                        onChange={(e) => setNewDescription(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setCreateMode("choose")}>
-                      Back
-                    </Button>
-                    <Button onClick={handleCreate} disabled={!newName.trim()}>
-                      Create Sequence
-                    </Button>
-                  </DialogFooter>
-                </>
-              )}
-
-              {createMode === "template" && (
-                <>
-                  <DialogHeader>
-                    <DialogTitle>Choose a Template</DialogTitle>
-                    <DialogDescription>
-                      Select a proven sequence template to get started quickly.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-3 py-4">
-                    {SEQUENCE_TEMPLATES.map((template) => (
-                      <button
-                        key={template.id}
-                        onClick={() => handleCreateFromTemplate(template)}
-                        className="w-full flex items-start gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors text-left"
-                      >
-                        <div className="p-2 rounded-lg bg-primary/10">
-                          <template.icon className="w-5 h-5 text-primary" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium">{template.name}</p>
-                          <p className="text-sm text-muted-foreground">{template.description}</p>
-                          <p className="text-xs text-muted-foreground mt-1">{template.steps.length} steps</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setCreateMode("choose")}>
-                      Back
-                    </Button>
-                  </DialogFooter>
-                </>
-              )}
-            </DialogContent>
-          </Dialog>
         </div>
       </div>
 
@@ -407,13 +288,9 @@ export function SequencesList() {
             <Mail className="w-5 h-5 text-muted-foreground" />
           </div>
           <h3 className="text-sm font-semibold mb-1">No sequences yet</h3>
-          <p className="text-xs text-muted-foreground max-w-[280px] leading-relaxed mb-4">
-            Create your first email sequence to automate follow-ups with signal-based, 4-touch campaigns that average 3–8% reply rates.
+          <p className="text-xs text-muted-foreground max-w-[280px] leading-relaxed">
+            Use the AI Builder above to generate your first signal-based, 4-touch sequence.
           </p>
-          <Button size="sm" onClick={() => setIsCreateOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Create Sequence
-          </Button>
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

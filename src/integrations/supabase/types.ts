@@ -1734,13 +1734,22 @@ export type Database = {
           icp_score: number | null
           id: string
           industry: string | null
+          intent_label: string | null
+          intent_reasons: string[] | null
+          intent_score: number | null
           job_title: string | null
           last_contacted_at: string | null
           lead_status: string
           linkedin_url: string | null
           notes: string | null
+          recommended_angle: string | null
           score_changed_at: string | null
           seniority: string | null
+          signal_date: string | null
+          signal_layers: Json | null
+          signal_score: number | null
+          signal_type: string | null
+          signals: string[] | null
           source: string | null
           technologies: string[] | null
           updated_at: string
@@ -1765,13 +1774,22 @@ export type Database = {
           icp_score?: number | null
           id?: string
           industry?: string | null
+          intent_label?: string | null
+          intent_reasons?: string[] | null
+          intent_score?: number | null
           job_title?: string | null
           last_contacted_at?: string | null
           lead_status?: string
           linkedin_url?: string | null
           notes?: string | null
+          recommended_angle?: string | null
           score_changed_at?: string | null
           seniority?: string | null
+          signal_date?: string | null
+          signal_layers?: Json | null
+          signal_score?: number | null
+          signal_type?: string | null
+          signals?: string[] | null
           source?: string | null
           technologies?: string[] | null
           updated_at?: string
@@ -1796,13 +1814,22 @@ export type Database = {
           icp_score?: number | null
           id?: string
           industry?: string | null
+          intent_label?: string | null
+          intent_reasons?: string[] | null
+          intent_score?: number | null
           job_title?: string | null
           last_contacted_at?: string | null
           lead_status?: string
           linkedin_url?: string | null
           notes?: string | null
+          recommended_angle?: string | null
           score_changed_at?: string | null
           seniority?: string | null
+          signal_date?: string | null
+          signal_layers?: Json | null
+          signal_score?: number | null
+          signal_type?: string | null
+          signals?: string[] | null
           source?: string | null
           technologies?: string[] | null
           updated_at?: string

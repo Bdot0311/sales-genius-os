@@ -60,7 +60,7 @@ export const BlogStrip = () => {
             </h2>
             <Link
               to="/blog"
-              className="group inline-flex items-center gap-1.5 text-sm transition-colors shrink-0"
+              className="group inline-flex items-center gap-1.5 text-sm transition-colors shrink-0 min-h-[40px] px-2"
               style={{ color: "hsl(261 75% 65%)" }}
             >
               All articles

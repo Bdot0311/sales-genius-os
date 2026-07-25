@@ -63,14 +63,14 @@ export const FooterSection = () => {
                     {link.href.startsWith('/') ? (
                       <Link 
                         to={link.href} 
-                        className="text-sm transition-colors duration-150" style={{ color: "hsl(0 0% 100% / 0.7)" }} onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")} onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.7)")}
+                        className="text-sm transition-colors duration-150 inline-flex items-center py-2 min-h-[40px] min-w-[40px] px-1" style={{ color: "hsl(0 0% 100% / 0.7)" }} onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")} onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.7)")}
                       >
                         {link.label}
                       </Link>
                     ) : (
                       <a 
                         href={link.href} 
-                        className="text-sm transition-colors duration-150" style={{ color: "hsl(0 0% 100% / 0.7)" }} onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")} onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.7)")}
+                        className="text-sm transition-colors duration-150 inline-flex items-center py-2 min-h-[40px] min-w-[40px] px-1" style={{ color: "hsl(0 0% 100% / 0.7)" }} onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")} onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.7)")}
                       >
                         {link.label}
                       </a>
@@ -88,7 +88,7 @@ export const FooterSection = () => {
                   <li key={link.label}>
                     <Link
                       to={link.href}
-                      className="text-sm transition-colors duration-150" style={{ color: "hsl(0 0% 100% / 0.7)" }} onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")} onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.7)")}
+                      className="text-sm transition-colors duration-150 inline-flex items-center py-2 min-h-[40px] min-w-[40px] px-1" style={{ color: "hsl(0 0% 100% / 0.7)" }} onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")} onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.7)")}
                     >
                       {link.label}
                     </Link>
@@ -105,7 +105,7 @@ export const FooterSection = () => {
                   <li key={link.label}>
                     <Link 
                       to={link.href} 
-                      className="text-sm transition-colors duration-150" style={{ color: "hsl(0 0% 100% / 0.7)" }} onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")} onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.7)")}
+                      className="text-sm transition-colors duration-150 inline-flex items-center py-2 min-h-[40px] min-w-[40px] px-1" style={{ color: "hsl(0 0% 100% / 0.7)" }} onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")} onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.7)")}
                     >
                       {link.label}
                     </Link>
@@ -122,7 +122,7 @@ export const FooterSection = () => {
                   <li key={link.label}>
                     <Link 
                       to={link.href} 
-                      className="text-sm transition-colors duration-150" style={{ color: "hsl(0 0% 100% / 0.7)" }} onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")} onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.7)")}
+                      className="text-sm transition-colors duration-150 inline-flex items-center py-2 min-h-[40px] min-w-[40px] px-1" style={{ color: "hsl(0 0% 100% / 0.7)" }} onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")} onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.7)")}
                     >
                       {link.label}
                     </Link>

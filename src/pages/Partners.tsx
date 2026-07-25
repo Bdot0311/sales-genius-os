@@ -302,14 +302,14 @@ export default function Partners() {
               New to OutReign?
             </h2>
             <p className="mb-8 text-sm" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
-              Free plan. No credit card. 10 lead searches included.
+              Free plan. No credit card. 100 lead searches included.
             </p>
             <button
               onClick={() => navigate("/auth")}
               className="inline-flex items-center gap-2 rounded-full px-8 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
               style={{ background: "linear-gradient(135deg, hsl(261 75% 60%), hsl(261 75% 50%))" }}
             >
-              Get 10 free leads
+              Get 100 free leads
               <ArrowRight className="h-4 w-4" />
             </button>
           </div>

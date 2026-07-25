@@ -130,7 +130,7 @@ export const FounderNoteSection = () => {
                     href="https://www.linkedin.com/in/buildwitbrandon"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs transition-colors duration-200"
+                    className="text-xs transition-colors duration-200 inline-flex items-center min-h-[40px] min-w-[40px] justify-center px-2"
                     style={{ color: "hsl(261 75% 55% / 0.55)" }}
                     onMouseEnter={(e) =>
                       (e.currentTarget.style.color = "hsl(261 75% 72%)")
@@ -146,7 +146,7 @@ export const FounderNoteSection = () => {
                     href="https://x.com/buildwitbrandon"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs transition-colors duration-200"
+                    className="text-xs transition-colors duration-200 inline-flex items-center min-h-[40px] min-w-[40px] justify-center px-2"
                     style={{ color: "hsl(261 75% 55% / 0.55)" }}
                     onMouseEnter={(e) =>
                       (e.currentTarget.style.color = "hsl(261 75% 72%)")
@@ -175,9 +175,10 @@ export const FounderNoteSection = () => {
               isVisible ? "opacity-100" : "opacity-0"
             }`}
           >
-            <button
-              onClick={() => navigate("/auth")}
-              className="text-sm font-medium transition-colors duration-200"
+            <a
+              href="/auth"
+              onClick={(e) => { e.preventDefault(); navigate("/auth"); }}
+              className="text-sm font-medium transition-colors duration-200 inline-flex items-center min-h-[40px] px-1"
               style={{ color: "hsl(261 75% 65%)" }}
               onMouseEnter={(e) =>
                 (e.currentTarget.style.color = "hsl(261 75% 80%)")
@@ -187,10 +188,11 @@ export const FounderNoteSection = () => {
               }
             >
               Try it free →
-            </button>
-            <button
-              onClick={() => navigate("/pricing")}
-              className="text-sm transition-colors duration-200"
+            </a>
+            <a
+              href="/pricing"
+              onClick={(e) => { e.preventDefault(); navigate("/pricing"); }}
+              className="text-sm transition-colors duration-200 inline-flex items-center min-h-[40px] px-1"
               style={{ color: "hsl(0 0% 100% / 0.6)" }}
               onMouseEnter={(e) =>
                 (e.currentTarget.style.color = "hsl(0 0% 100% / 0.6)")
@@ -200,7 +202,7 @@ export const FounderNoteSection = () => {
               }
             >
               View plans →
-            </button>
+            </a>
           </div>
         </div>
       </div>

@@ -60,7 +60,7 @@ const Confirmation = () => {
     return () => {
       clearInterval(pollInterval);
     };
-  }, [plan, isVerifying]);
+  }, [plan]);
 
   // Track purchase conversion and send confirmation email
   useEffect(() => {

@@ -35,6 +35,8 @@ project_id = "ghgfjnepvxvxrncmskys"
     verify_jwt = true
   [functions.check-subscription]
     verify_jwt = false
+  [functions.submit-campaign-setup]
+    verify_jwt = false
   [functions.create-account-with-subscription]
     verify_jwt = false
   [functions.create-checkout]

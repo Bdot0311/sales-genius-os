@@ -67,19 +67,28 @@ serve(async (req) => {
     );
 
     // Best-effort: log determinate results to history if the caller is authed.
-    // Results are returned regardless of whether saving succeeds.
+    // Validate the JWT via anon client, then insert with the service role so RLS
+    // on blacklist_checks cannot silently drop the write.
     try {
-      const supabase = createClient(
-        Deno.env.get("SUPABASE_URL") ?? "",
-        Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-        { global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } } },
-      );
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
+      const authHeader = req.headers.get("Authorization") ?? "";
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+      const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+      let userId: string | null = null;
+      if (authHeader) {
+        const authClient = createClient(supabaseUrl, anonKey, {
+          global: { headers: { Authorization: authHeader } },
+        });
+        const token = authHeader.replace(/^Bearer\s+/i, "");
+        const { data: { user } } = await authClient.auth.getUser(token);
+        userId = user?.id ?? null;
+      }
+      if (userId && serviceKey) {
+        const admin = createClient(supabaseUrl, serviceKey);
         const rows = results
           .filter((r) => r.status !== "unknown")
           .map((r) => ({
-            user_id: user.id,
+            user_id: userId!,
             target,
             target_type: "domain",
             rbl_name: r.rbl_name,
@@ -87,7 +96,7 @@ serve(async (req) => {
             detail: r.detail,
           }));
         if (rows.length > 0) {
-          const { error: insErr } = await supabase.from("blacklist_checks").insert(rows);
+          const { error: insErr } = await admin.from("blacklist_checks").insert(rows);
           if (insErr) console.error("[check-blacklists] insert error:", insErr);
         }
       }

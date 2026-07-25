@@ -201,9 +201,10 @@ export const HowItWorks = () => {
             viewport={{ once: true, margin: "-10% 0px" }}
             transition={{ duration: 0.6, delay: 0.3 }}
           >
-            <motion.button
-              onClick={() => navigate("/auth")}
-              className="px-6 py-3 rounded-xl text-sm font-semibold"
+            <motion.a
+              href="/auth"
+              onClick={(e) => { e.preventDefault(); navigate("/auth"); }}
+              className="inline-flex items-center px-6 py-3 rounded-xl text-sm font-semibold"
               style={{
                 background: "linear-gradient(135deg, hsl(261 75% 55%), hsl(280 80% 60%))",
                 color: "hsl(0 0% 98%)",
@@ -213,7 +214,7 @@ export const HowItWorks = () => {
               transition={{ type: "spring", stiffness: 400, damping: 20 }}
             >
               Try it free — 10 real leads, no card required
-            </motion.button>
+            </motion.a>
             <p className="text-xs" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
               No credit card. No demo call. Start in 60 seconds.
             </p>

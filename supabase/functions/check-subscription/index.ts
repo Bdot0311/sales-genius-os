@@ -139,23 +139,12 @@ serve(async (req) => {
           });
         }
 
-        // No existing subscription, create default FREE plan (zero cost, zero credits)
-        logStep('Creating default free subscription');
-        const { error: upsertError } = await supabaseClient
-          .from('subscriptions')
-          .upsert({
-            user_id: userId,
-            plan: 'free',
-            status: 'active',
-            leads_limit: 0,
-            search_credits_base: 0,
-            search_credits_addon: 0,
-            search_credits_remaining: 0,
-          }, { onConflict: 'user_id' });
+        // No existing subscription row — insert default free plan.
+        // Do NOT upsert unconditionally: that would clobber the 100 free
+        // credits granted by the handle_new_user_subscription trigger on
+        // every login for legitimate free-tier users.
+        logStep('No subscription row found; leaving trigger-created default in place');
 
-        if (upsertError) {
-          logStep('Error creating default subscription', { error: upsertError });
-        }
       }
 
       return new Response(JSON.stringify({ 
@@ -265,28 +254,14 @@ serve(async (req) => {
         logStep('Successfully synced subscription to database', { plan, baseCredits, addonCredits });
       }
     } else {
-      logStep('No active subscription found, setting to free plan');
-      
-      // Update to default free plan (only if authenticated)
-      if (userId) {
-        const { error: updateError } = await supabaseClient
-          .from('subscriptions')
-          .upsert({
-            user_id: userId,
-            plan: 'free',
-            status: 'active',
-            leads_limit: 0,
-            stripe_customer_id: customerId,
-            search_credits_base: 0,
-            search_credits_addon: 0,
-            search_credits_remaining: 0,
-          }, { onConflict: 'user_id' });
-
-        if (updateError) {
-          logStep('Error updating to free plan', { error: updateError });
-        }
-      }
+      logStep('No active Stripe subscription; leaving DB free plan/credits intact');
+      // NOTE: intentionally do NOT upsert search_credits_base/remaining to 0
+      // here — the signup trigger seeds free-tier users with 100 credits and
+      // this function runs on every login. Overwriting would erase them.
+      // A downgrade to free after a Stripe cancellation is handled by
+      // stripe-webhook / process-stripe-event, not by this poll.
     }
+
 
     return new Response(JSON.stringify({
       subscribed: hasActiveSub,

@@ -53,7 +53,7 @@ serve(async (req) => {
     // Pre-fetch daily + monthly limits for all unique users
     const userIds = [...new Set(scheduledEmails.map((e: any) => e.user_id))];
     const MONTHLY_EMAIL_LIMITS: Record<string, number> = {
-      free: 0, starter: 50000, growth: 250000, pro: 1000000, elite: 1000000, agency: -1,
+      free: 100, starter: 50000, growth: 250000, pro: 1000000, elite: 1000000, agency: -1,
     };
     const userLimits: Record<string, { dailyLimit: number; dailySent: number; monthlyLimit: number; monthlySent: number }> = {};
     for (const uid of userIds) {
@@ -90,6 +90,22 @@ serve(async (req) => {
 
     for (const email of scheduledEmails) {
       try {
+        // Compliance: skip recipients who unsubscribed after the email was queued.
+        const { data: optout } = await supabase
+          .from('email_optouts')
+          .select('id')
+          .eq('email', (email.to_email || '').toLowerCase().trim())
+          .maybeSingle();
+        if (optout) {
+          console.log(`Recipient ${email.to_email} unsubscribed, skipping ${email.id}`);
+          await supabase
+            .from('sent_emails')
+            .update({ status: 'failed', error_message: 'recipient_unsubscribed' } as any)
+            .eq('id', email.id);
+          failed++;
+          continue;
+        }
+
         // Check daily + monthly limits
         const ul = userLimits[email.user_id];
         if (ul && ul.dailySent >= ul.dailyLimit) {
@@ -118,6 +134,32 @@ serve(async (req) => {
             .eq("id", email.id);
           failed++;
           continue;
+        }
+
+        // Resolve sending account & respect per-mailbox pause + daily cap.
+        let sendingAccountId: string | null = null;
+        try {
+          const { data: sa } = await supabase
+            .from('sending_accounts')
+            .select('id, status, daily_limit, sent_today, sent_today_date')
+            .eq('user_id', email.user_id)
+            .eq('integration_id', integration.id)
+            .maybeSingle();
+          if (sa) {
+            sendingAccountId = sa.id;
+            if (sa.status === 'paused' || sa.status === 'disabled') {
+              console.log(`Mailbox ${sa.id} ${sa.status}, skipping ${email.id}`);
+              continue; // leave scheduled; will retry after resume
+            }
+            const today = new Date().toISOString().slice(0, 10);
+            const sentToday = sa.sent_today_date === today ? (sa.sent_today || 0) : 0;
+            if (sentToday >= (sa.daily_limit || 0)) {
+              console.log(`Mailbox ${sa.id} at daily cap, deferring ${email.id}`);
+              continue;
+            }
+          }
+        } catch (e) {
+          console.warn('sending_account lookup failed (non-fatal):', e);
         }
 
         const config = integration.config as any;
@@ -240,8 +282,34 @@ serve(async (req) => {
               gmail_message_id: gmailResult.id,
               gmail_thread_id: gmailResult.threadId,
               tracking_pixel_id: trackingPixelId,
-            })
+              sending_account_id: sendingAccountId,
+            } as any)
             .eq("id", email.id);
+
+          // Bump per-mailbox daily counter (drives rotation + deliverability caps).
+          // increment_account_send() gates on auth.uid(); called from service role
+          // that's null, so update directly. Reset counter when the day rolls over.
+          if (sendingAccountId) {
+            try {
+              const today = new Date().toISOString().slice(0, 10);
+              const { data: saRow } = await supabase
+                .from('sending_accounts')
+                .select('sent_today, sent_today_date')
+                .eq('id', sendingAccountId)
+                .maybeSingle();
+              const prevToday = saRow?.sent_today_date === today ? (saRow?.sent_today || 0) : 0;
+              await supabase
+                .from('sending_accounts')
+                .update({
+                  sent_today: prevToday + 1,
+                  sent_today_date: today,
+                  last_sent_at: new Date().toISOString(),
+                } as any)
+                .eq('id', sendingAccountId);
+            } catch (e) {
+              console.warn('sending_account counter update failed (non-fatal):', e);
+            }
+          }
 
           // Update lead's last_contacted_at
           if (email.lead_id) {

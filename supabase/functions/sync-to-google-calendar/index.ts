@@ -29,13 +29,15 @@ serve(async (req) => {
     if (!user) throw new Error("Not authenticated");
 
     // Get Google integration
-    const { data: integration } = await supabase
+    const { data: integrations } = await supabase
       .from('integrations')
-      .select('config')
+      .select('id, config')
       .eq('user_id', user.id)
       .eq('integration_id', 'google')
       .eq('is_active', true)
-      .single();
+      .order('updated_at', { ascending: false })
+      .limit(1);
+    const integration = integrations?.[0];
 
     if (!integration?.config) {
       return new Response(
@@ -74,8 +76,7 @@ serve(async (req) => {
               expiresAt: Date.now() + tokens.expires_in * 1000,
             },
           })
-          .eq('user_id', user.id)
-          .eq('integration_id', 'google');
+          .eq('id', integration.id);
       }
     }
 
