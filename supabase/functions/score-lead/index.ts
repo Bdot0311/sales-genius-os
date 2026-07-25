@@ -435,6 +435,9 @@ serve(async (req) => {
           recommended_angle:  result.recommended_angle,
           signal_type:        result.signal_type,
           signal_date:        result.signal_date,
+          signal_score:       result.signal_score,
+          signals:            result.signals,
+          signal_layers:      result.signal_layers,
         })
         .eq('id', body.leadId)
         .eq('user_id', user.id);
