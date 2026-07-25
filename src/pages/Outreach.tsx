@@ -2791,12 +2791,9 @@ For logos, use HTML:
             </Card>
           </TabsContent>
 
-          <TabsContent value="sequences" className="mt-6">
-            <SequencesList />
-          </TabsContent>
-
-          <TabsContent value="ai-builder" className="mt-6">
+          <TabsContent value="sequences" className="mt-6 space-y-8">
             <AiSequenceBuilder />
+            <SequencesList />
           </TabsContent>
 
           <TabsContent value="blocks" className="mt-6">
