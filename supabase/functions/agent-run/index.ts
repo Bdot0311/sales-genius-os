@@ -378,15 +378,19 @@ Output ONLY the reply body. No subject line or signature.`;
             continue;
           }
 
-          if (googleIntegrationId) {
-            await adminClient.functions.invoke("send-email", {
-              body: {
-                to: reply.fromEmail,
-                subject: `Re: ${reply.subject}`,
-                body: generatedReply,
-                integrationId: googleIntegrationId,
-              },
-            });
+          {
+            const replyIntegrationId = (reply as any).integrationRowId || fallbackGoogleIntegrationId;
+            if (replyIntegrationId) {
+              await adminClient.functions.invoke("send-email", {
+                body: {
+                  to: reply.fromEmail,
+                  subject: `Re: ${reply.subject}`,
+                  body: generatedReply,
+                  integrationId: "google",
+                  integrationRowId: replyIntegrationId,
+                },
+              });
+            }
           }
 
           await adminClient.from("agent_actions").insert({
