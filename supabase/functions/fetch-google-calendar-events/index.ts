@@ -100,8 +100,7 @@ serve(async (req) => {
             refreshToken: tokens.refresh_token || config.refreshToken,
           },
         })
-        .eq("user_id", user.id)
-        .eq("integration_id", "google");
+        .eq("id", integration.id);
     }
 
     // Fetch calendar events server-side
