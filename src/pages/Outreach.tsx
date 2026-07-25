@@ -1136,7 +1136,7 @@ IMMUTABLE RULES — these apply regardless of the fix task:
       'Length': `TASK: Adjust the word count to 50–70 words. If over 70 words, cut the most generic or redundant sentence. If under 40 words, add one specific detail about the prospect's situation. Do not change the opening line or the CTA.`,
       'Readability': `TASK: Simplify sentence structure only. Find any sentence over 20 words and split it or shorten it. Replace multi-syllable words (e.g. "utilize" → "use", "facilitate" → "help", "leverage" → "use"). Do not change the meaning or the CTA.`,
       'CTA': `TASK: Fix the call-to-action only. Replace the current ask with a single low-friction question on the last content line before the sign-off. Use one of: "Worth a look?", "Open to seeing it?", "Worth a quick chat?", "Should I send a 2-minute breakdown?", or "Want to compare to your current process?" — pick whichever fits the email's tone. Do not change the opening or body.`,
-      'Personalization': `TASK: Remove unfilled placeholder tokens only. Find any text matching patterns like [Name], [Company], {name}, {company}, <FirstName>, {{company}} and replace with a natural generic reference (e.g. "your team", "your company", "your workflow"). Change nothing else.`,
+      'Personalization': `TASK: Fix personalization only. Replace unresolved placeholders and generic phrases like "your company", "your team", "your business", and "someone like you" with one concrete lead-specific reference from the lead data. Use the company name, role, industry, team size, or tech stack when available. Do not invent facts. Change nothing else.`,
       'Credibility': `TASK: Remove or soften unverified claims only. Find percentage stats, multiplier claims (3x, 4x), benchmark numbers, or phrases like "teams cut ramp time" and either remove them or replace with a specific but unquantified outcome (e.g. "3x faster" → "noticeably faster"). Change nothing else.`,
       'Naturalness': `TASK: Rewrite the opening line only (the first sentence after "Hi [Name],"). It must NOT start with: "I noticed", "I hope", "I wanted", "Just", "I came across", "I was", "I've been". Start with a direct observation about their company or role — something that shows you understand their world right now. Keep the rest of the email exactly as-is.`,
       'Links': `TASK: Remove URLs and hyperlinks only. Find all instances of http://, https://, href= and remove them. If a URL was inline, replace it with a plain-text description of what it was linking to. Change nothing else.`,
@@ -1167,6 +1167,15 @@ IMMUTABLE RULES — these apply regardless of the fix task:
       instruction = `Fix only the following issue and nothing else: ${checkLabel}`;
     }
     const lead = leads.find((l) => l.id === selectedLead);
+
+    if (checkLabel === 'Personalization') {
+      const fixed = applyPersonalizationFixLocally(generatedEmail, lead).trim();
+      if (fixed && fixed !== generatedEmail.trim()) {
+        setGeneratedEmail(fixed);
+        setFixingCheck(null);
+        return;
+      }
+    }
 
     try {
       const { data, error } = await supabase.functions.invoke('generate-email', {
