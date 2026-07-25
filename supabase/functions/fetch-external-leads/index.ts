@@ -13,6 +13,8 @@ interface ExternalLeadFilters {
   company_size?: string;
   country?: string;
   company?: string;
+  company_domain?: string;
+  companies?: Array<{ name?: string; domain?: string }>;
   seniority?: string;
   keywords?: string[];
   limit?: number;
@@ -845,6 +847,7 @@ serve(async (req) => {
       location: normalizedCountry || undefined,
       industry: normalizedIndustry || undefined,
       company: filters.company || undefined,
+      company_domain: filters.company_domain || undefined,
       company_size: normalizedCompanySize || undefined,
       seniority: normalizedSeniority || undefined,
       keywords: nonJobKeywords.length > 0 ? nonJobKeywords.join(', ') : undefined,
@@ -858,8 +861,9 @@ serve(async (req) => {
     );
 
     // Check if we have at least one search parameter (besides limit/offset)
-    const hasSearchParam = requestBody.job_title || requestBody.location || 
-                           requestBody.industry || requestBody.company || 
+    const hasSearchParam = requestBody.job_title || requestBody.location ||
+                           requestBody.industry || requestBody.company ||
+                           requestBody.company_domain ||
                            requestBody.company_size || requestBody.seniority ||
                            requestBody.keywords;
     
@@ -878,6 +882,65 @@ serve(async (req) => {
     if (railwayApiKey) {
       railwayHeaders['Authorization'] = `Bearer ${railwayApiKey}`;
       railwayHeaders['X-API-Key'] = railwayApiKey;
+    }
+
+    // ─── Account-based mode: contacts scoped to a set of target companies ───────
+    // The "Target companies" tab sends companies[]. The data source can't OR
+    // multiple companies in one query, so we run one /search per company inside
+    // this single invocation (one credit total — already deducted above) and merge
+    // the results. Per-company misses are reported via empty_companies, not a
+    // global error, so other companies still return.
+    const targetCompanies = Array.isArray(filters.companies) ? filters.companies : [];
+    if (targetCompanies.length > 0) {
+      const targets = targetCompanies.slice(0, 10);
+      const perCompany = Math.min(Math.max(limit, 10), 25);
+      const roleFields: Record<string, any> = {};
+      if (jobTitle) roleFields.job_title = jobTitle;
+      if (normalizedSeniority) roleFields.seniority = normalizedSeniority;
+      if (nonJobKeywords.length > 0) roleFields.keywords = nonJobKeywords.join(', ');
+
+      const collected: any[] = [];
+      const emptyCompanies: string[] = [];
+      for (const t of targets) {
+        const name = typeof t?.name === 'string' ? t.name.trim() : '';
+        const domain = typeof t?.domain === 'string' ? t.domain.trim() : '';
+        if (!name && !domain) continue;
+        const body: Record<string, any> = { ...roleFields, limit: perCompany };
+        if (domain) body.company_domain = domain;
+        if (name) body.company = name;
+        try {
+          const r = await fetch(railwayUrl, { method: 'POST', headers: railwayHeaders, body: JSON.stringify(body) });
+          if (!r.ok) { emptyCompanies.push(name || domain); continue; }
+          const d = await r.json();
+          const arr = Array.isArray(d) ? d
+            : (d.leads || d.contacts || d.people || d.persons || d.results || d.data || d.items || []);
+          if (!Array.isArray(arr) || arr.length === 0) { emptyCompanies.push(name || domain); continue; }
+          for (const raw of arr) collected.push(raw);
+        } catch (e) {
+          console.warn('[companies] search failed for', name || domain, e instanceof Error ? e.message : e);
+          emptyCompanies.push(name || domain);
+        }
+      }
+
+      const mappedLeads: ScoredLead[] = collected
+        .map(mapRailwayLead)
+        .filter((l) => l.contact_name || l.company_name)
+        .sort((a, b) => b.scores.overall_score - a.scores.overall_score);
+
+      if (mappedLeads.length === 0) {
+        await refundCredit('empty_result');
+        return new Response(
+          JSON.stringify({ success: true, leads: [], total: 0, from_cache: false, empty_companies: emptyCompanies,
+            message: 'No contacts found at the selected companies. Try broadening the role filter.' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const pageLeads = mappedLeads.slice(offset, offset + limit);
+      return new Response(
+        JSON.stringify({ success: true, leads: pageLeads, total: mappedLeads.length, from_cache: false, empty_companies: emptyCompanies }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Call Railway backend
