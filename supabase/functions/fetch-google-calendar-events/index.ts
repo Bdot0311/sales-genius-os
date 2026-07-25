@@ -77,8 +77,7 @@ serve(async (req) => {
           await adminClient
             .from("integrations")
             .update({ is_active: false })
-            .eq("user_id", user.id)
-            .eq("integration_id", "google");
+            .eq("id", integration.id);
 
           return new Response(
             JSON.stringify({ events: [], connected: false, needsReconnect: true }),
