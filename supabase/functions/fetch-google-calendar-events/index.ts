@@ -141,13 +141,23 @@ serve(async (req) => {
         status: calResponse.status,
         body: bodyText.slice(0, 500),
       });
+      await adminClient.from("calendar_sync_logs").insert({
+        user_id: user.id,
+        integration_id: integration.id,
+        direction: "inbound",
+        action: "list_events",
+        status: "error",
+        attempt: 1,
+        http_status: calResponse.status,
+        error_code: String(calResponse.status),
+        error_message: bodyText.slice(0, 500) || `Google Calendar: ${calResponse.status}`,
+      });
       if (calResponse.status === 401 || calResponse.status === 403) {
         return new Response(
           JSON.stringify({ events: [], connected: false, needsReconnect: true }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      // Fail soft: return 200 so the UI renders an empty calendar instead of crashing
       return new Response(
         JSON.stringify({ events: [], connected: true, error: `Google Calendar: ${calResponse.status}` }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
