@@ -1928,10 +1928,6 @@ For logos, use HTML:
               <ListOrdered className="w-4 h-4" />
               Sequences
             </TabsTrigger>
-            <TabsTrigger value="ai-builder" className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4" />
-              AI Builder
-            </TabsTrigger>
             <TabsTrigger value="blocks" className="flex items-center gap-2">
               <Layout className="w-4 h-4" />
               Blocks
