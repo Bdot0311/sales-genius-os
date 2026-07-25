@@ -33,6 +33,7 @@ const Calendar = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [activityToDelete, setActivityToDelete] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [resyncing, setResyncing] = useState(false);
   const [newActivity, setNewActivity] = useState({
     subject: "",
     type: "meeting",
