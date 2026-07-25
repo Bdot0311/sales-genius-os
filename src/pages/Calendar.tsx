@@ -28,6 +28,11 @@ const Calendar = () => {
   const [googleEvents, setGoogleEvents] = useState<any[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [hasGoogleCalendar, setHasGoogleCalendar] = useState(false);
+  const [calendarStatus, setCalendarStatus] = useState<
+    "loading" | "connected" | "disconnected" | "needs_reconnect" | "error"
+  >("loading");
+  const [calendarStatusMessage, setCalendarStatusMessage] = useState<string>("");
+  const [refreshing, setRefreshing] = useState(false);
   const [editingActivity, setEditingActivity] = useState<any>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [activityToDelete, setActivityToDelete] = useState<any>(null);
