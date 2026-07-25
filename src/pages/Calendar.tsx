@@ -8,12 +8,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar as CalendarIcon, Plus, Clock, ExternalLink, Edit, Trash2, Link2, CheckCircle2, AlertTriangle, RefreshCw, Loader2 } from "lucide-react";
+import { Calendar as CalendarIcon, Plus, Clock, ExternalLink, Edit, Trash2, Link2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
+import { CalendarSyncLogPanel } from "@/components/calendar/CalendarSyncLogPanel";
 
 
 
@@ -28,11 +29,6 @@ const Calendar = () => {
   const [googleEvents, setGoogleEvents] = useState<any[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [hasGoogleCalendar, setHasGoogleCalendar] = useState(false);
-  const [calendarStatus, setCalendarStatus] = useState<
-    "loading" | "connected" | "disconnected" | "needs_reconnect" | "error"
-  >("loading");
-  const [calendarStatusMessage, setCalendarStatusMessage] = useState<string>("");
-  const [refreshing, setRefreshing] = useState(false);
   const [editingActivity, setEditingActivity] = useState<any>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [activityToDelete, setActivityToDelete] = useState<any>(null);
@@ -51,57 +47,31 @@ const Calendar = () => {
     checkGoogleCalendarConnection();
   }, []);
 
-  const checkGoogleCalendarConnection = async (opts?: { silent?: boolean }) => {
-    if (!opts?.silent) setRefreshing(true);
+  const checkGoogleCalendarConnection = async () => {
     try {
       const { data, error } = await supabase.functions.invoke('fetch-google-calendar-events');
       if (error) {
         console.error('Error fetching Google Calendar events:', error);
-        setHasGoogleCalendar(false);
-        setCalendarStatus("error");
-        setCalendarStatusMessage(
-          "We couldn't reach Google Calendar. Check your connection and try again."
-        );
+        setLoading(false);
         return;
       }
       if (data?.connected) {
         setHasGoogleCalendar(true);
         setGoogleEvents(data.events || []);
-        if (data.error) {
-          setCalendarStatus("error");
-          setCalendarStatusMessage(
-            `Connected, but Google returned an error while fetching events: ${data.error}`
-          );
-        } else {
-          setCalendarStatus("connected");
-          setCalendarStatusMessage("");
-        }
       } else {
         setHasGoogleCalendar(false);
-        setGoogleEvents([]);
         if (data?.needsReconnect) {
-          setCalendarStatus("needs_reconnect");
-          setCalendarStatusMessage(
-            "Your Google Calendar access has expired or was revoked. Reconnect your Google account to resume syncing."
-          );
-        } else if (data?.error) {
-          setCalendarStatus("error");
-          setCalendarStatusMessage(`Google Calendar error: ${data.error}`);
-        } else {
-          setCalendarStatus("disconnected");
-          setCalendarStatusMessage("");
+          toast({
+            title: "Google Calendar Disconnected",
+            description: "Please reconnect your Google account in Integrations.",
+            variant: "destructive",
+          });
         }
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error checking Google Calendar:', error);
-      setHasGoogleCalendar(false);
-      setCalendarStatus("error");
-      setCalendarStatusMessage(
-        error?.message || "Unexpected error while checking Google Calendar."
-      );
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   };
 
@@ -135,41 +105,39 @@ const Calendar = () => {
         throw new Error("Description must be less than 1000 characters");
       }
 
-      const { error } = await supabase.from("activities").insert({
+      const { data: inserted, error } = await supabase.from("activities").insert({
         ...newActivity,
         user_id: user.id,
-      });
+      }).select("id").single();
       if (error) throw error;
 
       if (hasGoogleCalendar && newActivity.due_date) {
         try {
           const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-to-google-calendar', {
-            body: { eventData: newActivity }
+            body: { eventData: newActivity, activityId: inserted?.id }
           });
           if (syncError || syncData?.error) {
             const msg = syncData?.error || syncError?.message || "Unknown error";
-            const needsReconnect = /invalid_grant|not connected|reconnect/i.test(msg);
+            const attempts = syncData?.attempts ?? 1;
             toast({
               title: "Saved locally — Google sync failed",
-              description: needsReconnect
-                ? "Your Google Calendar access expired. Reconnect Google in Integrations to resume syncing."
-                : `Google Calendar rejected the event: ${msg}`,
+              description: syncData?.needsReconnect
+                ? "Google access expired. Reconnect Google in Integrations."
+                : `${msg}${attempts > 1 ? ` (after ${attempts} attempts)` : ""}. See Sync history for details.`,
               variant: "destructive",
             });
-            if (needsReconnect) {
-              setCalendarStatus("needs_reconnect");
-              setCalendarStatusMessage(
-                "Your Google Calendar access has expired or was revoked. Reconnect your Google account to resume syncing."
-              );
-              setHasGoogleCalendar(false);
-            }
           } else {
-            toast({ title: "Meeting scheduled", description: "Added to OutReign and Google Calendar" });
+            toast({
+              title: "Meeting scheduled",
+              description: syncData?.attempts > 1
+                ? `Added to Google Calendar after ${syncData.attempts} attempts.`
+                : "Added to OutReign and Google Calendar.",
+            });
           }
         } catch (err: any) {
           toast({
             title: "Saved locally — Google sync failed",
-            description: err?.message || "We couldn't reach Google Calendar. Your meeting is saved in OutReign.",
+            description: `${err?.message || "Network error"}. See Sync history for details.`,
             variant: "destructive",
           });
         }
@@ -305,78 +273,7 @@ const Calendar = () => {
           </Dialog>
         </div>
 
-        {/* Google Calendar connection status */}
-        {!isFreeTier && (
-          <Card
-            className={`p-4 border ${
-              calendarStatus === "connected"
-                ? "border-emerald-500/30 bg-emerald-500/5"
-                : calendarStatus === "needs_reconnect"
-                ? "border-amber-500/40 bg-amber-500/5"
-                : calendarStatus === "error"
-                ? "border-destructive/40 bg-destructive/5"
-                : "border-border bg-muted/30"
-            }`}
-            role="status"
-            aria-live="polite"
-          >
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-              <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
-                <div className="shrink-0">
-                  {calendarStatus === "loading" ? (
-                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-                  ) : calendarStatus === "connected" ? (
-                    <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                  ) : calendarStatus === "needs_reconnect" ? (
-                    <AlertTriangle className="w-5 h-5 text-amber-500" />
-                  ) : calendarStatus === "error" ? (
-                    <AlertTriangle className="w-5 h-5 text-destructive" />
-                  ) : (
-                    <Link2 className="w-5 h-5 text-muted-foreground" />
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold">
-                    {calendarStatus === "loading" && "Checking Google Calendar..."}
-                    {calendarStatus === "connected" && "Google Calendar connected"}
-                    {calendarStatus === "needs_reconnect" && "Reconnect Google Calendar"}
-                    {calendarStatus === "disconnected" && "Google Calendar not connected"}
-                    {calendarStatus === "error" && "Google Calendar sync issue"}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-0.5 break-words">
-                    {calendarStatus === "connected" &&
-                      (calendarStatusMessage ||
-                        "New meetings you schedule here will sync to Google automatically.")}
-                    {calendarStatus === "needs_reconnect" && calendarStatusMessage}
-                    {calendarStatus === "disconnected" &&
-                      "Connect Google in Integrations to sync events both ways."}
-                    {calendarStatus === "error" && calendarStatusMessage}
-                    {calendarStatus === "loading" && "Verifying access to your Google account."}
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-2 shrink-0">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => checkGoogleCalendarConnection()}
-                  disabled={refreshing || calendarStatus === "loading"}
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${refreshing ? "animate-spin" : ""}`} />
-                  Refresh
-                </Button>
-                {(calendarStatus === "needs_reconnect" ||
-                  calendarStatus === "disconnected" ||
-                  calendarStatus === "error") && (
-                  <Button size="sm" onClick={() => navigate("/integrations")}>
-                    {calendarStatus === "needs_reconnect" ? "Reconnect Google" : "Connect Google"}
-                  </Button>
-                )}
-              </div>
-            </div>
-          </Card>
-        )}
-
+        
 
         {/* Google Calendar events for connected paid users */}
         {!isFreeTier && hasGoogleCalendar && googleEvents.length > 0 && (
@@ -473,6 +370,8 @@ const Calendar = () => {
             </div>
           </>
         )}
+
+        {!isFreeTier && <CalendarSyncLogPanel />}
 
         <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
           <AlertDialogContent>

@@ -116,25 +116,40 @@ serve(async (req) => {
           console.log(`Monthly limit reached for user ${email.user_id} (${ul.monthlySent}/${ul.monthlyLimit}), skipping email ${email.id}`);
           continue;
         }
-        // Resolve which mailbox this email was queued from. Users can have
-        // multiple Gmail accounts connected, so we MUST use the specific
-        // sending_account -> integration the email was assigned to. Only
-        // fall back to "any active Google integration" for legacy rows
-        // where sending_account_id was never set.
-        let integration: { id: string; config: any } | null = null;
-        let sendingAccountId: string | null = null;
+        // Get user's integration for sending
+        const { data: integration } = await supabase
+          .from("integrations")
+          .select("id, config")
+          .eq("user_id", email.user_id)
+          .eq("integration_id", "google")
+          .eq("is_active", true)
+          .limit(1)
+          .single();
 
-        if (email.sending_account_id) {
+        if (!integration) {
+          console.error(`No active integration for user ${email.user_id}`);
+          await supabase
+            .from("sent_emails")
+            .update({ status: "failed" })
+            .eq("id", email.id);
+          failed++;
+          continue;
+        }
+
+        // Resolve sending account & respect per-mailbox pause + daily cap.
+        let sendingAccountId: string | null = null;
+        try {
           const { data: sa } = await supabase
             .from('sending_accounts')
-            .select('id, status, daily_limit, sent_today, sent_today_date, integration_id')
-            .eq('id', email.sending_account_id)
+            .select('id, status, daily_limit, sent_today, sent_today_date')
+            .eq('user_id', email.user_id)
+            .eq('integration_id', integration.id)
             .maybeSingle();
           if (sa) {
             sendingAccountId = sa.id;
             if (sa.status === 'paused' || sa.status === 'disabled') {
               console.log(`Mailbox ${sa.id} ${sa.status}, skipping ${email.id}`);
-              continue;
+              continue; // leave scheduled; will retry after resume
             }
             const today = new Date().toISOString().slice(0, 10);
             const sentToday = sa.sent_today_date === today ? (sa.sent_today || 0) : 0;
@@ -142,59 +157,9 @@ serve(async (req) => {
               console.log(`Mailbox ${sa.id} at daily cap, deferring ${email.id}`);
               continue;
             }
-            if (sa.integration_id) {
-              const { data: integ } = await supabase
-                .from('integrations')
-                .select('id, config')
-                .eq('id', sa.integration_id)
-                .eq('is_active', true)
-                .maybeSingle();
-              integration = integ ?? null;
-            }
           }
-        }
-
-        if (!integration) {
-          // Legacy fallback: most-recently-updated active Google integration
-          // for this user. Ordering matters when the user has multiple.
-          const { data: integList } = await supabase
-            .from("integrations")
-            .select("id, config")
-            .eq("user_id", email.user_id)
-            .eq("integration_id", "google")
-            .eq("is_active", true)
-            .order("updated_at", { ascending: false })
-            .limit(1);
-          integration = integList?.[0] ?? null;
-
-          if (integration && !sendingAccountId) {
-            const { data: sa } = await supabase
-              .from('sending_accounts')
-              .select('id, status, daily_limit, sent_today, sent_today_date')
-              .eq('user_id', email.user_id)
-              .eq('integration_id', integration.id)
-              .maybeSingle();
-            if (sa) {
-              sendingAccountId = sa.id;
-              if (sa.status === 'paused' || sa.status === 'disabled') {
-                console.log(`Mailbox ${sa.id} ${sa.status}, skipping ${email.id}`);
-                continue;
-              }
-              const today = new Date().toISOString().slice(0, 10);
-              const sentToday = sa.sent_today_date === today ? (sa.sent_today || 0) : 0;
-              if (sentToday >= (sa.daily_limit || 0)) {
-                console.log(`Mailbox ${sa.id} at daily cap, deferring ${email.id}`);
-                continue;
-              }
-            }
-          }
-        }
-
-        if (!integration) {
-          console.error(`No active Google integration for user ${email.user_id}`);
-          await supabase.from("sent_emails").update({ status: "failed" }).eq("id", email.id);
-          failed++;
-          continue;
+        } catch (e) {
+          console.warn('sending_account lookup failed (non-fatal):', e);
         }
 
         const config = integration.config as any;
