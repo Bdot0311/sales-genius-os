@@ -26,6 +26,7 @@ const Calendar = () => {
   const [activities, setActivities] = useState<any[]>([]);
   const [leads, setLeads] = useState<any[]>([]);
   const [googleEvents, setGoogleEvents] = useState<any[]>([]);
+  const [googleEmail, setGoogleEmail] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [hasGoogleCalendar, setHasGoogleCalendar] = useState(false);
   const [calendarStatus, setCalendarStatus] = useState<
