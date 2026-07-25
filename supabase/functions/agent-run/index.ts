@@ -311,13 +311,15 @@ Output ONLY the reply body. No subject line. No greeting like "Hi [name]". No si
             continue;
           }
 
-          if (googleIntegrationId) {
+          const replyIntegrationId = (reply as any).integrationRowId || fallbackGoogleIntegrationId;
+          if (replyIntegrationId) {
             await adminClient.functions.invoke("send-email", {
               body: {
                 to: reply.fromEmail,
                 subject: `Re: ${reply.subject}`,
                 body: generatedReply,
-                integrationId: googleIntegrationId,
+                integrationId: "google",
+                integrationRowId: replyIntegrationId,
               },
             });
           }
