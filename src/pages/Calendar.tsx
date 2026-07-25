@@ -143,12 +143,35 @@ const Calendar = () => {
 
       if (hasGoogleCalendar && newActivity.due_date) {
         try {
-          await supabase.functions.invoke('sync-to-google-calendar', {
+          const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-to-google-calendar', {
             body: { eventData: newActivity }
           });
-          toast({ title: "Meeting scheduled", description: "Added to both calendars" });
-        } catch {
-          toast({ title: "Meeting scheduled", description: "Added locally. Google sync failed." });
+          if (syncError || syncData?.error) {
+            const msg = syncData?.error || syncError?.message || "Unknown error";
+            const needsReconnect = /invalid_grant|not connected|reconnect/i.test(msg);
+            toast({
+              title: "Saved locally — Google sync failed",
+              description: needsReconnect
+                ? "Your Google Calendar access expired. Reconnect Google in Integrations to resume syncing."
+                : `Google Calendar rejected the event: ${msg}`,
+              variant: "destructive",
+            });
+            if (needsReconnect) {
+              setCalendarStatus("needs_reconnect");
+              setCalendarStatusMessage(
+                "Your Google Calendar access has expired or was revoked. Reconnect your Google account to resume syncing."
+              );
+              setHasGoogleCalendar(false);
+            }
+          } else {
+            toast({ title: "Meeting scheduled", description: "Added to OutReign and Google Calendar" });
+          }
+        } catch (err: any) {
+          toast({
+            title: "Saved locally — Google sync failed",
+            description: err?.message || "We couldn't reach Google Calendar. Your meeting is saved in OutReign.",
+            variant: "destructive",
+          });
         }
       } else {
         toast({ title: "Meeting scheduled", description: "Your meeting has been added" });
