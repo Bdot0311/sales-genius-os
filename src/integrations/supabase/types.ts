@@ -1746,7 +1746,10 @@ export type Database = {
           score_changed_at: string | null
           seniority: string | null
           signal_date: string | null
+          signal_layers: Json | null
+          signal_score: number | null
           signal_type: string | null
+          signals: string[] | null
           source: string | null
           technologies: string[] | null
           updated_at: string
@@ -1783,7 +1786,10 @@ export type Database = {
           score_changed_at?: string | null
           seniority?: string | null
           signal_date?: string | null
+          signal_layers?: Json | null
+          signal_score?: number | null
           signal_type?: string | null
+          signals?: string[] | null
           source?: string | null
           technologies?: string[] | null
           updated_at?: string
@@ -1820,7 +1826,10 @@ export type Database = {
           score_changed_at?: string | null
           seniority?: string | null
           signal_date?: string | null
+          signal_layers?: Json | null
+          signal_score?: number | null
           signal_type?: string | null
+          signals?: string[] | null
           source?: string | null
           technologies?: string[] | null
           updated_at?: string

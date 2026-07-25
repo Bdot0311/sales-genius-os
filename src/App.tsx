@@ -28,6 +28,8 @@ const LiveCoaching = lazy(() => import("./pages/LiveCoaching"));
 const Playbooks = lazy(() => import("./pages/Playbooks"));
 const Pipeline = lazy(() => import("./pages/Pipeline"));
 const Outreach = lazy(() => import("./pages/Outreach"));
+const SequenceBuilder = lazy(() => import("./pages/SequenceBuilder"));
+const CopyPlaybook = lazy(() => import("./pages/CopyPlaybook"));
 const Calendar = lazy(() => import("./pages/Calendar"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const Automations = lazy(() => import("./pages/Automations"));
@@ -389,6 +391,8 @@ const App = () => {
               <Route path="/dashboard/coach/playbooks" element={<MaintenanceGuard><Playbooks /></MaintenanceGuard>} />
               <Route path="/dashboard/pipeline" element={<MaintenanceGuard><Pipeline /></MaintenanceGuard>} />
               <Route path="/dashboard/outreach" element={<MaintenanceGuard><Outreach /></MaintenanceGuard>} />
+              <Route path="/dashboard/sequence-builder" element={<MaintenanceGuard><SequenceBuilder /></MaintenanceGuard>} />
+              <Route path="/dashboard/playbook" element={<MaintenanceGuard><CopyPlaybook /></MaintenanceGuard>} />
               <Route path="/dashboard/calendar" element={<MaintenanceGuard><Calendar /></MaintenanceGuard>} />
               <Route path="/dashboard/analytics" element={<MaintenanceGuard><Analytics /></MaintenanceGuard>} />
               <Route path="/dashboard/automations" element={<MaintenanceGuard><Automations /></MaintenanceGuard>} />
