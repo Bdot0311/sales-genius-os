@@ -76,8 +76,7 @@ serve(async (req) => {
               expiresAt: Date.now() + tokens.expires_in * 1000,
             },
           })
-          .eq('user_id', user.id)
-          .eq('integration_id', 'google');
+          .eq('id', integration.id);
       }
     }
 
