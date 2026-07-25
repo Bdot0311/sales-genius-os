@@ -267,7 +267,20 @@ const Calendar = () => {
             <h1 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">Calendar</h1>
             <p className="text-muted-foreground text-sm sm:text-base">Manage your meetings and schedule</p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          <div className="flex items-center gap-2">
+            {!isFreeTier && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleResync}
+                disabled={resyncing}
+                title="Refresh tokens and pull the latest events from Google"
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${resyncing ? "animate-spin" : ""}`} />
+                {resyncing ? "Re-syncing..." : "Re-sync calendar"}
+              </Button>
+            )}
+            <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);
             if (!open) {
               setEditingActivity(null);
