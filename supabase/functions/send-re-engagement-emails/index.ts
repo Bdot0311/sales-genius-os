@@ -94,6 +94,7 @@ serve(async (req) => {
         idempotencyKey: `reengage-${user.id}-${new Date().toISOString().slice(0, 10)}${opts.manual ? '-manual' : ''}`,
         templateData: { name: firstName, daysInactive: daysInactive ?? undefined },
       },
+      headers: { Authorization: `Bearer ${serviceKey}` },
     });
 
     await recordAttempt({

@@ -755,6 +755,57 @@ export type Database = {
           },
         ]
       }
+      calendar_sync_logs: {
+        Row: {
+          action: string
+          activity_id: string | null
+          attempt: number
+          created_at: string
+          details: Json | null
+          direction: string
+          error_code: string | null
+          error_message: string | null
+          google_event_id: string | null
+          http_status: number | null
+          id: string
+          integration_id: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          activity_id?: string | null
+          attempt?: number
+          created_at?: string
+          details?: Json | null
+          direction: string
+          error_code?: string | null
+          error_message?: string | null
+          google_event_id?: string | null
+          http_status?: number | null
+          id?: string
+          integration_id?: string | null
+          status: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          activity_id?: string | null
+          attempt?: number
+          created_at?: string
+          details?: Json | null
+          direction?: string
+          error_code?: string | null
+          error_message?: string | null
+          google_event_id?: string | null
+          http_status?: number | null
+          id?: string
+          integration_id?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       coaching_conversations: {
         Row: {
           created_at: string
