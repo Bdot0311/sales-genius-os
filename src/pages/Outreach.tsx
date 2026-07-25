@@ -397,6 +397,20 @@ const Outreach = () => {
     loadComplianceSettings();
   }, []);
 
+  // Prefill compose from navigation state (e.g. AI Sequence Builder → Open in Compose)
+  useEffect(() => {
+    const state = (location?.state as any) || null;
+    if (!state) return;
+    const { prefillSubject, prefillBody } = state;
+    if (prefillSubject || prefillBody) {
+      if (prefillSubject) setSubjectLine(String(prefillSubject));
+      if (prefillBody) setGeneratedEmail(String(prefillBody));
+      setActiveTab("compose");
+      // Clear the state so refresh/back doesn't re-apply it
+      try { window.history.replaceState({ ...window.history.state, usr: null }, ""); } catch {}
+    }
+  }, [location?.state]);
+
   const loadDueFollowUps = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
