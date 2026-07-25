@@ -92,11 +92,11 @@ const SYSTEM_PROMPT = `You analyze a company's website and infer the Ideal Custo
 From the provided website text, determine what the company sells and who buys it, then output the target buyer profile as structured filters for a B2B lead search.
 
 Return ONLY a valid JSON object with these fields:
-- jobTitles: string[]   // buyer personas / decision-maker titles, e.g. ["VP of Sales", "Head of Marketing"]
-- industries: string[]  // industries the customers operate in
+- jobTitles: string[]   // concrete, searchable decision-maker titles only, e.g. ["VP of Sales", "Head of Marketing", "CMO"]. Max 6. No vague personas like "decision makers" or "leaders".
+- industries: string[]  // real industry sectors the CUSTOMERS operate in, using standard names (e.g. "Computer Software", "Marketing and Advertising", "Financial Services", "Staffing and Recruiting"). Max 3. Do NOT use sales-motion phrases like "B2B Sales" or "Outbound Sales".
 - companySizes: string[] // ONLY from: "1-10","11-50","51-200","201-500","501-1000","1000+"
 - locations: string[]   // geographies of the customers (countries/regions), if inferable
-- keywords: string[]    // buying-signal / intent keywords describing the customers
+- keywords: string[]    // up to 4 short intent/signal keywords describing the customers
 - summary: string       // 1-2 sentence plain-English description of who they should sell to
 
 If a field cannot be inferred, use an empty array. Never invent a specific city if none is implied. Output JSON only, no prose, no code fences.`;
