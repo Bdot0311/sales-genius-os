@@ -26,6 +26,7 @@ const Calendar = () => {
   const [activities, setActivities] = useState<any[]>([]);
   const [leads, setLeads] = useState<any[]>([]);
   const [googleEvents, setGoogleEvents] = useState<any[]>([]);
+  const [googleEmail, setGoogleEmail] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [hasGoogleCalendar, setHasGoogleCalendar] = useState(false);
   const [calendarStatus, setCalendarStatus] = useState<
@@ -67,6 +68,7 @@ const Calendar = () => {
       if (data?.connected) {
         setHasGoogleCalendar(true);
         setGoogleEvents(data.events || []);
+        setGoogleEmail(data.email || null);
         if (data.error) {
           setCalendarStatus("error");
           setCalendarStatusMessage(
@@ -378,39 +380,43 @@ const Calendar = () => {
         )}
 
 
-        {/* Google Calendar events for connected paid users */}
-        {!isFreeTier && hasGoogleCalendar && googleEvents.length > 0 && (
+        {/* Embedded Google Calendar for connected paid users */}
+        {!isFreeTier && hasGoogleCalendar && (
           <div>
-            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              Your Upcoming Events
-              <Badge variant="secondary">Google Calendar</Badge>
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {googleEvents.map((event) => (
-                <Card key={event.id} className="p-4 bg-gradient-to-br from-blue-500/5 to-purple-500/5 border-blue-200">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-lg bg-blue-500/10">
-                      <CalendarIcon className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold mb-1">{event.summary || "Untitled Event"}</h3>
-                      {event.description && <p className="text-sm text-muted-foreground mb-2 line-clamp-2">{event.description}</p>}
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                        <Clock className="w-4 h-4" />
-                        {event.start?.dateTime ? format(new Date(event.start.dateTime), "PPp") : event.start?.date ? format(new Date(event.start.date), "PP") : "No date"}
-                      </div>
-                      {event.htmlLink && (
-                        <a href={event.htmlLink} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline flex items-center gap-1">
-                          View in Google Calendar <ExternalLink className="w-3 h-3" />
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                </Card>
-              ))}
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold flex items-center gap-2">
+                Your Google Calendar
+                <Badge variant="secondary">Live</Badge>
+              </h2>
+              <a
+                href={googleEmail ? `https://calendar.google.com/calendar/u/0/r?authuser=${encodeURIComponent(googleEmail)}` : "https://calendar.google.com"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-primary hover:underline flex items-center gap-1"
+              >
+                Open in Google <ExternalLink className="w-3 h-3" />
+              </a>
             </div>
+            <Card className="overflow-hidden p-0">
+              <iframe
+                title="Google Calendar"
+                src={`https://calendar.google.com/calendar/embed?src=${encodeURIComponent(googleEmail || "primary")}&ctz=local&mode=WEEK&showTitle=0&showPrint=0&showTabs=1&showCalendars=0&showTz=0`}
+                style={{ border: 0 }}
+                width="100%"
+                height="700"
+                frameBorder={0}
+                scrolling="no"
+              />
+            </Card>
+            {!googleEmail && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Tip: your calendar must be shared publicly or you must be signed into this Google account in the browser for events to display in the embed.
+              </p>
+            )}
           </div>
         )}
+
+
 
         {/* Empty state — no calendar connected and no meetings */}
         {hasNoMeetings && (
