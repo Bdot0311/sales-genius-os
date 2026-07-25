@@ -389,7 +389,7 @@ const App = () => {
               <Route path="/dashboard/coach/playbooks" element={<MaintenanceGuard><Playbooks /></MaintenanceGuard>} />
               <Route path="/dashboard/pipeline" element={<MaintenanceGuard><Pipeline /></MaintenanceGuard>} />
               <Route path="/dashboard/outreach" element={<MaintenanceGuard><Outreach /></MaintenanceGuard>} />
-              <Route path="/dashboard/sequence-builder" element={<Navigate to="/dashboard/outreach?tab=ai-builder" replace />} />
+              <Route path="/dashboard/sequence-builder" element={<Navigate to="/dashboard/outreach?tab=sequences" replace />} />
               <Route path="/dashboard/playbook" element={<Navigate to="/dashboard/coach/playbooks" replace />} />
               <Route path="/dashboard/calendar" element={<MaintenanceGuard><Calendar /></MaintenanceGuard>} />
               <Route path="/dashboard/analytics" element={<MaintenanceGuard><Analytics /></MaintenanceGuard>} />
