@@ -288,13 +288,9 @@ export function SequencesList() {
             <Mail className="w-5 h-5 text-muted-foreground" />
           </div>
           <h3 className="text-sm font-semibold mb-1">No sequences yet</h3>
-          <p className="text-xs text-muted-foreground max-w-[280px] leading-relaxed mb-4">
-            Create your first email sequence to automate follow-ups with signal-based, 4-touch campaigns that average 3–8% reply rates.
+          <p className="text-xs text-muted-foreground max-w-[280px] leading-relaxed">
+            Use the AI Builder above to generate your first signal-based, 4-touch sequence.
           </p>
-          <Button size="sm" onClick={() => setIsCreateOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Create Sequence
-          </Button>
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
