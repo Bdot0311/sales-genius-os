@@ -4,7 +4,6 @@ import { STRIPE_PRICE_IDS } from "@/lib/stripe-config";
 import { useSearchCredits } from "@/hooks/use-search-credits";
 import { useNavigate } from "react-router-dom";
 import { QuickBuyCreditsDialog } from "@/components/dashboard/QuickBuyCreditsDialog";
-import { CampaignSetupDialog } from "@/components/CampaignSetupDialog";
 
 type BillingInterval = "monthly" | "yearly";
 
@@ -282,7 +281,6 @@ const accentPurple = "hsl(261 75% 65%)";
 export const Pricing = () => {
   const { credits } = useSearchCredits();
   const [topupDialogOpen, setTopupDialogOpen] = useState(false);
-  const [campaignDialogOpen, setCampaignDialogOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [billingInterval, setBillingInterval] = useState<BillingInterval>("monthly");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -672,7 +670,6 @@ export const Pricing = () => {
         </div>
 
         <QuickBuyCreditsDialog open={topupDialogOpen} onOpenChange={setTopupDialogOpen} />
-        <CampaignSetupDialog open={campaignDialogOpen} onOpenChange={setCampaignDialogOpen} />
 
         {/* FAQ */}
         <div className="max-w-3xl mx-auto">

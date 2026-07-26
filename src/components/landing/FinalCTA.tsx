@@ -1,12 +1,9 @@
 import { ArrowRight } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
 export const FinalCTA = () => {
-  const navigate = useNavigate();
-
   return (
     <section
       className="relative py-40 md:py-52 overflow-hidden"
