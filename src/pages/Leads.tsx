@@ -9,6 +9,7 @@ import { ImportLeadsDialog } from "@/components/dashboard/ImportLeadsDialog";
 import { ExternalLeadsTable } from "@/components/dashboard/ExternalLeadsTable";
 import { AILeadCommand } from "@/components/dashboard/AILeadCommand";
 import { DomainICPBuilder } from "@/components/dashboard/DomainICPBuilder";
+import { TargetCompanies } from "@/components/dashboard/TargetCompanies";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { buildExternalFilters, ParsedIcpFilters } from "@/lib/lead-filters";
 import { Sparkles, Loader2, Users, RefreshCw, Lock, CreditCard, ChevronLeft, ChevronRight } from "lucide-react";
@@ -107,6 +108,31 @@ const Leads = () => {
     Analytics.firstSearchRun();
   };
 
+  // Run a search scoped to a chosen set of target companies ("Target companies" tab).
+  // Same pipeline, results, cards, and single-credit metering as every other flow.
+  const handleCompaniesFindLeads = (
+    filters: Pick<ExternalLeadFilters, "companies" | "job_title">,
+    label: string,
+  ) => {
+    if (!canSearch) {
+      const isFreeExhausted = !subscriptionStatus?.isPaidUser && (credits?.remainingCredits ?? 0) <= 0;
+      toast({
+        title: isFreeExhausted ? "Free leads used up" : "Search limit reached",
+        description: isFreeExhausted
+          ? "You've used your 100 free leads. Upgrade to keep finding prospects."
+          : "You've reached your search limit. Try again later.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setAiSearchQuery(label);
+    setShowExternalLeads(true);
+    const newFilters: ExternalLeadFilters = { ...filters, limit: pageSize };
+    setExternalFilters(newFilters);
+    fetchExternalLeads(newFilters);
+    Analytics.firstSearchRun();
+  };
+
   return (
     <DashboardLayout>
       <PageHeader
@@ -156,6 +182,7 @@ const Leads = () => {
               <TabsList className="mb-4">
                 <TabsTrigger value="describe">Describe your ICP</TabsTrigger>
                 <TabsTrigger value="website">Analyze your website</TabsTrigger>
+                <TabsTrigger value="companies">Target companies</TabsTrigger>
               </TabsList>
 
               <TabsContent value="describe">
@@ -308,6 +335,13 @@ const Leads = () => {
                 <DomainICPBuilder
                   onFindLeads={handleDomainFindLeads}
                   onSwitchToDescribe={() => setInputTab("describe")}
+                  isSearching={externalLoading}
+                />
+              </TabsContent>
+
+              <TabsContent value="companies">
+                <TargetCompanies
+                  onFindLeads={handleCompaniesFindLeads}
                   isSearching={externalLoading}
                 />
               </TabsContent>

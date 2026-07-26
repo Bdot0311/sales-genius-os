@@ -176,8 +176,10 @@ serve(async (req) => {
       htmlLink: e.htmlLink,
     }));
 
+    const email = (config as any).email || (config as any).accountEmail || null;
+
     return new Response(
-      JSON.stringify({ events: safeEvents, connected: true }),
+      JSON.stringify({ events: safeEvents, connected: true, email }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: any) {
