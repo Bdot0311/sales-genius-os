@@ -8,13 +8,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar as CalendarIcon, Plus, Clock, ExternalLink, Edit, Trash2, Link2 } from "lucide-react";
+import { Calendar as CalendarIcon, Plus, Clock, ExternalLink, Edit, Trash2, Link2, CheckCircle2, AlertTriangle, RefreshCw, Loader2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
-import { CalendarSyncLogPanel } from "@/components/calendar/CalendarSyncLogPanel";
 
 
 
@@ -27,8 +26,14 @@ const Calendar = () => {
   const [activities, setActivities] = useState<any[]>([]);
   const [leads, setLeads] = useState<any[]>([]);
   const [googleEvents, setGoogleEvents] = useState<any[]>([]);
+  const [googleEmail, setGoogleEmail] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [hasGoogleCalendar, setHasGoogleCalendar] = useState(false);
+  const [calendarStatus, setCalendarStatus] = useState<
+    "loading" | "connected" | "disconnected" | "needs_reconnect" | "error"
+  >("loading");
+  const [calendarStatusMessage, setCalendarStatusMessage] = useState<string>("");
+  const [refreshing, setRefreshing] = useState(false);
   const [editingActivity, setEditingActivity] = useState<any>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [activityToDelete, setActivityToDelete] = useState<any>(null);
@@ -47,31 +52,58 @@ const Calendar = () => {
     checkGoogleCalendarConnection();
   }, []);
 
-  const checkGoogleCalendarConnection = async () => {
+  const checkGoogleCalendarConnection = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setRefreshing(true);
     try {
       const { data, error } = await supabase.functions.invoke('fetch-google-calendar-events');
       if (error) {
         console.error('Error fetching Google Calendar events:', error);
-        setLoading(false);
+        setHasGoogleCalendar(false);
+        setCalendarStatus("error");
+        setCalendarStatusMessage(
+          "We couldn't reach Google Calendar. Check your connection and try again."
+        );
         return;
       }
       if (data?.connected) {
         setHasGoogleCalendar(true);
         setGoogleEvents(data.events || []);
+        setGoogleEmail(data.email || null);
+        if (data.error) {
+          setCalendarStatus("error");
+          setCalendarStatusMessage(
+            `Connected, but Google returned an error while fetching events: ${data.error}`
+          );
+        } else {
+          setCalendarStatus("connected");
+          setCalendarStatusMessage("");
+        }
       } else {
         setHasGoogleCalendar(false);
+        setGoogleEvents([]);
         if (data?.needsReconnect) {
-          toast({
-            title: "Google Calendar Disconnected",
-            description: "Please reconnect your Google account in Integrations.",
-            variant: "destructive",
-          });
+          setCalendarStatus("needs_reconnect");
+          setCalendarStatusMessage(
+            "Your Google Calendar access has expired or was revoked. Reconnect your Google account to resume syncing."
+          );
+        } else if (data?.error) {
+          setCalendarStatus("error");
+          setCalendarStatusMessage(`Google Calendar error: ${data.error}`);
+        } else {
+          setCalendarStatus("disconnected");
+          setCalendarStatusMessage("");
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error checking Google Calendar:', error);
+      setHasGoogleCalendar(false);
+      setCalendarStatus("error");
+      setCalendarStatusMessage(
+        error?.message || "Unexpected error while checking Google Calendar."
+      );
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -105,39 +137,41 @@ const Calendar = () => {
         throw new Error("Description must be less than 1000 characters");
       }
 
-      const { data: inserted, error } = await supabase.from("activities").insert({
+      const { error } = await supabase.from("activities").insert({
         ...newActivity,
         user_id: user.id,
-      }).select("id").single();
+      });
       if (error) throw error;
 
       if (hasGoogleCalendar && newActivity.due_date) {
         try {
           const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-to-google-calendar', {
-            body: { eventData: newActivity, activityId: inserted?.id }
+            body: { eventData: newActivity }
           });
           if (syncError || syncData?.error) {
             const msg = syncData?.error || syncError?.message || "Unknown error";
-            const attempts = syncData?.attempts ?? 1;
+            const needsReconnect = /invalid_grant|not connected|reconnect/i.test(msg);
             toast({
               title: "Saved locally — Google sync failed",
-              description: syncData?.needsReconnect
-                ? "Google access expired. Reconnect Google in Integrations."
-                : `${msg}${attempts > 1 ? ` (after ${attempts} attempts)` : ""}. See Sync history for details.`,
+              description: needsReconnect
+                ? "Your Google Calendar access expired. Reconnect Google in Integrations to resume syncing."
+                : `Google Calendar rejected the event: ${msg}`,
               variant: "destructive",
             });
+            if (needsReconnect) {
+              setCalendarStatus("needs_reconnect");
+              setCalendarStatusMessage(
+                "Your Google Calendar access has expired or was revoked. Reconnect your Google account to resume syncing."
+              );
+              setHasGoogleCalendar(false);
+            }
           } else {
-            toast({
-              title: "Meeting scheduled",
-              description: syncData?.attempts > 1
-                ? `Added to Google Calendar after ${syncData.attempts} attempts.`
-                : "Added to OutReign and Google Calendar.",
-            });
+            toast({ title: "Meeting scheduled", description: "Added to OutReign and Google Calendar" });
           }
         } catch (err: any) {
           toast({
             title: "Saved locally — Google sync failed",
-            description: `${err?.message || "Network error"}. See Sync history for details.`,
+            description: err?.message || "We couldn't reach Google Calendar. Your meeting is saved in OutReign.",
             variant: "destructive",
           });
         }
@@ -273,41 +307,146 @@ const Calendar = () => {
           </Dialog>
         </div>
 
-        
+        {/* Google Calendar connection status */}
+        {!isFreeTier && (
+          <Card
+            className={`p-4 border ${
+              calendarStatus === "connected"
+                ? "border-emerald-500/30 bg-emerald-500/5"
+                : calendarStatus === "needs_reconnect"
+                ? "border-amber-500/40 bg-amber-500/5"
+                : calendarStatus === "error"
+                ? "border-destructive/40 bg-destructive/5"
+                : "border-border bg-muted/30"
+            }`}
+            role="status"
+            aria-live="polite"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+              <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
+                <div className="shrink-0">
+                  {calendarStatus === "loading" ? (
+                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                  ) : calendarStatus === "connected" ? (
+                    <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                  ) : calendarStatus === "needs_reconnect" ? (
+                    <AlertTriangle className="w-5 h-5 text-amber-500" />
+                  ) : calendarStatus === "error" ? (
+                    <AlertTriangle className="w-5 h-5 text-destructive" />
+                  ) : (
+                    <Link2 className="w-5 h-5 text-muted-foreground" />
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold">
+                    {calendarStatus === "loading" && "Checking Google Calendar..."}
+                    {calendarStatus === "connected" && "Google Calendar connected"}
+                    {calendarStatus === "needs_reconnect" && "Reconnect Google Calendar"}
+                    {calendarStatus === "disconnected" && "Google Calendar not connected"}
+                    {calendarStatus === "error" && "Google Calendar sync issue"}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5 break-words">
+                    {calendarStatus === "connected" &&
+                      (calendarStatusMessage ||
+                        "New meetings you schedule here will sync to Google automatically.")}
+                    {calendarStatus === "needs_reconnect" && calendarStatusMessage}
+                    {calendarStatus === "disconnected" &&
+                      "Connect Google in Integrations to sync events both ways."}
+                    {calendarStatus === "error" && calendarStatusMessage}
+                    {calendarStatus === "loading" && "Verifying access to your Google account."}
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => checkGoogleCalendarConnection()}
+                  disabled={refreshing || calendarStatus === "loading"}
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${refreshing ? "animate-spin" : ""}`} />
+                  Refresh
+                </Button>
+                {(calendarStatus === "needs_reconnect" ||
+                  calendarStatus === "disconnected" ||
+                  calendarStatus === "error") && (
+                  <Button size="sm" onClick={() => navigate("/integrations")}>
+                    {calendarStatus === "needs_reconnect" ? "Reconnect Google" : "Connect Google"}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </Card>
+        )}
+
 
         {/* Google Calendar events for connected paid users */}
-        {!isFreeTier && hasGoogleCalendar && googleEvents.length > 0 && (
+        {!isFreeTier && hasGoogleCalendar && (
           <div>
-            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              Your Upcoming Events
-              <Badge variant="secondary">Google Calendar</Badge>
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {googleEvents.map((event) => (
-                <Card key={event.id} className="p-4 bg-gradient-to-br from-blue-500/5 to-purple-500/5 border-blue-200">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-lg bg-blue-500/10">
-                      <CalendarIcon className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold mb-1">{event.summary || "Untitled Event"}</h3>
-                      {event.description && <p className="text-sm text-muted-foreground mb-2 line-clamp-2">{event.description}</p>}
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                        <Clock className="w-4 h-4" />
-                        {event.start?.dateTime ? format(new Date(event.start.dateTime), "PPp") : event.start?.date ? format(new Date(event.start.date), "PP") : "No date"}
-                      </div>
-                      {event.htmlLink && (
-                        <a href={event.htmlLink} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline flex items-center gap-1">
-                          View in Google Calendar <ExternalLink className="w-3 h-3" />
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                </Card>
-              ))}
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold flex items-center gap-2">
+                Your Google Calendar
+                <Badge variant="secondary">Live</Badge>
+              </h2>
+              <a
+                href={googleEmail ? `https://calendar.google.com/calendar/u/0/r?authuser=${encodeURIComponent(googleEmail)}` : "https://calendar.google.com"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-primary hover:underline flex items-center gap-1"
+              >
+                Open in Google <ExternalLink className="w-3 h-3" />
+              </a>
             </div>
+            {googleEvents.length === 0 ? (
+              <Card className="p-6 text-center text-sm text-muted-foreground">
+                No upcoming events on {googleEmail || "your calendar"}.
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {googleEvents.map((ev: any) => {
+                  const start = ev.start?.dateTime || ev.start?.date || ev.start;
+                  const end = ev.end?.dateTime || ev.end?.date || ev.end;
+                  const startDate = start ? new Date(start) : null;
+                  const endDate = end ? new Date(end) : null;
+                  return (
+                    <Card key={ev.id || `${ev.summary}-${start}`} className="p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 rounded-md bg-primary/10 flex-shrink-0">
+                          <CalendarIcon className="w-4 h-4 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm truncate">{ev.summary || "(No title)"}</div>
+                          {startDate && (
+                            <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {format(startDate, "MMM d, h:mm a")}
+                              {endDate && ` – ${format(endDate, "h:mm a")}`}
+                            </div>
+                          )}
+                          {ev.location && (
+                            <div className="text-xs text-muted-foreground mt-1 truncate">{ev.location}</div>
+                          )}
+                          {ev.htmlLink && (
+                            <a
+                              href={ev.htmlLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-primary hover:underline inline-flex items-center gap-1 mt-2"
+                            >
+                              Open <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
+
+
 
         {/* Empty state — no calendar connected and no meetings */}
         {hasNoMeetings && (
@@ -370,8 +509,6 @@ const Calendar = () => {
             </div>
           </>
         )}
-
-        {!isFreeTier && <CalendarSyncLogPanel />}
 
         <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
           <AlertDialogContent>

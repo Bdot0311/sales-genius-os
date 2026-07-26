@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useLocation } from "react-router-dom";
 import { Analytics } from "@/lib/analytics";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card } from "@/components/ui/card";
@@ -300,6 +301,7 @@ function applyPersonalizationFixLocally(email: string, lead?: any) {
 
 const Outreach = () => {
   const { toast } = useToast();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState("compose");
   const [leads, setLeads] = useState<any[]>([]);
   const [selectedLead, setSelectedLead] = useState("");
@@ -394,6 +396,20 @@ const Outreach = () => {
     loadDueFollowUps();
     loadComplianceSettings();
   }, []);
+
+  // Prefill compose from navigation state (e.g. AI Sequence Builder → Open in Compose)
+  useEffect(() => {
+    const state = (location?.state as any) || null;
+    if (!state) return;
+    const { prefillSubject, prefillBody } = state;
+    if (prefillSubject || prefillBody) {
+      if (prefillSubject) setSubjectLine(String(prefillSubject));
+      if (prefillBody) setGeneratedEmail(String(prefillBody));
+      setActiveTab("compose");
+      // Clear the state so refresh/back doesn't re-apply it
+      try { window.history.replaceState({ ...window.history.state, usr: null }, ""); } catch {}
+    }
+  }, [location?.state]);
 
   const loadDueFollowUps = async () => {
     const { data: { user } } = await supabase.auth.getUser();

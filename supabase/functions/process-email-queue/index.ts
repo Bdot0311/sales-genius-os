@@ -220,6 +220,32 @@ Deno.serve(async (req) => {
         continue
       }
 
+      // Validate recipient address up-front — invalid "to" values always fail
+      // at the provider (400 invalid_email) and waste retry budget.
+      const rawTo = typeof payload?.to === 'string' ? payload.to.trim() : ''
+      const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawTo)
+      if (!emailValid) {
+        console.warn('Dropping email with invalid recipient', {
+          queue,
+          msg_id: msg.msg_id,
+          message_id: payload?.message_id,
+          template: payload?.label,
+          to_preview: rawTo ? `${rawTo.slice(0, 3)}…` : '(empty)',
+        })
+        await supabase.from('email_send_log').insert({
+          message_id: payload?.message_id,
+          template_name: payload?.label || queue,
+          recipient_email: rawTo || null,
+          status: 'failed',
+          error_message: 'Invalid recipient email address (rejected before send)',
+        })
+        await moveToDlq(supabase, queue, msg, 'Invalid recipient email address')
+        continue
+      }
+      // Normalize back onto the payload so downstream send uses the trimmed value
+      payload.to = rawTo
+
+
       // Guard: skip if another worker already sent this message (VT expired race)
       if (payload.message_id) {
         const { data: alreadySent } = await supabase

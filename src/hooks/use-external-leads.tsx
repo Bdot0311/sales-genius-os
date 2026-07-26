@@ -9,6 +9,8 @@ export interface ExternalLeadFilters {
   include_unknown_size?: boolean;
   country?: string;
   company?: string;
+  company_domain?: string;
+  companies?: Array<{ name?: string; domain?: string }>;
   seniority?: string;
   keywords?: string[];
   limit?: number;
