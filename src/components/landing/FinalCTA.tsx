@@ -1,12 +1,9 @@
 import { ArrowRight } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
 export const FinalCTA = () => {
-  const navigate = useNavigate();
-
   return (
     <section
       className="relative py-40 md:py-52 overflow-hidden"
@@ -98,18 +95,19 @@ export const FinalCTA = () => {
             transition={{ duration: 0.5, ease, delay: 0.42 }}
           >
             <motion.a
-              href="/auth"
-              onClick={(e) => { e.preventDefault(); navigate("/auth"); }}
+              href="https://calendly.com/bdotindustries/30min"
+              target="_blank"
+              rel="noopener noreferrer"
               className="cta-pill-glow inline-flex items-center gap-2 px-10 rounded-full text-sm font-semibold text-white"
               style={{
                 height: "56px",
                 background: "linear-gradient(135deg, hsl(261 75% 60%) 0%, hsl(261 75% 50%) 100%)",
               }}
-              aria-label="Get 10 free leads"
+              aria-label="Book a time to set up campaigns"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              Get 10 free leads
+              Book a time to set up campaigns
               <ArrowRight className="w-4 h-4" />
             </motion.a>
 

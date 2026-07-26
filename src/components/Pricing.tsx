@@ -4,7 +4,6 @@ import { STRIPE_PRICE_IDS } from "@/lib/stripe-config";
 import { useSearchCredits } from "@/hooks/use-search-credits";
 import { useNavigate } from "react-router-dom";
 import { QuickBuyCreditsDialog } from "@/components/dashboard/QuickBuyCreditsDialog";
-import { CampaignSetupDialog } from "@/components/CampaignSetupDialog";
 
 type BillingInterval = "monthly" | "yearly";
 
@@ -282,7 +281,6 @@ const accentPurple = "hsl(261 75% 65%)";
 export const Pricing = () => {
   const { credits } = useSearchCredits();
   const [topupDialogOpen, setTopupDialogOpen] = useState(false);
-  const [campaignDialogOpen, setCampaignDialogOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [billingInterval, setBillingInterval] = useState<BillingInterval>("monthly");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -557,9 +555,10 @@ export const Pricing = () => {
                 </button>
 
                 {plan.key === "free" && (
-                  <button
-                    type="button"
-                    onClick={() => setCampaignDialogOpen(true)}
+                  <a
+                    href="https://calendly.com/bdotindustries/30min"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="mt-3 w-full h-11 rounded-full text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 group"
                     style={{
                       background: "linear-gradient(135deg, hsl(261 75% 60%), hsl(261 75% 50%))",
@@ -567,8 +566,8 @@ export const Pricing = () => {
                     }}
                   >
                     <Bot className="w-3.5 h-3.5" />
-                    We'll set up your first campaigns
-                  </button>
+                    Book a time to set up campaigns
+                  </a>
                 )}
               </div>
             );
@@ -671,7 +670,6 @@ export const Pricing = () => {
         </div>
 
         <QuickBuyCreditsDialog open={topupDialogOpen} onOpenChange={setTopupDialogOpen} />
-        <CampaignSetupDialog open={campaignDialogOpen} onOpenChange={setCampaignDialogOpen} />
 
         {/* FAQ */}
         <div className="max-w-3xl mx-auto">
