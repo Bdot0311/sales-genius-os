@@ -38,6 +38,7 @@ const Calendar = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [activityToDelete, setActivityToDelete] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [resyncing, setResyncing] = useState(false);
   const [newActivity, setNewActivity] = useState({
     subject: "",
     type: "meeting",
@@ -104,6 +105,48 @@ const Calendar = () => {
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  };
+
+  const handleResync = async () => {
+    setResyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('fetch-google-calendar-events', {
+        body: { forceRefresh: true },
+      });
+      if (error) throw error;
+
+      if (data?.connected) {
+        setHasGoogleCalendar(true);
+        setGoogleEvents(data.events || []);
+        await loadActivities();
+        toast({
+          title: "Calendar re-synced",
+          description: `Refreshed ${data.events?.length ?? 0} upcoming event${data.events?.length === 1 ? '' : 's'} from Google.`,
+        });
+      } else if (data?.needsReconnect) {
+        setHasGoogleCalendar(false);
+        toast({
+          title: "Google access expired",
+          description: "Reconnect your Google account in Integrations to resume syncing.",
+          variant: "destructive",
+        });
+      } else {
+        setHasGoogleCalendar(false);
+        toast({
+          title: "Google Calendar not connected",
+          description: "Connect Google in Integrations to sync events.",
+          variant: "destructive",
+        });
+      }
+    } catch (err: any) {
+      toast({
+        title: "Re-sync failed",
+        description: err?.message || "Could not refresh Google Calendar. See Sync history for details.",
+        variant: "destructive",
+      });
+    } finally {
+      setResyncing(false);
     }
   };
 
@@ -258,7 +301,20 @@ const Calendar = () => {
             <h1 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">Calendar</h1>
             <p className="text-muted-foreground text-sm sm:text-base">Manage your meetings and schedule</p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          <div className="flex items-center gap-2">
+            {!isFreeTier && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleResync}
+                disabled={resyncing}
+                title="Refresh tokens and pull the latest events from Google"
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${resyncing ? "animate-spin" : ""}`} />
+                {resyncing ? "Re-syncing..." : "Re-sync calendar"}
+              </Button>
+            )}
+            <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);
             if (!open) {
               setEditingActivity(null);
@@ -305,6 +361,7 @@ const Calendar = () => {
               </div>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
         {/* Google Calendar connection status */}
