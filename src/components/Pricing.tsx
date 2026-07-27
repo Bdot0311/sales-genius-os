@@ -538,12 +538,12 @@ export const Pricing = () => {
                 {/* CTA */}
                 <button
                   onClick={() => handleCheckout(plan)}
-                  className="w-full min-h-11 h-auto py-2.5 rounded-full text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 group"
+                  className="w-full min-h-11 h-auto py-2.5 rounded-full text-sm font-semibold text-center transition-all duration-200 flex items-center justify-center gap-2 group"
                   style={
                     isHighlighted
                       ? { background: "linear-gradient(135deg, hsl(261 75% 60%), hsl(261 75% 50%))", color: "white" }
                       : plan.key === "free"
-                      ? { background: "transparent", color: "hsl(0 0% 100% / 0.5)", border: "1px solid hsl(261 75% 50% / 0.2)" }
+                      ? { background: "linear-gradient(135deg, hsl(261 75% 60%), hsl(261 75% 50%))", color: "white" }
                       : { background: "hsl(261 75% 50% / 0.15)", color: "hsl(261 75% 75%)", border: "1px solid hsl(261 75% 50% / 0.3)" }
                   }
                   onMouseEnter={(e) => {
@@ -557,25 +557,9 @@ export const Pricing = () => {
                     }
                   }}
                 >
-                  {plan.key === "free" ? "Explore the product" : "Choose this plan"}
+                  {isPaidPlan(plan) ? "Choose this plan" : plan.cta}
                   <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
                 </button>
-
-                {plan.key === "free" && (
-                  <a
-                    href="https://calendly.com/bdotindustries/30min"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-3 w-full h-11 rounded-full text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 group"
-                    style={{
-                      background: "linear-gradient(135deg, hsl(261 75% 60%), hsl(261 75% 50%))",
-                      color: "white",
-                    }}
-                  >
-                    <Bot className="w-3.5 h-3.5" />
-                    Book a time to set up campaigns
-                  </a>
-                )}
               </div>
             );
           })}
