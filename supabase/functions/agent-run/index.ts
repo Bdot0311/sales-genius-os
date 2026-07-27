@@ -425,7 +425,8 @@ Return JSON only: { "subject": "...", "body": "..." }`;
                   prospect_email: to,
                   subject,
                   error_message: sendData?.error ?? `send-email returned ${sendRes.status}`,
-                  metadata: { phase: "outreach" },
+                  description: `Could not send to ${to}: ${sendData?.error ?? `send-email returned ${sendRes.status}`}`,
+                  metadata: { phase: "outreach", lead_id: lead.id },
                 });
                 continue;
               }
