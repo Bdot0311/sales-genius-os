@@ -120,15 +120,16 @@ export const HeroSection = () => {
           transition={{ duration: 0.55, ease, delay: 0.5 }}
         >
           <motion.a
-            href="/auth"
-            onClick={(e) => { e.preventDefault(); navigate("/auth"); }}
+            href="https://calendly.com/bdotindustries/30min"
+            target="_blank"
+            rel="noopener noreferrer"
             className="cta-pill-glow inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-full px-8 text-sm font-semibold text-white group sm:w-auto"
             style={{ background: "linear-gradient(135deg, hsl(261 75% 60%) 0%, hsl(261 75% 50%) 100%)" }}
-            aria-label="Start free with OutReign"
+            aria-label="Claim your free campaign setup"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            Start free
+            Get your free campaign setup
             <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
           </motion.a>
 
