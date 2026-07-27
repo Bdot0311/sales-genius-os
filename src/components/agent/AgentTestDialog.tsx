@@ -86,7 +86,7 @@ export function AgentTestDialog({ disabled }: { disabled?: boolean }) {
       const { data } = await supabase
         .from("sending_accounts")
         .select("integration_id, email, status, updated_at")
-        .eq("provider", "google")
+        .in("provider", ["google", "gmail"])
         .not("integration_id", "is", null)
         .order("updated_at", { ascending: false });
       if (cancelled) return;
