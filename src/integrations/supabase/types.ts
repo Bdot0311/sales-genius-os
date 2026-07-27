@@ -154,6 +154,7 @@ export type Database = {
           action_type: string
           classification: string | null
           created_at: string | null
+          description: string | null
           error_message: string | null
           id: string
           metadata: Json | null
@@ -168,6 +169,7 @@ export type Database = {
           action_type: string
           classification?: string | null
           created_at?: string | null
+          description?: string | null
           error_message?: string | null
           id?: string
           metadata?: Json | null
@@ -182,6 +184,7 @@ export type Database = {
           action_type?: string
           classification?: string | null
           created_at?: string | null
+          description?: string | null
           error_message?: string | null
           id?: string
           metadata?: Json | null
@@ -202,9 +205,76 @@ export type Database = {
           },
         ]
       }
+      agent_approvals: {
+        Row: {
+          body: string | null
+          classification: string | null
+          company_name: string | null
+          created_at: string
+          id: string
+          integration_row_id: string | null
+          kind: string
+          lead_id: string | null
+          metadata: Json | null
+          prospect_email: string | null
+          prospect_name: string | null
+          reasoning: string | null
+          review_note: string | null
+          reviewed_at: string | null
+          sent_email_id: string | null
+          status: string
+          subject: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          classification?: string | null
+          company_name?: string | null
+          created_at?: string
+          id?: string
+          integration_row_id?: string | null
+          kind: string
+          lead_id?: string | null
+          metadata?: Json | null
+          prospect_email?: string | null
+          prospect_name?: string | null
+          reasoning?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          sent_email_id?: string | null
+          status?: string
+          subject?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          classification?: string | null
+          company_name?: string | null
+          created_at?: string
+          id?: string
+          integration_row_id?: string | null
+          kind?: string
+          lead_id?: string | null
+          metadata?: Json | null
+          prospect_email?: string | null
+          prospect_name?: string | null
+          reasoning?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          sent_email_id?: string | null
+          status?: string
+          subject?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       agent_configs: {
         Row: {
           agent_name: string | null
+          approval_mode: boolean
           calendly_url: string | null
           can_book_meetings: boolean | null
           can_find_leads: boolean
@@ -233,6 +303,7 @@ export type Database = {
         }
         Insert: {
           agent_name?: string | null
+          approval_mode?: boolean
           calendly_url?: string | null
           can_book_meetings?: boolean | null
           can_find_leads?: boolean
@@ -261,6 +332,7 @@ export type Database = {
         }
         Update: {
           agent_name?: string | null
+          approval_mode?: boolean
           calendly_url?: string | null
           can_book_meetings?: boolean | null
           can_find_leads?: boolean
