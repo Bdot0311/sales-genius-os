@@ -52,8 +52,8 @@ const freePlan: FreePlan = {
     "Summary analytics",
     "Help center access",
   ],
-  cta: "Get started free",
-  ctaRoute: "/auth",
+  cta: "Book a time to set up campaigns",
+  ctaRoute: "https://calendly.com/bdotindustries/30min",
 };
 
 const paidPlans: PaidPlan[] = [
@@ -300,7 +300,12 @@ export const Pricing = () => {
 
   const handleCheckout = async (plan: Plan) => {
     if (!isPaidPlan(plan)) {
-      navigate(plan.ctaRoute || "/auth");
+      const route = plan.ctaRoute || "/auth";
+      if (route.startsWith("http")) {
+        window.open(route, "_blank", "noopener,noreferrer");
+      } else {
+        navigate(route);
+      }
       return;
     }
     navigate(`/checkout?plan=${plan.key}&interval=${billingInterval}`);
@@ -411,7 +416,7 @@ export const Pricing = () => {
             return (
               <div
                 key={plan.key}
-                className="relative flex flex-col rounded-2xl p-6 sm:p-7 transition-all duration-300"
+                className="relative flex flex-col rounded-2xl p-6 sm:p-7 transition-all duration-300 h-full"
                 style={
                   isHighlighted
                     ? {
@@ -533,7 +538,7 @@ export const Pricing = () => {
                 {/* CTA */}
                 <button
                   onClick={() => handleCheckout(plan)}
-                  className="w-full h-11 rounded-full text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 group"
+                  className="w-full min-h-11 h-auto py-2.5 rounded-full text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 group"
                   style={
                     isHighlighted
                       ? { background: "linear-gradient(135deg, hsl(261 75% 60%), hsl(261 75% 50%))", color: "white" }
