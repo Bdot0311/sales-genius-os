@@ -355,6 +355,7 @@ const Agent = () => {
                 {toggling ? "Updating…" : isEnabled ? "Enabled" : "Disabled"}
               </span>
             </div>
+            <AgentTestDialog disabled={loading} />
             <Button
               onClick={handleRunAgent}
               disabled={running || loading}
