@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/accordion";
 import { Plus, Trash2, Loader2, Save } from "lucide-react";
 import type { AgentConfig } from "@/pages/Agent";
+import { ProspectingSourceHelper } from "@/components/agent/ProspectingSourceHelper";
+
 
 interface ConfigTabProps {
   config: AgentConfig | null;
@@ -244,7 +246,17 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
           </div>
 
           {canFindLeads && (
+            <>
+            <ProspectingSourceHelper
+              onApply={(t) => {
+                if (t.jobTitle) setProspectJobTitle(t.jobTitle);
+                if (t.industry) setProspectIndustry(t.industry);
+                if (t.country) setProspectCountry(t.country);
+                if (t.companySize) setProspectCompanySize(t.companySize);
+              }}
+            />
             <div className="grid gap-4 sm:grid-cols-2 pt-1">
+
               <div className="space-y-1.5">
                 <Label htmlFor="p-title">Job title</Label>
                 <Input
@@ -293,7 +305,9 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
                 />
               </div>
             </div>
+            </>
           )}
+
         </CardContent>
       </Card>
 
