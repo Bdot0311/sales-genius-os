@@ -29,6 +29,7 @@ import { OverviewTab } from "@/components/agent/OverviewTab";
 import { InboxTab } from "@/components/agent/InboxTab";
 import { ConfigTab } from "@/components/agent/ConfigTab";
 import { SettingsTab } from "@/components/agent/SettingsTab";
+import { AgentTestDialog } from "@/components/agent/AgentTestDialog";
 
 export interface AgentConfig {
   id: string;
@@ -354,6 +355,7 @@ const Agent = () => {
                 {toggling ? "Updating…" : isEnabled ? "Enabled" : "Disabled"}
               </span>
             </div>
+            <AgentTestDialog disabled={loading} />
             <Button
               onClick={handleRunAgent}
               disabled={running || loading}
