@@ -251,7 +251,7 @@ export const AISdrSection = () => {
                     backgroundClip: "text",
                   }}
                 >
-                  never sleeps.
+                  start to finish.
                 </span>
               </h2>
 
