@@ -5,49 +5,49 @@ import { useNavigate } from "react-router-dom";
 
 const activityItems = [
   {
-    time: "09:14 AM",
-    type: "reply",
-    prospect: "Jordan Park",
+    time: "09:02 AM",
+    type: "lead",
+    prospect: "Dana Whitfield",
     company: "Northline",
-    text: "Replied to interested thread — sent follow-up with demo link",
-    color: "hsl(142 70% 50%)",
-    dot: "hsl(142 70% 50%)",
+    text: "Sourced 12 new leads matching your ICP — verified emails attached",
+    color: "hsl(190 80% 55%)",
+    dot: "hsl(190 80% 55%)",
+  },
+  {
+    time: "09:08 AM",
+    type: "send",
+    prospect: "Jordan Park",
+    company: "SignalFox",
+    text: "Wrote and sent first-touch email from your Gmail",
+    color: "hsl(261 75% 68%)",
+    dot: "hsl(261 75% 68%)",
   },
   {
     time: "09:22 AM",
     type: "classify",
     prospect: "Rina Shah",
-    company: "SignalFox",
-    text: "Classified as objection → \"Not the right time\" — response queued",
+    company: "GraphiteIQ",
+    text: "Classified reply as objection → \"Not the right time\" — response queued",
     color: "hsl(45 90% 60%)",
     dot: "hsl(45 90% 60%)",
   },
   {
     time: "09:31 AM",
-    type: "meeting",
-    prospect: "Alex Müller",
-    company: "GraphiteIQ",
-    text: "Meeting requested — sent Calendly link automatically",
-    color: "hsl(261 75% 68%)",
-    dot: "hsl(261 75% 68%)",
-  },
-  {
-    time: "09:47 AM",
     type: "reply",
     prospect: "Priya Nair",
     company: "VaultHQ",
-    text: "Handled objection — replied with ROI framing from your playbook",
+    text: "Handled objection — replied with framing from your playbook",
     color: "hsl(142 70% 50%)",
     dot: "hsl(142 70% 50%)",
   },
   {
-    time: "10:02 AM",
-    type: "classify",
-    prospect: "Sam Torres",
+    time: "09:47 AM",
+    type: "meeting",
+    prospect: "Alex Müller",
     company: "OrbitPay",
-    text: "Out-of-office detected — flagged for follow-up in 5 days",
-    color: "hsl(0 0% 55%)",
-    dot: "hsl(0 0% 55%)",
+    text: "Meeting requested — sent Calendly link automatically",
+    color: "hsl(261 75% 68%)",
+    dot: "hsl(261 75% 68%)",
   },
 ];
 
@@ -78,7 +78,7 @@ const AgentFeedPreview = ({ visible }: { visible: boolean }) => {
           </span>
         </div>
         <div className="flex gap-3">
-          {[["12", "threads"], ["5", "replied"], ["1", "meeting"]].map(([val, lbl]) => (
+          {[["12", "leads"], ["9", "sent"], ["5", "replied"], ["1", "meeting"]].map(([val, lbl]) => (
             <div key={lbl} className="text-center">
               <p className="text-xs font-bold" style={{ color: "hsl(261 75% 68%)" }}>{val}</p>
               <p className="text-[9px]" style={{ color: "hsl(0 0% 100% / 0.6)" }}>{lbl}</p>
@@ -133,6 +133,16 @@ const AgentFeedPreview = ({ visible }: { visible: boolean }) => {
 
 const capabilities = [
   {
+    icon: "🎯",
+    title: "Finds the leads for you",
+    desc: "Sources new prospects that match your ICP every run — no manual searching.",
+  },
+  {
+    icon: "✉️",
+    title: "Sends the first touch",
+    desc: "Writes and sends the opening email from your own Gmail, in your voice.",
+  },
+  {
     icon: "📬",
     title: "Never miss a hot reply",
     desc: "Reads every reply from active prospects across Gmail threads, around the clock.",
@@ -143,24 +153,14 @@ const capabilities = [
     desc: "Interest, objection, meeting request, unsubscribe. Always knows what's what.",
   },
   {
-    icon: "✍️",
-    title: "Replies that sound like you",
-    desc: "Uses your persona, tone, and value props to craft replies that move conversations forward.",
-  },
-  {
     icon: "📅",
     title: "Books meetings automatically",
     desc: "Sends your Calendly link the moment a prospect asks for a call.",
   },
   {
-    icon: "🛡️",
-    title: "Objections answered, deals saved",
-    desc: "Responds to common objections using playbooks you define. No hallucinations, no drift.",
-  },
-  {
     icon: "⚙️",
     title: "You control what it does",
-    desc: "Set daily reply limits, delay windows, and which actions are fully autonomous.",
+    desc: "Set daily lead and send caps, reply limits, and which actions run autonomously.",
   },
 ];
 
@@ -237,8 +237,9 @@ export const AISdrSection = () => {
                   transitionDelay: "80ms",
                 }}
               >
-                Your AI SDR that
+                One AI SDR.
                 <br />
+                Full cycle,{" "}
                 <span
                   className="italic animate-shiny"
                   style={{
@@ -259,7 +260,7 @@ export const AISdrSection = () => {
                 className={`text-base leading-relaxed mb-8 max-w-[480px] transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
                 style={{ color: "hsl(0 0% 100% / 0.65)", transitionDelay: "160ms" }}
               >
-                Connect your Gmail and OutReign watches every active thread. It classifies replies, handles objections, sends Calendly links when prospects ask for calls, and auto-replies in your voice, on your schedule.
+                Connect your Gmail and OutReign runs the whole cycle: it sources leads that match your ICP, writes and sends the first touch, then classifies replies, handles objections, and books meetings — in your voice, on your schedule.
               </p>
 
               {/* Capability grid */}
