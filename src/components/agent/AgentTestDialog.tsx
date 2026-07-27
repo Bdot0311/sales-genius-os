@@ -72,6 +72,8 @@ export function AgentTestDialog({ disabled }: { disabled?: boolean }) {
     const payload = data as {
       success: boolean;
       error?: string;
+      code?: string | null;
+      sendingAccountId?: string | null;
       results?: TestResult[];
       passed?: number;
       failed?: number;
@@ -82,7 +84,15 @@ export function AgentTestDialog({ disabled }: { disabled?: boolean }) {
       body?: string;
       to?: string;
     };
-    if (!payload?.success) throw new Error(payload?.error || "Request failed");
+    if (!payload?.success) {
+      const err = new Error(payload?.error || "Request failed") as Error & {
+        code?: string | null;
+        sendingAccountId?: string | null;
+      };
+      err.code = payload?.code ?? null;
+      err.sendingAccountId = payload?.sendingAccountId ?? null;
+      throw err;
+    }
     return payload;
   };
 
@@ -116,6 +126,18 @@ export function AgentTestDialog({ disabled }: { disabled?: boolean }) {
     }
   };
 
+  const resumeMailbox = async (accountId: string) => {
+    const { error } = await supabase
+      .from("sending_accounts")
+      .update({ status: "active", paused_reason: null })
+      .eq("id", accountId);
+    if (error) {
+      toast.error(`Couldn't resume mailbox: ${error.message}`);
+      return;
+    }
+    toast.success("Mailbox resumed. Try sending the test email again.");
+  };
+
   const sendLive = async () => {
     setSending(true);
     try {
@@ -123,11 +145,22 @@ export function AgentTestDialog({ disabled }: { disabled?: boolean }) {
       setSent({ to: payload.to ?? testEmail, subject: payload.subject ?? "", body: payload.body ?? "" });
       toast.success(`Real email sent to ${payload.to}. Reply to it, then run "Check my replies".`);
     } catch (err) {
-      toast.error(`Send failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+      const e = err as Error & { code?: string | null; sendingAccountId?: string | null };
+      const message = e instanceof Error ? e.message : "Unknown error";
+      if (e?.code === "account_paused" && e.sendingAccountId) {
+        const accountId = e.sendingAccountId;
+        toast.error(`Send failed: ${message}`, {
+          action: { label: "Resume mailbox", onClick: () => resumeMailbox(accountId) },
+          duration: 10000,
+        });
+      } else {
+        toast.error(`Send failed: ${message}`);
+      }
     } finally {
       setSending(false);
     }
   };
+
 
   const checkReplies = async () => {
     setChecking(true);
