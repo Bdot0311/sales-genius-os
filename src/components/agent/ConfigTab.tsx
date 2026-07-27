@@ -56,6 +56,14 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
   const [autoHandleObjections, setAutoHandleObjections] = useState(false);
   const [autoBookMeetings, setAutoBookMeetings] = useState(false);
   const [calendlyUrl, setCalendlyUrl] = useState("");
+  const [canFindLeads, setCanFindLeads] = useState(false);
+  const [canSendOutreach, setCanSendOutreach] = useState(false);
+  const [prospectJobTitle, setProspectJobTitle] = useState("");
+  const [prospectIndustry, setProspectIndustry] = useState("");
+  const [prospectCountry, setProspectCountry] = useState("");
+  const [prospectCompanySize, setProspectCompanySize] = useState("");
+  const [dailyLeadTarget, setDailyLeadTarget] = useState("10");
+  const [maxDailyNewEmails, setMaxDailyNewEmails] = useState("20");
   const [saving, setSaving] = useState(false);
 
   // Populate form from config
@@ -75,6 +83,14 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
     setAutoHandleObjections(config.can_handle_objections ?? false);
     setAutoBookMeetings(config.can_book_meetings ?? false);
     setCalendlyUrl(config.calendly_url ?? "");
+    setCanFindLeads(config.can_find_leads ?? false);
+    setCanSendOutreach(config.can_send_outreach ?? false);
+    setProspectJobTitle(config.prospecting_job_title ?? "");
+    setProspectIndustry(config.prospecting_industry ?? "");
+    setProspectCountry(config.prospecting_country ?? "");
+    setProspectCompanySize(config.prospecting_company_size ?? "");
+    setDailyLeadTarget(String(config.daily_lead_target ?? 10));
+    setMaxDailyNewEmails(String(config.max_daily_new_emails ?? 20));
   }, [config]);
 
   const handleAddValueProp = () => {
@@ -120,6 +136,14 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
         can_handle_objections: autoHandleObjections,
         can_book_meetings: autoBookMeetings,
         calendly_url: autoBookMeetings ? (calendlyUrl.trim() || null) : null,
+        can_find_leads: canFindLeads,
+        can_send_outreach: canSendOutreach,
+        prospecting_job_title: prospectJobTitle.trim() || null,
+        prospecting_industry: prospectIndustry.trim() || null,
+        prospecting_country: prospectCountry.trim() || null,
+        prospecting_company_size: prospectCompanySize.trim() || null,
+        daily_lead_target: Math.min(Math.max(Number(dailyLeadTarget) || 10, 1), 25),
+        max_daily_new_emails: Math.min(Math.max(Number(maxDailyNewEmails) || 20, 0), 100),
       };
       if (config?.id) payload.id = config.id;
 
@@ -194,6 +218,119 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
               onChange={(e) => setCompanyContext(e.target.value)}
             />
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Lead generation */}
+      <Card className="border-border/60 bg-card/60">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold">
+            Lead Generation
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">Find new leads automatically</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Each run the agent sources fresh prospects matching your targeting below
+              </p>
+            </div>
+            <Switch
+              checked={canFindLeads}
+              onCheckedChange={setCanFindLeads}
+              aria-label="Auto find leads"
+            />
+          </div>
+
+          {canFindLeads && (
+            <div className="grid gap-4 sm:grid-cols-2 pt-1">
+              <div className="space-y-1.5">
+                <Label htmlFor="p-title">Job title</Label>
+                <Input
+                  id="p-title"
+                  placeholder="e.g. Head of Sales"
+                  value={prospectJobTitle}
+                  onChange={(e) => setProspectJobTitle(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="p-industry">Industry</Label>
+                <Input
+                  id="p-industry"
+                  placeholder="e.g. SaaS"
+                  value={prospectIndustry}
+                  onChange={(e) => setProspectIndustry(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="p-country">Country</Label>
+                <Input
+                  id="p-country"
+                  placeholder="e.g. United States"
+                  value={prospectCountry}
+                  onChange={(e) => setProspectCountry(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="p-size">Company size</Label>
+                <Input
+                  id="p-size"
+                  placeholder="e.g. 11-50"
+                  value={prospectCompanySize}
+                  onChange={(e) => setProspectCompanySize(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="p-target">New leads per run</Label>
+                <Input
+                  id="p-target"
+                  type="number"
+                  min={1}
+                  max={25}
+                  value={dailyLeadTarget}
+                  onChange={(e) => setDailyLeadTarget(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Outreach sending */}
+      <Card className="border-border/60 bg-card/60">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold">
+            Outreach Sending
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">Send first-touch emails</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                The agent writes and sends the opening email to uncontacted leads from your Gmail
+              </p>
+            </div>
+            <Switch
+              checked={canSendOutreach}
+              onCheckedChange={setCanSendOutreach}
+              aria-label="Auto send outreach"
+            />
+          </div>
+          {canSendOutreach && (
+            <div className="space-y-1.5 pt-1 max-w-xs">
+              <Label htmlFor="p-max-emails">Max new emails per day</Label>
+              <Input
+                id="p-max-emails"
+                type="number"
+                min={0}
+                max={100}
+                value={maxDailyNewEmails}
+                onChange={(e) => setMaxDailyNewEmails(e.target.value)}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -275,7 +412,7 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
       <Card className="border-border/60 bg-card/60">
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold">
-            Auto-Reply Settings
+            Reply Handling
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
