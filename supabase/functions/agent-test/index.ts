@@ -226,7 +226,7 @@ serve(async (req) => {
         .from("sending_accounts")
         .select("id, integration_id, status, paused_reason, updated_at")
         .eq("user_id", user.id)
-        .eq("provider", "google")
+        .in("provider", ["google", "gmail"])
         .not("integration_id", "is", null)
         .order("updated_at", { ascending: false });
 
