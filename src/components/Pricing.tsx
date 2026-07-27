@@ -52,7 +52,7 @@ const freePlan: FreePlan = {
     "Summary analytics",
     "Help center access",
   ],
-  cta: "Book a time to set up campaigns",
+  cta: "Book a setup call",
   ctaRoute: "https://calendly.com/bdotindustries/30min",
 };
 
@@ -538,7 +538,7 @@ export const Pricing = () => {
                 {/* CTA */}
                 <button
                   onClick={() => handleCheckout(plan)}
-                  className="w-full min-h-11 h-auto py-2.5 rounded-full text-sm font-semibold text-center transition-all duration-200 flex items-center justify-center gap-2 group"
+                  className="w-full h-11 px-4 rounded-full text-sm font-semibold leading-none whitespace-nowrap transition-all duration-200 inline-flex items-center justify-center gap-2 group"
                   style={
                     isHighlighted
                       ? { background: "linear-gradient(135deg, hsl(261 75% 60%), hsl(261 75% 50%))", color: "white" }
