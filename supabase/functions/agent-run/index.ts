@@ -155,6 +155,32 @@ serve(async (req) => {
     const cfgValueProps = Array.isArray(config.value_props) ? config.value_props : [];
     const cfgValuePropsText = cfgValueProps.join("\n");
 
+    // Run mode: "approval" queues drafts for human review, "autonomous" sends directly.
+    const approvalMode =
+      reqBody.mode === "approval"
+        ? true
+        : reqBody.mode === "autonomous"
+        ? false
+        : (agentConfig as any).approval_mode !== false;
+
+    let pendingApprovals = 0;
+
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+    async function queueApproval(row: Record<string, unknown>) {
+      const { error } = await adminClient.from("agent_approvals").insert({
+        user_id: user.id,
+        status: "pending",
+        ...row,
+      });
+      if (error) {
+        console.error("queueApproval error:", error.message);
+        return false;
+      }
+      pendingApprovals++;
+      return true;
+    }
+
     // ────────────────────────────────────────────────────────────────────────
     // PHASE 1 — Lead generation
     // ────────────────────────────────────────────────────────────────────────
