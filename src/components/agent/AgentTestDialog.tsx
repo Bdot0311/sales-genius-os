@@ -1,4 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 import {
   Dialog,
   DialogContent,
@@ -66,8 +74,44 @@ export function AgentTestDialog({ disabled }: { disabled?: boolean }) {
     null
   );
 
+  const [mailboxes, setMailboxes] = useState<
+    { integrationId: string; email: string; status: string }[]
+  >([]);
+  const [selectedMailbox, setSelectedMailbox] = useState<string>("");
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("sending_accounts")
+        .select("integration_id, email, status, updated_at")
+        .eq("provider", "google")
+        .not("integration_id", "is", null)
+        .order("updated_at", { ascending: false });
+      if (cancelled) return;
+      const list = (data ?? []).map((a) => ({
+        integrationId: a.integration_id as string,
+        email: a.email as string,
+        status: (a.status as string) ?? "active",
+      }));
+      setMailboxes(list);
+      setSelectedMailbox((prev) => {
+        if (prev && list.some((m) => m.integrationId === prev)) return prev;
+        const active = list.find((m) => m.status !== "paused" && m.status !== "disabled");
+        return active?.integrationId ?? list[0]?.integrationId ?? "";
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
   const invokeTest = async (body: Record<string, unknown>) => {
-    const { data, error } = await supabase.functions.invoke("agent-test", { body });
+    const { data, error } = await supabase.functions.invoke("agent-test", {
+      body: selectedMailbox ? { ...body, integrationRowId: selectedMailbox } : body,
+    });
+
     if (error) throw error;
     const payload = data as {
       success: boolean;
@@ -209,7 +253,26 @@ export function AgentTestDialog({ disabled }: { disabled?: boolean }) {
               connected Gmail. Reply to it with each objection word for word, then check the
               replies to see how the agent classifies and responds.
             </p>
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium text-muted-foreground">Send from</p>
+              <Select value={selectedMailbox} onValueChange={setSelectedMailbox}>
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={mailboxes.length ? "Choose a mailbox" : "No connected mailboxes"}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {mailboxes.map((m) => (
+                    <SelectItem key={m.integrationId} value={m.integrationId}>
+                      {m.email}
+                      {m.status === "paused" || m.status === "disabled" ? ` (${m.status})` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex flex-col sm:flex-row gap-2">
+
               <Input
                 type="email"
                 placeholder="burner@yourdomain.com"
