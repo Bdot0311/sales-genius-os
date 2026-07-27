@@ -162,15 +162,19 @@ serve(async (req) => {
           continue;
         }
 
-        // Resolve sending account & respect per-mailbox pause + daily cap.
+        // Respect per-mailbox pause + daily cap on the account actually used.
         let sendingAccountId: string | null = null;
         try {
-          const { data: sa } = await supabase
-            .from('sending_accounts')
-            .select('id, status, daily_limit, sent_today, sent_today_date')
-            .eq('user_id', email.user_id)
-            .eq('integration_id', integration.id)
-            .maybeSingle();
+          let sa = queuedAccount;
+          if (!sa) {
+            const { data } = await supabase
+              .from('sending_accounts')
+              .select('id, status, daily_limit, sent_today, sent_today_date')
+              .eq('user_id', email.user_id)
+              .eq('integration_id', integration.id)
+              .maybeSingle();
+            sa = data;
+          }
           if (sa) {
             sendingAccountId = sa.id;
             if (sa.status === 'paused' || sa.status === 'disabled') {
