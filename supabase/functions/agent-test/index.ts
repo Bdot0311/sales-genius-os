@@ -165,7 +165,7 @@ serve(async (req) => {
     }
 
     let payload: {
-      mode?: "dry_run" | "live_send" | "live_check";
+      mode?: "dry_run" | "live_send" | "live_check" | "list_mailboxes";
       testEmail?: string;
       integrationRowId?: string;
       includeRealReplies?: boolean;
@@ -197,6 +197,48 @@ serve(async (req) => {
     const cfgValuePropsText = cfgValueProps.join("\n");
     const mode = payload.mode ?? "dry_run";
     const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (mode === "list_mailboxes") {
+      const { data: accounts, error: accountsError } = await adminClient
+        .from("sending_accounts")
+        .select("id, integration_id, email, provider, status, paused_reason, warmup_enabled, updated_at, created_at")
+        .eq("user_id", user.id)
+        .in("provider", ["google", "gmail"])
+        .not("integration_id", "is", null)
+        .order("updated_at", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false });
+
+      if (accountsError) {
+        return new Response(
+          JSON.stringify({ success: false, error: accountsError.message, mailboxes: [] }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const seen = new Set<string>();
+      const mailboxes = (accounts ?? [])
+        .filter((account) => account.integration_id && account.email)
+        .filter((account) => {
+          const key = account.integration_id as string;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        })
+        .map((account) => ({
+          sendingAccountId: account.id,
+          integrationId: account.integration_id,
+          email: account.email,
+          provider: account.provider,
+          status: account.status ?? "active",
+          pausedReason: account.paused_reason ?? null,
+          warmupEnabled: Boolean(account.warmup_enabled),
+        }));
+
+      return new Response(
+        JSON.stringify({ success: true, mode, mailboxes }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Resolve the Gmail integration used for live sending / inbox reads.
     // Prefer an active sending account so the test doesn't fail just because
