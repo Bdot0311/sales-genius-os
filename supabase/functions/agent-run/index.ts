@@ -388,6 +388,44 @@ Return JSON only: { "subject": "...", "body": "..." }`;
                   leadId: lead.id,
                 }),
               });
+              if (approvalMode) {
+                await queueApproval({
+                  kind: "outreach",
+                  lead_id: lead.id,
+                  integration_row_id: googleIntegrationId,
+                  prospect_email: to,
+                  prospect_name: lead.contact_name ?? null,
+                  company_name: lead.company_name ?? null,
+                  subject,
+                  body,
+                  reasoning: `Drafted first-touch email for ${lead.job_title ?? "contact"} at ${lead.company_name ?? "their company"}.`,
+                  metadata: { phase: "outreach", job_title: lead.job_title ?? null },
+                });
+                await adminClient.from("agent_actions").insert({
+                  user_id: user.id,
+                  action_type: "awaiting_approval",
+                  status: "pending",
+                  prospect_email: to,
+                  subject,
+                  reply_content: body,
+                  description: `Drafted a first-touch email to ${lead.contact_name ?? to} at ${lead.company_name ?? "their company"} — waiting for your approval`,
+                  metadata: { phase: "outreach", lead_id: lead.id },
+                });
+                remainingOutreach--;
+                continue;
+              }
+
+              const sendRes = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+                method: "POST",
+                headers: { Authorization: authHeader, "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  to,
+                  subject,
+                  body,
+                  integrationRowId: googleIntegrationId,
+                  leadId: lead.id,
+                }),
+              });
               const sendData = await sendRes.json().catch(() => ({}));
 
               if (!sendRes.ok || sendData?.error) {
