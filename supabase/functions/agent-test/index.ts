@@ -501,6 +501,17 @@ Subject: ${scenario.subject}
 From: test-prospect@example.com
 Body: ${scenario.body}
 
+Classification rules (apply in this order):
+1. unsubscribe — asks to stop, remove me, do not contact, hostile "leave me alone".
+2. out_of_office / auto_reply — automated away, vacation, or system-generated messages.
+3. meeting_request — proposes or agrees to a specific call/meeting/time, asks for a calendar link.
+4. objection — ANY hesitation, blocker, deferral or pushback, even if the tone is warm. This includes: "too expensive", "no budget", "not the right time", "already have a solution/vendor", "need to think about it", "need to run it by my team/boss", "circle back later", "not a priority right now", "who is this?" / "how did you get my info?".
+5. not_interested — clear rejection with no opening, but no unsubscribe request.
+6. interested — positive engagement WITHOUT a blocker: asks for pricing, details, a deck, or says "tell me more" / "sounds interesting, send info".
+7. unknown — cannot tell.
+
+Important: a reply that is polite or curious but contains a deferral or condition ("interesting, but I need to think about it", "let me talk to my team first") is objection, NOT interested. Only classify as interested when there is no stated blocker.
+
 Return JSON: { "classification": one of ["interested","objection","meeting_request","not_interested","unsubscribe","out_of_office","auto_reply","unknown"], "confidence": 0.0-1.0, "reasoning": "brief reason" }`,
           "You classify sales email replies. Respond ONLY with valid JSON."
         );
