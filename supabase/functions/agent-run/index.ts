@@ -705,6 +705,33 @@ Output ONLY the reply body. No subject line or signature.`;
             continue;
           }
 
+          if (approvalMode) {
+            await queueApproval({
+              kind: "reply",
+              sent_email_id: reply.sentEmailId,
+              integration_row_id: googleIntegrationId,
+              prospect_email: reply.fromEmail,
+              subject: `Re: ${reply.subject}`,
+              body: generatedReply,
+              classification: "objection",
+              reasoning,
+              metadata: { phase: "reply", gmail_message_id: reply.gmailMessageId, confidence },
+            });
+            await adminClient.from("agent_actions").insert({
+              user_id: user.id,
+              sent_email_id: reply.sentEmailId,
+              action_type: "awaiting_approval",
+              status: "pending",
+              prospect_email: reply.fromEmail,
+              subject: reply.subject,
+              classification: "objection",
+              reply_content: generatedReply,
+              description: `${reply.fromEmail} raised an objection — drafted a response for your approval`,
+              metadata: { phase: "reply", confidence },
+            });
+            continue;
+          }
+
           if (googleIntegrationId) {
             await adminClient.functions.invoke("send-email", {
               body: {
