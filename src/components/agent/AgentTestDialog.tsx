@@ -17,9 +17,12 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { FlaskConical, Loader2, Check, X, AlertTriangle } from "lucide-react";
+import { FlaskConical, Loader2, Check, X, AlertTriangle, Mail, Send, Inbox } from "lucide-react";
+
 
 interface TestResult {
   id: string;
