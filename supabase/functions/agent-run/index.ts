@@ -295,6 +295,18 @@ serve(async (req) => {
             if (remainingOutreach <= 0) break;
             const to = (lead.contact_email || "").trim();
             if (!to) continue;
+            if (!EMAIL_RE.test(to)) {
+              await adminClient.from("agent_actions").insert({
+                user_id: user.id,
+                action_type: "skipped",
+                status: "skipped",
+                prospect_email: to,
+                description: `Skipped ${lead.company_name ?? "lead"} — "${to}" is not a valid email address`,
+                metadata: { phase: "outreach", reason: "invalid_email", lead_id: lead.id },
+              });
+              continue;
+            }
+
 
             try {
               const { data: alreadySent } = await adminClient
