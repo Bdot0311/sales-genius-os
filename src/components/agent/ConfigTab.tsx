@@ -303,7 +303,9 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
                 />
               </div>
             </div>
+            </>
           )}
+
         </CardContent>
       </Card>
 
