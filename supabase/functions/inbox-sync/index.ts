@@ -49,9 +49,12 @@ function extractBody(payload: any): string {
   return "";
 }
 
+/**
+ * Refresh a single integration's access token. All writes are scoped by the
+ * integration row id so sibling Google mailboxes are never touched.
+ */
 async function refreshAccessToken(
   adminClient: any,
-  userId: string,
   integration: any
 ): Promise<string> {
   const config = integration.config as any;
@@ -75,8 +78,7 @@ async function refreshAccessToken(
       await adminClient
         .from("integrations")
         .update({ is_active: false })
-        .eq("user_id", userId)
-        .eq("integration_id", "google");
+        .eq("id", integration.id);
     }
     throw new Error(`Token refresh failed: ${err.error_description || err.error}`);
   }
@@ -94,8 +96,7 @@ async function refreshAccessToken(
         refreshToken: tokens.refresh_token || config.refreshToken,
       },
     })
-    .eq("user_id", userId)
-    .eq("integration_id", "google");
+    .eq("id", integration.id);
 
   return tokens.access_token;
 }
@@ -129,33 +130,69 @@ serve(async (req) => {
       });
     }
 
-    const { data: integration, error: integrationError } = await adminClient
+    // Enumerate ALL active Google mailboxes — users may connect more than one.
+    const { data: integrations, error: integrationError } = await adminClient
       .from("integrations")
       .select("id, config")
       .eq("user_id", user.id)
       .eq("integration_id", "google")
       .eq("is_active", true)
-      .single();
+      .order("updated_at", { ascending: false });
 
-    if (integrationError || !integration?.config) {
+    const activeIntegrations = (integrations || []).filter((i: any) => i?.config);
+
+    if (integrationError || activeIntegrations.length === 0) {
       return new Response(
         JSON.stringify({ error: "Google integration not connected", needsReconnect: true }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const config = integration.config as any;
-
-    let accessToken: string = config.accessToken;
-    if (!config.expiresAt || config.expiresAt < Date.now() + 60000) {
-      accessToken = await refreshAccessToken(adminClient, user.id, integration);
+    // Per-integration access tokens (refreshed independently).
+    type Mailbox = { id: string; token: string | null; email: string };
+    const mailboxes: Record<string, Mailbox> = {};
+    for (const integration of activeIntegrations) {
+      const config = integration.config as any;
+      let token: string | null = config.accessToken ?? null;
+      if (!config.expiresAt || config.expiresAt < Date.now() + 60000) {
+        try {
+          token = await refreshAccessToken(adminClient, integration);
+        } catch (e: any) {
+          console.error(`Token refresh failed for integration ${integration.id}:`, e.message);
+          token = null;
+        }
+      }
+      mailboxes[integration.id] = {
+        id: integration.id,
+        token,
+        email: config.googleEmail || "",
+      };
     }
 
-    const googleEmail: string = config.googleEmail || "";
+    if (Object.values(mailboxes).every((m) => !m.token)) {
+      return new Response(
+        JSON.stringify({ error: "Google authorization expired", needsReconnect: true }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Map sending_account_id -> integration id so each thread is polled with
+    // the mailbox it was actually sent from.
+    const { data: sendingAccounts } = await adminClient
+      .from("sending_accounts")
+      .select("id, integration_id")
+      .eq("user_id", user.id);
+    const accountToIntegration: Record<string, string> = {};
+    for (const sa of sendingAccounts || []) {
+      if (sa.integration_id) accountToIntegration[sa.id] = sa.integration_id;
+    }
+
+    const defaultMailbox =
+      Object.values(mailboxes).find((m) => m.token) as Mailbox;
 
     const { data: activeThreads, error: threadsError } = await adminClient
       .from("sent_emails")
-      .select("id, gmail_thread_id, sent_at, to_email, subject")
+      .select("id, gmail_thread_id, sent_at, to_email, subject, sending_account_id")
       .eq("user_id", user.id)
       .not("gmail_thread_id", "is", null)
       .eq("agent_thread_status", "active")
@@ -187,9 +224,16 @@ serve(async (req) => {
 
     for (const thread of threads) {
       try {
+        const integrationId = thread.sending_account_id
+          ? accountToIntegration[thread.sending_account_id]
+          : undefined;
+        const mailbox =
+          (integrationId ? mailboxes[integrationId] : undefined) ?? defaultMailbox;
+        if (!mailbox?.token) continue;
+
         const gmailRes = await fetch(
           `https://gmail.googleapis.com/gmail/v1/users/me/threads/${thread.gmail_thread_id}?format=full`,
-          { headers: { Authorization: `Bearer ${accessToken}` } }
+          { headers: { Authorization: `Bearer ${mailbox.token}` } }
         );
 
         if (!gmailRes.ok) {
@@ -211,11 +255,11 @@ serve(async (req) => {
             ? fromHeader.match(/<(.+?)>/)![1]
             : fromHeader.trim();
 
-          // Skip messages sent by the user themselves
-          if (
-            googleEmail &&
-            fromEmail.toLowerCase() === googleEmail.toLowerCase()
-          ) {
+          // Skip messages sent by any of the user's own connected mailboxes
+          const ownEmails = Object.values(mailboxes)
+            .map((m) => m.email.toLowerCase())
+            .filter(Boolean);
+          if (ownEmails.includes(fromEmail.toLowerCase())) {
             continue;
           }
 
@@ -235,6 +279,7 @@ serve(async (req) => {
             bodyText,
             receivedAt: new Date(internalDate).toISOString(),
             gmailThreadId: thread.gmail_thread_id,
+            integrationId: mailbox.id,
           });
 
           existingMessageIds.add(gmailMessageId);
