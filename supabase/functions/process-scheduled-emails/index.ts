@@ -116,15 +116,41 @@ serve(async (req) => {
           console.log(`Monthly limit reached for user ${email.user_id} (${ul.monthlySent}/${ul.monthlyLimit}), skipping email ${email.id}`);
           continue;
         }
-        // Get user's integration for sending
-        const { data: integration } = await supabase
-          .from("integrations")
-          .select("id, config")
-          .eq("user_id", email.user_id)
-          .eq("integration_id", "google")
-          .eq("is_active", true)
-          .limit(1)
-          .single();
+        // Resolve the mailbox this email was queued against. Prefer the
+        // explicit sending_account_id so multi-mailbox users always send from
+        // the account the campaign selected.
+        let queuedAccount: any = null;
+        if (email.sending_account_id) {
+          const { data: qa } = await supabase
+            .from("sending_accounts")
+            .select("id, integration_id, status, daily_limit, sent_today, sent_today_date")
+            .eq("id", email.sending_account_id)
+            .maybeSingle();
+          queuedAccount = qa ?? null;
+        }
+
+        let integration: any = null;
+        if (queuedAccount?.integration_id) {
+          const { data: intg } = await supabase
+            .from("integrations")
+            .select("id, config")
+            .eq("id", queuedAccount.integration_id)
+            .eq("user_id", email.user_id)
+            .eq("is_active", true)
+            .maybeSingle();
+          integration = intg ?? null;
+        } else {
+          const { data: intg } = await supabase
+            .from("integrations")
+            .select("id, config")
+            .eq("user_id", email.user_id)
+            .eq("integration_id", "google")
+            .eq("is_active", true)
+            .order("updated_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          integration = intg ?? null;
+        }
 
         if (!integration) {
           console.error(`No active integration for user ${email.user_id}`);
