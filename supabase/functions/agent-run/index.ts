@@ -144,7 +144,9 @@ serve(async (req) => {
       .eq("user_id", user.id)
       .eq("integration_id", "google")
       .eq("is_active", true)
-      .single();
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     const googleIntegrationId: string | null = integration?.id ?? null;
 
