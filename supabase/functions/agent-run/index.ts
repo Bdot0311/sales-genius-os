@@ -126,17 +126,10 @@ serve(async (req) => {
       .eq("action_type", "reply_sent")
       .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
 
-    if ((dailyReplyCount ?? 0) >= config.max_daily_auto_replies) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: `Daily auto-reply limit of ${config.max_daily_auto_replies} reached`,
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const remainingReplies = config.max_daily_auto_replies - (dailyReplyCount ?? 0);
+    const remainingReplies = Math.max(
+      0,
+      (config.max_daily_auto_replies ?? 0) - (dailyReplyCount ?? 0)
+    );
 
     const { data: integration } = await adminClient
       .from("integrations")
@@ -150,6 +143,258 @@ serve(async (req) => {
 
     const googleIntegrationId: string | null = integration?.id ?? null;
 
+    const cfgValueProps = Array.isArray(config.value_props) ? config.value_props : [];
+    const cfgValuePropsText = cfgValueProps.join("\n");
+
+    // ────────────────────────────────────────────────────────────────────────
+    // PHASE 1 — Lead generation
+    // ────────────────────────────────────────────────────────────────────────
+    let leadsFound = 0;
+    if (config.can_find_leads) {
+      try {
+        const target = Math.min(Math.max(config.daily_lead_target ?? 10, 1), 25);
+        const searchRes = await fetch(`${supabaseUrl}/functions/v1/fetch-external-leads`, {
+          method: "POST",
+          headers: { Authorization: authHeader, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            job_title: config.prospecting_job_title || undefined,
+            industry: config.prospecting_industry || undefined,
+            country: config.prospecting_country || undefined,
+            company_size: config.prospecting_company_size || undefined,
+            limit: target,
+          }),
+        });
+        const searchData = await searchRes.json().catch(() => ({}));
+        const foundLeads: any[] = Array.isArray(searchData?.leads) ? searchData.leads : [];
+
+        for (const l of foundLeads) {
+          const email = (l.business_email || "").trim().toLowerCase();
+          if (!email) continue;
+
+          const { data: existingLead } = await adminClient
+            .from("leads")
+            .select("id")
+            .eq("user_id", user.id)
+            .ilike("contact_email", email)
+            .maybeSingle();
+          if (existingLead) continue;
+
+          const { error: insertLeadErr } = await adminClient.from("leads").insert({
+            user_id: user.id,
+            contact_name: l.contact_name || email.split("@")[0],
+            contact_email: email,
+            company_name: l.company_name || "Unknown",
+            company_website: l.company_domain || null,
+            job_title: l.job_title || null,
+            industry: l.industry || null,
+            company_size: l.company_size || null,
+            linkedin_url: l.linkedin_url || null,
+            icp_score: l.scores?.icp_score ?? null,
+            intent_score: l.scores?.intent_score ?? null,
+            signals: Array.isArray(l.buying_signals) ? l.buying_signals : null,
+            source: "ai_agent",
+            lead_status: "new",
+          });
+          if (insertLeadErr) continue;
+
+          leadsFound++;
+          await adminClient.from("agent_actions").insert({
+            user_id: user.id,
+            action_type: "lead_found",
+            status: "completed",
+            prospect_email: email,
+            description: `Found ${l.job_title || "contact"} at ${l.company_name || "company"}`,
+            metadata: { source: "ai_agent", icp_score: l.scores?.icp_score ?? null },
+          });
+        }
+
+        if (searchData?.error) {
+          await adminClient.from("agent_actions").insert({
+            user_id: user.id,
+            action_type: "skipped",
+            status: "skipped",
+            description: `Lead search skipped: ${searchData.error}`,
+            metadata: { phase: "prospecting", error_code: searchData.error_code ?? null },
+          });
+        }
+      } catch (prospectErr: any) {
+        console.error("agent prospecting error:", prospectErr?.message);
+        await adminClient.from("agent_actions").insert({
+          user_id: user.id,
+          action_type: "error",
+          status: "failed",
+          description: "Lead generation failed",
+          error_message: prospectErr?.message ?? "unknown",
+          metadata: { phase: "prospecting" },
+        });
+      }
+    }
+
+    // ────────────────────────────────────────────────────────────────────────
+    // PHASE 2 — First-touch outreach
+    // ────────────────────────────────────────────────────────────────────────
+    let outreachSent = 0;
+    if (config.can_send_outreach && googleIntegrationId) {
+      try {
+        const dailyCap = Math.min(Math.max(config.max_daily_new_emails ?? 20, 0), 100);
+        const { count: sentToday } = await adminClient
+          .from("agent_actions")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .eq("action_type", "outreach_sent")
+          .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+
+        let remainingOutreach = Math.max(0, dailyCap - (sentToday ?? 0));
+
+        if (remainingOutreach > 0) {
+          const { data: pendingLeads } = await adminClient
+            .from("leads")
+            .select("id, contact_name, contact_email, company_name, job_title, industry, signals")
+            .eq("user_id", user.id)
+            .not("contact_email", "is", null)
+            .is("last_contacted_at", null)
+            .order("icp_score", { ascending: false, nullsFirst: false })
+            .limit(remainingOutreach);
+
+          for (const lead of pendingLeads ?? []) {
+            if (remainingOutreach <= 0) break;
+            const to = (lead.contact_email || "").trim();
+            if (!to) continue;
+
+            try {
+              const { data: alreadySent } = await adminClient
+                .from("sent_emails")
+                .select("id")
+                .eq("user_id", user.id)
+                .ilike("recipient_email", to)
+                .limit(1)
+                .maybeSingle();
+              if (alreadySent) {
+                await adminClient
+                  .from("leads")
+                  .update({ last_contacted_at: new Date().toISOString() })
+                  .eq("id", lead.id);
+                continue;
+              }
+
+              const firstName = (lead.contact_name || "").split(" ")[0] || "there";
+              const outreachSystemPrompt = `You are ${config.agent_name ?? "a sales rep"}. Persona: ${config.persona ?? "direct and helpful"}. Tone: ${config.tone ?? "professional"}.
+Company context: ${config.company_context ?? ""}
+Value propositions:
+${cfgValuePropsText}
+Never invent metrics, customer names, case studies, or results.`;
+              const outreachPrompt = `Write a first-touch cold email to ${firstName}, ${lead.job_title ?? "a decision maker"} at ${lead.company_name ?? "their company"}${lead.industry ? ` (${lead.industry})` : ""}.
+${Array.isArray(lead.signals) && lead.signals.length ? `Relevant signals: ${lead.signals.join(", ")}` : ""}
+
+Rules:
+- Under 75 words total.
+- Greeting line "Hi ${firstName}," then body.
+- One clear idea, one low-friction CTA.
+- No fabricated stats or claims. No placeholders like [Company].
+Return JSON only: { "subject": "...", "body": "..." }`;
+
+              const raw = await callGemini(outreachPrompt, outreachSystemPrompt);
+              let subject = "";
+              let body = "";
+              try {
+                const m = raw.match(/\{[\s\S]*\}/);
+                if (m) {
+                  const parsed = JSON.parse(m[0]);
+                  subject = (parsed.subject ?? "").toString().trim();
+                  body = (parsed.body ?? "").toString().trim();
+                }
+              } catch {
+                // fall through to validation below
+              }
+              if (!subject || !body) {
+                await adminClient.from("agent_actions").insert({
+                  user_id: user.id,
+                  action_type: "skipped",
+                  status: "skipped",
+                  prospect_email: to,
+                  metadata: { phase: "outreach", reason: "generation_failed" },
+                });
+                continue;
+              }
+
+              const check = deliverabilityCheck(subject, body);
+              if (!check.ok) {
+                await adminClient.from("agent_actions").insert({
+                  user_id: user.id,
+                  action_type: "skipped",
+                  status: "skipped",
+                  prospect_email: to,
+                  subject,
+                  metadata: { phase: "outreach", reason: "deliverability_block", spam_triggers: check.hits },
+                });
+                continue;
+              }
+
+              const sendRes = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+                method: "POST",
+                headers: { Authorization: authHeader, "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  to,
+                  subject,
+                  body,
+                  integrationRowId: googleIntegrationId,
+                  leadId: lead.id,
+                }),
+              });
+              const sendData = await sendRes.json().catch(() => ({}));
+
+              if (!sendRes.ok || sendData?.error) {
+                await adminClient.from("agent_actions").insert({
+                  user_id: user.id,
+                  action_type: "error",
+                  status: "failed",
+                  prospect_email: to,
+                  subject,
+                  error_message: sendData?.error ?? `send-email returned ${sendRes.status}`,
+                  metadata: { phase: "outreach" },
+                });
+                continue;
+              }
+
+              await adminClient
+                .from("leads")
+                .update({ last_contacted_at: new Date().toISOString(), lead_status: "contacted" })
+                .eq("id", lead.id);
+
+              await adminClient.from("agent_actions").insert({
+                user_id: user.id,
+                action_type: "outreach_sent",
+                status: "completed",
+                prospect_email: to,
+                subject,
+                reply_content: body,
+                description: `First-touch email sent to ${lead.company_name ?? to}`,
+                metadata: { phase: "outreach", lead_id: lead.id },
+              });
+
+              outreachSent++;
+              remainingOutreach--;
+            } catch (leadErr: any) {
+              console.error(`outreach error for ${to}:`, leadErr?.message);
+              await adminClient.from("agent_actions").insert({
+                user_id: user.id,
+                action_type: "error",
+                status: "failed",
+                prospect_email: to,
+                error_message: leadErr?.message ?? "unknown",
+                metadata: { phase: "outreach" },
+              });
+            }
+          }
+        }
+      } catch (outreachErr: any) {
+        console.error("agent outreach error:", outreachErr?.message);
+      }
+    }
+
+    // ────────────────────────────────────────────────────────────────────────
+    // PHASE 3 — Reply handling
+    // ────────────────────────────────────────────────────────────────────────
     const syncRes = await fetch(`${supabaseUrl}/functions/v1/inbox-sync`, {
       method: "POST",
       headers: {
