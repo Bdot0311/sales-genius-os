@@ -507,7 +507,11 @@ Value propositions: ${valuePropsText}`
     return new Response(
       JSON.stringify({
         success: true,
+        mode,
+        syncError,
+        realReplies: results.filter((r) => (r as { category: string }).category === "real").length,
         dryRun: true,
+
         total: results.length,
         graded: graded.length,
         passed,
