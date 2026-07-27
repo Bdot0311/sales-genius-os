@@ -17,9 +17,12 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { FlaskConical, Loader2, Check, X, AlertTriangle } from "lucide-react";
+import { FlaskConical, Loader2, Check, X, AlertTriangle, Mail, Send, Inbox } from "lucide-react";
+
 
 interface TestResult {
   id: string;
@@ -52,11 +55,36 @@ const ACTION_LABELS: Record<string, string> = {
 export function AgentTestDialog({ disabled }: { disabled?: boolean }) {
   const [open, setOpen] = useState(false);
   const [running, setRunning] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [checking, setChecking] = useState(false);
   const [custom, setCustom] = useState("");
+  const [testEmail, setTestEmail] = useState("");
+  const [includeRealReplies, setIncludeRealReplies] = useState(true);
+  const [sent, setSent] = useState<{ to: string; subject: string; body: string } | null>(null);
   const [results, setResults] = useState<TestResult[] | null>(null);
   const [summary, setSummary] = useState<{ passed: number; failed: number; graded: number } | null>(
     null
   );
+
+  const invokeTest = async (body: Record<string, unknown>) => {
+    const { data, error } = await supabase.functions.invoke("agent-test", { body });
+    if (error) throw error;
+    const payload = data as {
+      success: boolean;
+      error?: string;
+      results?: TestResult[];
+      passed?: number;
+      failed?: number;
+      graded?: number;
+      realReplies?: number;
+      syncError?: string | null;
+      subject?: string;
+      body?: string;
+      to?: string;
+    };
+    if (!payload?.success) throw new Error(payload?.error || "Request failed");
+    return payload;
+  };
 
   const runTest = async () => {
     setRunning(true);
@@ -68,36 +96,55 @@ export function AgentTestDialog({ disabled }: { disabled?: boolean }) {
         .filter(Boolean)
         .map((body, i) => ({ label: `Custom reply ${i + 1}`, body }));
 
-      const { data, error } = await supabase.functions.invoke("agent-test", {
-        body: { customReplies },
-      });
-      if (error) throw error;
-      const payload = data as {
-        success: boolean;
-        error?: string;
-        results?: TestResult[];
-        passed?: number;
-        failed?: number;
-        graded?: number;
-      };
-      if (!payload?.success) throw new Error(payload?.error || "Test run failed");
+      const payload = await invokeTest({ mode: "dry_run", customReplies, includeRealReplies });
       setResults(payload.results ?? []);
       setSummary({
         passed: payload.passed ?? 0,
         failed: payload.failed ?? 0,
         graded: payload.graded ?? 0,
       });
+      if (payload.syncError) {
+        toast.warning(`Live inbox couldn't be read: ${payload.syncError}`);
+      }
       toast.success(
-        `Dry run complete — ${payload.passed ?? 0}/${payload.graded ?? 0} classified as expected. Nothing was sent.`
+        `Test complete — ${payload.passed ?? 0}/${payload.graded ?? 0} classified as expected, ${payload.realReplies ?? 0} real replies analyzed. Nothing was sent.`
       );
     } catch (err) {
-      toast.error(
-        `Test failed: ${err instanceof Error ? err.message : "Unknown error"}`
-      );
+      toast.error(`Test failed: ${err instanceof Error ? err.message : "Unknown error"}`);
     } finally {
       setRunning(false);
     }
   };
+
+  const sendLive = async () => {
+    setSending(true);
+    try {
+      const payload = await invokeTest({ mode: "live_send", testEmail: testEmail.trim() });
+      setSent({ to: payload.to ?? testEmail, subject: payload.subject ?? "", body: payload.body ?? "" });
+      toast.success(`Real email sent to ${payload.to}. Reply to it, then run "Check my replies".`);
+    } catch (err) {
+      toast.error(`Send failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const checkReplies = async () => {
+    setChecking(true);
+    setResults(null);
+    try {
+      const payload = await invokeTest({ mode: "live_check", testEmail: testEmail.trim() });
+      setResults(payload.results ?? []);
+      setSummary(null);
+      toast.success(`${payload.realReplies ?? 0} real replies from ${testEmail} analyzed. Nothing was sent.`);
+    } catch (err) {
+      toast.error(`Check failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  const busy = running || sending || checking;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -109,15 +156,56 @@ export function AgentTestDialog({ disabled }: { disabled?: boolean }) {
       </DialogTrigger>
       <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Test the agent (dry run)</DialogTitle>
+          <DialogTitle>Test the agent</DialogTitle>
           <DialogDescription>
-            Runs your live classifier and reply generator against the four configured
-            objections plus the ugly cases — out of office, "who is this", hostile, and
-            unsubscribe. Nothing is sent, no contacts are touched, no actions are logged.
+            Runs your live classifier and reply generator against your saved configuration —
+            your real objection responses, persona, value props and capability switches. You can
+            also send a real campaign email to a burner inbox you control and have the agent
+            analyze your actual replies. Nothing is auto-sent to prospects.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
+          <Card className="p-4 space-y-3 border-primary/20 bg-primary/5">
+            <div className="flex items-center gap-2">
+              <Mail className="w-4 h-4 text-primary" />
+              <p className="text-sm font-medium">Live test to your own inbox (burner address)</p>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Sends a real first-touch email generated from your agent configuration, from your
+              connected Gmail. Reply to it with each objection word for word, then check the
+              replies to see how the agent classifies and responds.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Input
+                type="email"
+                placeholder="burner@yourdomain.com"
+                value={testEmail}
+                onChange={(e) => setTestEmail(e.target.value)}
+              />
+              <Button onClick={sendLive} disabled={busy || !testEmail.trim()} className="gap-2 shrink-0">
+                {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                Send real email
+              </Button>
+              <Button
+                variant="outline"
+                onClick={checkReplies}
+                disabled={busy || !testEmail.trim()}
+                className="gap-2 shrink-0"
+              >
+                {checking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Inbox className="w-4 h-4" />}
+                Check my replies
+              </Button>
+            </div>
+            {sent && (
+              <Card className="p-3 bg-background/60">
+                <p className="text-xs text-muted-foreground mb-1">Sent to {sent.to}</p>
+                <p className="text-sm font-medium">{sent.subject}</p>
+                <p className="text-sm whitespace-pre-wrap text-muted-foreground mt-1">{sent.body}</p>
+              </Card>
+            )}
+          </Card>
+
           <div className="space-y-2">
             <p className="text-sm font-medium">Extra replies to test (one per line, optional)</p>
             <Textarea
@@ -126,17 +214,25 @@ export function AgentTestDialog({ disabled }: { disabled?: boolean }) {
               value={custom}
               onChange={(e) => setCustom(e.target.value)}
             />
+            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Checkbox
+                checked={includeRealReplies}
+                onCheckedChange={(v) => setIncludeRealReplies(v === true)}
+              />
+              Also pull real unread replies from my connected inbox
+            </label>
           </div>
 
           <div className="flex items-center gap-3">
-            <Button onClick={runTest} disabled={running} className="gap-2">
+            <Button onClick={runTest} disabled={busy} className="gap-2">
               {running ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <FlaskConical className="w-4 h-4" />
               )}
-              {running ? "Running dry run…" : "Run test"}
+              {running ? "Running test…" : "Run test"}
             </Button>
+
             {summary && (
               <div className="flex items-center gap-2 text-sm">
                 <Badge className="bg-green-500/15 text-green-400 border-green-500/30">
