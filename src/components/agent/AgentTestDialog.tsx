@@ -80,6 +80,7 @@ export function AgentTestDialog({ disabled }: { disabled?: boolean }) {
   const [selectedMailbox, setSelectedMailbox] = useState<string>("");
   const [mailboxesLoading, setMailboxesLoading] = useState(false);
   const [mailboxesError, setMailboxesError] = useState<string | null>(null);
+  const selectedMailboxLabel = mailboxes.find((m) => m.integrationId === selectedMailbox)?.email;
 
   useEffect(() => {
     if (!open) return;
@@ -268,15 +269,14 @@ export function AgentTestDialog({ disabled }: { disabled?: boolean }) {
               <p className="text-xs font-medium text-muted-foreground">Send from</p>
               <Select value={selectedMailbox} onValueChange={setSelectedMailbox}>
                 <SelectTrigger>
-                  <SelectValue
-                    placeholder={
-                      mailboxesLoading
+                  <span className="truncate">
+                    {selectedMailboxLabel ??
+                      (mailboxesLoading
                         ? "Loading mailboxes…"
                         : mailboxes.length
                           ? "Choose a mailbox"
-                          : "No connected mailboxes"
-                    }
-                  />
+                          : "No connected mailboxes")}
+                  </span>
                 </SelectTrigger>
                 <SelectContent>
                   {mailboxes.map((m) => (
@@ -300,7 +300,7 @@ export function AgentTestDialog({ disabled }: { disabled?: boolean }) {
                 value={testEmail}
                 onChange={(e) => setTestEmail(e.target.value)}
               />
-              <Button onClick={sendLive} disabled={busy || !testEmail.trim()} className="gap-2 shrink-0">
+              <Button onClick={sendLive} disabled={busy || !testEmail.trim() || !selectedMailbox} className="gap-2 shrink-0">
                 {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 Send real email
               </Button>
