@@ -97,8 +97,9 @@ serve(async (req) => {
         .eq('user_id', user.id)
         .eq('integration_id', integrationId || 'google')
         .eq('is_active', true)
+        .order('updated_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
       integration = result.data;
       integrationError = result.error;
       console.log('Looking for integration:', integrationId || 'google', 'for user:', user.id);
