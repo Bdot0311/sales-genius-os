@@ -120,6 +120,17 @@ serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, serviceKey);
 
+    let payload: { testEmail?: string; includeOwnReplies?: boolean } = {};
+    try {
+      payload = await req.json();
+    } catch {
+      payload = {};
+    }
+
+    const allowedOwnReplyEmail = payload.includeOwnReplies
+      ? (payload.testEmail ?? "").trim().toLowerCase()
+      : "";
+
     const { data: { user }, error: authError } = await adminClient.auth.getUser(
       authHeader.replace("Bearer ", "")
     );
@@ -259,7 +270,8 @@ serve(async (req) => {
           const ownEmails = Object.values(mailboxes)
             .map((m) => m.email.toLowerCase())
             .filter(Boolean);
-          if (ownEmails.includes(fromEmail.toLowerCase())) {
+          const normalizedFromEmail = fromEmail.toLowerCase();
+          if (ownEmails.includes(normalizedFromEmail) && normalizedFromEmail !== allowedOwnReplyEmail) {
             continue;
           }
 
