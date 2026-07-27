@@ -99,19 +99,21 @@ const Agent = () => {
         .maybeSingle();
       setConfig(configData ?? null);
 
-      // Load Gmail integrations (users may have more than one Google mailbox)
-      const { data: integrationRows } = await supabase
+      // Load Gmail integrations (users may have more than one Google mailbox).
+      // Only read client-visible columns; token/config fields are intentionally hidden.
+      const { data: integrationRows, error: integrationsError } = await supabase
         .from("integrations")
-        .select("id, connected_email, is_active, config")
+        .select("id, connected_email")
         .eq("user_id", uid)
         .eq("integration_id", "google")
         .eq("is_active", true)
         .order("updated_at", { ascending: false });
-      const activeGoogle = (integrationRows ?? []).find((row: any) => {
-        const cfg = (row?.config ?? {}) as any;
-        return !!(row?.connected_email || cfg.googleEmail || cfg.refreshToken || cfg.accessToken);
-      });
-      setGmailConnected(!!activeGoogle);
+      if (integrationsError) {
+        console.error("Agent Gmail connection load error:", integrationsError);
+        setGmailConnected(false);
+      } else {
+        setGmailConnected((integrationRows ?? []).length > 0);
+      }
 
 
       // Load recent actions
