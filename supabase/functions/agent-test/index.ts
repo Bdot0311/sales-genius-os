@@ -164,7 +164,13 @@ serve(async (req) => {
       });
     }
 
-    let payload: { customReplies?: { label?: string; body?: string; subject?: string }[] } = {};
+    let payload: {
+      mode?: "dry_run" | "live_send" | "live_check";
+      testEmail?: string;
+      integrationRowId?: string;
+      includeRealReplies?: boolean;
+      customReplies?: { label?: string; body?: string; subject?: string }[];
+    } = {};
     try {
       payload = await req.json();
     } catch {
@@ -187,7 +193,160 @@ serve(async (req) => {
       );
     }
 
-    const scenarios: Scenario[] = [...DEFAULT_SCENARIOS];
+    const cfgValueProps = Array.isArray(config.value_props) ? config.value_props : [];
+    const cfgValuePropsText = cfgValueProps.join("\n");
+    const mode = payload.mode ?? "dry_run";
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    // Resolve the Gmail integration used for live sending / inbox reads.
+    const resolveIntegration = async (): Promise<string | null> => {
+      if (payload.integrationRowId) return payload.integrationRowId;
+      const { data } = await adminClient
+        .from("integrations")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("integration_id", "google")
+        .eq("is_active", true)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data?.id ?? null;
+    };
+
+    // ── LIVE SEND: send a real first-touch email to the user's own burner inbox
+    if (mode === "live_send") {
+      const to = (payload.testEmail ?? "").trim();
+      if (!EMAIL_RE.test(to)) {
+        return new Response(
+          JSON.stringify({ success: false, error: "Enter a valid burner email address to test with." }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const integrationRowId = await resolveIntegration();
+      if (!integrationRowId) {
+        return new Response(
+          JSON.stringify({ success: false, error: "No active Gmail connection found. Connect Gmail first." }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const firstName = to.split("@")[0].replace(/[._-]+/g, " ").split(" ")[0] || "there";
+      const systemPrompt = `You are ${config.agent_name ?? "a sales rep"}. Persona: ${config.persona ?? "direct and helpful"}. Tone: ${config.tone ?? "professional"}.
+Company context: ${config.company_context ?? ""}
+Value propositions:
+${cfgValuePropsText}
+Never invent metrics, customer names, case studies, or results.`;
+      const prompt = `Write a first-touch cold email to ${firstName}.
+
+Rules:
+- Under 75 words total.
+- Greeting line "Hi ${firstName}," then body.
+- One clear idea, one low-friction CTA.
+- No fabricated stats or claims. No placeholders like [Company].
+Return JSON only: { "subject": "...", "body": "..." }`;
+
+      const raw = await callGemini(prompt, systemPrompt);
+      let subject = "";
+      let body = "";
+      try {
+        const m = raw.match(/\{[\s\S]*\}/);
+        if (m) {
+          const parsed = JSON.parse(m[0]);
+          subject = (parsed.subject ?? "").toString().trim();
+          body = (parsed.body ?? "").toString().trim();
+        }
+      } catch {
+        // handled below
+      }
+      if (!subject || !body) {
+        return new Response(
+          JSON.stringify({ success: false, error: "The agent failed to generate an email from your configuration." }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const check = deliverabilityCheck(subject, body);
+
+      const sendRes = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+        method: "POST",
+        headers: { Authorization: authHeader, "Content-Type": "application/json" },
+        body: JSON.stringify({ to, subject, body, integrationRowId }),
+      });
+      const sendData = await sendRes.json().catch(() => ({}));
+
+      if (!sendRes.ok || sendData?.error) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: sendData?.error ?? `send-email returned ${sendRes.status}`,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      await adminClient.from("agent_actions").insert({
+        user_id: user.id,
+        action_type: "outreach_sent",
+        status: "completed",
+        prospect_email: to,
+        subject,
+        reply_content: body,
+        description: `Live test email sent to ${to}`,
+        metadata: { phase: "live_test" },
+      });
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          mode: "live_send",
+          to,
+          subject,
+          body,
+          messageId: sendData?.messageId ?? null,
+          threadId: sendData?.threadId ?? null,
+          spam_triggers: check.hits,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const scenarios: Scenario[] = mode === "live_check" ? [] : [...DEFAULT_SCENARIOS];
+
+    // Pull REAL inbound replies from the connected mailbox so the test runs
+    // against actual email traffic, not only synthetic scenarios.
+    let syncError: string | null = null;
+    if (mode === "live_check" || payload.includeRealReplies) {
+      try {
+        const syncRes = await fetch(`${supabaseUrl}/functions/v1/inbox-sync`, {
+          method: "POST",
+          headers: { Authorization: authHeader, "Content-Type": "application/json" },
+        });
+        const syncData = await syncRes.json().catch(() => ({}));
+        if (!syncRes.ok || !syncData?.success) {
+          syncError = syncData?.error ?? `inbox-sync returned ${syncRes.status}`;
+        } else {
+          const filterTo = (payload.testEmail ?? "").trim().toLowerCase();
+          const realReplies = (syncData.replies ?? []).filter((r: any) =>
+            filterTo ? (r.fromEmail ?? "").toLowerCase() === filterTo : true
+          );
+          for (const [i, r] of realReplies.entries()) {
+            if (!(r.bodyText ?? "").trim()) continue;
+            scenarios.push({
+              id: `real_${i}`,
+              label: `Real reply from ${r.fromEmail ?? "unknown"}`,
+              category: "real",
+              expected: [],
+              subject: r.subject ?? "(no subject)",
+              body: r.bodyText,
+            });
+          }
+        }
+      } catch (e) {
+        syncError = e instanceof Error ? e.message : "inbox-sync failed";
+      }
+    }
+
     for (const [i, custom] of (payload.customReplies ?? []).entries()) {
       if (!custom?.body?.trim()) continue;
       scenarios.push({
@@ -199,6 +358,19 @@ serve(async (req) => {
         body: custom.body,
       });
     }
+
+    if (scenarios.length === 0) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error:
+            syncError ??
+            "No replies found yet from that address. Reply from your burner inbox, then check again.",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
 
     const valuePropsList = Array.isArray(config.value_props) ? config.value_props : [];
     const valuePropsText = valuePropsList.join("\n");
