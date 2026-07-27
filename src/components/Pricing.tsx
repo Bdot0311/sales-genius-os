@@ -557,7 +557,7 @@ export const Pricing = () => {
                     }
                   }}
                 >
-                  {plan.cta}
+                  {isPaidPlan(plan) ? "Choose this plan" : plan.cta}
                   <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
                 </button>
               </div>
