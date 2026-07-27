@@ -65,6 +65,14 @@ interface AgentConfig {
   max_daily_auto_replies: number;
   reply_delay_minutes: number;
   signature: string | null;
+  can_find_leads: boolean;
+  can_send_outreach: boolean;
+  prospecting_job_title: string | null;
+  prospecting_industry: string | null;
+  prospecting_country: string | null;
+  prospecting_company_size: string | null;
+  daily_lead_target: number;
+  max_daily_new_emails: number;
 }
 
 serve(async (req) => {
@@ -797,6 +805,8 @@ Output ONLY the reply body. No subject line or signature.`;
       status: "completed",
       metadata: {
         threads_checked: threadsChecked,
+        leads_found: leadsFound,
+        outreach_sent: outreachSent,
         replies_processed: repliesProcessed,
         replies_sent: repliesSent,
         meetings_booked: meetingsBooked,
@@ -809,6 +819,8 @@ Output ONLY the reply body. No subject line or signature.`;
       JSON.stringify({
         success: true,
         threadsChecked,
+        leadsFound,
+        outreachSent,
         repliesProcessed,
         repliesSent,
         meetingsBooked,
