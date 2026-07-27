@@ -538,7 +538,7 @@ export const Pricing = () => {
                 {/* CTA */}
                 <button
                   onClick={() => handleCheckout(plan)}
-                  className="w-full min-h-11 h-auto py-2.5 rounded-full text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 group"
+                  className="w-full min-h-11 h-auto py-2.5 rounded-full text-sm font-semibold text-center transition-all duration-200 flex items-center justify-center gap-2 group"
                   style={
                     isHighlighted
                       ? { background: "linear-gradient(135deg, hsl(261 75% 60%), hsl(261 75% 50%))", color: "white" }
