@@ -199,8 +199,53 @@ serve(async (req) => {
     const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     // Resolve the Gmail integration used for live sending / inbox reads.
-    const resolveIntegration = async (): Promise<string | null> => {
-      if (payload.integrationRowId) return payload.integrationRowId;
+    // Prefer an active sending account so the test doesn't fail just because
+    // the most recently reconnected mailbox is paused while another Gmail
+    // mailbox is available.
+    const resolveIntegration = async (): Promise<{
+      integrationRowId: string | null;
+      pausedAccountId: string | null;
+      pausedReason: string | null;
+    }> => {
+      if (payload.integrationRowId) {
+        const { data: account } = await adminClient
+          .from("sending_accounts")
+          .select("id, status, paused_reason")
+          .eq("user_id", user.id)
+          .eq("integration_id", payload.integrationRowId)
+          .maybeSingle();
+
+        return {
+          integrationRowId: payload.integrationRowId,
+          pausedAccountId: account?.status === "paused" || account?.status === "disabled" ? account.id : null,
+          pausedReason: account?.status === "paused" || account?.status === "disabled" ? account.paused_reason : null,
+        };
+      }
+
+      const { data: accounts } = await adminClient
+        .from("sending_accounts")
+        .select("id, integration_id, status, paused_reason, updated_at")
+        .eq("user_id", user.id)
+        .eq("provider", "google")
+        .not("integration_id", "is", null)
+        .order("updated_at", { ascending: false });
+
+      const activeAccount = (accounts ?? []).find(
+        (account) => account.integration_id && account.status !== "paused" && account.status !== "disabled"
+      );
+      if (activeAccount?.integration_id) {
+        return { integrationRowId: activeAccount.integration_id, pausedAccountId: null, pausedReason: null };
+      }
+
+      const pausedAccount = (accounts ?? []).find((account) => account.integration_id);
+      if (pausedAccount?.integration_id) {
+        return {
+          integrationRowId: pausedAccount.integration_id,
+          pausedAccountId: pausedAccount.id,
+          pausedReason: pausedAccount.paused_reason ?? null,
+        };
+      }
+
       const { data } = await adminClient
         .from("integrations")
         .select("id")
@@ -210,7 +255,7 @@ serve(async (req) => {
         .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      return data?.id ?? null;
+      return { integrationRowId: data?.id ?? null, pausedAccountId: null, pausedReason: null };
     };
 
     // ── LIVE SEND: send a real first-touch email to the user's own burner inbox
@@ -223,10 +268,24 @@ serve(async (req) => {
         );
       }
 
-      const integrationRowId = await resolveIntegration();
+      const { integrationRowId, pausedAccountId, pausedReason } = await resolveIntegration();
       if (!integrationRowId) {
         return new Response(
           JSON.stringify({ success: false, error: "No active Gmail connection found. Connect Gmail first." }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (pausedAccountId) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: pausedReason
+              ? `Every connected sending mailbox is paused. Last pause reason: ${pausedReason}`
+              : "Every connected sending mailbox is paused. Resume one from Deliverability, then retry.",
+            code: "account_paused",
+            sendingAccountId: pausedAccountId,
+          }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
