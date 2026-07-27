@@ -253,7 +253,26 @@ export function AgentTestDialog({ disabled }: { disabled?: boolean }) {
               connected Gmail. Reply to it with each objection word for word, then check the
               replies to see how the agent classifies and responds.
             </p>
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium text-muted-foreground">Send from</p>
+              <Select value={selectedMailbox} onValueChange={setSelectedMailbox}>
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={mailboxes.length ? "Choose a mailbox" : "No connected mailboxes"}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {mailboxes.map((m) => (
+                    <SelectItem key={m.integrationId} value={m.integrationId}>
+                      {m.email}
+                      {m.status === "paused" || m.status === "disabled" ? ` (${m.status})` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex flex-col sm:flex-row gap-2">
+
               <Input
                 type="email"
                 placeholder="burner@yourdomain.com"
