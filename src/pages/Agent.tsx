@@ -99,16 +99,20 @@ const Agent = () => {
         .maybeSingle();
       setConfig(configData ?? null);
 
-      // Load Gmail integration
-      const { data: integrationData } = await supabase
+      // Load Gmail integrations (users may have more than one Google mailbox)
+      const { data: integrationRows } = await supabase
         .from("integrations")
-        .select("id, connected_email, is_active")
+        .select("id, connected_email, is_active, config")
         .eq("user_id", uid)
         .eq("integration_id", "google")
-        .maybeSingle();
-      setGmailConnected(
-        integrationData?.is_active === true && !!integrationData.connected_email
-      );
+        .eq("is_active", true)
+        .order("updated_at", { ascending: false });
+      const activeGoogle = (integrationRows ?? []).find((row: any) => {
+        const cfg = (row?.config ?? {}) as any;
+        return !!(row?.connected_email || cfg.googleEmail || cfg.refreshToken || cfg.accessToken);
+      });
+      setGmailConnected(!!activeGoogle);
+
 
       // Load recent actions
       setActionsLoading(true);
