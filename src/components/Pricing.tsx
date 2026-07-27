@@ -566,13 +566,13 @@ export const Pricing = () => {
                     href="https://calendly.com/bdotindustries/30min"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-3 w-full h-11 rounded-full text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 group"
+                    className="mt-3 w-full min-h-11 h-auto py-2.5 rounded-full text-sm font-semibold text-center transition-all duration-200 flex items-center justify-center gap-2 group"
                     style={{
                       background: "linear-gradient(135deg, hsl(261 75% 60%), hsl(261 75% 50%))",
                       color: "white",
                     }}
                   >
-                    <Bot className="w-3.5 h-3.5" />
+                    <Bot className="w-3.5 h-3.5 flex-shrink-0" />
                     Book a time to set up campaigns
                   </a>
                 )}
