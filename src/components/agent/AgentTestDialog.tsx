@@ -75,25 +75,35 @@ export function AgentTestDialog({ disabled }: { disabled?: boolean }) {
   );
 
   const [mailboxes, setMailboxes] = useState<
-    { integrationId: string; email: string; status: string }[]
+    { integrationId: string; email: string; status: string; pausedReason?: string | null }[]
   >([]);
   const [selectedMailbox, setSelectedMailbox] = useState<string>("");
+  const [mailboxesLoading, setMailboxesLoading] = useState(false);
+  const [mailboxesError, setMailboxesError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from("sending_accounts")
-        .select("integration_id, email, status, updated_at")
-        .in("provider", ["google", "gmail"])
-        .not("integration_id", "is", null)
-        .order("updated_at", { ascending: false });
+      setMailboxesLoading(true);
+      setMailboxesError(null);
+      const { data, error } = await supabase.functions.invoke("agent-test", {
+        body: { mode: "list_mailboxes" },
+      });
       if (cancelled) return;
-      const list = (data ?? []).map((a) => ({
-        integrationId: a.integration_id as string,
+      if (error || !data?.success) {
+        const message = error?.message || data?.error || "Mailbox status could not be loaded.";
+        setMailboxes([]);
+        setSelectedMailbox("");
+        setMailboxesError(message);
+        setMailboxesLoading(false);
+        return;
+      }
+      const list = (data.mailboxes ?? []).map((a: { integrationId: string; email: string; status?: string; pausedReason?: string | null }) => ({
+        integrationId: a.integrationId,
         email: a.email as string,
         status: (a.status as string) ?? "active",
+        pausedReason: a.pausedReason ?? null,
       }));
       setMailboxes(list);
       setSelectedMailbox((prev) => {
@@ -101,6 +111,7 @@ export function AgentTestDialog({ disabled }: { disabled?: boolean }) {
         const active = list.find((m) => m.status !== "paused" && m.status !== "disabled");
         return active?.integrationId ?? list[0]?.integrationId ?? "";
       });
+      setMailboxesLoading(false);
     })();
     return () => {
       cancelled = true;
@@ -258,7 +269,13 @@ export function AgentTestDialog({ disabled }: { disabled?: boolean }) {
               <Select value={selectedMailbox} onValueChange={setSelectedMailbox}>
                 <SelectTrigger>
                   <SelectValue
-                    placeholder={mailboxes.length ? "Choose a mailbox" : "No connected mailboxes"}
+                    placeholder={
+                      mailboxesLoading
+                        ? "Loading mailboxes…"
+                        : mailboxes.length
+                          ? "Choose a mailbox"
+                          : "No connected mailboxes"
+                    }
                   />
                 </SelectTrigger>
                 <SelectContent>
@@ -270,6 +287,10 @@ export function AgentTestDialog({ disabled }: { disabled?: boolean }) {
                   ))}
                 </SelectContent>
               </Select>
+              {mailboxesError && <p className="text-xs text-destructive">{mailboxesError}</p>}
+              {!mailboxesLoading && !mailboxesError && mailboxes.length > 0 && (
+                <p className="text-xs text-muted-foreground">{mailboxes.length} connected mailbox{mailboxes.length === 1 ? "" : "es"} available.</p>
+              )}
             </div>
             <div className="flex flex-col sm:flex-row gap-2">
 
