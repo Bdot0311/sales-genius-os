@@ -377,17 +377,6 @@ Return JSON only: { "subject": "...", "body": "..." }`;
                 continue;
               }
 
-              const sendRes = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
-                method: "POST",
-                headers: { Authorization: authHeader, "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  to,
-                  subject,
-                  body,
-                  integrationRowId: googleIntegrationId,
-                  leadId: lead.id,
-                }),
-              });
               if (approvalMode) {
                 await queueApproval({
                   kind: "outreach",
