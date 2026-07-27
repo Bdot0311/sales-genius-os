@@ -276,14 +276,28 @@ Return JSON only: { "subject": "...", "body": "..." }`;
       const sendData = await sendRes.json().catch(() => ({}));
 
       if (!sendRes.ok || sendData?.error) {
+        let sendingAccountId: string | null = null;
+        if (sendData?.code === "account_paused") {
+          const { data: sa } = await adminClient
+            .from("sending_accounts")
+            .select("id")
+            .eq("user_id", user.id)
+            .eq("integration_id", integrationRowId)
+            .limit(1)
+            .maybeSingle();
+          sendingAccountId = sa?.id ?? null;
+        }
         return new Response(
           JSON.stringify({
             success: false,
             error: sendData?.error ?? `send-email returned ${sendRes.status}`,
+            code: sendData?.code ?? null,
+            sendingAccountId,
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+
 
       await adminClient.from("agent_actions").insert({
         user_id: user.id,
