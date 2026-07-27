@@ -436,6 +436,10 @@ Return JSON only: { "subject": "...", "body": "..." }`;
         const syncRes = await fetch(`${supabaseUrl}/functions/v1/inbox-sync`, {
           method: "POST",
           headers: { Authorization: authHeader, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            testEmail: payload.testEmail,
+            includeOwnReplies: mode === "live_check",
+          }),
         });
         const syncData = await syncRes.json().catch(() => ({}));
         if (!syncRes.ok || !syncData?.success) {
