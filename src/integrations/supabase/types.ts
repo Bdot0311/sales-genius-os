@@ -207,15 +207,23 @@ export type Database = {
           agent_name: string | null
           calendly_url: string | null
           can_book_meetings: boolean | null
+          can_find_leads: boolean
           can_handle_objections: boolean | null
           can_reply_interested: boolean | null
+          can_send_outreach: boolean
           company_context: string | null
           created_at: string | null
+          daily_lead_target: number
           enabled: boolean | null
           id: string
           max_daily_auto_replies: number | null
+          max_daily_new_emails: number
           objection_responses: Json | null
           persona: string | null
+          prospecting_company_size: string | null
+          prospecting_country: string | null
+          prospecting_industry: string | null
+          prospecting_job_title: string | null
           reply_delay_minutes: number | null
           signature: string | null
           tone: string | null
@@ -227,15 +235,23 @@ export type Database = {
           agent_name?: string | null
           calendly_url?: string | null
           can_book_meetings?: boolean | null
+          can_find_leads?: boolean
           can_handle_objections?: boolean | null
           can_reply_interested?: boolean | null
+          can_send_outreach?: boolean
           company_context?: string | null
           created_at?: string | null
+          daily_lead_target?: number
           enabled?: boolean | null
           id?: string
           max_daily_auto_replies?: number | null
+          max_daily_new_emails?: number
           objection_responses?: Json | null
           persona?: string | null
+          prospecting_company_size?: string | null
+          prospecting_country?: string | null
+          prospecting_industry?: string | null
+          prospecting_job_title?: string | null
           reply_delay_minutes?: number | null
           signature?: string | null
           tone?: string | null
@@ -247,15 +263,23 @@ export type Database = {
           agent_name?: string | null
           calendly_url?: string | null
           can_book_meetings?: boolean | null
+          can_find_leads?: boolean
           can_handle_objections?: boolean | null
           can_reply_interested?: boolean | null
+          can_send_outreach?: boolean
           company_context?: string | null
           created_at?: string | null
+          daily_lead_target?: number
           enabled?: boolean | null
           id?: string
           max_daily_auto_replies?: number | null
+          max_daily_new_emails?: number
           objection_responses?: Json | null
           persona?: string | null
+          prospecting_company_size?: string | null
+          prospecting_country?: string | null
+          prospecting_industry?: string | null
+          prospecting_job_title?: string | null
           reply_delay_minutes?: number | null
           signature?: string | null
           tone?: string | null
