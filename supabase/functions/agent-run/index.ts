@@ -266,7 +266,7 @@ serve(async (req) => {
                 .from("sent_emails")
                 .select("id")
                 .eq("user_id", user.id)
-                .ilike("recipient_email", to)
+                .ilike("to_email", to)
                 .limit(1)
                 .maybeSingle();
               if (alreadySent) {
