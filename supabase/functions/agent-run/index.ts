@@ -753,6 +753,33 @@ Output ONLY the reply body. No subject line or signature.`;
             meetingReply = await callGemini(meetingPrompt, meetingSystemPrompt);
           }
 
+          if (approvalMode) {
+            await queueApproval({
+              kind: "reply",
+              sent_email_id: reply.sentEmailId,
+              integration_row_id: googleIntegrationId,
+              prospect_email: reply.fromEmail,
+              subject: `Re: ${reply.subject}`,
+              body: meetingReply,
+              classification: "meeting_request",
+              reasoning,
+              metadata: { phase: "reply", gmail_message_id: reply.gmailMessageId, confidence },
+            });
+            await adminClient.from("agent_actions").insert({
+              user_id: user.id,
+              sent_email_id: reply.sentEmailId,
+              action_type: "awaiting_approval",
+              status: "pending",
+              prospect_email: reply.fromEmail,
+              subject: reply.subject,
+              classification: "meeting_request",
+              reply_content: meetingReply,
+              description: `${reply.fromEmail} asked to meet — drafted a scheduling reply for your approval`,
+              metadata: { phase: "reply", confidence },
+            });
+            continue;
+          }
+
           if (googleIntegrationId) {
             await adminClient.functions.invoke("send-email", {
               body: {
