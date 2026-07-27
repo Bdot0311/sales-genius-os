@@ -20,6 +20,8 @@ import {
   AlertCircle,
   Lock,
   Zap,
+  Users,
+  Send,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useSubscription } from "@/hooks/use-subscription";
@@ -41,6 +43,14 @@ export interface AgentConfig {
   can_reply_interested: boolean | null;
   can_handle_objections: boolean | null;
   can_book_meetings: boolean | null;
+  can_find_leads: boolean | null;
+  can_send_outreach: boolean | null;
+  prospecting_job_title: string | null;
+  prospecting_industry: string | null;
+  prospecting_country: string | null;
+  prospecting_company_size: string | null;
+  daily_lead_target: number | null;
+  max_daily_new_emails: number | null;
   calendly_url: string | null;
   max_daily_auto_replies: number | null;
   reply_delay_minutes: number | null;
@@ -59,6 +69,8 @@ export interface AgentAction {
 
 interface AgentStats {
   activeThreads: number;
+  leadsToday: number;
+  outreachToday: number;
   repliesToday: number;
   meetingsBooked: number;
   lastRun: string | null;
@@ -71,6 +83,8 @@ const Agent = () => {
   const [actions, setActions] = useState<AgentAction[]>([]);
   const [stats, setStats] = useState<AgentStats>({
     activeThreads: 0,
+    leadsToday: 0,
+    outreachToday: 0,
     repliesToday: 0,
     meetingsBooked: 0,
     lastRun: null,
@@ -130,6 +144,14 @@ const Agent = () => {
       // Derive stats from actions
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+      const leadsToday = fetchedActions.filter(
+        (a) =>
+          a.action_type === "lead_found" && new Date(a.created_at) >= today
+      ).length;
+      const outreachToday = fetchedActions.filter(
+        (a) =>
+          a.action_type === "outreach_sent" && new Date(a.created_at) >= today
+      ).length;
       const repliesToday = fetchedActions.filter(
         (a) =>
           a.action_type === "reply_sent" && new Date(a.created_at) >= today
@@ -151,6 +173,8 @@ const Agent = () => {
 
       setStats({
         activeThreads: threadCount ?? 0,
+        leadsToday,
+        outreachToday,
         repliesToday,
         meetingsBooked,
         lastRun: lastRunAction?.created_at ?? null,
@@ -173,13 +197,15 @@ const Agent = () => {
       const { data, error } = await supabase.functions.invoke("agent-run");
       if (error) throw error;
       const result = data as {
+        leadsFound?: number;
+        outreachSent?: number;
         repliesSent?: number;
         threadsChecked?: number;
       } | null;
       toast.success(
-        `Agent ran: ${result?.repliesSent ?? 0} replies sent, ${
-          result?.threadsChecked ?? 0
-        } threads checked`
+        `Agent ran: ${result?.leadsFound ?? 0} leads found, ${
+          result?.outreachSent ?? 0
+        } emails sent, ${result?.repliesSent ?? 0} replies sent`
       );
       await loadData();
     } catch (err) {
@@ -220,6 +246,20 @@ const Agent = () => {
   const isEnabled = config?.enabled ?? false;
 
   const statCards = [
+    {
+      label: "Leads Found Today",
+      value: stats.leadsToday,
+      icon: Users,
+      color: "text-cyan-400",
+      bg: "bg-cyan-500/10",
+    },
+    {
+      label: "Emails Sent Today",
+      value: stats.outreachToday,
+      icon: Send,
+      color: "text-indigo-400",
+      bg: "bg-indigo-500/10",
+    },
     {
       label: "Active Threads",
       value: stats.activeThreads,
@@ -262,7 +302,7 @@ const Agent = () => {
       <DashboardLayout>
         <PageHeader
           title="AI Sales Agent"
-          description="Autonomous email reply management and prospect engagement"
+          description="Finds leads, writes and sends first-touch outreach, then handles replies — end to end"
         />
         <div className="mt-12 flex flex-col items-center text-center max-w-lg mx-auto gap-6">
           <div className="p-4 rounded-full bg-primary/10">
@@ -272,14 +312,14 @@ const Agent = () => {
             <h2 className="text-xl font-bold mb-2">AI SDR requires Growth or higher</h2>
             <p className="text-sm text-muted-foreground">
               The AI Sales Agent is available on <strong>Growth</strong>, <strong>Pro</strong>, and <strong>Agency</strong> plans.
-              Upgrade to put a fully autonomous SDR to work on your inbox.
+              Upgrade to put a fully autonomous SDR to work — sourcing leads, sending outreach, and handling replies.
             </p>
           </div>
           <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-3 text-left">
             {[
-              { tier: "Growth", desc: "Monitor inbox, reply to interested prospects, 10 replies/day" },
-              { tier: "Pro", desc: "Objection handling, meeting booking, 50 replies/day, deliverability check" },
-              { tier: "Elite", desc: "All features, 200 replies/day, priority processing — Agency plan" },
+              { tier: "Growth", desc: "Lead sourcing, first-touch outreach, inbox monitoring, 10 auto-replies/day" },
+              { tier: "Pro", desc: "Full cycle: sourcing, sending, objection handling, meeting booking, 50 auto-replies/day" },
+              { tier: "Elite", desc: "Full cycle at scale, 200 auto-replies/day, priority processing — Agency plan" },
             ].map((t) => (
               <div key={t.tier} className="p-4 rounded-xl border border-border/60 bg-card/60">
                 <p className="text-sm font-semibold mb-1">{t.tier} Agent</p>
@@ -300,7 +340,7 @@ const Agent = () => {
     <DashboardLayout>
       <PageHeader
         title="AI Sales Agent"
-        description="Autonomous email reply management and prospect engagement"
+        description="Finds leads, writes and sends first-touch outreach, then handles replies — end to end"
         actions={
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
@@ -366,8 +406,8 @@ const Agent = () => {
 
         {/* Stats row */}
         {loading ? (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {Array.from({ length: 4 }).map((_, i) => (
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
               <Card key={i} className="p-5">
                 <div className="space-y-2">
                   <div className="h-3 bg-muted animate-pulse rounded w-2/3" />
@@ -377,7 +417,7 @@ const Agent = () => {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
             {statCards.map((card) => (
               <Card key={card.label} className="p-5">
                 <div className="flex items-start justify-between">

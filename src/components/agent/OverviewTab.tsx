@@ -1,4 +1,4 @@
-import { Mail, Calendar, XCircle, X, RefreshCw, AlertTriangle, Brain, CheckCircle2, XCircle as XCircleIcon } from "lucide-react";
+import { Mail, Calendar, XCircle, X, RefreshCw, AlertTriangle, Brain, CheckCircle2, XCircle as XCircleIcon, UserPlus, Send } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDistanceToNow } from "date-fns";
@@ -24,6 +24,8 @@ interface OverviewTabProps {
 }
 
 const ACTION_ICONS: Record<string, { icon: React.ReactNode; label: string }> = {
+  lead_found: { icon: <UserPlus className="w-4 h-4 text-cyan-400" />, label: "Lead Found" },
+  outreach_sent: { icon: <Send className="w-4 h-4 text-indigo-400" />, label: "Outreach Sent" },
   reply_sent: { icon: <Mail className="w-4 h-4 text-blue-400" />, label: "Reply Sent" },
   meeting_booked: { icon: <Calendar className="w-4 h-4 text-green-400" />, label: "Meeting Booked" },
   unsubscribed: { icon: <XCircle className="w-4 h-4 text-red-400" />, label: "Unsubscribed" },

@@ -100,7 +100,7 @@ const paidPlans: PaidPlan[] = [
       "ICP lookalike discovery",
       "AI personalized outreach",
       "Priority support",
-      "🤖 Growth Agent — 10 AI SDR replies/day",
+      "🤖 Growth Agent — finds leads, sends first-touch, 10 auto-replies/day",
     ],
     highlighted: true,
     monthlyPriceId: STRIPE_PRICE_IDS.growth_monthly,
@@ -125,7 +125,7 @@ const paidPlans: PaidPlan[] = [
       "CRM integrations",
       "Team collaboration",
       "Premium support",
-      "🤖 Pro Agent — 50 AI SDR replies/day + objections + meetings",
+      "🤖 Pro Agent — full cycle: sourcing, sending, objections, meetings, 50 auto-replies/day",
     ],
     monthlyPriceId: STRIPE_PRICE_IDS.pro_monthly,
     yearlyPriceId: STRIPE_PRICE_IDS.pro_yearly,
@@ -150,7 +150,7 @@ const paidPlans: PaidPlan[] = [
       "Referral & reseller program",
       "Priority API access",
       "Dedicated account support",
-      "🤖 Elite Agent — 200 AI SDR replies/day, fully autonomous",
+      "🤖 Elite Agent — full cycle at scale, 200 auto-replies/day, fully autonomous",
     ],
     monthlyPriceId: STRIPE_PRICE_IDS.agency_monthly,
     yearlyPriceId: STRIPE_PRICE_IDS.agency_yearly,
@@ -225,6 +225,8 @@ const comparisonCategories = [
       { name: "Agent tier", free: "—", starter: "—", growth: "Growth", pro: "Pro", agency: "Elite" },
       { name: "Daily autonomous replies", free: "—", starter: "—", growth: "10/day", pro: "50/day", agency: "200/day" },
       { name: "Minimum reply delay", free: "—", starter: "—", growth: "30 min", pro: "10 min", agency: "5 min" },
+      { name: "Autonomous lead sourcing", free: false, starter: false, growth: true, pro: true, agency: true },
+      { name: "Sends first-touch outreach", free: false, starter: false, growth: true, pro: true, agency: true },
       { name: "Reply to interested prospects", free: false, starter: false, growth: true, pro: true, agency: true },
       { name: "Deliverability check on replies", free: false, starter: false, growth: true, pro: true, agency: true },
       { name: "Auto handle objections", free: false, starter: false, growth: false, pro: true, agency: true },
@@ -254,8 +256,8 @@ const creditFAQs = [
   { question: "Do unused credits roll over?", answer: "On monthly plans, Starter credits reset each cycle while Growth and Pro credits roll over to the next month. On yearly plans, you receive your full annual pool upfront." },
   { question: "Can I upgrade, downgrade, or cancel anytime?", answer: "Yes. Upgrades happen instantly with your new allocation. Downgrades and cancellations apply at the end of your billing cycle." },
   { question: "Is there a money-back guarantee?", answer: "Yes, we offer a 30-day money-back guarantee on all paid plans. If you're not satisfied, contact support for a full refund." },
-  { question: "What is the AI SDR Agent?", answer: "The AI SDR Agent is an autonomous sales rep built into OutReign. It monitors your Gmail threads, classifies prospect replies (interested, objection, meeting request, etc.), and automatically sends replies in your voice. Available on Growth, Pro, and Agency plans with increasing daily reply limits and capabilities." },
-  { question: "What's the difference between Growth, Pro, and Elite Agent?", answer: "Growth Agent (10 replies/day) auto-replies to interested prospects only. Pro Agent (50 replies/day) adds objection handling and automatic meeting booking via Calendly. Elite Agent on Agency (200 replies/day) is the full package — fully autonomous with all capabilities and the shortest reply delay (5 min)." },
+  { question: "What is the AI SDR Agent?", answer: "The AI SDR Agent is an autonomous sales rep built into OutReign. It sources leads that match your ICP, writes and sends the first-touch email from your Gmail, then monitors threads, classifies prospect replies (interested, objection, meeting request, etc.), and replies in your voice. Available on Growth, Pro, and Agency plans with increasing daily reply limits and capabilities." },
+  { question: "What's the difference between Growth, Pro, and Elite Agent?", answer: "Growth Agent (10 auto-replies/day) sources leads, sends first-touch outreach, and auto-replies to interested prospects. Pro Agent (50 replies/day) adds objection handling and automatic meeting booking via Calendly. Elite Agent on Agency (200 replies/day) is the full package — fully autonomous with all capabilities and the shortest reply delay (5 min)." },
   { question: "Does the AI SDR Agent pass a spam/deliverability check?", answer: "Yes. Every reply the agent generates is scanned for spam trigger words before it's sent. If a reply fails the check, it's blocked and logged — your sender reputation is never put at risk by the agent." },
 ];
 
@@ -369,10 +371,10 @@ export const Pricing = () => {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold" style={{ color: "hsl(0 0% 92%)" }}>
-              NEW — AI SDR Agent included on Growth, Pro & Agency
+              NEW — Full-cycle AI SDR included on Growth, Pro & Agency
             </p>
             <p className="text-xs mt-0.5" style={{ color: "hsl(0 0% 100% / 0.5)" }}>
-              Your AI sales rep monitors Gmail threads, classifies replies, handles objections, and books meetings — autonomously.
+              Your AI sales rep finds leads, writes and sends the first email, then handles replies, objections, and meeting booking — autonomously.
             </p>
           </div>
           <div className="hidden sm:flex gap-2 flex-shrink-0">
