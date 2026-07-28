@@ -71,8 +71,11 @@ const AgentChat = () => {
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [autonomy, setAutonomy] = useState<"approval" | "autonomous">("approval");
+  const [approvalStatus, setApprovalStatus] = useState<Record<string, string>>({});
+  const [resolving, setResolving] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
 
   const loadThreads = useCallback(async () => {
     const { data } = await supabase
