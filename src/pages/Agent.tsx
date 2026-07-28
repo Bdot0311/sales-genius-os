@@ -27,7 +27,6 @@ import { OverviewTab } from "@/components/agent/OverviewTab";
 import { InboxTab } from "@/components/agent/InboxTab";
 import { ConfigTab } from "@/components/agent/ConfigTab";
 import { SettingsTab } from "@/components/agent/SettingsTab";
-import { ApprovalsTab } from "@/components/agent/ApprovalsTab";
 import { AgentTestDialog } from "@/components/agent/AgentTestDialog";
 
 
@@ -448,17 +447,6 @@ const Agent = () => {
         <Tabs defaultValue="overview" className="space-y-4">
           <TabsList className="bg-muted/40 border border-border/60">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="approvals" className="gap-2">
-              Approvals
-              {pendingCount > 0 && (
-                <Badge
-                  variant="outline"
-                  className="px-1.5 py-0 text-[10px] bg-amber-500/15 text-amber-400 border-amber-500/30"
-                >
-                  {pendingCount}
-                </Badge>
-              )}
-            </TabsTrigger>
             <TabsTrigger value="inbox">Inbox</TabsTrigger>
             <TabsTrigger value="configuration">Configuration</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
@@ -471,10 +459,6 @@ const Agent = () => {
               config={config}
               gmailConnected={gmailConnected}
             />
-          </TabsContent>
-
-          <TabsContent value="approvals">
-            <ApprovalsTab onChanged={loadData} />
           </TabsContent>
 
 
