@@ -11,8 +11,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
   Bot,
-  Loader2,
-  Play,
   MessageSquare,
   CalendarCheck,
   Activity,
@@ -31,13 +29,6 @@ import { ConfigTab } from "@/components/agent/ConfigTab";
 import { SettingsTab } from "@/components/agent/SettingsTab";
 import { ApprovalsTab } from "@/components/agent/ApprovalsTab";
 import { AgentTestDialog } from "@/components/agent/AgentTestDialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 
 export interface AgentConfig {
@@ -104,11 +95,9 @@ const Agent = () => {
   });
   const [loading, setLoading] = useState(true);
   const [actionsLoading, setActionsLoading] = useState(true);
-  const [running, setRunning] = useState(false);
   const [toggling, setToggling] = useState(false);
   const [gmailConnected, setGmailConnected] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [runMode, setRunMode] = useState<"approval" | "autonomous">("approval");
   const [pendingCount, setPendingCount] = useState(0);
 
 
@@ -128,9 +117,6 @@ const Agent = () => {
         .eq("user_id", uid)
         .maybeSingle();
       setConfig(configData ?? null);
-      if (configData) {
-        setRunMode(configData.approval_mode === false ? "autonomous" : "approval");
-      }
 
       // Load Gmail integrations (users may have more than one Google mailbox).
       // Only read client-visible columns; token/config fields are intentionally hidden.
@@ -217,35 +203,6 @@ const Agent = () => {
     loadData();
   }, [loadData]);
 
-  const handleRunAgent = async () => {
-    setRunning(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("agent-run", {
-        body: { mode: runMode },
-      });
-      if (error) throw error;
-      const result = data as {
-        summary?: string;
-        leadsFound?: number;
-        outreachSent?: number;
-        pendingApprovals?: number;
-        repliesSent?: number;
-        threadsChecked?: number;
-      } | null;
-      toast.success(
-        result?.summary ??
-          `Agent ran: ${result?.leadsFound ?? 0} leads found, ${
-            result?.outreachSent ?? 0
-          } emails sent, ${result?.repliesSent ?? 0} replies sent`
-      );
-      await loadData();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error";
-      toast.error(`Agent run failed: ${message}`);
-    } finally {
-      setRunning(false);
-    }
-  };
 
 
   const handleToggle = async () => {
@@ -395,30 +352,6 @@ const Agent = () => {
               Chat with agent
             </Button>
             <AgentTestDialog disabled={loading} />
-            <Select
-              value={runMode}
-              onValueChange={(v) => setRunMode(v as "approval" | "autonomous")}
-            >
-              <SelectTrigger className="w-[190px]" aria-label="Run mode">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="approval">Approval mode</SelectItem>
-                <SelectItem value="autonomous">Autonomous</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button
-              onClick={handleRunAgent}
-              disabled={running || loading}
-              className="gap-2"
-            >
-              {running ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Play className="w-4 h-4" />
-              )}
-              {running ? "Running…" : "Run Agent Now"}
-            </Button>
           </div>
         }
       />
