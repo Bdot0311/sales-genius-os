@@ -450,8 +450,15 @@ ${PLAYBOOK_SYSTEM_RULES}`;
                   company_name: lead.company_name ?? null,
                   subject,
                   body,
-                  reasoning: `Drafted first-touch email for ${lead.job_title ?? "contact"} at ${lead.company_name ?? "their company"}.`,
-                  metadata: { phase: "outreach", job_title: lead.job_title ?? null, sender_email: senderEmail },
+                  reasoning: `Touch 1 of 4 (Cold Email Engine playbook) for ${lead.job_title ?? "contact"} at ${lead.company_name ?? "their company"}. Touches 2-4 (day 3, 7, 14) are scheduled automatically once this is approved.`,
+                  metadata: {
+                    phase: "outreach",
+                    job_title: lead.job_title ?? null,
+                    sender_email: senderEmail,
+                    playbook: "cold_email_engine_4_touch",
+                    follow_up_touches: touches.slice(1, 4),
+                  },
+
                 });
                 if (!queued) {
                   await adminClient.from("agent_actions").insert({
