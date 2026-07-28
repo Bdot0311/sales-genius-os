@@ -29,6 +29,8 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
+import { ChatDraftCard, type ChatDraft } from "@/components/agent/ChatDraftCard";
+
 
 interface Thread {
   id: string;
@@ -45,7 +47,9 @@ interface ToolEvent {
   approval_id?: string;
   approval_kind?: string;
   approval_summary?: string;
+  drafts?: ChatDraft[];
 }
+
 
 interface ChatMessage {
   id: string;
@@ -407,6 +411,18 @@ const AgentChat = () => {
                           ))}
                       </div>
                     )}
+
+                    {!!(m.tool_events ?? []).some((e) => e.drafts?.length) && (
+                      <div className="space-y-2">
+                        {(m.tool_events ?? [])
+                          .flatMap((e) => e.drafts ?? [])
+                          .map((d) => (
+                            <ChatDraftCard key={d.draft_id} draft={d} />
+                          ))}
+                      </div>
+                    )}
+
+
 
                     {(m.tool_events ?? [])
                       .filter((e) => e.approval_id)
