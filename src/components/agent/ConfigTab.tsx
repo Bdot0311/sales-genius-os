@@ -254,13 +254,51 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
           {canFindLeads && (
             <>
             <ProspectingSourceHelper
-              onApply={(t) => {
+              currentSnapshot={icpSnapshot}
+              onApply={(t, snapshot) => {
                 if (t.jobTitle) setProspectJobTitle(t.jobTitle);
                 if (t.industry) setProspectIndustry(t.industry);
                 if (t.country) setProspectCountry(t.country);
                 if (t.companySize) setProspectCompanySize(t.companySize);
+                setIcpSnapshot(snapshot);
+                setIcpProfileId(snapshot.profile_id);
               }}
             />
+            {icpSnapshot && (
+              <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium">
+                    ICP linked: {icpSnapshot.name}
+                    {config?.icp_snapshot ? "" : " (unsaved — hit Save)"}
+                  </p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setIcpSnapshot(null);
+                      setIcpProfileId(null);
+                    }}
+                  >
+                    Unlink
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {[
+                    icpSnapshot.target_titles.length ? `${icpSnapshot.target_titles.length} titles` : null,
+                    icpSnapshot.industries.length ? `${icpSnapshot.industries.length} industries` : null,
+                    icpSnapshot.pain_points.length ? `${icpSnapshot.pain_points.length} pain points` : null,
+                    icpSnapshot.buying_signals.length ? `${icpSnapshot.buying_signals.length} buying signals` : null,
+                    icpSnapshot.exclude_titles.length || icpSnapshot.exclude_industries.length
+                      ? "exclusions"
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ") || "Full profile stored"}
+                  {" — the agent uses this full context on every run."}
+                </p>
+              </div>
+            )}
+
             <div className="grid gap-4 sm:grid-cols-2 pt-1">
 
               <div className="space-y-1.5">
