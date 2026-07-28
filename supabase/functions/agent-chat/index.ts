@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { COLD_EMAIL_RULES } from "../_shared/cold-email-playbook.ts";
+import { PLAYBOOK_SYSTEM_RULES } from "../_shared/cold-email-playbook.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -480,7 +480,7 @@ serve(async (req) => {
 
         case "list_sequences": {
           const { data } = await admin
-            .from("sequences")
+            .from("email_sequences")
             .select("id, name, status")
             .eq("user_id", userId)
             .limit(50);
@@ -634,7 +634,7 @@ This conversation is in ${autonomous ? "FULL AUTONOMY mode: sending, enrolling a
 ${autonomous ? "" : "If the user asks you to just get on with it without approving each step, tell them they can switch this conversation to full autonomy with the mode selector at the top of the chat."}
 
 COLD EMAIL RULES (apply to every draft you write or review)
-${COLD_EMAIL_RULES}
+${PLAYBOOK_SYSTEM_RULES}
 
 Company context: ${config?.company_context ?? "not set"}
 Value props: ${(config?.value_props ?? []).join("; ") || "not set"}`;
