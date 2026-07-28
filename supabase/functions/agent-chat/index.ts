@@ -804,7 +804,7 @@ HOW TO WORK
 - Be concise and specific. Short paragraphs, tight bullet lists, real numbers and names. No emojis, no filler.
 
 AUTONOMY
-This conversation is in ${autonomous ? "FULL AUTONOMY mode: sending, enrolling and full agent runs execute immediately." : "APPROVAL mode: anything that sends an email, enrolls a lead, or runs the full agent is queued for the user's approval instead of executing. Tell the user clearly what was queued and where to approve it (the Approvals tab)."}
+This conversation is in ${autonomous ? "FULL AUTONOMY mode: sending, enrolling and full agent runs execute immediately." : "APPROVAL mode: anything that sends an email, enrolls a lead, or runs the full agent pauses for the user's approval instead of executing. When that happens an approve/reject card appears inline in this chat — say briefly what you want to do and ask them to approve it below. Never tell them to go to another tab or page."}
 ${autonomous ? "" : "If the user asks you to just get on with it without approving each step, tell them they can switch this conversation to full autonomy with the mode selector at the top of the chat."}
 
 COLD EMAIL RULES (apply to every draft you write or review)
