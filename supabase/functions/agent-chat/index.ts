@@ -542,10 +542,43 @@ serve(async (req) => {
                 tone: config?.tone ?? "professional",
               });
             }
+            const raw: string = typeof r?.email === "string" ? r.email : "";
+            let subject = "";
+            let body = raw;
+            const subjMatch = raw.match(/^\s*subject\s*:\s*(.+)\s*(?:\n|$)/i);
+            if (subjMatch) {
+              subject = subjMatch[1].trim();
+              body = raw.slice(subjMatch[0].length).trim();
+            }
+            if (!subject) {
+              subject = `Quick question${lead.company_name ? ` — ${lead.company_name}` : ""}`;
+            }
+
+            let draftId: string | null = null;
+            if (raw) {
+              const { data: savedDraft } = await admin
+                .from("email_drafts")
+                .insert({
+                  user_id: userId,
+                  lead_id: lead.id,
+                  subject,
+                  body,
+                  tone: config?.tone ?? "professional",
+                  trigger_context: `AI SDR chat — ${goal}`,
+                })
+                .select("id")
+                .single();
+              draftId = savedDraft?.id ?? null;
+            }
+
             drafts.push({
               lead_id: id,
+              draft_id: draftId,
               company: lead.company_name ?? null,
               contact: lead.contact_name ?? null,
+              contact_email: lead.contact_email ?? null,
+              subject: raw ? subject : null,
+              body: raw ? body : null,
               email: r?.email ?? null,
               error: r?.email ? undefined : (r?.error ?? "Draft failed"),
             });
@@ -561,9 +594,26 @@ serve(async (req) => {
               ids.length === 1
                 ? (drafts[0]?.company ?? "lead")
                 : `${okCount}/${ids.length} drafted`,
+            drafts: drafts
+              .filter((d) => d.draft_id && d.body)
+              .map((d) => ({
+                draft_id: d.draft_id as string,
+                lead_id: d.lead_id,
+                company: d.company,
+                contact: d.contact,
+                contact_email: d.contact_email,
+                subject: d.subject as string,
+                body: d.body as string,
+              })),
           });
-          return { goal, drafts };
+          return {
+            goal,
+            note:
+              "Drafts are saved and shown to the user in the chat with Send / Schedule controls. Do NOT call send_outreach for these unless the user explicitly asks you to send.",
+            drafts: drafts.map(({ body: _b, ...rest }) => rest),
+          };
         }
+
 
         case "draft_sequence": {
           const lead = await loadLead(String(args.lead_id ?? ""));
