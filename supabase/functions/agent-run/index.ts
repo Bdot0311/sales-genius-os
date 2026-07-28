@@ -958,14 +958,21 @@ Output ONLY the reply body. No subject line or signature.`;
       }
     }
 
+    const runSummary = approvalMode
+      ? `Run finished in approval mode — ${leadsFound} lead(s) found, ${threadsChecked} thread(s) checked, ${pendingApprovals} draft(s) waiting for your approval.`
+      : `Run finished autonomously — ${leadsFound} lead(s) found, ${outreachSent} first-touch email(s) sent, ${threadsChecked} thread(s) checked, ${repliesSent} reply(ies) sent.`;
+
     await adminClient.from("agent_actions").insert({
       user_id: user.id,
       action_type: "sync",
       status: "completed",
+      description: runSummary,
       metadata: {
+        mode: approvalMode ? "approval" : "autonomous",
         threads_checked: threadsChecked,
         leads_found: leadsFound,
         outreach_sent: outreachSent,
+        pending_approvals: pendingApprovals,
         replies_processed: repliesProcessed,
         replies_sent: repliesSent,
         meetings_booked: meetingsBooked,
@@ -977,9 +984,12 @@ Output ONLY the reply body. No subject line or signature.`;
     return new Response(
       JSON.stringify({
         success: true,
+        mode: approvalMode ? "approval" : "autonomous",
+        summary: runSummary,
         threadsChecked,
         leadsFound,
         outreachSent,
+        pendingApprovals,
         repliesProcessed,
         repliesSent,
         meetingsBooked,
