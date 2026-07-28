@@ -29,7 +29,16 @@ import { OverviewTab } from "@/components/agent/OverviewTab";
 import { InboxTab } from "@/components/agent/InboxTab";
 import { ConfigTab } from "@/components/agent/ConfigTab";
 import { SettingsTab } from "@/components/agent/SettingsTab";
+import { ApprovalsTab } from "@/components/agent/ApprovalsTab";
 import { AgentTestDialog } from "@/components/agent/AgentTestDialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 
 export interface AgentConfig {
   id: string;
