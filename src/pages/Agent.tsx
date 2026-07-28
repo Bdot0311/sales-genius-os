@@ -381,6 +381,18 @@ const Agent = () => {
               </span>
             </div>
             <AgentTestDialog disabled={loading} />
+            <Select
+              value={runMode}
+              onValueChange={(v) => setRunMode(v as "approval" | "autonomous")}
+            >
+              <SelectTrigger className="w-[190px]" aria-label="Run mode">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="approval">Approval mode</SelectItem>
+                <SelectItem value="autonomous">Autonomous</SelectItem>
+              </SelectContent>
+            </Select>
             <Button
               onClick={handleRunAgent}
               disabled={running || loading}
