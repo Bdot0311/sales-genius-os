@@ -1,0 +1,418 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import ReactMarkdown from "react-markdown";
+import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import {
+  Bot,
+  Plus,
+  SendHorizonal,
+  Loader2,
+  Trash2,
+  CheckCircle2,
+  AlertTriangle,
+  Clock,
+  ArrowLeft,
+} from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { cn } from "@/lib/utils";
+
+interface Thread {
+  id: string;
+  title: string;
+  autonomy: "approval" | "autonomous";
+  updated_at: string;
+}
+
+interface ToolEvent {
+  name: string;
+  label: string;
+  status: "ok" | "error" | "queued";
+  detail: string;
+}
+
+interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  tool_events: ToolEvent[] | null;
+  created_at: string;
+}
+
+const SUGGESTIONS = [
+  "Take my newest leads, enrich and score them, then draft first-touch emails",
+  "Which of my leads are worth contacting this week and why?",
+  "Draft a 4-touch sequence for my highest ICP score lead",
+  "Check my recent replies and tell me who needs a response",
+];
+
+const AgentChat = () => {
+  const navigate = useNavigate();
+  const { threadId } = useParams<{ threadId: string }>();
+  const [threads, setThreads] = useState<Thread[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [autonomy, setAutonomy] = useState<"approval" | "autonomous">("approval");
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const loadThreads = useCallback(async () => {
+    const { data } = await supabase
+      .from("agent_chat_threads")
+      .select("id, title, autonomy, updated_at")
+      .order("updated_at", { ascending: false })
+      .limit(50);
+    const list = (data ?? []) as Thread[];
+    setThreads(list);
+    return list;
+  }, []);
+
+  const createThread = useCallback(async () => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session?.user) {
+      navigate("/auth");
+      return null;
+    }
+    const { data, error } = await supabase
+      .from("agent_chat_threads")
+      .insert({ user_id: session.user.id })
+      .select("id, title, autonomy, updated_at")
+      .single();
+    if (error) {
+      toast.error("Could not start a conversation");
+      return null;
+    }
+    setThreads((prev) => [data as Thread, ...prev]);
+    return data as Thread;
+  }, [navigate]);
+
+  // Bootstrap: pick or create the active thread and route to it.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      const list = await loadThreads();
+      if (cancelled) return;
+      if (!threadId) {
+        const target = list[0] ?? (await createThread());
+        if (target && !cancelled) navigate(`/dashboard/agent/chat/${target.id}`, { replace: true });
+        setLoading(false);
+        return;
+      }
+      const { data: thread } = await supabase
+        .from("agent_chat_threads")
+        .select("id, title, autonomy, updated_at")
+        .eq("id", threadId)
+        .maybeSingle();
+      if (cancelled) return;
+      if (!thread) {
+        navigate("/dashboard/agent/chat", { replace: true });
+        return;
+      }
+      setAutonomy((thread as Thread).autonomy);
+      const { data: msgs } = await supabase
+        .from("agent_chat_messages")
+        .select("id, role, content, tool_events, created_at")
+        .eq("thread_id", threadId)
+        .order("created_at", { ascending: true });
+      if (cancelled) return;
+      setMessages((msgs ?? []) as unknown as ChatMessage[]);
+      setLoading(false);
+      inputRef.current?.focus();
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [threadId, loadThreads, createThread, navigate]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, sending]);
+
+  const handleNewThread = async () => {
+    const t = await createThread();
+    if (t) navigate(`/dashboard/agent/chat/${t.id}`);
+  };
+
+  const handleDeleteThread = async (id: string) => {
+    await supabase.from("agent_chat_threads").delete().eq("id", id);
+    const remaining = threads.filter((t) => t.id !== id);
+    setThreads(remaining);
+    if (id === threadId) {
+      if (remaining[0]) navigate(`/dashboard/agent/chat/${remaining[0].id}`, { replace: true });
+      else navigate("/dashboard/agent/chat", { replace: true });
+    }
+  };
+
+  const handleAutonomyChange = async (value: "approval" | "autonomous") => {
+    setAutonomy(value);
+    if (!threadId) return;
+    await supabase.from("agent_chat_threads").update({ autonomy: value }).eq("id", threadId);
+    toast.success(
+      value === "autonomous"
+        ? "Full autonomy on — the agent will send and enroll without asking"
+        : "Approval mode on — sends and enrollments go to Approvals first",
+    );
+  };
+
+  const handleSend = async (text?: string) => {
+    const content = (text ?? input).trim();
+    if (!content || !threadId || sending) return;
+    setInput("");
+    setSending(true);
+    const optimistic: ChatMessage = {
+      id: `local-${Date.now()}`,
+      role: "user",
+      content,
+      tool_events: null,
+      created_at: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, optimistic]);
+    try {
+      const { data, error } = await supabase.functions.invoke("agent-chat", {
+        body: { threadId, message: content },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      setMessages((prev) => [...prev, (data as any).message as ChatMessage]);
+      loadThreads();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast.error(`Agent error: ${message}`);
+      setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
+      setInput(content);
+    } finally {
+      setSending(false);
+      inputRef.current?.focus();
+    }
+  };
+
+  const statusIcon = (status: ToolEvent["status"]) =>
+    status === "ok" ? (
+      <CheckCircle2 className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />
+    ) : status === "queued" ? (
+      <Clock className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+    ) : (
+      <AlertTriangle className="w-3.5 h-3.5 text-red-400 flex-shrink-0" />
+    );
+
+  return (
+    <DashboardLayout>
+      <div className="flex flex-col lg:flex-row gap-4 h-[calc(100dvh-9rem)]">
+        {/* Threads */}
+        <Card className="lg:w-64 flex-shrink-0 p-3 flex flex-col gap-3 overflow-hidden">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/dashboard/agent")}
+              aria-label="Back to agent"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+            <Button className="flex-1 gap-2" size="sm" onClick={handleNewThread}>
+              <Plus className="w-4 h-4" />
+              New chat
+            </Button>
+          </div>
+          <ScrollArea className="flex-1 -mx-1">
+            <div className="px-1 space-y-1">
+              {threads.map((t) => (
+                <div
+                  key={t.id}
+                  className={cn(
+                    "group flex items-center gap-1 rounded-lg px-2 py-2 text-sm cursor-pointer transition-colors",
+                    t.id === threadId ? "bg-primary/15 text-foreground" : "hover:bg-muted/50",
+                  )}
+                >
+                  <button
+                    type="button"
+                    className="flex-1 min-w-0 text-left"
+                    onClick={() => navigate(`/dashboard/agent/chat/${t.id}`)}
+                  >
+                    <span className="block truncate">{t.title}</span>
+                    <span className="block text-[10px] text-muted-foreground">
+                      {formatDistanceToNow(new Date(t.updated_at), { addSuffix: true })}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Delete conversation"
+                    className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-400"
+                    onClick={() => handleDeleteThread(t.id)}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        </Card>
+
+        {/* Chat */}
+        <Card className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex items-center justify-between gap-3 border-b border-border/60 px-4 py-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="p-1.5 rounded-lg bg-primary/15">
+                <Bot className="w-4 h-4 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold truncate">Chat with your AI SDR</p>
+                <p className="text-xs text-muted-foreground truncate">
+                  It can enrich, score, draft, send and run full cycles on your leads
+                </p>
+              </div>
+            </div>
+            <Select value={autonomy} onValueChange={(v) => handleAutonomyChange(v as any)}>
+              <SelectTrigger className="w-[168px]" aria-label="Autonomy">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="approval">Ask before acting</SelectItem>
+                <SelectItem value="autonomous">Full autonomy</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <ScrollArea className="flex-1 px-4">
+            <div className="py-4 space-y-5 max-w-3xl mx-auto">
+              {loading && (
+                <div className="flex justify-center py-10">
+                  <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                </div>
+              )}
+
+              {!loading && messages.length === 0 && (
+                <div className="py-10 text-center space-y-5">
+                  <div className="inline-flex p-3 rounded-2xl bg-primary/10">
+                    <Bot className="w-7 h-7 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">Hand the work over</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Search leads however you like, then tell the agent to take it from there.
+                    </p>
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-2 text-left">
+                    {SUGGESTIONS.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => handleSend(s)}
+                        className="rounded-xl border border-border/60 bg-card/60 p-3 text-sm hover:border-primary/50 transition-colors"
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {messages.map((m) =>
+                m.role === "user" ? (
+                  <div key={m.id} className="flex justify-end">
+                    <div className="max-w-[85%] rounded-2xl rounded-br-sm bg-primary px-4 py-2.5 text-sm text-primary-foreground whitespace-pre-wrap">
+                      {m.content}
+                    </div>
+                  </div>
+                ) : (
+                  <div key={m.id} className="space-y-2">
+                    {!!m.tool_events?.length && (
+                      <div className="space-y-1">
+                        {m.tool_events.map((e, i) => (
+                          <div
+                            key={`${m.id}-${i}`}
+                            className="flex items-center gap-2 text-xs text-muted-foreground"
+                          >
+                            {statusIcon(e.status)}
+                            <span className="font-medium text-foreground/80">{e.label}</span>
+                            <span className="truncate">— {e.detail}</span>
+                            {e.status === "queued" && (
+                              <Badge
+                                variant="outline"
+                                className="ml-1 px-1.5 py-0 text-[10px] bg-amber-500/15 text-amber-400 border-amber-500/30"
+                              >
+                                needs approval
+                              </Badge>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="prose prose-sm prose-invert max-w-none text-sm leading-relaxed">
+                      <ReactMarkdown>{m.content}</ReactMarkdown>
+                    </div>
+                  </div>
+                ),
+              )}
+
+              {sending && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Working on it…
+                </div>
+              )}
+              <div ref={bottomRef} />
+            </div>
+          </ScrollArea>
+
+          <div className="border-t border-border/60 p-3">
+            <div className="max-w-3xl mx-auto flex items-end gap-2">
+              <Textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+                placeholder="e.g. Enrich the 12 leads I just saved, score them, and draft emails for anyone above 70"
+                rows={2}
+                className="resize-none"
+                disabled={sending || loading}
+              />
+              <Button
+                size="icon"
+                onClick={() => handleSend()}
+                disabled={sending || loading || !input.trim()}
+                aria-label="Send message"
+              >
+                {sending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <SendHorizonal className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
+            <p className="max-w-3xl mx-auto mt-2 text-[11px] text-muted-foreground">
+              {autonomy === "autonomous"
+                ? "Full autonomy: sends, enrollments and full runs execute immediately."
+                : "Approval mode: drafts are queued in the Approvals tab before anything is sent."}
+            </p>
+          </div>
+        </Card>
+      </div>
+    </DashboardLayout>
+  );
+};
+
+export default AgentChat;
