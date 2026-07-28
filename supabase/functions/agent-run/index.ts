@@ -544,6 +544,21 @@ Return JSON: { "classification": one of ["interested","objection","meeting_reque
           // classification stays "unknown"
         }
 
+        await adminClient.from("agent_actions").insert({
+          user_id: user.id,
+          sent_email_id: reply.sentEmailId,
+          action_type: "classify",
+          status: "completed",
+          prospect_email: reply.fromEmail,
+          subject: reply.subject,
+          classification,
+          description: `Read reply from ${reply.fromEmail} and classified it as "${classification}" (${Math.round(
+            (confidence ?? 0) * 100
+          )}% confidence)${reasoning ? ` — ${reasoning}` : ""}`,
+          metadata: { phase: "reply", confidence, reasoning },
+        });
+
+
         if (!reply.bodyText.trim()) {
           await adminClient.from("agent_actions").insert({
             user_id: user.id,
