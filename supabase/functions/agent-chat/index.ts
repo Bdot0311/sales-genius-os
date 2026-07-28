@@ -14,6 +14,16 @@ function json(body: unknown, status = 200) {
   });
 }
 
+type DraftPreview = {
+  draft_id: string;
+  lead_id: string;
+  company: string | null;
+  contact: string | null;
+  contact_email: string | null;
+  subject: string;
+  body: string;
+};
+
 type ToolEvent = {
   name: string;
   label: string;
@@ -22,7 +32,9 @@ type ToolEvent = {
   approval_id?: string;
   approval_kind?: string;
   approval_summary?: string;
+  drafts?: DraftPreview[];
 };
+
 
 const LEAD_FIELDS =
   "id, company_name, contact_name, contact_email, job_title, industry, company_website, linkedin_url, lead_status, icp_score, intent_score, intent_label, signal_score, signals, notes, last_contacted_at, created_at";
