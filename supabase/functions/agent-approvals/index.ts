@@ -134,12 +134,25 @@ serve(async (req) => {
         })
         .eq("id", id);
 
+      let followUpsScheduled = false;
       if (approval.kind === "outreach" && approval.lead_id) {
         await admin
           .from("leads")
           .update({ last_contacted_at: new Date().toISOString(), lead_status: "contacted" })
           .eq("id", approval.lead_id);
+
+        const followUps = (approval.metadata?.follow_up_touches ?? []) as Touch[];
+        if (Array.isArray(followUps) && followUps.length > 0) {
+          followUpsScheduled = await scheduleFollowUps(
+            admin,
+            user.id,
+            approval.lead_id,
+            approval.company_name ?? approval.prospect_name ?? to,
+            [{ day: 0, purpose: "signal opener", subject, body: messageBody }, ...followUps],
+          );
+        }
       }
+
 
       if (approval.kind === "reply" && approval.sent_email_id) {
         await admin
