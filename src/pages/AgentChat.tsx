@@ -393,26 +393,84 @@ const AgentChat = () => {
                   <div key={m.id} className="space-y-2">
                     {!!m.tool_events?.length && (
                       <div className="space-y-1">
-                        {m.tool_events.map((e, i) => (
+                        {m.tool_events
+                          .filter((e) => !e.approval_id)
+                          .map((e, i) => (
+                            <div
+                              key={`${m.id}-${i}`}
+                              className="flex items-center gap-2 text-xs text-muted-foreground"
+                            >
+                              {statusIcon(e.status)}
+                              <span className="font-medium text-foreground/80">{e.label}</span>
+                              <span className="truncate">— {e.detail}</span>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+
+                    {(m.tool_events ?? [])
+                      .filter((e) => e.approval_id)
+                      .map((e) => {
+                        const status = approvalStatus[e.approval_id!] ?? "pending";
+                        const pending = status === "pending";
+                        return (
                           <div
-                            key={`${m.id}-${i}`}
-                            className="flex items-center gap-2 text-xs text-muted-foreground"
+                            key={e.approval_id}
+                            className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 space-y-2"
                           >
-                            {statusIcon(e.status)}
-                            <span className="font-medium text-foreground/80">{e.label}</span>
-                            <span className="truncate">— {e.detail}</span>
-                            {e.status === "queued" && (
+                            <div className="flex items-center gap-2 text-xs">
+                              <Clock className="w-3.5 h-3.5 text-amber-400" />
+                              <span className="font-medium text-foreground">
+                                {pending ? "Approval needed" : "Approval request"}
+                              </span>
+                            </div>
+                            <p className="text-sm text-foreground/90">{e.detail}</p>
+                            {e.approval_summary && (
+                              <p className="text-xs text-muted-foreground whitespace-pre-wrap border-l-2 border-border/60 pl-2">
+                                {e.approval_summary}
+                              </p>
+                            )}
+                            {pending ? (
+                              <div className="flex gap-2 pt-1">
+                                <Button
+                                  size="sm"
+                                  className="gap-1.5"
+                                  disabled={resolving === e.approval_id}
+                                  onClick={() => handleApprovalDecision(e.approval_id!, "approve")}
+                                >
+                                  {resolving === e.approval_id ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  ) : (
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                  )}
+                                  Approve
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={resolving === e.approval_id}
+                                  onClick={() => handleApprovalDecision(e.approval_id!, "reject")}
+                                >
+                                  Reject
+                                </Button>
+                              </div>
+                            ) : (
                               <Badge
                                 variant="outline"
-                                className="ml-1 px-1.5 py-0 text-[10px] bg-amber-500/15 text-amber-400 border-amber-500/30"
+                                className={cn(
+                                  "px-1.5 py-0 text-[10px]",
+                                  status === "approved"
+                                    ? "bg-green-500/15 text-green-400 border-green-500/30"
+                                    : "bg-muted/40 text-muted-foreground border-border",
+                                )}
                               >
-                                needs approval
+                                {status === "approved" ? "Approved" : "Rejected"}
                               </Badge>
                             )}
                           </div>
-                        ))}
-                      </div>
-                    )}
+                        );
+                      })}
+
                     <div className="prose prose-sm prose-invert max-w-none text-sm leading-relaxed">
                       <ReactMarkdown>{m.content}</ReactMarkdown>
                     </div>
