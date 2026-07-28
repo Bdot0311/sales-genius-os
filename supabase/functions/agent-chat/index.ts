@@ -97,14 +97,23 @@ const TOOLS = [
     function: {
       name: "draft_outreach",
       description:
-        "Draft a first-touch cold email for a lead, following the OutReign cold email playbook. Returns subject and body. Does not send anything.",
+        "Draft first-touch cold emails following the OutReign cold email playbook. Pass lead_ids to draft for several leads in ONE call (preferred — never call this tool repeatedly in parallel). Does not send anything.",
       parameters: {
         type: "object",
         properties: {
-          lead_id: { type: "string" },
-          goal: { type: "string", description: "reply, meeting, case_study or info" },
+          lead_id: { type: "string", description: "Single lead id (use lead_ids for batches)" },
+          lead_ids: {
+            type: "array",
+            items: { type: "string" },
+            description: "Up to 20 lead ids to draft for in one call",
+          },
+          goal: {
+            type: "string",
+            enum: ["introduction", "follow-up", "meeting", "demo", "proposal"],
+            description: "Email goal. Use 'introduction' for first touches.",
+          },
         },
-        required: ["lead_id"],
+        required: [],
       },
     },
   },
