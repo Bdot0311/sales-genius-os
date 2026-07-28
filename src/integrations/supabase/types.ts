@@ -285,6 +285,8 @@ export type Database = {
           created_at: string | null
           daily_lead_target: number
           enabled: boolean | null
+          icp_profile_id: string | null
+          icp_snapshot: Json | null
           id: string
           max_daily_auto_replies: number | null
           max_daily_new_emails: number
@@ -314,6 +316,8 @@ export type Database = {
           created_at?: string | null
           daily_lead_target?: number
           enabled?: boolean | null
+          icp_profile_id?: string | null
+          icp_snapshot?: Json | null
           id?: string
           max_daily_auto_replies?: number | null
           max_daily_new_emails?: number
@@ -343,6 +347,8 @@ export type Database = {
           created_at?: string | null
           daily_lead_target?: number
           enabled?: boolean | null
+          icp_profile_id?: string | null
+          icp_snapshot?: Json | null
           id?: string
           max_daily_auto_replies?: number | null
           max_daily_new_emails?: number
@@ -359,7 +365,15 @@ export type Database = {
           user_id?: string
           value_props?: Json | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "agent_configs_icp_profile_id_fkey"
+            columns: ["icp_profile_id"]
+            isOneToOne: false
+            referencedRelation: "icp_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       alert_rules: {
         Row: {
