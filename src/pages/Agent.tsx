@@ -29,8 +29,6 @@ import { ConfigTab } from "@/components/agent/ConfigTab";
 import { SettingsTab } from "@/components/agent/SettingsTab";
 import { ApprovalsTab } from "@/components/agent/ApprovalsTab";
 import { AgentTestDialog } from "@/components/agent/AgentTestDialog";
-import {
-} from "@/components/ui/select";
 
 
 export interface AgentConfig {
