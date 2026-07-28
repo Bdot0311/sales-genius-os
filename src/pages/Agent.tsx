@@ -117,9 +117,6 @@ const Agent = () => {
         .eq("user_id", uid)
         .maybeSingle();
       setConfig(configData ?? null);
-      if (configData) {
-        setRunMode(configData.approval_mode === false ? "autonomous" : "approval");
-      }
 
       // Load Gmail integrations (users may have more than one Google mailbox).
       // Only read client-visible columns; token/config fields are intentionally hidden.
