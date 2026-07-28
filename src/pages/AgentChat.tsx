@@ -29,6 +29,8 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
+import { ChatDraftCard, type ChatDraft } from "@/components/agent/ChatDraftCard";
+
 
 interface Thread {
   id: string;
