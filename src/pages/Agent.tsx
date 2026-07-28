@@ -55,6 +55,7 @@ export interface AgentConfig {
   can_book_meetings: boolean | null;
   can_find_leads: boolean | null;
   can_send_outreach: boolean | null;
+  approval_mode: boolean | null;
   prospecting_job_title: string | null;
   prospecting_industry: string | null;
   prospecting_country: string | null;
@@ -125,6 +126,9 @@ const Agent = () => {
         .eq("user_id", uid)
         .maybeSingle();
       setConfig(configData ?? null);
+      if (configData) {
+        setRunMode(configData.approval_mode === false ? "autonomous" : "approval");
+      }
 
       // Load Gmail integrations (users may have more than one Google mailbox).
       // Only read client-visible columns; token/config fields are intentionally hidden.
