@@ -126,7 +126,7 @@ const TOOLS = [
     function: {
       name: "send_outreach",
       description:
-        "Send an email to a lead. In approval mode this queues the draft for the user to approve in the Approvals tab instead of sending.",
+        "Send an email to a lead. In approval mode this pauses and shows the user an approve/reject card inline in the chat instead of sending.",
       parameters: {
         type: "object",
         properties: {
