@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/accordion";
 import { Plus, Trash2, Loader2, Save } from "lucide-react";
 import type { AgentConfig } from "@/pages/Agent";
-import { ProspectingSourceHelper } from "@/components/agent/ProspectingSourceHelper";
+import { ProspectingSourceHelper, type ICPSnapshot } from "@/components/agent/ProspectingSourceHelper";
 
 
 interface ConfigTabProps {
