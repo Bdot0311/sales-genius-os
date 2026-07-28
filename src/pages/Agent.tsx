@@ -217,35 +217,6 @@ const Agent = () => {
     loadData();
   }, [loadData]);
 
-  const handleRunAgent = async () => {
-    setRunning(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("agent-run", {
-        body: { mode: runMode },
-      });
-      if (error) throw error;
-      const result = data as {
-        summary?: string;
-        leadsFound?: number;
-        outreachSent?: number;
-        pendingApprovals?: number;
-        repliesSent?: number;
-        threadsChecked?: number;
-      } | null;
-      toast.success(
-        result?.summary ??
-          `Agent ran: ${result?.leadsFound ?? 0} leads found, ${
-            result?.outreachSent ?? 0
-          } emails sent, ${result?.repliesSent ?? 0} replies sent`
-      );
-      await loadData();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error";
-      toast.error(`Agent run failed: ${message}`);
-    } finally {
-      setRunning(false);
-    }
-  };
 
 
   const handleToggle = async () => {
