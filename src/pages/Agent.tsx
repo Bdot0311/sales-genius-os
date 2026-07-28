@@ -105,6 +105,9 @@ const Agent = () => {
   const [toggling, setToggling] = useState(false);
   const [gmailConnected, setGmailConnected] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [runMode, setRunMode] = useState<"approval" | "autonomous">("approval");
+  const [pendingCount, setPendingCount] = useState(0);
+
 
   const loadData = useCallback(async () => {
     try {
