@@ -174,9 +174,10 @@ serve(async (req) => {
         classification: approval.classification ?? null,
         reply_content: messageBody,
         description: `You approved and sent a ${
-          approval.kind === "outreach" ? "first-touch email" : "reply"
-        } to ${to}`,
-        metadata: { approval_id: id, approved_by_human: true },
+          approval.kind === "outreach" ? "touch 1 of 4 email" : "reply"
+        } to ${to}${followUpsScheduled ? " — touches 2-4 scheduled for day 3, 7 and 14" : ""}`,
+        metadata: { approval_id: id, approved_by_human: true, follow_ups_scheduled: followUpsScheduled },
+
       });
 
       return json({ success: true, status: "sent" });
