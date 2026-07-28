@@ -977,28 +977,57 @@ serve(async (req) => {
       );
     }
 
-    // On 400, retry without location filter (common cause: unrecognised location string)
-    if (response.status === 400 && requestBody.location) {
-      console.warn('Railway returned 400 with location, retrying without location');
-      const retryBody = { ...requestBody };
-      delete retryBody.location;
-      try {
-        const retryRes = await fetch(railwayUrl, {
-          method: 'POST',
-          headers: railwayHeaders,
-          body: JSON.stringify(retryBody),
-        });
-        if (retryRes.ok) {
-          response = retryRes;
-        } else {
-          console.error('Railway retry also failed:', retryRes.status);
-          return new Response(
-            JSON.stringify({ leads: [], total: 0, success: true }),
-            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+    // On 400, progressively drop filters the provider doesn't support and retry.
+    // Common causes: unrecognised location string, unsupported industry / company_size filter field.
+    if (response.status === 400) {
+      const errBody = await response.text().catch(() => '');
+      console.warn('Railway returned 400, attempting filter-relaxation retries:', errBody.substring(0, 500));
+
+      const unsupported = /unsupported filter field/i.test(errBody);
+      const mentions = (field: string) => errBody.toLowerCase().includes(field);
+
+      // Build an ordered list of filter-drop attempts.
+      const dropPlans: string[][] = [];
+      if (unsupported) {
+        const offending: string[] = [];
+        if (mentions('industry') && requestBody.industry) offending.push('industry');
+        if ((mentions('employee_count') || mentions('company_size')) && requestBody.company_size) offending.push('company_size');
+        if (mentions('location') && requestBody.location) offending.push('location');
+        if (offending.length) dropPlans.push(offending);
+      }
+      if (requestBody.location) dropPlans.push(['location']);
+      if (requestBody.industry) dropPlans.push(['industry']);
+      if (requestBody.industry || requestBody.company_size || requestBody.location) {
+        dropPlans.push(['industry', 'company_size', 'location']);
+      }
+
+      let recovered = false;
+      for (const drops of dropPlans) {
+        const retryBody: Record<string, any> = { ...requestBody };
+        for (const key of drops) delete retryBody[key];
+        if (!retryBody.job_title && !retryBody.seniority && !retryBody.keywords && !retryBody.company && !retryBody.company_domain) {
+          retryBody.job_title = 'CEO';
         }
-      } catch (retryErr) {
-        console.error('Railway retry fetch failed:', retryErr);
+        console.log('Retrying Railway search without:', drops.join(', '));
+        try {
+          const retryRes = await fetch(railwayUrl, {
+            method: 'POST',
+            headers: railwayHeaders,
+            body: JSON.stringify(retryBody),
+          });
+          if (retryRes.ok) {
+            response = retryRes;
+            recovered = true;
+            break;
+          }
+          console.error('Railway retry failed:', retryRes.status);
+        } catch (retryErr) {
+          console.error('Railway retry fetch failed:', retryErr);
+        }
+      }
+
+      if (!recovered) {
+        await refundCredit('upstream_400');
         return new Response(
           JSON.stringify({ leads: [], total: 0, success: true }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -1015,6 +1044,7 @@ serve(async (req) => {
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
 
     const rawText = await response.text();
     console.log('=== RAW RESPONSE FROM RAILWAY ===');

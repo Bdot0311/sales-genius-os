@@ -204,20 +204,35 @@ serve(async (req) => {
 
         for (const l of foundLeads) {
           const email = (l.business_email || "").trim().toLowerCase();
-          if (!email) continue;
+          const name = (l.contact_name || "").trim();
+          if (!email && !name) continue;
 
-          const { data: existingLead } = await adminClient
-            .from("leads")
-            .select("id")
-            .eq("user_id", user.id)
-            .ilike("contact_email", email)
-            .maybeSingle();
+          // Dedupe on email when we have one, otherwise on name + company
+          let existingLead: { id: string } | null = null;
+          if (email) {
+            const { data } = await adminClient
+              .from("leads")
+              .select("id")
+              .eq("user_id", user.id)
+              .ilike("contact_email", email)
+              .maybeSingle();
+            existingLead = data ?? null;
+          } else {
+            const { data } = await adminClient
+              .from("leads")
+              .select("id")
+              .eq("user_id", user.id)
+              .ilike("contact_name", name)
+              .ilike("company_name", l.company_name || "Unknown")
+              .maybeSingle();
+            existingLead = data ?? null;
+          }
           if (existingLead) continue;
 
           const { error: insertLeadErr } = await adminClient.from("leads").insert({
             user_id: user.id,
-            contact_name: l.contact_name || email.split("@")[0],
-            contact_email: email,
+            contact_name: name || email.split("@")[0],
+            contact_email: email || null,
             company_name: l.company_name || "Unknown",
             company_website: l.company_domain || null,
             job_title: l.job_title || null,
@@ -228,20 +243,35 @@ serve(async (req) => {
             intent_score: l.scores?.intent_score ?? null,
             signals: Array.isArray(l.buying_signals) ? l.buying_signals : null,
             source: "ai_agent",
-            lead_status: "new",
+            lead_status: "discovered",
+            enrichment_status: email ? "enriched" : "pending",
           });
-          if (insertLeadErr) continue;
+          if (insertLeadErr) {
+            console.error("agent lead insert error:", insertLeadErr.message);
+            continue;
+          }
 
           leadsFound++;
           await adminClient.from("agent_actions").insert({
             user_id: user.id,
             action_type: "lead_found",
             status: "completed",
-            prospect_email: email,
-            description: `Found ${l.job_title || "contact"} at ${l.company_name || "company"}`,
-            metadata: { source: "ai_agent", icp_score: l.scores?.icp_score ?? null },
+            prospect_email: email || null,
+            description: `Found ${l.job_title || "contact"}${name ? ` ${name}` : ""} at ${l.company_name || "company"}${email ? "" : " — no email yet, needs enrichment"}`,
+            metadata: { source: "ai_agent", icp_score: l.scores?.icp_score ?? null, has_email: !!email },
           });
         }
+
+        if (foundLeads.length === 0) {
+          await adminClient.from("agent_actions").insert({
+            user_id: user.id,
+            action_type: "skipped",
+            status: "skipped",
+            description: `Lead search returned no matches for ${[config.prospecting_job_title, config.prospecting_industry, config.prospecting_country].filter(Boolean).join(" · ") || "your targeting"} — try broadening the targeting filters in Configure.`,
+            metadata: { phase: "prospecting" },
+          });
+        }
+
 
         if (searchData?.error) {
           await adminClient.from("agent_actions").insert({
