@@ -386,6 +386,14 @@ const Agent = () => {
                 {toggling ? "Updating…" : isEnabled ? "Enabled" : "Disabled"}
               </span>
             </div>
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => navigate("/dashboard/agent/chat")}
+            >
+              <MessageSquare className="w-4 h-4" />
+              Chat with agent
+            </Button>
             <AgentTestDialog disabled={loading} />
             <Select
               value={runMode}
