@@ -422,6 +422,7 @@ Return JSON only: { "subject": "...", "body": "..." }`;
                   action_type: "skipped",
                   status: "skipped",
                   prospect_email: to,
+                  description: `Skipped ${lead.contact_name ?? to} — the agent could not generate a usable first-touch email`,
                   metadata: { phase: "outreach", reason: "generation_failed" },
                 });
                 continue;
@@ -435,6 +436,7 @@ Return JSON only: { "subject": "...", "body": "..." }`;
                   status: "skipped",
                   prospect_email: to,
                   subject,
+                  description: `Skipped ${lead.contact_name ?? to} — generated email hit deliverability trigger(s): ${check.hits.join(", ")}`,
                   metadata: { phase: "outreach", reason: "deliverability_block", spam_triggers: check.hits },
                 });
                 continue;
