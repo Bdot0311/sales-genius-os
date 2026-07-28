@@ -1,0 +1,1 @@
+ALTER TABLE public.agent_configs ADD COLUMN IF NOT EXISTS approval_mode boolean NOT NULL DEFAULT true;
