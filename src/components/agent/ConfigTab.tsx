@@ -296,11 +296,30 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
                     .join(" · ") || "Full profile stored"}
                   {" — the agent uses this full context on every run."}
                 </p>
+                <div className="grid gap-x-4 gap-y-1.5 sm:grid-cols-2 pt-2 text-xs">
+                  {[
+                    { label: "Job title", value: prospectJobTitle },
+                    { label: "Industry", value: prospectIndustry },
+                    { label: "Country", value: prospectCountry },
+                    { label: "Company size", value: prospectCompanySize },
+                  ].map((f) => (
+                    <div key={f.label} className="flex justify-between gap-2">
+                      <span className="text-muted-foreground">{f.label}</span>
+                      <span className="font-medium text-right truncate">
+                        {f.value || "Any"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[11px] text-muted-foreground pt-1">
+                  Search filters are imported from this profile. Unlink to edit them manually.
+                </p>
               </div>
             )}
 
             <div className="grid gap-4 sm:grid-cols-2 pt-1">
-
+              {!icpSnapshot && (
+                <>
               <div className="space-y-1.5">
                 <Label htmlFor="p-title">Job title</Label>
                 <Input
@@ -337,6 +356,8 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
                   onChange={(e) => setProspectCompanySize(e.target.value)}
                 />
               </div>
+                </>
+              )}
               <div className="space-y-1.5">
                 <Label htmlFor="p-target">New leads per run</Label>
                 <Input
@@ -349,6 +370,7 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
                 />
               </div>
             </div>
+
             </>
           )}
 
