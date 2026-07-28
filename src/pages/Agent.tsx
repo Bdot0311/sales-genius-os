@@ -11,8 +11,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
   Bot,
-  Loader2,
-  Play,
   MessageSquare,
   CalendarCheck,
   Activity,
@@ -32,11 +30,6 @@ import { SettingsTab } from "@/components/agent/SettingsTab";
 import { ApprovalsTab } from "@/components/agent/ApprovalsTab";
 import { AgentTestDialog } from "@/components/agent/AgentTestDialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select";
 
 
@@ -104,11 +97,9 @@ const Agent = () => {
   });
   const [loading, setLoading] = useState(true);
   const [actionsLoading, setActionsLoading] = useState(true);
-  const [running, setRunning] = useState(false);
   const [toggling, setToggling] = useState(false);
   const [gmailConnected, setGmailConnected] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [runMode, setRunMode] = useState<"approval" | "autonomous">("approval");
   const [pendingCount, setPendingCount] = useState(0);
 
 
