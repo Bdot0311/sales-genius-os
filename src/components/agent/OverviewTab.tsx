@@ -1,4 +1,4 @@
-import { Mail, Calendar, XCircle, X, RefreshCw, AlertTriangle, Brain, CheckCircle2, XCircle as XCircleIcon, UserPlus, Send } from "lucide-react";
+import { Mail, Calendar, XCircle, X, RefreshCw, AlertTriangle, Brain, CheckCircle2, XCircle as XCircleIcon, UserPlus, Send, ShieldQuestion } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDistanceToNow } from "date-fns";
