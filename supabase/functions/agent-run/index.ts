@@ -388,45 +388,43 @@ serve(async (req) => {
               }
 
               const firstName = (lead.contact_name || "").split(" ")[0] || "there";
-              const outreachSystemPrompt = `You are ${config.agent_name ?? "a sales rep"}. Persona: ${config.persona ?? "direct and helpful"}. Tone: ${config.tone ?? "professional"}.
+              const senderFirstName =
+                (config.agent_name ?? "").split(" ")[0] ||
+                (senderEmail ?? "").split("@")[0] ||
+                "there";
+              const outreachSystemPrompt = `You are ${config.agent_name ?? "a sales rep"} writing outbound for a B2B founder. Persona: ${config.persona ?? "direct and helpful"}. Tone: ${config.tone ?? "professional"}.
 Company context: ${config.company_context ?? ""}
 Value propositions:
 ${cfgValuePropsText}
-Never invent metrics, customer names, case studies, or results.`;
-              const outreachPrompt = `Write a first-touch cold email to ${firstName}, ${lead.job_title ?? "a decision maker"} at ${lead.company_name ?? "their company"}${lead.industry ? ` (${lead.industry})` : ""}.
-${Array.isArray(lead.signals) && lead.signals.length ? `Relevant signals: ${lead.signals.join(", ")}` : ""}
 
-Rules:
-- Under 75 words total.
-- Greeting line "Hi ${firstName}," then body.
-- One clear idea, one low-friction CTA.
-- No fabricated stats or claims. No placeholders like [Company].
-Return JSON only: { "subject": "...", "body": "..." }`;
+${PLAYBOOK_SYSTEM_RULES}`;
+              const outreachPrompt = buildTouchPrompt({
+                firstName,
+                jobTitle: lead.job_title,
+                companyName: lead.company_name,
+                industry: lead.industry,
+                signals: Array.isArray(lead.signals) ? lead.signals : [],
+                senderFirstName,
+                companyContext: config.company_context,
+                valueProps: cfgValuePropsText,
+              });
 
               const raw = await callGemini(outreachPrompt, outreachSystemPrompt);
-              let subject = "";
-              let body = "";
-              try {
-                const m = raw.match(/\{[\s\S]*\}/);
-                if (m) {
-                  const parsed = JSON.parse(m[0]);
-                  subject = (parsed.subject ?? "").toString().trim();
-                  body = (parsed.body ?? "").toString().trim();
-                }
-              } catch {
-                // fall through to validation below
-              }
+              const touches = parseTouches(raw);
+              const subject = touches[0]?.subject ?? "";
+              const body = touches[0]?.body ?? "";
               if (!subject || !body) {
                 await adminClient.from("agent_actions").insert({
                   user_id: user.id,
                   action_type: "skipped",
                   status: "skipped",
                   prospect_email: to,
-                  description: `Skipped ${lead.contact_name ?? to} — the agent could not generate a usable first-touch email`,
+                  description: `Skipped ${lead.contact_name ?? to} — the agent could not generate a usable 4-touch sequence`,
                   metadata: { phase: "outreach", reason: "generation_failed" },
                 });
                 continue;
               }
+
 
               const check = deliverabilityCheck(subject, body);
               if (!check.ok) {
