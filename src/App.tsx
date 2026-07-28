@@ -405,6 +405,8 @@ const App = () => {
               <Route path="/onboarding-status" element={<MaintenanceGuard><OnboardingStatus /></MaintenanceGuard>} />
               <Route path="/dashboard/onboarding-status" element={<MaintenanceGuard><OnboardingStatus /></MaintenanceGuard>} />
               <Route path="/dashboard/agent" element={<MaintenanceGuard><Agent /></MaintenanceGuard>} />
+              <Route path="/dashboard/agent/chat" element={<MaintenanceGuard><AgentChat /></MaintenanceGuard>} />
+              <Route path="/dashboard/agent/chat/:threadId" element={<MaintenanceGuard><AgentChat /></MaintenanceGuard>} />
               <Route path="/admin/*" element={<MaintenanceGuard><Admin /></MaintenanceGuard>} />
               <Route path="/unsubscribe" element={<Unsubscribe />} />
               <Route path="/client-portal/:token" element={<ClientPortal />} />
