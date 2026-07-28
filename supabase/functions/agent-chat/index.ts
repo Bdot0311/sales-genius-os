@@ -507,20 +507,62 @@ serve(async (req) => {
         }
 
         case "draft_outreach": {
-          const lead = await loadLead(String(args.lead_id ?? ""));
-          if (!lead) return { error: "Lead not found" };
-          const r = await invokeFn("generate-email", {
-            lead,
-            goal: args.goal ?? "reply",
-            tone: config?.tone ?? "professional",
-          });
+          const VALID_GOALS = ["introduction", "follow-up", "meeting", "demo", "proposal"];
+          const rawGoal = String(args.goal ?? "").trim().toLowerCase();
+          const goal = VALID_GOALS.includes(rawGoal) ? rawGoal : "introduction";
+
+          const ids: string[] = (
+            Array.isArray(args.lead_ids) && args.lead_ids.length
+              ? args.lead_ids
+              : [args.lead_id]
+          )
+            .filter(Boolean)
+            .map((x: any) => String(x))
+            .slice(0, 20);
+          if (ids.length === 0) return { error: "lead_id or lead_ids is required" };
+
+          const drafts: any[] = [];
+          for (const id of ids) {
+            const lead = await loadLead(id);
+            if (!lead) {
+              drafts.push({ lead_id: id, error: "Lead not found" });
+              continue;
+            }
+            let r = await invokeFn("generate-email", {
+              lead,
+              goal,
+              tone: config?.tone ?? "professional",
+            });
+            // one retry on upstream rate limiting
+            if (!r?.email && /rate limit/i.test(JSON.stringify(r?.error ?? ""))) {
+              await new Promise((res) => setTimeout(res, 3000));
+              r = await invokeFn("generate-email", {
+                lead,
+                goal,
+                tone: config?.tone ?? "professional",
+              });
+            }
+            drafts.push({
+              lead_id: id,
+              company: lead.company_name ?? null,
+              contact: lead.contact_name ?? null,
+              email: r?.email ?? null,
+              error: r?.email ? undefined : (r?.error ?? "Draft failed"),
+            });
+            if (ids.length > 1) await new Promise((res) => setTimeout(res, 900));
+          }
+
+          const okCount = drafts.filter((d) => d.email).length;
           toolEvents.push({
             name,
-            label: "Drafted email",
-            status: r?.email ? "ok" : "error",
-            detail: lead.company_name ?? lead.contact_email ?? "lead",
+            label: "Drafted emails",
+            status: okCount === 0 ? "error" : "ok",
+            detail:
+              ids.length === 1
+                ? (drafts[0]?.company ?? "lead")
+                : `${okCount}/${ids.length} drafted`,
           });
-          return r;
+          return { goal, drafts };
         }
 
         case "draft_sequence": {
