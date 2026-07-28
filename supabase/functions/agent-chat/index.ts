@@ -227,8 +227,132 @@ serve(async (req) => {
 
     const payload = await req.json().catch(() => ({} as Record<string, unknown>));
     const threadId = String(payload.threadId ?? "");
-    const userMessage = String(payload.message ?? "").trim().slice(0, 4000);
+    const action = String(payload.action ?? "chat");
     if (!threadId) return json({ error: "Missing threadId" }, 400);
+
+    const callFn = async (name: string, body: unknown) => {
+      const res = await fetch(`${supabaseUrl}/functions/v1/${name}`, {
+        method: "POST",
+        headers: {
+          Authorization: authHeader,
+          "Content-Type": "application/json",
+          apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+        },
+        body: JSON.stringify(body ?? {}),
+      });
+      const text = await res.text();
+      try {
+        return JSON.parse(text);
+      } catch {
+        return { error: text.slice(0, 300) };
+      }
+    };
+
+    // --- inline approve / reject from the chat ---------------------------
+    if (action === "resolve_approval") {
+      const approvalId = String(payload.approvalId ?? "");
+      const decision = payload.decision === "approve" ? "approve" : "reject";
+      if (!approvalId) return json({ error: "Missing approvalId" }, 400);
+
+      const { data: approval } = await admin
+        .from("agent_approvals")
+        .select("*")
+        .eq("id", approvalId)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (!approval) return json({ error: "Approval not found" }, 404);
+      if (approval.status !== "pending")
+        return json({ error: "That request was already handled." }, 409);
+
+      let outcome = "";
+      let failed = false;
+
+      if (decision === "reject") {
+        outcome = "Rejected — nothing was sent or changed.";
+      } else if (approval.kind === "outreach") {
+        const r = await callFn("send-email", {
+          to: approval.prospect_email,
+          subject: approval.subject,
+          body: approval.body,
+          leadId: approval.lead_id,
+        });
+        failed = Boolean(r?.error);
+        if (!failed) {
+          if (approval.lead_id) {
+            await admin
+              .from("leads")
+              .update({ lead_status: "active", last_contacted_at: new Date().toISOString() })
+              .eq("id", approval.lead_id)
+              .eq("user_id", userId);
+          }
+          await admin.from("agent_actions").insert({
+            user_id: userId,
+            action_type: "outreach_sent",
+            status: "completed",
+            prospect_email: approval.prospect_email,
+            subject: approval.subject,
+            description: `Sent approved outreach to ${approval.prospect_email} from AI SDR chat`,
+            metadata: { source: "agent_chat", thread_id: threadId },
+          });
+        }
+        outcome = failed
+          ? `Send failed: ${String(r?.error).slice(0, 200)}`
+          : `Approved — email sent to ${approval.prospect_email}.`;
+      } else if (approval.kind === "enrollment") {
+        const meta = (approval.metadata ?? {}) as Record<string, any>;
+        const { error } = await admin.from("sequence_enrollments").insert({
+          user_id: userId,
+          lead_id: approval.lead_id,
+          sequence_id: meta.sequence_id,
+          next_action_at: new Date().toISOString(),
+        });
+        failed = Boolean(error);
+        outcome = error
+          ? `Enrollment failed: ${error.message}`
+          : `Approved — ${approval.company_name ?? approval.prospect_email ?? "the lead"} was enrolled in the sequence.`;
+      } else if (approval.kind === "agent_run") {
+        const r = await callFn("agent-run", { mode: "autonomous" });
+        failed = Boolean(r?.error);
+        outcome = failed
+          ? `Agent run failed: ${String(r?.error).slice(0, 200)}`
+          : `Approved — full agent run complete. ${r?.summary ?? ""}`.trim();
+      } else {
+        outcome = "Approved.";
+      }
+
+      await admin
+        .from("agent_approvals")
+        .update({
+          status: failed ? "pending" : decision === "approve" ? "approved" : "rejected",
+          resolved_at: failed ? null : new Date().toISOString(),
+        })
+        .eq("id", approvalId)
+        .eq("user_id", userId);
+
+      const { data: saved } = await admin
+        .from("agent_chat_messages")
+        .insert({
+          thread_id: threadId,
+          user_id: userId,
+          role: "assistant",
+          content: outcome,
+          tool_events: [],
+        })
+        .select("id, role, content, tool_events, created_at")
+        .single();
+
+      await admin
+        .from("agent_chat_threads")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", threadId);
+
+      return json({
+        message: saved,
+        approval: { id: approvalId, status: failed ? "pending" : decision === "approve" ? "approved" : "rejected" },
+      });
+    }
+
+    const userMessage = String(payload.message ?? "").trim().slice(0, 4000);
     if (!userMessage) return json({ error: "Message is required" }, 400);
 
     const { data: thread } = await admin
