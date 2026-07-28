@@ -97,7 +97,6 @@ const Agent = () => {
   const [toggling, setToggling] = useState(false);
   const [gmailConnected, setGmailConnected] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [pendingCount, setPendingCount] = useState(0);
 
 
   const loadData = useCallback(async () => {
@@ -183,13 +182,6 @@ const Agent = () => {
         meetingsBooked,
         lastRun: lastRunAction?.created_at ?? null,
       });
-
-      const { count: approvalCount } = await (supabase as any)
-        .from("agent_approvals")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", uid)
-        .eq("status", "pending");
-      setPendingCount(approvalCount ?? 0);
     } catch (err) {
       console.error("Agent load error:", err);
     } finally {
