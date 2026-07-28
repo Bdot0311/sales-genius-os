@@ -174,7 +174,7 @@ const AgentChat = () => {
     toast.success(
       value === "autonomous"
         ? "Full autonomy on — the agent will send and enroll without asking"
-        : "Approval mode on — sends and enrollments go to Approvals first",
+        : "Approval mode on — the agent will ask you to approve sends right in the chat",
     );
   };
 
@@ -521,7 +521,7 @@ const AgentChat = () => {
             <p className="max-w-3xl mx-auto mt-2 text-[11px] text-muted-foreground">
               {autonomy === "autonomous"
                 ? "Full autonomy: sends, enrollments and full runs execute immediately."
-                : "Approval mode: drafts are queued in the Approvals tab before anything is sent."}
+                : "Approval mode: the agent asks you to approve sends and runs right here in the chat."}
             </p>
           </div>
         </Card>
