@@ -59,7 +59,7 @@ serve(async (req) => {
     for (const uid of userIds) {
       const { data: sub } = await supabase
         .from('subscriptions')
-        .select('plan, daily_email_limit, daily_emails_sent, daily_emails_reset_at, monthly_emails_sent, monthly_emails_reset_at')
+        .select('plan, daily_email_limit, daily_emails_sent, daily_emails_reset_at')
         .eq('user_id', uid)
         .eq('status', 'active')
         .single();
@@ -73,19 +73,21 @@ serve(async (req) => {
           dailySent = 0;
           await supabase.from('subscriptions').update({ daily_emails_sent: 0, daily_emails_reset_at: todayMidnight.toISOString() }).eq('user_id', uid);
         }
-        const monthlyResetAt = (sub as any).monthly_emails_reset_at ? new Date((sub as any).monthly_emails_reset_at) : new Date(0);
-        let monthlySent = (sub as any).monthly_emails_sent || 0;
-        if (monthlyResetAt < monthStart) {
-          monthlySent = 0;
-          await supabase.from('subscriptions').update({ monthly_emails_sent: 0, monthly_emails_reset_at: monthStart.toISOString() } as any).eq('user_id', uid);
-        }
+        // Monthly usage derived from sent_emails (counter columns were removed).
+        const { count: monthlyCount } = await supabase
+          .from('sent_emails')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', uid)
+          .in('status', ['sent', 'delivered', 'opened', 'clicked', 'replied', 'bounced'])
+          .gte('sent_at', monthStart.toISOString());
         userLimits[uid] = {
           dailyLimit: sub.daily_email_limit || 10,
           dailySent,
           monthlyLimit: MONTHLY_EMAIL_LIMITS[sub.plan as string] ?? 0,
-          monthlySent,
+          monthlySent: monthlyCount ?? 0,
         };
       }
+
     }
 
     for (const email of scheduledEmails) {
@@ -350,11 +352,11 @@ serve(async (req) => {
               .eq("user_id", email.user_id);
           }
 
-          // Increment daily + monthly counters
+          // Increment daily counter (monthly usage is derived from sent_emails)
           await supabase.from('subscriptions').update({
             daily_emails_sent: (ul?.dailySent || 0) + 1,
-            monthly_emails_sent: (ul?.monthlySent || 0) + 1,
-          } as any).eq('user_id', email.user_id);
+          }).eq('user_id', email.user_id);
+
           if (ul) { ul.dailySent += 1; ul.monthlySent += 1; }
 
           processed++;

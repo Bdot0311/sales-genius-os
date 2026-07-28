@@ -218,7 +218,7 @@ serve(async (req) => {
     // --- Daily + Monthly email limit enforcement ---
     const { data: subscription, error: subError } = await supabase
       .from('subscriptions')
-      .select('plan, daily_email_limit, daily_emails_sent, daily_emails_reset_at, monthly_emails_sent, monthly_emails_reset_at')
+      .select('plan, daily_email_limit, daily_emails_sent, daily_emails_reset_at')
       .eq('user_id', user.id)
       .eq('status', 'active')
       .single();
@@ -242,15 +242,15 @@ serve(async (req) => {
           .eq('user_id', user.id);
       }
 
-      // Monthly reset
-      const monthlyResetAt = (subscription as any).monthly_emails_reset_at ? new Date((subscription as any).monthly_emails_reset_at) : new Date(0);
-      let monthlySent = (subscription as any).monthly_emails_sent || 0;
-      if (monthlyResetAt < monthStart) {
-        monthlySent = 0;
-        await supabase.from('subscriptions')
-          .update({ monthly_emails_sent: 0, monthly_emails_reset_at: monthStart.toISOString() } as any)
-          .eq('user_id', user.id);
-      }
+      // Monthly usage is derived from actually-sent emails (no counter column).
+      const { count: monthlyCount } = await supabase
+        .from('sent_emails')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .in('status', ['sent', 'delivered', 'opened', 'clicked', 'replied', 'bounced'])
+        .gte('sent_at', monthStart.toISOString());
+      const monthlySent = monthlyCount ?? 0;
+
 
       const dailyLimit = subscription.daily_email_limit || 10;
       const nextMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
@@ -547,11 +547,8 @@ ${unsubscribeFooterHtml}
           .update({ daily_emails_sent: (subscription?.daily_emails_sent || 0) + 1 } as any)
           .eq('user_id', user.id);
       }
-      // Increment monthly counter
-      await supabase
-        .from('subscriptions')
-        .update({ monthly_emails_sent: ((subscription as any)?.monthly_emails_sent || 0) + 1 } as any)
-        .eq('user_id', user.id);
+      // Monthly usage is derived from sent_emails — no counter column to update.
+
 
       // Update lead's last_contacted_at if leadId is provided
       if (leadId) {

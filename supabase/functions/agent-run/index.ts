@@ -577,7 +577,7 @@ ${PLAYBOOK_SYSTEM_RULES}`;
 
               await adminClient
                 .from("leads")
-                .update({ last_contacted_at: new Date().toISOString(), lead_status: "contacted" })
+                .update({ last_contacted_at: new Date().toISOString(), lead_status: "active" })
                 .eq("id", lead.id);
 
               const scheduled = await scheduleFollowUps(

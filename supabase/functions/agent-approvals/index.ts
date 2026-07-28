@@ -138,7 +138,7 @@ serve(async (req) => {
       if (approval.kind === "outreach" && approval.lead_id) {
         await admin
           .from("leads")
-          .update({ last_contacted_at: new Date().toISOString(), lead_status: "contacted" })
+          .update({ last_contacted_at: new Date().toISOString(), lead_status: "active" })
           .eq("id", approval.lead_id);
 
         const followUps = (approval.metadata?.follow_up_touches ?? []) as Touch[];
