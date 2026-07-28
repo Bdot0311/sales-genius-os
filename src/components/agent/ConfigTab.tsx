@@ -148,6 +148,8 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
         prospecting_industry: prospectIndustry.trim() || null,
         prospecting_country: prospectCountry.trim() || null,
         prospecting_company_size: prospectCompanySize.trim() || null,
+        icp_profile_id: icpProfileId,
+        icp_snapshot: icpSnapshot,
         daily_lead_target: Math.min(Math.max(Number(dailyLeadTarget) || 10, 1), 25),
         max_daily_new_emails: Math.min(Math.max(Number(maxDailyNewEmails) || 20, 0), 100),
       };
