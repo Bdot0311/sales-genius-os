@@ -80,6 +80,44 @@ interface AgentConfig {
   prospecting_company_size: string | null;
   daily_lead_target: number;
   max_daily_new_emails: number;
+  icp_profile_id: string | null;
+  icp_snapshot: Record<string, any> | null;
+}
+
+/** Renders the saved ICP profile as prompt/search context so runs stay grounded. */
+function buildIcpContext(snap: Record<string, any> | null | undefined): string {
+  if (!snap || typeof snap !== "object") return "";
+  const list = (v: unknown) => (Array.isArray(v) ? v.filter(Boolean).join(", ") : "");
+  const lines: string[] = [];
+  if (snap.name) lines.push(`ICP profile: ${snap.name}`);
+  if (snap.summary) lines.push(`Summary: ${snap.summary}`);
+  if (list(snap.target_titles)) lines.push(`Target titles: ${list(snap.target_titles)}`);
+  if (list(snap.seniority_levels)) lines.push(`Seniority: ${list(snap.seniority_levels)}`);
+  if (list(snap.departments)) lines.push(`Departments: ${list(snap.departments)}`);
+  if (list(snap.industries)) lines.push(`Industries: ${list(snap.industries)}`);
+  if (list(snap.geographies)) lines.push(`Geographies: ${list(snap.geographies)}`);
+  if (snap.company_size_min || snap.company_size_max) {
+    lines.push(`Company size: ${snap.company_size_min ?? "?"}-${snap.company_size_max ?? "?"} employees`);
+  }
+  if (list(snap.pain_points)) lines.push(`Pain points they feel: ${list(snap.pain_points)}`);
+  if (list(snap.buying_signals)) lines.push(`Buying signals: ${list(snap.buying_signals)}`);
+  if (list(snap.intent_keywords)) lines.push(`Intent keywords: ${list(snap.intent_keywords)}`);
+  if (list(snap.event_triggers)) lines.push(`Trigger events: ${list(snap.event_triggers)}`);
+  if (list(snap.hiring_signals)) lines.push(`Hiring signals: ${list(snap.hiring_signals)}`);
+  if (list(snap.tech_stack)) lines.push(`Tech stack: ${list(snap.tech_stack)}`);
+  if (list(snap.competitor_tools)) lines.push(`Competitor tools: ${list(snap.competitor_tools)}`);
+  if (list(snap.use_cases)) lines.push(`Use cases: ${list(snap.use_cases)}`);
+  if (snap.value_proposition) lines.push(`Value proposition: ${snap.value_proposition}`);
+  if (list(snap.success_metrics)) lines.push(`Success metrics: ${list(snap.success_metrics)}`);
+  if (list(snap.objections)) lines.push(`Common objections: ${list(snap.objections)}`);
+  if (snap.customer_examples) lines.push(`Customer examples: ${snap.customer_examples}`);
+  if (snap.disqualifiers) lines.push(`Disqualifiers: ${snap.disqualifiers}`);
+  const excl = [list(snap.exclude_titles), list(snap.exclude_industries), list(snap.exclude_keywords)]
+    .filter(Boolean)
+    .join(" | ");
+  if (excl) lines.push(`Never target: ${excl}`);
+  if (snap.notes) lines.push(`Notes: ${snap.notes}`);
+  return lines.length ? `IDEAL CUSTOMER PROFILE (use this for relevance and personalization):\n${lines.join("\n")}` : "";
 }
 
 serve(async (req) => {
@@ -179,6 +217,10 @@ serve(async (req) => {
       googleIntegrationId = integration?.id ?? null;
     }
 
+    const icpSnapshot = (config as any).icp_snapshot ?? null;
+    const icpContext = buildIcpContext(icpSnapshot);
+    const icpList = (v: unknown) => (Array.isArray(v) ? v.filter((x) => typeof x === "string" && x.trim()) : []);
+
     const cfgValueProps = Array.isArray(config.value_props) ? config.value_props : [];
     const cfgValuePropsText = cfgValueProps.join("\n");
 
@@ -219,10 +261,20 @@ serve(async (req) => {
           method: "POST",
           headers: { Authorization: authHeader, "Content-Type": "application/json" },
           body: JSON.stringify({
-            job_title: config.prospecting_job_title || undefined,
-            industry: config.prospecting_industry || undefined,
-            country: config.prospecting_country || undefined,
-            company_size: config.prospecting_company_size || undefined,
+            job_title: config.prospecting_job_title || icpList(icpSnapshot?.target_titles)[0] || undefined,
+            job_titles: icpList(icpSnapshot?.target_titles).length
+              ? icpList(icpSnapshot?.target_titles)
+              : undefined,
+            industry: config.prospecting_industry || icpList(icpSnapshot?.industries)[0] || undefined,
+            industries: icpList(icpSnapshot?.industries).length ? icpList(icpSnapshot?.industries) : undefined,
+            country: config.prospecting_country || icpList(icpSnapshot?.geographies)[0] || undefined,
+            company_size: config.prospecting_company_size || icpSnapshot?.company_size_bucket || undefined,
+            keywords: icpList(icpSnapshot?.intent_keywords).length
+              ? icpList(icpSnapshot?.intent_keywords)
+              : undefined,
+            exclude_titles: icpList(icpSnapshot?.exclude_titles).length
+              ? icpList(icpSnapshot?.exclude_titles)
+              : undefined,
             limit: target,
           }),
         });
@@ -403,6 +455,8 @@ serve(async (req) => {
 Company context: ${config.company_context ?? ""}
 Value propositions:
 ${cfgValuePropsText}
+
+${icpContext}
 
 ${PLAYBOOK_SYSTEM_RULES}`;
               const outreachPrompt = buildTouchPrompt({
@@ -744,7 +798,9 @@ Return JSON: { "classification": one of ["interested","objection","meeting_reque
         if (classification === "interested" && config.can_reply_interested) {
           const replySystemPrompt = `You are ${config.agent_name}, a sales rep. Your persona: ${config.persona}. Tone: ${config.tone}.
 Company context: ${config.company_context ?? ""}
-Value propositions: ${valuePropsText}`;
+Value propositions: ${valuePropsText}
+
+${icpContext}`;
 
           const replyPrompt = `A prospect replied to your email positively.
 Subject: ${reply.subject}

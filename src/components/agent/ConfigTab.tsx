@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/accordion";
 import { Plus, Trash2, Loader2, Save } from "lucide-react";
 import type { AgentConfig } from "@/pages/Agent";
-import { ProspectingSourceHelper } from "@/components/agent/ProspectingSourceHelper";
+import { ProspectingSourceHelper, type ICPSnapshot } from "@/components/agent/ProspectingSourceHelper";
 
 
 interface ConfigTabProps {
@@ -66,6 +66,8 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
   const [prospectCompanySize, setProspectCompanySize] = useState("");
   const [dailyLeadTarget, setDailyLeadTarget] = useState("10");
   const [maxDailyNewEmails, setMaxDailyNewEmails] = useState("20");
+  const [icpSnapshot, setIcpSnapshot] = useState<ICPSnapshot | null>(null);
+  const [icpProfileId, setIcpProfileId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   // Populate form from config
@@ -91,6 +93,8 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
     setProspectIndustry(config.prospecting_industry ?? "");
     setProspectCountry(config.prospecting_country ?? "");
     setProspectCompanySize(config.prospecting_company_size ?? "");
+    setIcpSnapshot((config.icp_snapshot as ICPSnapshot | null) ?? null);
+    setIcpProfileId(config.icp_profile_id ?? null);
     setDailyLeadTarget(String(config.daily_lead_target ?? 10));
     setMaxDailyNewEmails(String(config.max_daily_new_emails ?? 20));
   }, [config]);
@@ -144,6 +148,8 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
         prospecting_industry: prospectIndustry.trim() || null,
         prospecting_country: prospectCountry.trim() || null,
         prospecting_company_size: prospectCompanySize.trim() || null,
+        icp_profile_id: icpProfileId,
+        icp_snapshot: icpSnapshot,
         daily_lead_target: Math.min(Math.max(Number(dailyLeadTarget) || 10, 1), 25),
         max_daily_new_emails: Math.min(Math.max(Number(maxDailyNewEmails) || 20, 0), 100),
       };
@@ -248,13 +254,51 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
           {canFindLeads && (
             <>
             <ProspectingSourceHelper
-              onApply={(t) => {
+              currentSnapshot={icpSnapshot}
+              onApply={(t, snapshot) => {
                 if (t.jobTitle) setProspectJobTitle(t.jobTitle);
                 if (t.industry) setProspectIndustry(t.industry);
                 if (t.country) setProspectCountry(t.country);
                 if (t.companySize) setProspectCompanySize(t.companySize);
+                setIcpSnapshot(snapshot);
+                setIcpProfileId(snapshot.profile_id);
               }}
             />
+            {icpSnapshot && (
+              <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium">
+                    ICP linked: {icpSnapshot.name}
+                    {config?.icp_snapshot ? "" : " (unsaved — hit Save)"}
+                  </p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setIcpSnapshot(null);
+                      setIcpProfileId(null);
+                    }}
+                  >
+                    Unlink
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {[
+                    icpSnapshot.target_titles.length ? `${icpSnapshot.target_titles.length} titles` : null,
+                    icpSnapshot.industries.length ? `${icpSnapshot.industries.length} industries` : null,
+                    icpSnapshot.pain_points.length ? `${icpSnapshot.pain_points.length} pain points` : null,
+                    icpSnapshot.buying_signals.length ? `${icpSnapshot.buying_signals.length} buying signals` : null,
+                    icpSnapshot.exclude_titles.length || icpSnapshot.exclude_industries.length
+                      ? "exclusions"
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ") || "Full profile stored"}
+                  {" — the agent uses this full context on every run."}
+                </p>
+              </div>
+            )}
+
             <div className="grid gap-4 sm:grid-cols-2 pt-1">
 
               <div className="space-y-1.5">
