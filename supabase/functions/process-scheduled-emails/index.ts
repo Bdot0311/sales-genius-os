@@ -352,11 +352,11 @@ serve(async (req) => {
               .eq("user_id", email.user_id);
           }
 
-          // Increment daily + monthly counters
+          // Increment daily counter (monthly usage is derived from sent_emails)
           await supabase.from('subscriptions').update({
             daily_emails_sent: (ul?.dailySent || 0) + 1,
-            monthly_emails_sent: (ul?.monthlySent || 0) + 1,
-          } as any).eq('user_id', email.user_id);
+          }).eq('user_id', email.user_id);
+
           if (ul) { ul.dailySent += 1; ul.monthlySent += 1; }
 
           processed++;
