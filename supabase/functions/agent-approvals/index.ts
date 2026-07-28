@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { scheduleFollowUps, type Touch } from "../_shared/cold-email-playbook.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -132,12 +134,25 @@ serve(async (req) => {
         })
         .eq("id", id);
 
+      let followUpsScheduled = false;
       if (approval.kind === "outreach" && approval.lead_id) {
         await admin
           .from("leads")
           .update({ last_contacted_at: new Date().toISOString(), lead_status: "contacted" })
           .eq("id", approval.lead_id);
+
+        const followUps = (approval.metadata?.follow_up_touches ?? []) as Touch[];
+        if (Array.isArray(followUps) && followUps.length > 0) {
+          followUpsScheduled = await scheduleFollowUps(
+            admin,
+            user.id,
+            approval.lead_id,
+            approval.company_name ?? approval.prospect_name ?? to,
+            [{ day: 0, purpose: "signal opener", subject, body: messageBody }, ...followUps],
+          );
+        }
       }
+
 
       if (approval.kind === "reply" && approval.sent_email_id) {
         await admin
@@ -159,9 +174,10 @@ serve(async (req) => {
         classification: approval.classification ?? null,
         reply_content: messageBody,
         description: `You approved and sent a ${
-          approval.kind === "outreach" ? "first-touch email" : "reply"
-        } to ${to}`,
-        metadata: { approval_id: id, approved_by_human: true },
+          approval.kind === "outreach" ? "touch 1 of 4 email" : "reply"
+        } to ${to}${followUpsScheduled ? " — touches 2-4 scheduled for day 3, 7 and 14" : ""}`,
+        metadata: { approval_id: id, approved_by_human: true, follow_ups_scheduled: followUpsScheduled },
+
       });
 
       return json({ success: true, status: "sent" });

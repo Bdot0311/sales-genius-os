@@ -1,5 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  PLAYBOOK_SYSTEM_RULES,
+  buildTouchPrompt,
+  parseTouches,
+  scheduleFollowUps,
+} from "../_shared/cold-email-playbook.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -388,45 +395,43 @@ serve(async (req) => {
               }
 
               const firstName = (lead.contact_name || "").split(" ")[0] || "there";
-              const outreachSystemPrompt = `You are ${config.agent_name ?? "a sales rep"}. Persona: ${config.persona ?? "direct and helpful"}. Tone: ${config.tone ?? "professional"}.
+              const senderFirstName =
+                (config.agent_name ?? "").split(" ")[0] ||
+                (senderEmail ?? "").split("@")[0] ||
+                "there";
+              const outreachSystemPrompt = `You are ${config.agent_name ?? "a sales rep"} writing outbound for a B2B founder. Persona: ${config.persona ?? "direct and helpful"}. Tone: ${config.tone ?? "professional"}.
 Company context: ${config.company_context ?? ""}
 Value propositions:
 ${cfgValuePropsText}
-Never invent metrics, customer names, case studies, or results.`;
-              const outreachPrompt = `Write a first-touch cold email to ${firstName}, ${lead.job_title ?? "a decision maker"} at ${lead.company_name ?? "their company"}${lead.industry ? ` (${lead.industry})` : ""}.
-${Array.isArray(lead.signals) && lead.signals.length ? `Relevant signals: ${lead.signals.join(", ")}` : ""}
 
-Rules:
-- Under 75 words total.
-- Greeting line "Hi ${firstName}," then body.
-- One clear idea, one low-friction CTA.
-- No fabricated stats or claims. No placeholders like [Company].
-Return JSON only: { "subject": "...", "body": "..." }`;
+${PLAYBOOK_SYSTEM_RULES}`;
+              const outreachPrompt = buildTouchPrompt({
+                firstName,
+                jobTitle: lead.job_title,
+                companyName: lead.company_name,
+                industry: lead.industry,
+                signals: Array.isArray(lead.signals) ? lead.signals : [],
+                senderFirstName,
+                companyContext: config.company_context,
+                valueProps: cfgValuePropsText,
+              });
 
               const raw = await callGemini(outreachPrompt, outreachSystemPrompt);
-              let subject = "";
-              let body = "";
-              try {
-                const m = raw.match(/\{[\s\S]*\}/);
-                if (m) {
-                  const parsed = JSON.parse(m[0]);
-                  subject = (parsed.subject ?? "").toString().trim();
-                  body = (parsed.body ?? "").toString().trim();
-                }
-              } catch {
-                // fall through to validation below
-              }
+              const touches = parseTouches(raw);
+              const subject = touches[0]?.subject ?? "";
+              const body = touches[0]?.body ?? "";
               if (!subject || !body) {
                 await adminClient.from("agent_actions").insert({
                   user_id: user.id,
                   action_type: "skipped",
                   status: "skipped",
                   prospect_email: to,
-                  description: `Skipped ${lead.contact_name ?? to} — the agent could not generate a usable first-touch email`,
+                  description: `Skipped ${lead.contact_name ?? to} — the agent could not generate a usable 4-touch sequence`,
                   metadata: { phase: "outreach", reason: "generation_failed" },
                 });
                 continue;
               }
+
 
               const check = deliverabilityCheck(subject, body);
               if (!check.ok) {
@@ -452,8 +457,15 @@ Return JSON only: { "subject": "...", "body": "..." }`;
                   company_name: lead.company_name ?? null,
                   subject,
                   body,
-                  reasoning: `Drafted first-touch email for ${lead.job_title ?? "contact"} at ${lead.company_name ?? "their company"}.`,
-                  metadata: { phase: "outreach", job_title: lead.job_title ?? null, sender_email: senderEmail },
+                  reasoning: `Touch 1 of 4 (Cold Email Engine playbook) for ${lead.job_title ?? "contact"} at ${lead.company_name ?? "their company"}. Touches 2-4 (day 3, 7, 14) are scheduled automatically once this is approved.`,
+                  metadata: {
+                    phase: "outreach",
+                    job_title: lead.job_title ?? null,
+                    sender_email: senderEmail,
+                    playbook: "cold_email_engine_4_touch",
+                    follow_up_touches: touches.slice(1, 4),
+                  },
+
                 });
                 if (!queued) {
                   await adminClient.from("agent_actions").insert({
@@ -514,6 +526,14 @@ Return JSON only: { "subject": "...", "body": "..." }`;
                 .update({ last_contacted_at: new Date().toISOString(), lead_status: "contacted" })
                 .eq("id", lead.id);
 
+              const scheduled = await scheduleFollowUps(
+                adminClient,
+                user.id,
+                lead.id,
+                lead.company_name ?? lead.contact_name ?? to,
+                touches,
+              );
+
               await adminClient.from("agent_actions").insert({
                 user_id: user.id,
                 action_type: "outreach_sent",
@@ -521,9 +541,15 @@ Return JSON only: { "subject": "...", "body": "..." }`;
                 prospect_email: to,
                 subject,
                 reply_content: body,
-                description: `First-touch email sent to ${lead.company_name ?? to}`,
-                metadata: { phase: "outreach", lead_id: lead.id },
+                description: `Touch 1 of 4 sent to ${lead.company_name ?? to}${scheduled ? " — follow-ups queued for day 3, 7 and 14 (they stop automatically on reply)" : ""}`,
+                metadata: {
+                  phase: "outreach",
+                  lead_id: lead.id,
+                  playbook: "cold_email_engine_4_touch",
+                  follow_ups_scheduled: scheduled,
+                },
               });
+
 
               outreachSent++;
               remainingOutreach--;
