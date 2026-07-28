@@ -395,30 +395,6 @@ const Agent = () => {
               Chat with agent
             </Button>
             <AgentTestDialog disabled={loading} />
-            <Select
-              value={runMode}
-              onValueChange={(v) => setRunMode(v as "approval" | "autonomous")}
-            >
-              <SelectTrigger className="w-[190px]" aria-label="Run mode">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="approval">Approval mode</SelectItem>
-                <SelectItem value="autonomous">Autonomous</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button
-              onClick={handleRunAgent}
-              disabled={running || loading}
-              className="gap-2"
-            >
-              {running ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Play className="w-4 h-4" />
-              )}
-              {running ? "Running…" : "Run Agent Now"}
-            </Button>
           </div>
         }
       />
