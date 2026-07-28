@@ -519,6 +519,14 @@ ${PLAYBOOK_SYSTEM_RULES}`;
                 .update({ last_contacted_at: new Date().toISOString(), lead_status: "contacted" })
                 .eq("id", lead.id);
 
+              const scheduled = await scheduleFollowUps(
+                adminClient,
+                user.id,
+                lead.id,
+                lead.company_name ?? lead.contact_name ?? to,
+                touches,
+              );
+
               await adminClient.from("agent_actions").insert({
                 user_id: user.id,
                 action_type: "outreach_sent",
@@ -526,9 +534,15 @@ ${PLAYBOOK_SYSTEM_RULES}`;
                 prospect_email: to,
                 subject,
                 reply_content: body,
-                description: `First-touch email sent to ${lead.company_name ?? to}`,
-                metadata: { phase: "outreach", lead_id: lead.id },
+                description: `Touch 1 of 4 sent to ${lead.company_name ?? to}${scheduled ? " — follow-ups queued for day 3, 7 and 14 (they stop automatically on reply)" : ""}`,
+                metadata: {
+                  phase: "outreach",
+                  lead_id: lead.id,
+                  playbook: "cold_email_engine_4_touch",
+                  follow_ups_scheduled: scheduled,
+                },
               });
+
 
               outreachSent++;
               remainingOutreach--;
