@@ -91,6 +91,8 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
     setProspectIndustry(config.prospecting_industry ?? "");
     setProspectCountry(config.prospecting_country ?? "");
     setProspectCompanySize(config.prospecting_company_size ?? "");
+    setIcpSnapshot((config.icp_snapshot as ICPSnapshot | null) ?? null);
+    setIcpProfileId(config.icp_profile_id ?? null);
     setDailyLeadTarget(String(config.daily_lead_target ?? 10));
     setMaxDailyNewEmails(String(config.max_daily_new_emails ?? 20));
   }, [config]);
