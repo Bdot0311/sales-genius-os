@@ -324,7 +324,7 @@ serve(async (req) => {
         .from("agent_approvals")
         .update({
           status: failed ? "pending" : decision === "approve" ? "approved" : "rejected",
-          resolved_at: failed ? null : new Date().toISOString(),
+          reviewed_at: failed ? null : new Date().toISOString(),
         })
         .eq("id", approvalId)
         .eq("user_id", userId);
