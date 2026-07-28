@@ -68,6 +68,7 @@ const BlogPost = lazy(() => import("./pages/BlogPost"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const OnboardingStatus = lazy(() => import("./pages/OnboardingStatus"));
 const Agent = lazy(() => import("./pages/Agent"));
+const AgentChat = lazy(() => import("./pages/AgentChat"));
 const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 const Connect = lazy(() => import("./pages/Connect"));
 
