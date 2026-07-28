@@ -561,15 +561,18 @@ serve(async (req) => {
             if (error) return { error: error.message };
             toolEvents.push({
               name,
-              label: "Queued for approval",
+              label: "Waiting for your approval",
               status: "queued",
-              detail: `${lead.contact_email} — approve in the Approvals tab`,
+              detail: `Send "${subject}" to ${lead.contact_email}`,
+              approval_id: approval.id,
+              approval_kind: "outreach",
+              approval_summary: body.slice(0, 600),
             });
             return {
               queued_for_approval: true,
               approval_id: approval.id,
               message:
-                "Approval mode is on, so nothing was sent. The draft is waiting in the Approvals tab.",
+                "Nothing was sent. An approve/reject card is shown to the user right here in the chat — wait for their decision.",
             };
           }
 
