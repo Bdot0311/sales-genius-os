@@ -60,6 +60,8 @@ export interface AgentConfig {
   prospecting_industry: string | null;
   prospecting_country: string | null;
   prospecting_company_size: string | null;
+  icp_profile_id: string | null;
+  icp_snapshot: Record<string, any> | null;
   daily_lead_target: number | null;
   max_daily_new_emails: number | null;
   calendly_url: string | null;
