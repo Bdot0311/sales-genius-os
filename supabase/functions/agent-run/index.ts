@@ -775,14 +775,20 @@ Output ONLY the reply body. No subject line. No greeting like "Hi [name]". No si
           }
 
           if (googleIntegrationId) {
-            await adminClient.functions.invoke("send-email", {
-              body: {
+            const sendRes = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+              method: "POST",
+              headers: { Authorization: authHeader, "Content-Type": "application/json" },
+              body: JSON.stringify({
                 to: reply.fromEmail,
                 subject: `Re: ${reply.subject}`,
                 body: generatedReply,
-                integrationId: googleIntegrationId,
-              },
+                integrationRowId: googleIntegrationId,
+              }),
             });
+            const sendData = await sendRes.json().catch(() => ({}));
+            if (!sendRes.ok || sendData?.error) {
+              throw new Error(sendData?.error ?? `send-email returned ${sendRes.status}`);
+            }
           }
 
           await adminClient.from("agent_actions").insert({
@@ -867,14 +873,20 @@ Output ONLY the reply body. No subject line or signature.`;
           }
 
           if (googleIntegrationId) {
-            await adminClient.functions.invoke("send-email", {
-              body: {
+            const sendRes = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+              method: "POST",
+              headers: { Authorization: authHeader, "Content-Type": "application/json" },
+              body: JSON.stringify({
                 to: reply.fromEmail,
                 subject: `Re: ${reply.subject}`,
                 body: generatedReply,
-                integrationId: googleIntegrationId,
-              },
+                integrationRowId: googleIntegrationId,
+              }),
             });
+            const sendData = await sendRes.json().catch(() => ({}));
+            if (!sendRes.ok || sendData?.error) {
+              throw new Error(sendData?.error ?? `send-email returned ${sendRes.status}`);
+            }
           }
 
           await adminClient.from("agent_actions").insert({
@@ -942,14 +954,20 @@ Output ONLY the reply body. No subject line or signature.`;
           }
 
           if (googleIntegrationId) {
-            await adminClient.functions.invoke("send-email", {
-              body: {
+            const sendRes = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+              method: "POST",
+              headers: { Authorization: authHeader, "Content-Type": "application/json" },
+              body: JSON.stringify({
                 to: reply.fromEmail,
                 subject: `Re: ${reply.subject}`,
                 body: meetingReply,
-                integrationId: googleIntegrationId,
-              },
+                integrationRowId: googleIntegrationId,
+              }),
             });
+            const sendData = await sendRes.json().catch(() => ({}));
+            if (!sendRes.ok || sendData?.error) {
+              throw new Error(sendData?.error ?? `send-email returned ${sendRes.status}`);
+            }
           }
 
           await adminClient
