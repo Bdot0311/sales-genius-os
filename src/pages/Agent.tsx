@@ -192,6 +192,13 @@ const Agent = () => {
         meetingsBooked,
         lastRun: lastRunAction?.created_at ?? null,
       });
+
+      const { count: approvalCount } = await (supabase as any)
+        .from("agent_approvals")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", uid)
+        .eq("status", "pending");
+      setPendingCount(approvalCount ?? 0);
     } catch (err) {
       console.error("Agent load error:", err);
     } finally {
@@ -207,18 +214,23 @@ const Agent = () => {
   const handleRunAgent = async () => {
     setRunning(true);
     try {
-      const { data, error } = await supabase.functions.invoke("agent-run");
+      const { data, error } = await supabase.functions.invoke("agent-run", {
+        body: { mode: runMode },
+      });
       if (error) throw error;
       const result = data as {
+        summary?: string;
         leadsFound?: number;
         outreachSent?: number;
+        pendingApprovals?: number;
         repliesSent?: number;
         threadsChecked?: number;
       } | null;
       toast.success(
-        `Agent ran: ${result?.leadsFound ?? 0} leads found, ${
-          result?.outreachSent ?? 0
-        } emails sent, ${result?.repliesSent ?? 0} replies sent`
+        result?.summary ??
+          `Agent ran: ${result?.leadsFound ?? 0} leads found, ${
+            result?.outreachSent ?? 0
+          } emails sent, ${result?.repliesSent ?? 0} replies sent`
       );
       await loadData();
     } catch (err) {
@@ -228,6 +240,7 @@ const Agent = () => {
       setRunning(false);
     }
   };
+
 
   const handleToggle = async () => {
     if (!userId) return;
