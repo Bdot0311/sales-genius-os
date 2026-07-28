@@ -140,17 +140,37 @@ serve(async (req) => {
       (config.max_daily_auto_replies ?? 0) - (dailyReplyCount ?? 0)
     );
 
-    const { data: integration } = await adminClient
-      .from("integrations")
-      .select("id")
+    const { data: senderAccounts } = await adminClient
+      .from("sending_accounts")
+      .select("integration_id, email, status, updated_at")
       .eq("user_id", user.id)
-      .eq("integration_id", "google")
-      .eq("is_active", true)
-      .order("updated_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .in("provider", ["google", "gmail"])
+      .not("integration_id", "is", null)
+      .order("updated_at", { ascending: false });
 
-    const googleIntegrationId: string | null = integration?.id ?? null;
+    const activeSender = (senderAccounts ?? []).find(
+      (account) =>
+        account.integration_id &&
+        account.status !== "paused" &&
+        account.status !== "disabled"
+    );
+
+    let googleIntegrationId: string | null = activeSender?.integration_id ?? null;
+    const senderEmail: string | null = activeSender?.email ?? null;
+
+    if (!googleIntegrationId) {
+      const { data: integration } = await adminClient
+        .from("integrations")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("integration_id", "google")
+        .eq("is_active", true)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      googleIntegrationId = integration?.id ?? null;
+    }
 
     const cfgValueProps = Array.isArray(config.value_props) ? config.value_props : [];
     const cfgValuePropsText = cfgValueProps.join("\n");
@@ -299,6 +319,7 @@ serve(async (req) => {
     // PHASE 2 — First-touch outreach
     // ────────────────────────────────────────────────────────────────────────
     let outreachSent = 0;
+    let outreachDrafted = 0;
     if (config.can_send_outreach && googleIntegrationId) {
       try {
         const dailyCap = Math.min(Math.max(config.max_daily_new_emails ?? 20, 0), 100);
@@ -312,7 +333,7 @@ serve(async (req) => {
         let remainingOutreach = Math.max(0, dailyCap - (sentToday ?? 0));
 
         if (remainingOutreach > 0) {
-          const { data: pendingLeads } = await adminClient
+          const { data: pendingLeads, error: pendingLeadsError } = await adminClient
             .from("leads")
             .select("id, contact_name, contact_email, company_name, job_title, industry, signals")
             .eq("user_id", user.id)
@@ -320,6 +341,18 @@ serve(async (req) => {
             .is("last_contacted_at", null)
             .order("icp_score", { ascending: false, nullsFirst: false })
             .limit(remainingOutreach);
+
+          if (pendingLeadsError) throw pendingLeadsError;
+
+          if ((pendingLeads ?? []).length === 0) {
+            await adminClient.from("agent_actions").insert({
+              user_id: user.id,
+              action_type: "skipped",
+              status: "skipped",
+              description: "No uncontacted leads with emails are ready for first-touch outreach yet.",
+              metadata: { phase: "outreach", reason: "no_pending_leads" },
+            });
+          }
 
           for (const lead of pendingLeads ?? []) {
             if (remainingOutreach <= 0) break;
@@ -389,6 +422,7 @@ Return JSON only: { "subject": "...", "body": "..." }`;
                   action_type: "skipped",
                   status: "skipped",
                   prospect_email: to,
+                  description: `Skipped ${lead.contact_name ?? to} — the agent could not generate a usable first-touch email`,
                   metadata: { phase: "outreach", reason: "generation_failed" },
                 });
                 continue;
@@ -402,13 +436,14 @@ Return JSON only: { "subject": "...", "body": "..." }`;
                   status: "skipped",
                   prospect_email: to,
                   subject,
+                  description: `Skipped ${lead.contact_name ?? to} — generated email hit deliverability trigger(s): ${check.hits.join(", ")}`,
                   metadata: { phase: "outreach", reason: "deliverability_block", spam_triggers: check.hits },
                 });
                 continue;
               }
 
               if (approvalMode) {
-                await queueApproval({
+                const queued = await queueApproval({
                   kind: "outreach",
                   lead_id: lead.id,
                   integration_row_id: googleIntegrationId,
@@ -418,8 +453,20 @@ Return JSON only: { "subject": "...", "body": "..." }`;
                   subject,
                   body,
                   reasoning: `Drafted first-touch email for ${lead.job_title ?? "contact"} at ${lead.company_name ?? "their company"}.`,
-                  metadata: { phase: "outreach", job_title: lead.job_title ?? null },
+                  metadata: { phase: "outreach", job_title: lead.job_title ?? null, sender_email: senderEmail },
                 });
+                if (!queued) {
+                  await adminClient.from("agent_actions").insert({
+                    user_id: user.id,
+                    action_type: "error",
+                    status: "failed",
+                    prospect_email: to,
+                    subject,
+                    description: `Could not queue approval draft for ${lead.contact_name ?? to}`,
+                    metadata: { phase: "outreach", lead_id: lead.id },
+                  });
+                  continue;
+                }
                 await adminClient.from("agent_actions").insert({
                   user_id: user.id,
                   action_type: "awaiting_approval",
@@ -427,9 +474,10 @@ Return JSON only: { "subject": "...", "body": "..." }`;
                   prospect_email: to,
                   subject,
                   reply_content: body,
-                  description: `Drafted a first-touch email to ${lead.contact_name ?? to} at ${lead.company_name ?? "their company"} — waiting for your approval`,
-                  metadata: { phase: "outreach", lead_id: lead.id },
+                  description: `Drafted a first-touch email to ${lead.contact_name ?? to} at ${lead.company_name ?? "their company"} — waiting for your approval${senderEmail ? ` from ${senderEmail}` : ""}`,
+                  metadata: { phase: "outreach", lead_id: lead.id, sender_email: senderEmail },
                 });
+                outreachDrafted++;
                 remainingOutreach--;
                 continue;
               }
@@ -494,7 +542,23 @@ Return JSON only: { "subject": "...", "body": "..." }`;
         }
       } catch (outreachErr: any) {
         console.error("agent outreach error:", outreachErr?.message);
+        await adminClient.from("agent_actions").insert({
+          user_id: user.id,
+          action_type: "error",
+          status: "failed",
+          description: "First-touch outreach failed",
+          error_message: outreachErr?.message ?? "unknown",
+          metadata: { phase: "outreach" },
+        });
       }
+    } else if (config.can_send_outreach && !googleIntegrationId) {
+      await adminClient.from("agent_actions").insert({
+        user_id: user.id,
+        action_type: "skipped",
+        status: "skipped",
+        description: "First-touch outreach skipped because no active Gmail mailbox is available.",
+        metadata: { phase: "outreach", reason: "no_active_mailbox" },
+      });
     }
 
     // ────────────────────────────────────────────────────────────────────────
@@ -713,14 +777,20 @@ Output ONLY the reply body. No subject line. No greeting like "Hi [name]". No si
           }
 
           if (googleIntegrationId) {
-            await adminClient.functions.invoke("send-email", {
-              body: {
+            const sendRes = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+              method: "POST",
+              headers: { Authorization: authHeader, "Content-Type": "application/json" },
+              body: JSON.stringify({
                 to: reply.fromEmail,
                 subject: `Re: ${reply.subject}`,
                 body: generatedReply,
-                integrationId: googleIntegrationId,
-              },
+                integrationRowId: googleIntegrationId,
+              }),
             });
+            const sendData = await sendRes.json().catch(() => ({}));
+            if (!sendRes.ok || sendData?.error) {
+              throw new Error(sendData?.error ?? `send-email returned ${sendRes.status}`);
+            }
           }
 
           await adminClient.from("agent_actions").insert({
@@ -805,14 +875,20 @@ Output ONLY the reply body. No subject line or signature.`;
           }
 
           if (googleIntegrationId) {
-            await adminClient.functions.invoke("send-email", {
-              body: {
+            const sendRes = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+              method: "POST",
+              headers: { Authorization: authHeader, "Content-Type": "application/json" },
+              body: JSON.stringify({
                 to: reply.fromEmail,
                 subject: `Re: ${reply.subject}`,
                 body: generatedReply,
-                integrationId: googleIntegrationId,
-              },
+                integrationRowId: googleIntegrationId,
+              }),
             });
+            const sendData = await sendRes.json().catch(() => ({}));
+            if (!sendRes.ok || sendData?.error) {
+              throw new Error(sendData?.error ?? `send-email returned ${sendRes.status}`);
+            }
           }
 
           await adminClient.from("agent_actions").insert({
@@ -880,14 +956,20 @@ Output ONLY the reply body. No subject line or signature.`;
           }
 
           if (googleIntegrationId) {
-            await adminClient.functions.invoke("send-email", {
-              body: {
+            const sendRes = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+              method: "POST",
+              headers: { Authorization: authHeader, "Content-Type": "application/json" },
+              body: JSON.stringify({
                 to: reply.fromEmail,
                 subject: `Re: ${reply.subject}`,
                 body: meetingReply,
-                integrationId: googleIntegrationId,
-              },
+                integrationRowId: googleIntegrationId,
+              }),
             });
+            const sendData = await sendRes.json().catch(() => ({}));
+            if (!sendRes.ok || sendData?.error) {
+              throw new Error(sendData?.error ?? `send-email returned ${sendRes.status}`);
+            }
           }
 
           await adminClient
@@ -1004,7 +1086,7 @@ Output ONLY the reply body. No subject line or signature.`;
     }
 
     const runSummary = approvalMode
-      ? `Run finished in approval mode — ${leadsFound} lead(s) found, ${threadsChecked} thread(s) checked, ${pendingApprovals} draft(s) waiting for your approval.`
+      ? `Run finished in approval mode — ${leadsFound} new lead(s) found, ${outreachDrafted} first-touch draft(s) created, ${threadsChecked} thread(s) checked, ${pendingApprovals} total draft(s) waiting for your approval.`
       : `Run finished autonomously — ${leadsFound} lead(s) found, ${outreachSent} first-touch email(s) sent, ${threadsChecked} thread(s) checked, ${repliesSent} reply(ies) sent.`;
 
     await adminClient.from("agent_actions").insert({
@@ -1016,6 +1098,7 @@ Output ONLY the reply body. No subject line or signature.`;
         mode: approvalMode ? "approval" : "autonomous",
         threads_checked: threadsChecked,
         leads_found: leadsFound,
+        outreach_drafted: outreachDrafted,
         outreach_sent: outreachSent,
         pending_approvals: pendingApprovals,
         replies_processed: repliesProcessed,
@@ -1033,6 +1116,7 @@ Output ONLY the reply body. No subject line or signature.`;
         summary: runSummary,
         threadsChecked,
         leadsFound,
+        outreachDrafted,
         outreachSent,
         pendingApprovals,
         repliesProcessed,
