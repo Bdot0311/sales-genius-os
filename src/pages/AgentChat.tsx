@@ -45,7 +45,9 @@ interface ToolEvent {
   approval_id?: string;
   approval_kind?: string;
   approval_summary?: string;
+  drafts?: ChatDraft[];
 }
+
 
 interface ChatMessage {
   id: string;
