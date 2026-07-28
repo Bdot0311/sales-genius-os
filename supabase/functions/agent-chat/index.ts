@@ -749,14 +749,34 @@ serve(async (req) => {
 
         case "run_full_agent": {
           if (!autonomous) {
-            const r = await invokeFn("agent-run", { mode: "approval" });
+            const { data: approval, error: apprError } = await admin
+              .from("agent_approvals")
+              .insert({
+                user_id: userId,
+                kind: "agent_run",
+                status: "pending",
+                subject: "Run the full AI SDR cycle",
+                reasoning:
+                  "Requested in AI SDR chat — sources leads, drafts sequences and sends first touches",
+                metadata: { source: "agent_chat", thread_id: threadId },
+              })
+              .select("id")
+              .single();
+            if (apprError) return { error: apprError.message };
             toolEvents.push({
               name,
-              label: "Ran agent (approval mode)",
+              label: "Waiting for your approval",
               status: "queued",
-              detail: r?.summary ?? "Drafts queued for approval",
+              detail: "Run the full AI SDR cycle (source, draft, send)",
+              approval_id: approval.id,
+              approval_kind: "agent_run",
             });
-            return r;
+            return {
+              queued_for_approval: true,
+              approval_id: approval.id,
+              message:
+                "Nothing ran yet. An approve/reject card is shown to the user right here in the chat.",
+            };
           }
           const r = await invokeFn("agent-run", { mode: "autonomous" });
           toolEvents.push({
