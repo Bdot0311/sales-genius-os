@@ -243,7 +243,7 @@ serve(async (req) => {
             intent_score: l.scores?.intent_score ?? null,
             signals: Array.isArray(l.buying_signals) ? l.buying_signals : null,
             source: "ai_agent",
-            lead_status: "new",
+            lead_status: "discovered",
             enrichment_status: email ? "enriched" : "pending",
           });
           if (insertLeadErr) {
