@@ -19,6 +19,9 @@ type ToolEvent = {
   label: string;
   status: "ok" | "error" | "queued";
   detail: string;
+  approval_id?: string;
+  approval_kind?: string;
+  approval_summary?: string;
 };
 
 const LEAD_FIELDS =
@@ -123,7 +126,7 @@ const TOOLS = [
     function: {
       name: "send_outreach",
       description:
-        "Send an email to a lead. In approval mode this queues the draft for the user to approve in the Approvals tab instead of sending.",
+        "Send an email to a lead. In approval mode this pauses and shows the user an approve/reject card inline in the chat instead of sending.",
       parameters: {
         type: "object",
         properties: {
@@ -224,8 +227,132 @@ serve(async (req) => {
 
     const payload = await req.json().catch(() => ({} as Record<string, unknown>));
     const threadId = String(payload.threadId ?? "");
-    const userMessage = String(payload.message ?? "").trim().slice(0, 4000);
+    const action = String(payload.action ?? "chat");
     if (!threadId) return json({ error: "Missing threadId" }, 400);
+
+    const callFn = async (name: string, body: unknown) => {
+      const res = await fetch(`${supabaseUrl}/functions/v1/${name}`, {
+        method: "POST",
+        headers: {
+          Authorization: authHeader,
+          "Content-Type": "application/json",
+          apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+        },
+        body: JSON.stringify(body ?? {}),
+      });
+      const text = await res.text();
+      try {
+        return JSON.parse(text);
+      } catch {
+        return { error: text.slice(0, 300) };
+      }
+    };
+
+    // --- inline approve / reject from the chat ---------------------------
+    if (action === "resolve_approval") {
+      const approvalId = String(payload.approvalId ?? "");
+      const decision = payload.decision === "approve" ? "approve" : "reject";
+      if (!approvalId) return json({ error: "Missing approvalId" }, 400);
+
+      const { data: approval } = await admin
+        .from("agent_approvals")
+        .select("*")
+        .eq("id", approvalId)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (!approval) return json({ error: "Approval not found" }, 404);
+      if (approval.status !== "pending")
+        return json({ error: "That request was already handled." }, 409);
+
+      let outcome = "";
+      let failed = false;
+
+      if (decision === "reject") {
+        outcome = "Rejected — nothing was sent or changed.";
+      } else if (approval.kind === "outreach") {
+        const r = await callFn("send-email", {
+          to: approval.prospect_email,
+          subject: approval.subject,
+          body: approval.body,
+          leadId: approval.lead_id,
+        });
+        failed = Boolean(r?.error);
+        if (!failed) {
+          if (approval.lead_id) {
+            await admin
+              .from("leads")
+              .update({ lead_status: "active", last_contacted_at: new Date().toISOString() })
+              .eq("id", approval.lead_id)
+              .eq("user_id", userId);
+          }
+          await admin.from("agent_actions").insert({
+            user_id: userId,
+            action_type: "outreach_sent",
+            status: "completed",
+            prospect_email: approval.prospect_email,
+            subject: approval.subject,
+            description: `Sent approved outreach to ${approval.prospect_email} from AI SDR chat`,
+            metadata: { source: "agent_chat", thread_id: threadId },
+          });
+        }
+        outcome = failed
+          ? `Send failed: ${String(r?.error).slice(0, 200)}`
+          : `Approved — email sent to ${approval.prospect_email}.`;
+      } else if (approval.kind === "enrollment") {
+        const meta = (approval.metadata ?? {}) as Record<string, any>;
+        const { error } = await admin.from("sequence_enrollments").insert({
+          user_id: userId,
+          lead_id: approval.lead_id,
+          sequence_id: meta.sequence_id,
+          next_action_at: new Date().toISOString(),
+        });
+        failed = Boolean(error);
+        outcome = error
+          ? `Enrollment failed: ${error.message}`
+          : `Approved — ${approval.company_name ?? approval.prospect_email ?? "the lead"} was enrolled in the sequence.`;
+      } else if (approval.kind === "agent_run") {
+        const r = await callFn("agent-run", { mode: "autonomous" });
+        failed = Boolean(r?.error);
+        outcome = failed
+          ? `Agent run failed: ${String(r?.error).slice(0, 200)}`
+          : `Approved — full agent run complete. ${r?.summary ?? ""}`.trim();
+      } else {
+        outcome = "Approved.";
+      }
+
+      await admin
+        .from("agent_approvals")
+        .update({
+          status: failed ? "pending" : decision === "approve" ? "approved" : "rejected",
+          reviewed_at: failed ? null : new Date().toISOString(),
+        })
+        .eq("id", approvalId)
+        .eq("user_id", userId);
+
+      const { data: saved } = await admin
+        .from("agent_chat_messages")
+        .insert({
+          thread_id: threadId,
+          user_id: userId,
+          role: "assistant",
+          content: outcome,
+          tool_events: [],
+        })
+        .select("id, role, content, tool_events, created_at")
+        .single();
+
+      await admin
+        .from("agent_chat_threads")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", threadId);
+
+      return json({
+        message: saved,
+        approval: { id: approvalId, status: failed ? "pending" : decision === "approve" ? "approved" : "rejected" },
+      });
+    }
+
+    const userMessage = String(payload.message ?? "").trim().slice(0, 4000);
     if (!userMessage) return json({ error: "Message is required" }, 400);
 
     const { data: thread } = await admin
@@ -434,15 +561,18 @@ serve(async (req) => {
             if (error) return { error: error.message };
             toolEvents.push({
               name,
-              label: "Queued for approval",
+              label: "Waiting for your approval",
               status: "queued",
-              detail: `${lead.contact_email} — approve in the Approvals tab`,
+              detail: `Send "${subject}" to ${lead.contact_email}`,
+              approval_id: approval.id,
+              approval_kind: "outreach",
+              approval_summary: body.slice(0, 600),
             });
             return {
               queued_for_approval: true,
               approval_id: approval.id,
               message:
-                "Approval mode is on, so nothing was sent. The draft is waiting in the Approvals tab.",
+                "Nothing was sent. An approve/reject card is shown to the user right here in the chat — wait for their decision.",
             };
           }
 
@@ -497,16 +627,40 @@ serve(async (req) => {
           const lead = await loadLead(String(args.lead_id ?? ""));
           if (!lead) return { error: "Lead not found" };
           if (!autonomous) {
+            const { data: approval, error: apprError } = await admin
+              .from("agent_approvals")
+              .insert({
+                user_id: userId,
+                kind: "enrollment",
+                status: "pending",
+                lead_id: lead.id,
+                prospect_email: lead.contact_email,
+                prospect_name: lead.contact_name,
+                company_name: lead.company_name,
+                subject: "Enroll in sequence",
+                reasoning: "Requested in AI SDR chat — awaiting your approval",
+                metadata: {
+                  source: "agent_chat",
+                  thread_id: threadId,
+                  sequence_id: String(args.sequence_id ?? ""),
+                },
+              })
+              .select("id")
+              .single();
+            if (apprError) return { error: apprError.message };
             toolEvents.push({
               name,
-              label: "Enrollment needs approval",
+              label: "Waiting for your approval",
               status: "queued",
-              detail: `${lead.company_name ?? lead.contact_email}`,
+              detail: `Enroll ${lead.company_name ?? lead.contact_email} in the sequence`,
+              approval_id: approval.id,
+              approval_kind: "enrollment",
             });
             return {
-              blocked: true,
+              queued_for_approval: true,
+              approval_id: approval.id,
               message:
-                "Approval mode is on. Ask the user to switch this conversation to full autonomy, or confirm before enrolling.",
+                "Not enrolled yet. An approve/reject card is shown to the user right here in the chat.",
             };
           }
           const { data, error } = await admin
@@ -595,14 +749,34 @@ serve(async (req) => {
 
         case "run_full_agent": {
           if (!autonomous) {
-            const r = await invokeFn("agent-run", { mode: "approval" });
+            const { data: approval, error: apprError } = await admin
+              .from("agent_approvals")
+              .insert({
+                user_id: userId,
+                kind: "agent_run",
+                status: "pending",
+                subject: "Run the full AI SDR cycle",
+                reasoning:
+                  "Requested in AI SDR chat — sources leads, drafts sequences and sends first touches",
+                metadata: { source: "agent_chat", thread_id: threadId },
+              })
+              .select("id")
+              .single();
+            if (apprError) return { error: apprError.message };
             toolEvents.push({
               name,
-              label: "Ran agent (approval mode)",
+              label: "Waiting for your approval",
               status: "queued",
-              detail: r?.summary ?? "Drafts queued for approval",
+              detail: "Run the full AI SDR cycle (source, draft, send)",
+              approval_id: approval.id,
+              approval_kind: "agent_run",
             });
-            return r;
+            return {
+              queued_for_approval: true,
+              approval_id: approval.id,
+              message:
+                "Nothing ran yet. An approve/reject card is shown to the user right here in the chat.",
+            };
           }
           const r = await invokeFn("agent-run", { mode: "autonomous" });
           toolEvents.push({
@@ -630,7 +804,7 @@ HOW TO WORK
 - Be concise and specific. Short paragraphs, tight bullet lists, real numbers and names. No emojis, no filler.
 
 AUTONOMY
-This conversation is in ${autonomous ? "FULL AUTONOMY mode: sending, enrolling and full agent runs execute immediately." : "APPROVAL mode: anything that sends an email, enrolls a lead, or runs the full agent is queued for the user's approval instead of executing. Tell the user clearly what was queued and where to approve it (the Approvals tab)."}
+This conversation is in ${autonomous ? "FULL AUTONOMY mode: sending, enrolling and full agent runs execute immediately." : "APPROVAL mode: anything that sends an email, enrolls a lead, or runs the full agent pauses for the user's approval instead of executing. When that happens an approve/reject card appears inline in this chat — say briefly what you want to do and ask them to approve it below. Never tell them to go to another tab or page."}
 ${autonomous ? "" : "If the user asks you to just get on with it without approving each step, tell them they can switch this conversation to full autonomy with the mode selector at the top of the chat."}
 
 COLD EMAIL RULES (apply to every draft you write or review)

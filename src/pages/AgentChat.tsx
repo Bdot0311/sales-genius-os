@@ -42,6 +42,9 @@ interface ToolEvent {
   label: string;
   status: "ok" | "error" | "queued";
   detail: string;
+  approval_id?: string;
+  approval_kind?: string;
+  approval_summary?: string;
 }
 
 interface ChatMessage {
@@ -68,8 +71,11 @@ const AgentChat = () => {
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [autonomy, setAutonomy] = useState<"approval" | "autonomous">("approval");
+  const [approvalStatus, setApprovalStatus] = useState<Record<string, string>>({});
+  const [resolving, setResolving] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
 
   const loadThreads = useCallback(async () => {
     const { data } = await supabase
@@ -168,7 +174,7 @@ const AgentChat = () => {
     toast.success(
       value === "autonomous"
         ? "Full autonomy on — the agent will send and enroll without asking"
-        : "Approval mode on — sends and enrollments go to Approvals first",
+        : "Approval mode on — the agent will ask you to approve sends right in the chat",
     );
   };
 
@@ -201,6 +207,57 @@ const AgentChat = () => {
     } finally {
       setSending(false);
       inputRef.current?.focus();
+    }
+  };
+
+  // Keep inline approval cards in sync with the stored decision.
+  useEffect(() => {
+    const ids = messages
+      .flatMap((m) => m.tool_events ?? [])
+      .map((e) => e.approval_id)
+      .filter((id): id is string => Boolean(id));
+    if (!ids.length) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("agent_approvals")
+        .select("id, status")
+        .in("id", ids);
+      if (cancelled || !data) return;
+      setApprovalStatus((prev) => {
+        const next = { ...prev };
+        for (const row of data as { id: string; status: string }[]) next[row.id] = row.status;
+        return next;
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [messages]);
+
+  const handleApprovalDecision = async (
+    approvalId: string,
+    decision: "approve" | "reject",
+  ) => {
+    if (!threadId || resolving) return;
+    setResolving(approvalId);
+    try {
+      const { data, error } = await supabase.functions.invoke("agent-chat", {
+        body: { threadId, action: "resolve_approval", approvalId, decision },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      const status = (data as any)?.approval?.status ?? decision;
+      setApprovalStatus((prev) => ({ ...prev, [approvalId]: status }));
+      if ((data as any)?.message) {
+        setMessages((prev) => [...prev, (data as any).message as ChatMessage]);
+      }
+      loadThreads();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast.error(`Could not ${decision} that: ${message}`);
+    } finally {
+      setResolving(null);
     }
   };
 
@@ -336,26 +393,84 @@ const AgentChat = () => {
                   <div key={m.id} className="space-y-2">
                     {!!m.tool_events?.length && (
                       <div className="space-y-1">
-                        {m.tool_events.map((e, i) => (
+                        {m.tool_events
+                          .filter((e) => !e.approval_id)
+                          .map((e, i) => (
+                            <div
+                              key={`${m.id}-${i}`}
+                              className="flex items-center gap-2 text-xs text-muted-foreground"
+                            >
+                              {statusIcon(e.status)}
+                              <span className="font-medium text-foreground/80">{e.label}</span>
+                              <span className="truncate">— {e.detail}</span>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+
+                    {(m.tool_events ?? [])
+                      .filter((e) => e.approval_id)
+                      .map((e) => {
+                        const status = approvalStatus[e.approval_id!] ?? "pending";
+                        const pending = status === "pending";
+                        return (
                           <div
-                            key={`${m.id}-${i}`}
-                            className="flex items-center gap-2 text-xs text-muted-foreground"
+                            key={e.approval_id}
+                            className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 space-y-2"
                           >
-                            {statusIcon(e.status)}
-                            <span className="font-medium text-foreground/80">{e.label}</span>
-                            <span className="truncate">— {e.detail}</span>
-                            {e.status === "queued" && (
+                            <div className="flex items-center gap-2 text-xs">
+                              <Clock className="w-3.5 h-3.5 text-amber-400" />
+                              <span className="font-medium text-foreground">
+                                {pending ? "Approval needed" : "Approval request"}
+                              </span>
+                            </div>
+                            <p className="text-sm text-foreground/90">{e.detail}</p>
+                            {e.approval_summary && (
+                              <p className="text-xs text-muted-foreground whitespace-pre-wrap border-l-2 border-border/60 pl-2">
+                                {e.approval_summary}
+                              </p>
+                            )}
+                            {pending ? (
+                              <div className="flex gap-2 pt-1">
+                                <Button
+                                  size="sm"
+                                  className="gap-1.5"
+                                  disabled={resolving === e.approval_id}
+                                  onClick={() => handleApprovalDecision(e.approval_id!, "approve")}
+                                >
+                                  {resolving === e.approval_id ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  ) : (
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                  )}
+                                  Approve
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={resolving === e.approval_id}
+                                  onClick={() => handleApprovalDecision(e.approval_id!, "reject")}
+                                >
+                                  Reject
+                                </Button>
+                              </div>
+                            ) : (
                               <Badge
                                 variant="outline"
-                                className="ml-1 px-1.5 py-0 text-[10px] bg-amber-500/15 text-amber-400 border-amber-500/30"
+                                className={cn(
+                                  "px-1.5 py-0 text-[10px]",
+                                  status === "approved"
+                                    ? "bg-green-500/15 text-green-400 border-green-500/30"
+                                    : "bg-muted/40 text-muted-foreground border-border",
+                                )}
                               >
-                                needs approval
+                                {status === "approved" ? "Approved" : "Rejected"}
                               </Badge>
                             )}
                           </div>
-                        ))}
-                      </div>
-                    )}
+                        );
+                      })}
+
                     <div className="prose prose-sm prose-invert max-w-none text-sm leading-relaxed">
                       <ReactMarkdown>{m.content}</ReactMarkdown>
                     </div>
@@ -406,7 +521,7 @@ const AgentChat = () => {
             <p className="max-w-3xl mx-auto mt-2 text-[11px] text-muted-foreground">
               {autonomy === "autonomous"
                 ? "Full autonomy: sends, enrollments and full runs execute immediately."
-                : "Approval mode: drafts are queued in the Approvals tab before anything is sent."}
+                : "Approval mode: the agent asks you to approve sends and runs right here in the chat."}
             </p>
           </div>
         </Card>
