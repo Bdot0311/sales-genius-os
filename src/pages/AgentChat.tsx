@@ -112,7 +112,7 @@ const AgentChat = () => {
       if (cancelled) return;
       if (!threadId) {
         const target = list[0] ?? (await createThread());
-        if (target && !cancelled) navigate(`/agent/chat/${target.id}`, { replace: true });
+        if (target && !cancelled) navigate(`/dashboard/agent/chat/${target.id}`, { replace: true });
         setLoading(false);
         return;
       }
@@ -123,7 +123,7 @@ const AgentChat = () => {
         .maybeSingle();
       if (cancelled) return;
       if (!thread) {
-        navigate("/agent/chat", { replace: true });
+        navigate("/dashboard/agent/chat", { replace: true });
         return;
       }
       setAutonomy((thread as Thread).autonomy);
@@ -148,7 +148,7 @@ const AgentChat = () => {
 
   const handleNewThread = async () => {
     const t = await createThread();
-    if (t) navigate(`/agent/chat/${t.id}`);
+    if (t) navigate(`/dashboard/agent/chat/${t.id}`);
   };
 
   const handleDeleteThread = async (id: string) => {
@@ -156,8 +156,8 @@ const AgentChat = () => {
     const remaining = threads.filter((t) => t.id !== id);
     setThreads(remaining);
     if (id === threadId) {
-      if (remaining[0]) navigate(`/agent/chat/${remaining[0].id}`, { replace: true });
-      else navigate("/agent/chat", { replace: true });
+      if (remaining[0]) navigate(`/dashboard/agent/chat/${remaining[0].id}`, { replace: true });
+      else navigate("/dashboard/agent/chat", { replace: true });
     }
   };
 
@@ -222,7 +222,7 @@ const AgentChat = () => {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate("/agent")}
+              onClick={() => navigate("/dashboard/agent")}
               aria-label="Back to agent"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -245,7 +245,7 @@ const AgentChat = () => {
                   <button
                     type="button"
                     className="flex-1 min-w-0 text-left"
-                    onClick={() => navigate(`/agent/chat/${t.id}`)}
+                    onClick={() => navigate(`/dashboard/agent/chat/${t.id}`)}
                   >
                     <span className="block truncate">{t.title}</span>
                     <span className="block text-[10px] text-muted-foreground">
