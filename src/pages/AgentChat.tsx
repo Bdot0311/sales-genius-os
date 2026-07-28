@@ -210,6 +210,57 @@ const AgentChat = () => {
     }
   };
 
+  // Keep inline approval cards in sync with the stored decision.
+  useEffect(() => {
+    const ids = messages
+      .flatMap((m) => m.tool_events ?? [])
+      .map((e) => e.approval_id)
+      .filter((id): id is string => Boolean(id));
+    if (!ids.length) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("agent_approvals")
+        .select("id, status")
+        .in("id", ids);
+      if (cancelled || !data) return;
+      setApprovalStatus((prev) => {
+        const next = { ...prev };
+        for (const row of data as { id: string; status: string }[]) next[row.id] = row.status;
+        return next;
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [messages]);
+
+  const handleApprovalDecision = async (
+    approvalId: string,
+    decision: "approve" | "reject",
+  ) => {
+    if (!threadId || resolving) return;
+    setResolving(approvalId);
+    try {
+      const { data, error } = await supabase.functions.invoke("agent-chat", {
+        body: { threadId, action: "resolve_approval", approvalId, decision },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      const status = (data as any)?.approval?.status ?? decision;
+      setApprovalStatus((prev) => ({ ...prev, [approvalId]: status }));
+      if ((data as any)?.message) {
+        setMessages((prev) => [...prev, (data as any).message as ChatMessage]);
+      }
+      loadThreads();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast.error(`Could not ${decision} that: ${message}`);
+    } finally {
+      setResolving(null);
+    }
+  };
+
   const statusIcon = (status: ToolEvent["status"]) =>
     status === "ok" ? (
       <CheckCircle2 className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />
