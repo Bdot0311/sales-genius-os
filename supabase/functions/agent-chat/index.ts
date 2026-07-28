@@ -627,16 +627,40 @@ serve(async (req) => {
           const lead = await loadLead(String(args.lead_id ?? ""));
           if (!lead) return { error: "Lead not found" };
           if (!autonomous) {
+            const { data: approval, error: apprError } = await admin
+              .from("agent_approvals")
+              .insert({
+                user_id: userId,
+                kind: "enrollment",
+                status: "pending",
+                lead_id: lead.id,
+                prospect_email: lead.contact_email,
+                prospect_name: lead.contact_name,
+                company_name: lead.company_name,
+                subject: "Enroll in sequence",
+                reasoning: "Requested in AI SDR chat — awaiting your approval",
+                metadata: {
+                  source: "agent_chat",
+                  thread_id: threadId,
+                  sequence_id: String(args.sequence_id ?? ""),
+                },
+              })
+              .select("id")
+              .single();
+            if (apprError) return { error: apprError.message };
             toolEvents.push({
               name,
-              label: "Enrollment needs approval",
+              label: "Waiting for your approval",
               status: "queued",
-              detail: `${lead.company_name ?? lead.contact_email}`,
+              detail: `Enroll ${lead.company_name ?? lead.contact_email} in the sequence`,
+              approval_id: approval.id,
+              approval_kind: "enrollment",
             });
             return {
-              blocked: true,
+              queued_for_approval: true,
+              approval_id: approval.id,
               message:
-                "Approval mode is on. Ask the user to switch this conversation to full autonomy, or confirm before enrolling.",
+                "Not enrolled yet. An approve/reject card is shown to the user right here in the chat.",
             };
           }
           const { data, error } = await admin
