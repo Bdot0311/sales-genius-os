@@ -19,6 +19,9 @@ type ToolEvent = {
   label: string;
   status: "ok" | "error" | "queued";
   detail: string;
+  approval_id?: string;
+  approval_kind?: string;
+  approval_summary?: string;
 };
 
 const LEAD_FIELDS =
