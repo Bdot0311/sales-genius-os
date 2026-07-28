@@ -1,4 +1,4 @@
-import { Mail, Calendar, XCircle, X, RefreshCw, AlertTriangle, Brain, CheckCircle2, XCircle as XCircleIcon, UserPlus, Send } from "lucide-react";
+import { Mail, Calendar, XCircle, X, RefreshCw, AlertTriangle, Brain, CheckCircle2, XCircle as XCircleIcon, UserPlus, Send, ShieldQuestion } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDistanceToNow } from "date-fns";
@@ -34,7 +34,10 @@ const ACTION_ICONS: Record<string, { icon: React.ReactNode; label: string }> = {
   error: { icon: <AlertTriangle className="w-4 h-4 text-red-500" />, label: "Error" },
   sync: { icon: <RefreshCw className="w-4 h-4 text-purple-400" />, label: "Synced" },
   classify: { icon: <Brain className="w-4 h-4 text-indigo-400" />, label: "Classified" },
+  awaiting_approval: { icon: <ShieldQuestion className="w-4 h-4 text-amber-400" />, label: "Awaiting Approval" },
+  rejected: { icon: <XCircle className="w-4 h-4 text-red-400" />, label: "Rejected" },
 };
+
 
 const CLASSIFICATION_BADGES: Record<string, { label: string; className: string }> = {
   interested: { label: "Interested", className: "bg-green-500/20 text-green-400 border-green-500/30" },

@@ -82,6 +82,7 @@ serve(async (req) => {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const reqBody: { mode?: string } = await req.json().catch(() => ({}));
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -153,6 +154,32 @@ serve(async (req) => {
 
     const cfgValueProps = Array.isArray(config.value_props) ? config.value_props : [];
     const cfgValuePropsText = cfgValueProps.join("\n");
+
+    // Run mode: "approval" queues drafts for human review, "autonomous" sends directly.
+    const approvalMode =
+      reqBody.mode === "approval"
+        ? true
+        : reqBody.mode === "autonomous"
+        ? false
+        : (agentConfig as any).approval_mode !== false;
+
+    let pendingApprovals = 0;
+
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+    async function queueApproval(row: Record<string, unknown>) {
+      const { error } = await adminClient.from("agent_approvals").insert({
+        user_id: user.id,
+        status: "pending",
+        ...row,
+      });
+      if (error) {
+        console.error("queueApproval error:", error.message);
+        return false;
+      }
+      pendingApprovals++;
+      return true;
+    }
 
     // ────────────────────────────────────────────────────────────────────────
     // PHASE 1 — Lead generation
@@ -268,6 +295,18 @@ serve(async (req) => {
             if (remainingOutreach <= 0) break;
             const to = (lead.contact_email || "").trim();
             if (!to) continue;
+            if (!EMAIL_RE.test(to)) {
+              await adminClient.from("agent_actions").insert({
+                user_id: user.id,
+                action_type: "skipped",
+                status: "skipped",
+                prospect_email: to,
+                description: `Skipped ${lead.company_name ?? "lead"} — "${to}" is not a valid email address`,
+                metadata: { phase: "outreach", reason: "invalid_email", lead_id: lead.id },
+              });
+              continue;
+            }
+
 
             try {
               const { data: alreadySent } = await adminClient
@@ -338,6 +377,33 @@ Return JSON only: { "subject": "...", "body": "..." }`;
                 continue;
               }
 
+              if (approvalMode) {
+                await queueApproval({
+                  kind: "outreach",
+                  lead_id: lead.id,
+                  integration_row_id: googleIntegrationId,
+                  prospect_email: to,
+                  prospect_name: lead.contact_name ?? null,
+                  company_name: lead.company_name ?? null,
+                  subject,
+                  body,
+                  reasoning: `Drafted first-touch email for ${lead.job_title ?? "contact"} at ${lead.company_name ?? "their company"}.`,
+                  metadata: { phase: "outreach", job_title: lead.job_title ?? null },
+                });
+                await adminClient.from("agent_actions").insert({
+                  user_id: user.id,
+                  action_type: "awaiting_approval",
+                  status: "pending",
+                  prospect_email: to,
+                  subject,
+                  reply_content: body,
+                  description: `Drafted a first-touch email to ${lead.contact_name ?? to} at ${lead.company_name ?? "their company"} — waiting for your approval`,
+                  metadata: { phase: "outreach", lead_id: lead.id },
+                });
+                remainingOutreach--;
+                continue;
+              }
+
               const sendRes = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
                 method: "POST",
                 headers: { Authorization: authHeader, "Content-Type": "application/json" },
@@ -359,7 +425,8 @@ Return JSON only: { "subject": "...", "body": "..." }`;
                   prospect_email: to,
                   subject,
                   error_message: sendData?.error ?? `send-email returned ${sendRes.status}`,
-                  metadata: { phase: "outreach" },
+                  description: `Could not send to ${to}: ${sendData?.error ?? `send-email returned ${sendRes.status}`}`,
+                  metadata: { phase: "outreach", lead_id: lead.id },
                 });
                 continue;
               }
@@ -477,6 +544,21 @@ Return JSON: { "classification": one of ["interested","objection","meeting_reque
           // classification stays "unknown"
         }
 
+        await adminClient.from("agent_actions").insert({
+          user_id: user.id,
+          sent_email_id: reply.sentEmailId,
+          action_type: "classify",
+          status: "completed",
+          prospect_email: reply.fromEmail,
+          subject: reply.subject,
+          classification,
+          description: `Read reply from ${reply.fromEmail} and classified it as "${classification}" (${Math.round(
+            (confidence ?? 0) * 100
+          )}% confidence)${reasoning ? ` — ${reasoning}` : ""}`,
+          metadata: { phase: "reply", confidence, reasoning },
+        });
+
+
         if (!reply.bodyText.trim()) {
           await adminClient.from("agent_actions").insert({
             user_id: user.id,
@@ -573,6 +655,33 @@ Output ONLY the reply body. No subject line. No greeting like "Hi [name]". No si
             continue;
           }
 
+          if (approvalMode) {
+            await queueApproval({
+              kind: "reply",
+              sent_email_id: reply.sentEmailId,
+              integration_row_id: googleIntegrationId,
+              prospect_email: reply.fromEmail,
+              subject: `Re: ${reply.subject}`,
+              body: generatedReply,
+              classification: "interested",
+              reasoning,
+              metadata: { phase: "reply", gmail_message_id: reply.gmailMessageId, confidence },
+            });
+            await adminClient.from("agent_actions").insert({
+              user_id: user.id,
+              sent_email_id: reply.sentEmailId,
+              action_type: "awaiting_approval",
+              status: "pending",
+              prospect_email: reply.fromEmail,
+              subject: reply.subject,
+              classification: "interested",
+              reply_content: generatedReply,
+              description: `${reply.fromEmail} replied with interest — drafted a response for your approval`,
+              metadata: { phase: "reply", confidence },
+            });
+            continue;
+          }
+
           if (googleIntegrationId) {
             await adminClient.functions.invoke("send-email", {
               body: {
@@ -638,6 +747,33 @@ Output ONLY the reply body. No subject line or signature.`;
             continue;
           }
 
+          if (approvalMode) {
+            await queueApproval({
+              kind: "reply",
+              sent_email_id: reply.sentEmailId,
+              integration_row_id: googleIntegrationId,
+              prospect_email: reply.fromEmail,
+              subject: `Re: ${reply.subject}`,
+              body: generatedReply,
+              classification: "objection",
+              reasoning,
+              metadata: { phase: "reply", gmail_message_id: reply.gmailMessageId, confidence },
+            });
+            await adminClient.from("agent_actions").insert({
+              user_id: user.id,
+              sent_email_id: reply.sentEmailId,
+              action_type: "awaiting_approval",
+              status: "pending",
+              prospect_email: reply.fromEmail,
+              subject: reply.subject,
+              classification: "objection",
+              reply_content: generatedReply,
+              description: `${reply.fromEmail} raised an objection — drafted a response for your approval`,
+              metadata: { phase: "reply", confidence },
+            });
+            continue;
+          }
+
           if (googleIntegrationId) {
             await adminClient.functions.invoke("send-email", {
               body: {
@@ -684,6 +820,33 @@ Prospect reply: ${reply.bodyText}
 Write a short, friendly reply asking for their availability (2-3 time options format or asking when works best).
 Output ONLY the reply body. No subject line or signature.`;
             meetingReply = await callGemini(meetingPrompt, meetingSystemPrompt);
+          }
+
+          if (approvalMode) {
+            await queueApproval({
+              kind: "reply",
+              sent_email_id: reply.sentEmailId,
+              integration_row_id: googleIntegrationId,
+              prospect_email: reply.fromEmail,
+              subject: `Re: ${reply.subject}`,
+              body: meetingReply,
+              classification: "meeting_request",
+              reasoning,
+              metadata: { phase: "reply", gmail_message_id: reply.gmailMessageId, confidence },
+            });
+            await adminClient.from("agent_actions").insert({
+              user_id: user.id,
+              sent_email_id: reply.sentEmailId,
+              action_type: "awaiting_approval",
+              status: "pending",
+              prospect_email: reply.fromEmail,
+              subject: reply.subject,
+              classification: "meeting_request",
+              reply_content: meetingReply,
+              description: `${reply.fromEmail} asked to meet — drafted a scheduling reply for your approval`,
+              metadata: { phase: "reply", confidence },
+            });
+            continue;
           }
 
           if (googleIntegrationId) {
@@ -810,14 +973,21 @@ Output ONLY the reply body. No subject line or signature.`;
       }
     }
 
+    const runSummary = approvalMode
+      ? `Run finished in approval mode — ${leadsFound} lead(s) found, ${threadsChecked} thread(s) checked, ${pendingApprovals} draft(s) waiting for your approval.`
+      : `Run finished autonomously — ${leadsFound} lead(s) found, ${outreachSent} first-touch email(s) sent, ${threadsChecked} thread(s) checked, ${repliesSent} reply(ies) sent.`;
+
     await adminClient.from("agent_actions").insert({
       user_id: user.id,
       action_type: "sync",
       status: "completed",
+      description: runSummary,
       metadata: {
+        mode: approvalMode ? "approval" : "autonomous",
         threads_checked: threadsChecked,
         leads_found: leadsFound,
         outreach_sent: outreachSent,
+        pending_approvals: pendingApprovals,
         replies_processed: repliesProcessed,
         replies_sent: repliesSent,
         meetings_booked: meetingsBooked,
@@ -829,9 +999,12 @@ Output ONLY the reply body. No subject line or signature.`;
     return new Response(
       JSON.stringify({
         success: true,
+        mode: approvalMode ? "approval" : "autonomous",
+        summary: runSummary,
         threadsChecked,
         leadsFound,
         outreachSent,
+        pendingApprovals,
         repliesProcessed,
         repliesSent,
         meetingsBooked,

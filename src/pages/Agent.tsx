@@ -29,7 +29,16 @@ import { OverviewTab } from "@/components/agent/OverviewTab";
 import { InboxTab } from "@/components/agent/InboxTab";
 import { ConfigTab } from "@/components/agent/ConfigTab";
 import { SettingsTab } from "@/components/agent/SettingsTab";
+import { ApprovalsTab } from "@/components/agent/ApprovalsTab";
 import { AgentTestDialog } from "@/components/agent/AgentTestDialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 
 export interface AgentConfig {
   id: string;
@@ -96,6 +105,9 @@ const Agent = () => {
   const [toggling, setToggling] = useState(false);
   const [gmailConnected, setGmailConnected] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [runMode, setRunMode] = useState<"approval" | "autonomous">("approval");
+  const [pendingCount, setPendingCount] = useState(0);
+
 
   const loadData = useCallback(async () => {
     try {
@@ -180,6 +192,13 @@ const Agent = () => {
         meetingsBooked,
         lastRun: lastRunAction?.created_at ?? null,
       });
+
+      const { count: approvalCount } = await (supabase as any)
+        .from("agent_approvals")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", uid)
+        .eq("status", "pending");
+      setPendingCount(approvalCount ?? 0);
     } catch (err) {
       console.error("Agent load error:", err);
     } finally {
@@ -195,18 +214,23 @@ const Agent = () => {
   const handleRunAgent = async () => {
     setRunning(true);
     try {
-      const { data, error } = await supabase.functions.invoke("agent-run");
+      const { data, error } = await supabase.functions.invoke("agent-run", {
+        body: { mode: runMode },
+      });
       if (error) throw error;
       const result = data as {
+        summary?: string;
         leadsFound?: number;
         outreachSent?: number;
+        pendingApprovals?: number;
         repliesSent?: number;
         threadsChecked?: number;
       } | null;
       toast.success(
-        `Agent ran: ${result?.leadsFound ?? 0} leads found, ${
-          result?.outreachSent ?? 0
-        } emails sent, ${result?.repliesSent ?? 0} replies sent`
+        result?.summary ??
+          `Agent ran: ${result?.leadsFound ?? 0} leads found, ${
+            result?.outreachSent ?? 0
+          } emails sent, ${result?.repliesSent ?? 0} replies sent`
       );
       await loadData();
     } catch (err) {
@@ -216,6 +240,7 @@ const Agent = () => {
       setRunning(false);
     }
   };
+
 
   const handleToggle = async () => {
     if (!userId) return;
@@ -356,6 +381,18 @@ const Agent = () => {
               </span>
             </div>
             <AgentTestDialog disabled={loading} />
+            <Select
+              value={runMode}
+              onValueChange={(v) => setRunMode(v as "approval" | "autonomous")}
+            >
+              <SelectTrigger className="w-[190px]" aria-label="Run mode">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="approval">Approval mode</SelectItem>
+                <SelectItem value="autonomous">Autonomous</SelectItem>
+              </SelectContent>
+            </Select>
             <Button
               onClick={handleRunAgent}
               disabled={running || loading}
@@ -464,6 +501,17 @@ const Agent = () => {
         <Tabs defaultValue="overview" className="space-y-4">
           <TabsList className="bg-muted/40 border border-border/60">
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="approvals" className="gap-2">
+              Approvals
+              {pendingCount > 0 && (
+                <Badge
+                  variant="outline"
+                  className="px-1.5 py-0 text-[10px] bg-amber-500/15 text-amber-400 border-amber-500/30"
+                >
+                  {pendingCount}
+                </Badge>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="inbox">Inbox</TabsTrigger>
             <TabsTrigger value="configuration">Configuration</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
@@ -477,6 +525,11 @@ const Agent = () => {
               gmailConnected={gmailConnected}
             />
           </TabsContent>
+
+          <TabsContent value="approvals">
+            <ApprovalsTab onChanged={loadData} />
+          </TabsContent>
+
 
           <TabsContent value="inbox">
             <InboxTab />
