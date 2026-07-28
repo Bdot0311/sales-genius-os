@@ -97,14 +97,23 @@ const TOOLS = [
     function: {
       name: "draft_outreach",
       description:
-        "Draft a first-touch cold email for a lead, following the OutReign cold email playbook. Returns subject and body. Does not send anything.",
+        "Draft first-touch cold emails following the OutReign cold email playbook. Pass lead_ids to draft for several leads in ONE call (preferred — never call this tool repeatedly in parallel). Does not send anything.",
       parameters: {
         type: "object",
         properties: {
-          lead_id: { type: "string" },
-          goal: { type: "string", description: "reply, meeting, case_study or info" },
+          lead_id: { type: "string", description: "Single lead id (use lead_ids for batches)" },
+          lead_ids: {
+            type: "array",
+            items: { type: "string" },
+            description: "Up to 20 lead ids to draft for in one call",
+          },
+          goal: {
+            type: "string",
+            enum: ["introduction", "follow-up", "meeting", "demo", "proposal"],
+            description: "Email goal. Use 'introduction' for first touches.",
+          },
         },
-        required: ["lead_id"],
+        required: [],
       },
     },
   },
@@ -498,20 +507,62 @@ serve(async (req) => {
         }
 
         case "draft_outreach": {
-          const lead = await loadLead(String(args.lead_id ?? ""));
-          if (!lead) return { error: "Lead not found" };
-          const r = await invokeFn("generate-email", {
-            lead,
-            goal: args.goal ?? "reply",
-            tone: config?.tone ?? "professional",
-          });
+          const VALID_GOALS = ["introduction", "follow-up", "meeting", "demo", "proposal"];
+          const rawGoal = String(args.goal ?? "").trim().toLowerCase();
+          const goal = VALID_GOALS.includes(rawGoal) ? rawGoal : "introduction";
+
+          const ids: string[] = (
+            Array.isArray(args.lead_ids) && args.lead_ids.length
+              ? args.lead_ids
+              : [args.lead_id]
+          )
+            .filter(Boolean)
+            .map((x: any) => String(x))
+            .slice(0, 20);
+          if (ids.length === 0) return { error: "lead_id or lead_ids is required" };
+
+          const drafts: any[] = [];
+          for (const id of ids) {
+            const lead = await loadLead(id);
+            if (!lead) {
+              drafts.push({ lead_id: id, error: "Lead not found" });
+              continue;
+            }
+            let r = await invokeFn("generate-email", {
+              lead,
+              goal,
+              tone: config?.tone ?? "professional",
+            });
+            // one retry on upstream rate limiting
+            if (!r?.email && /rate limit/i.test(JSON.stringify(r?.error ?? ""))) {
+              await new Promise((res) => setTimeout(res, 3000));
+              r = await invokeFn("generate-email", {
+                lead,
+                goal,
+                tone: config?.tone ?? "professional",
+              });
+            }
+            drafts.push({
+              lead_id: id,
+              company: lead.company_name ?? null,
+              contact: lead.contact_name ?? null,
+              email: r?.email ?? null,
+              error: r?.email ? undefined : (r?.error ?? "Draft failed"),
+            });
+            if (ids.length > 1) await new Promise((res) => setTimeout(res, 900));
+          }
+
+          const okCount = drafts.filter((d) => d.email).length;
           toolEvents.push({
             name,
-            label: "Drafted email",
-            status: r?.email ? "ok" : "error",
-            detail: lead.company_name ?? lead.contact_email ?? "lead",
+            label: "Drafted emails",
+            status: okCount === 0 ? "error" : "ok",
+            detail:
+              ids.length === 1
+                ? (drafts[0]?.company ?? "lead")
+                : `${okCount}/${ids.length} drafted`,
           });
-          return r;
+          return { goal, drafts };
         }
 
         case "draft_sequence": {
@@ -799,7 +850,8 @@ You can take real action on the user's account using your tools: reading their l
 
 HOW TO WORK
 - When the user says something like "I just searched some leads, take it from here", find the relevant leads with list_leads first, then chain the work: enrich -> score -> draft -> send/queue. Do not ask permission for read-only or drafting steps; just do them and report back.
-- Do several tool calls in a row when needed. Prefer batching lead ids over one-at-a-time calls.
+- Do several tool calls in a row when needed. Prefer batching lead ids over one-at-a-time calls. For drafting, ALWAYS pass every lead id in a single draft_outreach call via lead_ids — never fire many parallel draft_outreach calls, that trips the rate limiter.
+- draft_outreach goal must be one of: introduction, follow-up, meeting, demo, proposal. Use "introduction" for first touches.
 - Never invent leads, metrics, emails or results. Only report what the tools returned.
 - Be concise and specific. Short paragraphs, tight bullet lists, real numbers and names. No emojis, no filler.
 
