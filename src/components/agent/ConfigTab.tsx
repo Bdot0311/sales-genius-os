@@ -66,6 +66,8 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
   const [prospectCompanySize, setProspectCompanySize] = useState("");
   const [dailyLeadTarget, setDailyLeadTarget] = useState("10");
   const [maxDailyNewEmails, setMaxDailyNewEmails] = useState("20");
+  const [icpSnapshot, setIcpSnapshot] = useState<ICPSnapshot | null>(null);
+  const [icpProfileId, setIcpProfileId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   // Populate form from config
