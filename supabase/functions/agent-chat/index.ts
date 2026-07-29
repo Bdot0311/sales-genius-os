@@ -251,6 +251,38 @@ serve(async (req) => {
     const action = String(payload.action ?? "chat");
     if (!threadId) return json({ error: "Missing threadId" }, 400);
 
+    // Wall-clock budget: edge functions get killed around ~150s, which the client
+    // surfaces as "Failed to send a request to the Edge Function". Stop early and
+    // return partial work instead of dying mid-flight.
+    const startedAt = Date.now();
+    const BUDGET_MS = 110_000;
+    const timeLeft = () => BUDGET_MS - (Date.now() - startedAt);
+    const outOfTime = () => timeLeft() <= 8_000;
+
+    // Run async work with bounded concurrency, stopping if the budget runs out.
+    const mapLimit = async <T, R>(
+      items: T[],
+      limit: number,
+      fn: (item: T) => Promise<R>,
+    ): Promise<{ results: R[]; skipped: T[] }> => {
+      const results: R[] = [];
+      const skipped: T[] = [];
+      let i = 0;
+      const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+        while (i < items.length) {
+          const idx = i++;
+          if (outOfTime()) {
+            skipped.push(items[idx]);
+            continue;
+          }
+          results.push(await fn(items[idx]));
+        }
+      });
+      await Promise.all(workers);
+      return { results, skipped };
+    };
+
+
     const callFn = async (name: string, body: unknown) => {
       const res = await fetch(`${supabaseUrl}/functions/v1/${name}`, {
         method: "POST",
