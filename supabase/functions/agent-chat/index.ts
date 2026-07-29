@@ -519,36 +519,35 @@ serve(async (req) => {
 
         case "enrich_leads": {
           const ids: string[] = (args.lead_ids ?? []).slice(0, 10);
-          const results: unknown[] = [];
-          for (const id of ids) {
+          const { results, skipped } = await mapLimit(ids, 4, async (id: string) => {
             const r = await invokeFn("enrich-lead", { leadId: id });
-            results.push({ lead_id: id, ...r });
-          }
+            return { lead_id: id, ...r };
+          });
           const failed = results.filter((r: any) => r?.error).length;
           toolEvents.push({
             name,
             label: "Enriched leads",
-            status: failed === ids.length && ids.length > 0 ? "error" : "ok",
-            detail: `${ids.length - failed}/${ids.length} enriched`,
+            status: failed === results.length && results.length > 0 ? "error" : "ok",
+            detail: `${results.length - failed}/${ids.length} enriched${skipped.length ? ` (${skipped.length} skipped — ran out of time)` : ""}`,
           });
-          return { results };
+          return { results, skipped_lead_ids: skipped };
         }
 
         case "score_leads": {
           const ids: string[] = (args.lead_ids ?? []).slice(0, 15);
-          const results: unknown[] = [];
-          for (const id of ids) {
+          const { results, skipped } = await mapLimit(ids, 5, async (id: string) => {
             const r = await invokeFn("score-lead", { leadId: id });
-            results.push({ lead_id: id, ...r });
-          }
+            return { lead_id: id, ...r };
+          });
           toolEvents.push({
             name,
             label: "Scored leads",
             status: "ok",
-            detail: `${ids.length} lead(s) scored`,
+            detail: `${results.length} lead(s) scored${skipped.length ? ` (${skipped.length} skipped — ran out of time)` : ""}`,
           });
-          return { results };
+          return { results, skipped_lead_ids: skipped };
         }
+
 
         case "draft_outreach": {
           const VALID_GOALS = ["introduction", "follow-up", "meeting", "demo", "proposal"];
