@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,7 @@ export interface ChatDraft {
   body: string;
 }
 
-type DraftState = "pending" | "sent" | "scheduled" | "discarded";
+type DraftState = "pending" | "sent" | "scheduled" | "discarded" | "resolved";
 
 const textLinesToHtml = (text: string) =>
   text
@@ -42,6 +42,7 @@ export const ChatDraftCard = ({ draft }: { draft: ChatDraft }) => {
   const [subject, setSubject] = useState(draft.subject);
   const [body, setBody] = useState(draft.body);
   const [state, setState] = useState<DraftState>("pending");
+  const [checking, setChecking] = useState(true);
   const [busy, setBusy] = useState<null | "send" | "schedule" | "discard">(null);
   const [scheduleDate, setScheduleDate] = useState<Date | undefined>();
   const [scheduleTime, setScheduleTime] = useState("09:00");
@@ -51,6 +52,30 @@ export const ChatDraftCard = ({ draft }: { draft: ChatDraft }) => {
   const who = draft.contact || draft.contact_email || "this lead";
   const disabled = state !== "pending" || busy !== null;
 
+  // Re-hydrate real status: if the draft row no longer exists it was already
+  // sent / scheduled / discarded in a previous session — don't offer it again.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("email_drafts")
+        .select("id, subject, body")
+        .eq("id", draft.draft_id)
+        .maybeSingle();
+      if (cancelled) return;
+      if (!error && !data) {
+        setState("resolved");
+      } else if (data) {
+        setSubject(data.subject ?? draft.subject);
+        setBody(data.body ?? draft.body);
+      }
+      setChecking(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [draft.draft_id, draft.subject, draft.body]);
+
   const persistEdits = async () => {
     await supabase
       .from("email_drafts")
@@ -58,9 +83,25 @@ export const ChatDraftCard = ({ draft }: { draft: ChatDraft }) => {
       .eq("id", draft.draft_id);
   };
 
-  const removeDraft = async () => {
-    await supabase.from("email_drafts").delete().eq("id", draft.draft_id);
+  // Atomically claim the draft so a double click / second tab can't send twice.
+  const claimDraft = async () => {
+    const { data, error } = await supabase
+      .from("email_drafts")
+      .delete()
+      .eq("id", draft.draft_id)
+      .select("id, user_id, lead_id, tone, trigger_context, opener_word");
+    if (error) throw error;
+    if (!data?.length) {
+      setState("resolved");
+      throw new Error("This draft was already sent or removed");
+    }
+    return data[0];
   };
+
+  const restoreDraft = async (row: Record<string, unknown>) => {
+    await supabase.from("email_drafts").insert({ ...row, subject, body } as never);
+  };
+
 
   const handleSend = async () => {
     if (!draft.contact_email) {
@@ -87,6 +128,7 @@ export const ChatDraftCard = ({ draft }: { draft: ChatDraft }) => {
       }
 
       await persistEdits();
+      const claimed = await claimDraft();
 
       const { error } = await supabase.functions.invoke("send-email", {
         body: {
@@ -98,9 +140,11 @@ export const ChatDraftCard = ({ draft }: { draft: ChatDraft }) => {
           leadId: draft.lead_id,
         },
       });
-      if (error) throw error;
+      if (error) {
+        await restoreDraft(claimed);
+        throw error;
+      }
 
-      await removeDraft();
       setState("sent");
       toast.success(`Email sent to ${who}`);
     } catch (err) {
@@ -132,6 +176,7 @@ export const ChatDraftCard = ({ draft }: { draft: ChatDraft }) => {
       if (!user) throw new Error("Not signed in");
 
       await persistEdits();
+      const claimed = await claimDraft();
 
       const { error } = await supabase.from("sent_emails").insert({
         user_id: user.id,
@@ -143,9 +188,11 @@ export const ChatDraftCard = ({ draft }: { draft: ChatDraft }) => {
         status: "scheduled",
         scheduled_at: scheduledAt.toISOString(),
       });
-      if (error) throw error;
+      if (error) {
+        await restoreDraft(claimed);
+        throw error;
+      }
 
-      await removeDraft();
       setScheduledFor(scheduledAt);
       setState("scheduled");
       setSchedulePopoverOpen(false);
@@ -160,12 +207,13 @@ export const ChatDraftCard = ({ draft }: { draft: ChatDraft }) => {
   const handleDiscard = async () => {
     setBusy("discard");
     try {
-      await removeDraft();
+      await supabase.from("email_drafts").delete().eq("id", draft.draft_id);
       setState("discarded");
       toast.success("Draft discarded");
     } finally {
       setBusy(null);
     }
+
   };
 
   return (
@@ -206,7 +254,9 @@ export const ChatDraftCard = ({ draft }: { draft: ChatDraft }) => {
                 ? scheduledFor
                   ? `Scheduled ${format(scheduledFor, "MMM d, p")}`
                   : "Scheduled"
-                : "Discarded"}
+                : state === "resolved"
+                  ? "Already handled"
+                  : "Discarded"}
           </Badge>
         )}
       </button>
@@ -231,7 +281,7 @@ export const ChatDraftCard = ({ draft }: { draft: ChatDraft }) => {
         </div>
       )}
 
-      {state === "pending" && (
+      {state === "pending" && !checking && (
         <div className="flex flex-wrap gap-2 pt-1">
           <Button size="sm" className="gap-1.5" disabled={busy !== null} onClick={handleSend}>
             {busy === "send" ? (
