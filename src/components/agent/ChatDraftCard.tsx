@@ -128,6 +128,7 @@ export const ChatDraftCard = ({ draft }: { draft: ChatDraft }) => {
       }
 
       await persistEdits();
+      const claimed = await claimDraft();
 
       const { error } = await supabase.functions.invoke("send-email", {
         body: {
@@ -139,9 +140,11 @@ export const ChatDraftCard = ({ draft }: { draft: ChatDraft }) => {
           leadId: draft.lead_id,
         },
       });
-      if (error) throw error;
+      if (error) {
+        await restoreDraft(claimed);
+        throw error;
+      }
 
-      await removeDraft();
       setState("sent");
       toast.success(`Email sent to ${who}`);
     } catch (err) {
