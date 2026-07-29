@@ -1043,10 +1043,15 @@ Value props: ${(config?.value_props ?? []).join("; ") || "not set"}`;
     }
 
     if (!finalText) {
-      finalText = toolEvents.length
-        ? "I finished the actions above. Tell me what you'd like next."
-        : "I couldn't complete that. Try rephrasing what you'd like me to do.";
+      finalText = ranOutOfTime
+        ? "That batch was too big to finish in one turn — the work above is saved. Reply \"continue\" and I'll pick up where I left off."
+        : toolEvents.length
+          ? "I finished the actions above. Tell me what you'd like next."
+          : "I couldn't complete that. Try rephrasing what you'd like me to do.";
+    } else if (ranOutOfTime) {
+      finalText += "\n\nI ran out of time on this turn — reply \"continue\" and I'll finish the rest.";
     }
+
 
     const { data: saved } = await admin
       .from("agent_chat_messages")
