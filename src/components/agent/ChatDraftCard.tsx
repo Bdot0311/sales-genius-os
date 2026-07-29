@@ -254,7 +254,9 @@ export const ChatDraftCard = ({ draft }: { draft: ChatDraft }) => {
                 ? scheduledFor
                   ? `Scheduled ${format(scheduledFor, "MMM d, p")}`
                   : "Scheduled"
-                : "Discarded"}
+                : state === "resolved"
+                  ? "Already handled"
+                  : "Discarded"}
           </Badge>
         )}
       </button>
