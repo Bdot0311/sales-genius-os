@@ -176,6 +176,7 @@ export const ChatDraftCard = ({ draft }: { draft: ChatDraft }) => {
       if (!user) throw new Error("Not signed in");
 
       await persistEdits();
+      const claimed = await claimDraft();
 
       const { error } = await supabase.from("sent_emails").insert({
         user_id: user.id,
@@ -187,9 +188,11 @@ export const ChatDraftCard = ({ draft }: { draft: ChatDraft }) => {
         status: "scheduled",
         scheduled_at: scheduledAt.toISOString(),
       });
-      if (error) throw error;
+      if (error) {
+        await restoreDraft(claimed);
+        throw error;
+      }
 
-      await removeDraft();
       setScheduledFor(scheduledAt);
       setState("scheduled");
       setSchedulePopoverOpen(false);
@@ -204,12 +207,13 @@ export const ChatDraftCard = ({ draft }: { draft: ChatDraft }) => {
   const handleDiscard = async () => {
     setBusy("discard");
     try {
-      await removeDraft();
+      await supabase.from("email_drafts").delete().eq("id", draft.draft_id);
       setState("discarded");
       toast.success("Draft discarded");
     } finally {
       setBusy(null);
     }
+
   };
 
   return (
