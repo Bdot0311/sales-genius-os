@@ -564,13 +564,9 @@ serve(async (req) => {
             .slice(0, 20);
           if (ids.length === 0) return { error: "lead_id or lead_ids is required" };
 
-          const drafts: any[] = [];
-          for (const id of ids) {
+          const genOne = async (id: string) => {
             const lead = await loadLead(id);
-            if (!lead) {
-              drafts.push({ lead_id: id, error: "Lead not found" });
-              continue;
-            }
+            if (!lead) return { lead_id: id, error: "Lead not found" };
             let r = await invokeFn("generate-email", {
               lead,
               goal,
@@ -578,7 +574,7 @@ serve(async (req) => {
             });
             // one retry on upstream rate limiting
             if (!r?.email && /rate limit/i.test(JSON.stringify(r?.error ?? ""))) {
-              await new Promise((res) => setTimeout(res, 3000));
+              await new Promise((res) => setTimeout(res, 2500));
               r = await invokeFn("generate-email", {
                 lead,
                 goal,
@@ -614,7 +610,7 @@ serve(async (req) => {
               draftId = savedDraft?.id ?? null;
             }
 
-            drafts.push({
+            return {
               lead_id: id,
               draft_id: draftId,
               company: lead.company_name ?? null,
@@ -624,9 +620,11 @@ serve(async (req) => {
               body: raw ? body : null,
               email: r?.email ?? null,
               error: r?.email ? undefined : (r?.error ?? "Draft failed"),
-            });
-            if (ids.length > 1) await new Promise((res) => setTimeout(res, 900));
-          }
+            };
+          };
+
+          const { results: drafts, skipped } = await mapLimit(ids, 3, genOne);
+
 
           const okCount = drafts.filter((d) => d.email).length;
           toolEvents.push({
