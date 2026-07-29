@@ -971,33 +971,49 @@ Value props: ${(config?.value_props ?? []).join("; ") || "not set"}`;
 
     let finalText = "";
     let ranOutOfTime = false;
+    // Never lose completed tool work: when the model call fails we stop the loop
+    // and still persist an assistant message describing what happened.
+    let failureNote = "";
+
     for (let step = 0; step < 8; step++) {
       if (outOfTime()) {
         ranOutOfTime = true;
         break;
       }
 
-      const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "openai/gpt-5.6-sol",
-          reasoning_effort: "none",
-          messages,
-          tools: TOOLS,
-        }),
-      });
+      let res: Response;
+      try {
+        res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "openai/gpt-5.6-sol",
+            reasoning_effort: "none",
+            messages,
+            tools: TOOLS,
+          }),
+          signal: AbortSignal.timeout(Math.max(5_000, timeLeft() - 5_000)),
+        });
+      } catch (e) {
+        console.error("AI gateway request failed", e);
+        failureNote =
+          "The AI service didn't respond in time. Any work above is saved — reply \"continue\" to pick up from here.";
+        break;
+      }
 
       if (!res.ok) {
         const detail = await res.text();
         console.error("AI gateway error", res.status, detail.slice(0, 500));
-        if (res.status === 429) return json({ error: "Rate limited — try again in a moment." }, 429);
-        if (res.status === 402)
-          return json({ error: "AI credits exhausted. Add credits to continue." }, 402);
-        return json({ error: "The agent could not respond right now." }, 500);
+        failureNote =
+          res.status === 429
+            ? "I'm being rate limited right now. Any work above is saved — wait a few seconds and reply \"continue\"."
+            : res.status === 402
+              ? "AI credits are exhausted, so I can't continue this turn. Add credits in Settings and reply \"continue\"."
+              : "The AI service returned an error, so I stopped here. Any work above is saved — reply \"continue\" to retry.";
+        break;
       }
 
       const data = await res.json();
