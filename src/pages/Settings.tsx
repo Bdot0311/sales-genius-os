@@ -38,6 +38,7 @@ import { ChangePasswordCard } from "@/components/settings/ChangePasswordCard";
 import NotificationsTab from "@/components/settings/NotificationsTab";
 import { AgencyPortalTab } from "@/components/settings/AgencyPortalTab";
 import { useAdmin } from "@/hooks/use-admin";
+import { SupportAccessCard } from "@/components/settings/SupportAccessCard";
 
 const Settings = () => {
   const { subscription, loading: subLoading } = useSubscription();
@@ -273,6 +274,7 @@ const Settings = () => {
                 <TabsTrigger value="notifications" className={tabBase}><Bell className="h-4 w-4" />Notifications</TabsTrigger>
                 <TabsTrigger value="white-label" className={tabBase}><Palette className="h-4 w-4" />White Label</TabsTrigger>
                 <TabsTrigger value="agency-portal" className={tabBase}><Building2 className="h-4 w-4" />Agency Portal</TabsTrigger>
+                <TabsTrigger value="support-access" className={tabBase}><KeyRound className="h-4 w-4" />Support Access</TabsTrigger>
                 {showPro && <TabsTrigger value="team" className={tabBase}><Users className="h-4 w-4" />Team</TabsTrigger>}
                 {showPro && <TabsTrigger value="activity" className={tabBase}><History className="h-4 w-4" />Activity</TabsTrigger>}
               </TabsList>
@@ -298,6 +300,10 @@ const Settings = () => {
           })()}
 
 
+
+          <TabsContent value="support-access" className="space-y-6">
+            <SupportAccessCard />
+          </TabsContent>
 
           <TabsContent value="profile" className="space-y-6">
             <Card>

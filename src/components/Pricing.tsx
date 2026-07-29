@@ -4,6 +4,7 @@ import { STRIPE_PRICE_IDS } from "@/lib/stripe-config";
 import { useSearchCredits } from "@/hooks/use-search-credits";
 import { useNavigate } from "react-router-dom";
 import { QuickBuyCreditsDialog } from "@/components/dashboard/QuickBuyCreditsDialog";
+import { openCampaignSetupBooking } from "@/lib/campaign-setup";
 
 type BillingInterval = "monthly" | "yearly";
 
@@ -302,7 +303,7 @@ export const Pricing = () => {
     if (!isPaidPlan(plan)) {
       const route = plan.ctaRoute || "/auth";
       if (route.startsWith("http")) {
-        window.open(route, "_blank", "noopener,noreferrer");
+        void openCampaignSetupBooking("pricing", plan.key);
       } else {
         navigate(route);
       }
