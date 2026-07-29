@@ -634,7 +634,8 @@ serve(async (req) => {
             detail:
               ids.length === 1
                 ? (drafts[0]?.company ?? "lead")
-                : `${okCount}/${ids.length} drafted`,
+                : `${okCount}/${ids.length} drafted${skipped.length ? ` (${skipped.length} left — ask me to continue)` : ""}`,
+
             drafts: drafts
               .filter((d) => d.draft_id && d.body)
               .map((d) => ({
