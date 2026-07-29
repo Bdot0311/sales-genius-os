@@ -20,6 +20,7 @@ import AdminSignupLogs from "./admin/SignupLogs";
 import AdminReEngagement from "./admin/ReEngagement";
 import AdminRealtimeHealth from "./admin/RealtimeHealth";
 import AdminActivation from "./admin/Activation";
+import AdminCampaignSetup from "./admin/CampaignSetup";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -84,6 +85,7 @@ const Admin = () => {
               <Route path="re-engagement" element={<AdminReEngagement />} />
               <Route path="realtime" element={<AdminRealtimeHealth />} />
               <Route path="activation" element={<AdminActivation />} />
+              <Route path="campaign-setup" element={<AdminCampaignSetup />} />
               <Route path="*" element={<Navigate to="/admin" replace />} />
             </Routes>
           </main>

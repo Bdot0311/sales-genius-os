@@ -981,6 +981,39 @@ export type Database = {
         }
         Relationships: []
       }
+      campaign_setup_requests: {
+        Row: {
+          booked_at: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          plan: string | null
+          source: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          booked_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          plan?: string | null
+          source?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          booked_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          plan?: string | null
+          source?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       coaching_conversations: {
         Row: {
           created_at: string
@@ -3364,6 +3397,100 @@ export type Database = {
         }
         Relationships: []
       }
+      support_access_events: {
+        Row: {
+          action: string
+          admin_id: string
+          created_at: string
+          details: Json
+          entity_id: string | null
+          entity_type: string | null
+          grant_id: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          admin_id: string
+          created_at?: string
+          details?: Json
+          entity_id?: string | null
+          entity_type?: string | null
+          grant_id?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          admin_id?: string
+          created_at?: string
+          details?: Json
+          entity_id?: string | null
+          entity_type?: string | null
+          grant_id?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_access_events_grant_id_fkey"
+            columns: ["grant_id"]
+            isOneToOne: false
+            referencedRelation: "support_access_grants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_access_grants: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          expires_at: string
+          granted_at: string
+          id: string
+          request_id: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          scopes: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          granted_at?: string
+          id?: string
+          request_id?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          scopes?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          granted_at?: string
+          id?: string
+          request_id?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          scopes?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_access_grants_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_setup_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppressed_emails: {
         Row: {
           created_at: string
@@ -4370,6 +4497,10 @@ export type Database = {
         }[]
       }
       get_webhook_secret: { Args: { webhook_id: string }; Returns: string }
+      has_active_support_grant: {
+        Args: { _scope?: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

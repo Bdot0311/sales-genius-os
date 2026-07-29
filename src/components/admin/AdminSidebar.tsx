@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Settings, Activity, BarChart3, Lock, ArrowLeft, Bell, Webhook, UserPlus, Mail, Radio, TrendingUp } from "lucide-react";
+import { LayoutDashboard, Users, Settings, Activity, BarChart3, Lock, ArrowLeft, Bell, Webhook, UserPlus, Mail, Radio, TrendingUp, KeyRound } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ const menuItems = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard, exact: true },
   { title: "Users", url: "/admin/users", icon: Users },
   { title: "Activation", url: "/admin/activation", icon: TrendingUp },
+  { title: "Campaign Setup", url: "/admin/campaign-setup", icon: KeyRound },
   { title: "Activity Logs", url: "/admin/activity", icon: Activity },
   { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
   { title: "Alerts", url: "/admin/alerts", icon: Bell },

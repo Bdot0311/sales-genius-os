@@ -15,7 +15,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { toast } from "sonner";
-import { CreditCard, TrendingUp, Check, RefreshCw, User, Save, Loader2, Palette, Activity, Bell, Key, GitBranch, Code2, Webhook, FileText, RotateCcw, Users, History, FileSearch, Globe, Coins, ExternalLink, Settings2, Copy, MapPin, Shield, AlertTriangle, Building2 } from "lucide-react";
+import { CreditCard, TrendingUp, Check, RefreshCw, User, Save, Loader2, Palette, Activity, Bell, Key, GitBranch, Code2, Webhook, FileText, RotateCcw, Users, History, FileSearch, Globe, Coins, ExternalLink, Settings2, Copy, MapPin, Shield, AlertTriangle, Building2, KeyRound } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { CAN_SPAM_PENALTY, generateComplianceFooter } from "@/lib/compliance";
 import { Switch } from "@/components/ui/switch";
@@ -38,6 +38,7 @@ import { ChangePasswordCard } from "@/components/settings/ChangePasswordCard";
 import NotificationsTab from "@/components/settings/NotificationsTab";
 import { AgencyPortalTab } from "@/components/settings/AgencyPortalTab";
 import { useAdmin } from "@/hooks/use-admin";
+import { SupportAccessCard } from "@/components/settings/SupportAccessCard";
 
 const Settings = () => {
   const { subscription, loading: subLoading } = useSubscription();
@@ -273,6 +274,7 @@ const Settings = () => {
                 <TabsTrigger value="notifications" className={tabBase}><Bell className="h-4 w-4" />Notifications</TabsTrigger>
                 <TabsTrigger value="white-label" className={tabBase}><Palette className="h-4 w-4" />White Label</TabsTrigger>
                 <TabsTrigger value="agency-portal" className={tabBase}><Building2 className="h-4 w-4" />Agency Portal</TabsTrigger>
+                <TabsTrigger value="support-access" className={tabBase}><KeyRound className="h-4 w-4" />Support Access</TabsTrigger>
                 {showPro && <TabsTrigger value="team" className={tabBase}><Users className="h-4 w-4" />Team</TabsTrigger>}
                 {showPro && <TabsTrigger value="activity" className={tabBase}><History className="h-4 w-4" />Activity</TabsTrigger>}
               </TabsList>
@@ -298,6 +300,10 @@ const Settings = () => {
           })()}
 
 
+
+          <TabsContent value="support-access" className="space-y-6">
+            <SupportAccessCard />
+          </TabsContent>
 
           <TabsContent value="profile" className="space-y-6">
             <Card>
