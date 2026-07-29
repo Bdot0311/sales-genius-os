@@ -206,8 +206,19 @@ const AgentChat = () => {
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
       toast.error(`Agent error: ${message}`);
-      setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
-      setInput(content);
+      // The turn may have completed real work (enrichments, drafts) before failing.
+      // Re-read the thread so nothing the agent saved disappears from the chat.
+      const { data: msgs } = await supabase
+        .from("agent_chat_messages")
+        .select("id, role, content, tool_events, created_at")
+        .eq("thread_id", threadId)
+        .order("created_at", { ascending: true });
+      if (msgs?.length) {
+        setMessages(msgs as unknown as ChatMessage[]);
+      } else {
+        setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
+        setInput(content);
+      }
     } finally {
       setSending(false);
       inputRef.current?.focus();
