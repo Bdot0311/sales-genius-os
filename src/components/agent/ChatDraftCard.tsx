@@ -281,7 +281,7 @@ export const ChatDraftCard = ({ draft }: { draft: ChatDraft }) => {
         </div>
       )}
 
-      {state === "pending" && (
+      {state === "pending" && !checking && (
         <div className="flex flex-wrap gap-2 pt-1">
           <Button size="sm" className="gap-1.5" disabled={busy !== null} onClick={handleSend}>
             {busy === "send" ? (
