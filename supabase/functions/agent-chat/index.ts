@@ -970,7 +970,13 @@ Value props: ${(config?.value_props ?? []).join("; ") || "not set"}`;
     ];
 
     let finalText = "";
+    let ranOutOfTime = false;
     for (let step = 0; step < 8; step++) {
+      if (outOfTime()) {
+        ranOutOfTime = true;
+        break;
+      }
+
       const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
