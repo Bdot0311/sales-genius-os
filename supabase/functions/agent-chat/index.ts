@@ -251,6 +251,38 @@ serve(async (req) => {
     const action = String(payload.action ?? "chat");
     if (!threadId) return json({ error: "Missing threadId" }, 400);
 
+    // Wall-clock budget: edge functions get killed around ~150s, which the client
+    // surfaces as "Failed to send a request to the Edge Function". Stop early and
+    // return partial work instead of dying mid-flight.
+    const startedAt = Date.now();
+    const BUDGET_MS = 110_000;
+    const timeLeft = () => BUDGET_MS - (Date.now() - startedAt);
+    const outOfTime = () => timeLeft() <= 8_000;
+
+    // Run async work with bounded concurrency, stopping if the budget runs out.
+    const mapLimit = async <T, R>(
+      items: T[],
+      limit: number,
+      fn: (item: T) => Promise<R>,
+    ): Promise<{ results: R[]; skipped: T[] }> => {
+      const results: R[] = [];
+      const skipped: T[] = [];
+      let i = 0;
+      const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+        while (i < items.length) {
+          const idx = i++;
+          if (outOfTime()) {
+            skipped.push(items[idx]);
+            continue;
+          }
+          results.push(await fn(items[idx]));
+        }
+      });
+      await Promise.all(workers);
+      return { results, skipped };
+    };
+
+
     const callFn = async (name: string, body: unknown) => {
       const res = await fetch(`${supabaseUrl}/functions/v1/${name}`, {
         method: "POST",
@@ -487,36 +519,35 @@ serve(async (req) => {
 
         case "enrich_leads": {
           const ids: string[] = (args.lead_ids ?? []).slice(0, 10);
-          const results: unknown[] = [];
-          for (const id of ids) {
+          const { results, skipped } = await mapLimit(ids, 4, async (id: string) => {
             const r = await invokeFn("enrich-lead", { leadId: id });
-            results.push({ lead_id: id, ...r });
-          }
+            return { lead_id: id, ...r };
+          });
           const failed = results.filter((r: any) => r?.error).length;
           toolEvents.push({
             name,
             label: "Enriched leads",
-            status: failed === ids.length && ids.length > 0 ? "error" : "ok",
-            detail: `${ids.length - failed}/${ids.length} enriched`,
+            status: failed === results.length && results.length > 0 ? "error" : "ok",
+            detail: `${results.length - failed}/${ids.length} enriched${skipped.length ? ` (${skipped.length} skipped — ran out of time)` : ""}`,
           });
-          return { results };
+          return { results, skipped_lead_ids: skipped };
         }
 
         case "score_leads": {
           const ids: string[] = (args.lead_ids ?? []).slice(0, 15);
-          const results: unknown[] = [];
-          for (const id of ids) {
+          const { results, skipped } = await mapLimit(ids, 5, async (id: string) => {
             const r = await invokeFn("score-lead", { leadId: id });
-            results.push({ lead_id: id, ...r });
-          }
+            return { lead_id: id, ...r };
+          });
           toolEvents.push({
             name,
             label: "Scored leads",
             status: "ok",
-            detail: `${ids.length} lead(s) scored`,
+            detail: `${results.length} lead(s) scored${skipped.length ? ` (${skipped.length} skipped — ran out of time)` : ""}`,
           });
-          return { results };
+          return { results, skipped_lead_ids: skipped };
         }
+
 
         case "draft_outreach": {
           const VALID_GOALS = ["introduction", "follow-up", "meeting", "demo", "proposal"];
@@ -533,13 +564,9 @@ serve(async (req) => {
             .slice(0, 20);
           if (ids.length === 0) return { error: "lead_id or lead_ids is required" };
 
-          const drafts: any[] = [];
-          for (const id of ids) {
+          const genOne = async (id: string) => {
             const lead = await loadLead(id);
-            if (!lead) {
-              drafts.push({ lead_id: id, error: "Lead not found" });
-              continue;
-            }
+            if (!lead) return { lead_id: id, error: "Lead not found" };
             let r = await invokeFn("generate-email", {
               lead,
               goal,
@@ -547,7 +574,7 @@ serve(async (req) => {
             });
             // one retry on upstream rate limiting
             if (!r?.email && /rate limit/i.test(JSON.stringify(r?.error ?? ""))) {
-              await new Promise((res) => setTimeout(res, 3000));
+              await new Promise((res) => setTimeout(res, 2500));
               r = await invokeFn("generate-email", {
                 lead,
                 goal,
@@ -583,7 +610,7 @@ serve(async (req) => {
               draftId = savedDraft?.id ?? null;
             }
 
-            drafts.push({
+            return {
               lead_id: id,
               draft_id: draftId,
               company: lead.company_name ?? null,
@@ -593,9 +620,11 @@ serve(async (req) => {
               body: raw ? body : null,
               email: r?.email ?? null,
               error: r?.email ? undefined : (r?.error ?? "Draft failed"),
-            });
-            if (ids.length > 1) await new Promise((res) => setTimeout(res, 900));
-          }
+            };
+          };
+
+          const { results: drafts, skipped } = await mapLimit(ids, 3, genOne);
+
 
           const okCount = drafts.filter((d) => d.email).length;
           toolEvents.push({
@@ -605,7 +634,8 @@ serve(async (req) => {
             detail:
               ids.length === 1
                 ? (drafts[0]?.company ?? "lead")
-                : `${okCount}/${ids.length} drafted`,
+                : `${okCount}/${ids.length} drafted${skipped.length ? ` (${skipped.length} left — ask me to continue)` : ""}`,
+
             drafts: drafts
               .filter((d) => d.draft_id && d.body)
               .map((d) => ({
@@ -621,9 +651,14 @@ serve(async (req) => {
           return {
             goal,
             note:
-              "Drafts are saved and shown to the user in the chat with Send / Schedule controls. Do NOT call send_outreach for these unless the user explicitly asks you to send.",
+              "Drafts are saved and shown to the user in the chat with Send / Schedule controls. Do NOT call send_outreach for these unless the user explicitly asks you to send." +
+              (skipped.length
+                ? ` ${skipped.length} lead(s) were not drafted because this turn ran out of time — tell the user to reply "continue" and you'll draft the rest.`
+                : ""),
+            skipped_lead_ids: skipped,
             drafts: drafts.map(({ body: _b, ...rest }) => rest),
           };
+
         }
 
 
@@ -935,7 +970,13 @@ Value props: ${(config?.value_props ?? []).join("; ") || "not set"}`;
     ];
 
     let finalText = "";
+    let ranOutOfTime = false;
     for (let step = 0; step < 8; step++) {
+      if (outOfTime()) {
+        ranOutOfTime = true;
+        break;
+      }
+
       const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -1002,10 +1043,15 @@ Value props: ${(config?.value_props ?? []).join("; ") || "not set"}`;
     }
 
     if (!finalText) {
-      finalText = toolEvents.length
-        ? "I finished the actions above. Tell me what you'd like next."
-        : "I couldn't complete that. Try rephrasing what you'd like me to do.";
+      finalText = ranOutOfTime
+        ? "That batch was too big to finish in one turn — the work above is saved. Reply \"continue\" and I'll pick up where I left off."
+        : toolEvents.length
+          ? "I finished the actions above. Tell me what you'd like next."
+          : "I couldn't complete that. Try rephrasing what you'd like me to do.";
+    } else if (ranOutOfTime) {
+      finalText += "\n\nI ran out of time on this turn — reply \"continue\" and I'll finish the rest.";
     }
+
 
     const { data: saved } = await admin
       .from("agent_chat_messages")
