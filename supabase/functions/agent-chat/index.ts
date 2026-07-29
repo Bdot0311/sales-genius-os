@@ -284,20 +284,27 @@ serve(async (req) => {
 
 
     const callFn = async (name: string, body: unknown) => {
-      const res = await fetch(`${supabaseUrl}/functions/v1/${name}`, {
-        method: "POST",
-        headers: {
-          Authorization: authHeader,
-          "Content-Type": "application/json",
-          apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-        },
-        body: JSON.stringify(body ?? {}),
-      });
-      const text = await res.text();
       try {
-        return JSON.parse(text);
-      } catch {
-        return { error: text.slice(0, 300) };
+        const res = await fetch(`${supabaseUrl}/functions/v1/${name}`, {
+          method: "POST",
+          headers: {
+            Authorization: authHeader,
+            "Content-Type": "application/json",
+            apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+          },
+          body: JSON.stringify(body ?? {}),
+          // Never let one hung sub-function eat the whole turn.
+          signal: AbortSignal.timeout(Math.max(5_000, Math.min(45_000, timeLeft() - 5_000))),
+        });
+        const text = await res.text();
+        try {
+          return JSON.parse(text);
+        } catch {
+          return { error: text.slice(0, 300) };
+        }
+      } catch (e) {
+        console.error(`callFn ${name} failed`, e);
+        return { error: e instanceof Error ? e.message : `${name} did not respond` };
       }
     };
 
@@ -971,33 +978,49 @@ Value props: ${(config?.value_props ?? []).join("; ") || "not set"}`;
 
     let finalText = "";
     let ranOutOfTime = false;
+    // Never lose completed tool work: when the model call fails we stop the loop
+    // and still persist an assistant message describing what happened.
+    let failureNote = "";
+
     for (let step = 0; step < 8; step++) {
       if (outOfTime()) {
         ranOutOfTime = true;
         break;
       }
 
-      const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "openai/gpt-5.6-sol",
-          reasoning_effort: "none",
-          messages,
-          tools: TOOLS,
-        }),
-      });
+      let res: Response;
+      try {
+        res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "openai/gpt-5.6-sol",
+            reasoning_effort: "none",
+            messages,
+            tools: TOOLS,
+          }),
+          signal: AbortSignal.timeout(Math.max(5_000, timeLeft() - 5_000)),
+        });
+      } catch (e) {
+        console.error("AI gateway request failed", e);
+        failureNote =
+          "The AI service didn't respond in time. Any work above is saved — reply \"continue\" to pick up from here.";
+        break;
+      }
 
       if (!res.ok) {
         const detail = await res.text();
         console.error("AI gateway error", res.status, detail.slice(0, 500));
-        if (res.status === 429) return json({ error: "Rate limited — try again in a moment." }, 429);
-        if (res.status === 402)
-          return json({ error: "AI credits exhausted. Add credits to continue." }, 402);
-        return json({ error: "The agent could not respond right now." }, 500);
+        failureNote =
+          res.status === 429
+            ? "I'm being rate limited right now. Any work above is saved — wait a few seconds and reply \"continue\"."
+            : res.status === 402
+              ? "AI credits are exhausted, so I can't continue this turn. Add credits in Settings and reply \"continue\"."
+              : "The AI service returned an error, so I stopped here. Any work above is saved — reply \"continue\" to retry.";
+        break;
       }
 
       const data = await res.json();
@@ -1043,11 +1066,15 @@ Value props: ${(config?.value_props ?? []).join("; ") || "not set"}`;
     }
 
     if (!finalText) {
-      finalText = ranOutOfTime
-        ? "That batch was too big to finish in one turn — the work above is saved. Reply \"continue\" and I'll pick up where I left off."
-        : toolEvents.length
-          ? "I finished the actions above. Tell me what you'd like next."
-          : "I couldn't complete that. Try rephrasing what you'd like me to do.";
+      finalText = failureNote
+        ? failureNote
+        : ranOutOfTime
+          ? "That batch was too big to finish in one turn — the work above is saved. Reply \"continue\" and I'll pick up where I left off."
+          : toolEvents.length
+            ? "I finished the actions above. Tell me what you'd like next."
+            : "I couldn't complete that. Try rephrasing what you'd like me to do.";
+    } else if (failureNote) {
+      finalText += `\n\n${failureNote}`;
     } else if (ranOutOfTime) {
       finalText += "\n\nI ran out of time on this turn — reply \"continue\" and I'll finish the rest.";
     }
