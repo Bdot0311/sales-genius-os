@@ -42,6 +42,7 @@ export const ChatDraftCard = ({ draft }: { draft: ChatDraft }) => {
   const [subject, setSubject] = useState(draft.subject);
   const [body, setBody] = useState(draft.body);
   const [state, setState] = useState<DraftState>("pending");
+  const [checking, setChecking] = useState(true);
   const [busy, setBusy] = useState<null | "send" | "schedule" | "discard">(null);
   const [scheduleDate, setScheduleDate] = useState<Date | undefined>();
   const [scheduleTime, setScheduleTime] = useState("09:00");
@@ -51,6 +52,30 @@ export const ChatDraftCard = ({ draft }: { draft: ChatDraft }) => {
   const who = draft.contact || draft.contact_email || "this lead";
   const disabled = state !== "pending" || busy !== null;
 
+  // Re-hydrate real status: if the draft row no longer exists it was already
+  // sent / scheduled / discarded in a previous session — don't offer it again.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("email_drafts")
+        .select("id, subject, body")
+        .eq("id", draft.draft_id)
+        .maybeSingle();
+      if (cancelled) return;
+      if (!error && !data) {
+        setState("resolved");
+      } else if (data) {
+        setSubject(data.subject ?? draft.subject);
+        setBody(data.body ?? draft.body);
+      }
+      setChecking(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [draft.draft_id, draft.subject, draft.body]);
+
   const persistEdits = async () => {
     await supabase
       .from("email_drafts")
@@ -58,9 +83,25 @@ export const ChatDraftCard = ({ draft }: { draft: ChatDraft }) => {
       .eq("id", draft.draft_id);
   };
 
-  const removeDraft = async () => {
-    await supabase.from("email_drafts").delete().eq("id", draft.draft_id);
+  // Atomically claim the draft so a double click / second tab can't send twice.
+  const claimDraft = async () => {
+    const { data, error } = await supabase
+      .from("email_drafts")
+      .delete()
+      .eq("id", draft.draft_id)
+      .select("id, user_id, lead_id, tone, trigger_context, opener_word");
+    if (error) throw error;
+    if (!data?.length) {
+      setState("resolved");
+      throw new Error("This draft was already sent or removed");
+    }
+    return data[0];
   };
+
+  const restoreDraft = async (row: Record<string, unknown>) => {
+    await supabase.from("email_drafts").insert({ ...row, subject, body } as never);
+  };
+
 
   const handleSend = async () => {
     if (!draft.contact_email) {
