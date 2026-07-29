@@ -284,20 +284,27 @@ serve(async (req) => {
 
 
     const callFn = async (name: string, body: unknown) => {
-      const res = await fetch(`${supabaseUrl}/functions/v1/${name}`, {
-        method: "POST",
-        headers: {
-          Authorization: authHeader,
-          "Content-Type": "application/json",
-          apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-        },
-        body: JSON.stringify(body ?? {}),
-      });
-      const text = await res.text();
       try {
-        return JSON.parse(text);
-      } catch {
-        return { error: text.slice(0, 300) };
+        const res = await fetch(`${supabaseUrl}/functions/v1/${name}`, {
+          method: "POST",
+          headers: {
+            Authorization: authHeader,
+            "Content-Type": "application/json",
+            apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+          },
+          body: JSON.stringify(body ?? {}),
+          // Never let one hung sub-function eat the whole turn.
+          signal: AbortSignal.timeout(Math.max(5_000, Math.min(45_000, timeLeft() - 5_000))),
+        });
+        const text = await res.text();
+        try {
+          return JSON.parse(text);
+        } catch {
+          return { error: text.slice(0, 300) };
+        }
+      } catch (e) {
+        console.error(`callFn ${name} failed`, e);
+        return { error: e instanceof Error ? e.message : `${name} did not respond` };
       }
     };
 
