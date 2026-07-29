@@ -29,7 +29,7 @@ export interface ChatDraft {
   body: string;
 }
 
-type DraftState = "pending" | "sent" | "scheduled" | "discarded";
+type DraftState = "pending" | "sent" | "scheduled" | "discarded" | "resolved";
 
 const textLinesToHtml = (text: string) =>
   text
