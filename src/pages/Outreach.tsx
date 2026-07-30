@@ -1041,7 +1041,7 @@ const Outreach = () => {
   };
 
 
-  const generateEmail = async () => {
+  const generateEmail = async (opts: { allowThinResearch?: boolean } = {}) => {
     if (!selectedLead) {
       toast({
         title: "Missing information",
@@ -1109,10 +1109,27 @@ const Outreach = () => {
           use4SentenceFramework,
           senderName: resolvedSender,
           senderCompany: resolvedSender ? businessDescription?.split(/[\n.]/)[0]?.trim() : "",
+          // Gate on research completeness unless the user chose to override.
+          blockOnThinResearch: opts.allowThinResearch !== true,
         },
       });
 
       if (error) throw error;
+
+      // Soft block: research too thin to personalize safely.
+      if (data?.error_code === "research_too_thin") {
+        if (data?.research) setLeadResearch(data.research as LeadResearch);
+        toast({
+          title: "Research too thin to personalize",
+          description: data.error,
+          action: (
+            <ToastAction altText="Generate anyway" onClick={() => generateEmail({ allowThinResearch: true })}>
+              Generate anyway
+            </ToastAction>
+          ),
+        });
+        return;
+      }
       const emailBody = appendSenderLine(sanitizeGeneratedEmailBody(data.email), resolvedSender);
       setGeneratedEmail(emailBody);
       if (data?.research) {
