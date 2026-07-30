@@ -34,14 +34,11 @@ function linesOf(body: string) {
 function singleCta(body: string) {
   const lines = linesOf(body);
   if (lines.length === 0) return body;
-  const questionLines = lines.filter((line) => line.includes("?"));
-  const preferred = questionLines.at(-1)?.replace(/\?/g, "").trim() || "Worth a quick look";
   const cleaned = lines
-    .filter((line) => !line.includes("?"))
-    .map((line) => line.replace(/\?/g, "."));
+    .map((line) => line.replace(/\?\s*/g, ". ").replace(/\.\s*\./g, ".").trim());
   const signOffIndex = cleaned.findIndex((line, index) => index > 0 && (SIGN_OFF.test(line) || (index === cleaned.length - 1 && line.split(/\s+/).length <= 3)));
   const insertAt = signOffIndex >= 0 ? signOffIndex : cleaned.length;
-  cleaned.splice(insertAt, 0, `${preferred.replace(/[.!]+$/, "")}?`);
+  cleaned.splice(insertAt, 0, "Worth a quick look?");
   return cleaned.join("\n\n");
 }
 
