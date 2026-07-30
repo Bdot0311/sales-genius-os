@@ -265,6 +265,9 @@ export const ChatDraftCard = ({ draft }: { draft: ChatDraft }) => {
 
       {open && (
         <div className="space-y-2 pt-1">
+          {draft.research && (
+            <LeadResearchPanel research={draft.research} compact />
+          )}
           <Input
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
