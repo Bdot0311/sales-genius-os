@@ -358,11 +358,14 @@ serve(async (req) => {
       }
     }
 
-    const brief: LeadResearchBrief = {
+    const sources = pages.map((p) => p.url);
+    const baseBrief: LeadResearchBrief = {
       ...result.brief,
       confidence: thinSite && result.brief.confidence === "high" ? "medium" : result.brief.confidence,
     };
-    const sources = pages.map((p) => p.url);
+    // Deterministic completeness score so every surface gates the same way.
+    const quality = scoreResearchQuality(baseBrief, sources);
+    const brief: LeadResearchBrief = { ...baseBrief, quality };
     const researchedAt = new Date().toISOString();
 
     const { error: writeError } = await supabase
@@ -385,6 +388,7 @@ serve(async (req) => {
       "pages:", pages.length,
       "observations:", brief.observations.length,
       "confidence:", brief.confidence,
+      "quality:", quality.score, quality.label,
     );
 
     return new Response(
@@ -392,12 +396,14 @@ serve(async (req) => {
         brief,
         sources,
         confidence: brief.confidence,
+        quality,
         researched_at: researchedAt,
         prompt_block: briefToPromptBlock(brief, sources),
         cached: false,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
+
   } catch (error) {
     console.error("[research-lead] unexpected error:", error instanceof Error ? error.message : error);
     return new Response(
