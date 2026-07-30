@@ -33,6 +33,7 @@ import { FollowUpSuggestion, FollowUpData } from "@/components/outreach/FollowUp
 import { BarChart3, ListOrdered, Layout, Users } from "lucide-react";
 import { BulkSendDialog } from "@/components/outreach/BulkSendDialog";
 import { EmailQualityChecker, scoreEmailQuality } from "@/components/outreach/EmailQualityChecker";
+import { LeadResearchPanel, type LeadResearch } from "@/components/outreach/LeadResearchPanel";
 import { SequencesList, MessageBlocksList } from "@/components/sequences";
 import { AiSequenceBuilder } from "@/components/sequences/AiSequenceBuilder";
 import { generateComplianceFooter, validateSenderDomain, checkSendTimeCompliance, parseSpintax } from "@/lib/compliance";
