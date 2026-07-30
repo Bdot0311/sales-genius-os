@@ -22,6 +22,14 @@ type DraftPreview = {
   contact_email: string | null;
   subject: string;
   body: string;
+  research?: {
+    what_they_do?: string;
+    observations?: { fact: string; source: string }[];
+    hooks?: string[];
+    confidence?: string;
+    sources?: string[];
+    researched_at?: string | null;
+  } | null;
 };
 
 type ToolEvent = {
