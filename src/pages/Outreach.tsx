@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import { Loader2, Send, Sparkles, CalendarPlus, Settings2, Image, Upload, Wand2, Mail, FileText, Save, Shuffle, Check, X, Keyboard, Clock, AlertTriangle, Monitor, Smartphone } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
