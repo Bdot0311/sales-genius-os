@@ -1,88 +1,63 @@
+## Goal
 
-## Cold Email Engine — Full Integration Plan
+Every generated email should be grounded in real, per-lead research instead of generic filler. Today research is a hidden Gemini-grounded call buried inside `generate-email` (`generate-email/index.ts:583-676`), invisible to users, cached only 24h in `api_cache`, and completely bypassed by the AI SDR path (`agent-chat/index.ts:577-590` forwards only `lead`, `goal`, `tone`).
 
-Bake the skill's rules into every place OutReign touches cold email: AI prompts, quality checks, sequence generation, and lead scoring UI.
+Plan: extract research into its own service that scrapes the lead's company website, stores a durable per-lead research brief, keeps it fresh, and surfaces it in both Outreach Studio and the AI SDR chat.
 
-### 1. Generation prompts (`supabase/functions/generate-email/index.ts`)
+## 1. New edge function: `research-lead`
 
-Rewrite the system prompt for all goals (`reply`, `case_study`, `meeting`, `info`, `custom`) to enforce:
-- 50–75 words, 130 word ceiling
-- 3–4 sentences, 8th-grade reading level
-- One of the three canonical structures (Problem-First / Question-Led / Ultra-Short)
-- Named proof point with company + metric + timeframe
-- One low-friction CTA (question form)
-- Banned tokens list (best, amazing, revolutionary, leverage, optimize, streamline, synergy, cutting-edge, "hope this finds you well", "just checking in", em dashes, emojis)
-- Subject line: 2–5 words, <40 chars, colleague tone
+Scrapes the lead's own company site — same technique already proven in `analyze-domain/index.ts` (domain normalization, homepage + candidate paths, HTML→text, timeouts).
 
-Add a shared `_shared/cold-email-rules.ts` module so every function (generate-email, generate-followup-suggestion, ai-coach) pulls the same guardrails.
+- Input: `{ leadId, force?: boolean }`. Auth required; ownership verified against `leads.user_id`.
+- Resolve domain from `company_website`, else derive from `contact_email` domain (skip free-mail domains), else fail gracefully.
+- Fetch homepage plus high-signal paths: `/about`, `/pricing`, `/product(s)`, `/customers`, `/case-studies`, `/careers`, `/blog`, `/news` (max ~6 pages, 10s timeout each, best effort).
+- Feed extracted text + the lead's existing DB context (`job_title`, `industry`, `signals`, `technologies`, `intent_reasons`, `recommended_angle`) to Lovable AI (`google/gemini-2.5-flash`) and return a structured brief:
+  - `what_they_do` — one line, plain language
+  - `who_they_sell_to` — their customer
+  - `observations[]` — 3–5 concrete, quotable facts (each with the source URL it came from)
+  - `hooks[]` — 2–3 personalization angles tied to a specific observation
+  - `avoid[]` — claims not supported by the site
+  - `confidence` — high/medium/low (low when the site is JS-rendered/thin, same signal `analyze-domain` uses)
+- Strict no-invention rule: if nothing verifiable is found, return `confidence: "low"` with empty observations rather than plausible-sounding filler (matches existing `NO_HALLUCINATION_RULE` posture and the project's no-fabrication rule).
+- Rate limited per user via the existing `_shared/rate-limit.ts`. Returns 200 with `{ error, error_code }` on soft failures, per project convention.
 
-### 2. Quality Checker (`src/components/outreach/EmailQualityChecker.tsx` + new edge fn `score-email-quality`)
+## 2. Storage + freshness
 
-Replace ad-hoc checks with the skill's 7-criteria rubric (0–10 each, 70 total):
-1. Authenticity
-2. Brevity (word count based)
-3. Clarity (jargon detection)
-4. Humanness
-5. CTA (single question, low friction)
-6. Proof (named company + metric + timeframe regex + AI judgment)
-7. Specificity (numbers, real names)
+Migration adds to `public.leads`:
+- `research_brief jsonb`
+- `research_sources text[]`
+- `research_confidence text`
+- `researched_at timestamptz`
 
-Deterministic checks (word count, banned tokens, em dashes, CTA count) run client-side. Subjective checks (authenticity, humanness) run through a lightweight AI call using `openai/gpt-5.5`. Show total score + per-criterion breakdown; "Fix this" targets the lowest-scoring criterion.
+Freshness policy (cache **and** always-current):
+- Reuse the stored brief if `researched_at` is within a TTL (14 days).
+- If stale, or if the lead's signals/enrichment changed after `researched_at` (`updated_at`/`enriched_at` newer), re-research automatically before generating.
+- `force: true` (manual "Refresh research" button) always re-scrapes.
+- Research is written to the lead row, so the brief is reusable across Outreach Studio, bulk send, sequences, and the agent — one scrape, many emails.
 
-### 3. Campaign / Sequence Builder (new)
+## 3. Wire into `generate-email`
 
-Add "Generate Sequence" action in Outreach Studio that produces a full 4-touch sequence:
-- Email 1 (Day 0): signal-based opener
-- Email 2 (Day 3–5): market/industry context
-- Email 3 (Day 7–10): timing/clarification
-- Email 4 (Day 14): polite breakup
+- Replace the private `researchLead()` helper with: read the lead's stored brief → if missing/stale, call `research-lead` inline → inject the structured brief into the prompt.
+- Also start using lead fields the prompt ignores today: `signals`, `signal_type`, `intent_reasons`, `recommended_angle`, `linkedin_url`.
+- Precision-edit requests (`goal: custom` + `customInstruction`) keep skipping research, as now.
+- Response gains `research: { observations, hooks, sources, confidence, researched_at }` alongside the existing `email` field — additive, so the public `rest-api` proxy (`rest-api/index.ts:440`) keeps working unchanged.
+- Guardrail: research failure never blocks generation — it degrades to the current behavior and reports low confidence.
 
-Plus 3 subject line variations per email (curiosity / results / question).
+## 4. Wire into the AI SDR agent
 
-New edge fn `generate-sequence` returns structured JSON via AI SDK `Output.object`. New component `src/components/outreach/SequenceBuilder.tsx` renders touches as tabs, lets user copy/edit each, and can save as a workflow.
+- Add a `research_leads` tool to `agent-chat` (batched, reusing the existing `mapLimit` + wall-clock budget helpers).
+- `draft_outreach` auto-researches any lead with a missing/stale brief before drafting, and forwards the richer context (`businessDescription` from the agent's ICP snapshot, `senderName`/`senderCompany` from profile) that the UI path already sends but the agent path drops.
+- Agent chat surfaces a short "Researched N leads" activity line, and each draft card shows the observation the email was built on.
 
-### 4. Signal-based targeting UI
+## 5. UI: show the brief
 
-`src/components/dashboard/LeadRow.tsx` (and lead detail sheet): add a **Signal Score** column (0–10) computed from the 3-layer framework:
-- Layer 1: company fundamentals (size, industry match)
-- Layer 2: decision-maker readiness (tenure, seniority)
-- Layer 3: timing triggers (new hire, funding, tech change, traffic drop)
+- **Outreach Studio** (`src/pages/Outreach.tsx`): a collapsible "Lead research" panel above the composer showing `what_they_do`, observations with source links, hooks, confidence badge, `researched_at`, and a "Refresh research" button. Low-confidence state says plainly that the site was thin so the email leans on enrichment data.
+- **AI SDR chat**: research findings rendered in the draft card (`src/components/agent/ChatDraftCard.tsx`) so the user can see why the email says what it says before approving.
+- New shared component `src/components/outreach/LeadResearchPanel.tsx` used by both surfaces. Semantic tokens only, no hardcoded colors.
 
-Extend `score-lead` edge fn to compute `signal_score`, `signal_layers` (jsonb), and a `signals[]` array of tags (e.g. "new-CFO", "hiring", "tech-migration"). Add DB migration for those columns. Sort/filter leads by signal score in the lead table; badge 3+ signals as "hot".
+## Technical notes
 
-### 5. Copywriting reference doc
-
-Add `src/pages/CopyPlaybook.tsx` (linked from Outreach Studio "?" icon) surfacing the skill's rules to end users: banned words list, structure templates, example patterns. Read-only reference — no AI calls.
-
-### Files touched
-
-Backend:
-- `supabase/functions/_shared/cold-email-rules.ts` (new)
-- `supabase/functions/generate-email/index.ts` (rewrite prompts)
-- `supabase/functions/generate-followup-suggestion/index.ts` (apply rules)
-- `supabase/functions/score-email-quality/index.ts` (new)
-- `supabase/functions/generate-sequence/index.ts` (new)
-- `supabase/functions/score-lead/index.ts` (add signal_score + signals)
-- Migration: `leads.signal_score int`, `leads.signals text[]`, `leads.signal_layers jsonb`
-
-Frontend:
-- `src/components/outreach/EmailQualityChecker.tsx` (7-criteria rubric)
-- `src/components/outreach/SequenceBuilder.tsx` (new)
-- `src/pages/Outreach.tsx` (wire sequence builder + new quality checker)
-- `src/components/dashboard/*` lead table (signal column, filters, hot badge)
-- `src/pages/CopyPlaybook.tsx` (new)
-- `src/App.tsx` (route)
-
-### Scope guardrails
-- No changes to billing, credits, or auth.
-- Sequence + quality-check calls debit existing AI credit meter.
-- All prompts stay server-side; `LOVABLE_API_KEY` never touches client.
-
-### Rollout order
-1. Shared rules module + prompt rewrite (fast win, no UI risk)
-2. Score-lead signal extension + migration
-3. Quality checker rubric
-4. Sequence builder
-5. Signal UI + Copy Playbook page
-
-Ready to build in that order — reply "go" and I'll start with step 1.
+- No new secrets or connectors — scraping is direct `fetch`, reasoning uses the existing Lovable AI gateway key.
+- Cost/latency: one scrape+model call per lead per 14 days instead of per email; bulk send and sequences benefit most.
+- `api_cache` remains for the transitional path; the durable brief on `leads` becomes the source of truth.
+- Files touched: new `supabase/functions/research-lead/index.ts`, new `_shared/lead-research.ts` (brief types + freshness helper), edits to `generate-email/index.ts`, `agent-chat/index.ts`, `src/pages/Outreach.tsx`, `src/components/agent/ChatDraftCard.tsx`, `src/components/outreach/BulkSendDialog.tsx`, plus one migration.

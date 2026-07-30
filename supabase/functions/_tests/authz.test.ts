@@ -22,6 +22,7 @@ const PRIVATE_FUNCTIONS = [
   "inbox-sync", "link-agency-client", "parse-lead-query",
   "preview-transactional-email", "process-sequence-step", "purchase-credit-topup",
   "refresh-google-token", "remove-subscription-addon", "replay-webhook",
+  "research-lead",
   "rest-api", "rotate-api-key", "run-webhook-tests", "score-lead",
   "search-prospects", "send-email", "send-push-notification",
   "send-transactional-email", "sync-to-google-calendar", "test-webhook",

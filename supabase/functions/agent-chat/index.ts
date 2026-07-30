@@ -22,6 +22,14 @@ type DraftPreview = {
   contact_email: string | null;
   subject: string;
   body: string;
+  research?: {
+    what_they_do?: string;
+    observations?: { fact: string; source: string }[];
+    hooks?: string[];
+    confidence?: string;
+    sources?: string[];
+    researched_at?: string | null;
+  } | null;
 };
 
 type ToolEvent = {
@@ -100,6 +108,22 @@ const TOOLS = [
       parameters: {
         type: "object",
         properties: { lead_ids: { type: "array", items: { type: "string" } } },
+        required: ["lead_ids"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "research_leads",
+      description:
+        "Research one or more leads by reading their own company website, producing a brief (what they do, who they sell to, concrete observations and personalization hooks). Results are stored on the lead and reused by drafting. draft_outreach researches automatically, so only call this when the user explicitly asks for research.",
+      parameters: {
+        type: "object",
+        properties: {
+          lead_ids: { type: "array", items: { type: "string" } },
+          force: { type: "boolean", description: "Re-scrape even if a recent brief exists" },
+        },
         required: ["lead_ids"],
       },
     },
@@ -555,6 +579,32 @@ serve(async (req) => {
           return { results, skipped_lead_ids: skipped };
         }
 
+        case "research_leads": {
+          const ids: string[] = (args.lead_ids ?? []).slice(0, 12).map((x: any) => String(x));
+          if (ids.length === 0) return { error: "lead_ids is required" };
+          const force = args.force === true;
+          const { results, skipped } = await mapLimit(ids, 3, async (id: string) => {
+            const r = await invokeFn("research-lead", { leadId: id, force });
+            return {
+              lead_id: id,
+              what_they_do: r?.brief?.what_they_do ?? null,
+              who_they_sell_to: r?.brief?.who_they_sell_to ?? null,
+              observations: r?.brief?.observations ?? [],
+              hooks: r?.brief?.hooks ?? [],
+              confidence: r?.confidence ?? null,
+              error: r?.brief ? undefined : (r?.error ?? "Research failed"),
+            };
+          });
+          const okCount = results.filter((r: any) => !r.error).length;
+          toolEvents.push({
+            name,
+            label: "Researched leads",
+            status: okCount === 0 ? "error" : "ok",
+            detail: `${okCount}/${ids.length} researched from their websites${skipped.length ? ` (${skipped.length} left — ask me to continue)` : ""}`,
+          });
+          return { results, skipped_lead_ids: skipped };
+        }
+
 
         case "draft_outreach": {
           const VALID_GOALS = ["introduction", "follow-up", "meeting", "demo", "proposal"];
@@ -571,22 +621,31 @@ serve(async (req) => {
             .slice(0, 20);
           if (ids.length === 0) return { error: "lead_id or lead_ids is required" };
 
+          // Sender + offer context the UI path already sends — the agent path
+          // used to drop these, which made its emails noticeably more generic.
+          const businessDescription = [
+            config?.company_context ?? "",
+            (config?.value_props ?? []).join("; "),
+          ].filter(Boolean).join(" — ").slice(0, 600);
+
+          const basePayload = {
+            goal,
+            tone: config?.tone ?? "professional",
+            senderName: profile?.full_name ?? "",
+            senderCompany: profile?.company_name ?? config?.company_context ?? "",
+            businessDescription,
+          };
+
           const genOne = async (id: string) => {
             const lead = await loadLead(id);
             if (!lead) return { lead_id: id, error: "Lead not found" };
-            let r = await invokeFn("generate-email", {
-              lead,
-              goal,
-              tone: config?.tone ?? "professional",
-            });
+            // generate-email runs (or reuses) the per-lead website research brief
+            // internally, so drafts are grounded in real findings.
+            let r = await invokeFn("generate-email", { lead, ...basePayload });
             // one retry on upstream rate limiting
             if (!r?.email && /rate limit/i.test(JSON.stringify(r?.error ?? ""))) {
               await new Promise((res) => setTimeout(res, 2500));
-              r = await invokeFn("generate-email", {
-                lead,
-                goal,
-                tone: config?.tone ?? "professional",
-              });
+              r = await invokeFn("generate-email", { lead, ...basePayload });
             }
             const raw: string = typeof r?.email === "string" ? r.email : "";
             let subject = "";
@@ -626,14 +685,25 @@ serve(async (req) => {
               subject: raw ? subject : null,
               body: raw ? body : null,
               email: r?.email ?? null,
+              research: r?.research ?? null,
               error: r?.email ? undefined : (r?.error ?? "Draft failed"),
             };
           };
+
 
           const { results: drafts, skipped } = await mapLimit(ids, 3, genOne);
 
 
           const okCount = drafts.filter((d) => d.email).length;
+          const researchedCount = drafts.filter((d: any) => d.research?.observations?.length).length;
+          if (researchedCount > 0) {
+            toolEvents.push({
+              name,
+              label: "Researched leads",
+              status: "ok",
+              detail: `${researchedCount}/${ids.length} grounded in findings from the prospect's own website`,
+            });
+          }
           toolEvents.push({
             name,
             label: "Drafted emails",
@@ -653,6 +723,7 @@ serve(async (req) => {
                 contact_email: d.contact_email,
                 subject: d.subject as string,
                 body: d.body as string,
+                research: (d as any).research ?? null,
               })),
           });
           return {
