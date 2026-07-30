@@ -2159,7 +2159,20 @@ For logos, use HTML:
                         </div>
                       );
                     })()}
+
+                    {/* Website research brief — what the AI actually read about them */}
+                    {selectedLead && (
+                      <LeadResearchPanel
+                        className="mt-2"
+                        research={leadResearch}
+                        loading={researchLoading}
+                        refreshing={researchRefreshing}
+                        onRefresh={() => runLeadResearch(true)}
+                        emptyMessage="Not researched yet. Generating an email reads this prospect's website first, or hit Refresh to research now."
+                      />
+                    )}
                   </div>
+
 
                   <div>
                     <Label>
