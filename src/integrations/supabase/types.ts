@@ -2002,6 +2002,10 @@ export type Database = {
           linkedin_url: string | null
           notes: string | null
           recommended_angle: string | null
+          research_brief: Json | null
+          research_confidence: string | null
+          research_sources: string[] | null
+          researched_at: string | null
           score_changed_at: string | null
           seniority: string | null
           signal_date: string | null
@@ -2042,6 +2046,10 @@ export type Database = {
           linkedin_url?: string | null
           notes?: string | null
           recommended_angle?: string | null
+          research_brief?: Json | null
+          research_confidence?: string | null
+          research_sources?: string[] | null
+          researched_at?: string | null
           score_changed_at?: string | null
           seniority?: string | null
           signal_date?: string | null
@@ -2082,6 +2090,10 @@ export type Database = {
           linkedin_url?: string | null
           notes?: string | null
           recommended_angle?: string | null
+          research_brief?: Json | null
+          research_confidence?: string | null
+          research_sources?: string[] | null
+          researched_at?: string | null
           score_changed_at?: string | null
           seniority?: string | null
           signal_date?: string | null
