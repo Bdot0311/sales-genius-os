@@ -712,10 +712,56 @@ STRICT RULES:
       return lines.join('\n');
     };
 
-    // ─── Run lead research (skip for precision edits — they don't need new context) ──
+    // ─── Website research brief (primary source of prospect facts) ─────────────
+    // Stored on the lead and refreshed when stale, so one scrape serves every
+    // email surface. Failure here never blocks generation.
     const isPrecisionEditPre = goal === 'custom' && typeof requestData.customInstruction === 'string' && requestData.customInstruction.length > 0;
+
+    let researchBrief: LeadResearchBrief | null = null;
+    let researchSources: string[] = [];
+    let researchedAt: string | null = null;
+    let websiteResearchBlock = '';
+
+    if (!isPrecisionEditPre && lead.id) {
+      try {
+        const { data: leadRow } = await serviceClient
+          .from('leads')
+          .select('research_brief, research_sources, research_confidence, researched_at, updated_at, enriched_at')
+          .eq('id', lead.id)
+          .maybeSingle();
+
+        if (leadRow && isResearchFresh(leadRow as Record<string, unknown>)) {
+          researchBrief = leadRow.research_brief as LeadResearchBrief;
+          researchSources = (leadRow.research_sources as string[]) || [];
+          researchedAt = leadRow.researched_at as string;
+        } else {
+          const res = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/research-lead`, {
+            method: 'POST',
+            headers: {
+              Authorization: authHeader!,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ leadId: lead.id }),
+            signal: AbortSignal.timeout(60_000),
+          });
+          const rj = await res.json().catch(() => ({}));
+          if (rj?.brief) {
+            researchBrief = rj.brief as LeadResearchBrief;
+            researchSources = Array.isArray(rj.sources) ? rj.sources : [];
+            researchedAt = typeof rj.researched_at === 'string' ? rj.researched_at : null;
+          } else if (rj?.error) {
+            console.warn('[generate-email] research skipped:', rj.error_code || rj.error);
+          }
+        }
+        websiteResearchBlock = briefToPromptBlock(researchBrief, researchSources);
+      } catch (err) {
+        console.warn('[generate-email] research step failed:', err instanceof Error ? err.message : err);
+      }
+    }
+
+    // ─── Secondary: web-grounded signals, only when the site gave us nothing ───
     let verifiedResearch = '';
-    if (!isPrecisionEditPre) {
+    if (!isPrecisionEditPre && !websiteResearchBlock) {
       verifiedResearch = await researchLead(
         sanitizedCompanyName,
         sanitizedJobTitle,
@@ -727,9 +773,30 @@ STRICT RULES:
       );
     }
 
-    const researchBlock = verifiedResearch
-      ? `\n\nVERIFIED RESEARCH for ${sanitizedContactName} at ${sanitizedCompanyName} (web-grounded, treat as the ONLY source of external facts about this prospect — do not invent anything beyond this):\n${verifiedResearch}`
-      : `\n\nVERIFIED RESEARCH: none available. You MUST NOT invent any external facts about this prospect. Stick to the provided lead fields (role, industry, size, tech stack) and operational inferences a peer in this space could reasonably make from role/industry alone. NEVER claim a funding round, launch, hire, customer, metric, or initiative.`;
+    // ─── CRM signals already on the lead (previously unused in prompts) ────────
+    const crmSignalLines: string[] = [];
+    if (Array.isArray(lead.signals) && lead.signals.length > 0) {
+      crmSignalLines.push(`- Buying signals on record: ${lead.signals.slice(0, 6).map((s: string) => sanitizeString(String(s), 120)).join('; ')}`);
+    }
+    if (lead.signal_type) crmSignalLines.push(`- Signal type: ${sanitizeString(String(lead.signal_type), 80)}`);
+    if (Array.isArray(lead.intent_reasons) && lead.intent_reasons.length > 0) {
+      crmSignalLines.push(`- Intent reasons: ${lead.intent_reasons.slice(0, 4).map((s: string) => sanitizeString(String(s), 120)).join('; ')}`);
+    }
+    if (lead.recommended_angle) crmSignalLines.push(`- Recommended angle: ${sanitizeString(String(lead.recommended_angle), 200)}`);
+    if (lead.linkedin_url) crmSignalLines.push(`- Prospect LinkedIn: ${sanitizeString(String(lead.linkedin_url), 200)}`);
+    const crmSignalBlock = crmSignalLines.length > 0
+      ? `\n\nCRM SIGNALS on record for this prospect (verified data, safe to reference):\n${crmSignalLines.join('\n')}`
+      : '';
+
+    const combinedResearch = [
+      websiteResearchBlock ? `From ${sanitizedCompanyName}'s own website:\n${websiteResearchBlock}` : '',
+      verifiedResearch,
+    ].filter(Boolean).join('\n\n');
+
+    const researchBlock = combinedResearch
+      ? `\n\nVERIFIED RESEARCH for ${sanitizedContactName} at ${sanitizedCompanyName} (treat as the ONLY source of external facts about this prospect — do not invent anything beyond this):\n${combinedResearch}${crmSignalBlock}`
+      : `\n\nVERIFIED RESEARCH: none available. You MUST NOT invent any external facts about this prospect. Stick to the provided lead fields (role, industry, size, tech stack) and operational inferences a peer in this space could reasonably make from role/industry alone. NEVER claim a funding round, launch, hire, customer, metric, or initiative.${crmSignalBlock}`;
+
 
     const NO_HALLUCINATION_RULE = `\n\nNO-HALLUCINATION RULE — non-negotiable:
 - The ONLY facts you may state about the prospect or their company are: (a) the lead fields above, and (b) items in VERIFIED RESEARCH.
