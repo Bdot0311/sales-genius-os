@@ -621,22 +621,31 @@ serve(async (req) => {
             .slice(0, 20);
           if (ids.length === 0) return { error: "lead_id or lead_ids is required" };
 
+          // Sender + offer context the UI path already sends — the agent path
+          // used to drop these, which made its emails noticeably more generic.
+          const businessDescription = [
+            config?.company_context ?? "",
+            (config?.value_props ?? []).join("; "),
+          ].filter(Boolean).join(" — ").slice(0, 600);
+
+          const basePayload = {
+            goal,
+            tone: config?.tone ?? "professional",
+            senderName: profile?.full_name ?? "",
+            senderCompany: profile?.company_name ?? config?.company_context ?? "",
+            businessDescription,
+          };
+
           const genOne = async (id: string) => {
             const lead = await loadLead(id);
             if (!lead) return { lead_id: id, error: "Lead not found" };
-            let r = await invokeFn("generate-email", {
-              lead,
-              goal,
-              tone: config?.tone ?? "professional",
-            });
+            // generate-email runs (or reuses) the per-lead website research brief
+            // internally, so drafts are grounded in real findings.
+            let r = await invokeFn("generate-email", { lead, ...basePayload });
             // one retry on upstream rate limiting
             if (!r?.email && /rate limit/i.test(JSON.stringify(r?.error ?? ""))) {
               await new Promise((res) => setTimeout(res, 2500));
-              r = await invokeFn("generate-email", {
-                lead,
-                goal,
-                tone: config?.tone ?? "professional",
-              });
+              r = await invokeFn("generate-email", { lead, ...basePayload });
             }
             const raw: string = typeof r?.email === "string" ? r.email : "";
             let subject = "";
@@ -676,9 +685,11 @@ serve(async (req) => {
               subject: raw ? subject : null,
               body: raw ? body : null,
               email: r?.email ?? null,
+              research: r?.research ?? null,
               error: r?.email ? undefined : (r?.error ?? "Draft failed"),
             };
           };
+
 
           const { results: drafts, skipped } = await mapLimit(ids, 3, genOne);
 
