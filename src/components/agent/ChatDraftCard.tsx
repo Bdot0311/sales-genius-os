@@ -18,6 +18,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { LeadResearchPanel, type LeadResearch } from "@/components/outreach/LeadResearchPanel";
 
 export interface ChatDraft {
   draft_id: string;
@@ -27,6 +28,7 @@ export interface ChatDraft {
   contact_email: string | null;
   subject: string;
   body: string;
+  research?: LeadResearch | null;
 }
 
 type DraftState = "pending" | "sent" | "scheduled" | "discarded" | "resolved";
