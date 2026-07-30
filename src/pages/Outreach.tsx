@@ -1247,6 +1247,71 @@ Return ONLY the corrected email body. No subject line. No explanation. No "Here 
     return pickBestTemplate(lead);
   }, [selectedLead, leads]);
 
+  // Load the stored research brief whenever the selected lead changes. Reads the
+  // lead row directly (cheap) — the scrape only happens on Refresh or generation.
+  useEffect(() => {
+    let cancelled = false;
+    if (!selectedLead) {
+      setLeadResearch(null);
+      return;
+    }
+    (async () => {
+      setResearchLoading(true);
+      const { data } = await supabase
+        .from("leads")
+        .select("research_brief, research_sources, research_confidence, researched_at")
+        .eq("id", selectedLead)
+        .maybeSingle();
+      if (cancelled) return;
+      const brief = (data?.research_brief as LeadResearch | null) || null;
+      setLeadResearch(
+        brief
+          ? {
+              ...brief,
+              sources: (data?.research_sources as string[] | null) ?? brief.sources ?? [],
+              confidence: (data?.research_confidence as string | null) ?? brief.confidence ?? null,
+              researched_at: (data?.researched_at as string | null) ?? null,
+            }
+          : null,
+      );
+      setResearchLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedLead]);
+
+  // Run (or re-run) website research for the selected lead.
+  const runLeadResearch = async (force = false) => {
+    if (!selectedLead) return;
+    setResearchRefreshing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("research-lead", {
+        body: { leadId: selectedLead, force },
+      });
+      if (error) throw error;
+      if (data?.brief) {
+        setLeadResearch({
+          ...(data.brief as LeadResearch),
+          sources: Array.isArray(data.sources) ? data.sources : [],
+          confidence: data.confidence ?? null,
+          researched_at: data.researched_at ?? null,
+        });
+        toast({ title: "Research updated", description: "Pulled fresh findings from their website." });
+      } else {
+        toast({
+          title: "Couldn't research this lead",
+          description: data?.error || "No readable website found for this company.",
+          variant: "destructive",
+        });
+      }
+    } catch (e: any) {
+      toast({ title: "Research failed", description: e?.message || "Try again", variant: "destructive" });
+    } finally {
+      setResearchRefreshing(false);
+    }
+  };
+
   // Resolve the template that should actually drive generation, honoring auto mode.
   const resolveActiveTemplate = (): EmailTemplate => {
     if (selectedTemplate === "auto") return autoPick.template;
