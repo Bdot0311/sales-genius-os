@@ -227,17 +227,22 @@ serve(async (req) => {
 
     // Fresh brief already stored — hand it back without spending a scrape.
     if (!force && isResearchFresh(lead as Record<string, unknown>)) {
+      const cachedBrief = lead.research_brief as LeadResearchBrief;
+      const cachedSources = (lead.research_sources as string[]) || [];
+      const quality = scoreResearchQuality(cachedBrief, cachedSources);
       return new Response(
         JSON.stringify({
-          brief: lead.research_brief,
-          sources: lead.research_sources || [],
+          brief: { ...cachedBrief, quality },
+          sources: cachedSources,
           confidence: lead.research_confidence,
+          quality,
           researched_at: lead.researched_at,
           cached: true,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
+
 
     // Scraping + a model call is expensive: cap per user per day.
     const rl = await rateLimit(`research-lead:${user.id}`, 300, 86_400);
