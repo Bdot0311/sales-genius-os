@@ -740,6 +740,7 @@ STRICT RULES:
             method: 'POST',
             headers: {
               Authorization: authHeader!,
+              apikey: Deno.env.get('SUPABASE_ANON_KEY') ?? '',
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({ leadId: lead.id }),
