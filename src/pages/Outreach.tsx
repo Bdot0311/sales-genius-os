@@ -312,7 +312,12 @@ const Outreach = () => {
   const [subjectLine, setSubjectLine] = useState("");
   const [isGeneratingSubject, setIsGeneratingSubject] = useState(false);
   const [isGeneratingTrigger, setIsGeneratingTrigger] = useState(false);
-  
+
+  // Per-lead website research brief (shared engine with the AI SDR agent).
+  const [leadResearch, setLeadResearch] = useState<LeadResearch | null>(null);
+  const [researchLoading, setResearchLoading] = useState(false);
+  const [researchRefreshing, setResearchRefreshing] = useState(false);
+
   const [generatedEmail, setGeneratedEmail] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [fixingCheck, setFixingCheck] = useState<string | null>(null);
