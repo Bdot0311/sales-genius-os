@@ -34,6 +34,7 @@ import { FollowUpSuggestion, FollowUpData } from "@/components/outreach/FollowUp
 import { BarChart3, ListOrdered, Layout, Users } from "lucide-react";
 import { BulkSendDialog } from "@/components/outreach/BulkSendDialog";
 import { EmailQualityChecker, scoreEmailQuality } from "@/components/outreach/EmailQualityChecker";
+import { applyEmailQualityFix } from "@/lib/email-quality-fixes";
 import { LeadResearchPanel, type LeadResearch } from "@/components/outreach/LeadResearchPanel";
 import { SequencesList, MessageBlocksList } from "@/components/sequences";
 import { AiSequenceBuilder } from "@/components/sequences/AiSequenceBuilder";
@@ -1216,13 +1217,47 @@ IMMUTABLE RULES — these apply regardless of the fix task:
     }
     const lead = leads.find((l) => l.id === selectedLead);
 
+    const persistFixedDraft = async (fixedBody: string) => {
+      setGeneratedEmail(fixedBody);
+      if (!currentDraftId) return;
+      const { error } = await supabase
+        .from('email_drafts')
+        .update({ body: fixedBody, updated_at: new Date().toISOString() })
+        .eq('id', currentDraftId);
+      if (error) throw error;
+    };
+
     if (checkLabel === 'Personalization') {
       const fixed = applyPersonalizationFixLocally(generatedEmail, lead).trim();
       if (fixed && fixed !== generatedEmail.trim()) {
-        setGeneratedEmail(fixed);
-        setFixingCheck(null);
-        return;
+        try {
+          await persistFixedDraft(fixed);
+          toast({ title: "Personalization fixed", description: "The draft was updated and saved." });
+          return;
+        } catch (err) {
+          console.error('Fix persistence failed:', err);
+        } finally {
+          setFixingCheck(null);
+        }
       }
+    }
+
+    const localFixed = applyEmailQualityFix(generatedEmail, checkLabel);
+    const beforeCheck = scoreEmailQuality(subjectLine, generatedEmail, isFirstTouch).checks.find((check) => check.label === checkLabel);
+    const afterCheck = scoreEmailQuality(subjectLine, localFixed, isFirstTouch).checks.find((check) => check.label === checkLabel);
+    const localImproved = localFixed !== generatedEmail.trim() && (!afterCheck || afterCheck.score > (beforeCheck?.score ?? 0));
+
+    if (localImproved) {
+      try {
+        await persistFixedDraft(localFixed);
+        toast({ title: `${checkLabel} fixed`, description: afterCheck ? afterCheck.message : "The issue was removed and the draft was saved." });
+      } catch (err: any) {
+        console.error('Fix persistence failed:', err);
+        toast({ title: "Draft changed but could not be saved", description: err?.message || "Save the draft before leaving this page.", variant: "destructive" });
+      } finally {
+        setFixingCheck(null);
+      }
+      return;
     }
 
     try {
@@ -1256,11 +1291,18 @@ Return ONLY the corrected email body. No subject line. No explanation. No "Here 
       // Strip any "Here is the rewritten email:" style preambles
       fixed = fixed.replace(/^(?:here is|here's|below is|the (?:updated|revised|rewritten|fixed) email[:\s]*)\n+/i, '').trim();
 
-      if (fixed) {
-        setGeneratedEmail(fixed);
-      }
-    } catch (err) {
+      const aiCheck = scoreEmailQuality(subjectLine, fixed, isFirstTouch).checks.find((check) => check.label === checkLabel);
+      const aiImproved = fixed && fixed !== generatedEmail.trim() && (!aiCheck || aiCheck.score > (beforeCheck?.score ?? 0));
+      if (!aiImproved) throw new Error(`The ${checkLabel.toLowerCase()} fix did not improve the draft.`);
+      await persistFixedDraft(fixed);
+      toast({ title: `${checkLabel} fixed`, description: aiCheck ? aiCheck.message : "The draft was updated and saved." });
+    } catch (err: any) {
       console.error('Fix failed:', err);
+      toast({
+        title: `Could not fix ${checkLabel.toLowerCase()}`,
+        description: err?.message || "The draft was left unchanged. Try editing this item manually.",
+        variant: "destructive",
+      });
     } finally {
       setFixingCheck(null);
     }
