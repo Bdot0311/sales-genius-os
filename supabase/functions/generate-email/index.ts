@@ -1015,7 +1015,21 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
     const preserveSubject = goal === 'introduction' && !use4SentenceFramework;
     email = cleanGeneratedEmail(email, preserveSubject);
 
-    return new Response(JSON.stringify({ email }), {
+    return new Response(JSON.stringify({
+      email,
+      research: researchBrief
+        ? {
+            what_they_do: researchBrief.what_they_do,
+            who_they_sell_to: researchBrief.who_they_sell_to,
+            observations: researchBrief.observations,
+            hooks: researchBrief.hooks,
+            avoid: researchBrief.avoid,
+            confidence: researchBrief.confidence,
+            sources: researchSources,
+            researched_at: researchedAt,
+          }
+        : null,
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
