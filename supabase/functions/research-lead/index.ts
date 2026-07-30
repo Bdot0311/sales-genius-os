@@ -5,8 +5,10 @@ import {
   briefToPromptBlock,
   isResearchFresh,
   resolveLeadDomain,
+  scoreResearchQuality,
   type LeadResearchBrief,
 } from "../_shared/lead-research.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
