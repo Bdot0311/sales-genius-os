@@ -695,6 +695,15 @@ serve(async (req) => {
 
 
           const okCount = drafts.filter((d) => d.email).length;
+          const researchedCount = drafts.filter((d: any) => d.research?.observations?.length).length;
+          if (researchedCount > 0) {
+            toolEvents.push({
+              name,
+              label: "Researched leads",
+              status: "ok",
+              detail: `${researchedCount}/${ids.length} grounded in findings from the prospect's own website`,
+            });
+          }
           toolEvents.push({
             name,
             label: "Drafted emails",
@@ -714,6 +723,7 @@ serve(async (req) => {
                 contact_email: d.contact_email,
                 subject: d.subject as string,
                 body: d.body as string,
+                research: (d as any).research ?? null,
               })),
           });
           return {
