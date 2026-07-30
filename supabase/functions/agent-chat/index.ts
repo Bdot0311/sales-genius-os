@@ -579,6 +579,32 @@ serve(async (req) => {
           return { results, skipped_lead_ids: skipped };
         }
 
+        case "research_leads": {
+          const ids: string[] = (args.lead_ids ?? []).slice(0, 12).map((x: any) => String(x));
+          if (ids.length === 0) return { error: "lead_ids is required" };
+          const force = args.force === true;
+          const { results, skipped } = await mapLimit(ids, 3, async (id: string) => {
+            const r = await invokeFn("research-lead", { leadId: id, force });
+            return {
+              lead_id: id,
+              what_they_do: r?.brief?.what_they_do ?? null,
+              who_they_sell_to: r?.brief?.who_they_sell_to ?? null,
+              observations: r?.brief?.observations ?? [],
+              hooks: r?.brief?.hooks ?? [],
+              confidence: r?.confidence ?? null,
+              error: r?.brief ? undefined : (r?.error ?? "Research failed"),
+            };
+          });
+          const okCount = results.filter((r: any) => !r.error).length;
+          toolEvents.push({
+            name,
+            label: "Researched leads",
+            status: okCount === 0 ? "error" : "ok",
+            detail: `${okCount}/${ids.length} researched from their websites${skipped.length ? ` (${skipped.length} left — ask me to continue)` : ""}`,
+          });
+          return { results, skipped_lead_ids: skipped };
+        }
+
 
         case "draft_outreach": {
           const VALID_GOALS = ["introduction", "follow-up", "meeting", "demo", "proposal"];
