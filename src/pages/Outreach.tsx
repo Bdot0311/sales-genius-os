@@ -2535,7 +2535,7 @@ For logos, use HTML:
                   <div className="space-y-3">
                     <div className="flex gap-2">
                       <Button
-                        onClick={generateEmail}
+                        onClick={() => generateEmail()}
                         disabled={isGenerating || !selectedLead}
                         className="flex-1 bg-gradient-to-r from-primary to-accent hover:opacity-90"
                         size="lg"
@@ -2782,7 +2782,7 @@ For logos, use HTML:
                           variant="outline"
                           size="icon"
                           className="shrink-0 self-start"
-                          onClick={generateEmail}
+                          onClick={() => generateEmail()}
                           disabled={isGenerating || !selectedLead}
                         >
                           {isGenerating ? (
