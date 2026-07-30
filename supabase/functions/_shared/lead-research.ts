@@ -184,5 +184,15 @@ export function briefToPromptBlock(
   }
   if (sources?.length) lines.push(`- Sources read: ${sources.slice(0, 8).join(", ")}`);
   if (lines.length === 0) return "";
-  return `${lines.join("\n")}\n- Research confidence: ${brief.confidence || "low"}`;
+  const quality = brief.quality ?? scoreResearchQuality(brief, sources);
+  let block = `${lines.join("\n")}\n- Research confidence: ${brief.confidence || "low"}`;
+  block += `\n- Research completeness score: ${quality.score}/100 (${quality.label})`;
+  if (!quality.safe_to_personalize) {
+    block +=
+      "\n- WARNING: this research is too thin to personalize on. Do NOT reference anything specific about this company beyond the verified lead fields below, and do NOT imply you studied their website.";
+  } else if (quality.label === "thin") {
+    block +=
+      "\n- CAUTION: research is thin. Reference ONLY the observations listed above verbatim in meaning; make no other company-specific claims.";
+  }
+  return block;
 }
