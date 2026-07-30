@@ -115,6 +115,22 @@ const TOOLS = [
   {
     type: "function",
     function: {
+      name: "research_leads",
+      description:
+        "Research one or more leads by reading their own company website, producing a brief (what they do, who they sell to, concrete observations and personalization hooks). Results are stored on the lead and reused by drafting. draft_outreach researches automatically, so only call this when the user explicitly asks for research.",
+      parameters: {
+        type: "object",
+        properties: {
+          lead_ids: { type: "array", items: { type: "string" } },
+          force: { type: "boolean", description: "Re-scrape even if a recent brief exists" },
+        },
+        required: ["lead_ids"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "draft_outreach",
       description:
         "Draft first-touch cold emails following the OutReign cold email playbook. Pass lead_ids to draft for several leads in ONE call (preferred — never call this tool repeatedly in parallel). Does not send anything.",
