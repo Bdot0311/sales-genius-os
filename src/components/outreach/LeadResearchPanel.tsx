@@ -2,12 +2,19 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ExternalLink, Loader2, RefreshCw, Search } from "lucide-react";
+import { AlertTriangle, ChevronDown, ExternalLink, Loader2, RefreshCw, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface LeadResearchObservation {
   fact: string;
   source?: string;
+}
+
+export interface LeadResearchQuality {
+  score: number;
+  label: string;
+  safe_to_personalize: boolean;
+  gaps?: string[] | null;
 }
 
 export interface LeadResearch {
@@ -19,6 +26,7 @@ export interface LeadResearch {
   confidence?: string | null;
   sources?: string[] | null;
   researched_at?: string | null;
+  quality?: LeadResearchQuality | null;
 }
 
 const CONFIDENCE_COPY: Record<string, string> = {
@@ -65,6 +73,9 @@ export const LeadResearchPanel = ({
   const hooks = research?.hooks?.filter(Boolean) ?? [];
   const confidence = (research?.confidence || "").toLowerCase();
   const hasBrief = Boolean(research && (observations.length > 0 || research.what_they_do));
+  const quality = research?.quality ?? null;
+  const tooThin = Boolean(quality && !quality.safe_to_personalize);
+  const gaps = quality?.gaps?.filter(Boolean) ?? [];
 
   return (
     <div
@@ -86,6 +97,14 @@ export const LeadResearchPanel = ({
                 <Badge variant="secondary" className="text-[10px]">
                   {observations.length} finding{observations.length === 1 ? "" : "s"}
                 </Badge>
+                {quality && (
+                  <Badge
+                    variant={quality.safe_to_personalize ? "secondary" : "destructive"}
+                    className="text-[10px]"
+                  >
+                    {quality.score}/100 {quality.label}
+                  </Badge>
+                )}
                 {confidence && (
                   <Badge
                     variant={confidence === "low" ? "outline" : "secondary"}
@@ -131,6 +150,32 @@ export const LeadResearchPanel = ({
 
             {!loading && !hasBrief && (
               <p className="text-xs text-muted-foreground">{emptyMessage}</p>
+            )}
+
+            {!loading && (tooThin || (quality && quality.label === "thin")) && (
+              <div
+                className={cn(
+                  "flex items-start gap-2 rounded-md border p-2 text-xs",
+                  tooThin
+                    ? "border-destructive/40 bg-destructive/10 text-destructive"
+                    : "border-border bg-muted/50 text-muted-foreground",
+                )}
+              >
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <div className="space-y-1">
+                  <p className="font-medium">
+                    {tooThin
+                      ? `Research completeness ${quality?.score}/100 — too thin to personalize safely`
+                      : `Research completeness ${quality?.score}/100 — thin`}
+                  </p>
+                  <p>
+                    {tooThin
+                      ? "Emails will avoid company-specific claims. Refresh research or add their website to improve this."
+                      : "Only reference the findings below; anything else risks sounding invented."}
+                  </p>
+                  {gaps.length > 0 && <p className="opacity-80">Missing: {gaps.join(" · ")}</p>}
+                </div>
+              </div>
             )}
 
             {!loading && hasBrief && (

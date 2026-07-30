@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import { Loader2, Send, Sparkles, CalendarPlus, Settings2, Image, Upload, Wand2, Mail, FileText, Save, Shuffle, Check, X, Keyboard, Clock, AlertTriangle, Monitor, Smartphone } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -1041,7 +1042,7 @@ const Outreach = () => {
   };
 
 
-  const generateEmail = async () => {
+  const generateEmail = async (opts: { allowThinResearch?: boolean } = {}) => {
     if (!selectedLead) {
       toast({
         title: "Missing information",
@@ -1109,10 +1110,27 @@ const Outreach = () => {
           use4SentenceFramework,
           senderName: resolvedSender,
           senderCompany: resolvedSender ? businessDescription?.split(/[\n.]/)[0]?.trim() : "",
+          // Gate on research completeness unless the user chose to override.
+          blockOnThinResearch: opts.allowThinResearch !== true,
         },
       });
 
       if (error) throw error;
+
+      // Soft block: research too thin to personalize safely.
+      if (data?.error_code === "research_too_thin") {
+        if (data?.research) setLeadResearch(data.research as LeadResearch);
+        toast({
+          title: "Research too thin to personalize",
+          description: data.error,
+          action: (
+            <ToastAction altText="Generate anyway" onClick={() => generateEmail({ allowThinResearch: true })}>
+              Generate anyway
+            </ToastAction>
+          ),
+        });
+        return;
+      }
       const emailBody = appendSenderLine(sanitizeGeneratedEmailBody(data.email), resolvedSender);
       setGeneratedEmail(emailBody);
       if (data?.research) {
@@ -2517,7 +2535,7 @@ For logos, use HTML:
                   <div className="space-y-3">
                     <div className="flex gap-2">
                       <Button
-                        onClick={generateEmail}
+                        onClick={() => generateEmail()}
                         disabled={isGenerating || !selectedLead}
                         className="flex-1 bg-gradient-to-r from-primary to-accent hover:opacity-90"
                         size="lg"
@@ -2764,7 +2782,7 @@ For logos, use HTML:
                           variant="outline"
                           size="icon"
                           className="shrink-0 self-start"
-                          onClick={generateEmail}
+                          onClick={() => generateEmail()}
                           disabled={isGenerating || !selectedLead}
                         >
                           {isGenerating ? (

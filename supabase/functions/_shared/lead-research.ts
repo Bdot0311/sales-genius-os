@@ -15,17 +15,91 @@ export interface LeadResearchBrief {
   hooks: string[];
   avoid: string[];
   confidence: "high" | "medium" | "low";
+  /** Deterministic completeness score, stored with the brief for reuse. */
+  quality?: ResearchQuality;
 }
 
-export interface StoredResearch {
-  research_brief: LeadResearchBrief | null;
-  research_sources: string[] | null;
-  research_confidence: string | null;
-  researched_at: string | null;
+export type ResearchQualityLabel = "strong" | "usable" | "thin" | "insufficient";
+
+export interface ResearchQuality {
+  /** 0-100 completeness score. */
+  score: number;
+  label: ResearchQualityLabel;
+  /** False when the brief is too thin to personalize safely. */
+  safe_to_personalize: boolean;
+  /** What's missing, in plain language. */
+  gaps: string[];
+}
+
+/** Below this we refuse to claim the email is personalized. */
+export const RESEARCH_BLOCK_THRESHOLD = 35;
+/** Below this we still generate, but warn the user. */
+export const RESEARCH_WARN_THRESHOLD = 60;
+
+/**
+ * Deterministic 0-100 research completeness score. No model involved so the
+ * same brief always scores the same, and the gate can't drift.
+ */
+export function scoreResearchQuality(
+  brief: LeadResearchBrief | null | undefined,
+  sources?: string[] | null,
+): ResearchQuality {
+  const gaps: string[] = [];
+  if (!brief) {
+    return {
+      score: 0,
+      label: "insufficient",
+      safe_to_personalize: false,
+      gaps: ["No research brief for this lead yet"],
+    };
+  }
+
+  const observations = (brief.observations || []).filter((o) => o?.fact);
+  const sourced = observations.filter((o) => o.source);
+  const hooks = (brief.hooks || []).filter(Boolean);
+  const pages = (sources || []).length;
+
+  let score = 0;
+  // Concrete, quotable facts carry most of the weight.
+  score += Math.min(observations.length, 3) * 15; // max 45
+  if (observations.length >= 4) score += 5; // max 50
+  // Facts we can point at a page are worth more than floating claims.
+  score += observations.length > 0
+    ? Math.round((sourced.length / observations.length) * 15)
+    : 0;
+  score += Math.min(hooks.length, 2) * 7; // max 14
+  if (brief.what_they_do) score += 10;
+  if (brief.who_they_sell_to) score += 8;
+  score += Math.min(Math.max(pages - 1, 0), 3); // breadth of pages read
+
+  if (observations.length < 3) gaps.push("Fewer than 3 concrete findings from their site");
+  if (observations.length > 0 && sourced.length < observations.length) {
+    gaps.push("Some findings have no source page");
+  }
+  if (hooks.length === 0) gaps.push("No personalization angle found");
+  if (!brief.what_they_do) gaps.push("What they do is unclear");
+  if (!brief.who_they_sell_to) gaps.push("Who they sell to is unclear");
+  if (pages <= 1) gaps.push("Only their homepage was readable");
+
+  // A low-confidence read can never be called strong.
+  if (brief.confidence === "low") score = Math.min(score, 45);
+  else if (brief.confidence === "medium") score = Math.min(score, 80);
+  score = Math.max(0, Math.min(100, score));
+
+  const label: ResearchQualityLabel =
+    score >= 80 ? "strong" : score >= RESEARCH_WARN_THRESHOLD ? "usable" : score >= RESEARCH_BLOCK_THRESHOLD ? "thin" : "insufficient";
+
+  return {
+    score,
+    label,
+    safe_to_personalize: score >= RESEARCH_BLOCK_THRESHOLD,
+    gaps,
+  };
 }
 
 /** Briefs older than this are re-scraped so the context stays current. */
 export const RESEARCH_TTL_DAYS = 14;
+
 
 export const FREE_MAIL_DOMAINS = new Set([
   "gmail.com", "googlemail.com", "yahoo.com", "hotmail.com", "outlook.com",
@@ -110,5 +184,15 @@ export function briefToPromptBlock(
   }
   if (sources?.length) lines.push(`- Sources read: ${sources.slice(0, 8).join(", ")}`);
   if (lines.length === 0) return "";
-  return `${lines.join("\n")}\n- Research confidence: ${brief.confidence || "low"}`;
+  const quality = brief.quality ?? scoreResearchQuality(brief, sources);
+  let block = `${lines.join("\n")}\n- Research confidence: ${brief.confidence || "low"}`;
+  block += `\n- Research completeness score: ${quality.score}/100 (${quality.label})`;
+  if (!quality.safe_to_personalize) {
+    block +=
+      "\n- WARNING: this research is too thin to personalize on. Do NOT reference anything specific about this company beyond the verified lead fields below, and do NOT imply you studied their website.";
+  } else if (quality.label === "thin") {
+    block +=
+      "\n- CAUTION: research is thin. Reference ONLY the observations listed above verbatim in meaning; make no other company-specific claims.";
+  }
+  return block;
 }

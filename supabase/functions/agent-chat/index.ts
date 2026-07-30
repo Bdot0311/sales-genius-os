@@ -29,6 +29,12 @@ type DraftPreview = {
     confidence?: string;
     sources?: string[];
     researched_at?: string | null;
+    quality?: {
+      score: number;
+      label: string;
+      safe_to_personalize: boolean;
+      gaps?: string[];
+    } | null;
   } | null;
 };
 
@@ -592,15 +598,20 @@ serve(async (req) => {
               observations: r?.brief?.observations ?? [],
               hooks: r?.brief?.hooks ?? [],
               confidence: r?.confidence ?? null,
+              quality_score: r?.quality?.score ?? r?.brief?.quality?.score ?? null,
+              quality_label: r?.quality?.label ?? r?.brief?.quality?.label ?? null,
+              safe_to_personalize: r?.quality?.safe_to_personalize ?? r?.brief?.quality?.safe_to_personalize ?? null,
+              gaps: r?.quality?.gaps ?? r?.brief?.quality?.gaps ?? [],
               error: r?.brief ? undefined : (r?.error ?? "Research failed"),
             };
           });
           const okCount = results.filter((r: any) => !r.error).length;
+          const thinCount = results.filter((r: any) => !r.error && r.safe_to_personalize === false).length;
           toolEvents.push({
             name,
             label: "Researched leads",
             status: okCount === 0 ? "error" : "ok",
-            detail: `${okCount}/${ids.length} researched from their websites${skipped.length ? ` (${skipped.length} left — ask me to continue)` : ""}`,
+            detail: `${okCount}/${ids.length} researched from their websites${thinCount ? ` — ${thinCount} too thin to personalize safely` : ""}${skipped.length ? ` (${skipped.length} left — ask me to continue)` : ""}`,
           });
           return { results, skipped_lead_ids: skipped };
         }
@@ -696,6 +707,17 @@ serve(async (req) => {
 
           const okCount = drafts.filter((d) => d.email).length;
           const researchedCount = drafts.filter((d: any) => d.research?.observations?.length).length;
+          const thinResearchCount = drafts.filter(
+            (d: any) => d.email && d.research?.quality?.safe_to_personalize === false,
+          ).length;
+          if (thinResearchCount > 0) {
+            toolEvents.push({
+              name,
+              label: "Thin research warning",
+              status: "ok",
+              detail: `${thinResearchCount} draft(s) had too little site research to personalize safely — review before sending, or ask me to re-research those leads.`,
+            });
+          }
           if (researchedCount > 0) {
             toolEvents.push({
               name,

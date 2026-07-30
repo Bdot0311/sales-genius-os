@@ -1,6 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { briefToPromptBlock, isResearchFresh, type LeadResearchBrief } from "../_shared/lead-research.ts";
+import {
+  briefToPromptBlock,
+  isResearchFresh,
+  scoreResearchQuality,
+  RESEARCH_BLOCK_THRESHOLD,
+  type LeadResearchBrief,
+  type ResearchQuality,
+} from "../_shared/lead-research.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -761,6 +768,21 @@ STRICT RULES:
       }
     }
 
+    // Research completeness gate: warn always, hard-block when the caller asks.
+    const researchQuality: ResearchQuality = scoreResearchQuality(researchBrief, researchSources);
+    if (researchBrief) researchBrief = { ...researchBrief, quality: researchQuality };
+    const blockOnThinResearch = requestData.blockOnThinResearch === true;
+    if (!isPrecisionEditPre && blockOnThinResearch && !researchQuality.safe_to_personalize) {
+      return new Response(JSON.stringify({
+        error: researchBrief
+          ? `Research on this lead is too thin to personalize safely (${researchQuality.score}/100). Refresh the research or generate anyway without site-specific claims.`
+          : "We have no usable research on this lead yet, so a personalized email would be guesswork. Refresh the research or generate anyway.",
+        error_code: 'research_too_thin',
+        research: researchBrief ? { ...researchBrief, sources: researchSources, researched_at: researchedAt, quality: researchQuality } : null,
+        research_quality: researchQuality,
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     // ─── Secondary: web-grounded signals, only when the site gave us nothing ───
     let verifiedResearch = '';
     if (!isPrecisionEditPre && !websiteResearchBlock) {
@@ -1026,10 +1048,12 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
             hooks: researchBrief.hooks,
             avoid: researchBrief.avoid,
             confidence: researchBrief.confidence,
+            quality: researchQuality,
             sources: researchSources,
             researched_at: researchedAt,
           }
         : null,
+      research_quality: researchQuality,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

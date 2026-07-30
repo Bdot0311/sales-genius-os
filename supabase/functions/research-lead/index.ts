@@ -5,8 +5,10 @@ import {
   briefToPromptBlock,
   isResearchFresh,
   resolveLeadDomain,
+  scoreResearchQuality,
   type LeadResearchBrief,
 } from "../_shared/lead-research.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -225,17 +227,22 @@ serve(async (req) => {
 
     // Fresh brief already stored — hand it back without spending a scrape.
     if (!force && isResearchFresh(lead as Record<string, unknown>)) {
+      const cachedBrief = lead.research_brief as LeadResearchBrief;
+      const cachedSources = (lead.research_sources as string[]) || [];
+      const quality = scoreResearchQuality(cachedBrief, cachedSources);
       return new Response(
         JSON.stringify({
-          brief: lead.research_brief,
-          sources: lead.research_sources || [],
+          brief: { ...cachedBrief, quality },
+          sources: cachedSources,
           confidence: lead.research_confidence,
+          quality,
           researched_at: lead.researched_at,
           cached: true,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
+
 
     // Scraping + a model call is expensive: cap per user per day.
     const rl = await rateLimit(`research-lead:${user.id}`, 300, 86_400);
@@ -351,11 +358,14 @@ serve(async (req) => {
       }
     }
 
-    const brief: LeadResearchBrief = {
+    const sources = pages.map((p) => p.url);
+    const baseBrief: LeadResearchBrief = {
       ...result.brief,
       confidence: thinSite && result.brief.confidence === "high" ? "medium" : result.brief.confidence,
     };
-    const sources = pages.map((p) => p.url);
+    // Deterministic completeness score so every surface gates the same way.
+    const quality = scoreResearchQuality(baseBrief, sources);
+    const brief: LeadResearchBrief = { ...baseBrief, quality };
     const researchedAt = new Date().toISOString();
 
     const { error: writeError } = await supabase
@@ -378,6 +388,7 @@ serve(async (req) => {
       "pages:", pages.length,
       "observations:", brief.observations.length,
       "confidence:", brief.confidence,
+      "quality:", quality.score, quality.label,
     );
 
     return new Response(
@@ -385,12 +396,14 @@ serve(async (req) => {
         brief,
         sources,
         confidence: brief.confidence,
+        quality,
         researched_at: researchedAt,
         prompt_block: briefToPromptBlock(brief, sources),
         cached: false,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
+
   } catch (error) {
     console.error("[research-lead] unexpected error:", error instanceof Error ? error.message : error);
     return new Response(
