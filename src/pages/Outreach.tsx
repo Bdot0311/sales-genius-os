@@ -1115,6 +1115,13 @@ const Outreach = () => {
       if (error) throw error;
       const emailBody = appendSenderLine(sanitizeGeneratedEmailBody(data.email), resolvedSender);
       setGeneratedEmail(emailBody);
+      if (data?.research) {
+        setLeadResearch({
+          ...(data.research as LeadResearch),
+          sources: Array.isArray(data.research_sources) ? data.research_sources : (data.research as any).sources ?? [],
+          researched_at: data.researched_at ?? null,
+        });
+      }
       Analytics.firstEmailGenerated();
       toast({
         title: "Email generated",
