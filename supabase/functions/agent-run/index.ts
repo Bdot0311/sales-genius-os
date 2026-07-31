@@ -379,8 +379,17 @@ serve(async (req) => {
             user_id: user.id,
             action_type: "skipped",
             status: "skipped",
-            description: `Lead search returned no matches for ${[config.prospecting_job_title, config.prospecting_industry, config.prospecting_country].filter(Boolean).join(" · ") || "your targeting"} — try broadening the targeting filters in Configure.`,
-            metadata: { phase: "prospecting" },
+            description: `Lead search returned no matches for ${
+              [
+                icpList(icpSnapshot?.target_titles).join(", ") || config.prospecting_job_title,
+                icpList(icpSnapshot?.industries).join(", ") || config.prospecting_industry,
+                icpList(icpSnapshot?.geographies).join(", ") || config.prospecting_country,
+              ]
+                .filter(Boolean)
+                .join(" · ") || "your targeting"
+            }${icpSnapshot?.name ? ` (ICP: ${icpSnapshot.name})` : ""} — try broadening the targeting in your ICP profile.`,
+            metadata: { phase: "prospecting", icp_profile: icpSnapshot?.name ?? null },
+
           });
         }
 
