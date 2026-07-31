@@ -58,12 +58,8 @@ export const HeroSection = () => {
       <div className="relative z-10 mx-auto flex w-full max-w-[38rem] flex-col items-center px-5 text-center sm:max-w-5xl sm:px-6">
 
         {/* Badge */}
-        <motion.div
-          className="mb-6 max-w-full sm:mb-10"
-          initial={{ opacity: 0, y: -12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease }}
-        >
+        {/* Badge — paints immediately (no opacity-0 start) to protect LCP */}
+        <div className="mb-6 max-w-full sm:mb-10">
           <span className="inline-flex max-w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[11px] leading-tight text-white/95 sm:flex-nowrap sm:gap-2.5 sm:px-4 sm:text-xs">
             <span className="relative flex h-1.5 w-1.5 shrink-0">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-75" />
@@ -73,7 +69,7 @@ export const HeroSection = () => {
             <span className="text-white/85">·</span>
             <span>AI SDR now live · see who's ready to buy before you reach out</span>
           </span>
-        </motion.div>
+        </div>
 
         {/* H1 — two lines spring in with stagger */}
         <h1
@@ -101,15 +97,11 @@ export const HeroSection = () => {
           </span>
         </h1>
 
-        {/* Subhead */}
-        <motion.p
-          className="mb-5 max-w-[22rem] text-base font-light leading-snug text-white/95 sm:max-w-2xl sm:text-xl sm:leading-relaxed"
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.65, ease, delay: 0 }}
-        >
+        {/* Subhead — LCP element: rendered fully opaque, no entrance animation */}
+        <p className="mb-5 max-w-[22rem] text-base font-light leading-snug text-white/95 sm:max-w-2xl sm:text-xl sm:leading-relaxed">
           Know exactly who's ready to buy. OutReign scores every prospect by fit and intent, verifies their inbox, and drafts the opener, so your team focuses on closing.
-        </motion.p>
+        </p>
+
 
 
         {/* CTAs */}
