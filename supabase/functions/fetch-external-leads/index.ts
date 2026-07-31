@@ -1287,7 +1287,9 @@ serve(async (req) => {
     const leads: ScoredLead[] = rawLeads
       .map(mapRailwayLead)
       .filter(lead => lead.contact_name || lead.company_name)
+      .filter(lead => (icpExcluder ? icpExcluder(lead) : true))
       .sort((a, b) => b.scores.overall_score - a.scores.overall_score);
+
 
     console.log('Processed leads count:', leads.length);
     if (leads.length > 0) {
