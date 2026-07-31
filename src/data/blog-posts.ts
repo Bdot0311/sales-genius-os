@@ -11,6 +11,175 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: "cold-email-infrastructure-guide",
+    title: "Cold Email Infrastructure: Multiple Domains and Inboxes (2026 Guide)",
+    description: "How to build cold email outreach infrastructure across multiple domains and inboxes: secondary domains, SPF/DKIM/DMARC setup, warm-up schedules, and mailbox rotation that protects deliverability.",
+    publishedAt: "2026-07-31",
+    readingTime: "10 min read",
+    category: "Deliverability",
+    keywords: [
+      "cold email outreach infrastructure multiple domains inboxes",
+      "cold email infrastructure",
+      "cold email domains setup",
+      "spf dkim dmarc cold email",
+      "mailbox rotation cold email",
+      "email warm up schedule",
+      "cold email deliverability",
+      "secondary sending domains",
+    ],
+    content: `
+Most cold email programs don't fail on copy. They fail on infrastructure. Emails land in spam, reply rates collapse, and the team blames the message when the real problem is a single overloaded inbox on the company's primary domain.
+
+This guide covers how to build cold email outreach infrastructure across multiple domains and inboxes: how many of each you need, how to configure SPF, DKIM, and DMARC correctly, how to warm up new mailboxes, and how mailbox rotation keeps volume safe as you scale.
+
+## Rule One: Never Send Cold Email From Your Primary Domain
+
+Your primary domain carries your marketing email, transactional email, invoices, support, and every internal thread. Cold outreach generates spam complaints and bounces by design — even a well-targeted campaign gets some. If those signals attach to your primary domain's reputation, you risk your entire business email.
+
+Send cold email from **secondary domains** instead:
+
+- Register look-alike domains of your main brand (for example \`getacme.com\`, \`acmehq.com\`, \`acme-partners.com\`)
+- Stick to \`.com\` where possible — obscure TLDs correlate with spam filtering
+- Redirect each secondary domain to your primary website so clicks and manual lookups resolve properly
+- Keep branding consistent so a prospect who checks the domain sees a real company
+
+## How Many Domains and Inboxes Do You Need?
+
+Work backwards from target volume, not from what a tool lets you connect.
+
+Safe planning numbers:
+
+| Item | Safe limit |
+|---|---|
+| Emails per inbox per day | 30–40 (never above 50) |
+| Inboxes per domain | 2–3 |
+| Effective volume per domain per day | ~60–120 |
+| Warm-up period per new inbox | 2–3 weeks |
+
+So a team that wants to send 1,000 cold emails per day needs roughly **25–30 active inboxes across 10–14 domains**. A team sending 150 per day needs 4–5 inboxes across 2 domains.
+
+Two more rules that save programs later:
+
+1. **Keep spare capacity warmed.** Hold roughly 50% extra warmed inboxes in reserve. When a domain's reputation dips, you swap instead of pausing the campaign.
+2. **Spread across providers.** Mix Google Workspace and Microsoft 365, in separate tenants or workspaces. A provider-level suspension then takes out part of your capacity, not all of it.
+
+## Authentication: SPF, DKIM, and DMARC
+
+Authentication is non-negotiable. Gmail and Outlook both require authenticated bulk senders, and an unauthenticated cold email is filtered before your copy ever matters. Configure all three records on **every** sending domain.
+
+### SPF
+
+SPF lists which servers may send on behalf of your domain. One TXT record at the domain root:
+
+\`\`\`
+v=spf1 include:_spf.google.com ~all
+\`\`\`
+
+Rules that matter:
+
+- **One SPF record per domain.** Two records is a hard failure, not a merge — combine \`include:\` statements into a single record instead.
+- **Stay under 10 DNS lookups.** Each \`include:\` counts. Exceeding the limit invalidates the record.
+- Use \`~all\` (softfail) while testing, then tighten to \`-all\` once you're certain every legitimate sender is listed.
+
+### DKIM
+
+DKIM cryptographically signs each message so receivers can verify it was not altered and really came from your domain. Your provider generates the key; you publish the public half as a TXT record at a selector subdomain such as \`google._domainkey.yourdomain.com\`.
+
+- Use a **2048-bit key** where your provider supports it
+- Enable signing in the provider console *after* publishing the DNS record — enabling first produces signed-but-unverifiable mail
+- Rotate keys periodically if you send at high volume
+
+### DMARC
+
+DMARC tells receivers what to do when SPF and DKIM fail, and sends you reports. Publish a TXT record at \`_dmarc.yourdomain.com\`:
+
+\`\`\`
+v=DMARC1; p=none; rua=mailto:dmarc@yourdomain.com; fo=1; pct=100
+\`\`\`
+
+Start at \`p=none\` for two to four weeks and read the aggregate reports. Once reports show only legitimate sources passing, move to \`p=quarantine\`, then \`p=reject\`. Skipping straight to \`p=reject\` on a new domain is a common way to silently kill your own mail.
+
+### Two more records worth setting
+
+- **MX** must exist and resolve, even on domains you barely receive on. A sending domain with no MX record looks disposable.
+- **rDNS / PTR** matters if you send from your own IPs. On shared provider infrastructure, your provider handles it.
+
+Verify everything before your first send. If any one of SPF, DKIM, or DMARC fails on a test message, fix it before adding volume — you cannot warm your way out of broken authentication.
+
+## Warming Up New Inboxes
+
+A brand-new mailbox that sends 40 cold emails on day one is a spam signal. Warm-up builds sending history and positive engagement before real campaigns start.
+
+A workable 3-week schedule per inbox:
+
+| Days | Daily volume | Focus |
+|---|---|---|
+| 1–3 | 5–10 | Internal and known-contact threads, real replies |
+| 4–7 | 10–15 | Add warm-up network traffic, keep reply rate high |
+| 8–14 | 15–25 | Introduce a small slice of real prospects |
+| 15–21 | 25–40 | Ramp to steady state, then hold |
+
+Guidelines during warm-up:
+
+- **Prioritize replies over sends.** Two-way conversation is the strongest positive signal.
+- **Send on a human schedule** — business hours in the recipient's timezone, with jitter between sends, not 40 identical messages at 09:00:00.
+- **Turn off open tracking.** Tracking pixels and link-wrapping domains hurt inbox placement, and reply rate is the metric that actually predicts pipeline.
+- **Keep bounce rate under 2%.** Verify every address before it enters a sequence.
+- **No links or attachments** in first-touch cold email. Plain text performs best and looks least automated.
+
+## Mailbox Rotation
+
+Rotation distributes a campaign's sends across every healthy inbox so no single mailbox exceeds its safe daily ceiling. Done well, it looks like a team of real people emailing; done badly, it looks like one server blasting a list.
+
+What good rotation does:
+
+- **Round-robins by inbox**, respecting each mailbox's own daily cap
+- **Keeps a thread on one inbox.** Follow-ups and replies must come from the mailbox that sent touch one — rotating mid-thread confuses prospects and breaks threading.
+- **Ramps new inboxes gradually** rather than assigning them full share on day one
+- **Pauses unhealthy mailboxes automatically** when bounce rate, spam complaints, or placement drop below thresholds
+- **Spreads sends across the day** instead of emptying the daily quota in one burst
+
+Health signals worth monitoring per inbox, every day: bounce rate, spam complaint rate, reply rate, inbox placement on seed tests, and authentication pass rate. Any inbox that drifts should come out of rotation and go back to warm-up, not stay in the campaign at reduced volume.
+
+## Sending Tools: What to Use and What to Avoid
+
+**Avoid** marketing and CRM sending platforms for cold outreach — HubSpot, Salesforce, Mailchimp, and similar tools sit on shared marketing IP pools that are already filtered aggressively, and they wrap links by default. They are built for opted-in lists.
+
+**Use** a dedicated cold email sending layer that supports multiple connected mailboxes, per-inbox daily caps, rotation, warm-up, and reply detection. That combination is what separates infrastructure from a mail merge.
+
+## A Realistic Build Timeline
+
+| Week | Work |
+|---|---|
+| 1 | Register domains, set up inboxes, publish SPF/DKIM/DMARC, verify with test sends |
+| 2–3 | Warm up every inbox, build and verify the prospect list |
+| 4 | Launch at 25–50% of target volume, watch bounce and reply rates |
+| 5+ | Ramp to full volume, rotate out weak inboxes, keep spares warmed |
+
+Rushing weeks 1–3 is the single most expensive mistake in outbound. Burned domains cannot be repaired quickly — you replace them.
+
+## Common Infrastructure Mistakes
+
+- Sending cold email from the primary domain
+- Skipping or shortening warm-up
+- Running too few domains, so every inbox is near its ceiling
+- Exceeding 40 emails per inbox per day
+- Two SPF records, or an SPF record over the 10-lookup limit
+- DMARC set straight to \`p=reject\` on an unmonitored domain
+- Open tracking and link-wrapping left on
+- No seed testing, so placement problems surface as silence instead of data
+- Unverified lists driving bounce rates above 2%
+
+## Where OutReign Fits
+
+OutReign's deliverability suite handles the operational half of this: connecting multiple mailboxes, enforcing per-inbox daily caps, automated warm-up, mailbox rotation across a campaign, and per-inbox health monitoring that pauses accounts before reputation damage compounds. On the targeting side, ICP scoring and SMTP-level verification keep bounce and complaint rates low, which is what protects the infrastructure you just built.
+
+Infrastructure buys you the inbox. Relevance is what earns the reply.
+
+[Try OutReign free](https://outreign.io) — connect your mailboxes, warm them up, and launch outreach that actually lands.
+    `.trim(),
+  },
+  {
     slug: "outreign-vs-rocketreach",
     title: "OutReign vs RocketReach: The Best RocketReach Alternative for Outbound Teams",
     description: "RocketReach is a powerful contact database. OutReign is a full outbound workflow that finds, scores, and drafts outreach to the right prospects. Here's how to choose.",
