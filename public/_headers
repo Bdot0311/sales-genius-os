@@ -5,6 +5,48 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
   Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://api.stripe.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';
+  Link: </.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"
+  Link: </.well-known/mcp/server-card.json>; rel="service-desc"; type="application/json"
+  Link: </.well-known/agent-skills/index.json>; rel="describedby"; type="application/json"
+  Link: </.well-known/oauth-protected-resource>; rel="oauth-protected-resource"; type="application/json"
+  Link: </api-docs>; rel="service-doc"; type="text/html"
+  Link: </llms.txt>; rel="describedby"; type="text/plain"
+  Link: </auth.md>; rel="author"; type="text/markdown"
+
+# Agent discovery documents — correct media types and short caches
+/.well-known/api-catalog
+  Content-Type: application/linkset+json; charset=utf-8
+  Cache-Control: public, max-age=3600
+  Access-Control-Allow-Origin: *
+
+/.well-known/oauth-protected-resource
+  Content-Type: application/json; charset=utf-8
+  Cache-Control: public, max-age=3600
+  Access-Control-Allow-Origin: *
+
+/.well-known/oauth-authorization-server
+  Content-Type: application/json; charset=utf-8
+  Cache-Control: public, max-age=3600
+  Access-Control-Allow-Origin: *
+
+/.well-known/openid-configuration
+  Content-Type: application/json; charset=utf-8
+  Cache-Control: public, max-age=3600
+  Access-Control-Allow-Origin: *
+
+/.well-known/mcp/server-card.json
+  Cache-Control: public, max-age=3600
+  Access-Control-Allow-Origin: *
+
+/.well-known/agent-skills/*
+  Cache-Control: public, max-age=3600
+  Access-Control-Allow-Origin: *
+
+/auth.md
+  Content-Type: text/markdown; charset=utf-8
+  Cache-Control: public, max-age=3600
+  Access-Control-Allow-Origin: *
+
 
 # HTML pages — short cache with revalidation
 /
