@@ -1263,12 +1263,13 @@ All colors MUST be HSL. Using 8px spacing scale.
    coarse pointers (phones/tablets) without affecting desktop layout.
    Addresses "small tap targets" flagged by mobile launch-readiness scans.
 --------------------------------------------------------------------------- */
-@media (pointer: coarse) {
+@media (pointer: coarse), (max-width: 767px) {
   nav a,
   nav button,
   footer a,
   footer button {
     min-height: 44px;
+    min-width: 44px;
     display: inline-flex;
     align-items: center;
   }
