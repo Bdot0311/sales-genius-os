@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Sparkles } from "lucide-react";
+import { posthog } from "@/lib/posthog";
 
 interface AddLeadDialogProps {
   onLeadAdded?: () => void;
@@ -126,6 +127,13 @@ export const AddLeadDialog = ({ onLeadAdded }: AddLeadDialogProps) => {
           console.error('Auto-enrichment failed:', enrichError);
         });
       }
+
+      posthog.capture('lead_created', {
+        has_email: Boolean(formData.contactEmail),
+        has_phone: Boolean(formData.contactPhone),
+        has_ai_score: Boolean(aiScore),
+        source_selected: Boolean(formData.source),
+      });
 
       toast({
         title: "Lead added!",

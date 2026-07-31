@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { posthog } from "@/lib/posthog";
 
 export interface ScoringWeights {
   title: number;
@@ -115,6 +116,7 @@ export function useICPProfiles() {
       return data;
     },
     onSuccess: () => {
+      posthog.capture('icp_profile_created');
       queryClient.invalidateQueries({ queryKey: ["icp-profiles"] });
       toast.success("ICP profile created");
     },

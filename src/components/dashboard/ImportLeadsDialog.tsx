@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
+import { posthog } from "@/lib/posthog";
 
 interface ImportLeadsDialogProps {
   onImportComplete?: () => void;
@@ -162,6 +163,11 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
         success_count: data?.length || 0,
         failed_count: leads.length - (data?.length || 0),
         import_type: 'manual'
+      });
+
+      posthog.capture('leads_csv_imported', {
+        lead_count: data?.length || 0,
+        source_selected: Boolean(source),
       });
 
       toast({

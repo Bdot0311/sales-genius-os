@@ -15,6 +15,7 @@ import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
 import { PlanLimitBadge } from "@/components/dashboard/PlanLimitBadge";
 import { FeatureHighlight } from "@/components/dashboard/FeatureHighlight";
+import { posthog } from "@/lib/posthog";
 
 interface Workflow {
   id: string;
@@ -129,6 +130,10 @@ const Automations = () => {
 
       if (error) throw error;
 
+      posthog.capture('workflow_created', {
+        workflow_type: 'visual',
+      });
+
       toast({
         title: "Workflow created",
         description: "Start building your automation workflow",
@@ -174,6 +179,11 @@ const Automations = () => {
         edges: edges,
       });
 
+      posthog.capture('workflow_saved', {
+        node_count: nodes.length,
+        edge_count: edges.length,
+      });
+
       await loadWorkflows();
     } catch (error: any) {
       toast({
@@ -195,6 +205,10 @@ const Automations = () => {
         .eq("id", id);
 
       if (error) throw error;
+
+      posthog.capture('workflow_status_changed', {
+        status: workflow.active ? 'paused' : 'active',
+      });
 
       toast({
         title: "Workflow updated",
