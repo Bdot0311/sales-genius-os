@@ -162,14 +162,17 @@
   <!--
     SEO finding http:sitemap (false positive): the following routes are intentionally
     excluded from the sitemap because they are not indexable. They are authenticated
-    dashboard pages or internal Lovable OAuth flows and are Disallow'd in
-    public/robots.txt. Adding them here would create "Submitted URL blocked by
-    robots.txt" warnings in Search Console and would not help SEO.
-    Excluded routes: /dashboard, /dashboard/leads, /dashboard/leads/saved,
-    /dashboard/coach, /dashboard/coach/live, all other /dashboard/* paths, and
-    /.lovable/oauth/consent.
-    Last reviewed: 2026-07-18.
+    dashboard pages, admin pages, or token-gated/internal flows, and are all
+    Disallow'd in public/robots.txt. Adding them here would create "Submitted URL
+    blocked by robots.txt" warnings in Search Console and would not help SEO.
+    Excluded routes: /dashboard and all /dashboard/* paths (including
+    /dashboard/sequences/:id and /dashboard/agent/chat/:threadId), /admin and all
+    /admin/* paths (the admin child routes reported as /users and /activity render
+    at /admin/users and /admin/activity), /client-portal/:token (per-client token
+    link), /onboarding-status, /unsubscribe, and /.lovable/oauth/consent.
+    Last reviewed: 2026-07-31.
   -->
+
 
 
 
