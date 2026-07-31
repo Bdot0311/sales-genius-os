@@ -1,0 +1,10 @@
+{
+  "resource": "https://ghgfjnepvxvxrncmskys.supabase.co/functions/v1/mcp",
+  "resource_name": "OutReign MCP server",
+  "resource_documentation": "https://outreign.io/connect",
+  "authorization_servers": [
+    "https://ghgfjnepvxvxrncmskys.supabase.co/auth/v1"
+  ],
+  "bearer_methods_supported": ["header"],
+  "scopes_supported": ["openid", "profile", "email"]
+}
