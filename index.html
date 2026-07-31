@@ -68,10 +68,9 @@
     <meta name="google-site-verification" content="eKoMLZR8fPmFLx7hsLBEuVSla6QSzAy9S6JK__ijJq8" />
     <meta name="ft-site-verification" content="2831cb54-1652-428d-b3e2-bd504f1659e8" />
     
-    <!-- Preconnect and preload the above-the-fold Smol LaunchPad badge -->
-    <link rel="preconnect" href="https://r2.direasy-multi-tenant.focusapps.app" crossorigin />
+    <!-- Smol LaunchPad badge sits below the hero text and is lazy-loaded, so it no
+         longer competes with the LCP text/bundle for bandwidth. -->
     <link rel="dns-prefetch" href="//r2.direasy-multi-tenant.focusapps.app" />
-    <link rel="preload" as="image" href="https://r2.direasy-multi-tenant.focusapps.app/uploads/616d0b1a-3979-4b8c-94d1-b4f1fedd3ead/1783046766775/sjxeszczb3i/top1-dark.svg" type="image/svg+xml" crossorigin="anonymous" fetchpriority="high" />
     
     <!-- Favicon — use local asset to avoid render-blocking external request -->
     <link rel="apple-touch-icon" sizes="180x180" href="/pwa-192x192.png" />
@@ -79,28 +78,17 @@
     <!-- Homepage LCP is the H1 text; no hero image to preload. Navbar logo loads via normal request. -->
 
 
-    <!-- Hero H1 is the LCP element: inline @font-face rules with font-display: swap
-         so the headline can paint immediately with a system fallback while the
-         web fonts load. Preload the critical italic 800 font used by the gradient
-         H1 line. -->
+    <!-- Hero H1 / subhead are the LCP elements. Fonts are latin-subset WOFF2
+         variable files (a fraction of the old full TTFs) with font-display: swap,
+         so text paints immediately with a system fallback. Only the italic
+         Playfair face used by the gradient H1 line is preloaded. -->
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preload" as="font" type="font/ttf" crossorigin="anonymous"
-          href="https://fonts.gstatic.com/s/playfairdisplay/v40/nuFRD-vYSZviVYUb_rj3ij__anPXDTnCjmHKM4nYO7KN_iiUbtY.ttf" />
-    <link rel="preload" as="font" type="font/ttf" crossorigin="anonymous"
-          href="https://fonts.gstatic.com/s/playfairdisplay/v40/nuFvD-vYSZviVYUb_rj3ij__anPXJzDwcbmjWBN2PKfFukDQ.ttf" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin="anonymous"
+          href="https://fonts.gstatic.com/s/playfairdisplay/v40/nuFkD-vYSZviVYUb_rj3ij__anPXDTnogkk7yRZrPA.woff2" />
     <style>
-      @font-face{font-family:'Inter';font-style:normal;font-weight:400;font-display:swap;src:url(https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfMZg.ttf) format('truetype');}
-      @font-face{font-family:'Inter';font-style:normal;font-weight:500;font-display:swap;src:url(https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fMZg.ttf) format('truetype');}
-      @font-face{font-family:'Inter';font-style:normal;font-weight:600;font-display:swap;src:url(https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuGKYMZg.ttf) format('truetype');}
-      @font-face{font-family:'Inter';font-style:normal;font-weight:700;font-display:swap;src:url(https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuFuYMZg.ttf) format('truetype');}
-      @font-face{font-family:'Inter';font-style:normal;font-weight:800;font-display:swap;src:url(https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuDyYMZg.ttf) format('truetype');}
-      @font-face{font-family:'Inter';font-style:normal;font-weight:900;font-display:swap;src:url(https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuBWYMZg.ttf) format('truetype');}
-      @font-face{font-family:'Playfair Display';font-style:italic;font-weight:700;font-display:swap;src:url(https://fonts.gstatic.com/s/playfairdisplay/v40/nuFRD-vYSZviVYUb_rj3ij__anPXDTnCjmHKM4nYO7KN_k-UbtY.ttf) format('truetype');}
-      @font-face{font-family:'Playfair Display';font-style:italic;font-weight:800;font-display:swap;src:url(https://fonts.gstatic.com/s/playfairdisplay/v40/nuFRD-vYSZviVYUb_rj3ij__anPXDTnCjmHKM4nYO7KN_iiUbtY.ttf) format('truetype');}
-      @font-face{font-family:'Playfair Display';font-style:italic;font-weight:900;font-display:swap;src:url(https://fonts.gstatic.com/s/playfairdisplay/v40/nuFRD-vYSZviVYUb_rj3ij__anPXDTnCjmHKM4nYO7KN_gGUbtY.ttf) format('truetype');}
-      @font-face{font-family:'Playfair Display';font-style:normal;font-weight:700;font-display:swap;src:url(https://fonts.gstatic.com/s/playfairdisplay/v40/nuFvD-vYSZviVYUb_rj3ij__anPXJzDwcbmjWBN2PKeiukDQ.ttf) format('truetype');}
-      @font-face{font-family:'Playfair Display';font-style:normal;font-weight:800;font-display:swap;src:url(https://fonts.gstatic.com/s/playfairdisplay/v40/nuFvD-vYSZviVYUb_rj3ij__anPXJzDwcbmjWBN2PKfFukDQ.ttf) format('truetype');}
-      @font-face{font-family:'Playfair Display';font-style:normal;font-weight:900;font-display:swap;src:url(https://fonts.gstatic.com/s/playfairdisplay/v40/nuFvD-vYSZviVYUb_rj3ij__anPXJzDwcbmjWBN2PKfsukDQ.ttf) format('truetype');}
+      @font-face{font-family:'Inter';font-style:normal;font-weight:400 900;font-display:swap;src:url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+      @font-face{font-family:'Playfair Display';font-style:italic;font-weight:700 900;font-display:swap;src:url(https://fonts.gstatic.com/s/playfairdisplay/v40/nuFkD-vYSZviVYUb_rj3ij__anPXDTnogkk7yRZrPA.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+      @font-face{font-family:'Playfair Display';font-style:normal;font-weight:700 900;font-display:swap;src:url(https://fonts.gstatic.com/s/playfairdisplay/v40/nuFiD-vYSZviVYUb_rj3ij__anPXDTzYgEM86xQ.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
     </style>
 
 
