@@ -74,6 +74,17 @@
     
     <!-- Favicon — use local asset to avoid render-blocking external request -->
     <link rel="apple-touch-icon" sizes="180x180" href="/pwa-192x192.png" />
+
+    <!-- Agent discovery (RFC 8288 relations, mirrored as HTML link elements so
+         crawlers that only parse markup see the same targets as the Link headers) -->
+    <link rel="api-catalog" href="/.well-known/api-catalog" type="application/linkset+json" />
+    <link rel="service-desc" href="/.well-known/mcp/server-card.json" type="application/json" />
+    <link rel="service-doc" href="/api-docs" type="text/html" />
+    <link rel="oauth-protected-resource" href="/.well-known/oauth-protected-resource" type="application/json" />
+    <link rel="describedby" href="/llms.txt" type="text/plain" />
+    <link rel="describedby" href="/.well-known/agent-skills/index.json" type="application/json" />
+    <link rel="author" href="/auth.md" type="text/markdown" />
+
     
     <!-- Homepage LCP is the H1 text; no hero image to preload. Navbar logo loads via normal request. -->
 
