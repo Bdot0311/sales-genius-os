@@ -19,7 +19,41 @@ interface ExternalLeadFilters {
   keywords?: string[];
   limit?: number;
   page?: number;
+  // ─── Full-ICP filters (sent by the AI SDR agent and ICP-driven searches) ───
+  // The upstream provider only accepts one value per field, so multi-value ICP
+  // filters are fanned out into several searches and merged here.
+  job_titles?: string[];
+  industries?: string[];
+  countries?: string[];
+  seniority_levels?: string[];
+  exclude_titles?: string[];
+  exclude_industries?: string[];
+  exclude_keywords?: string[];
 }
+
+const strList = (v: unknown): string[] =>
+  Array.isArray(v)
+    ? v.filter((x) => typeof x === 'string' && x.trim()).map((x) => (x as string).trim())
+    : [];
+
+/** Builds a predicate that drops leads matching the ICP's exclusion lists. */
+function buildIcpExcluder(filters: ExternalLeadFilters): ((lead: any) => boolean) | null {
+  const lower = (arr: string[]) => arr.map((s) => s.toLowerCase());
+  const titles = lower(strList(filters.exclude_titles));
+  const industries = lower(strList(filters.exclude_industries));
+  const keywords = lower(strList(filters.exclude_keywords));
+  if (!titles.length && !industries.length && !keywords.length) return null;
+  return (lead: any) => {
+    const title = String(lead?.job_title ?? '').toLowerCase();
+    const industry = String(lead?.industry ?? '').toLowerCase();
+    const blob = `${title} ${industry} ${String(lead?.company_name ?? '')}`.toLowerCase();
+    if (title && titles.some((t) => title.includes(t))) return false;
+    if (industry && industries.some((t) => industry.includes(t))) return false;
+    if (keywords.some((t) => blob.includes(t))) return false;
+    return true;
+  };
+}
+
 
 interface LeadScores {
   icp_score: number;
