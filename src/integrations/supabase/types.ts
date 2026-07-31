@@ -4589,6 +4589,8 @@ export type Database = {
         Args: { _signed_up: string; _uid: string }
         Returns: undefined
       }
+      webhook_has_secret: { Args: { _webhook_id: string }; Returns: boolean }
+      webhook_secret_masked: { Args: { _webhook_id: string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "user"
