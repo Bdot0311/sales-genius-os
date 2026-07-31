@@ -23,6 +23,10 @@ Disallow: /coach/*
 Disallow: /saved-leads
 Disallow: /integrations
 Disallow: /confirmation
+Disallow: /onboarding-status
+Disallow: /unsubscribe
+Disallow: /client-portal
+Disallow: /client-portal/*
 Disallow: /.lovable
 Disallow: /.lovable/*
 Crawl-delay: 0
