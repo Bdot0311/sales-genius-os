@@ -10,6 +10,7 @@ import { LeadAssignmentDialog } from "@/components/dashboard/LeadAssignmentDialo
 import { LeadDetailSheet } from "@/components/dashboard/LeadDetailSheet";
 import { Search, Download, ArrowUpDown, Trash2, UserPlus, LayoutGrid, Table as TableIcon, ArrowLeft, CheckCircle, Sparkles, AlertCircle, Filter } from "lucide-react";
 import { IntentScoreBadge } from "@/components/dashboard/IntentScoreBadge";
+import { LeadTierBadge } from "@/components/dashboard/LeadTierBadge";
 import { Progress } from "@/components/ui/progress";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -17,7 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Analytics } from "@/lib/analytics";
 
-type SortField = "created_at" | "icp_score" | "intent_score" | "company_name" | "company_size";
+type SortField = "tier" | "created_at" | "icp_score" | "intent_score" | "company_name" | "company_size";
 type SortOrder = "asc" | "desc";
 
 interface Lead {
@@ -45,6 +46,11 @@ interface Lead {
   intent_label?: string | null;
   intent_reasons?: string[] | null;
   recommended_angle?: string | null;
+  tier?: string | null;
+  fit_score?: number | null;
+  score_reason?: string | null;
+  score_breakdown?: Record<string, any> | null;
+  signal_date?: string | null;
 }
 
 const getEnrichmentBadge = (lead: Lead) => {
@@ -69,7 +75,7 @@ const SavedLeads = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortField, setSortField] = useState<SortField>("created_at");
+  const [sortField, setSortField] = useState<SortField>("tier");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -155,6 +161,18 @@ const SavedLeads = () => {
     .sort((a, b) => {
       let comparison = 0;
       switch (sortField) {
+        case "tier": {
+          // Sort by tier (A > B > C > unscored), then by intent recency, then intent score.
+          const rank: Record<string, number> = { A: 3, B: 2, C: 1 };
+          comparison = (rank[a.tier || ""] || 0) - (rank[b.tier || ""] || 0);
+          if (comparison === 0) {
+            const da = a.signal_date ? new Date(a.signal_date).getTime() : 0;
+            const db = b.signal_date ? new Date(b.signal_date).getTime() : 0;
+            comparison = da - db;
+            if (comparison === 0) comparison = (a.intent_score || 0) - (b.intent_score || 0);
+          }
+          break;
+        }
         case "created_at":
           comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
           break;
@@ -402,6 +420,7 @@ const SavedLeads = () => {
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="tier">Tier</SelectItem>
                   <SelectItem value="created_at">Date Added</SelectItem>
                   <SelectItem value="icp_score">ICP Score</SelectItem>
                   <SelectItem value="intent_score">Intent Score</SelectItem>
@@ -568,6 +587,7 @@ const SavedLeads = () => {
                           onCheckedChange={toggleSelectAll}
                         />
                       </th>
+                      <th className="p-3 text-left text-sm font-medium">Tier</th>
                       <th className="p-3 text-left text-sm font-medium">Contact</th>
                       <th className="p-3 text-left text-sm font-medium">Company</th>
                       <th className="p-3 text-left text-sm font-medium">Industry</th>
@@ -590,6 +610,9 @@ const SavedLeads = () => {
                             checked={selectedLeads.has(lead.id)}
                             onCheckedChange={() => toggleSelectLead(lead.id)}
                           />
+                        </td>
+                        <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                          <LeadTierBadge lead={lead} />
                         </td>
                         <td className="p-3">
                           <div>
@@ -659,6 +682,9 @@ const SavedLeads = () => {
                         <div className="space-y-1 flex-1">
                           <div className="flex items-center gap-3 flex-wrap">
                             <h3 className="font-semibold text-lg">{lead.contact_name}</h3>
+                            <span onClick={(e) => e.stopPropagation()}>
+                              <LeadTierBadge lead={lead} />
+                            </span>
                             {getScoreBadge(lead.icp_score)}
                             <span onClick={(e) => e.stopPropagation()}>
                               <IntentScoreBadge lead={lead} />
