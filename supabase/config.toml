@@ -3,6 +3,8 @@ project_id = "ghgfjnepvxvxrncmskys"
 [functions]
   [functions.score-lead-v2]
     verify_jwt = true
+  [functions.process-rescore-queue]
+    verify_jwt = false
   [functions.analyze-domain]
     verify_jwt = true
   [functions.search-companies]
