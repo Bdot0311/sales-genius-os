@@ -835,7 +835,14 @@ serve(async (req) => {
     }
 
     // Prepare request body for Railway API - PDL format
-    let jobTitle: string | undefined = filters.job_title;
+    // Multi-value ICP filters: fall back to the first entry for the single-value
+    // provider fields, and keep the full lists for the fan-out below.
+    const icpTitles = strList(filters.job_titles);
+    const icpIndustries = strList(filters.industries);
+    const icpCountries = strList(filters.countries);
+    const icpSeniorities = strList(filters.seniority_levels);
+    let jobTitle: string | undefined = filters.job_title || icpTitles[0];
+
     let nonJobKeywords: string[] = [];
     
     if (filters.keywords && filters.keywords.length > 0) {
