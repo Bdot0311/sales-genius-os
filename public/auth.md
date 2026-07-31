@@ -10,6 +10,31 @@
 Agents act on behalf of a signed-in OutReign user — there are no anonymous agent
 credentials.
 
+```json agent_auth
+{
+  "agent_auth": {
+    "register_uri": "https://ghgfjnepvxvxrncmskys.supabase.co/auth/v1/oauth/clients/register",
+    "documentation_uri": "https://outreign.io/auth.md",
+    "authorization_uri": "https://ghgfjnepvxvxrncmskys.supabase.co/auth/v1/oauth/authorize",
+    "token_uri": "https://ghgfjnepvxvxrncmskys.supabase.co/auth/v1/oauth/token",
+    "revocation_uri": "https://outreign.io/dashboard/settings",
+    "claim_uri": "https://outreign.io/connect",
+    "identity_types": ["human_delegated"],
+    "credential_types": ["oauth2_access_token"],
+    "grant_types_supported": ["authorization_code", "refresh_token"],
+    "code_challenge_methods_supported": ["S256"],
+    "scopes_supported": ["openid", "profile", "email"],
+    "protected_resources": [
+      "https://ghgfjnepvxvxrncmskys.supabase.co/functions/v1/mcp"
+    ],
+    "protected_resource_metadata": "https://outreign.io/.well-known/oauth-protected-resource",
+    "contact": "support@bdotindustries.com"
+  }
+}
+```
+
+
+
 
 ## Endpoints
 
