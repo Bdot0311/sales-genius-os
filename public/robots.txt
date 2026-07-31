@@ -33,6 +33,10 @@ Disallow: /integrations
 Disallow: /confirmation
 Disallow: /onboarding-status
 Disallow: /unsubscribe
+Disallow: /users
+Disallow: /activity
+Disallow: /dashboard/sequences/*
+Disallow: /dashboard/agent/*
 Disallow: /client-portal
 Disallow: /client-portal/*
 Disallow: /.lovable
@@ -191,6 +195,10 @@ Disallow: /integrations
 Disallow: /confirmation
 Disallow: /onboarding-status
 Disallow: /unsubscribe
+Disallow: /users
+Disallow: /activity
+Disallow: /dashboard/sequences/*
+Disallow: /dashboard/agent/*
 Disallow: /client-portal
 Disallow: /client-portal/*
 Disallow: /.lovable
