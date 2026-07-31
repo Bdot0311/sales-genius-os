@@ -84,8 +84,23 @@ interface AgentConfig {
   icp_snapshot: Record<string, any> | null;
 }
 
+/** Maps an ICP employee-count range onto the provider's size buckets. */
+function bucketFromRange(min?: number | null, max?: number | null): string {
+  const lo = typeof min === "number" ? min : 0;
+  const hi = typeof max === "number" && max > 0 ? max : lo;
+  const mid = hi || lo;
+  if (!mid) return "";
+  if (mid <= 10) return "1-10";
+  if (mid <= 50) return "11-50";
+  if (mid <= 200) return "51-200";
+  if (mid <= 500) return "201-500";
+  if (mid <= 1000) return "501-1000";
+  return "1000+";
+}
+
 /** Renders the saved ICP profile as prompt/search context so runs stay grounded. */
 function buildIcpContext(snap: Record<string, any> | null | undefined): string {
+
   if (!snap || typeof snap !== "object") return "";
   const list = (v: unknown) => (Array.isArray(v) ? v.filter(Boolean).join(", ") : "");
   const lines: string[] = [];
