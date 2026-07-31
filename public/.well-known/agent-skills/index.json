@@ -1,0 +1,17 @@
+{
+  "$schema": "https://raw.githubusercontent.com/cloudflare/agent-skills-discovery-rfc/main/schema/v0.2.0/index.json",
+  "version": "0.2.0",
+  "name": "OutReign agent skills",
+  "description": "Skills for using OutReign's lead intelligence and outbound email tools from an AI agent.",
+  "skills": [
+    {
+      "name": "outreign-outbound",
+      "type": "skill",
+      "description": "Find B2B leads, qualify them against a saved ICP, then research, draft, and send personalized cold email sequences through OutReign's MCP server.",
+      "url": "https://outreign.io/.well-known/agent-skills/outreign-outbound/SKILL.md",
+      "digest": "sha256:9316a234dc5cde8e41d0a1eae86162a675407059b93ed8567b519063ab22d885",
+      "sha256": "9316a234dc5cde8e41d0a1eae86162a675407059b93ed8567b519063ab22d885",
+      "version": "0.2.0"
+    }
+  ]
+}

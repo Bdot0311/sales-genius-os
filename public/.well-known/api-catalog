@@ -1,0 +1,51 @@
+{
+  "linkset": [
+    {
+      "anchor": "https://outreign.io/api",
+      "service-doc": [
+        {
+          "href": "https://outreign.io/api-docs",
+          "title": "OutReign API documentation",
+          "type": "text/html"
+        }
+      ],
+      "status": [
+        {
+          "href": "https://outreign.io/api-status",
+          "title": "OutReign API status",
+          "type": "text/html"
+        }
+      ],
+      "describedby": [
+        {
+          "href": "https://outreign.io/llms.txt",
+          "title": "OutReign LLM context file",
+          "type": "text/plain"
+        }
+      ]
+    },
+    {
+      "anchor": "https://ghgfjnepvxvxrncmskys.supabase.co/functions/v1/mcp",
+      "service-desc": [
+        {
+          "href": "https://outreign.io/.well-known/mcp/server-card.json",
+          "title": "OutReign MCP server card",
+          "type": "application/json"
+        }
+      ],
+      "service-doc": [
+        {
+          "href": "https://outreign.io/connect",
+          "title": "Connect an AI assistant to OutReign",
+          "type": "text/html"
+        }
+      ],
+      "oauth-protected-resource": [
+        {
+          "href": "https://outreign.io/.well-known/oauth-protected-resource",
+          "type": "application/json"
+        }
+      ]
+    }
+  ]
+}

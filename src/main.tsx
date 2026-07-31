@@ -124,3 +124,7 @@ if (typeof caches !== 'undefined') {
 }
 
 createRoot(document.getElementById("root")!).render(<App />);
+
+// Expose public site tools to browser AI agents (WebMCP). No-op when unsupported.
+void import("./lib/webmcp").then(({ registerWebMcpTools }) => registerWebMcpTools());
+

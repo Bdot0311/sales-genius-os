@@ -2,6 +2,14 @@
 # https://outreign.io/robots.txt
 # Optimized for SEO and AI Search Engines (AEO)
 
+# Content Signals (https://contentsignals.org/)
+# ai-train=no: do not use this content to train generative AI models
+# search=yes: indexing for search results is allowed
+# ai-input=yes: content may be used as grounding input for AI answers with attribution
+Content-Signal: ai-train=no, search=yes, ai-input=yes
+
+
+
 # Main Search Engine Crawlers
 User-agent: Googlebot
 Allow: /
@@ -153,6 +161,8 @@ Crawl-delay: 5
 
 # Default rule for all other bots
 User-agent: *
+Content-Signal: ai-train=no, search=yes, ai-input=yes
+
 Allow: /
 Crawl-delay: 2
 

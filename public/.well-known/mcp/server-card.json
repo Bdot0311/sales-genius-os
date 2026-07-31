@@ -1,0 +1,23 @@
+{
+  "$schema": "https://modelcontextprotocol.io/schemas/draft/server-card.json",
+  "serverInfo": {
+    "name": "outreign-mcp",
+    "title": "OutReign",
+    "version": "0.2.0",
+    "websiteUrl": "https://outreign.io"
+  },
+  "instructions": "OutReign is a B2B lead intelligence and outbound sales platform. Tools let a signed-in user search and manage leads, review ICP profiles, inspect sequences and deals, read recent replies and sent emails, and configure the AI SDR agent.",
+  "transport": {
+    "type": "streamable-http",
+    "endpoint": "https://ghgfjnepvxvxrncmskys.supabase.co/functions/v1/mcp"
+  },
+  "capabilities": {
+    "tools": { "listChanged": false }
+  },
+  "authentication": {
+    "type": "oauth2",
+    "protectedResourceMetadata": "https://outreign.io/.well-known/oauth-protected-resource",
+    "authorizationServers": ["https://ghgfjnepvxvxrncmskys.supabase.co/auth/v1"]
+  },
+  "documentationUrl": "https://outreign.io/connect"
+}
