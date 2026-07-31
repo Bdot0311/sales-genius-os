@@ -56,7 +56,7 @@ export const FooterSection = () => {
 
             {/* Product */}
             <div>
-              <h3 className="font-semibold text-sm mb-4" style={{ color: "hsl(0 0% 92%)" }}>Product</h4>
+              <h3 className="font-semibold text-sm mb-4" style={{ color: "hsl(0 0% 92%)" }}>Product</h3>
               <ul className="space-y-3">
                 {footerLinks.product.map((link) => (
                   <li key={link.label}>
@@ -82,7 +82,7 @@ export const FooterSection = () => {
 
             {/* Compare */}
             <div>
-              <h3 className="font-semibold text-sm mb-4" style={{ color: "hsl(0 0% 92%)" }}>Compare</h4>
+              <h3 className="font-semibold text-sm mb-4" style={{ color: "hsl(0 0% 92%)" }}>Compare</h3>
               <ul className="space-y-3">
                 {footerLinks.compare.map((link) => (
                   <li key={link.label}>
@@ -99,7 +99,7 @@ export const FooterSection = () => {
 
             {/* Resources */}
             <div>
-              <h3 className="font-semibold text-sm mb-4" style={{ color: "hsl(0 0% 92%)" }}>Resources</h4>
+              <h3 className="font-semibold text-sm mb-4" style={{ color: "hsl(0 0% 92%)" }}>Resources</h3>
               <ul className="space-y-3">
                 {footerLinks.resources.map((link) => (
                   <li key={link.label}>
@@ -116,7 +116,7 @@ export const FooterSection = () => {
 
             {/* Legal */}
             <div>
-              <h3 className="font-semibold text-sm mb-4" style={{ color: "hsl(0 0% 92%)" }}>Legal</h4>
+              <h3 className="font-semibold text-sm mb-4" style={{ color: "hsl(0 0% 92%)" }}>Legal</h3>
               <ul className="space-y-3">
                 {footerLinks.legal.map((link) => (
                   <li key={link.label}>
