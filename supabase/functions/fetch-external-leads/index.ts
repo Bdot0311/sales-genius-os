@@ -985,6 +985,83 @@ serve(async (req) => {
       );
     }
 
+    const icpExcluder = buildIcpExcluder(filters);
+
+    // ─── Full-ICP fan-out: the provider takes one title/industry per query, so ──
+    // run one search per ICP title (x industry), merge, de-dupe and apply the
+    // ICP's exclusion lists. This is what makes agent searches match the saved ICP
+    // instead of collapsing to the first title only.
+    const fanTitles = icpTitles.length > 1 ? icpTitles.slice(0, 4) : [];
+    const fanIndustries = icpIndustries.length > 1 ? icpIndustries.slice(0, 2) : [];
+    if (fanTitles.length > 1 || (fanTitles.length && fanIndustries.length > 1)) {
+      const variants: Array<Record<string, any>> = [];
+      const titles = fanTitles.length ? fanTitles : [jobTitle].filter(Boolean) as string[];
+      const industriesForFan = fanIndustries.length ? fanIndustries : [filters.industry || icpIndustries[0] || ''];
+      for (const t of titles) {
+        for (const ind of industriesForFan) {
+          const body: Record<string, any> = { ...requestBody, job_title: t };
+          const normInd = normalizeIndustry(ind || '');
+          if (normInd) body.industry = normInd; else delete body.industry;
+          variants.push(body);
+        }
+      }
+
+      const perVariant = Math.max(5, Math.ceil(limit / Math.max(variants.length, 1)) * 2);
+      const collectedIcp: any[] = [];
+      for (const body of variants.slice(0, 8)) {
+        try {
+          const r = await fetch(railwayUrl, {
+            method: 'POST',
+            headers: railwayHeaders,
+            body: JSON.stringify({ ...body, limit: perVariant }),
+          });
+          if (!r.ok) {
+            console.warn('[icp-fanout] variant failed', body.job_title, r.status);
+            continue;
+          }
+          const d = await r.json();
+          const arr = Array.isArray(d)
+            ? d
+            : (d.leads || d.contacts || d.people || d.persons || d.results || d.data || d.items || []);
+          if (Array.isArray(arr)) collectedIcp.push(...arr);
+        } catch (e) {
+          console.warn('[icp-fanout] variant error', body.job_title, e instanceof Error ? e.message : e);
+        }
+      }
+
+      if (collectedIcp.length > 0) {
+        const seen = new Set<string>();
+        const icpLeads: ScoredLead[] = collectedIcp
+          .map(mapRailwayLead)
+          .filter((l) => l.contact_name || l.company_name)
+          .filter((l) => (icpExcluder ? icpExcluder(l) : true))
+          .filter((l) => {
+            const key = `${(l as any).business_email || ''}|${l.contact_name || ''}|${l.company_name || ''}`.toLowerCase();
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          })
+          .sort((a, b) => b.scores.overall_score - a.scores.overall_score);
+
+        if (icpLeads.length > 0) {
+          console.log(`[icp-fanout] ${variants.length} variants → ${icpLeads.length} unique in-ICP leads`);
+          return new Response(
+            JSON.stringify({
+              success: true,
+              leads: icpLeads.slice(offset, offset + limit),
+              total: icpLeads.length,
+              from_cache: false,
+              icp_fanout: { variants: variants.length, titles },
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      }
+      console.warn('[icp-fanout] no results from fan-out, falling back to single search');
+    }
+
+
+
     // Call Railway backend
     let response: Response;
     try {
