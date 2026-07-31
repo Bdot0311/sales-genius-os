@@ -19,7 +19,41 @@ interface ExternalLeadFilters {
   keywords?: string[];
   limit?: number;
   page?: number;
+  // ─── Full-ICP filters (sent by the AI SDR agent and ICP-driven searches) ───
+  // The upstream provider only accepts one value per field, so multi-value ICP
+  // filters are fanned out into several searches and merged here.
+  job_titles?: string[];
+  industries?: string[];
+  countries?: string[];
+  seniority_levels?: string[];
+  exclude_titles?: string[];
+  exclude_industries?: string[];
+  exclude_keywords?: string[];
 }
+
+const strList = (v: unknown): string[] =>
+  Array.isArray(v)
+    ? v.filter((x) => typeof x === 'string' && x.trim()).map((x) => (x as string).trim())
+    : [];
+
+/** Builds a predicate that drops leads matching the ICP's exclusion lists. */
+function buildIcpExcluder(filters: ExternalLeadFilters): ((lead: any) => boolean) | null {
+  const lower = (arr: string[]) => arr.map((s) => s.toLowerCase());
+  const titles = lower(strList(filters.exclude_titles));
+  const industries = lower(strList(filters.exclude_industries));
+  const keywords = lower(strList(filters.exclude_keywords));
+  if (!titles.length && !industries.length && !keywords.length) return null;
+  return (lead: any) => {
+    const title = String(lead?.job_title ?? '').toLowerCase();
+    const industry = String(lead?.industry ?? '').toLowerCase();
+    const blob = `${title} ${industry} ${String(lead?.company_name ?? '')}`.toLowerCase();
+    if (title && titles.some((t) => title.includes(t))) return false;
+    if (industry && industries.some((t) => industry.includes(t))) return false;
+    if (keywords.some((t) => blob.includes(t))) return false;
+    return true;
+  };
+}
+
 
 interface LeadScores {
   icp_score: number;
@@ -801,7 +835,14 @@ serve(async (req) => {
     }
 
     // Prepare request body for Railway API - PDL format
-    let jobTitle: string | undefined = filters.job_title;
+    // Multi-value ICP filters: fall back to the first entry for the single-value
+    // provider fields, and keep the full lists for the fan-out below.
+    const icpTitles = strList(filters.job_titles);
+    const icpIndustries = strList(filters.industries);
+    const icpCountries = strList(filters.countries);
+    const icpSeniorities = strList(filters.seniority_levels);
+    let jobTitle: string | undefined = filters.job_title || icpTitles[0];
+
     let nonJobKeywords: string[] = [];
     
     if (filters.keywords && filters.keywords.length > 0) {
@@ -836,10 +877,11 @@ serve(async (req) => {
     const offset = (page - 1) * limit;
 
     // Normalize all values
-    const normalizedIndustry = normalizeIndustry(filters.industry || '');
-    const normalizedSeniority = normalizeSeniority(filters.seniority || '');
+    const normalizedIndustry = normalizeIndustry(filters.industry || icpIndustries[0] || '');
+    const normalizedSeniority = normalizeSeniority(filters.seniority || icpSeniorities[0] || '');
     const normalizedCompanySize = normalizeCompanySize(filters.company_size || '');
-    const normalizedCountry = normalizeCountry(filters.country || '');
+    const normalizedCountry = normalizeCountry(filters.country || icpCountries[0] || '');
+
 
     // Build raw body, we'll strip empty values before sending
     const rawBody: Record<string, any> = {
@@ -942,6 +984,83 @@ serve(async (req) => {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    const icpExcluder = buildIcpExcluder(filters);
+
+    // ─── Full-ICP fan-out: the provider takes one title/industry per query, so ──
+    // run one search per ICP title (x industry), merge, de-dupe and apply the
+    // ICP's exclusion lists. This is what makes agent searches match the saved ICP
+    // instead of collapsing to the first title only.
+    const fanTitles = icpTitles.length > 1 ? icpTitles.slice(0, 4) : [];
+    const fanIndustries = icpIndustries.length > 1 ? icpIndustries.slice(0, 2) : [];
+    if (fanTitles.length > 1 || (fanTitles.length && fanIndustries.length > 1)) {
+      const variants: Array<Record<string, any>> = [];
+      const titles = fanTitles.length ? fanTitles : [jobTitle].filter(Boolean) as string[];
+      const industriesForFan = fanIndustries.length ? fanIndustries : [filters.industry || icpIndustries[0] || ''];
+      for (const t of titles) {
+        for (const ind of industriesForFan) {
+          const body: Record<string, any> = { ...requestBody, job_title: t };
+          const normInd = normalizeIndustry(ind || '');
+          if (normInd) body.industry = normInd; else delete body.industry;
+          variants.push(body);
+        }
+      }
+
+      const perVariant = Math.max(5, Math.ceil(limit / Math.max(variants.length, 1)) * 2);
+      const collectedIcp: any[] = [];
+      for (const body of variants.slice(0, 8)) {
+        try {
+          const r = await fetch(railwayUrl, {
+            method: 'POST',
+            headers: railwayHeaders,
+            body: JSON.stringify({ ...body, limit: perVariant }),
+          });
+          if (!r.ok) {
+            console.warn('[icp-fanout] variant failed', body.job_title, r.status);
+            continue;
+          }
+          const d = await r.json();
+          const arr = Array.isArray(d)
+            ? d
+            : (d.leads || d.contacts || d.people || d.persons || d.results || d.data || d.items || []);
+          if (Array.isArray(arr)) collectedIcp.push(...arr);
+        } catch (e) {
+          console.warn('[icp-fanout] variant error', body.job_title, e instanceof Error ? e.message : e);
+        }
+      }
+
+      if (collectedIcp.length > 0) {
+        const seen = new Set<string>();
+        const icpLeads: ScoredLead[] = collectedIcp
+          .map(mapRailwayLead)
+          .filter((l) => l.contact_name || l.company_name)
+          .filter((l) => (icpExcluder ? icpExcluder(l) : true))
+          .filter((l) => {
+            const key = `${(l as any).business_email || ''}|${l.contact_name || ''}|${l.company_name || ''}`.toLowerCase();
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          })
+          .sort((a, b) => b.scores.overall_score - a.scores.overall_score);
+
+        if (icpLeads.length > 0) {
+          console.log(`[icp-fanout] ${variants.length} variants → ${icpLeads.length} unique in-ICP leads`);
+          return new Response(
+            JSON.stringify({
+              success: true,
+              leads: icpLeads.slice(offset, offset + limit),
+              total: icpLeads.length,
+              from_cache: false,
+              icp_fanout: { variants: variants.length, titles },
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      }
+      console.warn('[icp-fanout] no results from fan-out, falling back to single search');
+    }
+
+
 
     // Call Railway backend
     let response: Response;
@@ -1168,7 +1287,9 @@ serve(async (req) => {
     const leads: ScoredLead[] = rawLeads
       .map(mapRailwayLead)
       .filter(lead => lead.contact_name || lead.company_name)
+      .filter(lead => (icpExcluder ? icpExcluder(lead) : true))
       .sort((a, b) => b.scores.overall_score - a.scores.overall_score);
+
 
     console.log('Processed leads count:', leads.length);
     if (leads.length > 0) {

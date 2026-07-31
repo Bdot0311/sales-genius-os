@@ -84,8 +84,23 @@ interface AgentConfig {
   icp_snapshot: Record<string, any> | null;
 }
 
+/** Maps an ICP employee-count range onto the provider's size buckets. */
+function bucketFromRange(min?: number | null, max?: number | null): string {
+  const lo = typeof min === "number" ? min : 0;
+  const hi = typeof max === "number" && max > 0 ? max : lo;
+  const mid = hi || lo;
+  if (!mid) return "";
+  if (mid <= 10) return "1-10";
+  if (mid <= 50) return "11-50";
+  if (mid <= 200) return "51-200";
+  if (mid <= 500) return "201-500";
+  if (mid <= 1000) return "501-1000";
+  return "1000+";
+}
+
 /** Renders the saved ICP profile as prompt/search context so runs stay grounded. */
 function buildIcpContext(snap: Record<string, any> | null | undefined): string {
+
   if (!snap || typeof snap !== "object") return "";
   const list = (v: unknown) => (Array.isArray(v) ? v.filter(Boolean).join(", ") : "");
   const lines: string[] = [];
@@ -261,22 +276,40 @@ serve(async (req) => {
           method: "POST",
           headers: { Authorization: authHeader, "Content-Type": "application/json" },
           body: JSON.stringify({
-            job_title: config.prospecting_job_title || icpList(icpSnapshot?.target_titles)[0] || undefined,
+            // The saved ICP profile is the source of truth. The legacy single-field
+            // targeting on agent_configs is only a fallback for users with no ICP.
+            job_title: icpList(icpSnapshot?.target_titles)[0] || config.prospecting_job_title || undefined,
             job_titles: icpList(icpSnapshot?.target_titles).length
               ? icpList(icpSnapshot?.target_titles)
               : undefined,
-            industry: config.prospecting_industry || icpList(icpSnapshot?.industries)[0] || undefined,
+            industry: icpList(icpSnapshot?.industries)[0] || config.prospecting_industry || undefined,
             industries: icpList(icpSnapshot?.industries).length ? icpList(icpSnapshot?.industries) : undefined,
-            country: config.prospecting_country || icpList(icpSnapshot?.geographies)[0] || undefined,
-            company_size: config.prospecting_company_size || icpSnapshot?.company_size_bucket || undefined,
+            country: icpList(icpSnapshot?.geographies)[0] || config.prospecting_country || undefined,
+            countries: icpList(icpSnapshot?.geographies).length ? icpList(icpSnapshot?.geographies) : undefined,
+            company_size:
+              icpSnapshot?.company_size_bucket ||
+              bucketFromRange(icpSnapshot?.company_size_min, icpSnapshot?.company_size_max) ||
+              config.prospecting_company_size ||
+              undefined,
+            seniority: icpList(icpSnapshot?.seniority_levels)[0] || undefined,
+            seniority_levels: icpList(icpSnapshot?.seniority_levels).length
+              ? icpList(icpSnapshot?.seniority_levels)
+              : undefined,
             keywords: icpList(icpSnapshot?.intent_keywords).length
               ? icpList(icpSnapshot?.intent_keywords)
               : undefined,
             exclude_titles: icpList(icpSnapshot?.exclude_titles).length
               ? icpList(icpSnapshot?.exclude_titles)
               : undefined,
+            exclude_industries: icpList(icpSnapshot?.exclude_industries).length
+              ? icpList(icpSnapshot?.exclude_industries)
+              : undefined,
+            exclude_keywords: icpList(icpSnapshot?.exclude_keywords).length
+              ? icpList(icpSnapshot?.exclude_keywords)
+              : undefined,
             limit: target,
           }),
+
         });
         const searchData = await searchRes.json().catch(() => ({}));
         const foundLeads: any[] = Array.isArray(searchData?.leads) ? searchData.leads : [];
@@ -346,8 +379,17 @@ serve(async (req) => {
             user_id: user.id,
             action_type: "skipped",
             status: "skipped",
-            description: `Lead search returned no matches for ${[config.prospecting_job_title, config.prospecting_industry, config.prospecting_country].filter(Boolean).join(" · ") || "your targeting"} — try broadening the targeting filters in Configure.`,
-            metadata: { phase: "prospecting" },
+            description: `Lead search returned no matches for ${
+              [
+                icpList(icpSnapshot?.target_titles).join(", ") || config.prospecting_job_title,
+                icpList(icpSnapshot?.industries).join(", ") || config.prospecting_industry,
+                icpList(icpSnapshot?.geographies).join(", ") || config.prospecting_country,
+              ]
+                .filter(Boolean)
+                .join(" · ") || "your targeting"
+            }${icpSnapshot?.name ? ` (ICP: ${icpSnapshot.name})` : ""} — try broadening the targeting in your ICP profile.`,
+            metadata: { phase: "prospecting", icp_profile: icpSnapshot?.name ?? null },
+
           });
         }
 
