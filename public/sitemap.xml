@@ -94,6 +94,14 @@
   </url>
 
 
+  <!-- Blog: Cold Email Infrastructure Guide -->
+  <url>
+    <loc>https://outreign.io/blog/cold-email-infrastructure-guide</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
   <!-- Blog: Email Warmup -->
   <url>
     <loc>https://outreign.io/blog/email-warmup</loc>
