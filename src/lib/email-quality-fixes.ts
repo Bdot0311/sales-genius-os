@@ -46,11 +46,61 @@ function moveCtaToEnd(body: string) {
   return singleCta(body);
 }
 
+const countWords = (text: string) => (text.trim() ? text.trim().split(/\s+/).length : 0);
+
+/**
+ * Trim a body to a word budget while preserving paragraph breaks, the final
+ * CTA line and the sign-off block. Content is dropped sentence-by-sentence
+ * from the middle paragraphs, never by flattening the whole email.
+ */
 function trimToWords(body: string, limit: number) {
-  const words = body.trim().split(/\s+/);
-  if (words.length <= limit) return body.trim();
-  return `${words.slice(0, limit).join(" ").replace(/[,;:]$/, ".")}`;
+  const lines = linesOf(body);
+  if (lines.length === 0) return body.trim();
+  if (countWords(body) <= limit) return body.trim();
+
+  // Detect a trailing sign-off block ("Best,\nSam") and keep it intact.
+  let signOffStart = -1;
+  for (let i = Math.max(1, lines.length - 3); i < lines.length; i++) {
+    if (SIGN_OFF.test(lines[i])) { signOffStart = i; break; }
+  }
+  const signOff = signOffStart >= 0 ? lines.slice(signOffStart) : [];
+  const content = signOffStart >= 0 ? lines.slice(0, signOffStart) : [...lines];
+  if (content.length === 0) return lines.join("\n\n");
+
+  // Always keep the closing CTA line (last content line).
+  const cta = content.pop() as string;
+  const reserved = countWords(cta) + signOff.reduce((sum, l) => sum + countWords(l), 0);
+  let budget = Math.max(0, limit - reserved);
+
+  const kept: string[] = [];
+  for (const line of content) {
+    if (budget <= 0) break;
+    if (countWords(line) <= budget) {
+      kept.push(line);
+      budget -= countWords(line);
+      continue;
+    }
+    // Keep as many whole sentences of this paragraph as fit.
+    const sentences = line.match(/[^.!?]+[.!?]*/g) ?? [line];
+    const partial: string[] = [];
+    for (const sentence of sentences) {
+      const words = countWords(sentence);
+      if (words > budget) break;
+      partial.push(sentence.trim());
+      budget -= words;
+    }
+    if (partial.length) {
+      let text = partial.join(" ").trim();
+      if (!/[.!?]$/.test(text)) text = `${text.replace(/[,;:]$/, "")}.`;
+      kept.push(text);
+    }
+    break;
+  }
+
+  if (kept.length === 0) kept.push(content[0]);
+  return [...kept, cta, ...signOff].join("\n\n");
 }
+
 
 function simplify(body: string) {
   return body
