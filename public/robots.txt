@@ -161,6 +161,8 @@ Crawl-delay: 5
 
 # Default rule for all other bots
 User-agent: *
+Content-Signal: ai-train=no, search=yes, ai-input=yes
+
 Allow: /
 Crawl-delay: 2
 
