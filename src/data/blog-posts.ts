@@ -42,7 +42,7 @@ A score is a **rank**. It answers a different question: of the 3,000 companies t
 
 The gap between those two questions is where most outbound revenue leaks. Two companies can both match your ICP perfectly and have wildly different odds of replying this month — because one just hired a Head of Demand Gen, posted three RevOps job listings, and visited your pricing page, and the other has been quiet for two years.
 
-Fit tells you who *could* buy. Intent tells you who might buy *now*. You need both, scored separately.
+Fit tells you who **could** buy. Intent tells you who might buy **now**. You need both, scored separately.
 
 ## Model 1: The Fit + Intent Matrix (Start Here)
 
