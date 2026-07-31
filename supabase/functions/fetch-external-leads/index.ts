@@ -877,10 +877,11 @@ serve(async (req) => {
     const offset = (page - 1) * limit;
 
     // Normalize all values
-    const normalizedIndustry = normalizeIndustry(filters.industry || '');
-    const normalizedSeniority = normalizeSeniority(filters.seniority || '');
+    const normalizedIndustry = normalizeIndustry(filters.industry || icpIndustries[0] || '');
+    const normalizedSeniority = normalizeSeniority(filters.seniority || icpSeniorities[0] || '');
     const normalizedCompanySize = normalizeCompanySize(filters.company_size || '');
-    const normalizedCountry = normalizeCountry(filters.country || '');
+    const normalizedCountry = normalizeCountry(filters.country || icpCountries[0] || '');
+
 
     // Build raw body, we'll strip empty values before sending
     const rawBody: Record<string, any> = {
