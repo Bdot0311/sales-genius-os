@@ -22,7 +22,7 @@ export const TrustBar = () => (
     <div className="container mx-auto px-6">
       <p
         className="text-center mb-6 text-[10px] uppercase tracking-[0.25em] font-medium"
-        style={{ color: "hsl(261 75% 60% / 0.5)" }}
+        style={{ color: "hsl(261 70% 80%)" }}
       >
         Built with security and honesty in mind
       </p>
@@ -31,11 +31,11 @@ export const TrustBar = () => (
           <div key={label} className="flex items-center gap-2">
             <Icon
               className="w-3.5 h-3.5 shrink-0"
-              style={{ color: "hsl(261 75% 62%)" }}
+              style={{ color: "hsl(261 75% 72%)" }}
             />
             <span
               className="text-xs font-medium"
-              style={{ color: "hsl(0 0% 100% / 0.65)" }}
+              style={{ color: "hsl(0 0% 100% / 0.85)" }}
             >
               {label}
             </span>
