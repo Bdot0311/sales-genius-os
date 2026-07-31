@@ -102,9 +102,17 @@ Return ONLY a valid JSON object with these fields:
 If a field cannot be inferred, use an empty array. Never invent a specific city if none is implied. Output JSON only, no prose, no code fences.`;
 
 function parseModelJson(content: string): Record<string, unknown> {
-  let jsonStr = content;
+  let jsonStr = content.trim();
   const fenced = content.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (fenced) jsonStr = fenced[1].trim();
+  if (fenced) {
+    jsonStr = fenced[1].trim();
+  } else {
+    // Model sometimes wraps the JSON in prose ("Here is the ICP: { ... }").
+    // Extract the outermost { ... } object so JSON.parse doesn't choke.
+    const start = jsonStr.indexOf("{");
+    const end = jsonStr.lastIndexOf("}");
+    if (start !== -1 && end > start) jsonStr = jsonStr.slice(start, end + 1);
+  }
   return JSON.parse(jsonStr);
 }
 
