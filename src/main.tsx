@@ -1,4 +1,8 @@
 import { createRoot } from "react-dom/client";
+import App from "./App.tsx";
+import "./index.css";
+
+
 // Self-heal stale chunk references after a redeploy. When a dynamic import
 // fails because the hashed chunk URL no longer exists, force a one-shot
 // reload so the browser fetches the fresh index.html + new chunk hashes.
