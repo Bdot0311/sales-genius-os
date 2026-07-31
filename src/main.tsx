@@ -1,72 +1,7 @@
 import { createRoot } from "react-dom/client";
-import * as Sentry from "@sentry/react";
 import App from "./App.tsx";
 import "./index.css";
 
-Sentry.init({
-  dsn: "https://3419bbc0b0d5de6af9e00fd6f7b96295@o4511526216597504.ingest.us.sentry.io/4511526241697792",
-  sendDefaultPii: true,
-  tracesSampleRate: 0.1,
-  replaysSessionSampleRate: 0,
-  replaysOnErrorSampleRate: 1.0,
-  environment: import.meta.env.MODE,
-  // Filter out noise from browser extensions, third-party scripts, and known
-  // non-actionable rejections. These do not originate from our code.
-  ignoreErrors: [
-    // Browser-extension injected content scripts (LastPass/password managers etc.)
-    "Object Not Found Matching Id",
-    "MethodName:update",
-    "MethodName:getProperty",
-    // Generic noisy / non-actionable runtime errors
-    "ResizeObserver loop limit exceeded",
-    "ResizeObserver loop completed with undelivered notifications",
-    "Non-Error promise rejection captured",
-    // Network/abort noise users can't act on
-    "Network request failed",
-    "Load failed",
-    "AbortError",
-    "The user aborted a request",
-    // Chunk reloads are self-healed above; no need to alert
-    "Failed to fetch dynamically imported module",
-    "Importing a module script failed",
-    "ChunkLoadError",
-  ],
-  denyUrls: [
-    // Browser extensions
-    /extensions\//i,
-    /^chrome:\/\//i,
-    /^chrome-extension:\/\//i,
-    /^moz-extension:\/\//i,
-    /^safari-extension:\/\//i,
-    /^safari-web-extension:\/\//i,
-  ],
-  beforeSend(event, hint) {
-    const ex: any = hint?.originalException;
-    const msg = typeof ex === "string" ? ex : ex?.message || event.message || "";
-    if (typeof msg === "string" && /Object Not Found Matching|MethodName:(update|getProperty)|Non-Error promise rejection/i.test(msg)) {
-      return null;
-    }
-    // Drop empty-object promise rejections — no stack, no message, not actionable.
-    // Typically thrown by third-party scripts or aborted fetches that reject with `{}`.
-    if (
-      ex &&
-      typeof ex === "object" &&
-      !(ex instanceof Error) &&
-      !msg &&
-      Object.keys(ex).length === 0
-    ) {
-      return null;
-    }
-    // Drop events from browser extensions regardless of message content
-    const frames = event.exception?.values?.[0]?.stacktrace?.frames ?? [];
-    const fromExtension = frames.some(f =>
-      /chrome-extension:|moz-extension:|safari-extension:|safari-web-extension:/.test(f.filename ?? "")
-    );
-    if (fromExtension) return null;
-    return event;
-  },
-
-});
 
 // Self-heal stale chunk references after a redeploy. When a dynamic import
 // fails because the hashed chunk URL no longer exists, force a one-shot
@@ -125,6 +60,17 @@ if (typeof caches !== 'undefined') {
 
 createRoot(document.getElementById("root")!).render(<App />);
 
-// Expose public site tools to browser AI agents (WebMCP). No-op when unsupported.
-void import("./lib/webmcp").then(({ registerWebMcpTools }) => registerWebMcpTools());
+// Error monitoring is loaded after the first paint so it stays off the LCP
+// critical path. Errors thrown before this resolves are still caught by the
+// window listeners above.
+const bootDeferred = () => {
+  void import("./lib/sentry").then(({ initSentry }) => initSentry());
+  // Expose public site tools to browser AI agents (WebMCP). No-op when unsupported.
+  void import("./lib/webmcp").then(({ registerWebMcpTools }) => registerWebMcpTools());
+};
+if (typeof requestIdleCallback === "function") {
+  requestIdleCallback(bootDeferred, { timeout: 3000 });
+} else {
+  setTimeout(bootDeferred, 1200);
+}
 
