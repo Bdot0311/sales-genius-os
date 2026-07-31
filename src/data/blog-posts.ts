@@ -11,6 +11,150 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: "b2b-lead-scoring-models-startups",
+    title: "B2B Lead Scoring Models for Startups: From ICP to a Prioritized List",
+    description: "A practical lead scoring framework for early-stage B2B startups: how to turn a broad ICP into a ranked call list using fit and intent signals, with point weights, thresholds, and a recalibration loop.",
+    publishedAt: "2026-07-31",
+    readingTime: "11 min read",
+    category: "Lead Scoring",
+    keywords: [
+      "b2b lead scoring models startups",
+      "lead scoring framework",
+      "icp criteria for revenue operations",
+      "fit and intent scoring",
+      "lead prioritization outbound",
+      "lead scoring model example",
+      "startup lead qualification",
+      "sales qualification framework",
+    ],
+    content: `
+Most early-stage teams stop at the ICP. They write down "Series A to Series B SaaS, 20 to 200 employees, US, RevOps or sales leadership owns the budget," and then treat every company matching that description as equally worth a call.
+
+That list is usually thousands of accounts long. Your team can work maybe forty a day. Without a scoring model, the order is decided by whatever the tool exported first — which is a coin flip on your quarter.
+
+Lead scoring is the step between the ICP and the call list. This guide covers the two scoring models that actually work at startup scale, exact point weights you can copy, how to set thresholds, and how to recalibrate once real replies come in.
+
+## Why ICP Definitions Alone Don't Prioritize
+
+An ICP is a **filter**. It answers a binary question: should this company be in the database at all?
+
+A score is a **rank**. It answers a different question: of the 3,000 companies that passed the filter, which 40 do I work today?
+
+The gap between those two questions is where most outbound revenue leaks. Two companies can both match your ICP perfectly and have wildly different odds of replying this month — because one just hired a Head of Demand Gen, posted three RevOps job listings, and visited your pricing page, and the other has been quiet for two years.
+
+Fit tells you who **could** buy. Intent tells you who might buy **now**. You need both, scored separately.
+
+## Model 1: The Fit + Intent Matrix (Start Here)
+
+If you have fewer than about 500 replies of historical data, don't build a statistical model. You don't have the sample size, and a fitted model on 40 conversions will confidently learn noise.
+
+Instead, score fit and intent as two independent axes from 0 to 100 and plot leads into four quadrants.
+
+| | Low intent (0–49) | High intent (50–100) |
+|---|---|---|
+| **High fit (50–100)** | Nurture — sequence, low volume, wait for a trigger | **Priority — work today, personalized, phone + email** |
+| **Low fit (0–49)** | Suppress — don't spend a send | Inbound-style — respond fast but don't invest in research |
+
+The reason to keep the axes separate rather than summing into one number: a single blended 72 could be a perfect-fit company with no activity or a poor-fit company that just raised. Those need completely different plays, and a blended score hides which one you're looking at.
+
+## Scoring Fit: Point Weights That Work
+
+Fit signals are stable attributes. They change quarterly at most, so you can score them once and cache the result.
+
+| Fit signal | Weight | How to score it |
+|---|---|---|
+| Industry / vertical match | 25 | 25 = core vertical, 12 = adjacent, 0 = outside |
+| Employee count in range | 20 | 20 = in band, 10 = within 50% of band, 0 = outside |
+| Persona title present | 20 | 20 = exact title owns budget, 10 = influencer, 0 = no persona found |
+| Tech stack overlap | 15 | 15 = runs a required complement, 0 = runs a direct competitor |
+| Funding stage / revenue proxy | 10 | 10 = funded or profitable at your price point |
+| Geography and language | 10 | 10 = in your serviceable market |
+
+Two rules that keep fit scores honest:
+
+1. **Use negative points, not just positive ones.** A company running an entrenched direct competitor they signed six months ago should score *below* a neutral account, not the same. Subtract 20.
+2. **Missing data is not a zero — it's a flag.** If you can't find the persona, the account isn't a bad fit; it's unresearched. Route it to enrichment instead of suppressing it, or you'll systematically ignore companies with thin public footprints.
+
+## Scoring Intent: Weight by Recency, Not Just Type
+
+Intent signals decay. A hiring post from last week means something; the same post from eleven months ago means nothing. Every intent signal needs a timestamp and a decay curve, or your scores drift upward forever as signals accumulate.
+
+| Intent signal | Base points | Decay window |
+|---|---|---|
+| Pricing page or demo request visit | 30 | 14 days |
+| Job posting for your buyer's function | 25 | 60 days |
+| New executive hired into buying role | 25 | 90 days |
+| Funding round announced | 20 | 120 days |
+| Competitor mentioned in a public post or review | 15 | 90 days |
+| Tooling change detected in tech stack | 15 | 60 days |
+| Content engagement (webinar, guide download) | 10 | 30 days |
+| Headcount growth above 15% quarter over quarter | 10 | 90 days |
+
+Apply linear decay across the window: a signal at half its window is worth half its points. Then cap the total intent score at 100 so one noisy account with eight stale signals doesn't outrank a company that just requested a demo.
+
+The signal worth building first is the **buyer-function job posting**. It's public, cheap to collect, unambiguous about budget, and almost nobody in your category is using it well.
+
+## Model 2: Weighted Conversion Scoring (After ~500 Replies)
+
+Once you have real outcome data, stop guessing weights. Replace them with observed reply lift.
+
+For each signal, compute:
+
+\`\`\`
+lift = reply_rate(leads with signal) / reply_rate(all leads)
+\`\`\`
+
+A signal with a lift of 2.4 gets roughly 2.4x the weight of a baseline signal. Signals with a lift between 0.9 and 1.1 predict nothing — remove them, because every useless signal adds variance and hides the ones that work.
+
+Two guardrails:
+
+- **Require at least 30 replies per signal** before you trust its lift. Below that the confidence interval is wider than the effect.
+- **Score against replies, not opens.** Open tracking is unreliable post-Apple-MPP, and optimizing for opens teaches your model to prefer subject-line curiosity over buying readiness.
+
+## Setting Thresholds Instead of Chasing Scores
+
+A score is only useful if it changes what someone does. Bind each band to an action:
+
+| Band | Fit + intent | Action |
+|---|---|---|
+| A | Fit 70+, intent 60+ | Manual research, personalized first touch, phone attempt within 24h |
+| B | Fit 70+, intent 30–59 | Playbook sequence, light personalization, 4 touches |
+| C | Fit 50–69, any intent | Bulk sequence, no research, monitor for trigger events |
+| D | Fit under 50 | Suppress unless they raise their hand |
+
+Then hold the bands stable for a full quarter. The most common mistake is retuning weights every week, which makes it impossible to tell whether a change in reply rate came from the model or the copy.
+
+Track exactly two model metrics:
+
+- **Precision of band A** — what share of A leads produce a reply. If it isn't at least 2x your list average, your intent signals aren't working.
+- **Coverage** — what share of your total addressable list ever reaches A or B. If under 20%, your ICP is too narrow or your intent collection is too thin.
+
+## A Worked Example
+
+Two accounts, same ICP:
+
+**Account 1** — 90-person HR-tech company, core vertical (25), in headcount band (20), VP RevOps identified (20), complementary stack (15), Series B (10), US (10) = **fit 100**. Signals: RevOps job posting 40 days into a 60-day window (25 × 0.33 = 8), funding 100 days into 120 (20 × 0.17 = 3) = **intent 11**.
+
+**Account 2** — 140-person fintech, adjacent vertical (12), in band (20), Head of Sales Ops identified (20), neutral stack (0), Series A (10), US (10) = **fit 72**. Signals: pricing page visit 2 days ago (30 × 0.86 = 26), new VP Sales hired 20 days ago (25 × 0.78 = 19), competitor mentioned in a G2 review 30 days ago (15 × 0.67 = 10) = **intent 55**.
+
+Account 1 has the better fit score and looks better in a spreadsheet sorted by ICP match. Account 2 is the call you make this morning — it's in band A, Account 1 is in band B. Sorting by fit alone would have inverted the right order.
+
+## Common Failure Modes
+
+- **Summing fit and intent into one number.** You lose the ability to choose a play, which is the entire point of scoring.
+- **No decay on intent.** Scores inflate over time and every account eventually looks hot.
+- **Scoring the company but not the person.** A perfect-fit account with the wrong contact converts like a bad-fit account. Persona match belongs in the fit score.
+- **Too many signals.** Six good signals beat twenty weak ones. Every added signal that doesn't clear a 1.2 lift makes the ranking noisier.
+- **Never suppressing anything.** If your model never says "don't send," it isn't a model — it's a sorting cosmetic on the same undifferentiated blast.
+
+## How OutReign Scores Leads
+
+OutReign runs this two-axis model on every lead in your workspace. You define the ICP once, and each lead gets a fit score from firmographic and persona attributes plus an intent score from decayed signals — hiring activity, funding, tooling changes, and engagement. Leads sort into bands, the openers are drafted against the specific signal that fired, and the model reports band-A precision so you can tell whether your signals are actually predicting replies.
+
+If you're still sorting an ICP-filtered CSV by company name, the fit + intent matrix above is the highest-leverage change you can make this week — with or without tooling.
+`,
+  },
+  {
     slug: "cold-email-infrastructure-guide",
     title: "Cold Email Infrastructure: Multiple Domains and Inboxes (2026 Guide)",
     description: "How to build cold email outreach infrastructure across multiple domains and inboxes: secondary domains, SPF/DKIM/DMARC setup, warm-up schedules, and mailbox rotation that protects deliverability.",
