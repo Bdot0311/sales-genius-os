@@ -30,12 +30,23 @@ serve(async (req) => {
     // Use service role to access integration config
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { data: integrations } = await adminClient
+    // Accept an optional { integrationId } to refresh a specific mailbox when
+    // the user has multiple Google accounts connected. Falls back to the most
+    // recently updated active integration when no id is provided.
+    let requestedIntegrationId: string | undefined;
+    try {
+      const body = await req.json().catch(() => null);
+      requestedIntegrationId = body?.integrationId;
+    } catch { /* body may be empty */ }
+
+    let query = adminClient
       .from("integrations")
       .select("id, config")
       .eq("user_id", user.id)
       .eq("integration_id", "google")
-      .eq("is_active", true)
+      .eq("is_active", true);
+    if (requestedIntegrationId) query = query.eq("id", requestedIntegrationId);
+    const { data: integrations } = await query
       .order("updated_at", { ascending: false })
       .limit(1);
     const integration = integrations?.[0];

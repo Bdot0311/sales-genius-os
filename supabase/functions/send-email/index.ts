@@ -91,14 +91,19 @@ serve(async (req) => {
       integrationError = result.error;
       console.log('Looking for integration by row ID:', integrationRowId);
     } else {
+      // Multi-account safety: never use `.single()` blindly here — a user may
+      // have several active Google integrations. Pick the most-recently-used
+      // one deterministically so callers that omit integrationRowId still get
+      // predictable behavior instead of a random row or a 500.
       const result = await supabase
         .from('integrations')
         .select('id, config')
         .eq('user_id', user.id)
         .eq('integration_id', integrationId || 'google')
         .eq('is_active', true)
+        .order('updated_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
       integration = result.data;
       integrationError = result.error;
       console.log('Looking for integration:', integrationId || 'google', 'for user:', user.id);

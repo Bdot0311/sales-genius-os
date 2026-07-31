@@ -138,15 +138,19 @@ serve(async (req) => {
 
     const remainingReplies = config.max_daily_auto_replies - (dailyReplyCount ?? 0);
 
-    const { data: integration } = await adminClient
+    // Fallback Google integration when the reply's thread has no
+    // sending_account_id (legacy rows). Handles multi-account cleanly by
+    // ordering, so we never blow up on `.single()`.
+    const { data: fallbackIntegrations } = await adminClient
       .from("integrations")
       .select("id")
       .eq("user_id", user.id)
       .eq("integration_id", "google")
       .eq("is_active", true)
-      .single();
+      .order("updated_at", { ascending: false })
+      .limit(1);
 
-    const googleIntegrationId: string | null = integration?.id ?? null;
+    const fallbackGoogleIntegrationId: string | null = fallbackIntegrations?.[0]?.id ?? null;
 
     const syncRes = await fetch(`${supabaseUrl}/functions/v1/inbox-sync`, {
       method: "POST",
@@ -307,13 +311,15 @@ Output ONLY the reply body. No subject line. No greeting like "Hi [name]". No si
             continue;
           }
 
-          if (googleIntegrationId) {
+          const replyIntegrationId = (reply as any).integrationRowId || fallbackGoogleIntegrationId;
+          if (replyIntegrationId) {
             await adminClient.functions.invoke("send-email", {
               body: {
                 to: reply.fromEmail,
                 subject: `Re: ${reply.subject}`,
                 body: generatedReply,
-                integrationId: googleIntegrationId,
+                integrationId: "google",
+                integrationRowId: replyIntegrationId,
               },
             });
           }
@@ -372,15 +378,19 @@ Output ONLY the reply body. No subject line or signature.`;
             continue;
           }
 
-          if (googleIntegrationId) {
-            await adminClient.functions.invoke("send-email", {
-              body: {
-                to: reply.fromEmail,
-                subject: `Re: ${reply.subject}`,
-                body: generatedReply,
-                integrationId: googleIntegrationId,
-              },
-            });
+          {
+            const replyIntegrationId = (reply as any).integrationRowId || fallbackGoogleIntegrationId;
+            if (replyIntegrationId) {
+              await adminClient.functions.invoke("send-email", {
+                body: {
+                  to: reply.fromEmail,
+                  subject: `Re: ${reply.subject}`,
+                  body: generatedReply,
+                  integrationId: "google",
+                  integrationRowId: replyIntegrationId,
+                },
+              });
+            }
           }
 
           await adminClient.from("agent_actions").insert({
@@ -420,15 +430,19 @@ Output ONLY the reply body. No subject line or signature.`;
             meetingReply = await callGemini(meetingPrompt, meetingSystemPrompt);
           }
 
-          if (googleIntegrationId) {
-            await adminClient.functions.invoke("send-email", {
-              body: {
-                to: reply.fromEmail,
-                subject: `Re: ${reply.subject}`,
-                body: meetingReply,
-                integrationId: googleIntegrationId,
-              },
-            });
+          {
+            const replyIntegrationId = (reply as any).integrationRowId || fallbackGoogleIntegrationId;
+            if (replyIntegrationId) {
+              await adminClient.functions.invoke("send-email", {
+                body: {
+                  to: reply.fromEmail,
+                  subject: `Re: ${reply.subject}`,
+                  body: meetingReply,
+                  integrationId: "google",
+                  integrationRowId: replyIntegrationId,
+                },
+              });
+            }
           }
 
           await adminClient
