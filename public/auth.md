@@ -1,7 +1,15 @@
-# Agent registration for OutReign
+# Auth.md
 
-OutReign is a B2B lead intelligence and outbound sales platform. Agents act on
-behalf of a signed-in OutReign user — there are no anonymous agent credentials.
+**Site:** https://outreign.io
+**Service:** OutReign — B2B lead intelligence and outbound sales platform
+**Contact:** support@bdotindustries.com
+**Spec:** https://workos.com/auth-md
+
+## Agent registration for OutReign
+
+Agents act on behalf of a signed-in OutReign user — there are no anonymous agent
+credentials.
+
 
 ## Endpoints
 
