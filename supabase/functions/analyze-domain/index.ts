@@ -276,7 +276,10 @@ serve(async (req) => {
       }
       if (msg === "ai_credits") {
         return new Response(
-          JSON.stringify({ error: "Analysis is temporarily unavailable.", error_code: "ai_credits" }),
+          JSON.stringify({
+            error: "Domain analysis is temporarily unavailable because the AI credit limit was reached. Describe your ICP manually for now.",
+            error_code: "ai_credits",
+          }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
