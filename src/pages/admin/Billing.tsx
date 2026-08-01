@@ -199,6 +199,10 @@ export default function AdminBilling() {
 
       <BillingNotificationSettings />
 
+      <BillingAuditTrail />
+
+
+
 
 
       {!loading && issues.length === 0 && (
