@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -44,6 +45,10 @@ export const AiSequenceBuilder = () => {
   const [loading, setLoading] = useState(false);
   const [touches, setTouches] = useState<Touch[]>([]);
   const [lowPersonalization, setLowPersonalization] = useState(false);
+  const [briefs, setBriefs] = useState<{ id: string; name: string }[]>([]);
+  const [briefId, setBriefId] = useState<string>("");
+  const [rubric, setRubric] = useState<any[] | null>(null);
+  const [whyNow, setWhyNow] = useState<any[]>([]);
 
   useEffect(() => {
     let mounted = true;
@@ -65,11 +70,27 @@ export const AiSequenceBuilder = () => {
       if (profile?.full_name) setSenderName(profile.full_name);
       if (profile?.company_name) setSenderCompany(profile.company_name);
       setLeads((leadRows as any) || []);
+      const { data: briefRows } = await supabase.from("campaign_briefs").select("id, name").eq("user_id", user.id).order("created_at", { ascending: false });
+      if (mounted) setBriefs((briefRows as any) || []);
     })();
     return () => { mounted = false; };
   }, []);
 
   const selectedLead = leads.find((l) => l.id === leadId);
+
+  // Surface the selected account's why-now claims (they feed the why_now token).
+  useEffect(() => {
+    (async () => {
+      if (!selectedLead?.company_name) { setWhyNow([]); return; }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: comp } = await supabase.from("companies").select("id").eq("user_id", user.id).eq("name", selectedLead.company_name).maybeSingle();
+      if (!comp) { setWhyNow([]); return; }
+      const { data: wn } = await supabase.from("why_now_research").select("claims").eq("user_id", user.id).eq("company_id", comp.id).maybeSingle();
+      setWhyNow(Array.isArray(wn?.claims) ? wn.claims : []);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leadId]);
 
   const handleGenerate = async () => {
     if (!leadId || !offer.trim()) {
@@ -87,6 +108,7 @@ export const AiSequenceBuilder = () => {
           offer,
           proof,
           signal: signal || (selectedLead?.signals?.[0] ?? ""),
+          briefId: briefId || undefined,
         },
       });
       if (error) throw error;
@@ -96,6 +118,7 @@ export const AiSequenceBuilder = () => {
       if (t.length === 0) throw new Error("No sequence returned");
       setTouches(t);
       setLowPersonalization(Boolean(data?.low_personalization));
+      setRubric(Array.isArray(data?.rubric) ? data.rubric : null);
       toast({ title: "Sequence ready", description: `Generated ${t.length} touches following the cold email engine rules.` });
     } catch (e: any) {
       toast({ title: "Generation failed", description: e?.message || "Try again", variant: "destructive" });
@@ -188,6 +211,28 @@ export const AiSequenceBuilder = () => {
             />
           </div>
 
+          {briefs.length > 0 && (
+            <div className="space-y-2 md:col-span-2">
+              <Label>Campaign brief (optional — grounds copy in your brief)</Label>
+              <Select value={briefId || "none"} onValueChange={(v) => setBriefId(v === "none" ? "" : v)}>
+                <SelectTrigger><SelectValue placeholder="No brief" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No brief</SelectItem>
+                  {briefs.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {whyNow.filter((c: any) => c.confidence !== "low").length > 0 && (
+            <div className="md:col-span-2 rounded-md border border-border/60 p-3 text-xs space-y-1">
+              <p className="text-muted-foreground">why-now for this account (feeds the why_now token):</p>
+              {whyNow.filter((c: any) => c.confidence !== "low").slice(0, 3).map((c: any, i: number) => (
+                <div key={i} className="flex items-center gap-2"><Badge variant="outline" className="text-[10px]">{c.confidence}</Badge><span>{c.claim}</span></div>
+              ))}
+            </div>
+          )}
+
           <div className="md:col-span-2">
             <Button onClick={handleGenerate} disabled={loading} className="w-full">
               {loading ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generating 4 touches…</>) : (<><Sparkles className="w-4 h-4 mr-2" /> Generate sequence</>)}
@@ -220,6 +265,15 @@ export const AiSequenceBuilder = () => {
                 <div className="rounded-md border border-border/60 bg-muted/30 p-3 whitespace-pre-wrap text-sm leading-relaxed">
                   {t.body}
                 </div>
+                {rubric?.[i]?.dimensions && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {Object.entries(rubric[i].dimensions).map(([k, v]: any) => (
+                      <Badge key={k} variant="outline" className={`text-[10px] ${rubric[i].weakest === k ? "border-destructive text-destructive" : ""}`}>
+                        {k.replace(/_/g, " ")} {v.score}/5
+                      </Badge>
+                    ))}
+                  </div>
+                )}
                 <div className="flex items-center gap-2">
                   <Button size="sm" variant="outline" onClick={() => copyTouch(t)}>
                     <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy touch

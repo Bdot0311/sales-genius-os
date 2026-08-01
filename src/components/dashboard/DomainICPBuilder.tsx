@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -82,6 +83,7 @@ export const DomainICPBuilder = ({ onFindLeads, onSwitchToDescribe, isSearching 
   const [summary, setSummary] = useState("");
   const [lowConfidence, setLowConfidence] = useState(false);
   const [analyzedDomain, setAnalyzedDomain] = useState("");
+  const [savingIcp, setSavingIcp] = useState(false);
 
   const stageTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (stageTimer.current) clearTimeout(stageTimer.current); }, []);
@@ -147,6 +149,33 @@ export const DomainICPBuilder = ({ onFindLeads, onSwitchToDescribe, isSearching 
       { jobTitles, industries, companySizes, locations, keywords, limit: 50 },
       analyzedDomain,
     );
+  };
+
+  // Save the reviewed ICP as a first-class icp_profiles row (Phase 5 follow-up).
+  const saveAsIcp = async () => {
+    setSavingIcp(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("not signed in");
+      const m = (companySizes[0] || "").match(/\d+/g);
+      const { error } = await supabase.from("icp_profiles").insert({
+        user_id: session.user.id,
+        name: analyzedDomain || "website icp",
+        target_titles: jobTitles,
+        industries,
+        geographies: locations,
+        intent_keywords: keywords,
+        company_size_min: m ? parseInt(m[0]) : 1,
+        company_size_max: m ? parseInt(m[1] || m[0]) : 10000,
+        value_proposition: summary || null,
+      });
+      if (error) throw error;
+      toast.success("saved as an icp profile");
+    } catch (e: any) {
+      toast.error(e?.message || "could not save as icp");
+    } finally {
+      setSavingIcp(false);
+    }
   };
 
   return (
@@ -257,7 +286,9 @@ export const DomainICPBuilder = ({ onFindLeads, onSwitchToDescribe, isSearching 
                 {isSearching ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Search className="w-4 h-4 mr-2" />}
                 Find leads
               </Button>
-              <p className="text-xs text-muted-foreground">Uses the same lead search as every other flow.</p>
+              <Button onClick={saveAsIcp} variant="outline" disabled={savingIcp}>
+                {savingIcp && <Loader2 className="w-4 h-4 animate-spin mr-2" />}Save as ICP
+              </Button>
             </div>
           </div>
         )}

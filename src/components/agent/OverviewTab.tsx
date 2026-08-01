@@ -10,6 +10,7 @@ interface AgentAction {
   description: string | null;
   classification: string | null;
   created_at: string;
+  metadata?: Record<string, any> | null;
 }
 
 interface AgentConfig {
@@ -132,6 +133,9 @@ export function OverviewTab({ actions, loading, config, gmailConnected }: Overvi
                             >
                               {classificationInfo.label}
                             </Badge>
+                          )}
+                          {Array.isArray(action.metadata?.objection_entry_ids) && action.metadata!.objection_entry_ids.length > 0 && (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground">grounded by objection library</Badge>
                           )}
                         </div>
                         {action.prospect_email && (
