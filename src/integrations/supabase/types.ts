@@ -3494,6 +3494,8 @@ export type Database = {
           addon_price_id: string | null
           auto_pause_reason: string | null
           auto_paused_at: string | null
+          auto_resume_reason: string | null
+          auto_resumed_at: string | null
           cancel_at_period_end: boolean
           canceled_at: string | null
           created_at: string
@@ -3506,6 +3508,8 @@ export type Database = {
           daily_searches_reset_at: string | null
           daily_searches_used: number
           failed_invoice_count: number
+          grace_period_ends_at: string | null
+          grace_started_at: string | null
           id: string
           last_payment_error: string | null
           last_stripe_event_at: string | null
@@ -3531,6 +3535,8 @@ export type Database = {
           addon_price_id?: string | null
           auto_pause_reason?: string | null
           auto_paused_at?: string | null
+          auto_resume_reason?: string | null
+          auto_resumed_at?: string | null
           cancel_at_period_end?: boolean
           canceled_at?: string | null
           created_at?: string
@@ -3543,6 +3549,8 @@ export type Database = {
           daily_searches_reset_at?: string | null
           daily_searches_used?: number
           failed_invoice_count?: number
+          grace_period_ends_at?: string | null
+          grace_started_at?: string | null
           id?: string
           last_payment_error?: string | null
           last_stripe_event_at?: string | null
@@ -3568,6 +3576,8 @@ export type Database = {
           addon_price_id?: string | null
           auto_pause_reason?: string | null
           auto_paused_at?: string | null
+          auto_resume_reason?: string | null
+          auto_resumed_at?: string | null
           cancel_at_period_end?: boolean
           canceled_at?: string | null
           created_at?: string
@@ -3580,6 +3590,8 @@ export type Database = {
           daily_searches_reset_at?: string | null
           daily_searches_used?: number
           failed_invoice_count?: number
+          grace_period_ends_at?: string | null
+          grace_started_at?: string | null
           id?: string
           last_payment_error?: string | null
           last_stripe_event_at?: string | null
@@ -4630,13 +4642,33 @@ export type Database = {
         Args: { _user_id: string }
         Returns: number
       }
+      billing_expire_grace_periods: {
+        Args: never
+        Returns: {
+          paused: boolean
+          user_id: string
+        }[]
+      }
       billing_record_auto_pause: {
         Args: { _details?: Json; _reason: string; _user_id: string }
         Returns: undefined
       }
+      billing_record_auto_resume: {
+        Args: { _details?: Json; _reason?: string; _user_id: string }
+        Returns: boolean
+      }
       billing_reset_failed_invoice_count: {
         Args: { _user_id: string }
         Returns: undefined
+      }
+      billing_start_grace_period: {
+        Args: {
+          _days?: number
+          _details?: Json
+          _reason?: string
+          _user_id: string
+        }
+        Returns: string
       }
       check_expiring_api_keys: { Args: never; Returns: undefined }
       claim_stripe_webhook_event: {
