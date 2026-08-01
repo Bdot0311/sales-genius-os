@@ -1,6 +1,8 @@
 project_id = "ghgfjnepvxvxrncmskys"
 
 [functions]
+  [functions.research-account]
+    verify_jwt = true
   [functions.map-account-committee]
     verify_jwt = true
   [functions.check-email-rubric]
