@@ -4475,6 +4475,26 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_get_billing_audit: {
+        Args: {
+          _limit?: number
+          _offset?: number
+          _search?: string
+          _source?: string
+        }
+        Returns: {
+          action: string
+          actor_email: string
+          actor_id: string
+          details: Json
+          event_at: string
+          id: string
+          source: string
+          status: string
+          target_email: string
+          target_user_id: string
+        }[]
+      }
       admin_get_billing_issues: {
         Args: { _include_resolved?: boolean }
         Returns: {

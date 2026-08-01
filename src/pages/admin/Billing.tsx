@@ -27,6 +27,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { BillingNotificationSettings } from "@/components/admin/BillingNotificationSettings";
+import { BillingAuditTrail } from "@/components/admin/BillingAuditTrail";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
@@ -198,6 +199,10 @@ export default function AdminBilling() {
       </div>
 
       <BillingNotificationSettings />
+
+      <BillingAuditTrail />
+
+
 
 
 
