@@ -14,6 +14,7 @@ const corsHeaders = {
 };
 
 const PAID_PLANS = new Set(["starter", "growth", "pro", "agency"]);
+const GROWTH_PLUS = new Set(["growth", "pro", "agency"]);
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -81,6 +82,45 @@ serve(async (req) => {
     if (userError || !user) return json({ error: "Invalid user token" }, 401);
 
     const body = await req.json().catch(() => ({} as Record<string, unknown>));
+    // Rubric editor live preview: score a sample of the user's leads with the
+    // supplied override weights, writing nothing. Uses the same deterministic
+    // engine, so the preview matches a real rescore. Gated to Growth and above.
+    if (body.dryRun === true) {
+      const { data: adminRole } = await supabase
+        .from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
+      if (adminRole?.role !== "admin") {
+        const { data: sub } = await supabase.from("subscriptions").select("plan").eq("user_id", user.id).maybeSingle();
+        if (!GROWTH_PLUS.has((sub?.plan || "free").toLowerCase())) {
+          return json({ error: "rubric editing is available on growth and above.", error_code: "upgrade_required" }, 403);
+        }
+      }
+      const weights: RubricWeights = (body.weights as RubricWeights) || DEFAULT_RUBRIC;
+      const sampleLimit = Math.min(Math.max(Number(body.sampleLimit) || 10, 1), 25);
+      const { data: icpRow } = await supabase
+        .from("icp_profiles")
+        .select("industries, company_size_min, company_size_max, seniority_levels, departments, target_titles, geographies, tech_stack")
+        .eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle();
+      const { data: sampleLeads } = await supabase
+        .from("leads")
+        .select("id, industry, company_size, job_title, country, company_name, contact_name")
+        .eq("user_id", user.id).order("created_at", { ascending: false }).limit(sampleLimit);
+      const nowMs = Date.parse(new Date().toISOString());
+      const preview = [];
+      for (const l of sampleLeads || []) {
+        const { data: events } = await supabase
+          .from("signal_events").select("signal_type, weight, occurred_at, metadata")
+          .eq("lead_id", (l as any).id).eq("user_id", user.id);
+        const r = scoreLead(l as any, (icpRow as any) || null, (events as SignalEventInput[]) || [], weights, nowMs);
+        preview.push({
+          lead_id: (l as any).id,
+          company_name: (l as any).company_name,
+          contact_name: (l as any).contact_name,
+          tier: r.tier, fit_score: r.fit_score, intent_score: r.intent_score, reason: r.reason,
+        });
+      }
+      return json({ preview });
+    }
+
     const leadId = typeof body.leadId === "string" ? body.leadId : "";
     if (!leadId) return json({ error: "leadId is required", error_code: "invalid_input" }, 400);
 
