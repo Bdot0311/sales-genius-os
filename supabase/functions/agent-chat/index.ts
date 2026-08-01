@@ -494,10 +494,23 @@ serve(async (req) => {
       .limit(40);
 
     // --- context ---------------------------------------------------------
-    const [{ data: config }, { data: profile }] = await Promise.all([
+    const [{ data: config }, { data: profile }, { data: savedIcp }] = await Promise.all([
       admin.from("agent_configs").select("*").eq("user_id", userId).maybeSingle(),
       admin.from("profiles").select("full_name, company_name").eq("id", userId).maybeSingle(),
+      admin
+        .from("icp_profiles")
+        .select("*")
+        .eq("user_id", userId)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
     ]);
+
+    // The agent's saved ICP snapshot is the source of truth; fall back to the
+    // user's most recently updated ICP profile so chat is never ungrounded.
+    const icpSnapshot: Record<string, any> | null =
+      ((config as any)?.icp_snapshot as Record<string, any> | null) ?? (savedIcp as any) ?? null;
+    const icpContext = buildIcpContext(icpSnapshot);
 
     const invokeFn = async (name: string, body: unknown) => {
       const res = await fetch(`${supabaseUrl}/functions/v1/${name}`, {
