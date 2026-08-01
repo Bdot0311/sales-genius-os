@@ -476,6 +476,8 @@ export async function processStripeEvent(
       ? new Date(invoice.next_payment_attempt * 1000).toISOString()
       : null;
 
+    const policy = await getBillingPolicy(supabase);
+
     await applyEvent(supabase, userId, event, {
       status: 'past_due',
       account_status: 'past_due',
@@ -483,16 +485,45 @@ export async function processStripeEvent(
       last_payment_error: String(reason).slice(0, 500),
     });
 
+    // Count consecutive failures first — the grace window and pause decision
+    // both depend on it.
+    const { data: failures, error: bumpErr } = await supabase.rpc(
+      'billing_bump_failed_invoice_count', { _user_id: userId },
+    );
+    if (bumpErr) log("failed-invoice bump failed", { error: bumpErr.message });
+    const failureCount = Number(failures ?? attemptCount) || attemptCount;
+
+    // Policy step 1: open a grace window on the first failure. Access stays on
+    // until the deadline passes with the invoice still unpaid.
+    let graceEndsAt: string | null = null;
+    if (policy.grace.enabled && policy.grace.days > 0) {
+      graceEndsAt = await startGracePeriod(
+        supabase, userId, policy.grace.days,
+        `Invoice payment failed — ${reason}`,
+        {
+          trigger: 'invoice_payment_failed',
+          target_email: customer.email,
+          attempt_count: attemptCount,
+          failed_invoice_count: failureCount,
+          next_payment_attempt: nextAttempt,
+          invoice_url: invoice.hosted_invoice_url,
+        },
+      );
+    }
+    const graceActive = !!graceEndsAt && new Date(graceEndsAt).getTime() > Date.now();
+
     await logSystemAlert({
       category: "billing_payment_failed",
       severity: nextAttempt ? "error" : "critical",
-      message: `Payment failed for ${customer.email} — $${((invoice.amount_due ?? 0) / 100).toFixed(2)} (attempt ${attemptCount})${nextAttempt ? `, Stripe retries ${nextAttempt.slice(0, 10)}` : `, no further retries`}`,
+      message: `Payment failed for ${customer.email} — $${((invoice.amount_due ?? 0) / 100).toFixed(2)} (attempt ${attemptCount})${nextAttempt ? `, Stripe retries ${nextAttempt.slice(0, 10)}` : `, no further retries`}${graceActive ? `. Access continues until ${graceEndsAt!.slice(0, 10)} (grace period)` : ''}`,
       details: {
         email: customer.email,
         amount_due: (invoice.amount_due ?? 0) / 100,
         currency: invoice.currency,
         attempt_count: attemptCount,
+        failed_invoice_count: failureCount,
         next_payment_attempt: nextAttempt,
+        grace_period_ends_at: graceEndsAt,
         reason,
         invoice_url: invoice.hosted_invoice_url,
         stripe_customer_id: invoice.customer,
@@ -501,15 +532,11 @@ export async function processStripeEvent(
       user_id: userId,
       related_entity: invoice.id,
     });
-    // Count consecutive failures and auto-pause once the threshold is hit.
-    const { data: failures, error: bumpErr } = await supabase.rpc(
-      'billing_bump_failed_invoice_count', { _user_id: userId },
-    );
-    if (bumpErr) log("failed-invoice bump failed", { error: bumpErr.message });
-    const failureCount = Number(failures ?? attemptCount) || attemptCount;
 
-    const cfg = await getAutoPauseConfig(supabase);
-    if (cfg.enabled && failureCount >= cfg.max_failed_invoices) {
+    // Policy step 2: pause once the failure threshold is hit AND the grace
+    // window is over (or grace is disabled).
+    const cfg = policy.autoPause;
+    if (cfg.enabled && failureCount >= cfg.max_failed_invoices && !graceActive) {
       await autoPauseAccount(
         supabase, userId, customer.email,
         `${failureCount} failed invoices (threshold ${cfg.max_failed_invoices}) — ${reason}`,
@@ -528,9 +555,12 @@ export async function processStripeEvent(
       );
     }
 
-    log("invoice.payment_failed handled", { email: customer.email, failureCount });
+    log("invoice.payment_failed handled", {
+      email: customer.email, failureCount, graceEndsAt, graceActive,
+    });
     return;
   }
+
 
   if (event.type === "invoice.payment_action_required") {
     const invoice = event.data.object as Stripe.Invoice;
