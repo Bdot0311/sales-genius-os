@@ -347,24 +347,36 @@ const useJwtSanityCheck = () => {
 
 const usePostHogIdentity = () => {
   useEffect(() => {
-    if (!isPostHogEnabled) return;
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT") {
-        posthog.reset();
+        if (isPostHogEnabled) posthog.reset();
+        heycatch.resetIdentity();
         return;
       }
 
       if ((event === "INITIAL_SESSION" || event === "SIGNED_IN") && session?.user.id) {
-        posthog.identify(session.user.id, {
-          ...(session.user.email ? { email: session.user.email } : {}),
-        });
+        if (isPostHogEnabled) {
+          posthog.identify(session.user.id, {
+            ...(session.user.email ? { email: session.user.email } : {}),
+          });
+        }
+        heycatch.setIdentity(
+          session.user.id,
+          {
+            ...(session.user.email ? { email: session.user.email } : {}),
+            ...(session.user.user_metadata?.full_name
+              ? { name: session.user.user_metadata.full_name as string }
+              : {}),
+          },
+          ...(session.user.created_at ? [{ signup_date: session.user.created_at }] : []),
+        );
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 };
+
 
 const App = () => {
   useJwtSanityCheck();
