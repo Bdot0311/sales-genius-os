@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { posthog } from "@/lib/posthog";
 
 export interface Sequence {
   id: string;
@@ -87,7 +88,10 @@ export function useSequences() {
       if (error) throw error;
       return data as Sequence;
     },
-    onSuccess: () => {
+    onSuccess: (_sequence, newSequence) => {
+      posthog.capture('sequence_created', {
+        has_description: Boolean(newSequence.description),
+      });
       queryClient.invalidateQueries({ queryKey: ['sequences'] });
       toast({
         title: "Sequence created",

@@ -2,6 +2,7 @@ import { Component, Suspense, lazy, useState, useEffect, type ComponentType, typ
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { isPostHogEnabled, posthog } from "@/lib/posthog";
 import Index from "./pages/Index";
 
 // Public marketing routes that should NOT trigger Supabase/auth/white-label loads
@@ -343,8 +344,30 @@ const useJwtSanityCheck = () => {
   }, []);
 };
 
+const usePostHogIdentity = () => {
+  useEffect(() => {
+    if (!isPostHogEnabled) return;
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT") {
+        posthog.reset();
+        return;
+      }
+
+      if ((event === "INITIAL_SESSION" || event === "SIGNED_IN") && session?.user.id) {
+        posthog.identify(session.user.id, {
+          ...(session.user.email ? { email: session.user.email } : {}),
+        });
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+};
+
 const App = () => {
   useJwtSanityCheck();
+  usePostHogIdentity();
   return (
   <QueryClientProvider client={queryClient}>
     <DeferredUIShell>

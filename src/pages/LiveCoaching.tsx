@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
+import { posthog } from "@/lib/posthog";
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -136,6 +137,10 @@ const LiveCoaching = () => {
   }
 
   const startSession = (scenario: Scenario) => {
+    posthog.capture('coaching_session_started', {
+      scenario_id: scenario.id,
+      difficulty: scenario.difficulty.toLowerCase(),
+    });
     setSelectedScenario(scenario);
     setSessionActive(true);
     setTurnCount(0);
@@ -322,6 +327,12 @@ Respond in this EXACT JSON format (no markdown, just raw JSON):
         cleanJson = cleanJson.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
       }
       const scores = JSON.parse(cleanJson) as ScoreCard;
+      posthog.capture('coaching_session_scored', {
+        scenario_id: selectedScenario?.id ?? 'unknown',
+        difficulty: selectedScenario?.difficulty.toLowerCase() ?? 'unknown',
+        turn_count: turnCount,
+        overall_score: scores.overall,
+      });
       setScoreCard(scores);
     } catch (error: any) {
       toast({ title: "Scoring failed", description: "Try ending the session again.", variant: "destructive" });

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { posthog } from '@/lib/posthog';
 
 export interface ExternalLeadFilters {
   job_title?: string;
@@ -101,8 +102,13 @@ export function useExternalLeads() {
         pageSize,
       });
       
-      if (data.credits_used) {
-      }
+      posthog.capture('lead_search_completed', {
+        result_count: newLeads.length,
+        total_results: total,
+        page: currentPage,
+        page_size: pageSize,
+        credits_used: Boolean(data.credits_used),
+      });
       
       return newLeads;
     } catch (error: any) {
@@ -305,6 +311,12 @@ export function useExternalLeads() {
       toast({
         title: 'Lead enriched & saved',
         description: `${lead.contact_name} from ${lead.company_name} is now in your saved leads!`,
+      });
+
+      posthog.capture('lead_enriched', {
+        overall_score: lead.scores.overall_score,
+        has_linkedin_profile: Boolean(lead.linkedin_url),
+        source: 'lead_intelligence',
       });
 
       // Remove from external leads list
