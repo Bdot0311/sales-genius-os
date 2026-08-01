@@ -5,6 +5,7 @@
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { logSystemAlert } from "./alerts.ts";
+import { trackBusinessEvent } from "./heycatch.ts";
 
 const PRICE_TO_PLAN: Record<string, { plan: 'starter' | 'growth' | 'pro' | 'agency', credits: number, dailyLimit: number, leadsLimit: number, isYearly: boolean }> = {
   'price_1T8tywFTerosS6hi0fHQuybr': { plan: 'starter', credits: 1000, dailyLimit: 100, leadsLimit: 1000, isYearly: false },
@@ -345,6 +346,12 @@ export async function processStripeEvent(
       credits_reset_at: periodEnd,
     });
     log("checkout.session.completed apply", result);
+    await trackBusinessEvent(
+      "subscription_started",
+      userId,
+      { plan: planDetails.plan, is_yearly: planDetails.isYearly, stripe_subscription_id: subscriptionId },
+      { email: customerEmail, plan: planDetails.plan },
+    );
     return;
   }
 
@@ -721,6 +728,15 @@ export async function processStripeEvent(
       canceled_at: sub.canceled_at ? new Date(sub.canceled_at * 1000).toISOString() : new Date().toISOString(),
     });
     log("subscription.deleted apply", result);
+    await trackBusinessEvent(
+      "subscription_cancelled",
+      userId,
+      {
+        stripe_subscription_id: sub.id,
+        cancellation_reason: (sub.cancellation_details as any)?.reason ?? null,
+      },
+      { email: customer.email, plan: "free" },
+    );
     await logSystemAlert({
       category: "billing_cancellation", severity: "critical",
       message: `${customer.email} cancelled — subscription ended and the account is now inactive`,

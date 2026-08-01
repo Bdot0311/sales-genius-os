@@ -5,6 +5,7 @@
     "": {
       "name": "vite_react_shadcn_ts",
       "dependencies": {
+        "@heycatch/sdk": "^0.7.0",
         "@hookform/resolvers": "^3.10.0",
         "@lovable.dev/cloud-auth-js": "^1.1.2",
         "@lovable.dev/mcp-js": "^0.23.0",
@@ -214,6 +215,8 @@
     "@formatjs/icu-skeleton-parser": ["@formatjs/icu-skeleton-parser@1.8.16", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@formatjs/icu-skeleton-parser/-/icu-skeleton-parser-1.8.16.tgz", { "dependencies": { "@formatjs/ecma402-abstract": "2.3.6", "tslib": "^2.8.0" } }, "sha512-H13E9Xl+PxBd8D5/6TVUluSpxGNvFSlN/b3coUp0e0JpuWXXnQDiavIpY3NnvSp4xhEMoXyyBvVfdFX8jglOHQ=="],
 
     "@formatjs/intl-localematcher": ["@formatjs/intl-localematcher@0.6.2", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@formatjs/intl-localematcher/-/intl-localematcher-0.6.2.tgz", { "dependencies": { "tslib": "^2.8.0" } }, "sha512-XOMO2Hupl0wdd172Y06h6kLpBz6Dv+J4okPLl4LPtzbr8f66WbIoy4ev98EBuZ6ZK4h5ydTN6XneT4QVpD7cdA=="],
+
+    "@heycatch/sdk": ["@heycatch/sdk@0.7.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@heycatch/sdk/-/sdk-0.7.0.tgz", { "dependencies": { "posthog-react-native": "^4.61.1" }, "peerDependencies": { "expo-router": "*", "react": "^18.2.0 || ^19.0.0" }, "optionalPeers": ["expo-router", "react"] }, "sha512-uGMp54jq8O4Xq0gbVZnQSbTqoDLP0C6rFkIJDQlObIcgyfmY/+qupU5MfIIPsoIHCWy+BfTEcbCc8/E44sJMqg=="],
 
     "@hono/node-server": ["@hono/node-server@1.19.14", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@hono/node-server/-/node-server-1.19.14.tgz", { "peerDependencies": { "hono": "^4" } }, "sha512-GwtvgtXxnWsucXvbQXkRgqksiH2Qed37H9xHZocE5sA3N8O8O8/8FA3uclQXxXVzc9XBZuEOMK7+r02FmSpHtw=="],
 
@@ -1428,6 +1431,8 @@
     "postgres-interval": ["postgres-interval@1.2.0", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/postgres-interval/-/postgres-interval-1.2.0.tgz", { "dependencies": { "xtend": "^4.0.0" } }, "sha512-9ZhXKM/rw350N1ovuWHbGxnGh/SNJ4cnxHiM0rxE4VN41wsg8P8zWn9hv/buK00RP4WvlOyr/RBDiptyxVbkZQ=="],
 
     "posthog-js": ["posthog-js@1.409.5", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/posthog-js/-/posthog-js-1.409.5.tgz", { "dependencies": { "@posthog/browser-common": "^0.3.1", "@posthog/core": "^1.46.1", "@posthog/types": "^1.399.0", "core-js": "^3.49.0", "dompurify": "^3.3.2", "fflate": "^0.4.8", "preact": "^10.29.3", "query-selector-shadow-dom": "^1.0.1", "web-vitals": "^5.3.0" } }, "sha512-s1iJz+vq0YAluUD4OwLjUFIJt/9pqiiB6MITvHWIS16a7pqTJqbSLXsd5/8kJcIgfrOSZHe+mdYAXLYcJCS4LQ=="],
+
+    "posthog-react-native": ["posthog-react-native@4.61.2", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/posthog-react-native/-/posthog-react-native-4.61.2.tgz", { "dependencies": { "@posthog/core": "^1.46.1", "@posthog/types": "^1.399.0" }, "peerDependencies": { "@posthog/react-native-plugin": ">= 2.2.0", "@react-native-async-storage/async-storage": ">=1.0.0", "@react-navigation/native": ">= 5.0.0", "expo-application": ">= 4.0.0", "expo-device": ">= 4.0.0", "expo-file-system": ">= 13.0.0", "expo-localization": ">= 11.0.0", "posthog-react-native-session-replay": ">= 1.6.0", "react-native-device-info": ">= 10.0.0", "react-native-localize": ">= 3.0.0", "react-native-navigation": ">= 6.0.0", "react-native-safe-area-context": ">= 4.0.0", "react-native-svg": ">= 15.0.0" }, "optionalPeers": ["@posthog/react-native-plugin", "@react-native-async-storage/async-storage", "@react-navigation/native", "expo-application", "expo-device", "expo-file-system", "expo-localization", "posthog-react-native-session-replay", "react-native-device-info", "react-native-localize", "react-native-navigation", "react-native-safe-area-context", "react-native-svg"], "bin": { "posthog-react-native-xcode": "tooling/posthog-xcode.sh" } }, "sha512-AaLU4Lyst9M4E16kqf5F7fdxuOFu8g9m6mH2pJydXsWUx/Rm6aLk6CZ1/EpfspCKaAhO32TVoQkBI/x4ZpVbMw=="],
 
     "powershell-utils": ["powershell-utils@0.1.0", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/powershell-utils/-/powershell-utils-0.1.0.tgz", {}, "sha512-dM0jVuXJPsDN6DvRpea484tCUaMiXWjuCn++HGTqUWzGDjv5tZkEZldAJ/UMlqRYGFrD/etByo4/xOuC/snX2A=="],
 

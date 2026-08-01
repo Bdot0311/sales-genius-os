@@ -3,6 +3,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { isPostHogEnabled, posthog } from "@/lib/posthog";
+import { analytics as heycatch } from "@/lib/heycatch";
+
 import Index from "./pages/Index";
 
 // Public marketing routes that should NOT trigger Supabase/auth/white-label loads
@@ -347,24 +349,36 @@ const useJwtSanityCheck = () => {
 
 const usePostHogIdentity = () => {
   useEffect(() => {
-    if (!isPostHogEnabled) return;
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT") {
-        posthog.reset();
+        if (isPostHogEnabled) posthog.reset();
+        heycatch.resetIdentity();
         return;
       }
 
       if ((event === "INITIAL_SESSION" || event === "SIGNED_IN") && session?.user.id) {
-        posthog.identify(session.user.id, {
-          ...(session.user.email ? { email: session.user.email } : {}),
-        });
+        if (isPostHogEnabled) {
+          posthog.identify(session.user.id, {
+            ...(session.user.email ? { email: session.user.email } : {}),
+          });
+        }
+        heycatch.setIdentity(
+          session.user.id,
+          {
+            ...(session.user.email ? { email: session.user.email } : {}),
+            ...(session.user.user_metadata?.full_name
+              ? { name: session.user.user_metadata.full_name as string }
+              : {}),
+          },
+          ...(session.user.created_at ? [{ signup_date: session.user.created_at }] : []),
+        );
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 };
+
 
 const App = () => {
   useJwtSanityCheck();
