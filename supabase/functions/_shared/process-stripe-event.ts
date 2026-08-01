@@ -375,6 +375,10 @@ export async function processStripeEvent(
     const result = await applyEvent(supabase, userId, event, {
       search_credits_remaining: newCredits,
       daily_searches_used: 0,
+      status: 'active',
+      account_status: 'active',
+      payment_failed_at: null,
+      last_payment_error: null,
       credits_reset_at: new Date(sub.current_period_end * 1000).toISOString(),
       current_period_start: new Date(sub.current_period_start * 1000).toISOString(),
       current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
@@ -392,10 +396,25 @@ export async function processStripeEvent(
     const result = await applyEvent(supabase, userId, event, {
       status: 'cancelled',
       account_status: 'cancelled',
+      cancel_at_period_end: false,
+      canceled_at: sub.canceled_at ? new Date(sub.canceled_at * 1000).toISOString() : new Date().toISOString(),
     });
     log("subscription.deleted apply", result);
+    await logSystemAlert({
+      category: "billing_cancellation", severity: "critical",
+      message: `${customer.email} cancelled — subscription ended and the account is now inactive`,
+      details: {
+        email: customer.email,
+        stripe_customer_id: sub.customer,
+        stripe_subscription_id: sub.id,
+        cancellation_reason: (sub.cancellation_details as any)?.reason ?? null,
+        cancellation_comment: (sub.cancellation_details as any)?.comment ?? null,
+      },
+      user_id: userId, related_entity: sub.id,
+    });
     return;
   }
+
 
   log("unhandled event type, skipping", { type: event.type });
 }
