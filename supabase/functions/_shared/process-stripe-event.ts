@@ -504,6 +504,7 @@ export async function processStripeEvent(
       current_period_start: new Date(sub.current_period_start * 1000).toISOString(),
       current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
     });
+    await resetDunningState(supabase, userId);
     log("invoice.paid apply", result);
     return;
   }
