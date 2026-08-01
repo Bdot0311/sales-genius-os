@@ -5,16 +5,16 @@ import { History, ChevronDown, ChevronRight } from "lucide-react";
 // Lists the saved ICP version snapshots (Phase 5). Snapshots are written by the
 // trg_snapshot_icp_version trigger on every save.
 export const IcpVersionHistory = ({ icpProfileId }: { icpProfileId: string }) => {
-  const [versions, setVersions] = useState<{ version_number: number; created_at: string }[]>([]);
+  const [versions, setVersions] = useState<{ version: number; created_at: string }[]>([]);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
     (async () => {
       const { data } = await supabase
         .from("icp_versions")
-        .select("version_number, created_at")
+        .select("version, created_at")
         .eq("icp_profile_id", icpProfileId)
-        .order("version_number", { ascending: false })
+        .order("version", { ascending: false })
         .limit(20);
       setVersions(data || []);
     })();
