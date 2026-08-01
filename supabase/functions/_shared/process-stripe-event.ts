@@ -395,21 +395,57 @@ export async function processStripeEvent(
       });
     }
 
+    const policy = await getBillingPolicy(supabase);
+
+    // Successful retry: Stripe moved the subscription back to active.
+    if (
+      sub.status === 'active' &&
+      prev.status && ['past_due', 'unpaid', 'incomplete', 'paused'].includes(prev.status) &&
+      policy.autoResume.enabled && policy.autoResume.on_subscription_active
+    ) {
+      await autoResumeAccount(
+        supabase, userId, customer.email,
+        `Payment retry succeeded — subscription is active again (was ${prev.status})`,
+        {
+          trigger: 'subscription_active',
+          previous_status: prev.status,
+          plan: planDetails.plan,
+          stripe_subscription_id: sub.id,
+        },
+      );
+    }
+
     // Stripe flipped the subscription into a dunning/unpaid state.
     if (prev.status && prev.status !== sub.status && ['past_due', 'unpaid', 'incomplete_expired'].includes(sub.status)) {
+      let graceEndsAt: string | null = null;
+      if (sub.status === 'past_due' && policy.grace.enabled && policy.grace.days > 0) {
+        graceEndsAt = await startGracePeriod(
+          supabase, userId, policy.grace.days,
+          `Subscription became ${sub.status}`,
+          {
+            trigger: 'subscription_past_due',
+            target_email: customer.email,
+            previous_status: prev.status,
+            stripe_subscription_id: sub.id,
+          },
+        );
+      }
+
       await logSystemAlert({
         category: "billing_payment_failed", severity: "error",
-        message: `${customer.email} subscription is now ${sub.status} — payment is not going through`,
+        message: `${customer.email} subscription is now ${sub.status} — payment is not going through${graceEndsAt ? `. Access continues until ${graceEndsAt.slice(0, 10)} (grace period)` : ''}`,
         details: {
           email: customer.email, plan: planDetails.plan, stripe_status: sub.status,
           previous_status: prev.status, stripe_subscription_id: sub.id,
+          grace_period_ends_at: graceEndsAt,
         },
         user_id: userId, related_entity: sub.id,
       });
 
-      // Dunning threshold reached: Stripe gave up on collecting.
+      // Dunning threshold reached: Stripe gave up on collecting. Grace does not
+      // apply here — there are no retries left.
       if (['unpaid', 'incomplete_expired'].includes(sub.status)) {
-        const cfg = await getAutoPauseConfig(supabase);
+        const cfg = policy.autoPause;
         if (cfg.enabled && cfg.pause_on_dunning_exhausted) {
           await autoPauseAccount(
             supabase, userId, customer.email,
@@ -425,6 +461,7 @@ export async function processStripeEvent(
         }
       }
     }
+
     return;
   }
 
