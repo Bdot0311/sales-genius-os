@@ -1224,7 +1224,7 @@ serve(async (req) => {
       return [];
     };
 
-    if (rawLeads.length === 0 && (requestBody.industry || requestBody.location || requestBody.keywords || requestBody.company_size)) {
+    if (!filters.strict && rawLeads.length === 0 && (requestBody.industry || requestBody.location || requestBody.keywords || requestBody.company_size)) {
       // Retry 1: drop the "soft" filters that most often over-constrain (industry +
       // keywords), keep job_title + location + seniority + company_size. This is the
       // common case for generated ICPs, which carry a non-canonical industry and a
