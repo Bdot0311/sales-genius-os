@@ -292,6 +292,24 @@ export async function processStripeEvent(
         },
         user_id: userId, related_entity: sub.id,
       });
+
+      // Dunning threshold reached: Stripe gave up on collecting.
+      if (['unpaid', 'incomplete_expired'].includes(sub.status)) {
+        const cfg = await getAutoPauseConfig(supabase);
+        if (cfg.enabled && cfg.pause_on_dunning_exhausted) {
+          await autoPauseAccount(
+            supabase, userId, customer.email,
+            `Stripe dunning exhausted — subscription became ${sub.status}`,
+            {
+              trigger: 'dunning_exhausted',
+              stripe_status: sub.status,
+              previous_status: prev.status,
+              plan: planDetails.plan,
+              stripe_subscription_id: sub.id,
+            },
+          );
+        }
+      }
     }
     return;
   }
