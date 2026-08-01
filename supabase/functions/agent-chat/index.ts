@@ -249,6 +249,20 @@ const TOOLS = [
   {
     type: "function",
     function: {
+      name: "find_leads",
+      description:
+        "Source brand new leads from the lead network using the user's saved ICP profile, and save them. Every search automatically excludes people already in the account and advances the result page, so repeated calls return different people. Use this when the user asks to find/source/prospect new leads.",
+      parameters: {
+        type: "object",
+        properties: {
+          count: { type: "number", description: "How many new leads to source (1-25, default 10)." },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "run_full_agent",
       description:
         "Trigger a full AI SDR run: source new leads from the ICP, generate sequences and send or queue first touches, then handle replies.",
