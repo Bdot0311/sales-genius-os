@@ -619,9 +619,27 @@ export async function processStripeEvent(
       current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
     });
     await resetDunningState(supabase, userId);
+
+    // Policy: a paid invoice clears the grace period and restores access.
+    const policy = await getBillingPolicy(supabase);
+    if (policy.autoResume.enabled && policy.autoResume.on_invoice_paid) {
+      await autoResumeAccount(
+        supabase, userId, customer.email,
+        'Invoice paid — access restored automatically',
+        {
+          trigger: 'invoice_paid',
+          amount_paid: (invoice.amount_paid ?? 0) / 100,
+          currency: invoice.currency,
+          invoice_url: invoice.hosted_invoice_url,
+          stripe_customer_id: invoice.customer,
+          stripe_subscription_id: subscriptionId,
+        },
+      );
+    }
     log("invoice.paid apply", result);
     return;
   }
+
 
   if (event.type === "customer.subscription.deleted") {
     const sub = event.data.object as Stripe.Subscription;
