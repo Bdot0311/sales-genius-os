@@ -49,7 +49,7 @@ interface Lead {
   tier?: string | null;
   fit_score?: number | null;
   score_reason?: string | null;
-  score_breakdown?: Record<string, any> | null;
+  score_breakdown?: any;
   signal_date?: string | null;
 }
 
