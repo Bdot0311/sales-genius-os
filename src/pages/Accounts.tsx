@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/dashboard/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { AccountCommittee } from "@/components/dashboard/AccountCommittee";
+import { WhyNowPanel } from "@/components/dashboard/WhyNowPanel";
 import { Building2, ChevronRight } from "lucide-react";
 
 interface Company { id: string; name: string; domain: string | null }
@@ -50,7 +51,10 @@ const Accounts = () => {
 
         <div>
           {selected ? (
-            <AccountCommittee companyId={selected.id} companyName={selected.name} companyDomain={selected.domain || undefined} />
+            <div className="space-y-6">
+              <AccountCommittee companyId={selected.id} companyName={selected.name} companyDomain={selected.domain || undefined} />
+              <WhyNowPanel companyId={selected.id} />
+            </div>
           ) : (
             <p className="text-sm text-muted-foreground">pick an account to see its committee.</p>
           )}

@@ -101,6 +101,21 @@ serve(async (req) => {
       job_title: lead.job_title || "",
       sender_first_name: senderName.split(/\s+/)[0],
     };
+
+    // Why-now token: pull the highest-confidence cached claim. Low-confidence
+    // claims are never inserted into a token so they can't reach a sent email.
+    try {
+      if (lead.company_name) {
+        const { data: comp } = await supabase.from("companies").select("id").eq("user_id", user.id).eq("name", lead.company_name).maybeSingle();
+        if (comp) {
+          const { data: wn } = await supabase.from("why_now_research").select("claims").eq("user_id", user.id).eq("company_id", comp.id).maybeSingle();
+          const list = Array.isArray(wn?.claims) ? wn.claims : [];
+          const pick = list.find((c: any) => c.confidence === "high") || list.find((c: any) => c.confidence === "medium");
+          if (pick?.claim) resolvedTokens.why_now = String(pick.claim);
+        }
+      }
+    } catch { /* why_now is an optional token */ }
+
     // Token resolution guard: if a required token can't be resolved, block and flag.
     const missingTokens = Object.entries(resolvedTokens).filter(([k, v]) => (k === "first_name" || k === "company") && !v).map(([k]) => k);
     if (missingTokens.length) {
