@@ -3492,6 +3492,8 @@ export type Database = {
         Row: {
           account_status: string | null
           addon_price_id: string | null
+          cancel_at_period_end: boolean
+          canceled_at: string | null
           created_at: string
           credits_reset_at: string | null
           current_period_end: string
@@ -3502,9 +3504,11 @@ export type Database = {
           daily_searches_reset_at: string | null
           daily_searches_used: number
           id: string
+          last_payment_error: string | null
           last_stripe_event_at: string | null
           last_stripe_event_id: string | null
           leads_limit: number
+          payment_failed_at: string | null
           plan: Database["public"]["Enums"]["subscription_plan"]
           search_credits_addon: number
           search_credits_base: number
@@ -3522,6 +3526,8 @@ export type Database = {
         Insert: {
           account_status?: string | null
           addon_price_id?: string | null
+          cancel_at_period_end?: boolean
+          canceled_at?: string | null
           created_at?: string
           credits_reset_at?: string | null
           current_period_end?: string
@@ -3532,9 +3538,11 @@ export type Database = {
           daily_searches_reset_at?: string | null
           daily_searches_used?: number
           id?: string
+          last_payment_error?: string | null
           last_stripe_event_at?: string | null
           last_stripe_event_id?: string | null
           leads_limit?: number
+          payment_failed_at?: string | null
           plan?: Database["public"]["Enums"]["subscription_plan"]
           search_credits_addon?: number
           search_credits_base?: number
@@ -3552,6 +3560,8 @@ export type Database = {
         Update: {
           account_status?: string | null
           addon_price_id?: string | null
+          cancel_at_period_end?: boolean
+          canceled_at?: string | null
           created_at?: string
           credits_reset_at?: string | null
           current_period_end?: string
@@ -3562,9 +3572,11 @@ export type Database = {
           daily_searches_reset_at?: string | null
           daily_searches_used?: number
           id?: string
+          last_payment_error?: string | null
           last_stripe_event_at?: string | null
           last_stripe_event_id?: string | null
           leads_limit?: number
+          payment_failed_at?: string | null
           plan?: Database["public"]["Enums"]["subscription_plan"]
           search_credits_addon?: number
           search_credits_base?: number
@@ -4451,6 +4463,28 @@ export type Database = {
           status: string
           stripe_customer_id: string
           trial_end_date: string
+          user_id: string
+        }[]
+      }
+      admin_get_billing_issues: {
+        Args: { _include_resolved?: boolean }
+        Returns: {
+          account_status: string
+          alert_id: string
+          cancel_at_period_end: boolean
+          category: string
+          created_at: string
+          current_period_end: string
+          details: Json
+          email: string
+          full_name: string
+          is_locked: boolean
+          message: string
+          payment_failed_at: string
+          plan: string
+          resolved: boolean
+          severity: string
+          subscription_status: string
           user_id: string
         }[]
       }
