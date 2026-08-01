@@ -34,6 +34,7 @@ import { FollowUpSuggestion, FollowUpData } from "@/components/outreach/FollowUp
 import { BarChart3, ListOrdered, Layout, Users } from "lucide-react";
 import { BulkSendDialog } from "@/components/outreach/BulkSendDialog";
 import { EmailQualityChecker, scoreEmailQuality } from "@/components/outreach/EmailQualityChecker";
+import { EmailRubricPanel } from "@/components/outreach/EmailRubricPanel";
 import { applyEmailQualityFix } from "@/lib/email-quality-fixes";
 import { LeadResearchPanel, type LeadResearch } from "@/components/outreach/LeadResearchPanel";
 import { SequencesList, MessageBlocksList } from "@/components/sequences";
@@ -2845,6 +2846,7 @@ For logos, use HTML:
                         onFix={handleQualityFix}
                         fixingCheck={fixingCheck}
                       />
+                      <EmailRubricPanel subject={subjectLine} body={generatedEmail} />
                       <div className="flex gap-2">
                         <Button
                           className="flex-1"

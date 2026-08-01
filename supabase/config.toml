@@ -1,6 +1,8 @@
 project_id = "ghgfjnepvxvxrncmskys"
 
 [functions]
+  [functions.check-email-rubric]
+    verify_jwt = true
   [functions.score-lead-v2]
     verify_jwt = true
   [functions.process-rescore-queue]
