@@ -1023,6 +1023,79 @@ serve(async (req) => {
           };
         }
 
+        case "find_leads": {
+          if (!icpSnapshot) {
+            return {
+              error:
+                "No saved ICP profile found. Ask the user to save an ICP on the ICP page first — searching without it would return off-target leads.",
+            };
+          }
+          const want = Math.min(Math.max(Number(args.count) || 10, 1), 25);
+          // Advance the provider page as the account fills up so back-to-back
+          // searches return different people instead of the same first page.
+          const { count: sourcedCount } = await admin
+            .from("leads")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", userId)
+            .in("source", ["ai_agent", "ai_sdr_chat"]);
+          const page = Math.floor((sourcedCount ?? 0) / want) + 1;
+
+          const res = await invokeFn(
+            "fetch-external-leads",
+            icpSearchBody(icpSnapshot, { limit: want, page }),
+          );
+          const found: any[] = Array.isArray(res?.leads) ? res.leads : [];
+          const saved: string[] = [];
+          for (const l of found) {
+            const email = String(l.business_email ?? "").trim().toLowerCase();
+            const contact = String(l.contact_name ?? "").trim();
+            if (!email && !contact) continue;
+            const { data: inserted, error: insErr } = await admin
+              .from("leads")
+              .insert({
+                user_id: userId,
+                contact_name: contact || email.split("@")[0],
+                contact_email: email || null,
+                company_name: l.company_name || "Unknown",
+                company_website: l.company_domain || null,
+                job_title: l.job_title || null,
+                industry: l.industry || null,
+                company_size: l.company_size || null,
+                linkedin_url: l.linkedin_url || null,
+                icp_score: l.scores?.icp_score ?? null,
+                intent_score: l.scores?.intent_score ?? null,
+                signals: Array.isArray(l.buying_signals) ? l.buying_signals : null,
+                source: "ai_sdr_chat",
+                lead_status: "active",
+                enrichment_status: email ? "enriched" : "pending",
+              })
+              .select("id")
+              .maybeSingle();
+            if (!insErr && inserted?.id) saved.push(inserted.id);
+          }
+
+          toolEvents.push({
+            name,
+            label: `Sourced ${saved.length} new lead${saved.length === 1 ? "" : "s"}`,
+            status: res?.error ? "error" : "ok",
+            detail: res?.error ?? `ICP-matched, page ${page}, duplicates excluded`,
+          });
+
+          return {
+            searched_page: page,
+            returned: found.length,
+            saved_lead_ids: saved,
+            message: res?.message ?? res?.error ?? undefined,
+            leads: found.slice(0, 25).map((l) => ({
+              contact_name: l.contact_name,
+              job_title: l.job_title,
+              company_name: l.company_name,
+              industry: l.industry,
+              icp_score: l.scores?.icp_score ?? null,
+            })),
+          };
+        }
+
         case "run_full_agent": {
           if (!autonomous) {
             const { data: approval, error: apprError } = await admin
