@@ -741,13 +741,14 @@ Classification rules (apply in this order):
 
 Important: a reply that is polite or curious but contains a deferral or condition ("interesting, but I need to think about it", "let me talk to my team first") is objection, NOT interested. Only classify as interested when there is no stated blocker.
 
-Return JSON: { "classification": one of ["interested","objection","meeting_request","not_interested","unsubscribe","out_of_office","auto_reply","unknown"], "confidence": 0.0-1.0, "reasoning": "brief reason" }`;
+Return JSON: { "classification": one of ["interested","objection","meeting_request","not_interested","unsubscribe","out_of_office","auto_reply","unknown"], "confidence": 0.0-1.0, "reasoning": "brief reason", "objection_type": one of ["pricing","timing","competitor","authority","status_quo","no_need"] or null (set only when classification is "objection") }`;
 
         const classifyRaw = await callGemini(classifyPrompt, classifySystemPrompt);
 
         let classification = "unknown";
         let confidence = 0;
         let reasoning = "";
+        let objectionType: string | null = null;
         try {
           const jsonMatch = classifyRaw.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
@@ -755,6 +756,7 @@ Return JSON: { "classification": one of ["interested","objection","meeting_reque
             classification = parsed.classification ?? "unknown";
             confidence = parsed.confidence ?? 0;
             reasoning = parsed.reasoning ?? "";
+            objectionType = parsed.objection_type ?? null;
           }
         } catch {
           // classification stays "unknown"
@@ -941,10 +943,44 @@ Output ONLY the reply body. No subject line. No greeting like "Hi [name]". No si
 
           repliesSent++;
         } else if (classification === "objection" && config.can_handle_objections) {
-          const objectionGuidance =
-            config.objection_responses && Object.keys(config.objection_responses).length > 0
-              ? `Prepared guidance for objections: ${JSON.stringify(config.objection_responses)}`
-              : "";
+          // Objection Library: pull matching entries (by classified type first,
+          // then trigger term in the reply body; top two if several) and ground the
+          // draft in them. Fall back to the flat objection_responses map when
+          // nothing matches, so an empty library behaves exactly as before.
+          const { data: objEntries } = await adminClient
+            .from("objection_entries")
+            .select("id, type, trigger_terms, positioning, talk_track, proof_points, do_not_say, competitor_name, strengths, weaknesses")
+            .eq("user_id", user.id);
+          const bodyLower = (reply.bodyText || "").toLowerCase();
+          const matched: any[] = [];
+          const seen = new Set<string>();
+          const push = (e: any) => { if (e && !seen.has(e.id)) { seen.add(e.id); matched.push(e); } };
+          for (const e of objEntries || []) { if (objectionType && e.type === objectionType) push(e); }
+          for (const e of objEntries || []) {
+            if ((e.trigger_terms || []).some((t: string) => t && bodyLower.includes(t.toLowerCase()))) push(e);
+          }
+          const top = matched.slice(0, 2);
+
+          const usedEntryIds: string[] = [];
+          let objectionGuidance = "";
+          if (top.length > 0) {
+            const blocks = top.map((e: any) => {
+              usedEntryIds.push(e.id);
+              const pts = Array.isArray(e.proof_points) ? e.proof_points.filter(Boolean) : [];
+              const parts = [`Objection type: ${e.type}`];
+              if (e.positioning) parts.push(`Positioning: ${e.positioning}`);
+              if (e.talk_track) parts.push(`Talk track: ${e.talk_track}`);
+              if (e.competitor_name) parts.push(`Competitor named: ${e.competitor_name}`);
+              if (e.strengths) parts.push(`Their strengths (do not disparage): ${e.strengths}`);
+              if (e.weaknesses) parts.push(`Where we differ: ${e.weaknesses}`);
+              if (pts.length) parts.push(`Proof points you may cite (only these, as written): ${JSON.stringify(pts)}`);
+              if ((e.do_not_say || []).length) parts.push(`Never say: ${(e.do_not_say).join("; ")}`);
+              return parts.join("\n");
+            });
+            objectionGuidance = `Use this prepared objection guidance. Cite a proof point only if one is listed here. Never invent a customer name, a metric, or a statistic that is not listed.\n\n${blocks.join("\n\n")}`;
+          } else if (config.objection_responses && Object.keys(config.objection_responses).length > 0) {
+            objectionGuidance = `Prepared guidance for objections: ${JSON.stringify(config.objection_responses)}`;
+          }
 
           const objectionSystemPrompt = `You are ${config.agent_name}. ${config.persona}. Tone: ${config.tone}.`;
           const objectionPrompt = `The prospect raised an objection to your sales email.
@@ -981,7 +1017,7 @@ Output ONLY the reply body. No subject line or signature.`;
               body: generatedReply,
               classification: "objection",
               reasoning,
-              metadata: { phase: "reply", gmail_message_id: reply.gmailMessageId, confidence },
+              metadata: { phase: "reply", gmail_message_id: reply.gmailMessageId, confidence, objection_entry_ids: usedEntryIds },
             });
             await adminClient.from("agent_actions").insert({
               user_id: user.id,
@@ -993,7 +1029,7 @@ Output ONLY the reply body. No subject line or signature.`;
               classification: "objection",
               reply_content: generatedReply,
               description: `${reply.fromEmail} raised an objection — drafted a response for your approval`,
-              metadata: { phase: "reply", confidence },
+              metadata: { phase: "reply", confidence, objection_entry_ids: usedEntryIds },
             });
             continue;
           }

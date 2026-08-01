@@ -1990,6 +1990,7 @@ export type Database = {
           engagement_state: string | null
           enriched_at: string | null
           enrichment_status: string | null
+          fit_score: number | null
           icp_score: number | null
           id: string
           industry: string | null
@@ -2006,7 +2007,10 @@ export type Database = {
           research_confidence: string | null
           research_sources: string[] | null
           researched_at: string | null
+          score_breakdown: Json | null
           score_changed_at: string | null
+          score_reason: string | null
+          scored_at: string | null
           seniority: string | null
           signal_date: string | null
           signal_layers: Json | null
@@ -2015,6 +2019,7 @@ export type Database = {
           signals: string[] | null
           source: string | null
           technologies: string[] | null
+          tier: string | null
           updated_at: string
           user_id: string
         }
@@ -2034,6 +2039,7 @@ export type Database = {
           engagement_state?: string | null
           enriched_at?: string | null
           enrichment_status?: string | null
+          fit_score?: number | null
           icp_score?: number | null
           id?: string
           industry?: string | null
@@ -2050,7 +2056,10 @@ export type Database = {
           research_confidence?: string | null
           research_sources?: string[] | null
           researched_at?: string | null
+          score_breakdown?: Json | null
           score_changed_at?: string | null
+          score_reason?: string | null
+          scored_at?: string | null
           seniority?: string | null
           signal_date?: string | null
           signal_layers?: Json | null
@@ -2059,6 +2068,7 @@ export type Database = {
           signals?: string[] | null
           source?: string | null
           technologies?: string[] | null
+          tier?: string | null
           updated_at?: string
           user_id: string
         }
@@ -2078,6 +2088,7 @@ export type Database = {
           engagement_state?: string | null
           enriched_at?: string | null
           enrichment_status?: string | null
+          fit_score?: number | null
           icp_score?: number | null
           id?: string
           industry?: string | null
@@ -2094,7 +2105,10 @@ export type Database = {
           research_confidence?: string | null
           research_sources?: string[] | null
           researched_at?: string | null
+          score_breakdown?: Json | null
           score_changed_at?: string | null
+          score_reason?: string | null
+          scored_at?: string | null
           seniority?: string | null
           signal_date?: string | null
           signal_layers?: Json | null
@@ -2103,6 +2117,7 @@ export type Database = {
           signals?: string[] | null
           source?: string | null
           technologies?: string[] | null
+          tier?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -2643,6 +2658,44 @@ export type Database = {
           },
         ]
       }
+      rescore_queue: {
+        Row: {
+          enqueued_at: string
+          id: string
+          lead_id: string
+          processed_at: string | null
+          reason: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          enqueued_at?: string
+          id?: string
+          lead_id: string
+          processed_at?: string | null
+          reason?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          enqueued_at?: string
+          id?: string
+          lead_id?: string
+          processed_at?: string | null
+          reason?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rescore_queue_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rl_buckets: {
         Row: {
           bucket_key: string
@@ -2700,6 +2753,30 @@ export type Database = {
           search_query?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      scoring_rubric: {
+        Row: {
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+          weights: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          weights?: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          weights?: Json
         }
         Relationships: []
       }
@@ -3228,6 +3305,50 @@ export type Database = {
             columns: ["sequence_id"]
             isOneToOne: false
             referencedRelation: "email_sequences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      signal_events: {
+        Row: {
+          created_at: string
+          id: string
+          lead_id: string
+          metadata: Json
+          occurred_at: string
+          signal_type: string
+          source: string | null
+          user_id: string
+          weight: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lead_id: string
+          metadata?: Json
+          occurred_at?: string
+          signal_type: string
+          source?: string | null
+          user_id: string
+          weight?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lead_id?: string
+          metadata?: Json
+          occurred_at?: string
+          signal_type?: string
+          source?: string | null
+          user_id?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signal_events_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
             referencedColumns: ["id"]
           },
         ]
@@ -4589,6 +4710,7 @@ export type Database = {
         Args: { _signed_up: string; _uid: string }
         Returns: undefined
       }
+      trigger_rescore_queue: { Args: never; Returns: undefined }
       webhook_has_secret: { Args: { _webhook_id: string }; Returns: boolean }
       webhook_secret_masked: { Args: { _webhook_id: string }; Returns: string }
     }
