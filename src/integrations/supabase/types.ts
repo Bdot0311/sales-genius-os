@@ -2219,6 +2219,57 @@ export type Database = {
         }
         Relationships: []
       }
+      objection_entries: {
+        Row: {
+          competitor_name: string | null
+          created_at: string
+          do_not_say: string[]
+          id: string
+          label: string | null
+          positioning: string | null
+          proof_points: Json
+          strengths: string | null
+          talk_track: string | null
+          trigger_terms: string[]
+          type: string
+          updated_at: string
+          user_id: string
+          weaknesses: string | null
+        }
+        Insert: {
+          competitor_name?: string | null
+          created_at?: string
+          do_not_say?: string[]
+          id?: string
+          label?: string | null
+          positioning?: string | null
+          proof_points?: Json
+          strengths?: string | null
+          talk_track?: string | null
+          trigger_terms?: string[]
+          type: string
+          updated_at?: string
+          user_id: string
+          weaknesses?: string | null
+        }
+        Update: {
+          competitor_name?: string | null
+          created_at?: string
+          do_not_say?: string[]
+          id?: string
+          label?: string | null
+          positioning?: string | null
+          proof_points?: Json
+          strengths?: string | null
+          talk_track?: string | null
+          trigger_terms?: string[]
+          type?: string
+          updated_at?: string
+          user_id?: string
+          weaknesses?: string | null
+        }
+        Relationships: []
+      }
       onboarding_progress: {
         Row: {
           added_first_lead: boolean
@@ -4705,6 +4756,10 @@ export type Database = {
         Returns: undefined
       }
       reset_daily_email_counters: { Args: never; Returns: undefined }
+      seed_objection_entries: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
       touch_last_active: { Args: never; Returns: undefined }
       trg_activation_ensure_row: {
         Args: { _signed_up: string; _uid: string }
