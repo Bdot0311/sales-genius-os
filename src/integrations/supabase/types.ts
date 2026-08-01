@@ -1680,8 +1680,12 @@ export type Database = {
           departments: Json | null
           disqualifiers: string | null
           event_triggers: Json | null
+          exclude_company_sizes: Json | null
+          exclude_domains: Json | null
+          exclude_geographies: Json | null
           exclude_industries: Json | null
           exclude_keywords: Json | null
+          exclude_tech_stack: Json | null
           exclude_titles: Json | null
           funding_stages: Json | null
           geographies: Json | null
@@ -1721,8 +1725,12 @@ export type Database = {
           departments?: Json | null
           disqualifiers?: string | null
           event_triggers?: Json | null
+          exclude_company_sizes?: Json | null
+          exclude_domains?: Json | null
+          exclude_geographies?: Json | null
           exclude_industries?: Json | null
           exclude_keywords?: Json | null
+          exclude_tech_stack?: Json | null
           exclude_titles?: Json | null
           funding_stages?: Json | null
           geographies?: Json | null
@@ -1762,8 +1770,12 @@ export type Database = {
           departments?: Json | null
           disqualifiers?: string | null
           event_triggers?: Json | null
+          exclude_company_sizes?: Json | null
+          exclude_domains?: Json | null
+          exclude_geographies?: Json | null
           exclude_industries?: Json | null
           exclude_keywords?: Json | null
+          exclude_tech_stack?: Json | null
           exclude_titles?: Json | null
           funding_stages?: Json | null
           geographies?: Json | null
@@ -1790,6 +1802,44 @@ export type Database = {
           value_proposition?: string | null
         }
         Relationships: []
+      }
+      icp_versions: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          icp_profile_id: string
+          id: string
+          snapshot: Json
+          user_id: string
+          version: number
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          icp_profile_id: string
+          id?: string
+          snapshot: Json
+          user_id: string
+          version: number
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          icp_profile_id?: string
+          id?: string
+          snapshot?: Json
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "icp_versions_icp_profile_id_fkey"
+            columns: ["icp_profile_id"]
+            isOneToOne: false
+            referencedRelation: "icp_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       import_history: {
         Row: {
