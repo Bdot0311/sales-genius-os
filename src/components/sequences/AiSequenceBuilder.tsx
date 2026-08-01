@@ -48,6 +48,7 @@ export const AiSequenceBuilder = () => {
   const [briefs, setBriefs] = useState<{ id: string; name: string }[]>([]);
   const [briefId, setBriefId] = useState<string>("");
   const [rubric, setRubric] = useState<any[] | null>(null);
+  const [whyNow, setWhyNow] = useState<any[]>([]);
 
   useEffect(() => {
     let mounted = true;
@@ -76,6 +77,20 @@ export const AiSequenceBuilder = () => {
   }, []);
 
   const selectedLead = leads.find((l) => l.id === leadId);
+
+  // Surface the selected account's why-now claims (they feed the why_now token).
+  useEffect(() => {
+    (async () => {
+      if (!selectedLead?.company_name) { setWhyNow([]); return; }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: comp } = await supabase.from("companies").select("id").eq("user_id", user.id).eq("name", selectedLead.company_name).maybeSingle();
+      if (!comp) { setWhyNow([]); return; }
+      const { data: wn } = await supabase.from("why_now_research").select("claims").eq("user_id", user.id).eq("company_id", comp.id).maybeSingle();
+      setWhyNow(Array.isArray(wn?.claims) ? wn.claims : []);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leadId]);
 
   const handleGenerate = async () => {
     if (!leadId || !offer.trim()) {
@@ -206,6 +221,15 @@ export const AiSequenceBuilder = () => {
                   {briefs.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
                 </SelectContent>
               </Select>
+            </div>
+          )}
+
+          {whyNow.filter((c: any) => c.confidence !== "low").length > 0 && (
+            <div className="md:col-span-2 rounded-md border border-border/60 p-3 text-xs space-y-1">
+              <p className="text-muted-foreground">why-now for this account (feeds the why_now token):</p>
+              {whyNow.filter((c: any) => c.confidence !== "low").slice(0, 3).map((c: any, i: number) => (
+                <div key={i} className="flex items-center gap-2"><Badge variant="outline" className="text-[10px]">{c.confidence}</Badge><span>{c.claim}</span></div>
+              ))}
             </div>
           )}
 
