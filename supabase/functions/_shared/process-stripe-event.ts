@@ -387,7 +387,34 @@ export async function processStripeEvent(
       user_id: userId,
       related_entity: invoice.id,
     });
-    log("invoice.payment_failed handled", { email: customer.email });
+    // Count consecutive failures and auto-pause once the threshold is hit.
+    const { data: failures, error: bumpErr } = await supabase.rpc(
+      'billing_bump_failed_invoice_count', { _user_id: userId },
+    );
+    if (bumpErr) log("failed-invoice bump failed", { error: bumpErr.message });
+    const failureCount = Number(failures ?? attemptCount) || attemptCount;
+
+    const cfg = await getAutoPauseConfig(supabase);
+    if (cfg.enabled && failureCount >= cfg.max_failed_invoices) {
+      await autoPauseAccount(
+        supabase, userId, customer.email,
+        `${failureCount} failed invoices (threshold ${cfg.max_failed_invoices}) — ${reason}`,
+        {
+          trigger: 'failed_invoice_threshold',
+          failed_invoice_count: failureCount,
+          threshold: cfg.max_failed_invoices,
+          attempt_count: attemptCount,
+          amount_due: (invoice.amount_due ?? 0) / 100,
+          currency: invoice.currency,
+          decline_reason: reason,
+          invoice_url: invoice.hosted_invoice_url,
+          stripe_customer_id: invoice.customer,
+          stripe_subscription_id: invoice.subscription,
+        },
+      );
+    }
+
+    log("invoice.payment_failed handled", { email: customer.email, failureCount });
     return;
   }
 
