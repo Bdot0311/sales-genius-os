@@ -2905,6 +2905,24 @@ export type Database = {
           },
         ]
       }
+      research_usage: {
+        Row: {
+          count: number
+          day: string
+          user_id: string
+        }
+        Insert: {
+          count?: number
+          day?: string
+          user_id: string
+        }
+        Update: {
+          count?: number
+          day?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       rl_buckets: {
         Row: {
           bucket_key: string
@@ -4510,6 +4528,38 @@ export type Database = {
         }
         Relationships: []
       }
+      why_now_research: {
+        Row: {
+          claims: Json
+          company_id: string
+          id: string
+          researched_at: string
+          user_id: string
+        }
+        Insert: {
+          claims?: Json
+          company_id: string
+          id?: string
+          researched_at?: string
+          user_id: string
+        }
+        Update: {
+          claims?: Json
+          company_id?: string
+          id?: string
+          researched_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "why_now_research_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workflows: {
         Row: {
           action: string
@@ -4850,6 +4900,10 @@ export type Database = {
       consume_rate_limit: {
         Args: { _key: string; _max: number; _window_seconds: number }
         Returns: boolean
+      }
+      consume_research: {
+        Args: { p_cap: number; p_user_id: string }
+        Returns: number
       }
       current_month_start_utc: { Args: never; Returns: string }
       deduct_search_credits: {
