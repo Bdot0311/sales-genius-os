@@ -316,6 +316,10 @@ serve(async (req) => {
               ? icpList(icpSnapshot?.exclude_keywords)
               : undefined,
             limit: target,
+            page: searchPage,
+            // Never relax the saved ICP, and never return people already saved.
+            strict: Boolean(icpSnapshot),
+            exclude_seen: true,
           }),
 
         });
