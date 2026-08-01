@@ -35,11 +35,221 @@
 
 # HeyCatch short links: single-character paths are reserved for channel attribution.
 [[redirects]]
-  from = "/:char"
-  to = "/?utm_source=heycatch&utm_campaign=:char"
+  from = "/a"
+  to = "/?utm_source=heycatch&utm_campaign=a"
   status = 302
   force = true
-  conditions = {}
+
+[[redirects]]
+  from = "/b"
+  to = "/?utm_source=heycatch&utm_campaign=b"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/c"
+  to = "/?utm_source=heycatch&utm_campaign=c"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/d"
+  to = "/?utm_source=heycatch&utm_campaign=d"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/e"
+  to = "/?utm_source=heycatch&utm_campaign=e"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/f"
+  to = "/?utm_source=heycatch&utm_campaign=f"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/g"
+  to = "/?utm_source=heycatch&utm_campaign=g"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/h"
+  to = "/?utm_source=heycatch&utm_campaign=h"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/i"
+  to = "/?utm_source=heycatch&utm_campaign=i"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/j"
+  to = "/?utm_source=heycatch&utm_campaign=j"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/k"
+  to = "/?utm_source=heycatch&utm_campaign=k"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/l"
+  to = "/?utm_source=heycatch&utm_campaign=l"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/m"
+  to = "/?utm_source=heycatch&utm_campaign=m"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/n"
+  to = "/?utm_source=heycatch&utm_campaign=n"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/o"
+  to = "/?utm_source=heycatch&utm_campaign=o"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/p"
+  to = "/?utm_source=heycatch&utm_campaign=p"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/q"
+  to = "/?utm_source=heycatch&utm_campaign=q"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/r"
+  to = "/?utm_source=heycatch&utm_campaign=r"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/s"
+  to = "/?utm_source=heycatch&utm_campaign=s"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/t"
+  to = "/?utm_source=heycatch&utm_campaign=t"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/u"
+  to = "/?utm_source=heycatch&utm_campaign=u"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/v"
+  to = "/?utm_source=heycatch&utm_campaign=v"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/w"
+  to = "/?utm_source=heycatch&utm_campaign=w"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/x"
+  to = "/?utm_source=heycatch&utm_campaign=x"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/y"
+  to = "/?utm_source=heycatch&utm_campaign=y"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/z"
+  to = "/?utm_source=heycatch&utm_campaign=z"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/0"
+  to = "/?utm_source=heycatch&utm_campaign=0"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/1"
+  to = "/?utm_source=heycatch&utm_campaign=1"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/2"
+  to = "/?utm_source=heycatch&utm_campaign=2"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/3"
+  to = "/?utm_source=heycatch&utm_campaign=3"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/4"
+  to = "/?utm_source=heycatch&utm_campaign=4"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/5"
+  to = "/?utm_source=heycatch&utm_campaign=5"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/6"
+  to = "/?utm_source=heycatch&utm_campaign=6"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/7"
+  to = "/?utm_source=heycatch&utm_campaign=7"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/8"
+  to = "/?utm_source=heycatch&utm_campaign=8"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/9"
+  to = "/?utm_source=heycatch&utm_campaign=9"
+  status = 302
+  force = true
+
 
 # SPA fallback — keep last.
 [[redirects]]
