@@ -981,6 +981,45 @@ export type Database = {
         }
         Relationships: []
       }
+      campaign_briefs: {
+        Row: {
+          created_at: string
+          forbidden_claims: string[]
+          id: string
+          name: string
+          offer: string | null
+          pain_by_persona: Json
+          proof: Json
+          replaces: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          forbidden_claims?: string[]
+          id?: string
+          name: string
+          offer?: string | null
+          pain_by_persona?: Json
+          proof?: Json
+          replaces?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          forbidden_claims?: string[]
+          id?: string
+          name?: string
+          offer?: string | null
+          pain_by_persona?: Json
+          proof?: Json
+          replaces?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       campaign_setup_requests: {
         Row: {
           booked_at: string | null
@@ -2301,6 +2340,42 @@ export type Database = {
           created_first_deal?: boolean
           id?: string
           set_up_integration?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      payoff_bank: {
+        Row: {
+          asserts_stat: boolean
+          content: string
+          created_at: string
+          id: string
+          source_of_truth: string | null
+          source_url: string | null
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          asserts_stat?: boolean
+          content: string
+          created_at?: string
+          id?: string
+          source_of_truth?: string | null
+          source_url?: string | null
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          asserts_stat?: boolean
+          content?: string
+          created_at?: string
+          id?: string
+          source_of_truth?: string | null
+          source_url?: string | null
+          type?: string
           updated_at?: string
           user_id?: string
         }
