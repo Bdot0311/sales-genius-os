@@ -32,7 +32,10 @@ export default defineConfig(({ mode }) => ({
     },
   },
   optimizeDeps: {
-    include: ["react", "react-dom"],
+    // Pre-bundle these on server start. Anything discovered later forces a
+    // mid-session re-optimization, which can swap React's prebundled chunk
+    // under an already-mounted tree and throw "Invalid hook call".
+    include: ["react", "react-dom", "@heycatch/sdk", "posthog-js"],
   },
   build: {
     // Enable modulePreload (default) so statically-imported entry chunks
