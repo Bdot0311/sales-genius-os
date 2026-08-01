@@ -1063,7 +1063,7 @@ serve(async (req) => {
 
       if (collectedIcp.length > 0) {
         const seen = new Set<string>();
-        const icpLeads: ScoredLead[] = collectedIcp
+        const dedupedIcp: ScoredLead[] = collectedIcp
           .map(mapRailwayLead)
           .filter((l) => l.contact_name || l.company_name)
           .filter((l) => (icpExcluder ? icpExcluder(l) : true))
@@ -1074,6 +1074,7 @@ serve(async (req) => {
             return true;
           })
           .sort((a, b) => b.scores.overall_score - a.scores.overall_score);
+        const icpLeads = await dropSeenLeads(dedupedIcp);
 
         if (icpLeads.length > 0) {
           console.log(`[icp-fanout] ${variants.length} variants → ${icpLeads.length} unique in-ICP leads`);
