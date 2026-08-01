@@ -13,7 +13,7 @@ import { TargetCompanies } from "@/components/dashboard/TargetCompanies";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { buildExternalFilters, ParsedIcpFilters } from "@/lib/lead-filters";
 import { Sparkles, Loader2, Users, RefreshCw, Lock, CreditCard, ChevronLeft, ChevronRight } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -33,6 +33,7 @@ const Leads = () => {
   const [inputTab, setInputTab] = useState("describe");
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const { status: subscriptionStatus, loading: subscriptionLoading } = useSubscriptionStatus();
   const { credits, canSearch, useCredit } = useSearchCredits();
   
@@ -132,6 +133,19 @@ const Leads = () => {
     fetchExternalLeads(newFilters);
     Analytics.firstSearchRun();
   };
+
+  // Sourcing a committee gap (from the Accounts page) reuses this exact flow.
+  useEffect(() => {
+    const st = location.state as any;
+    if (st?.sourceCompany?.name) {
+      setInputTab("companies");
+      handleCompaniesFindLeads(
+        { companies: [{ name: st.sourceCompany.name, domain: st.sourceCompany.domain }], job_title: st.sourceRole },
+        st.sourceCompany.name,
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <DashboardLayout>
