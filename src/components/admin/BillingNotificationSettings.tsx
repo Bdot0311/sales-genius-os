@@ -18,18 +18,33 @@ const EVENTS: { key: string; label: string; hint: string }[] = [
   { key: "billing_payment_action_required", label: "Card authentication needed", hint: "3DS confirmation pending" },
   { key: "billing_dispute", label: "Chargeback opened", hint: "Dispute filed against a charge" },
   { key: "billing_subscription_paused", label: "Subscription paused", hint: "Paused in Stripe" },
+  { key: "billing_auto_paused", label: "Account auto-paused", hint: "Paused automatically after repeated failed invoices" },
 ];
+
+interface AutoPause {
+  enabled: boolean;
+  max_failed_invoices: number;
+  pause_on_dunning_exhausted: boolean;
+}
 
 interface Settings {
   enabled: boolean;
   recipients: string[];
   events: Record<string, boolean>;
+  auto_pause: AutoPause;
 }
+
+const AUTO_PAUSE_DEFAULTS: AutoPause = {
+  enabled: true,
+  max_failed_invoices: 3,
+  pause_on_dunning_exhausted: true,
+};
 
 const DEFAULTS: Settings = {
   enabled: true,
   recipients: [],
   events: Object.fromEntries(EVENTS.map((e) => [e.key, true])),
+  auto_pause: AUTO_PAUSE_DEFAULTS,
 };
 
 export function BillingNotificationSettings() {
