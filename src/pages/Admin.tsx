@@ -81,6 +81,7 @@ const Admin = () => {
               <Route path="security" element={<AdminSecurity />} />
               <Route path="settings" element={<AdminSettings />} />
               <Route path="alerts" element={<AdminAlerts />} />
+              <Route path="billing" element={<AdminBilling />} />
               <Route path="webhooks" element={<AdminWebhooks />} />
               <Route path="signup-logs" element={<AdminSignupLogs />} />
               <Route path="re-engagement" element={<AdminReEngagement />} />
