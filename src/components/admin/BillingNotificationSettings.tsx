@@ -19,6 +19,7 @@ const EVENTS: { key: string; label: string; hint: string }[] = [
   { key: "billing_dispute", label: "Chargeback opened", hint: "Dispute filed against a charge" },
   { key: "billing_subscription_paused", label: "Subscription paused", hint: "Paused in Stripe" },
   { key: "billing_auto_paused", label: "Account auto-paused", hint: "Paused automatically after repeated failed invoices" },
+  { key: "billing_auto_resumed", label: "Access auto-restored", hint: "Restored automatically after a successful payment or retry" },
 ];
 
 interface AutoPause {
@@ -27,11 +28,24 @@ interface AutoPause {
   pause_on_dunning_exhausted: boolean;
 }
 
+interface Grace {
+  enabled: boolean;
+  days: number;
+}
+
+interface AutoResume {
+  enabled: boolean;
+  on_invoice_paid: boolean;
+  on_subscription_active: boolean;
+}
+
 interface Settings {
   enabled: boolean;
   recipients: string[];
   events: Record<string, boolean>;
   auto_pause: AutoPause;
+  grace: Grace;
+  auto_resume: AutoResume;
 }
 
 const AUTO_PAUSE_DEFAULTS: AutoPause = {
@@ -40,12 +54,23 @@ const AUTO_PAUSE_DEFAULTS: AutoPause = {
   pause_on_dunning_exhausted: true,
 };
 
+const GRACE_DEFAULTS: Grace = { enabled: true, days: 7 };
+
+const AUTO_RESUME_DEFAULTS: AutoResume = {
+  enabled: true,
+  on_invoice_paid: true,
+  on_subscription_active: true,
+};
+
 const DEFAULTS: Settings = {
   enabled: true,
   recipients: [],
   events: Object.fromEntries(EVENTS.map((e) => [e.key, true])),
   auto_pause: AUTO_PAUSE_DEFAULTS,
+  grace: GRACE_DEFAULTS,
+  auto_resume: AUTO_RESUME_DEFAULTS,
 };
+
 
 export function BillingNotificationSettings() {
   const [settings, setSettings] = useState<Settings>(DEFAULTS);
