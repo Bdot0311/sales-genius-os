@@ -21,6 +21,7 @@ import AdminReEngagement from "./admin/ReEngagement";
 import AdminRealtimeHealth from "./admin/RealtimeHealth";
 import AdminActivation from "./admin/Activation";
 import AdminCampaignSetup from "./admin/CampaignSetup";
+import AdminBilling from "./admin/Billing";
 
 const Admin = () => {
   const navigate = useNavigate();
