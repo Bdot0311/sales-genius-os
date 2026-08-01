@@ -31,9 +31,10 @@ export const IcpVersionHistory = ({ icpProfileId }: { icpProfileId: string }) =>
       {open && (
         <ul className="mt-2 space-y-1">
           {versions.map((v) => (
-            <li key={v.version_number} className="text-muted-foreground">
-              v{v.version_number} · {new Date(v.created_at).toLocaleString()}
+            <li key={v.version} className="text-muted-foreground">
+              v{v.version} · {new Date(v.created_at).toLocaleString()}
             </li>
+
           ))}
         </ul>
       )}
