@@ -65,6 +65,7 @@ export function BillingNotificationSettings() {
         enabled: v.enabled !== false,
         recipients: Array.isArray(v.recipients) ? v.recipients : [],
         events: { ...DEFAULTS.events, ...(v.events ?? {}) },
+        auto_pause: { ...AUTO_PAUSE_DEFAULTS, ...(v.auto_pause ?? {}) },
       });
     }
     setLoading(false);
