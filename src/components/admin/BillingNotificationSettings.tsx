@@ -19,6 +19,7 @@ const EVENTS: { key: string; label: string; hint: string }[] = [
   { key: "billing_dispute", label: "Chargeback opened", hint: "Dispute filed against a charge" },
   { key: "billing_subscription_paused", label: "Subscription paused", hint: "Paused in Stripe" },
   { key: "billing_auto_paused", label: "Account auto-paused", hint: "Paused automatically after repeated failed invoices" },
+  { key: "billing_auto_resumed", label: "Access auto-restored", hint: "Restored automatically after a successful payment or retry" },
 ];
 
 interface AutoPause {
@@ -27,11 +28,24 @@ interface AutoPause {
   pause_on_dunning_exhausted: boolean;
 }
 
+interface Grace {
+  enabled: boolean;
+  days: number;
+}
+
+interface AutoResume {
+  enabled: boolean;
+  on_invoice_paid: boolean;
+  on_subscription_active: boolean;
+}
+
 interface Settings {
   enabled: boolean;
   recipients: string[];
   events: Record<string, boolean>;
   auto_pause: AutoPause;
+  grace: Grace;
+  auto_resume: AutoResume;
 }
 
 const AUTO_PAUSE_DEFAULTS: AutoPause = {
@@ -40,12 +54,23 @@ const AUTO_PAUSE_DEFAULTS: AutoPause = {
   pause_on_dunning_exhausted: true,
 };
 
+const GRACE_DEFAULTS: Grace = { enabled: true, days: 7 };
+
+const AUTO_RESUME_DEFAULTS: AutoResume = {
+  enabled: true,
+  on_invoice_paid: true,
+  on_subscription_active: true,
+};
+
 const DEFAULTS: Settings = {
   enabled: true,
   recipients: [],
   events: Object.fromEntries(EVENTS.map((e) => [e.key, true])),
   auto_pause: AUTO_PAUSE_DEFAULTS,
+  grace: GRACE_DEFAULTS,
+  auto_resume: AUTO_RESUME_DEFAULTS,
 };
+
 
 export function BillingNotificationSettings() {
   const [settings, setSettings] = useState<Settings>(DEFAULTS);
@@ -66,6 +91,8 @@ export function BillingNotificationSettings() {
         recipients: Array.isArray(v.recipients) ? v.recipients : [],
         events: { ...DEFAULTS.events, ...(v.events ?? {}) },
         auto_pause: { ...AUTO_PAUSE_DEFAULTS, ...(v.auto_pause ?? {}) },
+        grace: { ...GRACE_DEFAULTS, ...(v.grace ?? {}) },
+        auto_resume: { ...AUTO_RESUME_DEFAULTS, ...(v.auto_resume ?? {}) },
       });
     }
     setLoading(false);
@@ -260,6 +287,98 @@ export function BillingNotificationSettings() {
             />
           </div>
         </div>
+
+        <div className="space-y-3 rounded-lg border border-border p-3">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <Label className="text-sm">Grace period before pausing</Label>
+              <p className="text-xs text-muted-foreground">
+                After a failed payment the customer keeps access for this many days. Pausing only
+                happens once the window ends with the invoice still unpaid.
+              </p>
+            </div>
+            <Switch
+              checked={settings.grace.enabled}
+              disabled={loading}
+              onCheckedChange={(v) => persist({ ...settings, grace: { ...settings.grace, enabled: v } })}
+            />
+          </div>
+
+          <div className="flex items-center justify-between gap-4">
+            <Label className="text-sm" htmlFor="grace-days">
+              Grace period length (days)
+            </Label>
+            <Input
+              id="grace-days"
+              type="number"
+              min={0}
+              max={30}
+              className="w-20"
+              value={settings.grace.days}
+              disabled={loading || !settings.grace.enabled}
+              onChange={(e) =>
+                setSettings({ ...settings, grace: { ...settings.grace, days: Number(e.target.value) } })
+              }
+              onBlur={() => {
+                const n = Math.min(30, Math.max(0, Math.floor(settings.grace.days) || 0));
+                persist({ ...settings, grace: { ...settings.grace, days: n } });
+              }}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-3 rounded-lg border border-border p-3">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <Label className="text-sm">Automatically restore access when payment succeeds</Label>
+              <p className="text-xs text-muted-foreground">
+                Clears the grace period, failure count and auto-pause. Accounts you paused or removed
+                manually are never restored automatically.
+              </p>
+            </div>
+            <Switch
+              checked={settings.auto_resume.enabled}
+              disabled={loading}
+              onCheckedChange={(v) =>
+                persist({ ...settings, auto_resume: { ...settings.auto_resume, enabled: v } })
+              }
+            />
+          </div>
+
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <Label className="text-sm">Resume on paid invoice</Label>
+              <p className="text-xs text-muted-foreground">Triggered by Stripe's invoice.paid event.</p>
+            </div>
+            <Switch
+              checked={settings.auto_resume.on_invoice_paid}
+              disabled={loading || !settings.auto_resume.enabled}
+              onCheckedChange={(v) =>
+                persist({ ...settings, auto_resume: { ...settings.auto_resume, on_invoice_paid: v } })
+              }
+            />
+          </div>
+
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <Label className="text-sm">Resume on successful retry</Label>
+              <p className="text-xs text-muted-foreground">
+                Triggered when Stripe moves a past-due or unpaid subscription back to active.
+              </p>
+            </div>
+            <Switch
+              checked={settings.auto_resume.on_subscription_active}
+              disabled={loading || !settings.auto_resume.enabled}
+              onCheckedChange={(v) =>
+                persist({
+                  ...settings,
+                  auto_resume: { ...settings.auto_resume, on_subscription_active: v },
+                })
+              }
+            />
+          </div>
+        </div>
+
       </CardContent>
     </Card>
   );

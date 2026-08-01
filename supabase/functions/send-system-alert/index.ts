@@ -22,6 +22,7 @@ const BILLING_LABELS: Record<string, string> = {
   billing_dispute: "Chargeback opened",
   billing_subscription_paused: "Subscription paused",
   billing_auto_paused: "Account automatically paused",
+  billing_auto_resumed: "Access automatically restored",
 };
 
 interface BillingSettings {

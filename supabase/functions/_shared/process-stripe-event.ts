@@ -53,8 +53,11 @@ async function findUserId(supabase: SupabaseClient, email: string): Promise<stri
 }
 
 // ---------------------------------------------------------------------------
-// Automatic pause after repeated invoice failures / exhausted dunning.
-// Config lives in admin_settings -> billing_notifications.auto_pause
+// Access-management policy: grace period → auto-pause → auto-resume.
+// Config lives in admin_settings -> billing_notifications
+//   .auto_pause  { enabled, max_failed_invoices, pause_on_dunning_exhausted }
+//   .grace       { enabled, days }
+//   .auto_resume { enabled, on_invoice_paid, on_subscription_active }
 // ---------------------------------------------------------------------------
 interface AutoPauseConfig {
   enabled: boolean;
@@ -62,28 +65,63 @@ interface AutoPauseConfig {
   pause_on_dunning_exhausted: boolean;
 }
 
-const AUTO_PAUSE_DEFAULTS: AutoPauseConfig = {
-  enabled: true,
-  max_failed_invoices: 3,
-  pause_on_dunning_exhausted: true,
+interface GraceConfig {
+  enabled: boolean;
+  days: number;
+}
+
+interface AutoResumeConfig {
+  enabled: boolean;
+  on_invoice_paid: boolean;
+  on_subscription_active: boolean;
+}
+
+interface BillingPolicy {
+  autoPause: AutoPauseConfig;
+  grace: GraceConfig;
+  autoResume: AutoResumeConfig;
+}
+
+const POLICY_DEFAULTS: BillingPolicy = {
+  autoPause: { enabled: true, max_failed_invoices: 3, pause_on_dunning_exhausted: true },
+  grace: { enabled: true, days: 7 },
+  autoResume: { enabled: true, on_invoice_paid: true, on_subscription_active: true },
 };
 
-async function getAutoPauseConfig(supabase: SupabaseClient): Promise<AutoPauseConfig> {
+async function getBillingPolicy(supabase: SupabaseClient): Promise<BillingPolicy> {
   try {
     const { data } = await supabase
       .from('admin_settings')
       .select('setting_value')
       .eq('setting_key', 'billing_notifications')
       .maybeSingle();
-    const cfg = ((data as any)?.setting_value?.auto_pause ?? {}) as Partial<AutoPauseConfig>;
-    const max = Number(cfg.max_failed_invoices);
+    const value = ((data as any)?.setting_value ?? {}) as Record<string, any>;
+    const ap = (value.auto_pause ?? {}) as Partial<AutoPauseConfig>;
+    const gr = (value.grace ?? {}) as Partial<GraceConfig>;
+    const ar = (value.auto_resume ?? {}) as Partial<AutoResumeConfig>;
+
+    const max = Number(ap.max_failed_invoices);
+    const days = Number(gr.days);
     return {
-      enabled: cfg.enabled !== false,
-      max_failed_invoices: Number.isFinite(max) && max >= 1 ? Math.floor(max) : AUTO_PAUSE_DEFAULTS.max_failed_invoices,
-      pause_on_dunning_exhausted: cfg.pause_on_dunning_exhausted !== false,
+      autoPause: {
+        enabled: ap.enabled !== false,
+        max_failed_invoices: Number.isFinite(max) && max >= 1
+          ? Math.floor(max)
+          : POLICY_DEFAULTS.autoPause.max_failed_invoices,
+        pause_on_dunning_exhausted: ap.pause_on_dunning_exhausted !== false,
+      },
+      grace: {
+        enabled: gr.enabled !== false,
+        days: Number.isFinite(days) && days >= 0 ? Math.floor(days) : POLICY_DEFAULTS.grace.days,
+      },
+      autoResume: {
+        enabled: ar.enabled !== false,
+        on_invoice_paid: ar.on_invoice_paid !== false,
+        on_subscription_active: ar.on_subscription_active !== false,
+      },
     };
   } catch (_e) {
-    return AUTO_PAUSE_DEFAULTS;
+    return POLICY_DEFAULTS;
   }
 }
 
@@ -121,6 +159,82 @@ async function autoPauseAccount(
     related_entity: (details.stripe_subscription_id as string) ?? null,
   });
   log("account auto-paused", { email, reason });
+}
+
+/** Starts (or keeps) the grace window after a failed payment. Returns the deadline. */
+async function startGracePeriod(
+  supabase: SupabaseClient,
+  userId: string,
+  days: number,
+  reason: string,
+  details: Record<string, unknown>,
+): Promise<string | null> {
+  const { data, error } = await supabase.rpc('billing_start_grace_period', {
+    _user_id: userId,
+    _days: days,
+    _reason: reason,
+    _details: details,
+  });
+  if (error) {
+    log("grace period start failed", { error: error.message });
+    return null;
+  }
+  return (data as string) ?? null;
+}
+
+/**
+ * Restores access after a successful payment or retry. Only reverses automatic
+ * restrictions — manual admin locks and real cancellations stay in place.
+ */
+async function autoResumeAccount(
+  supabase: SupabaseClient,
+  userId: string,
+  email: string,
+  reason: string,
+  details: Record<string, unknown>,
+) {
+  const policy = await getBillingPolicy(supabase);
+  if (!policy.autoResume.enabled) return;
+
+  const { data: current } = await supabase
+    .from('subscriptions')
+    .select('account_status, auto_paused_at, grace_period_ends_at, failed_invoice_count')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  const wasRestricted =
+    !!current &&
+    (current.account_status === 'paused' ||
+      current.account_status === 'past_due' ||
+      !!current.auto_paused_at ||
+      !!current.grace_period_ends_at ||
+      (current.failed_invoice_count ?? 0) > 0);
+
+  if (!wasRestricted) return;
+
+  const { data: resumed, error } = await supabase.rpc('billing_record_auto_resume', {
+    _user_id: userId,
+    _reason: reason,
+    _details: { email, ...details },
+  });
+  if (error) {
+    log("auto-resume failed", { email, error: error.message });
+    return;
+  }
+  if (resumed !== true) {
+    log("auto-resume skipped (manual lock or cancelled)", { email, status: current?.account_status });
+    return;
+  }
+
+  await logSystemAlert({
+    category: "billing_auto_resumed",
+    severity: "info",
+    message: `${email} regained access automatically — ${reason}`,
+    details: { email, reason, auto_resumed: true, was_auto_paused: !!current?.auto_paused_at, ...details },
+    user_id: userId,
+    related_entity: (details.stripe_subscription_id as string) ?? null,
+  });
+  log("account auto-resumed", { email, reason });
 }
 
 async function resetDunningState(supabase: SupabaseClient, userId: string) {
@@ -281,21 +395,57 @@ export async function processStripeEvent(
       });
     }
 
+    const policy = await getBillingPolicy(supabase);
+
+    // Successful retry: Stripe moved the subscription back to active.
+    if (
+      sub.status === 'active' &&
+      prev.status && ['past_due', 'unpaid', 'incomplete', 'paused'].includes(prev.status) &&
+      policy.autoResume.enabled && policy.autoResume.on_subscription_active
+    ) {
+      await autoResumeAccount(
+        supabase, userId, customer.email,
+        `Payment retry succeeded — subscription is active again (was ${prev.status})`,
+        {
+          trigger: 'subscription_active',
+          previous_status: prev.status,
+          plan: planDetails.plan,
+          stripe_subscription_id: sub.id,
+        },
+      );
+    }
+
     // Stripe flipped the subscription into a dunning/unpaid state.
     if (prev.status && prev.status !== sub.status && ['past_due', 'unpaid', 'incomplete_expired'].includes(sub.status)) {
+      let graceEndsAt: string | null = null;
+      if (sub.status === 'past_due' && policy.grace.enabled && policy.grace.days > 0) {
+        graceEndsAt = await startGracePeriod(
+          supabase, userId, policy.grace.days,
+          `Subscription became ${sub.status}`,
+          {
+            trigger: 'subscription_past_due',
+            target_email: customer.email,
+            previous_status: prev.status,
+            stripe_subscription_id: sub.id,
+          },
+        );
+      }
+
       await logSystemAlert({
         category: "billing_payment_failed", severity: "error",
-        message: `${customer.email} subscription is now ${sub.status} — payment is not going through`,
+        message: `${customer.email} subscription is now ${sub.status} — payment is not going through${graceEndsAt ? `. Access continues until ${graceEndsAt.slice(0, 10)} (grace period)` : ''}`,
         details: {
           email: customer.email, plan: planDetails.plan, stripe_status: sub.status,
           previous_status: prev.status, stripe_subscription_id: sub.id,
+          grace_period_ends_at: graceEndsAt,
         },
         user_id: userId, related_entity: sub.id,
       });
 
-      // Dunning threshold reached: Stripe gave up on collecting.
+      // Dunning threshold reached: Stripe gave up on collecting. Grace does not
+      // apply here — there are no retries left.
       if (['unpaid', 'incomplete_expired'].includes(sub.status)) {
-        const cfg = await getAutoPauseConfig(supabase);
+        const cfg = policy.autoPause;
         if (cfg.enabled && cfg.pause_on_dunning_exhausted) {
           await autoPauseAccount(
             supabase, userId, customer.email,
@@ -311,6 +461,7 @@ export async function processStripeEvent(
         }
       }
     }
+
     return;
   }
 
@@ -362,6 +513,8 @@ export async function processStripeEvent(
       ? new Date(invoice.next_payment_attempt * 1000).toISOString()
       : null;
 
+    const policy = await getBillingPolicy(supabase);
+
     await applyEvent(supabase, userId, event, {
       status: 'past_due',
       account_status: 'past_due',
@@ -369,16 +522,45 @@ export async function processStripeEvent(
       last_payment_error: String(reason).slice(0, 500),
     });
 
+    // Count consecutive failures first — the grace window and pause decision
+    // both depend on it.
+    const { data: failures, error: bumpErr } = await supabase.rpc(
+      'billing_bump_failed_invoice_count', { _user_id: userId },
+    );
+    if (bumpErr) log("failed-invoice bump failed", { error: bumpErr.message });
+    const failureCount = Number(failures ?? attemptCount) || attemptCount;
+
+    // Policy step 1: open a grace window on the first failure. Access stays on
+    // until the deadline passes with the invoice still unpaid.
+    let graceEndsAt: string | null = null;
+    if (policy.grace.enabled && policy.grace.days > 0) {
+      graceEndsAt = await startGracePeriod(
+        supabase, userId, policy.grace.days,
+        `Invoice payment failed — ${reason}`,
+        {
+          trigger: 'invoice_payment_failed',
+          target_email: customer.email,
+          attempt_count: attemptCount,
+          failed_invoice_count: failureCount,
+          next_payment_attempt: nextAttempt,
+          invoice_url: invoice.hosted_invoice_url,
+        },
+      );
+    }
+    const graceActive = !!graceEndsAt && new Date(graceEndsAt).getTime() > Date.now();
+
     await logSystemAlert({
       category: "billing_payment_failed",
       severity: nextAttempt ? "error" : "critical",
-      message: `Payment failed for ${customer.email} — $${((invoice.amount_due ?? 0) / 100).toFixed(2)} (attempt ${attemptCount})${nextAttempt ? `, Stripe retries ${nextAttempt.slice(0, 10)}` : `, no further retries`}`,
+      message: `Payment failed for ${customer.email} — $${((invoice.amount_due ?? 0) / 100).toFixed(2)} (attempt ${attemptCount})${nextAttempt ? `, Stripe retries ${nextAttempt.slice(0, 10)}` : `, no further retries`}${graceActive ? `. Access continues until ${graceEndsAt!.slice(0, 10)} (grace period)` : ''}`,
       details: {
         email: customer.email,
         amount_due: (invoice.amount_due ?? 0) / 100,
         currency: invoice.currency,
         attempt_count: attemptCount,
+        failed_invoice_count: failureCount,
         next_payment_attempt: nextAttempt,
+        grace_period_ends_at: graceEndsAt,
         reason,
         invoice_url: invoice.hosted_invoice_url,
         stripe_customer_id: invoice.customer,
@@ -387,15 +569,11 @@ export async function processStripeEvent(
       user_id: userId,
       related_entity: invoice.id,
     });
-    // Count consecutive failures and auto-pause once the threshold is hit.
-    const { data: failures, error: bumpErr } = await supabase.rpc(
-      'billing_bump_failed_invoice_count', { _user_id: userId },
-    );
-    if (bumpErr) log("failed-invoice bump failed", { error: bumpErr.message });
-    const failureCount = Number(failures ?? attemptCount) || attemptCount;
 
-    const cfg = await getAutoPauseConfig(supabase);
-    if (cfg.enabled && failureCount >= cfg.max_failed_invoices) {
+    // Policy step 2: pause once the failure threshold is hit AND the grace
+    // window is over (or grace is disabled).
+    const cfg = policy.autoPause;
+    if (cfg.enabled && failureCount >= cfg.max_failed_invoices && !graceActive) {
       await autoPauseAccount(
         supabase, userId, customer.email,
         `${failureCount} failed invoices (threshold ${cfg.max_failed_invoices}) — ${reason}`,
@@ -414,9 +592,12 @@ export async function processStripeEvent(
       );
     }
 
-    log("invoice.payment_failed handled", { email: customer.email, failureCount });
+    log("invoice.payment_failed handled", {
+      email: customer.email, failureCount, graceEndsAt, graceActive,
+    });
     return;
   }
+
 
   if (event.type === "invoice.payment_action_required") {
     const invoice = event.data.object as Stripe.Invoice;
@@ -505,9 +686,27 @@ export async function processStripeEvent(
       current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
     });
     await resetDunningState(supabase, userId);
+
+    // Policy: a paid invoice clears the grace period and restores access.
+    const policy = await getBillingPolicy(supabase);
+    if (policy.autoResume.enabled && policy.autoResume.on_invoice_paid) {
+      await autoResumeAccount(
+        supabase, userId, customer.email,
+        'Invoice paid — access restored automatically',
+        {
+          trigger: 'invoice_paid',
+          amount_paid: (invoice.amount_paid ?? 0) / 100,
+          currency: invoice.currency,
+          invoice_url: invoice.hosted_invoice_url,
+          stripe_customer_id: invoice.customer,
+          stripe_subscription_id: subscriptionId,
+        },
+      );
+    }
     log("invoice.paid apply", result);
     return;
   }
+
 
   if (event.type === "customer.subscription.deleted") {
     const sub = event.data.object as Stripe.Subscription;
