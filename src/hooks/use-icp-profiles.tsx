@@ -45,6 +45,10 @@ export interface ICPProfile {
   exclude_industries: string[];
   exclude_titles: string[];
   exclude_keywords: string[];
+  exclude_headcount_ceiling: number | null;
+  exclude_b2c: boolean;
+  exclude_regulated: string[];
+  exclude_non_english: boolean;
   // Strategy
   value_proposition: string | null;
   use_cases: string[];
@@ -92,6 +96,10 @@ export function useICPProfiles() {
         exclude_industries: d.exclude_industries || [],
         exclude_titles: d.exclude_titles || [],
         exclude_keywords: d.exclude_keywords || [],
+        exclude_headcount_ceiling: d.exclude_headcount_ceiling ?? null,
+        exclude_b2c: d.exclude_b2c ?? false,
+        exclude_regulated: d.exclude_regulated || [],
+        exclude_non_english: d.exclude_non_english ?? false,
         use_cases: d.use_cases || [],
         objections: d.objections || [],
         success_metrics: d.success_metrics || [],
