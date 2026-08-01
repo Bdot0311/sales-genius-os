@@ -1317,38 +1317,14 @@ serve(async (req) => {
     }
 
     // Map leads to expected format
-    let leads: ScoredLead[] = rawLeads
+    const mapped: ScoredLead[] = rawLeads
       .map(mapRailwayLead)
       .filter(lead => lead.contact_name || lead.company_name)
       .filter(lead => (icpExcluder ? icpExcluder(lead) : true))
       .sort((a, b) => b.scores.overall_score - a.scores.overall_score);
 
-    // Drop leads the user already has saved, so repeated searches surface new people.
-    if (filters.exclude_seen && leads.length > 0) {
-      const { data: seen } = await supabase
-        .from('leads')
-        .select('contact_email, contact_name, company_name')
-        .eq('user_id', user.id)
-        .limit(5000);
-      const seenEmails = new Set(
-        (seen ?? [])
-          .map((r: any) => String(r.contact_email ?? '').trim().toLowerCase())
-          .filter(Boolean)
-      );
-      const seenPairs = new Set(
-        (seen ?? []).map((r: any) =>
-          `${String(r.contact_name ?? '').trim().toLowerCase()}|${String(r.company_name ?? '').trim().toLowerCase()}`
-        )
-      );
-      const before = leads.length;
-      leads = leads.filter((l) => {
-        const email = String(l.business_email ?? '').trim().toLowerCase();
-        if (email && seenEmails.has(email)) return false;
-        const pair = `${String(l.contact_name ?? '').trim().toLowerCase()}|${String(l.company_name ?? '').trim().toLowerCase()}`;
-        return !seenPairs.has(pair);
-      });
-      console.log(`exclude_seen: dropped ${before - leads.length} already-saved leads`);
-    }
+    const leads = await dropSeenLeads(mapped);
+
 
     console.log('Processed leads count:', leads.length);
     if (leads.length > 0) {
