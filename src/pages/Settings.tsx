@@ -39,6 +39,7 @@ import NotificationsTab from "@/components/settings/NotificationsTab";
 import { AgencyPortalTab } from "@/components/settings/AgencyPortalTab";
 import { LeadScoringTab } from "@/components/settings/LeadScoringTab";
 import { PayoffBankTab } from "@/components/settings/PayoffBankTab";
+import { CampaignBriefsTab } from "@/components/settings/CampaignBriefsTab";
 import { useAdmin } from "@/hooks/use-admin";
 import { SupportAccessCard } from "@/components/settings/SupportAccessCard";
 
@@ -276,6 +277,7 @@ const Settings = () => {
                 <TabsTrigger value="usage" className={tabBase}><TrendingUp className="h-4 w-4" />Usage</TabsTrigger>
                 {showGrowthPlus && <TabsTrigger value="lead-scoring" className={tabBase}><Activity className="h-4 w-4" />Lead Scoring</TabsTrigger>}
                 {showGrowthPlus && <TabsTrigger value="payoff-bank" className={tabBase}><Coins className="h-4 w-4" />Payoff Bank</TabsTrigger>}
+                {showGrowthPlus && <TabsTrigger value="campaign-briefs" className={tabBase}><Activity className="h-4 w-4" />Campaign Briefs</TabsTrigger>}
                 <TabsTrigger value="notifications" className={tabBase}><Bell className="h-4 w-4" />Notifications</TabsTrigger>
                 <TabsTrigger value="white-label" className={tabBase}><Palette className="h-4 w-4" />White Label</TabsTrigger>
                 <TabsTrigger value="agency-portal" className={tabBase}><Building2 className="h-4 w-4" />Agency Portal</TabsTrigger>
@@ -668,6 +670,10 @@ const Settings = () => {
 
           <TabsContent value="payoff-bank" className="space-y-6">
             <PayoffBankTab />
+          </TabsContent>
+
+          <TabsContent value="campaign-briefs" className="space-y-6">
+            <CampaignBriefsTab />
           </TabsContent>
 
           <TabsContent value="credits" className="space-y-6">

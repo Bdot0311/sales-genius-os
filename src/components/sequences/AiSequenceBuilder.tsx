@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -44,6 +45,9 @@ export const AiSequenceBuilder = () => {
   const [loading, setLoading] = useState(false);
   const [touches, setTouches] = useState<Touch[]>([]);
   const [lowPersonalization, setLowPersonalization] = useState(false);
+  const [briefs, setBriefs] = useState<{ id: string; name: string }[]>([]);
+  const [briefId, setBriefId] = useState<string>("");
+  const [rubric, setRubric] = useState<any[] | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -65,6 +69,8 @@ export const AiSequenceBuilder = () => {
       if (profile?.full_name) setSenderName(profile.full_name);
       if (profile?.company_name) setSenderCompany(profile.company_name);
       setLeads((leadRows as any) || []);
+      const { data: briefRows } = await supabase.from("campaign_briefs").select("id, name").eq("user_id", user.id).order("created_at", { ascending: false });
+      if (mounted) setBriefs((briefRows as any) || []);
     })();
     return () => { mounted = false; };
   }, []);
@@ -87,6 +93,7 @@ export const AiSequenceBuilder = () => {
           offer,
           proof,
           signal: signal || (selectedLead?.signals?.[0] ?? ""),
+          briefId: briefId || undefined,
         },
       });
       if (error) throw error;
@@ -96,6 +103,7 @@ export const AiSequenceBuilder = () => {
       if (t.length === 0) throw new Error("No sequence returned");
       setTouches(t);
       setLowPersonalization(Boolean(data?.low_personalization));
+      setRubric(Array.isArray(data?.rubric) ? data.rubric : null);
       toast({ title: "Sequence ready", description: `Generated ${t.length} touches following the cold email engine rules.` });
     } catch (e: any) {
       toast({ title: "Generation failed", description: e?.message || "Try again", variant: "destructive" });
@@ -188,6 +196,19 @@ export const AiSequenceBuilder = () => {
             />
           </div>
 
+          {briefs.length > 0 && (
+            <div className="space-y-2 md:col-span-2">
+              <Label>Campaign brief (optional — grounds copy in your brief)</Label>
+              <Select value={briefId || "none"} onValueChange={(v) => setBriefId(v === "none" ? "" : v)}>
+                <SelectTrigger><SelectValue placeholder="No brief" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No brief</SelectItem>
+                  {briefs.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="md:col-span-2">
             <Button onClick={handleGenerate} disabled={loading} className="w-full">
               {loading ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generating 4 touches…</>) : (<><Sparkles className="w-4 h-4 mr-2" /> Generate sequence</>)}
@@ -220,6 +241,15 @@ export const AiSequenceBuilder = () => {
                 <div className="rounded-md border border-border/60 bg-muted/30 p-3 whitespace-pre-wrap text-sm leading-relaxed">
                   {t.body}
                 </div>
+                {rubric?.[i]?.dimensions && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {Object.entries(rubric[i].dimensions).map(([k, v]: any) => (
+                      <Badge key={k} variant="outline" className={`text-[10px] ${rubric[i].weakest === k ? "border-destructive text-destructive" : ""}`}>
+                        {k.replace(/_/g, " ")} {v.score}/5
+                      </Badge>
+                    ))}
+                  </div>
+                )}
                 <div className="flex items-center gap-2">
                   <Button size="sm" variant="outline" onClick={() => copyTouch(t)}>
                     <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy touch

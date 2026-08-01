@@ -21,6 +21,7 @@ import { AlertCircle, Target, Plus, Trash2, X, Save, Building2, Users, Activity,
 import { toast } from "sonner";
 import { ICPLookalikesDialog } from "@/components/dashboard/ICPLookalikesDialog";
 import { ICPValidationPanel } from "@/components/dashboard/ICPValidationPanel";
+import { IcpVersionHistory } from "@/components/dashboard/IcpVersionHistory";
 
 // ─── Option catalogs ─────────────────────────────────────────────────────────
 const INDUSTRY_OPTIONS = [
@@ -339,7 +340,10 @@ const ICP = () => {
 
           {editing && (
             <div className="mt-6">
-              <div className="mb-4"><ICPValidationPanel profile={editing as any} /></div>
+              <div className="mb-4 space-y-3">
+                <ICPValidationPanel profile={editing as any} />
+                {editing.id && <IcpVersionHistory icpProfileId={editing.id} />}
+              </div>
               <Tabs defaultValue="basics" className="w-full">
                 <TabsList className="grid grid-cols-4 mb-4">
                   <TabsTrigger value="basics">Basics</TabsTrigger>
