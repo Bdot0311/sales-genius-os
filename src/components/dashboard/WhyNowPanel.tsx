@@ -28,7 +28,7 @@ export const WhyNowPanel = ({ companyId }: { companyId: string }) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { setLoading(false); return; }
     const { data } = await supabase.from("why_now_research").select("claims, researched_at").eq("user_id", session.user.id).eq("company_id", companyId).maybeSingle();
-    setClaims(Array.isArray(data?.claims) ? data.claims : []);
+    setClaims(Array.isArray(data?.claims) ? (data.claims as unknown as Claim[]) : []);
     setResearchedAt(data?.researched_at || null);
     setLoading(false);
   };
