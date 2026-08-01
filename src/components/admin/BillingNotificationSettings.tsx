@@ -91,6 +91,8 @@ export function BillingNotificationSettings() {
         recipients: Array.isArray(v.recipients) ? v.recipients : [],
         events: { ...DEFAULTS.events, ...(v.events ?? {}) },
         auto_pause: { ...AUTO_PAUSE_DEFAULTS, ...(v.auto_pause ?? {}) },
+        grace: { ...GRACE_DEFAULTS, ...(v.grace ?? {}) },
+        auto_resume: { ...AUTO_RESUME_DEFAULTS, ...(v.auto_resume ?? {}) },
       });
     }
     setLoading(false);
