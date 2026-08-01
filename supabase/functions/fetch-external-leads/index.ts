@@ -1179,9 +1179,16 @@ serve(async (req) => {
       }
 
       if (!recovered) {
+        // Don't dress an upstream rejection up as a successful empty search —
+        // the user needs to know the provider refused the query (credit refunded).
         await refundCredit('upstream_400');
         return new Response(
-          JSON.stringify({ leads: [], total: 0, success: true }),
+          JSON.stringify({
+            error: 'The lead data provider rejected this search. Your search credit was not used — try simpler filters or a different location.',
+            error_code: 'upstream_rejected',
+            leads: [],
+            total: 0,
+          }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -1192,7 +1199,12 @@ serve(async (req) => {
       console.error('Railway API error:', response.status, errorText);
       await refundCredit(`upstream_${response.status}`);
       return new Response(
-        JSON.stringify({ leads: [], total: 0, success: true }),
+        JSON.stringify({
+          error: 'The lead data provider is unavailable right now. Your search credit was not used — please try again shortly.',
+          error_code: 'upstream_unavailable',
+          leads: [],
+          total: 0,
+        }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
