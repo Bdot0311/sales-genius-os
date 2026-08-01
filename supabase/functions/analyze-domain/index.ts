@@ -137,6 +137,11 @@ async function generateICP(
     if (response.status === 402) throw new Error("ai_credits");
     const errorText = await response.text();
     console.error("[analyze-domain] AI gateway error:", response.status, errorText);
+    // 403 credit_limit_reached is a workspace AI credit cap, not a transient
+    // failure — retrying burns another call and returns the same error.
+    if (response.status === 403 && /credit_limit_reached/i.test(errorText)) {
+      throw new Error("ai_credits");
+    }
     throw new Error("ai_failed");
   }
 
