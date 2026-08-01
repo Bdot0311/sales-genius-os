@@ -22,6 +22,7 @@ const menuItems = [
   { title: "Activity Logs", url: "/admin/activity", icon: Activity },
   { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
   { title: "Alerts", url: "/admin/alerts", icon: Bell },
+  { title: "Billing & Churn", url: "/admin/billing", icon: CreditCard },
   { title: "Webhooks", url: "/admin/webhooks", icon: Webhook },
   { title: "Signup Logs", url: "/admin/signup-logs", icon: UserPlus },
   { title: "Re-engagement", url: "/admin/re-engagement", icon: Mail },
