@@ -195,6 +195,71 @@ export function BillingNotificationSettings() {
             ))}
           </div>
         </div>
+
+        <div className="space-y-3 rounded-lg border border-border p-3">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <Label className="text-sm">Automatically pause unpaid accounts</Label>
+              <p className="text-xs text-muted-foreground">
+                Pauses access after repeated failed invoices and records the reason in the billing log.
+              </p>
+            </div>
+            <Switch
+              checked={settings.auto_pause.enabled}
+              disabled={loading}
+              onCheckedChange={(v) =>
+                persist({ ...settings, auto_pause: { ...settings.auto_pause, enabled: v } })
+              }
+            />
+          </div>
+
+          <div className="flex items-center justify-between gap-4">
+            <Label className="text-sm" htmlFor="max-failed-invoices">
+              Failed invoices before pausing
+            </Label>
+            <Input
+              id="max-failed-invoices"
+              type="number"
+              min={1}
+              max={10}
+              className="w-20"
+              value={settings.auto_pause.max_failed_invoices}
+              disabled={loading || !settings.auto_pause.enabled}
+              onChange={(e) =>
+                setSettings({
+                  ...settings,
+                  auto_pause: {
+                    ...settings.auto_pause,
+                    max_failed_invoices: Number(e.target.value),
+                  },
+                })
+              }
+              onBlur={() => {
+                const n = Math.min(10, Math.max(1, Math.floor(settings.auto_pause.max_failed_invoices) || 3));
+                persist({ ...settings, auto_pause: { ...settings.auto_pause, max_failed_invoices: n } });
+              }}
+            />
+          </div>
+
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <Label className="text-sm">Pause when Stripe stops retrying</Label>
+              <p className="text-xs text-muted-foreground">
+                Also pause as soon as the subscription becomes unpaid after dunning is exhausted.
+              </p>
+            </div>
+            <Switch
+              checked={settings.auto_pause.pause_on_dunning_exhausted}
+              disabled={loading || !settings.auto_pause.enabled}
+              onCheckedChange={(v) =>
+                persist({
+                  ...settings,
+                  auto_pause: { ...settings.auto_pause, pause_on_dunning_exhausted: v },
+                })
+              }
+            />
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
