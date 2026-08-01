@@ -287,6 +287,98 @@ export function BillingNotificationSettings() {
             />
           </div>
         </div>
+
+        <div className="space-y-3 rounded-lg border border-border p-3">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <Label className="text-sm">Grace period before pausing</Label>
+              <p className="text-xs text-muted-foreground">
+                After a failed payment the customer keeps access for this many days. Pausing only
+                happens once the window ends with the invoice still unpaid.
+              </p>
+            </div>
+            <Switch
+              checked={settings.grace.enabled}
+              disabled={loading}
+              onCheckedChange={(v) => persist({ ...settings, grace: { ...settings.grace, enabled: v } })}
+            />
+          </div>
+
+          <div className="flex items-center justify-between gap-4">
+            <Label className="text-sm" htmlFor="grace-days">
+              Grace period length (days)
+            </Label>
+            <Input
+              id="grace-days"
+              type="number"
+              min={0}
+              max={30}
+              className="w-20"
+              value={settings.grace.days}
+              disabled={loading || !settings.grace.enabled}
+              onChange={(e) =>
+                setSettings({ ...settings, grace: { ...settings.grace, days: Number(e.target.value) } })
+              }
+              onBlur={() => {
+                const n = Math.min(30, Math.max(0, Math.floor(settings.grace.days) || 0));
+                persist({ ...settings, grace: { ...settings.grace, days: n } });
+              }}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-3 rounded-lg border border-border p-3">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <Label className="text-sm">Automatically restore access when payment succeeds</Label>
+              <p className="text-xs text-muted-foreground">
+                Clears the grace period, failure count and auto-pause. Accounts you paused or removed
+                manually are never restored automatically.
+              </p>
+            </div>
+            <Switch
+              checked={settings.auto_resume.enabled}
+              disabled={loading}
+              onCheckedChange={(v) =>
+                persist({ ...settings, auto_resume: { ...settings.auto_resume, enabled: v } })
+              }
+            />
+          </div>
+
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <Label className="text-sm">Resume on paid invoice</Label>
+              <p className="text-xs text-muted-foreground">Triggered by Stripe's invoice.paid event.</p>
+            </div>
+            <Switch
+              checked={settings.auto_resume.on_invoice_paid}
+              disabled={loading || !settings.auto_resume.enabled}
+              onCheckedChange={(v) =>
+                persist({ ...settings, auto_resume: { ...settings.auto_resume, on_invoice_paid: v } })
+              }
+            />
+          </div>
+
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <Label className="text-sm">Resume on successful retry</Label>
+              <p className="text-xs text-muted-foreground">
+                Triggered when Stripe moves a past-due or unpaid subscription back to active.
+              </p>
+            </div>
+            <Switch
+              checked={settings.auto_resume.on_subscription_active}
+              disabled={loading || !settings.auto_resume.enabled}
+              onCheckedChange={(v) =>
+                persist({
+                  ...settings,
+                  auto_resume: { ...settings.auto_resume, on_subscription_active: v },
+                })
+              }
+            />
+          </div>
+        </div>
+
       </CardContent>
     </Card>
   );
