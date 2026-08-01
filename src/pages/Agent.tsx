@@ -26,6 +26,7 @@ import { useSubscription } from "@/hooks/use-subscription";
 import { OverviewTab } from "@/components/agent/OverviewTab";
 import { InboxTab } from "@/components/agent/InboxTab";
 import { ConfigTab } from "@/components/agent/ConfigTab";
+import { ObjectionLibrary } from "@/components/agent/ObjectionLibrary";
 import { SettingsTab } from "@/components/agent/SettingsTab";
 import { AgentTestDialog } from "@/components/agent/AgentTestDialog";
 
@@ -441,6 +442,7 @@ const Agent = () => {
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="inbox">Inbox</TabsTrigger>
             <TabsTrigger value="configuration">Configuration</TabsTrigger>
+            <TabsTrigger value="objections">Objections</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
 
@@ -464,6 +466,10 @@ const Agent = () => {
               userId={userId}
               onSaved={setConfig}
             />
+          </TabsContent>
+
+          <TabsContent value="objections">
+            <ObjectionLibrary />
           </TabsContent>
 
           <TabsContent value="settings">
