@@ -40,6 +40,12 @@ const CATEGORY_LABEL: Record<string, string> = {
   stripe_plan_mismatch: "Plan mismatch",
   outreach_send_limit: "Send limit",
   outreach_send_error: "Send error",
+  billing_cancellation: "Cancelled",
+  billing_cancellation_scheduled: "Cancellation scheduled",
+  billing_payment_failed: "Payment failed",
+  billing_payment_action_required: "Card auth needed",
+  billing_dispute: "Chargeback",
+  billing_subscription_paused: "Subscription paused",
 };
 
 export default function AdminAlerts() {
