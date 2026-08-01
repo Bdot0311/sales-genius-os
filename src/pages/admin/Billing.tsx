@@ -196,6 +196,10 @@ export default function AdminBilling() {
         ))}
       </div>
 
+      <BillingNotificationSettings />
+
+
+
       {!loading && issues.length === 0 && (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
