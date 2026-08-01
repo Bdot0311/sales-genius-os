@@ -29,6 +29,10 @@ interface ExternalLeadFilters {
   exclude_titles?: string[];
   exclude_industries?: string[];
   exclude_keywords?: string[];
+  /** When true, never relax ICP filters to backfill results (agent searches). */
+  strict?: boolean;
+  /** When true, drop leads the user already has saved so runs don't repeat. */
+  exclude_seen?: boolean;
 }
 
 const strList = (v: unknown): string[] =>
