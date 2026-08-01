@@ -160,12 +160,14 @@ export async function processStripeEvent(
 
   if (event.type === "customer.subscription.updated") {
     const sub = event.data.object as Stripe.Subscription;
+    const prev = (event.data.previous_attributes ?? {}) as Partial<Stripe.Subscription>;
     const priceId = sub.items.data[0]?.price?.id || '';
     const customer = await stripe.customers.retrieve(sub.customer as string) as Stripe.Customer;
     if (!customer.email) return;
     const userId = await findUserId(supabase, customer.email);
     if (!userId) throw new Error(`user not found for ${customer.email}`);
     const planDetails = PRICE_TO_PLAN[priceId] || PRICE_TO_PLAN['price_1SmM2hFTerosS6hiiDXBDIxl'];
+    const periodEndIso = new Date(sub.current_period_end * 1000).toISOString();
     const result = await applyEvent(supabase, userId, event, {
       plan: planDetails.plan,
       status: sub.status === 'active' ? 'active' : 'inactive',
@@ -173,12 +175,174 @@ export async function processStripeEvent(
       stripe_subscription_id: sub.id,
       search_credits_base: planDetails.credits,
       leads_limit: planDetails.leadsLimit,
+      cancel_at_period_end: !!sub.cancel_at_period_end,
+      canceled_at: sub.canceled_at ? new Date(sub.canceled_at * 1000).toISOString() : null,
       current_period_start: new Date(sub.current_period_start * 1000).toISOString(),
-      current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
+      current_period_end: periodEndIso,
     });
     log("subscription.updated apply", result);
+
+    // Churn signal: user just scheduled a cancellation for the end of the period.
+    if (sub.cancel_at_period_end && prev.cancel_at_period_end === false) {
+      await logSystemAlert({
+        category: "billing_cancellation_scheduled", severity: "error",
+        message: `${customer.email} scheduled a cancellation (${planDetails.plan} plan) — access ends ${periodEndIso.slice(0, 10)}`,
+        details: {
+          email: customer.email, plan: planDetails.plan, access_until: periodEndIso,
+          stripe_customer_id: sub.customer, stripe_subscription_id: sub.id,
+        },
+        user_id: userId, related_entity: sub.id,
+      });
+    }
+
+    // Cancellation reversed.
+    if (!sub.cancel_at_period_end && prev.cancel_at_period_end === true) {
+      await logSystemAlert({
+        category: "billing_cancellation_scheduled", severity: "info",
+        message: `${customer.email} reactivated — cancellation was removed`,
+        details: { email: customer.email, plan: planDetails.plan },
+        user_id: userId, related_entity: sub.id,
+      });
+    }
+
+    // Stripe flipped the subscription into a dunning/unpaid state.
+    if (prev.status && prev.status !== sub.status && ['past_due', 'unpaid', 'incomplete_expired'].includes(sub.status)) {
+      await logSystemAlert({
+        category: "billing_payment_failed", severity: "error",
+        message: `${customer.email} subscription is now ${sub.status} — payment is not going through`,
+        details: {
+          email: customer.email, plan: planDetails.plan, stripe_status: sub.status,
+          previous_status: prev.status, stripe_subscription_id: sub.id,
+        },
+        user_id: userId, related_entity: sub.id,
+      });
+    }
     return;
   }
+
+  if (event.type === "customer.subscription.paused") {
+    const sub = event.data.object as Stripe.Subscription;
+    const customer = await stripe.customers.retrieve(sub.customer as string) as Stripe.Customer;
+    if (!customer.email) return;
+    const userId = await findUserId(supabase, customer.email);
+    if (!userId) return;
+    await applyEvent(supabase, userId, event, { status: 'paused', account_status: 'paused' });
+    await logSystemAlert({
+      category: "billing_subscription_paused", severity: "error",
+      message: `${customer.email} subscription was paused in Stripe`,
+      details: { email: customer.email, stripe_subscription_id: sub.id },
+      user_id: userId, related_entity: sub.id,
+    });
+    return;
+  }
+
+  if (event.type === "customer.subscription.resumed") {
+    const sub = event.data.object as Stripe.Subscription;
+    const customer = await stripe.customers.retrieve(sub.customer as string) as Stripe.Customer;
+    if (!customer.email) return;
+    const userId = await findUserId(supabase, customer.email);
+    if (!userId) return;
+    await applyEvent(supabase, userId, event, { status: 'active', account_status: 'active' });
+    await logSystemAlert({
+      category: "billing_subscription_paused", severity: "info",
+      message: `${customer.email} subscription resumed in Stripe`,
+      details: { email: customer.email, stripe_subscription_id: sub.id },
+      user_id: userId, related_entity: sub.id,
+    });
+    return;
+  }
+
+  if (event.type === "invoice.payment_failed") {
+    const invoice = event.data.object as Stripe.Invoice;
+    const customer = await stripe.customers.retrieve(invoice.customer as string) as Stripe.Customer;
+    if (!customer.email) return;
+    const userId = await findUserId(supabase, customer.email);
+    if (!userId) throw new Error(`user not found for ${customer.email}`);
+
+    const reason =
+      (invoice as any).last_finalization_error?.message ||
+      (invoice as any).payment_intent_error?.message ||
+      "Card was declined or payment could not be completed";
+    const attemptCount = invoice.attempt_count ?? 1;
+    const nextAttempt = invoice.next_payment_attempt
+      ? new Date(invoice.next_payment_attempt * 1000).toISOString()
+      : null;
+
+    await applyEvent(supabase, userId, event, {
+      status: 'past_due',
+      account_status: 'past_due',
+      payment_failed_at: new Date().toISOString(),
+      last_payment_error: String(reason).slice(0, 500),
+    });
+
+    await logSystemAlert({
+      category: "billing_payment_failed",
+      severity: nextAttempt ? "error" : "critical",
+      message: `Payment failed for ${customer.email} — $${((invoice.amount_due ?? 0) / 100).toFixed(2)} (attempt ${attemptCount})${nextAttempt ? `, Stripe retries ${nextAttempt.slice(0, 10)}` : `, no further retries`}`,
+      details: {
+        email: customer.email,
+        amount_due: (invoice.amount_due ?? 0) / 100,
+        currency: invoice.currency,
+        attempt_count: attemptCount,
+        next_payment_attempt: nextAttempt,
+        reason,
+        invoice_url: invoice.hosted_invoice_url,
+        stripe_customer_id: invoice.customer,
+        stripe_subscription_id: invoice.subscription,
+      },
+      user_id: userId,
+      related_entity: invoice.id,
+    });
+    log("invoice.payment_failed handled", { email: customer.email });
+    return;
+  }
+
+  if (event.type === "invoice.payment_action_required") {
+    const invoice = event.data.object as Stripe.Invoice;
+    const customer = await stripe.customers.retrieve(invoice.customer as string) as Stripe.Customer;
+    if (!customer.email) return;
+    const userId = await findUserId(supabase, customer.email);
+    await logSystemAlert({
+      category: "billing_payment_action_required", severity: "error",
+      message: `${customer.email} needs to authenticate their card (3DS) to complete payment`,
+      details: {
+        email: customer.email,
+        amount_due: (invoice.amount_due ?? 0) / 100,
+        invoice_url: invoice.hosted_invoice_url,
+      },
+      user_id: userId, related_entity: invoice.id,
+    });
+    return;
+  }
+
+  if (event.type === "charge.dispute.created") {
+    const dispute = event.data.object as Stripe.Dispute;
+    let email: string | null = null;
+    let userId: string | null = null;
+    try {
+      const charge = await stripe.charges.retrieve(dispute.charge as string);
+      const customerId = charge.customer as string | null;
+      if (customerId) {
+        const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
+        email = customer.email ?? null;
+      }
+      email = email ?? charge.billing_details?.email ?? null;
+      if (email) userId = await findUserId(supabase, email);
+    } catch (e) {
+      log("dispute lookup failed", { error: String(e) });
+    }
+    await logSystemAlert({
+      category: "billing_dispute", severity: "critical",
+      message: `Chargeback opened${email ? ` by ${email}` : ''} — $${((dispute.amount ?? 0) / 100).toFixed(2)} (${dispute.reason})`,
+      details: {
+        email, amount: (dispute.amount ?? 0) / 100, reason: dispute.reason,
+        status: dispute.status, charge_id: dispute.charge,
+      },
+      user_id: userId, related_entity: dispute.id,
+    });
+    return;
+  }
+
 
   if (event.type === "invoice.paid") {
     const invoice = event.data.object as Stripe.Invoice;
@@ -211,6 +375,10 @@ export async function processStripeEvent(
     const result = await applyEvent(supabase, userId, event, {
       search_credits_remaining: newCredits,
       daily_searches_used: 0,
+      status: 'active',
+      account_status: 'active',
+      payment_failed_at: null,
+      last_payment_error: null,
       credits_reset_at: new Date(sub.current_period_end * 1000).toISOString(),
       current_period_start: new Date(sub.current_period_start * 1000).toISOString(),
       current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
@@ -228,10 +396,25 @@ export async function processStripeEvent(
     const result = await applyEvent(supabase, userId, event, {
       status: 'cancelled',
       account_status: 'cancelled',
+      cancel_at_period_end: false,
+      canceled_at: sub.canceled_at ? new Date(sub.canceled_at * 1000).toISOString() : new Date().toISOString(),
     });
     log("subscription.deleted apply", result);
+    await logSystemAlert({
+      category: "billing_cancellation", severity: "critical",
+      message: `${customer.email} cancelled — subscription ended and the account is now inactive`,
+      details: {
+        email: customer.email,
+        stripe_customer_id: sub.customer,
+        stripe_subscription_id: sub.id,
+        cancellation_reason: (sub.cancellation_details as any)?.reason ?? null,
+        cancellation_comment: (sub.cancellation_details as any)?.comment ?? null,
+      },
+      user_id: userId, related_entity: sub.id,
+    });
     return;
   }
+
 
   log("unhandled event type, skipping", { type: event.type });
 }
