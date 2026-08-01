@@ -7,7 +7,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Copy, Sparkles, Wand2 } from "lucide-react";
@@ -15,8 +14,10 @@ import { Loader2, Copy, Sparkles, Wand2 } from "lucide-react";
 interface Touch {
   day: number;
   purpose: string;
-  subject_variations: { curiosity?: string; results?: string; question?: string };
+  subject: string;
   body: string;
+  hook_used?: string;
+  payoff_id?: string | null;
 }
 
 interface LeadOption {
@@ -42,9 +43,7 @@ export const AiSequenceBuilder = () => {
   const [signal, setSignal] = useState("");
   const [loading, setLoading] = useState(false);
   const [touches, setTouches] = useState<Touch[]>([]);
-  const [activeSubject, setActiveSubject] = useState<Record<number, keyof Touch["subject_variations"]>>({
-    0: "curiosity", 1: "curiosity", 2: "curiosity", 3: "curiosity",
-  });
+  const [lowPersonalization, setLowPersonalization] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -92,9 +91,11 @@ export const AiSequenceBuilder = () => {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      if (data?.blocked) throw new Error("could not resolve " + (data.missing_tokens || []).join(", ") + " for this lead. pick a lead with a name and company.");
       const t: Touch[] = Array.isArray(data?.touches) ? data.touches : [];
       if (t.length === 0) throw new Error("No sequence returned");
       setTouches(t);
+      setLowPersonalization(Boolean(data?.low_personalization));
       toast({ title: "Sequence ready", description: `Generated ${t.length} touches following the cold email engine rules.` });
     } catch (e: any) {
       toast({ title: "Generation failed", description: e?.message || "Try again", variant: "destructive" });
@@ -103,9 +104,8 @@ export const AiSequenceBuilder = () => {
     }
   };
 
-  const copyTouch = (t: Touch, subjectKey: keyof Touch["subject_variations"]) => {
-    const subj = t.subject_variations?.[subjectKey] || "";
-    const text = `Subject: ${subj}\n\n${t.body}`;
+  const copyTouch = (t: Touch) => {
+    const text = `Subject: ${t.subject}\n\n${t.body}`;
     navigator.clipboard.writeText(text);
     toast({ title: "Copied", description: `Touch (day ${t.day}) copied to clipboard.` });
   };
@@ -198,6 +198,11 @@ export const AiSequenceBuilder = () => {
 
       {touches.length > 0 && (
         <div className="space-y-4">
+          {lowPersonalization && (
+            <div className="flex items-start gap-2 rounded-md border border-yellow-500/30 bg-yellow-500/10 p-3 text-xs text-yellow-600 dark:text-yellow-500">
+              <span>this prospect had no hook above generic persona pain. review carefully, or route it to a segment-level sequence.</span>
+            </div>
+          )}
           {touches.map((t, i) => (
             <Card key={i} className="border-primary/20">
               <CardHeader className="pb-3">
@@ -207,33 +212,22 @@ export const AiSequenceBuilder = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Tabs
-                  value={activeSubject[i] || "curiosity"}
-                  onValueChange={(v) => setActiveSubject((s) => ({ ...s, [i]: v as any }))}
-                >
-                  <TabsList className="h-8">
-                    <TabsTrigger value="curiosity" className="text-xs h-6">Curiosity</TabsTrigger>
-                    <TabsTrigger value="results" className="text-xs h-6">Results</TabsTrigger>
-                    <TabsTrigger value="question" className="text-xs h-6">Question</TabsTrigger>
-                  </TabsList>
-                  {(["curiosity", "results", "question"] as const).map((k) => (
-                    <TabsContent key={k} value={k} className="pt-2">
-                      <div className="text-xs text-muted-foreground mb-1">Subject</div>
-                      <div className="text-sm font-medium">{t.subject_variations?.[k] || "—"}</div>
-                    </TabsContent>
-                  ))}
-                </Tabs>
+                <div>
+                  <div className="text-xs text-muted-foreground mb-1">Subject</div>
+                  <div className="text-sm font-medium">{t.subject || "—"}</div>
+                  {t.hook_used && <div className="text-[11px] text-muted-foreground mt-1">hook: {t.hook_used}</div>}
+                </div>
                 <div className="rounded-md border border-border/60 bg-muted/30 p-3 whitespace-pre-wrap text-sm leading-relaxed">
                   {t.body}
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button size="sm" variant="outline" onClick={() => copyTouch(t, activeSubject[i] || "curiosity")}>
+                  <Button size="sm" variant="outline" onClick={() => copyTouch(t)}>
                     <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy touch
                   </Button>
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => navigate("/dashboard/outreach", { state: { prefillBody: t.body, prefillSubject: t.subject_variations?.[activeSubject[i] || "curiosity"] || "" } })}
+                    onClick={() => navigate("/dashboard/outreach", { state: { prefillBody: t.body, prefillSubject: t.subject || "" } })}
                   >
                     Open in Compose →
                   </Button>

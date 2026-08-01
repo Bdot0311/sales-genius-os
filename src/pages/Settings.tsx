@@ -38,6 +38,7 @@ import { ChangePasswordCard } from "@/components/settings/ChangePasswordCard";
 import NotificationsTab from "@/components/settings/NotificationsTab";
 import { AgencyPortalTab } from "@/components/settings/AgencyPortalTab";
 import { LeadScoringTab } from "@/components/settings/LeadScoringTab";
+import { PayoffBankTab } from "@/components/settings/PayoffBankTab";
 import { useAdmin } from "@/hooks/use-admin";
 import { SupportAccessCard } from "@/components/settings/SupportAccessCard";
 
@@ -274,6 +275,7 @@ const Settings = () => {
                 <TabsTrigger value="credits" className={tabBase}><Coins className="h-4 w-4" />Credits</TabsTrigger>
                 <TabsTrigger value="usage" className={tabBase}><TrendingUp className="h-4 w-4" />Usage</TabsTrigger>
                 {showGrowthPlus && <TabsTrigger value="lead-scoring" className={tabBase}><Activity className="h-4 w-4" />Lead Scoring</TabsTrigger>}
+                {showGrowthPlus && <TabsTrigger value="payoff-bank" className={tabBase}><Coins className="h-4 w-4" />Payoff Bank</TabsTrigger>}
                 <TabsTrigger value="notifications" className={tabBase}><Bell className="h-4 w-4" />Notifications</TabsTrigger>
                 <TabsTrigger value="white-label" className={tabBase}><Palette className="h-4 w-4" />White Label</TabsTrigger>
                 <TabsTrigger value="agency-portal" className={tabBase}><Building2 className="h-4 w-4" />Agency Portal</TabsTrigger>
@@ -662,6 +664,10 @@ const Settings = () => {
 
           <TabsContent value="lead-scoring" className="space-y-6">
             <LeadScoringTab />
+          </TabsContent>
+
+          <TabsContent value="payoff-bank" className="space-y-6">
+            <PayoffBankTab />
           </TabsContent>
 
           <TabsContent value="credits" className="space-y-6">
