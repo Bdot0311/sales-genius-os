@@ -272,6 +272,14 @@ serve(async (req) => {
     if (config.can_find_leads) {
       try {
         const target = Math.min(Math.max(config.daily_lead_target ?? 10, 1), 25);
+        // Rotate the result page as the agent accumulates leads, so consecutive
+        // runs don't keep pulling the same first page from the provider.
+        const { count: agentLeadCount } = await adminClient
+          .from("leads")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .eq("source", "ai_agent");
+        const searchPage = Math.floor((agentLeadCount ?? 0) / target) + 1;
         const searchRes = await fetch(`${supabaseUrl}/functions/v1/fetch-external-leads`, {
           method: "POST",
           headers: { Authorization: authHeader, "Content-Type": "application/json" },
@@ -308,6 +316,10 @@ serve(async (req) => {
               ? icpList(icpSnapshot?.exclude_keywords)
               : undefined,
             limit: target,
+            page: searchPage,
+            // Never relax the saved ICP, and never return people already saved.
+            strict: Boolean(icpSnapshot),
+            exclude_seen: true,
           }),
 
         });

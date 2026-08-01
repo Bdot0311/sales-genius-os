@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { PLAYBOOK_SYSTEM_RULES } from "../_shared/cold-email-playbook.ts";
+import { buildIcpContext, icpSearchBody } from "../_shared/icp-context.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -248,6 +249,20 @@ const TOOLS = [
   {
     type: "function",
     function: {
+      name: "find_leads",
+      description:
+        "Source brand new leads from the lead network using the user's saved ICP profile, and save them. Every search automatically excludes people already in the account and advances the result page, so repeated calls return different people. Use this when the user asks to find/source/prospect new leads.",
+      parameters: {
+        type: "object",
+        properties: {
+          count: { type: "number", description: "How many new leads to source (1-25, default 10)." },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "run_full_agent",
       description:
         "Trigger a full AI SDR run: source new leads from the ICP, generate sequences and send or queue first touches, then handle replies.",
@@ -479,10 +494,23 @@ serve(async (req) => {
       .limit(40);
 
     // --- context ---------------------------------------------------------
-    const [{ data: config }, { data: profile }] = await Promise.all([
+    const [{ data: config }, { data: profile }, { data: savedIcp }] = await Promise.all([
       admin.from("agent_configs").select("*").eq("user_id", userId).maybeSingle(),
       admin.from("profiles").select("full_name, company_name").eq("id", userId).maybeSingle(),
+      admin
+        .from("icp_profiles")
+        .select("*")
+        .eq("user_id", userId)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
     ]);
+
+    // The agent's saved ICP snapshot is the source of truth; fall back to the
+    // user's most recently updated ICP profile so chat is never ungrounded.
+    const icpSnapshot: Record<string, any> | null =
+      ((config as any)?.icp_snapshot as Record<string, any> | null) ?? (savedIcp as any) ?? null;
+    const icpContext = buildIcpContext(icpSnapshot);
 
     const invokeFn = async (name: string, body: unknown) => {
       const res = await fetch(`${supabaseUrl}/functions/v1/${name}`, {
@@ -995,6 +1023,79 @@ serve(async (req) => {
           };
         }
 
+        case "find_leads": {
+          if (!icpSnapshot) {
+            return {
+              error:
+                "No saved ICP profile found. Ask the user to save an ICP on the ICP page first — searching without it would return off-target leads.",
+            };
+          }
+          const want = Math.min(Math.max(Number(args.count) || 10, 1), 25);
+          // Advance the provider page as the account fills up so back-to-back
+          // searches return different people instead of the same first page.
+          const { count: sourcedCount } = await admin
+            .from("leads")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", userId)
+            .in("source", ["ai_agent", "ai_sdr_chat"]);
+          const page = Math.floor((sourcedCount ?? 0) / want) + 1;
+
+          const res = await invokeFn(
+            "fetch-external-leads",
+            icpSearchBody(icpSnapshot, { limit: want, page }),
+          );
+          const found: any[] = Array.isArray(res?.leads) ? res.leads : [];
+          const saved: string[] = [];
+          for (const l of found) {
+            const email = String(l.business_email ?? "").trim().toLowerCase();
+            const contact = String(l.contact_name ?? "").trim();
+            if (!email && !contact) continue;
+            const { data: inserted, error: insErr } = await admin
+              .from("leads")
+              .insert({
+                user_id: userId,
+                contact_name: contact || email.split("@")[0],
+                contact_email: email || null,
+                company_name: l.company_name || "Unknown",
+                company_website: l.company_domain || null,
+                job_title: l.job_title || null,
+                industry: l.industry || null,
+                company_size: l.company_size || null,
+                linkedin_url: l.linkedin_url || null,
+                icp_score: l.scores?.icp_score ?? null,
+                intent_score: l.scores?.intent_score ?? null,
+                signals: Array.isArray(l.buying_signals) ? l.buying_signals : null,
+                source: "ai_sdr_chat",
+                lead_status: "active",
+                enrichment_status: email ? "enriched" : "pending",
+              })
+              .select("id")
+              .maybeSingle();
+            if (!insErr && inserted?.id) saved.push(inserted.id);
+          }
+
+          toolEvents.push({
+            name,
+            label: `Sourced ${saved.length} new lead${saved.length === 1 ? "" : "s"}`,
+            status: res?.error ? "error" : "ok",
+            detail: res?.error ?? `ICP-matched, page ${page}, duplicates excluded`,
+          });
+
+          return {
+            searched_page: page,
+            returned: found.length,
+            saved_lead_ids: saved,
+            message: res?.message ?? res?.error ?? undefined,
+            leads: found.slice(0, 25).map((l) => ({
+              contact_name: l.contact_name,
+              job_title: l.job_title,
+              company_name: l.company_name,
+              industry: l.industry,
+              icp_score: l.scores?.icp_score ?? null,
+            })),
+          };
+        }
+
         case "run_full_agent": {
           if (!autonomous) {
             const { data: approval, error: apprError } = await admin
@@ -1050,7 +1151,7 @@ HOW TO WORK
 - Do several tool calls in a row when needed. Prefer batching lead ids over one-at-a-time calls. For drafting, ALWAYS pass every lead id in a single draft_outreach call via lead_ids — never fire many parallel draft_outreach calls, that trips the rate limiter.
 - draft_outreach goal must be one of: introduction, follow-up, meeting, demo, proposal. Use "introduction" for first touches.
 - Drafts are auto-saved and rendered in the chat as reviewable cards with Send now / Schedule / Discard buttons. After drafting, tell the user the drafts are below for review — never send them yourself unless the user explicitly asks you to send.
-
+- To source NEW people, use find_leads. It always targets the saved ICP below, excludes anyone already in the account, and advances the result page, so calling it again returns different people. Never make up targeting criteria of your own, and if there is no ICP say so instead of guessing.
 - Never invent leads, metrics, emails or results. Only report what the tools returned.
 - Be concise and specific. Short paragraphs, tight bullet lists, real numbers and names. No emojis, no filler.
 
@@ -1062,7 +1163,9 @@ COLD EMAIL RULES (apply to every draft you write or review)
 ${PLAYBOOK_SYSTEM_RULES}
 
 Company context: ${config?.company_context ?? "not set"}
-Value props: ${(config?.value_props ?? []).join("; ") || "not set"}`;
+Value props: ${(config?.value_props ?? []).join("; ") || "not set"}
+
+${icpContext || "No ICP profile is saved yet. Tell the user to save one on the ICP page before sourcing leads, and do not invent targeting criteria."}`;
 
     const messages: any[] = [
       { role: "system", content: systemPrompt },

@@ -29,6 +29,10 @@ interface ExternalLeadFilters {
   exclude_titles?: string[];
   exclude_industries?: string[];
   exclude_keywords?: string[];
+  /** When true, never relax ICP filters to backfill results (agent searches). */
+  strict?: boolean;
+  /** When true, drop leads the user already has saved so runs don't repeat. */
+  exclude_seen?: boolean;
 }
 
 const strList = (v: unknown): string[] =>
@@ -987,6 +991,34 @@ serve(async (req) => {
 
     const icpExcluder = buildIcpExcluder(filters);
 
+    // Drops leads the user already has saved, so repeated searches surface new people.
+    const dropSeenLeads = async (input: ScoredLead[]): Promise<ScoredLead[]> => {
+      if (!filters.exclude_seen || input.length === 0) return input;
+      const { data: seenRows } = await supabase
+        .from('leads')
+        .select('contact_email, contact_name, company_name')
+        .eq('user_id', user.id)
+        .limit(5000);
+      const seenEmails = new Set(
+        (seenRows ?? [])
+          .map((r: any) => String(r.contact_email ?? '').trim().toLowerCase())
+          .filter(Boolean)
+      );
+      const seenPairs = new Set(
+        (seenRows ?? []).map((r: any) =>
+          `${String(r.contact_name ?? '').trim().toLowerCase()}|${String(r.company_name ?? '').trim().toLowerCase()}`
+        )
+      );
+      const out = input.filter((l) => {
+        const email = String((l as any).business_email ?? '').trim().toLowerCase();
+        if (email && seenEmails.has(email)) return false;
+        const pair = `${String(l.contact_name ?? '').trim().toLowerCase()}|${String(l.company_name ?? '').trim().toLowerCase()}`;
+        return !seenPairs.has(pair);
+      });
+      console.log(`exclude_seen: dropped ${input.length - out.length} already-saved leads`);
+      return out;
+    };
+
     // ─── Full-ICP fan-out: the provider takes one title/industry per query, so ──
     // run one search per ICP title (x industry), merge, de-dupe and apply the
     // ICP's exclusion lists. This is what makes agent searches match the saved ICP
@@ -1031,7 +1063,7 @@ serve(async (req) => {
 
       if (collectedIcp.length > 0) {
         const seen = new Set<string>();
-        const icpLeads: ScoredLead[] = collectedIcp
+        const dedupedIcp: ScoredLead[] = collectedIcp
           .map(mapRailwayLead)
           .filter((l) => l.contact_name || l.company_name)
           .filter((l) => (icpExcluder ? icpExcluder(l) : true))
@@ -1042,6 +1074,7 @@ serve(async (req) => {
             return true;
           })
           .sort((a, b) => b.scores.overall_score - a.scores.overall_score);
+        const icpLeads = await dropSeenLeads(dedupedIcp);
 
         if (icpLeads.length > 0) {
           console.log(`[icp-fanout] ${variants.length} variants → ${icpLeads.length} unique in-ICP leads`);
@@ -1220,7 +1253,7 @@ serve(async (req) => {
       return [];
     };
 
-    if (rawLeads.length === 0 && (requestBody.industry || requestBody.location || requestBody.keywords || requestBody.company_size)) {
+    if (!filters.strict && rawLeads.length === 0 && (requestBody.industry || requestBody.location || requestBody.keywords || requestBody.company_size)) {
       // Retry 1: drop the "soft" filters that most often over-constrain (industry +
       // keywords), keep job_title + location + seniority + company_size. This is the
       // common case for generated ICPs, which carry a non-canonical industry and a
@@ -1284,11 +1317,13 @@ serve(async (req) => {
     }
 
     // Map leads to expected format
-    const leads: ScoredLead[] = rawLeads
+    const mapped: ScoredLead[] = rawLeads
       .map(mapRailwayLead)
       .filter(lead => lead.contact_name || lead.company_name)
       .filter(lead => (icpExcluder ? icpExcluder(lead) : true))
       .sort((a, b) => b.scores.overall_score - a.scores.overall_score);
+
+    const leads = await dropSeenLeads(mapped);
 
 
     console.log('Processed leads count:', leads.length);
