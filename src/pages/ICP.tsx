@@ -20,6 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertCircle, Target, Plus, Trash2, X, Save, Building2, Users, Activity, Ban, Lightbulb, Sparkles, BarChart3, Search } from "lucide-react";
 import { toast } from "sonner";
 import { ICPLookalikesDialog } from "@/components/dashboard/ICPLookalikesDialog";
+import { ICPValidationPanel } from "@/components/dashboard/ICPValidationPanel";
 
 // ─── Option catalogs ─────────────────────────────────────────────────────────
 const INDUSTRY_OPTIONS = [
@@ -76,6 +77,7 @@ const emptyProfile: Partial<ICPProfile> = {
   departments: [], seniority_levels: [], budget_authority: [],
   event_triggers: [], intent_keywords: [], hiring_signals: [], competitor_tools: [],
   exclude_industries: [], exclude_titles: [], exclude_keywords: [],
+  exclude_headcount_ceiling: null, exclude_b2c: false, exclude_regulated: [], exclude_non_english: false,
   value_proposition: null, use_cases: [], objections: [], success_metrics: [],
   preferred_channels: [], customer_examples: null,
   scoring_weights: { title: 25, industry: 25, size: 25, tech: 25 },
@@ -337,6 +339,7 @@ const ICP = () => {
 
           {editing && (
             <div className="mt-6">
+              <div className="mb-4"><ICPValidationPanel profile={editing as any} /></div>
               <Tabs defaultValue="basics" className="w-full">
                 <TabsList className="grid grid-cols-4 mb-4">
                   <TabsTrigger value="basics">Basics</TabsTrigger>
@@ -561,6 +564,31 @@ const ICP = () => {
                         <div className="space-y-2">
                           <Label>Exclude Keywords (in company name or description)</Label>
                           <TagInput value={editing.exclude_keywords || []} onChange={(v) => update({ exclude_keywords: v })} placeholder="e.g., agency, freelance, consulting" />
+                        </div>
+                        <div className="space-y-3 rounded-lg border border-border/60 p-3">
+                          <Label className="text-sm">Hard exclusions</Label>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground">Headcount ceiling (drop accounts above)</Label>
+                            <Input
+                              type="number"
+                              value={editing.exclude_headcount_ceiling ?? ""}
+                              onChange={(e) => update({ exclude_headcount_ceiling: e.target.value ? parseInt(e.target.value) : null })}
+                              placeholder="e.g., 5000"
+                              className="w-40"
+                            />
+                          </div>
+                          <label className="flex items-center gap-2 text-sm cursor-pointer">
+                            <Checkbox checked={!!editing.exclude_b2c} onCheckedChange={(c) => update({ exclude_b2c: !!c })} />
+                            Exclude B2C companies
+                          </label>
+                          <label className="flex items-center gap-2 text-sm cursor-pointer">
+                            <Checkbox checked={!!editing.exclude_non_english} onCheckedChange={(c) => update({ exclude_non_english: !!c })} />
+                            Exclude non-English-primary markets
+                          </label>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground">Exclude regulated verticals</Label>
+                            <TagInput value={editing.exclude_regulated || []} onChange={(v) => update({ exclude_regulated: v })} placeholder="e.g., gambling, defense, tobacco" />
+                          </div>
                         </div>
                         <div className="space-y-2">
                           <Label>Disqualifiers (free-form)</Label>
