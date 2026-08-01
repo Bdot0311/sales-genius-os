@@ -2431,6 +2431,39 @@ export type Database = {
         }
         Relationships: []
       }
+      personas: {
+        Row: {
+          created_at: string
+          function: string | null
+          id: string
+          label: string
+          required: boolean
+          seniority_band: string | null
+          sort_order: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          function?: string | null
+          id?: string
+          label: string
+          required?: boolean
+          seniority_band?: string | null
+          sort_order?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          function?: string | null
+          id?: string
+          label?: string
+          required?: boolean
+          seniority_band?: string | null
+          sort_order?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       placement_results: {
         Row: {
           created_at: string
@@ -4992,6 +5025,7 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: undefined
       }
+      seed_personas: { Args: { p_user_id: string }; Returns: undefined }
       touch_last_active: { Args: never; Returns: undefined }
       trg_activation_ensure_row: {
         Args: { _signed_up: string; _uid: string }
