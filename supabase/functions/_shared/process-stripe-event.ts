@@ -53,8 +53,11 @@ async function findUserId(supabase: SupabaseClient, email: string): Promise<stri
 }
 
 // ---------------------------------------------------------------------------
-// Automatic pause after repeated invoice failures / exhausted dunning.
-// Config lives in admin_settings -> billing_notifications.auto_pause
+// Access-management policy: grace period → auto-pause → auto-resume.
+// Config lives in admin_settings -> billing_notifications
+//   .auto_pause  { enabled, max_failed_invoices, pause_on_dunning_exhausted }
+//   .grace       { enabled, days }
+//   .auto_resume { enabled, on_invoice_paid, on_subscription_active }
 // ---------------------------------------------------------------------------
 interface AutoPauseConfig {
   enabled: boolean;
@@ -62,28 +65,63 @@ interface AutoPauseConfig {
   pause_on_dunning_exhausted: boolean;
 }
 
-const AUTO_PAUSE_DEFAULTS: AutoPauseConfig = {
-  enabled: true,
-  max_failed_invoices: 3,
-  pause_on_dunning_exhausted: true,
+interface GraceConfig {
+  enabled: boolean;
+  days: number;
+}
+
+interface AutoResumeConfig {
+  enabled: boolean;
+  on_invoice_paid: boolean;
+  on_subscription_active: boolean;
+}
+
+interface BillingPolicy {
+  autoPause: AutoPauseConfig;
+  grace: GraceConfig;
+  autoResume: AutoResumeConfig;
+}
+
+const POLICY_DEFAULTS: BillingPolicy = {
+  autoPause: { enabled: true, max_failed_invoices: 3, pause_on_dunning_exhausted: true },
+  grace: { enabled: true, days: 7 },
+  autoResume: { enabled: true, on_invoice_paid: true, on_subscription_active: true },
 };
 
-async function getAutoPauseConfig(supabase: SupabaseClient): Promise<AutoPauseConfig> {
+async function getBillingPolicy(supabase: SupabaseClient): Promise<BillingPolicy> {
   try {
     const { data } = await supabase
       .from('admin_settings')
       .select('setting_value')
       .eq('setting_key', 'billing_notifications')
       .maybeSingle();
-    const cfg = ((data as any)?.setting_value?.auto_pause ?? {}) as Partial<AutoPauseConfig>;
-    const max = Number(cfg.max_failed_invoices);
+    const value = ((data as any)?.setting_value ?? {}) as Record<string, any>;
+    const ap = (value.auto_pause ?? {}) as Partial<AutoPauseConfig>;
+    const gr = (value.grace ?? {}) as Partial<GraceConfig>;
+    const ar = (value.auto_resume ?? {}) as Partial<AutoResumeConfig>;
+
+    const max = Number(ap.max_failed_invoices);
+    const days = Number(gr.days);
     return {
-      enabled: cfg.enabled !== false,
-      max_failed_invoices: Number.isFinite(max) && max >= 1 ? Math.floor(max) : AUTO_PAUSE_DEFAULTS.max_failed_invoices,
-      pause_on_dunning_exhausted: cfg.pause_on_dunning_exhausted !== false,
+      autoPause: {
+        enabled: ap.enabled !== false,
+        max_failed_invoices: Number.isFinite(max) && max >= 1
+          ? Math.floor(max)
+          : POLICY_DEFAULTS.autoPause.max_failed_invoices,
+        pause_on_dunning_exhausted: ap.pause_on_dunning_exhausted !== false,
+      },
+      grace: {
+        enabled: gr.enabled !== false,
+        days: Number.isFinite(days) && days >= 0 ? Math.floor(days) : POLICY_DEFAULTS.grace.days,
+      },
+      autoResume: {
+        enabled: ar.enabled !== false,
+        on_invoice_paid: ar.on_invoice_paid !== false,
+        on_subscription_active: ar.on_subscription_active !== false,
+      },
     };
   } catch (_e) {
-    return AUTO_PAUSE_DEFAULTS;
+    return POLICY_DEFAULTS;
   }
 }
 
@@ -121,6 +159,82 @@ async function autoPauseAccount(
     related_entity: (details.stripe_subscription_id as string) ?? null,
   });
   log("account auto-paused", { email, reason });
+}
+
+/** Starts (or keeps) the grace window after a failed payment. Returns the deadline. */
+async function startGracePeriod(
+  supabase: SupabaseClient,
+  userId: string,
+  days: number,
+  reason: string,
+  details: Record<string, unknown>,
+): Promise<string | null> {
+  const { data, error } = await supabase.rpc('billing_start_grace_period', {
+    _user_id: userId,
+    _days: days,
+    _reason: reason,
+    _details: details,
+  });
+  if (error) {
+    log("grace period start failed", { error: error.message });
+    return null;
+  }
+  return (data as string) ?? null;
+}
+
+/**
+ * Restores access after a successful payment or retry. Only reverses automatic
+ * restrictions — manual admin locks and real cancellations stay in place.
+ */
+async function autoResumeAccount(
+  supabase: SupabaseClient,
+  userId: string,
+  email: string,
+  reason: string,
+  details: Record<string, unknown>,
+) {
+  const policy = await getBillingPolicy(supabase);
+  if (!policy.autoResume.enabled) return;
+
+  const { data: current } = await supabase
+    .from('subscriptions')
+    .select('account_status, auto_paused_at, grace_period_ends_at, failed_invoice_count')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  const wasRestricted =
+    !!current &&
+    (current.account_status === 'paused' ||
+      current.account_status === 'past_due' ||
+      !!current.auto_paused_at ||
+      !!current.grace_period_ends_at ||
+      (current.failed_invoice_count ?? 0) > 0);
+
+  if (!wasRestricted) return;
+
+  const { data: resumed, error } = await supabase.rpc('billing_record_auto_resume', {
+    _user_id: userId,
+    _reason: reason,
+    _details: { email, ...details },
+  });
+  if (error) {
+    log("auto-resume failed", { email, error: error.message });
+    return;
+  }
+  if (resumed !== true) {
+    log("auto-resume skipped (manual lock or cancelled)", { email, status: current?.account_status });
+    return;
+  }
+
+  await logSystemAlert({
+    category: "billing_auto_resumed",
+    severity: "info",
+    message: `${email} regained access automatically — ${reason}`,
+    details: { email, reason, auto_resumed: true, was_auto_paused: !!current?.auto_paused_at, ...details },
+    user_id: userId,
+    related_entity: (details.stripe_subscription_id as string) ?? null,
+  });
+  log("account auto-resumed", { email, reason });
 }
 
 async function resetDunningState(supabase: SupabaseClient, userId: string) {
