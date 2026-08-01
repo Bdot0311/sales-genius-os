@@ -3492,6 +3492,8 @@ export type Database = {
         Row: {
           account_status: string | null
           addon_price_id: string | null
+          auto_pause_reason: string | null
+          auto_paused_at: string | null
           cancel_at_period_end: boolean
           canceled_at: string | null
           created_at: string
@@ -3503,6 +3505,7 @@ export type Database = {
           daily_emails_sent: number
           daily_searches_reset_at: string | null
           daily_searches_used: number
+          failed_invoice_count: number
           id: string
           last_payment_error: string | null
           last_stripe_event_at: string | null
@@ -3526,6 +3529,8 @@ export type Database = {
         Insert: {
           account_status?: string | null
           addon_price_id?: string | null
+          auto_pause_reason?: string | null
+          auto_paused_at?: string | null
           cancel_at_period_end?: boolean
           canceled_at?: string | null
           created_at?: string
@@ -3537,6 +3542,7 @@ export type Database = {
           daily_emails_sent?: number
           daily_searches_reset_at?: string | null
           daily_searches_used?: number
+          failed_invoice_count?: number
           id?: string
           last_payment_error?: string | null
           last_stripe_event_at?: string | null
@@ -3560,6 +3566,8 @@ export type Database = {
         Update: {
           account_status?: string | null
           addon_price_id?: string | null
+          auto_pause_reason?: string | null
+          auto_paused_at?: string | null
           cancel_at_period_end?: boolean
           canceled_at?: string | null
           created_at?: string
@@ -3571,6 +3579,7 @@ export type Database = {
           daily_emails_sent?: number
           daily_searches_reset_at?: string | null
           daily_searches_used?: number
+          failed_invoice_count?: number
           id?: string
           last_payment_error?: string | null
           last_stripe_event_at?: string | null
@@ -4596,6 +4605,18 @@ export type Database = {
           applied: boolean
           reason: string
         }[]
+      }
+      billing_bump_failed_invoice_count: {
+        Args: { _user_id: string }
+        Returns: number
+      }
+      billing_record_auto_pause: {
+        Args: { _details?: Json; _reason: string; _user_id: string }
+        Returns: undefined
+      }
+      billing_reset_failed_invoice_count: {
+        Args: { _user_id: string }
+        Returns: undefined
       }
       check_expiring_api_keys: { Args: never; Returns: undefined }
       claim_stripe_webhook_event: {

@@ -52,6 +52,82 @@ async function findUserId(supabase: SupabaseClient, email: string): Promise<stri
   return null;
 }
 
+// ---------------------------------------------------------------------------
+// Automatic pause after repeated invoice failures / exhausted dunning.
+// Config lives in admin_settings -> billing_notifications.auto_pause
+// ---------------------------------------------------------------------------
+interface AutoPauseConfig {
+  enabled: boolean;
+  max_failed_invoices: number;
+  pause_on_dunning_exhausted: boolean;
+}
+
+const AUTO_PAUSE_DEFAULTS: AutoPauseConfig = {
+  enabled: true,
+  max_failed_invoices: 3,
+  pause_on_dunning_exhausted: true,
+};
+
+async function getAutoPauseConfig(supabase: SupabaseClient): Promise<AutoPauseConfig> {
+  try {
+    const { data } = await supabase
+      .from('admin_settings')
+      .select('setting_value')
+      .eq('setting_key', 'billing_notifications')
+      .maybeSingle();
+    const cfg = ((data as any)?.setting_value?.auto_pause ?? {}) as Partial<AutoPauseConfig>;
+    const max = Number(cfg.max_failed_invoices);
+    return {
+      enabled: cfg.enabled !== false,
+      max_failed_invoices: Number.isFinite(max) && max >= 1 ? Math.floor(max) : AUTO_PAUSE_DEFAULTS.max_failed_invoices,
+      pause_on_dunning_exhausted: cfg.pause_on_dunning_exhausted !== false,
+    };
+  } catch (_e) {
+    return AUTO_PAUSE_DEFAULTS;
+  }
+}
+
+/** Pauses the account and records the reason in the billing log (audit_logs + system_alerts). */
+async function autoPauseAccount(
+  supabase: SupabaseClient,
+  userId: string,
+  email: string,
+  reason: string,
+  details: Record<string, unknown>,
+) {
+  const { data: current } = await supabase
+    .from('subscriptions').select('account_status').eq('user_id', userId).maybeSingle();
+  if (current?.account_status === 'paused' || current?.account_status === 'locked' || current?.account_status === 'cancelled') {
+    log("auto-pause skipped, account already restricted", { email, status: current?.account_status });
+    return;
+  }
+
+  const { error } = await supabase.rpc('billing_record_auto_pause', {
+    _user_id: userId,
+    _reason: reason,
+    _details: { email, ...details },
+  });
+  if (error) {
+    log("auto-pause failed", { email, error: error.message });
+    return;
+  }
+
+  await logSystemAlert({
+    category: "billing_auto_paused",
+    severity: "critical",
+    message: `${email} was automatically paused — ${reason}`,
+    details: { email, reason, auto_paused: true, ...details },
+    user_id: userId,
+    related_entity: (details.stripe_subscription_id as string) ?? null,
+  });
+  log("account auto-paused", { email, reason });
+}
+
+async function resetDunningState(supabase: SupabaseClient, userId: string) {
+  const { error } = await supabase.rpc('billing_reset_failed_invoice_count', { _user_id: userId });
+  if (error) log("failed-invoice reset failed", { error: error.message });
+}
+
 async function applyEvent(
   supabase: SupabaseClient,
   userId: string,
@@ -216,6 +292,24 @@ export async function processStripeEvent(
         },
         user_id: userId, related_entity: sub.id,
       });
+
+      // Dunning threshold reached: Stripe gave up on collecting.
+      if (['unpaid', 'incomplete_expired'].includes(sub.status)) {
+        const cfg = await getAutoPauseConfig(supabase);
+        if (cfg.enabled && cfg.pause_on_dunning_exhausted) {
+          await autoPauseAccount(
+            supabase, userId, customer.email,
+            `Stripe dunning exhausted — subscription became ${sub.status}`,
+            {
+              trigger: 'dunning_exhausted',
+              stripe_status: sub.status,
+              previous_status: prev.status,
+              plan: planDetails.plan,
+              stripe_subscription_id: sub.id,
+            },
+          );
+        }
+      }
     }
     return;
   }
@@ -293,7 +387,34 @@ export async function processStripeEvent(
       user_id: userId,
       related_entity: invoice.id,
     });
-    log("invoice.payment_failed handled", { email: customer.email });
+    // Count consecutive failures and auto-pause once the threshold is hit.
+    const { data: failures, error: bumpErr } = await supabase.rpc(
+      'billing_bump_failed_invoice_count', { _user_id: userId },
+    );
+    if (bumpErr) log("failed-invoice bump failed", { error: bumpErr.message });
+    const failureCount = Number(failures ?? attemptCount) || attemptCount;
+
+    const cfg = await getAutoPauseConfig(supabase);
+    if (cfg.enabled && failureCount >= cfg.max_failed_invoices) {
+      await autoPauseAccount(
+        supabase, userId, customer.email,
+        `${failureCount} failed invoices (threshold ${cfg.max_failed_invoices}) — ${reason}`,
+        {
+          trigger: 'failed_invoice_threshold',
+          failed_invoice_count: failureCount,
+          threshold: cfg.max_failed_invoices,
+          attempt_count: attemptCount,
+          amount_due: (invoice.amount_due ?? 0) / 100,
+          currency: invoice.currency,
+          decline_reason: reason,
+          invoice_url: invoice.hosted_invoice_url,
+          stripe_customer_id: invoice.customer,
+          stripe_subscription_id: invoice.subscription,
+        },
+      );
+    }
+
+    log("invoice.payment_failed handled", { email: customer.email, failureCount });
     return;
   }
 
@@ -383,6 +504,7 @@ export async function processStripeEvent(
       current_period_start: new Date(sub.current_period_start * 1000).toISOString(),
       current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
     });
+    await resetDunningState(supabase, userId);
     log("invoice.paid apply", result);
     return;
   }
