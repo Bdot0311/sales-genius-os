@@ -1163,7 +1163,9 @@ COLD EMAIL RULES (apply to every draft you write or review)
 ${PLAYBOOK_SYSTEM_RULES}
 
 Company context: ${config?.company_context ?? "not set"}
-Value props: ${(config?.value_props ?? []).join("; ") || "not set"}`;
+Value props: ${(config?.value_props ?? []).join("; ") || "not set"}
+
+${icpContext || "No ICP profile is saved yet. Tell the user to save one on the ICP page before sourcing leads, and do not invent targeting criteria."}`;
 
     const messages: any[] = [
       { role: "system", content: systemPrompt },
