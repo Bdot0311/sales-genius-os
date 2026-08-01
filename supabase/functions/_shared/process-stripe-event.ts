@@ -52,6 +52,82 @@ async function findUserId(supabase: SupabaseClient, email: string): Promise<stri
   return null;
 }
 
+// ---------------------------------------------------------------------------
+// Automatic pause after repeated invoice failures / exhausted dunning.
+// Config lives in admin_settings -> billing_notifications.auto_pause
+// ---------------------------------------------------------------------------
+interface AutoPauseConfig {
+  enabled: boolean;
+  max_failed_invoices: number;
+  pause_on_dunning_exhausted: boolean;
+}
+
+const AUTO_PAUSE_DEFAULTS: AutoPauseConfig = {
+  enabled: true,
+  max_failed_invoices: 3,
+  pause_on_dunning_exhausted: true,
+};
+
+async function getAutoPauseConfig(supabase: SupabaseClient): Promise<AutoPauseConfig> {
+  try {
+    const { data } = await supabase
+      .from('admin_settings')
+      .select('setting_value')
+      .eq('setting_key', 'billing_notifications')
+      .maybeSingle();
+    const cfg = ((data as any)?.setting_value?.auto_pause ?? {}) as Partial<AutoPauseConfig>;
+    const max = Number(cfg.max_failed_invoices);
+    return {
+      enabled: cfg.enabled !== false,
+      max_failed_invoices: Number.isFinite(max) && max >= 1 ? Math.floor(max) : AUTO_PAUSE_DEFAULTS.max_failed_invoices,
+      pause_on_dunning_exhausted: cfg.pause_on_dunning_exhausted !== false,
+    };
+  } catch (_e) {
+    return AUTO_PAUSE_DEFAULTS;
+  }
+}
+
+/** Pauses the account and records the reason in the billing log (audit_logs + system_alerts). */
+async function autoPauseAccount(
+  supabase: SupabaseClient,
+  userId: string,
+  email: string,
+  reason: string,
+  details: Record<string, unknown>,
+) {
+  const { data: current } = await supabase
+    .from('subscriptions').select('account_status').eq('user_id', userId).maybeSingle();
+  if (current?.account_status === 'paused' || current?.account_status === 'locked' || current?.account_status === 'cancelled') {
+    log("auto-pause skipped, account already restricted", { email, status: current?.account_status });
+    return;
+  }
+
+  const { error } = await supabase.rpc('billing_record_auto_pause', {
+    _user_id: userId,
+    _reason: reason,
+    _details: { email, ...details },
+  });
+  if (error) {
+    log("auto-pause failed", { email, error: error.message });
+    return;
+  }
+
+  await logSystemAlert({
+    category: "billing_auto_paused",
+    severity: "critical",
+    message: `${email} was automatically paused — ${reason}`,
+    details: { email, reason, auto_paused: true, ...details },
+    user_id: userId,
+    related_entity: (details.stripe_subscription_id as string) ?? null,
+  });
+  log("account auto-paused", { email, reason });
+}
+
+async function resetDunningState(supabase: SupabaseClient, userId: string) {
+  const { error } = await supabase.rpc('billing_reset_failed_invoice_count', { _user_id: userId });
+  if (error) log("failed-invoice reset failed", { error: error.message });
+}
+
 async function applyEvent(
   supabase: SupabaseClient,
   userId: string,
