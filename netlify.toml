@@ -33,6 +33,14 @@
   status = 200
   force = true
 
+# HeyCatch short links: single-character paths are reserved for channel attribution.
+[[redirects]]
+  from = "/:char"
+  to = "/?utm_source=heycatch&utm_campaign=:char"
+  status = 302
+  force = true
+  conditions = {}
+
 # SPA fallback — keep last.
 [[redirects]]
   from = "/*"
