@@ -135,17 +135,27 @@ const Leads = () => {
   };
 
   // Sourcing a committee gap (from the Accounts page) reuses this exact flow.
+  // Wait until credits/subscription have loaded, otherwise canSearch is still
+  // false on the first tick and the search would be blocked with a false
+  // "limit reached" toast.
+  const sourceHandledRef = useRef(false);
   useEffect(() => {
     const st = location.state as any;
-    if (st?.sourceCompany?.name) {
-      setInputTab("companies");
-      handleCompaniesFindLeads(
-        { companies: [{ name: st.sourceCompany.name, domain: st.sourceCompany.domain }], job_title: st.sourceRole },
-        st.sourceCompany.name,
-      );
-    }
+    if (!st?.sourceCompany?.name || sourceHandledRef.current) return;
+    if (creditsLoading || subscriptionLoading) return;
+    sourceHandledRef.current = true;
+    setInputTab("companies");
+    handleCompaniesFindLeads(
+      {
+        companies: [{ name: st.sourceCompany.name, domain: st.sourceCompany.domain }],
+        // Prefer a real job-title query; persona labels ("economic buyer") match
+        // almost nothing upstream.
+        job_title: st.sourceTitle || undefined,
+      },
+      st.sourceCompany.name,
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [creditsLoading, subscriptionLoading, location.state]);
 
   return (
     <DashboardLayout>
