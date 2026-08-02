@@ -22,6 +22,7 @@ import { useSubscriptionStatus } from "@/hooks/use-subscription-status";
 import { useSearchCredits } from "@/hooks/use-search-credits";
 import { useRealtimeTable } from "@/hooks/use-realtime-table";
 import { Analytics } from "@/lib/analytics";
+import { PLAN_SEARCH_LIMITS } from "../../supabase/functions/_shared/plan-limits.ts";
 
 
 const Leads = () => {
@@ -95,7 +96,7 @@ const Leads = () => {
       toast({
         title: isFreeExhausted ? "Free leads used up" : "Search limit reached",
         description: isFreeExhausted
-          ? "You've used your 100 free leads. Upgrade to keep finding prospects."
+          ? `You've used your ${PLAN_SEARCH_LIMITS.free.monthlySearchCredits} free lead searches. Upgrade to keep finding prospects.`
           : "You've reached your search limit. Try again later.",
         variant: "destructive",
       });
@@ -120,7 +121,7 @@ const Leads = () => {
       toast({
         title: isFreeExhausted ? "Free leads used up" : "Search limit reached",
         description: isFreeExhausted
-          ? "You've used your 100 free leads. Upgrade to keep finding prospects."
+          ? `You've used your ${PLAN_SEARCH_LIMITS.free.monthlySearchCredits} free lead searches. Upgrade to keep finding prospects.`
           : "You've reached your search limit. Try again later.",
         variant: "destructive",
       });
@@ -183,7 +184,7 @@ const Leads = () => {
               <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-5">
                 <Sparkles className="w-7 h-7 text-primary" />
               </div>
-              <h2 className="text-2xl font-bold mb-2">You've used your 100 free leads</h2>
+              <h2 className="text-2xl font-bold mb-2">You've used your {PLAN_SEARCH_LIMITS.free.monthlySearchCredits} free lead searches</h2>
               <p className="text-muted-foreground max-w-md mb-6">
                 Nice work exploring the lead engine. Upgrade to a paid plan to unlock thousands of monthly searches and verified contact data.
               </p>
@@ -218,10 +219,8 @@ const Leads = () => {
                   toast({
                     title: isFreeExhausted ? "Free leads used up" : "Search limit reached",
                     description: isFreeExhausted
-                      ? "You've used your 100 free leads. Upgrade to keep finding prospects."
-                      : credits?.remainingCredits === 0
-                        ? "You've used all your search credits. Purchase a credit pack or upgrade your plan to continue."
-                        : "You've reached your daily search limit. Try again tomorrow.",
+                      ? `You've used your ${PLAN_SEARCH_LIMITS.free.monthlySearchCredits} free lead searches. Upgrade to keep finding prospects.`
+                      : "You've reached your daily search limit. Try again tomorrow.",
                     variant: "destructive",
                   });
                   return;

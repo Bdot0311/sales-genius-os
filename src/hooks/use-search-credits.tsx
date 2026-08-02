@@ -171,6 +171,12 @@ export const useSearchCredits = () => {
     useCredit,
     // Admins always have unlimited credits
     hasCredits: isAdmin ? true : (credits ? credits.remainingCredits > 0 : false),
-    canSearch: isAdmin ? true : (credits ? credits.dailySearchesUsed < credits.dailySearchLimit && credits.remainingCredits > 0 : false),
+    // Searching is free on paid plans — a credit is spent when a lead is
+    // revealed — so only the free tier, which spends its allowance per search,
+    // can be stopped by an empty balance. The daily rate limit binds everyone.
+    canSearch: isAdmin ? true : (credits
+      ? credits.dailySearchesUsed < credits.dailySearchLimit
+        && (credits.plan !== 'free' || credits.remainingCredits > 0)
+      : false),
   };
 };

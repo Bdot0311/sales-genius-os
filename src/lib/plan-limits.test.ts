@@ -29,6 +29,40 @@ describe("plan search limits", () => {
     );
   });
 
+  // What outreign.io/pricing advertises, transcribed from src/components/Pricing.tsx
+  // (freePlan, paidPlans and the "Verified Prospects & Email Sends" comparison
+  // rows). Enforcement must match the page: if a tier's published allowance
+  // changes, this fails until PLAN_SEARCH_LIMITS is updated to match.
+  const PUBLISHED = {
+    free: { monthly: 100, daily: 100, maxResults: 25 },
+    starter: { monthly: 1000, daily: 100 },
+    growth: { monthly: 2500, daily: 250 },
+    pro: { monthly: 5000, daily: 500 },
+    agency: { monthly: 15000, daily: 1500 },
+  } as const;
+
+  it.each(PLANS)("enforces the published allowance for %s", (plan) => {
+    expect(PLAN_SEARCH_LIMITS[plan].monthlySearchCredits).toBe(PUBLISHED[plan].monthly);
+    expect(PLAN_SEARCH_LIMITS[plan].dailySearchLimit).toBe(PUBLISHED[plan].daily);
+  });
+
+  it("caps the free tier at the published 25 results per search", () => {
+    // The pricing page states this only for Explore: "Up to 25 results per
+    // search". Paid tiers advertise no per-search cap.
+    expect(PLAN_SEARCH_LIMITS.free.maxResultsPerSearch).toBe(PUBLISHED.free.maxResults);
+  });
+
+  it("never caps a paid tier below the free tier", () => {
+    for (const plan of PLANS.filter((p) => p !== "free")) {
+      expect(PLAN_SEARCH_LIMITS[plan].maxResultsPerSearch).toBeGreaterThanOrEqual(
+        PLAN_SEARCH_LIMITS.free.maxResultsPerSearch,
+      );
+      expect(PLAN_SEARCH_LIMITS[plan].monthlySearchCredits).toBeGreaterThanOrEqual(
+        PLAN_SEARCH_LIMITS.free.monthlySearchCredits,
+      );
+    }
+  });
+
   it("grants the free tier 100 search credits", () => {
     expect(PLAN_SEARCH_LIMITS.free.monthlySearchCredits).toBe(100);
     expect(PLAN_SEARCH_LIMITS.free.dailySearchLimit).toBe(100);
