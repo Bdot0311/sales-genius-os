@@ -150,33 +150,16 @@ export const HeroSection = () => {
           First leads in 2 minutes
         </motion.p>
 
-        <motion.a
-          href="https://smollaunchpad.com/projects/outreign"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center justify-center rounded-xl transition-all duration-200 hover:scale-[1.02] hover:brightness-110"
-          style={{
-            background: "hsl(0 0% 100% / 0.03)",
-            border: "1px solid hsl(261 75% 50% / 0.18)",
-            padding: "0.75rem 1rem",
-          }}
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
+        {/* Social proof line */}
+        <motion.p
+          className="text-xs text-center"
+          style={{ color: "hsl(0 0% 100% / 0.5)" }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.75 }}
-          aria-label="Smol LaunchPad Top 1 Daily Winner"
         >
-          <img
-            src="https://r2.direasy-multi-tenant.focusapps.app/uploads/616d0b1a-3979-4b8c-94d1-b4f1fedd3ead/1783046766775/sjxeszczb3i/top1-dark.svg"
-            alt="Smol LaunchPad Top 1 Daily Winner"
-            width={195}
-            height={60}
-            loading="lazy"
-            fetchPriority="low"
-            decoding="async"
-            className="h-auto w-[195px]"
-          />
-
-        </motion.a>
+          Built in public by a founder running real outbound daily
+        </motion.p>
       </div>
 
       {/* Scroll indicator */}

@@ -180,6 +180,8 @@ export const FooterSection = () => {
                 { href: "https://www.producthunt.com/products/outreign-io?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-outreign-io", src: "https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1174023&theme=dark&t=1781681273997", alt: "OutReign.io - Find who to sell to then close them. | Product Hunt", w: 250, h: 54 },
                 { href: "https://launchllama.co?utm_source=badge&utm_medium=referral", src: "https://speaktechenglish.com/wp-content/uploads/2026/04/Screenshot_2026-04-09_at_17.40.44-removebg-preview.png", alt: "Featured on Launch Llama", w: 200, h: 50 },
                 { href: "https://launchigniter.com/product/outreign-io?ref=badge-outreign-io", src: "https://launchigniter.com/api/badge/outreign-io?theme=dark", alt: "Featured on LaunchIgniter", w: 212, h: 55 },
+                { href: "https://smollaunchpad.com/projects/outreign", src: "https://r2.direasy-multi-tenant.focusapps.app/uploads/616d0b1a-3979-4b8c-94d1-b4f1fedd3ead/1783046766775/sjxeszczb3i/top1-dark.svg", alt: "Smol LaunchPad Top 1 Daily Winner", w: 195, h: 60 },
+                { href: "https://spacerrapps.com/apps/outreign?ref=badge", src: "https://spacerrapps.com/badge/outreign.svg?theme=light", alt: "OutReign is featured on Spacerr", w: 192, h: 54 },
               ].map((b) => (
                 <a
                   key={b.href}
