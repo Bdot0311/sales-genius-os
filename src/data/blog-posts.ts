@@ -20,7 +20,6 @@ export const blogPosts: BlogPost[] = [
     keywords: [
       "b2b lead scoring models startups",
       "lead scoring framework",
-      "icp criteria for revenue operations",
       "fit and intent scoring",
       "lead prioritization outbound",
       "lead scoring model example",
@@ -33,6 +32,8 @@ Most early-stage teams stop at the ICP. They write down "Series A to Series B Sa
 That list is usually thousands of accounts long. Your team can work maybe forty a day. Without a scoring model, the order is decided by whatever the tool exported first — which is a coin flip on your quarter.
 
 Lead scoring is the step between the ICP and the call list. This guide covers the two scoring models that actually work at startup scale, exact point weights you can copy, how to set thresholds, and how to recalibrate once real replies come in.
+
+> Background: start with [what ICP scoring is](/blog/what-is-icp-scoring), then [define your ICP criteria](/blog/b2b-icp-criteria-template) before you build the scoring model below.
 
 ## Why ICP Definitions Alone Don't Prioritize
 
@@ -325,24 +326,25 @@ Infrastructure buys you the inbox. Relevance is what earns the reply.
   },
   {
     slug: "outreign-vs-rocketreach",
-    title: "OutReign vs RocketReach: The Best RocketReach Alternative for Outbound Teams",
-    description: "RocketReach is a powerful contact database. OutReign is a full outbound workflow that finds, scores, and drafts outreach to the right prospects. Here's how to choose.",
+    title: "After RocketReach: Turning a Contact List Into Sent Outreach",
+    description: "RocketReach hands you contact data. Then the real work starts: deciding who is worth emailing, verifying deliverability, and writing the message. Here is the workflow that turns a contact list into sent outreach.",
     publishedAt: "2026-07-18",
     readingTime: "6 min read",
     category: "Comparisons",
     keywords: [
-      "rocketreach alternatives",
-      "rocketreach alternative",
-      "outreign vs rocketreach",
-      "rocketreach vs outreign",
-      "best rocketreach alternative",
+      "contact data to outreach",
+      "what to do after rocketreach",
+      "turn a contact list into outreach",
       "outreach tool with ICP scoring",
       "AI drafted outreach",
+      "prospect qualification workflow",
     ],
     content: `
-RocketReach is one of the most recognizable contact databases for sales and recruiting. If your job is to find email addresses and phone numbers for specific people, it is still a useful tool. But if your job is to figure out *who* to contact, *why* they'll care, and *what* to say, RocketReach leaves most of the work on your desk.
+RocketReach is one of the most recognizable contact databases for sales and recruiting. It is genuinely good at one job: finding an email address or phone number for a specific person. The catch is that a contact list is the start of outbound, not the end. Deciding who is worth emailing, confirming the address will deliver, and writing something worth reading are all still on your desk.
 
-OutReign was built for that second problem. It finds prospects in plain English, scores them by ICP fit, verifies deliverability, and drafts personalized first-touch emails before you send a single message. If you're comparing RocketReach vs OutReign, the real question is whether you want a contact lookup database or a discovery-to-send workflow.
+This post is about that second half of the workflow, the part that begins once a database hands you a name. OutReign was built for it: it finds prospects in plain English, scores them by ICP fit, verifies deliverability, and drafts personalized first-touch emails before you send a single message.
+
+> Comparing the two tools head to head? See the full [OutReign vs RocketReach comparison](/vs-rocketreach). This post is about the workflow that starts once you already have contact data.
 
 ## What RocketReach Does Best
 
@@ -434,23 +436,24 @@ If you need a **RocketReach alternative** that handles lead discovery, scoring, 
   },
   {
     slug: "outreign-vs-instantly",
-    title: "OutReign vs Instantly: The Best Instantly Alternative for Prospect Discovery",
-    description: "Instantly is a powerful cold email sender. OutReign is a full outbound workflow that finds, scores, and drafts outreach to the right prospects first. Here's how to pick between them.",
+    title: "You Have a Cold Email Sender. You Still Need Someone to Email.",
+    description: "A cold email sender like Instantly maximizes delivery, but it does not decide who is worth emailing. Here is how prospect discovery and ICP scoring feed a sending engine so volume lands on the right people.",
     publishedAt: "2026-07-17",
     readingTime: "6 min read",
     category: "Comparisons",
     keywords: [
-      "instantly alternative",
-      "instantly vs outreign",
-      "outreign vs instantly",
-      "best instantly alternative",
+      "lead source for cold email",
+      "finding leads for cold email",
       "cold email tool with lead discovery",
       "prospect discovery vs sending volume",
+      "who to email cold outreach",
     ],
     content: `
-Instantly is one of the best-known names in cold email infrastructure. If your job is to push thousands of emails out through rotating inboxes with warmup, it's hard to beat. But if your job is to figure out *who* to email and *why* they'll care, Instantly leaves most of the work undone.
+Instantly is one of the best-known names in cold email infrastructure. If your job is to push thousands of emails through rotating inboxes with warmup, it is hard to beat. But a sending engine does not decide who is worth emailing, and volume aimed at the wrong list just burns your domain faster.
 
-OutReign was built for the second problem. It finds prospects in plain English, scores them by ICP fit, verifies deliverability, and drafts personalized first-touch emails before you send a single message. If you're comparing Instantly vs OutReign, the real question is whether you want a sending engine or a discovery-to-send workflow.
+This post is about the half of the workflow a sender leaves undone: finding the right prospects, scoring them by fit, and drafting outreach before anything goes out. OutReign was built for exactly that, and it feeds a sending engine like Instantly instead of replacing it.
+
+> Comparing the two tools head to head? See the full [OutReign vs Instantly comparison](/vs-instantly). This post is about how prospect discovery feeds a sending engine like Instantly.
 
 ## What Instantly Does Best
 
@@ -606,9 +609,11 @@ If you want to try this approach: [OutReign is free to start](https://outreign.i
     publishedAt: "2026-05-12",
     readingTime: "4 min read",
     category: "Sales Strategy",
-    keywords: ["ICP scoring", "ideal customer profile", "lead scoring", "outbound sales", "prospect qualification"],
+    keywords: ["ICP scoring", "ideal customer profile", "outbound sales", "prospect qualification"],
     content: `
 ICP scoring is the process of comparing each prospect against your Ideal Customer Profile (ICP) and assigning a match percentage. A score of 90% means the prospect closely matches the company type, role, and signals you care about. A score of 40% means they're a weak fit — worth deprioritizing.
+
+> Related reading: define the profile itself with the [B2B ICP criteria and template guide](/blog/b2b-icp-criteria-template), then turn it into a ranked call list with [lead scoring models for startups](/blog/b2b-lead-scoring-models-startups).
 
 ## Why Manual Qualification Doesn't Scale
 
@@ -1615,13 +1620,14 @@ OutReign pairs SMTP-verified leads with built-in sending discipline so you ramp 
       "b2b icp template",
       "ideal customer profile b2b",
       "icp criteria",
-      "icp scoring",
       "revenue operations icp",
       "b2b ideal customer profile template",
       "sales ideal customer profile",
     ],
     content: `
 Your Ideal Customer Profile is a written definition of the *account* most likely to buy, expand, and stay. It is not a wish list, not a persona, and not the market you serve today — it is the narrow subset of that market where your product wins on repeat.
+
+> New to the concept? Start with [what ICP scoring is](/blog/what-is-icp-scoring). Ready to rank prospects against this profile? See [lead scoring models for startups](/blog/b2b-lead-scoring-models-startups).
 
 Get it wrong and every downstream RevOps decision compounds the mistake: territories are drawn around the wrong accounts, SDRs prospect the wrong logos, CS scrambles to save contracts that should never have been signed. Get it right and outbound reply rates, win rate, and net retention move together.
 
