@@ -57,12 +57,15 @@ const slotToTitle = (s: Slot): string | undefined => {
   return title || undefined;
 };
 
-// Reuse the existing Target-companies prospect flow to fill a gap.
-const sourceRoleState = (s: Slot, companyName: string, companyDomain?: string) => ({
-  sourceCompany: { name: companyName, domain: companyDomain },
-  sourceRole: s.label,
-  sourceTitle: slotToTitle(s),
-});
+  // Reuse the existing Target-companies prospect flow to fill a gap.
+  const sourceRole = (s: Slot) =>
+    navigate("/dashboard/leads", {
+      state: {
+        sourceCompany: { name: companyName, domain: companyDomain },
+        sourceRole: s.label,
+        sourceTitle: slotToTitle(s),
+      },
+    });
 
   if (loading) return <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" />mapping the committee...</div>;
   if (gated) return (
