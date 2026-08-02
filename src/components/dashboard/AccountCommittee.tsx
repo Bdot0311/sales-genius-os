@@ -42,9 +42,27 @@ export const AccountCommittee = ({ companyId, companyName, companyDomain }: { co
     return () => { mounted = false; };
   }, [companyId]);
 
-  // Reuse the existing Target-companies prospect flow to fill a gap.
-  const sourceRole = (label: string) =>
-    navigate("/dashboard/leads", { state: { sourceCompany: { name: companyName, domain: companyDomain }, sourceRole: label } });
+// Persona slots are described by seniority band + function, not by real job
+// titles. Turn them into a title query the lead provider can actually match.
+const SENIORITY: Record<string, string> = { cxo: "Chief", vp: "VP", director: "Director", manager: "Manager", ic: "" };
+const FUNCTION: Record<string, string> = {
+  exec: "Executive", sales: "Sales", marketing: "Marketing",
+  technical: "Engineering", finance: "Finance", operations: "Operations", hr: "People",
+};
+const slotToTitle = (s: Slot): string | undefined => {
+  const band = SENIORITY[(s.seniority_band || "").toLowerCase()] ?? "";
+  const fn = FUNCTION[(s.function || "").toLowerCase()] ?? "";
+  if ((s.function || "").toLowerCase() === "exec") return band === "Chief" ? "CEO" : "VP";
+  const title = `${band} ${fn}`.trim();
+  return title || undefined;
+};
+
+// Reuse the existing Target-companies prospect flow to fill a gap.
+const sourceRoleState = (s: Slot, companyName: string, companyDomain?: string) => ({
+  sourceCompany: { name: companyName, domain: companyDomain },
+  sourceRole: s.label,
+  sourceTitle: slotToTitle(s),
+});
 
   if (loading) return <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" />mapping the committee...</div>;
   if (gated) return (
