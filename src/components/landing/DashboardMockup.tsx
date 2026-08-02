@@ -63,11 +63,10 @@ const DashboardMockup = () => {
             <span>Dashboard</span>
           </div>
           </div>
-          <div
-            className="w-1.5 h-1.5 rounded-full bg-primary transition-opacity duration-300"
-              style={{ opacity: 0.8 }}
-            aria-hidden="true"
-          />
+          <span className="flex items-center gap-1.5 text-[9px] font-medium uppercase tracking-wider text-muted-foreground/70">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary" style={{ opacity: 0.8 }} aria-hidden="true" />
+            Simulated preview
+          </span>
         </div>
 
         <div className="relative grid grid-cols-1 gap-3 p-3 sm:grid-cols-2 sm:p-4">

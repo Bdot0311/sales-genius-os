@@ -4,6 +4,7 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/supabase/vite";
 import { visualizer } from "rollup-plugin-visualizer";
+import { seoRoutesPlugin } from "./vite-plugin-seo-routes";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -14,6 +15,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mcpPlugin(),
+    seoRoutesPlugin(),
     mode === "development" && componentTagger(),
     process.env.ANALYZE === "true" &&
       visualizer({

@@ -39,10 +39,11 @@ const PAGES: Record<string, string> = {
 };
 
 const PLANS = [
-  { name: "Free", price: "$0/mo", includes: "10 lead searches per month, sample data, 1 seat" },
-  { name: "Starter", price: "$39/mo", includes: "1,000 prospects, lead enrichment, outreach studio" },
-  { name: "Growth", price: "$89/mo", includes: "2,500 prospects, sequences, AI roleplay coach" },
-  { name: "Pro", price: "$179/mo", includes: "5,000 prospects, full AI SDR agent, deliverability suite" },
+  { name: "Explore (Free)", price: "$0/mo", includes: "100 lead searches per month, up to 25 results per search, 100 emails per month, view-only dashboard. No AI SDR agent." },
+  { name: "Starter", price: "$39/mo", includes: "1,000 prospects per month, 100 per day, 50,000 emails per month, ICP Builder (3 profiles), AI email generator" },
+  { name: "Growth", price: "$89/mo", includes: "2,500 prospects per month, 250 per day, 250,000 emails per month, unified reply inbox, ICP lookalike discovery, Growth AI SDR agent (10 replies per day)" },
+  { name: "Pro", price: "$179/mo", includes: "5,000 prospects per month, 500 per day, 1,000,000 emails per month, sequence branching and A/B testing, CRM integrations, Pro AI SDR agent (50 replies per day)" },
+  { name: "Agency", price: "$249/mo", includes: "15,000 prospects per month, 1,500 per day, unlimited emails, white-label client portal, Elite AI SDR agent (200 replies per day)" },
 ];
 
 const text = (value: string) => ({ content: [{ type: "text" as const, text: value }] });
@@ -69,8 +70,8 @@ const tools: WebMcpTool[] = [
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
     execute: async () =>
       text(
-        PLANS.map((p) => `${p.name} — ${p.price} — ${p.includes}`).join("\n") +
-          "\nAll paid plans include a 14-day free trial. No credit card required to start.",
+        PLANS.map((p) => `${p.name}: ${p.price}: ${p.includes}`).join("\n") +
+          "\nPricing scales by prospects contacted per month, not per seat. Seats are unlimited on paid plans. Monthly and yearly billing are both available; yearly saves 20%. All four paid plans start with a 14-day free trial and a 30-day money-back guarantee. Explore is free forever and needs no credit card. One-time credit packs: 200 prospects for $37.50, 400 for $67.50, 600 for $90.",
       ),
   },
   {

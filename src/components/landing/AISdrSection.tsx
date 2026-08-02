@@ -348,10 +348,10 @@ export const AISdrSection = () => {
                   </div>
                   <div
                     className="flex items-center gap-1.5 px-2 py-1 rounded-md"
-                    style={{ background: "hsl(142 70% 45% / 0.1)", border: "1px solid hsl(142 70% 45% / 0.2)" }}
+                    style={{ background: "hsl(261 75% 55% / 0.1)", border: "1px solid hsl(261 75% 55% / 0.2)" }}
                   >
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                    <span className="text-[10px] font-medium text-green-400">Live</span>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: "hsl(261 75% 68%)" }} />
+                    <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: "hsl(261 75% 72%)" }}>Simulated preview</span>
                   </div>
                 </div>
 

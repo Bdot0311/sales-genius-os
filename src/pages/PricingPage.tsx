@@ -25,7 +25,8 @@ const PricingPage = () => {
     { question: "Do unused credits roll over?", answer: "On monthly plans, Starter credits reset each cycle while Growth and Pro credits roll over. Yearly plans grant your full annual pool upfront." },
     { question: "Is there a free plan?", answer: "Yes. The Explore plan includes 100 lead searches per month, up to 25 results per search, and 100 emails per month — enough to genuinely stress-test the platform before you upgrade." },
     { question: "Can I upgrade, downgrade, or cancel anytime?", answer: "Yes. Upgrades are instant. Downgrades apply at end of billing cycle." },
-    { question: "Is there a money-back guarantee?", answer: "Yes, 30-day money-back guarantee on all paid plans." },
+    { question: "Is there a free trial?", answer: "Yes. All four paid plans start with a 14-day free trial. You add a card at signup, explore the full plan, and you are not charged until day 15. Cancel before then and you pay nothing. The Explore plan is free forever and needs no trial." },
+    { question: "Is there a money-back guarantee?", answer: "Yes, 30-day money-back guarantee on all paid plans. The trial and the guarantee work together: 14 days to try a plan before your first charge, then 30 days after it to request a full refund." },
   ];
 
   const valueProps = [
@@ -55,7 +56,7 @@ const PricingPage = () => {
     <>
       <SEOHead
         title="OutReign Pricing — Outbound Plans for Founders & SDR Teams"
-        description="OutReign plans from $0 to $179/month. Find B2B leads, verify emails, and draft outreach without the tool sprawl. No credit card to start."
+        description="OutReign plans from $0 to $249/month. Find B2B leads, verify emails, and draft outreach without the tool sprawl. 14-day free trial on paid plans."
         keywords="OutReign pricing, outbound sales software pricing, lead generation pricing, B2B prospecting tool cost, Apollo alternative pricing, cold email tool pricing"
         ogImage="https://outreign.io/outreign-social-card.jpg"
       />
@@ -114,7 +115,7 @@ const PricingPage = () => {
               <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
                 <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-medium text-white/70 backdrop-blur-sm sm:text-xs">
                   <span className="h-1.5 w-1.5 rounded-full bg-violet-400" />
-                  Pricing · 30-day money-back guarantee
+                  Pricing · 14-day free trial on paid plans · 30-day money-back guarantee
                 </span>
 
                 <h1
@@ -232,21 +233,28 @@ const PricingPage = () => {
                 color: "hsl(0 0% 95%)",
               }}
             >
-              All plans include
+              The OutReign platform
             </h2>
             <div className="max-w-3xl mx-auto">
+              <p className="text-center text-sm mb-6" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
+                Availability by tier. See the comparison table above for the full breakdown.
+              </p>
               <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-3">
                 {[
-                  "ICP Builder with lead match scoring",
-                  "Email Quality Pre-Send Checker",
-                  "Unified Reply Inbox with AI drafts",
-                  "Sequence branching and A/B testing",
-                  "Deliverability dashboard and warmup",
-                  "Visual pipeline management",
-                  "AI Sales Coach",
-                  "Real-time analytics dashboard",
-                  "Secure data encryption",
-                  "Help center access",
+                  "ICP Builder with fit and intent scoring · Starter and up",
+                  "Email quality pre-send checker · Starter and up",
+                  "AI email generator · Starter and up",
+                  "Unified reply inbox with AI drafts · Growth and up",
+                  "Deliverability dashboard and warmup · Growth and up",
+                  "ICP lookalike discovery · Growth and up",
+                  "AI Sales Coach · Growth and up",
+                  "Sequence branching and A/B testing · Pro and up",
+                  "CRM integrations · Pro and up",
+                  "White-label client portal and branded reports · Agency",
+                  "Visual pipeline · view-only on Explore, full on paid",
+                  "Real-time analytics dashboard · all plans",
+                  "Secure data encryption · all plans",
+                  "Help center access · all plans",
                 ].map((feature) => (
                   <li key={feature} className="flex items-start gap-3 text-sm">
                     <span

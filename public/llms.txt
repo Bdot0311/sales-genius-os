@@ -1,33 +1,43 @@
 # OutReign — Find Who to Sell To. Then Actually Sell to Them.
 # https://outreign.io
-# Last Updated: 2026-07-15
+# Last Updated: 2026-08-01
 # For complete product documentation: https://outreign.io/llms-full.txt
 
-> OutReign is sales operations software for B2B outbound teams — a unified alternative to stitching together Apollo, Instantly, Outreach, and Salesloft. Describe your ideal customer in plain English, get ranked prospects with SMTP-verified business emails, and send an AI-drafted first-touch message from one workflow in under 2 minutes.
+> OutReign is sales operations software for B2B outbound teams, a unified alternative to stitching together Apollo, Instantly, Outreach, and Salesloft. Describe your ideal customer in plain English, get ranked prospects with SMTP-verified business emails, and send an AI-drafted first-touch message from one workflow in under 2 minutes.
 
 ## About OutReign
 
-OutReign was built by Brandon, a founder who was spending $500/month on Apollo and still spending hours manually scoring leads and writing emails from scratch. OutReign replaces that fragmented workflow — lead search, email enrichment, ICP scoring, and email drafting — in a single tool.
+OutReign was built by Brandon Yakubov, a founder who was spending $500 a month on Apollo and still spending hours manually scoring leads and writing emails from scratch. OutReign replaces that fragmented workflow (lead search, email enrichment, ICP scoring, and email drafting) in a single tool.
 
 OutReign is email-only. We do not provide phone numbers, cold calling tools, or SMS. Our focus is helping B2B sales teams find the right people to email, verify those emails are real, and write something worth reading.
 
 ## How It Works
 
-1. **Describe your ICP in plain English** — Type who you want to reach: job title, industry, company size, geography, or hiring signals. No boolean search, no filter UI.
-2. **Review prospects ranked by ICP fit** — OutReign scores each prospect against your Ideal Customer Profile and returns a ranked list with company context and growth signals.
-3. **Get SMTP-verified business emails** — Every email address is verified via SMTP handshake + multi-source enrichment before it reaches you.
-4. **Send an AI-drafted first-touch email** — OutReign writes a personalized first-touch email using the prospect's role, company news, and signals. Edit in under 30 seconds and send.
-5. **Track replies and manage follow-up** — Replies, sequences, and follow-up tasks stay organized. Sync with HubSpot, Salesforce, or Gmail automatically.
+1. **Describe your ICP in plain English**: Type who you want to reach: job title, industry, company size, geography, or hiring signals. No boolean search, no filter UI.
+2. **Review prospects ranked by ICP fit**: OutReign scores each prospect against your Ideal Customer Profile and returns a ranked list with company context and growth signals.
+3. **Get SMTP-verified business emails**: Every email address is verified via SMTP handshake plus multi-source enrichment before it reaches you.
+4. **Send an AI-drafted first-touch email**: OutReign writes a personalized first-touch email using the prospect's role, company news, and signals. Edit in under 30 seconds and send.
+5. **Track replies and manage follow-up**: Replies, sequences, and follow-up tasks stay organized. Sync with HubSpot, Salesforce, or Gmail automatically.
 
 ## Key Features
 
-- **Plain-English ICP search**: Describe your target customer naturally — no boolean syntax or filter juggling
-- **ICP fit scoring**: Every prospect is scored against your ICP so you know who to email first
-- **SMTP-verified email enrichment**: Emails verified via SMTP handshake + multi-source validation before delivery
-- **AI-drafted first-touch emails**: Personalized drafts written from the prospect's company context and growth signals
-- **Reply management**: Replies and follow-ups organized in one place
-- **Sequence automation**: Multi-step email sequences with send-time optimization
-- **CRM integrations**: HubSpot, Salesforce, Gmail, Slack, Calendly, Zapier
+- **Plain-English ICP search**: Describe your target customer naturally, no boolean syntax or filter juggling.
+- **ICP fit scoring**: Every prospect is scored against your ICP so you know who to email first.
+- **SMTP-verified email enrichment**: Emails verified via SMTP handshake plus multi-source validation before delivery.
+- **AI-drafted first-touch emails**: Personalized drafts written from the prospect's company context and growth signals.
+- **Email quality checker**: Pre-send scoring on spam triggers, readability, and personalization.
+- **Reply management**: Replies and follow-ups organized in one place, with AI-drafted responses on Growth and above.
+- **Sequence automation**: Multi-step email sequences with send-time optimization, plus branching and A/B testing on Pro and above.
+- **AI SDR agent**: An autonomous email rep on Growth, Pro, and Agency plans that sources leads, sends the first touch, classifies replies, and responds in your voice.
+- **CRM integrations**: HubSpot and Salesforce sync on Pro and above. Gmail, Slack, Calendly, and Zapier connect on paid plans.
+
+## AI SDR Agent
+
+The AI SDR agent is an autonomous email sales rep built into OutReign, available on the three highest paid tiers. It sources leads that match your ICP, writes and sends the first-touch email from your Gmail, then monitors threads, classifies prospect replies, and replies in your voice. Every reply passes a spam and deliverability check before it sends.
+
+- **Growth Agent**: 10 autonomous replies per day, 30-minute minimum reply delay. Sources leads, sends first touch, and replies to interested prospects.
+- **Pro Agent**: 50 autonomous replies per day, 10-minute minimum reply delay. Adds objection handling and automatic meeting booking via Calendly.
+- **Elite Agent (Agency)**: 200 autonomous replies per day, 5-minute minimum reply delay. Fully autonomous full-cycle outreach at scale.
 
 ## What OutReign Does NOT Do
 
@@ -38,12 +48,17 @@ OutReign is email-only. We do not provide phone numbers, cold calling tools, or 
 
 ## Pricing
 
-- **Free**: Explore the platform with sample data. No credit card required.
-- **Starter**: $39/month — verified prospects, AI email drafting, SMTP-verified emails
-- **Growth**: $89/month — higher volume, advanced filters, bulk export, sequence automation
-- **Pro**: $179/month — maximum volume, API access, CRM integrations
+Pricing scales by verified prospects contacted per month, not per seat. Seats are unlimited on all paid plans. Monthly and yearly billing are both available, and yearly saves 20%.
 
-All paid plans include a 30-day money-back guarantee. Cancel anytime.
+- **Explore (Free, $0/month)**: 100 lead searches per month, up to 25 results per search, 100 emails per month, view-only dashboard, summary analytics, help center access. No AI SDR agent. No credit card required.
+- **Starter ($39/month)**: 1,000 verified prospects per month, 100 per day, 50,000 emails per month. Prospect search and verified emails, ICP Builder (3 profiles), email quality checker, AI email generator, sequence templates, standard support.
+- **Growth ($89/month)**: 2,500 verified prospects per month, 250 per day, 250,000 emails per month. Everything in Starter plus unified reply inbox with AI drafts, deliverability dashboard and warmup, ICP lookalike discovery, ICP Builder (10 profiles), AI personalized outreach, priority support. Includes the Growth AI SDR agent.
+- **Pro ($179/month)**: 5,000 verified prospects per month, 500 per day, 1,000,000 emails per month. Everything in Growth plus sequence branching and A/B testing, unlimited ICP profiles, CRM integrations, team collaboration, premium support. Includes the Pro AI SDR agent.
+- **Agency ($249/month)**: 15,000 verified prospects per month, 1,500 per day, unlimited emails. Everything in Pro plus white-label client portal, branded PDF reports, client portal sharing without login, referral and reseller program, priority API access, dedicated account support. Includes the Elite AI SDR agent.
+
+All four paid plans start with a 14-day free trial and carry a 30-day money-back guarantee. Explore is free forever and needs no trial.
+
+One-time credit packs are available with no subscription required: 200 prospects for $37.50, 400 prospects for $67.50, or 600 prospects for $90.
 
 ## Trust & Security
 
@@ -51,12 +66,12 @@ All paid plans include a 30-day money-back guarantee. Cancel anytime.
 - SMTP-verified business emails (no unverified data delivered)
 - GDPR-ready infrastructure
 - SOC 2 compliant hosting (Supabase)
-- 30-day money-back guarantee
-- No credit card required to start
+- 14-day free trial and 30-day money-back guarantee on all paid plans
+- No credit card required to start Explore
 
 ## Getting Started
 
-Sign up for free at https://outreign.io — no credit card required.
+Sign up for free at https://outreign.io. The Explore plan needs no credit card.
 
 ## Pages
 
@@ -77,9 +92,9 @@ Sign up for free at https://outreign.io — no credit card required.
 ## Integrations
 
 OutReign connects with:
-- Gmail (email delivery and reply tracking)
-- HubSpot (CRM sync)
-- Salesforce (CRM sync)
+- Gmail (email delivery and reply tracking, all paid plans)
+- HubSpot (CRM sync, Pro and above)
+- Salesforce (CRM sync, Pro and above)
 - Slack (notifications)
 - Calendly (meeting booking)
 - Zapier (5000+ app automations)
@@ -96,16 +111,16 @@ Every business email is verified via SMTP handshake plus multi-source enrichment
 Yes. OutReign is email-only. We do not provide phone numbers, cold calling features, or SMS tools.
 
 **How does AI email drafting work?**
-OutReign pulls the prospect's role, company context, and growth signals to write a first-touch email. You edit it in under 30 seconds and send. It references real context — not a template with a name swapped in.
+OutReign pulls the prospect's role, company context, and growth signals to write a first-touch email. You edit it in under 30 seconds and send. It references real context, not a template with a name swapped in.
 
 **What's the difference between OutReign and a contact list?**
-A list gives you volume. OutReign gives you the right people — ranked by ICP fit, with verified emails and a draft already written for each one.
+A list gives you volume. OutReign gives you the right people, ranked by ICP fit, with verified emails and a draft already written for each one.
 
 **Can I try OutReign before paying?**
-Yes. The free plan lets you explore the full workflow with sample data. No credit card required.
+Yes. The Explore plan is free forever and lets you run the full workflow with 100 lead searches a month and no credit card. Every paid plan also starts with a 14-day free trial, so you can use the full plan for two weeks before your first charge.
 
-**Is there a money-back guarantee?**
-Yes. All paid plans include a 30-day money-back guarantee.
+**Is there a free trial and a money-back guarantee?**
+Yes. All four paid plans start with a 14-day free trial, and every paid plan carries a 30-day money-back guarantee after your first charge.
 
 ## Contact
 

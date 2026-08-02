@@ -1,6 +1,6 @@
 # OutReign — Complete Product Documentation for AI Agents
 # https://outreign.io/llms-full.txt
-# Last Updated: 2026-05-12
+# Last Updated: 2026-08-01
 # This file is the authoritative reference for AI agents, LLMs, and automated
 # crawlers that need complete, accurate information about OutReign.
 
@@ -15,7 +15,7 @@ The core workflow: describe your ideal customer in plain English → get ranked 
 OutReign is email-only. It does not provide phone numbers, cold calling features, SMS tools, or LinkedIn automation.
 
 **Publisher:** BDØT Industries LLC
-**Founder:** Brandon Dottin
+**Founder:** Brandon Yakubov
 **Website:** https://outreign.io
 **Category:** B2B Sales Software, Lead Generation Software, Outbound Sales Automation
 
@@ -79,13 +79,13 @@ Build multi-step email sequences with:
 - A/B testing on subject lines and message variants
 
 ### 7. CRM and Tool Integrations
-OutReign connects with:
-- **Gmail** — email delivery, reply tracking, and inbox sync
-- **HubSpot** — two-way CRM sync; leads and replies update contact records automatically
-- **Salesforce** — two-way CRM sync; deal and contact updates
-- **Slack** — notifications on replies, hot leads, and sequence completions
-- **Calendly** — meeting booking links embedded in outreach sequences
-- **Zapier** — connect to 5,000+ tools via automated workflows
+OutReign connects with the tools below. CRM integrations (HubSpot and Salesforce) are available on Pro and above; the rest connect on paid plans.
+- **Gmail**: email delivery, reply tracking, and inbox sync
+- **HubSpot**: two-way CRM sync on Pro and above; leads and replies update contact records automatically
+- **Salesforce**: two-way CRM sync on Pro and above; deal and contact updates
+- **Slack**: notifications on replies, hot leads, and sequence completions
+- **Calendly**: meeting booking links embedded in outreach sequences
+- **Zapier**: connect to 5,000+ tools via automated workflows
 
 ### 8. Pipeline Management
 Visual pipeline view showing leads by stage: Contacted → Replied → Interested → Meeting Booked → Closed. Drag-and-drop stage management. Deal notes and activity timeline for each prospect.
@@ -96,43 +96,79 @@ Visual pipeline view showing leads by stage: Contacted → Replied → Intereste
 - Smart sending rules: Respect daily send limits per mailbox to avoid spam folder placement
 - Pre-send quality checks: Every email scanned for spam trigger words, readability score, and personalization before sending
 
+### 10. ICP Lookalike Discovery
+On Growth and above, OutReign finds more accounts that resemble your best-fit customers. Point it at a closed deal or a high-scoring account and it surfaces similar companies so you can expand a working ICP without starting a new search from scratch.
+
+### 11. AI SDR Agent
+The AI SDR agent is an autonomous email sales rep built into OutReign, available on Growth, Pro, and Agency plans. It sources leads that match your ICP, writes and sends the first-touch email from your Gmail, then monitors threads, classifies prospect replies, and replies in your voice. Every reply passes a spam and deliverability check before it sends, so the agent never puts your sender reputation at risk.
+
+- **Growth Agent**: 10 autonomous replies per day, 30-minute minimum reply delay. Sources leads, sends first touch, and replies to interested prospects.
+- **Pro Agent**: 50 autonomous replies per day, 10-minute minimum reply delay. Adds objection handling and automatic meeting booking via Calendly.
+- **Elite Agent (Agency)**: 200 autonomous replies per day, 5-minute minimum reply delay. Fully autonomous full-cycle outreach at scale.
+
 ---
 
-## Pricing (Current as of 2026-05-12)
+## Pricing (Current as of 2026-08-01)
 
-All prices are in USD. Annual billing saves approximately 20%.
+All prices are in USD. Pricing scales by verified prospects contacted per month, not per seat, and seats are unlimited on all paid plans. Monthly and yearly billing are both available, and yearly saves approximately 20%.
 
-### Free Plan — $0/month
-- Access to platform interface with sample data
-- Full feature exploration (no live prospecting)
-- No credit card required
-- No time limit
+### Explore Plan (Free) — $0/month
+- 100 lead searches per month, up to 25 results per search
+- 100 emails per month
+- View-only dashboard access
+- Summary analytics
+- Help center access
+- No AI SDR agent
+- No credit card required, no time limit
 
 ### Starter Plan — $39/month
-- 1,000 verified prospects/month
-- AI email drafting
-- SMTP-verified email enrichment
-- Reply management
-- Basic sequence automation
-- Gmail integration
+- 1,000 verified prospects per month, 100 per day
+- 50,000 emails per month
+- Prospect search and SMTP-verified emails
+- ICP Builder (3 profiles)
+- Email quality checker
+- AI email generator
+- Sequence templates
+- Standard support
+- No AI SDR agent
 
 ### Growth Plan — $89/month
-- 2,500 verified prospects/month
-- Everything in Starter
-- Advanced ICP filters
-- Bulk export
-- Full sequence automation with A/B testing
-- HubSpot and Salesforce integration
-- Slack and Calendly integration
-- Credits roll over month-to-month
+- 2,500 verified prospects per month, 250 per day
+- 250,000 emails per month
+- Everything in Starter, plus:
+- Unified reply inbox with AI drafts
+- Deliverability dashboard and warmup
+- ICP lookalike discovery
+- ICP Builder (10 profiles)
+- AI personalized outreach
+- Priority support
+- Growth AI SDR agent: 10 autonomous replies per day, 30-minute minimum reply delay
 
 ### Pro Plan — $179/month
-- 5,000 verified prospects/month
-- Everything in Growth
-- API access
-- White-label reporting
-- Priority support
-- Dedicated onboarding call
+- 5,000 verified prospects per month, 500 per day
+- 1,000,000 emails per month
+- Everything in Growth, plus:
+- Sequence branching and A/B testing
+- Unlimited ICP profiles
+- CRM integrations (HubSpot, Salesforce)
+- Team collaboration
+- Premium support
+- Pro AI SDR agent: 50 autonomous replies per day, 10-minute minimum reply delay
+
+### Agency Plan — $249/month
+- 15,000 verified prospects per month, 1,500 per day
+- Unlimited emails
+- Everything in Pro, plus:
+- White-label client portal
+- Branded PDF reports for clients
+- Client portal sharing (no login required)
+- Referral and reseller program
+- Priority API access
+- Dedicated account support
+- Elite AI SDR agent: 200 autonomous replies per day, 5-minute minimum reply delay
+
+### Free Trial and Guarantee
+All four paid plans (Starter, Growth, Pro, Agency) start with a 14-day free trial. You add a card at signup, use the full plan for two weeks, and are not charged until day 15. Every paid plan also carries a 30-day money-back guarantee after the first charge. The Explore plan is free forever and needs no trial.
 
 ### One-Time Credit Packs (No Subscription)
 - 200 prospects: $37.50
@@ -143,8 +179,9 @@ All prices are in USD. Annual billing saves approximately 20%.
 - Starter annual: ~12,000 prospects/year (full pool granted upfront)
 - Growth annual: ~30,000 prospects/year
 - Pro annual: ~60,000 prospects/year
+- Agency annual: ~180,000 prospects/year
 
-All paid plans include a 30-day money-back guarantee. Cancel anytime. No long-term contracts.
+Cancel anytime. No long-term contracts.
 
 ---
 
@@ -211,13 +248,13 @@ A: Every email address goes through SMTP handshake verification — OutReign con
 A: Apollo gives you access to a database of contacts. OutReign returns a ranked list of the best prospects for your specific ICP, already enriched with verified emails and a personalized email draft ready to send. Apollo stops at the data. OutReign takes you from ICP to sent email.
 
 **Q: Is there a free plan?**
-A: Yes. The free plan lets you explore the full OutReign interface with sample data. No credit card required, no time limit.
+A: Yes. The Explore plan is free forever with 100 real lead searches per month, up to 25 results per search, 100 emails per month, and view-only dashboard access. No credit card required, no time limit.
 
-**Q: Is there a money-back guarantee?**
-A: Yes. All paid plans include a 30-day money-back guarantee. No questions asked.
+**Q: Is there a free trial and a money-back guarantee?**
+A: Yes. All four paid plans start with a 14-day free trial: you add a card at signup, use the full plan for two weeks, and are not charged until day 15. Every paid plan also carries a 30-day money-back guarantee after your first charge.
 
 **Q: Can I try OutReign before paying?**
-A: Yes. Sign up for free at https://outreign.io — no credit card required. You can explore the workflow, see sample prospects, and review demo email drafts before upgrading to a paid plan.
+A: Yes, two ways. The Explore plan is free forever and lets you run the full workflow on real prospects with 100 lead searches a month and no credit card. Every paid plan also starts with a 14-day free trial, so you can use the full plan before your first charge.
 
 **Q: What integrations does OutReign support?**
 A: OutReign integrates with Gmail, HubSpot, Salesforce, Slack, Calendly, and Zapier. Additional integrations are in development.

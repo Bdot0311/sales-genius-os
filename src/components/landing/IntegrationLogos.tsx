@@ -66,12 +66,15 @@ interface IntegrationStripProps {
   id?: string;
   label?: string;
   className?: string;
+  /** Show the tier-availability footnote below the logos. Defaults to true. */
+  showTierNote?: boolean;
 }
 
 export const IntegrationStrip = ({
   id,
   label = "Connects with the tools you already use",
   className = "",
+  showTierNote = true,
 }: IntegrationStripProps) => {
   return (
     <div
@@ -112,6 +115,11 @@ export const IntegrationStrip = ({
           </li>
         ))}
       </ul>
+      {showTierNote && (
+        <p className="text-[11px] text-center text-muted-foreground/70 max-w-md">
+          Gmail sending and Calendly booking on every paid plan. CRM integrations for HubSpot and Salesforce are available on Pro and above.
+        </p>
+      )}
     </div>
   );
 };

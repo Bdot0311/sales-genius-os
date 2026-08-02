@@ -97,8 +97,7 @@ export const OrganizationSchema = ({
     },
     "image": logo,
     "sameAs": [
-      "https://twitter.com/outreign",
-      "https://www.linkedin.com/company/outreign",
+      "https://x.com/buildwitbrandon",
       "https://www.linkedin.com/in/buildwitbrandon"
     ],
     "contactPoint": [
@@ -123,7 +122,7 @@ export const OrganizationSchema = ({
     },
     "founder": {
       "@type": "Person",
-      "name": "Brandon Dottin",
+      "name": "Brandon Yakubov",
       "url": "https://www.linkedin.com/in/buildwitbrandon",
       "jobTitle": "Founder & CEO"
     },
@@ -162,17 +161,17 @@ export const SoftwareApplicationSchema = () => {
     "offers": {
       "@type": "AggregateOffer",
       "lowPrice": "0",
-      "highPrice": "179",
+      "highPrice": "249",
       "priceCurrency": "USD",
-      "offerCount": "4",
+      "offerCount": "5",
       "offers": [
         {
           "@type": "Offer",
-          "name": "Free Plan",
+          "name": "Explore Plan",
           "price": "0",
           "priceCurrency": "USD",
           "availability": "https://schema.org/InStock",
-          "description": "Explore the workflow with sample data. No credit card required."
+          "description": "Free forever. 100 lead searches per month, up to 25 results per search, 100 emails per month, view-only dashboard. No credit card required."
         },
         {
           "@type": "Offer",
@@ -181,7 +180,7 @@ export const SoftwareApplicationSchema = () => {
           "priceCurrency": "USD",
           "priceValidUntil": "2027-12-31",
           "availability": "https://schema.org/InStock",
-          "description": "For solo founders — verified prospects/month, AI email drafting, SMTP-verified emails"
+          "description": "For solo founders. 1,000 verified prospects per month, ICP Builder, AI email generator, SMTP-verified emails. 14-day free trial."
         },
         {
           "@type": "Offer",
@@ -190,7 +189,7 @@ export const SoftwareApplicationSchema = () => {
           "priceCurrency": "USD",
           "priceValidUntil": "2027-12-31",
           "availability": "https://schema.org/InStock",
-          "description": "For growing teams — higher prospect volume, advanced filters, bulk export, sequence automation"
+          "description": "For growing teams. 2,500 verified prospects per month, unified reply inbox, deliverability suite, Growth AI SDR agent. 14-day free trial."
         },
         {
           "@type": "Offer",
@@ -199,7 +198,16 @@ export const SoftwareApplicationSchema = () => {
           "priceCurrency": "USD",
           "priceValidUntil": "2027-12-31",
           "availability": "https://schema.org/InStock",
-          "description": "High-volume outbound — maximum prospect volume, API access, CRM integrations"
+          "description": "High-volume outbound. 5,000 verified prospects per month, sequence branching and A/B testing, CRM integrations, Pro AI SDR agent. 14-day free trial."
+        },
+        {
+          "@type": "Offer",
+          "name": "Agency Plan",
+          "price": "249",
+          "priceCurrency": "USD",
+          "priceValidUntil": "2027-12-31",
+          "availability": "https://schema.org/InStock",
+          "description": "For agencies. 15,000 verified prospects per month, white-label client portal, branded PDF reports, Elite AI SDR agent. 14-day free trial."
         }
       ]
     },
@@ -208,11 +216,15 @@ export const SoftwareApplicationSchema = () => {
       "ICP fit scoring for every prospect",
       "SMTP-verified business email enrichment",
       "AI-drafted first-touch email per prospect",
-      "Reply management and follow-up tracking",
-      "Sequence automation",
-      "CRM integration (HubSpot, Salesforce)",
+      "Email quality pre-send checker",
+      "Unified reply inbox with AI drafts",
+      "Sequence automation with branching and A/B testing",
+      "Deliverability dashboard and mailbox warmup",
+      "ICP lookalike discovery",
+      "Autonomous AI SDR agent (Growth, Pro, Agency)",
+      "CRM integration (HubSpot, Salesforce) on Pro and above",
       "Gmail integration for email delivery",
-      "Pipeline management"
+      "White-label client portal (Agency)"
     ],
     "softwareRequirements": "Modern web browser with JavaScript enabled",
     "author": {
@@ -429,7 +441,7 @@ export const ArticleSchema = ({
       "name": "OutReign",
       "logo": {
         "@type": "ImageObject",
-        "url": "https://storage.googleapis.com/gpt-engineer-file-uploads/ZFJK1zezovOpOdjy9TptFukIhhc2/uploads/1761024288225-image 2.png"
+        "url": "https://outreign.io/outreign-logo.webp"
       }
     },
     "datePublished": datePublished,
@@ -494,7 +506,7 @@ export const BlogPostingSchema = ({
       "name": "OutReign",
       "logo": {
         "@type": "ImageObject",
-        "url": "https://storage.googleapis.com/gpt-engineer-file-uploads/ZFJK1zezovOpOdjy9TptFukIhhc2/uploads/1761024288225-image 2.png"
+        "url": "https://outreign.io/outreign-logo.webp"
       }
     },
     "datePublished": datePublished,

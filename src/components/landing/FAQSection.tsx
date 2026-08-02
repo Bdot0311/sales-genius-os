@@ -26,7 +26,12 @@ const faqs = [
   {
     question: "How does the free plan work?",
     answer:
-      "The free plan gives you 10 real, verified leads — no credit card, no auto-charge, no surprise fees. Run the full workflow: find contacts, review their fit scores, and draft your first outreach. When you're ready to prospect at volume, you upgrade.",
+      "The Explore plan gives you 100 lead searches a month with up to 25 results each and 100 emails a month, at no cost and with no credit card. Run the full workflow: find contacts, review their fit scores, and draft your first outreach. When you're ready to prospect at volume, you upgrade.",
+  },
+  {
+    question: "Is there a free trial on the paid plans?",
+    answer:
+      "Yes. Every paid plan starts with a 14-day free trial. You add a card at signup, use the full plan for two weeks, and you are not charged until day 15. Cancel before then and you pay nothing. Paid plans also carry a 30-day money-back guarantee after your first charge.",
   },
   {
     question: "How does OutReign verify email addresses?",

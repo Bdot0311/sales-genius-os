@@ -213,7 +213,7 @@ export const HowItWorks = () => {
               whileHover={{ boxShadow: "0 0 36px hsl(261 75% 55% / 0.5)" }}
               transition={{ type: "spring", stiffness: 400, damping: 20 }}
             >
-              Try it free — 10 real leads, no card required
+              Try it free, 100 lead searches a month, no card required
             </motion.a>
             <p className="text-xs" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
               No credit card. No demo call. Start in 60 seconds.

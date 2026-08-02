@@ -256,7 +256,8 @@ const creditFAQs = [
   { question: "Do you offer yearly billing?", answer: "Yes! Save ~20% with annual billing. With yearly plans, your full annual credit pool is granted upfront: Starter gets 12,000, Growth gets 30,000, and Pro gets 60,000 prospects. Monthly plans reset each billing cycle." },
   { question: "Do unused credits roll over?", answer: "On monthly plans, Starter credits reset each cycle while Growth and Pro credits roll over to the next month. On yearly plans, you receive your full annual pool upfront." },
   { question: "Can I upgrade, downgrade, or cancel anytime?", answer: "Yes. Upgrades happen instantly with your new allocation. Downgrades and cancellations apply at the end of your billing cycle." },
-  { question: "Is there a money-back guarantee?", answer: "Yes, we offer a 30-day money-back guarantee on all paid plans. If you're not satisfied, contact support for a full refund." },
+  { question: "Is there a free trial?", answer: "Yes. All four paid plans start with a 14-day free trial. You add a card at signup, use the full plan for two weeks, and you are not charged until day 15. Cancel before then and you pay nothing. The Explore plan is free forever and needs no trial." },
+  { question: "Is there a money-back guarantee?", answer: "Yes, we offer a 30-day money-back guarantee on all paid plans. The trial and the guarantee work together: 14 days to try a plan before your first charge, then 30 days after it to request a full refund." },
   { question: "What is the AI SDR Agent?", answer: "The AI SDR Agent is an autonomous sales rep built into OutReign. It sources leads that match your ICP, writes and sends the first-touch email from your Gmail, then monitors threads, classifies prospect replies (interested, objection, meeting request, etc.), and replies in your voice. Available on Growth, Pro, and Agency plans with increasing daily reply limits and capabilities." },
   { question: "What's the difference between Growth, Pro, and Elite Agent?", answer: "Growth Agent (10 auto-replies/day) sources leads, sends first-touch outreach, and auto-replies to interested prospects. Pro Agent (50 replies/day) adds objection handling and automatic meeting booking via Calendly. Elite Agent on Agency (200 replies/day) is the full package — fully autonomous with all capabilities and the shortest reply delay (5 min)." },
   { question: "Does the AI SDR Agent pass a spam/deliverability check?", answer: "Yes. Every reply the agent generates is scanned for spam trigger words before it's sent. If a reply fails the check, it's blocked and logged — your sender reputation is never put at risk by the agent." },
@@ -561,6 +562,12 @@ export const Pricing = () => {
                   {isPaidPlan(plan) ? "Choose this plan" : plan.cta}
                   <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
                 </button>
+
+                {paid && (
+                  <p className="text-xs text-center mt-3" style={{ color: "hsl(0 0% 100% / 0.5)" }}>
+                    14-day free trial · then {displayPrice}{period}
+                  </p>
+                )}
               </div>
             );
           })}

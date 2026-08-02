@@ -105,7 +105,7 @@ const Checkout = () => {
             After checkout, OutReign will confirm your plan and guide you into account setup or sign-in. If anything looks off, you can return to pricing or contact support.
           </p>
           <p className="text-xs text-muted-foreground/80">
-            14-day trial where applicable • Cancel anytime • 30-day money-back guarantee
+            14-day free trial on all paid plans • Cancel anytime • 30-day money-back guarantee
           </p>
         </div>
         {error ? (

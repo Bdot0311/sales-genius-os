@@ -56,7 +56,7 @@ export const FinalCTA = () => {
               viewport={{ once: true, margin: "-10% 0px" }}
               transition={{ type: "spring", stiffness: 60, damping: 18, delay: 0.06 }}
             >
-              Your next 10 prospects
+              Your next 100 prospects
             </motion.span>
             <motion.span
               className="block italic animate-shiny"
