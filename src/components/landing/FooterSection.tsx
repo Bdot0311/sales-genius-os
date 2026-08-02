@@ -6,10 +6,12 @@ const footerLinks = {
     { label: "Features", href: "#features" },
     { label: "Pricing", href: "/pricing" },
     { label: "Integrations", href: "/pricing" },
+    { label: "Sales Ops Software", href: "/sales-operations-software" },
   ],
   compare: [
     { label: "vs Apollo", href: "/vs-apollo" },
     { label: "vs Instantly", href: "/vs-instantly" },
+    { label: "vs RocketReach", href: "/vs-rocketreach" },
     { label: "vs Lusha", href: "/vs-lusha" },
     { label: "vs ZoomInfo", href: "/vs-zoominfo" },
     { label: "Why Switch", href: "/apollo-alternative" },
