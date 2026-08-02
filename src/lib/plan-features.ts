@@ -1,18 +1,23 @@
 // Plan-based feature gating configuration for OutReign
 // All features remain visible - plans control capacity, depth, and throughput
+//
+// Search-credit limits are not declared here: they come from
+// PLAN_SEARCH_LIMITS, the single source of truth that fetch-external-leads
+// enforces against. Everything else below is feature gating.
+import { PLAN_SEARCH_LIMITS } from '../../supabase/functions/_shared/plan-limits.ts';
 
 export const PLAN_FEATURES = {
   free: {
     name: 'Free',
     price: 0,
     
-    // Credits — free trial allowance: 100 lead searches / month
-    monthlySearchCredits: 100,
-    dailySearchLimit: 100,
+    // Search credits — see PLAN_SEARCH_LIMITS
+    monthlySearchCredits: PLAN_SEARCH_LIMITS.free.monthlySearchCredits,
+    dailySearchLimit: PLAN_SEARCH_LIMITS.free.dailySearchLimit,
     exportTier: 'none' as const,
     
     // Lead Intelligence Engine
-    maxResultsPerSearch: 25,
+    maxResultsPerSearch: PLAN_SEARCH_LIMITS.free.maxResultsPerSearch,
     enrichmentLevel: 'none',
     advancedFilters: false,
     apiAccessLeads: false,
@@ -98,13 +103,13 @@ export const PLAN_FEATURES = {
     name: 'Starter',
     price: 39,
     
-    // Credits
-    monthlySearchCredits: 1000,
-    dailySearchLimit: 100,
+    // Search credits — see PLAN_SEARCH_LIMITS
+    monthlySearchCredits: PLAN_SEARCH_LIMITS.starter.monthlySearchCredits,
+    dailySearchLimit: PLAN_SEARCH_LIMITS.starter.dailySearchLimit,
     exportTier: 'standard' as const,
     
     // Lead Intelligence Engine
-    maxResultsPerSearch: 10,
+    maxResultsPerSearch: PLAN_SEARCH_LIMITS.starter.maxResultsPerSearch,
     enrichmentLevel: 'basic',
     advancedFilters: false,
     apiAccessLeads: false,
@@ -190,13 +195,13 @@ export const PLAN_FEATURES = {
     name: 'Growth',
     price: 89,
     
-    // Search Credits
-    monthlySearchCredits: 2500,
-    dailySearchLimit: 250,
+    // Search credits — see PLAN_SEARCH_LIMITS
+    monthlySearchCredits: PLAN_SEARCH_LIMITS.growth.monthlySearchCredits,
+    dailySearchLimit: PLAN_SEARCH_LIMITS.growth.dailySearchLimit,
     exportTier: 'advanced' as const,
     
     // Lead Intelligence Engine
-    maxResultsPerSearch: 25,
+    maxResultsPerSearch: PLAN_SEARCH_LIMITS.growth.maxResultsPerSearch,
     enrichmentLevel: 'standard',
     advancedFilters: false,
     apiAccessLeads: false,
@@ -282,13 +287,13 @@ export const PLAN_FEATURES = {
     name: 'Agency',
     price: 249,
 
-    // Search Credits
-    monthlySearchCredits: 15000,
-    dailySearchLimit: 1500,
+    // Search credits — see PLAN_SEARCH_LIMITS
+    monthlySearchCredits: PLAN_SEARCH_LIMITS.agency.monthlySearchCredits,
+    dailySearchLimit: PLAN_SEARCH_LIMITS.agency.dailySearchLimit,
     exportTier: 'unlimited' as const,
 
     // Lead Intelligence Engine
-    maxResultsPerSearch: 200,
+    maxResultsPerSearch: PLAN_SEARCH_LIMITS.agency.maxResultsPerSearch,
     enrichmentLevel: 'premium',
     advancedFilters: true,
     apiAccessLeads: true,
@@ -383,13 +388,13 @@ export const PLAN_FEATURES = {
     name: 'Pro',
     price: 179,
     
-    // Search Credits
-    monthlySearchCredits: 5000,
-    dailySearchLimit: 500,
+    // Search credits — see PLAN_SEARCH_LIMITS
+    monthlySearchCredits: PLAN_SEARCH_LIMITS.pro.monthlySearchCredits,
+    dailySearchLimit: PLAN_SEARCH_LIMITS.pro.dailySearchLimit,
     exportTier: 'unlimited' as const,
     
     // Lead Intelligence Engine
-    maxResultsPerSearch: 100,
+    maxResultsPerSearch: PLAN_SEARCH_LIMITS.pro.maxResultsPerSearch,
     enrichmentLevel: 'premium',
     advancedFilters: true,
     apiAccessLeads: true,

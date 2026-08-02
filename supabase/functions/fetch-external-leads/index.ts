@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getPlanSearchLimits } from "../_shared/plan-limits.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -600,14 +601,8 @@ async function fetchCachedResults(railwayBaseUrl: string): Promise<{ searches: a
   }
 }
 
-// Plan credit configuration - must match stripe-config.ts
-const PLAN_CREDITS = {
-  free: { monthlyCredits: 100, dailyLimit: 100, maxResultsPerSearch: 25 },
-  starter: { monthlyCredits: 1000, dailyLimit: 100, maxResultsPerSearch: 25 },
-  growth: { monthlyCredits: 2500, dailyLimit: 250, maxResultsPerSearch: 50 },
-  pro: { monthlyCredits: 5000, dailyLimit: 500, maxResultsPerSearch: 100 },
-  agency: { monthlyCredits: 15000, dailyLimit: 1500, maxResultsPerSearch: 200 },
-};
+// Plan credit configuration lives in _shared/plan-limits.ts, which the frontend
+// reads too — see getPlanSearchLimits. Do not reintroduce a local copy.
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -672,8 +667,8 @@ serve(async (req) => {
       }
 
       // Resolve plan — no subscription row = free tier.
-      const plan = (subscription?.plan || 'free') as keyof typeof PLAN_CREDITS;
-      const planConfig = PLAN_CREDITS[plan] || PLAN_CREDITS.free;
+      const plan = subscription?.plan || 'free';
+      const planConfig = getPlanSearchLimits(plan);
 
       // Check daily limit reset
       const now = new Date();
@@ -696,14 +691,14 @@ serve(async (req) => {
       }
 
       // Check daily limit
-      if (dailyUsed >= planConfig.dailyLimit) {
-        console.log('Daily limit reached:', { userId: user.id, dailyUsed, limit: planConfig.dailyLimit });
+      if (dailyUsed >= planConfig.dailySearchLimit) {
+        console.log('Daily limit reached:', { userId: user.id, dailyUsed, limit: planConfig.dailySearchLimit });
         return new Response(
           JSON.stringify({ 
             error: 'Daily search limit reached. Try again tomorrow.',
             error_code: 'daily_limit_reached',
             daily_used: dailyUsed,
-            daily_limit: planConfig.dailyLimit,
+            daily_limit: planConfig.dailySearchLimit,
             leads: [] 
           }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -711,7 +706,7 @@ serve(async (req) => {
       }
 
       // Check credits — free users get 100, paid users get their plan allotment.
-      const remainingCredits = subscription?.search_credits_remaining ?? planConfig.monthlyCredits;
+      const remainingCredits = subscription?.search_credits_remaining ?? planConfig.monthlySearchCredits;
       if (remainingCredits <= 0) {
         const isFree = plan === 'free';
         console.log('Credits exhausted:', { userId: user.id, plan, remaining: remainingCredits });
@@ -760,7 +755,7 @@ serve(async (req) => {
         plan,
         newRemaining, 
         newDailyUsed, 
-        dailyLimit: planConfig.dailyLimit 
+        dailyLimit: planConfig.dailySearchLimit 
       });
     }
 
@@ -862,9 +857,6 @@ serve(async (req) => {
     // Enforce plan-based maxResultsPerSearch limit
     const page = filters.page || 1;
     
-    // Get plan config for results-per-search enforcement (admins get pro limits)
-    const userPlanConfig = isAdmin ? PLAN_CREDITS.pro : PLAN_CREDITS[(filters as any)._plan as keyof typeof PLAN_CREDITS] || PLAN_CREDITS.growth;
-    
     // Look up actual plan from subscription if not admin
     let maxResults = 100; // default for admin
     if (!isAdmin) {
@@ -873,8 +865,7 @@ serve(async (req) => {
         .select('plan')
         .eq('user_id', user.id)
         .maybeSingle();
-      const planKey = (subForLimits?.plan || 'growth') as keyof typeof PLAN_CREDITS;
-      maxResults = PLAN_CREDITS[planKey]?.maxResultsPerSearch || 25;
+      maxResults = getPlanSearchLimits(subForLimits?.plan || 'growth').maxResultsPerSearch;
     }
     
     const limit = Math.min(filters.limit || 10, maxResults);

@@ -1,3 +1,5 @@
+import { PLAN_SEARCH_LIMITS } from '../../supabase/functions/_shared/plan-limits.ts';
+
 // Stripe Price ID Configuration
 export const STRIPE_PRICE_IDS = {
   // Base subscription plans - Monthly
@@ -40,16 +42,20 @@ export type PlanType = 'free' | 'starter' | 'growth' | 'pro' | 'agency';
 export type BillingInterval = 'monthly' | 'yearly';
 export type AddonType = 'addon200' | 'addon500';
 
-// Plan configuration with verified prospect limits
+// Plan configuration with verified prospect limits.
+// Search-credit limits come from PLAN_SEARCH_LIMITS so the numbers shown here
+// are always the ones fetch-external-leads enforces. Pricing and reveal costs
+// are display-only and stay local.
 export const PLAN_CONFIG = {
   free: {
     name: 'Free',
     monthlyPrice: 0,
     yearlyPrice: 0,
     yearlyTotal: 0,
-    monthlyProspects: 10,
-    yearlyProspects: 10,
-    dailyLimit: 10,
+    monthlyProspects: PLAN_SEARCH_LIMITS.free.monthlySearchCredits,
+    // Free has no annual billing — the allowance is the same either way.
+    yearlyProspects: PLAN_SEARCH_LIMITS.free.monthlySearchCredits,
+    dailyLimit: PLAN_SEARCH_LIMITS.free.dailySearchLimit,
     emailRevealCost: 1,
     phoneRevealCost: 10,
     companyRevealCost: 1,
@@ -60,9 +66,9 @@ export const PLAN_CONFIG = {
     monthlyPrice: 39,
     yearlyPrice: 31,
     yearlyTotal: 372,
-    monthlyProspects: 1000,
-    yearlyProspects: 12000,
-    dailyLimit: 100,
+    monthlyProspects: PLAN_SEARCH_LIMITS.starter.monthlySearchCredits,
+    yearlyProspects: PLAN_SEARCH_LIMITS.starter.monthlySearchCredits * 12,
+    dailyLimit: PLAN_SEARCH_LIMITS.starter.dailySearchLimit,
     emailRevealCost: 1,
     phoneRevealCost: 10,
     companyRevealCost: 1,
@@ -73,9 +79,9 @@ export const PLAN_CONFIG = {
     monthlyPrice: 89,
     yearlyPrice: 71,
     yearlyTotal: 852,
-    monthlyProspects: 2500,
-    yearlyProspects: 30000,
-    dailyLimit: 250,
+    monthlyProspects: PLAN_SEARCH_LIMITS.growth.monthlySearchCredits,
+    yearlyProspects: PLAN_SEARCH_LIMITS.growth.monthlySearchCredits * 12,
+    dailyLimit: PLAN_SEARCH_LIMITS.growth.dailySearchLimit,
     emailRevealCost: 1,
     phoneRevealCost: 10,
     companyRevealCost: 1,
@@ -86,9 +92,9 @@ export const PLAN_CONFIG = {
     monthlyPrice: 179,
     yearlyPrice: 143,
     yearlyTotal: 1716,
-    monthlyProspects: 5000,
-    yearlyProspects: 60000,
-    dailyLimit: 500,
+    monthlyProspects: PLAN_SEARCH_LIMITS.pro.monthlySearchCredits,
+    yearlyProspects: PLAN_SEARCH_LIMITS.pro.monthlySearchCredits * 12,
+    dailyLimit: PLAN_SEARCH_LIMITS.pro.dailySearchLimit,
     emailRevealCost: 1,
     phoneRevealCost: 10,
     companyRevealCost: 1,
@@ -99,9 +105,9 @@ export const PLAN_CONFIG = {
     monthlyPrice: 249,
     yearlyPrice: 199,
     yearlyTotal: 2388,
-    monthlyProspects: 15000,
-    yearlyProspects: 180000,
-    dailyLimit: 1500,
+    monthlyProspects: PLAN_SEARCH_LIMITS.agency.monthlySearchCredits,
+    yearlyProspects: PLAN_SEARCH_LIMITS.agency.monthlySearchCredits * 12,
+    dailyLimit: PLAN_SEARCH_LIMITS.agency.dailySearchLimit,
     emailRevealCost: 1,
     phoneRevealCost: 10,
     companyRevealCost: 1,
