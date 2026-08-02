@@ -118,12 +118,23 @@ serve(async (req) => {
       } catch (_) { /* fall through with no claims */ }
     }
 
-    await supabase.from("why_now_research").upsert(
-      { user_id: user.id, company_id: companyId, claims, researched_at: new Date().toISOString() },
-      { onConflict: "user_id,company_id" },
-    );
+    // Never cache an empty result: if phrasing failed there is nothing worth
+    // pinning for STALE_DAYS, and the next attempt should be able to retry.
+    const researchedAt = new Date().toISOString();
+    if (claims.length) {
+      await supabase.from("why_now_research").upsert(
+        { user_id: user.id, company_id: companyId, claims, researched_at: researchedAt },
+        { onConflict: "user_id,company_id" },
+      );
+    }
 
-    return json({ claims, from_cache: false, remaining: remaining.data, researched_at: new Date().toISOString() });
+    return json({
+      claims,
+      from_cache: false,
+      remaining: remaining.data,
+      researched_at: claims.length ? researchedAt : null,
+      ...(claims.length ? {} : { error: "could not build a why-now right now, try again in a moment." }),
+    });
   } catch (e) {
     console.error("[research-account] error:", e instanceof Error ? e.message : e);
     return json({ error: "something went wrong", error_code: "internal" }, 500);
