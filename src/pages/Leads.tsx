@@ -35,7 +35,7 @@ const Leads = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { status: subscriptionStatus, loading: subscriptionLoading } = useSubscriptionStatus();
-  const { credits, canSearch, useCredit } = useSearchCredits();
+  const { credits, canSearch, useCredit, loading: creditsLoading } = useSearchCredits();
   
   const {
     leads: externalLeads,
