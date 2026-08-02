@@ -17,6 +17,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PLAN_SEARCH_LIMITS } from "../../../supabase/functions/_shared/plan-limits.ts";
 
 interface AuthFormProps {
   onSuccess?: () => void;
@@ -472,7 +473,7 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
               </Button>
 
               <p className="text-xs text-muted-foreground text-center leading-relaxed">
-                Free forever — no credit card required. Includes 10 free lead searches to try the platform.
+                Free forever — no credit card required. Includes {PLAN_SEARCH_LIMITS.free.monthlySearchCredits} free lead searches to try the platform.
               </p>
 
             </form>
