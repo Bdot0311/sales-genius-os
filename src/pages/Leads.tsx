@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { buildExternalFilters, ParsedIcpFilters } from "@/lib/lead-filters";
 import { Sparkles, Loader2, Users, RefreshCw, Lock, CreditCard, ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useExternalLeads, ExternalLeadFilters } from "@/hooks/use-external-leads";
