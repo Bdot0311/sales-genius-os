@@ -15,6 +15,17 @@
  * These are SalesOS plan credits, metered per account in
  * `subscriptions.search_credits_remaining`. They are unrelated to the balance
  * on any upstream data provider's account.
+ *
+ * What a credit buys depends on the tier:
+ *   - Paid tiers: searching is free; one credit is spent per lead *revealed*
+ *     (enrich-lead), which is what "contact up to N verified prospects" means
+ *     on the pricing page.
+ *   - Free tier: cannot reveal at all, so its allowance is spent per *search* —
+ *     the pricing page's "100 lead searches / month".
+ *
+ * dailySearchLimit applies to every tier regardless. It is a rate limit rather
+ * than a charge, and it is what bounds upstream provider spend now that paid
+ * searching costs no credits.
  */
 
 export type PlanId = "free" | "starter" | "growth" | "pro" | "agency";
