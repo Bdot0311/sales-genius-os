@@ -144,7 +144,7 @@ function renderMarkdown(content: string): JSX.Element[] {
             color: "hsl(261 75% 72%)",
           }}
         >
-          {line.slice(2)}
+          {renderInline(line.slice(2))}
         </blockquote>
       );
       i++; continue;

@@ -12,8 +12,8 @@ const featured = [
   {
     slug: "apollo-alternative-for-founders",
     eyebrow: "Guide",
-    title: "The best Apollo alternative for founders doing their own outbound",
-    blurb: "Why Apollo's pricing and bounce rate punish small teams — and what to use instead.",
+    title: "Founder-led outbound: why Apollo fights you",
+    blurb: "Apollo is built for SDR teams with ops support. Here's the simpler setup that fits a founder doing their own outbound.",
   },
   {
     slug: "how-to-find-b2b-leads-without-boolean-search",
