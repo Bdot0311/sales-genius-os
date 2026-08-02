@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { posthog } from '@/lib/posthog';
+import { classifySearchError } from '@/lib/search-error';
 
 export interface ExternalLeadFilters {
   job_title?: string;
@@ -80,11 +81,17 @@ export function useExternalLeads() {
       });
 
       if (error) throw error;
-      
+
       if (data.error) {
-        throw new Error(data.error);
+        // Carry the edge function's classification through the throw — without
+        // it the catch below can only guess at the message text.
+        throw Object.assign(new Error(data.error), {
+          errorCode: data.error_code,
+          remainingCredits: data.remaining_credits,
+          upgradeRequired: data.upgrade_required,
+        });
       }
-      
+
       // Only set leads that were returned for this specific search
       const newLeads = data.leads || [];
       setLeads(newLeads);
@@ -113,6 +120,9 @@ export function useExternalLeads() {
       return newLeads;
     } catch (error: any) {
       let errorMessage = error.message || 'Failed to fetch leads';
+      let errorCode: string | undefined = error.errorCode;
+      let remainingCredits: number | undefined = error.remainingCredits;
+      let upgradeRequired: boolean | undefined = error.upgradeRequired;
 
       // Supabase FunctionsHttpError — try to extract the actual body from the edge function
       if (error.context) {
@@ -120,51 +130,31 @@ export function useExternalLeads() {
           const body = await error.context.json?.();
           if (body?.error) errorMessage = body.error;
           else if (body?.message) errorMessage = body.message;
+          if (body?.error_code) errorCode = body.error_code;
+          if (body?.remaining_credits !== undefined) remainingCredits = body.remaining_credits;
+          if (body?.upgrade_required !== undefined) upgradeRequired = body.upgrade_required;
         } catch {}
       }
 
-      // Credit / billing errors get a dedicated toast
-      if (
-        errorMessage.toLowerCase().includes('credit') ||
-        errorMessage.toLowerCase().includes('exhausted') ||
-        errorMessage.toLowerCase().includes('payment') ||
-        errorMessage.toLowerCase().includes('402') ||
-        errorMessage.toLowerCase().includes('upgrade')
-      ) {
-        toast({
-          title: 'Search Credits Exhausted',
-          description: 'Your OutReign search credits have been used up. Contact support or add more credits to continue searching.',
-          variant: 'destructive',
-          duration: 10000,
-        });
-      } else if (
-        errorMessage.toLowerCase().includes('subscription') ||
-        errorMessage.toLowerCase().includes('paid plan') ||
-        errorMessage.toLowerCase().includes('trial')
-      ) {
-        toast({
-          title: 'Subscription Required',
-          description: errorMessage,
-          variant: 'destructive',
-          duration: 10000,
-        });
-      } else if (
-        errorMessage.toLowerCase().includes('reach') ||
-        errorMessage.toLowerCase().includes('network') ||
-        errorMessage.toLowerCase().includes('provider')
-      ) {
-        toast({
-          title: 'Search unavailable',
-          description: 'Could not connect to the lead data provider. This is usually a temporary issue — please try again in a moment.',
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: 'Search failed',
-          description: errorMessage || 'No results found. Try a different query — e.g. "VP of Sales at SaaS companies" or "CTOs in New York".',
-          variant: 'destructive',
-        });
-      }
+      const { title, description, durationMs } = classifySearchError({
+        message: errorMessage,
+        code: errorCode,
+        remainingCredits,
+        upgradeRequired,
+      });
+
+      toast({
+        title,
+        description,
+        variant: 'destructive',
+        ...(durationMs ? { duration: durationMs } : {}),
+      });
+
+      posthog.capture('lead_search_failed', {
+        error_code: errorCode || 'unknown',
+        page: filters.page || 1,
+      });
+
       return [];
     } finally {
       setLoading(false);
