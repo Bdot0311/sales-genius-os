@@ -39,8 +39,6 @@ Disallow: /dashboard/sequences/*
 Disallow: /dashboard/agent/*
 Disallow: /client-portal
 Disallow: /client-portal/*
-Disallow: /.lovable
-Disallow: /.lovable/*
 Crawl-delay: 0
 
 User-agent: Googlebot-Image
@@ -63,8 +61,6 @@ Disallow: /settings
 Disallow: /settings/*
 Disallow: /coach
 Disallow: /coach/*
-Disallow: /.lovable
-Disallow: /.lovable/*
 Crawl-delay: 1
 
 User-agent: msnbot
@@ -201,8 +197,6 @@ Disallow: /dashboard/sequences/*
 Disallow: /dashboard/agent/*
 Disallow: /client-portal
 Disallow: /client-portal/*
-Disallow: /.lovable
-Disallow: /.lovable/*
 
 
 # Allow public pages

@@ -208,10 +208,10 @@ const modules = [
 const alsoIncluded = [
   "Multi-step sequences",
   "Deliverability monitoring",
-  "AI Roleplay Coach (Growth & Pro)",
+  "AI Sales Coach (Growth & up)",
   "Zapier & API automation",
-  "White-label client portal",
-  "Agency reporting",
+  "White-label client portal (Agency)",
+  "Branded client reports (Agency)",
 ];
 
 // ─── Section ──────────────────────────────────────────────────────────────────
@@ -399,6 +399,9 @@ export const ModulesSection = () => {
                   ))}
                   <span className="ml-3 text-[11px] font-medium" style={{ color: "hsl(0 0% 100% / 0.55)" }}>
                     OutReign — {modules[activeIndex].title}
+                  </span>
+                  <span className="ml-auto text-[9px] font-medium uppercase tracking-wider" style={{ color: "hsl(0 0% 100% / 0.4)" }}>
+                    Simulated preview
                   </span>
                 </div>
 

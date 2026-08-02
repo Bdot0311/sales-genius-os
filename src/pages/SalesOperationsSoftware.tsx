@@ -19,7 +19,7 @@ const faqs = [
   { question: "How is OutReign different from a CRM?", answer: "A CRM stores deals you already have. Sales operations software like OutReign generates the pipeline that fills the CRM — prospect discovery, ICP fit scoring, verified email enrichment, and AI-drafted first-touch outreach in one workflow." },
   { question: "Do I need separate tools for prospecting, enrichment, and sequences?", answer: "No. OutReign replaces the typical sales ops stack — Apollo for search, ZoomInfo for enrichment, Instantly or Salesloft for sequences — with one platform built around plain-English ICP search." },
   { question: "Is this a fit for sales operations planning (S&OP)?", answer: "No. OutReign is built for B2B outbound sales operations — pipeline generation, prospecting, and outreach. It is not inventory or supply-chain S&OP software." },
-  { question: "Can I try it before paying?", answer: "Yes. The free tier lets you explore the full workflow with sample data. No credit card required." },
+  { question: "Can I try it before paying?", answer: "Yes. The Explore plan is free forever with 100 real lead searches a month and no credit card required. Every paid plan also starts with a 14-day free trial." },
 ];
 
 const features = [

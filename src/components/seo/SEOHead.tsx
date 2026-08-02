@@ -170,8 +170,8 @@ export const SEOHead = ({
       
       {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:site" content="@outreign" />
-      <meta name="twitter:creator" content="@outreign" />
+      <meta name="twitter:site" content="@buildwitbrandon" />
+      <meta name="twitter:creator" content="@buildwitbrandon" />
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={safeDescription} />
       <meta name="twitter:image" content={versionedOgImage} />

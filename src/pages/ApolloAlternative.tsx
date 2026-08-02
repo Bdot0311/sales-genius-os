@@ -20,7 +20,7 @@ const faqs = [
   { question: "Will I lose my Apollo data if I switch?", answer: "No. Apollo lets you export contacts, lists, and sequence history as CSV. You keep everything. OutReign only reads what you import — nothing is pulled from Apollo automatically." },
   { question: "Is OutReign cheaper than Apollo in practice?", answer: "For solo operators and teams under 5 users, yes — meaningfully. OutReign is $0 to start and $39/mo for the entry paid plan with prospect, enrichment, and outreach included. Apollo's comparable bundle usually runs higher once you add data credits and engagement seats. For 20+ seat SDR orgs the math changes — Apollo's scale pricing can win there." },
   { question: "What if I need the exact Apollo features?", answer: "OutReign doesn't try to replace every Apollo module. It does prospect search, enrichment, ICP scoring, AI drafting, sending, and reply inbox. If your workflow depends on Apollo's dialer, deep CRM integrations, or their intent data, keep Apollo for those and use OutReign alongside — many teams do." },
-  { question: "Can I try before I commit?", answer: "Yes. The free plan lets you use the full UI with sample data. No credit card, no time limit. When you're ready to run against real leads, the entry paid plan is $39/mo." },
+  { question: "Can I try before I commit?", answer: "Yes. The Explore plan is free forever with 100 real lead searches a month, up to 25 results each, and 100 emails a month. No credit card, no time limit. When you're ready to prospect at volume, the entry paid plan is $39/mo and starts with a 14-day free trial." },
 ];
 
 const painPoints = [

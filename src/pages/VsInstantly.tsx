@@ -64,9 +64,9 @@ const rows = [
     advantage: "neutral",
   },
   {
-    feature: "AI Roleplay Coach",
+    feature: "AI Sales Coach",
     instantly: "Not available",
-    outreign: "Available on Growth and Pro — practice objection handling before campaigns go out",
+    outreign: "Included on Growth and up. Sharpen objection handling in your email replies before campaigns go out",
     advantage: "outreign",
   },
   {

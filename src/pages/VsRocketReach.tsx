@@ -70,9 +70,9 @@ const rows = [
     advantage: "outreign",
   },
   {
-    feature: "AI Roleplay Coach",
+    feature: "AI Sales Coach",
     rocketreach: "Not available",
-    outreign: "Included on Growth and Pro — practice objection handling before campaigns go out",
+    outreign: "Included on Growth and up. Sharpen objection handling in your email replies before campaigns go out",
     advantage: "outreign",
   },
   {

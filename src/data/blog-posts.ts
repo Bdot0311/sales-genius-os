@@ -716,7 +716,7 @@ A founder doing outbound needs to move from "who should I email this week" to "e
 | Sending | Separate sequences module | Integrated workflow |
 | Setup time | 45–90 min per campaign | Under 5 min |
 | Best for | Large SDR teams with ops | Founders and small teams |
-| Price | $49–$99+/month | Free–$179/month |
+| Price | $49–$99+/month | Free–$249/month |
 
 ## When Apollo Is Still the Right Call
 

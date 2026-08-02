@@ -219,7 +219,7 @@ const BlogPost = () => {
       <ArticleSchema
         headline={post.title}
         description={post.description}
-        author={{ name: "Brandon Dottin", url: "https://www.linkedin.com/in/buildwitbrandon" }}
+        author={{ name: "Brandon Yakubov", url: "https://www.linkedin.com/in/buildwitbrandon" }}
         datePublished={post.publishedAt}
         url={canonicalUrl}
         keywords={post.keywords}

@@ -5,15 +5,19 @@
     <!-- CSP is set as a real HTTP response header via Cloudflare Worker; meta tag removed so frame-ancestors is honored. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
     
-    <!-- Primary Meta Tags (50-60 char title, 150-160 char description) -->
-    <title>OutReign — Know Who to Email Before Writing a Word</title>
-    <meta name="title" content="OutReign — Know Who to Email Before Writing a Word" />
-    <meta name="description" content="Describe your ideal customer in plain English, get ranked verified prospects, and launch personalized email outreach — first lead in under 2 minutes.">
-    <meta name="keywords" content="sales operations software, sales operations, sales ops, sales management software, sales productivity software, B2B lead generation, lead discovery, sales prospecting, outbound sales software, AI sales assistant, AI lead search, lead enrichment, B2B prospecting, Apollo alternative, Instantly alternative, Outreach alternative, Salesloft alternative" />
+    <!-- Primary Meta Tags (50-60 char title, 150-160 char description).
+         Per-route title/description/canonical/og:url are injected at build time
+         (see vite-plugin-seo-routes.ts) and again at runtime by SEOHead.tsx.
+         The values here are the homepage/default fallback. -->
+    <title>OutReign — B2B Lead Discovery & AI Email Outreach</title>
+    <meta name="title" content="OutReign — B2B Lead Discovery & AI Email Outreach" />
+    <meta name="description" content="Describe your ideal customer in plain English, get ranked verified prospects, and launch personalized email outreach. First lead in under 2 minutes.">
     <meta name="author" content="OutReign" />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-    <!-- Canonical is set per-route by src/components/seo/SEOHead.tsx to avoid conflicting tags -->
+    <!-- Homepage canonical. Per-route builds overwrite this tag (vite-plugin-seo-routes.ts);
+         SEOHead.tsx also sets it at runtime for JS clients. -->
+    <link rel="canonical" href="https://outreign.io/" />
     <meta name="google-site-verification" content="FgB0cn6OP_V1a_oXsssnA_qaeCg6Nqht2Wbs8_pngiQ" />
     <meta name="google-site-verification" content="_Djbe9hwDX3WWpcJhgjCzUZJBbwqBZi0GV9LI7P4juc" />
     
@@ -39,8 +43,8 @@
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@outreign" />
-    <meta name="twitter:creator" content="@outreign" />
+    <meta name="twitter:site" content="@buildwitbrandon" />
+    <meta name="twitter:creator" content="@buildwitbrandon" />
     
     
     <meta name="twitter:image" content="https://outreign.io/outreign-social-card.jpg?v=5">
@@ -106,7 +110,7 @@
     </style>
 
 
-    <!-- Sitewide JSON-LD: Organization + WebSite only. Route-specific schemas (FAQPage, Article, etc.) are injected per-page from React. -->
+    <!-- Sitewide JSON-LD: Organization, WebSite, and SoftwareApplication. Route-specific schemas (FAQPage, Article, etc.) are injected per-page from React (src/components/seo/StructuredData.tsx). -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -115,8 +119,24 @@
           "@type": "Organization",
           "@id": "https://outreign.io/#organization",
           "name": "OutReign",
+          "legalName": "BDØT Industries LLC",
           "url": "https://outreign.io/",
-          "logo": "https://outreign.io/outreign-og.png"
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://outreign.io/outreign-logo.webp"
+          },
+          "image": "https://outreign.io/outreign-logo.webp",
+          "description": "OutReign is email-only sales operations software for B2B outbound teams. Describe your ideal customer in plain English, get ranked prospects with SMTP-verified emails, and send AI-drafted first-touch emails from one workflow.",
+          "founder": {
+            "@type": "Person",
+            "name": "Brandon Yakubov",
+            "url": "https://www.linkedin.com/in/buildwitbrandon",
+            "jobTitle": "Founder & CEO"
+          },
+          "sameAs": [
+            "https://x.com/buildwitbrandon",
+            "https://www.linkedin.com/in/buildwitbrandon"
+          ]
         },
         {
           "@type": "WebSite",
@@ -125,6 +145,30 @@
           "name": "OutReign",
           "publisher": { "@id": "https://outreign.io/#organization" },
           "inLanguage": "en-US"
+        },
+        {
+          "@type": "SoftwareApplication",
+          "@id": "https://outreign.io/#software",
+          "name": "OutReign",
+          "applicationCategory": "BusinessApplication",
+          "applicationSubCategory": "B2B Lead Generation Software",
+          "operatingSystem": "Web Browser",
+          "url": "https://outreign.io/",
+          "publisher": { "@id": "https://outreign.io/#organization" },
+          "offers": {
+            "@type": "AggregateOffer",
+            "lowPrice": "0",
+            "highPrice": "249",
+            "priceCurrency": "USD",
+            "offerCount": "5",
+            "offers": [
+              { "@type": "Offer", "name": "Explore Plan", "price": "0", "priceCurrency": "USD", "availability": "https://schema.org/InStock", "description": "Free forever. 100 lead searches per month, up to 25 results per search, 100 emails per month, view-only dashboard. No credit card required." },
+              { "@type": "Offer", "name": "Starter Plan", "price": "39", "priceCurrency": "USD", "availability": "https://schema.org/InStock", "description": "1,000 verified prospects per month, ICP Builder, AI email generator, SMTP-verified emails. 14-day free trial." },
+              { "@type": "Offer", "name": "Growth Plan", "price": "89", "priceCurrency": "USD", "availability": "https://schema.org/InStock", "description": "2,500 verified prospects per month, unified reply inbox, deliverability suite, Growth AI SDR agent. 14-day free trial." },
+              { "@type": "Offer", "name": "Pro Plan", "price": "179", "priceCurrency": "USD", "availability": "https://schema.org/InStock", "description": "5,000 verified prospects per month, sequence branching and A/B testing, CRM integrations, Pro AI SDR agent. 14-day free trial." },
+              { "@type": "Offer", "name": "Agency Plan", "price": "249", "priceCurrency": "USD", "availability": "https://schema.org/InStock", "description": "15,000 verified prospects per month, white-label client portal, branded PDF reports, Elite AI SDR agent. 14-day free trial." }
+            ]
+          }
         }
       ]
     }
@@ -163,119 +207,42 @@
   
   
   
-  <!-- Brand-level social defaults. Per-route SEOHead overrides title/description/url for JS-executing crawlers; these remain the fallback for non-JS social preview scrapers. -->
-  <meta property="og:title" content="OutReign — B2B Lead Discovery & AI Outreach Platform">
-  <meta name="twitter:title" content="OutReign — B2B Lead Discovery & AI Outreach Platform">
+  <!-- Brand-level social defaults. Per-route builds (vite-plugin-seo-routes.ts) and runtime SEOHead override title/description/url per route; these remain the homepage/non-JS fallback. -->
+  <meta property="og:title" content="OutReign — B2B Lead Discovery & AI Email Outreach">
+  <meta name="twitter:title" content="OutReign — B2B Lead Discovery & AI Email Outreach">
   <meta property="og:description" content="OutReign helps B2B teams find verified prospects and launch personalized email outreach from one platform.">
   <meta name="twitter:description" content="OutReign helps B2B teams find verified prospects and launch personalized email outreach from one platform.">
 
 </head>
 
   <body>
-    <!-- Static crawlable content for AI engines (GPTBot, ClaudeBot, PerplexityBot) and non-JS crawlers -->
-    <div id="static-content" style="display:none" aria-hidden="true">
-      <h2>OutReign — Sales Operations Software for Outbound B2B Teams</h2>
-      <p>OutReign is sales operations software that helps B2B teams describe their ideal customer in plain English, review qualified prospects, enrich contact data, and launch personalized outreach faster from one workflow. A modern alternative to Apollo, Instantly, Outreach, and Salesloft built for founder-led sales ops.</p>
-
-      <h2>Sales Operations Software, Without the Tool Sprawl</h2>
-      <p>Most sales ops stacks bolt together a prospecting tool, an enrichment tool, a sequencer, and a CRM. OutReign collapses lead search, ICP scoring, SMTP-verified email enrichment, AI email drafting, and reply management into one sales operations platform — so revenue teams ship outbound in minutes, not weeks.</p>
-
-      <h2>How It Works</h2>
-      <ol>
-        <li><strong>Describe your ideal customer</strong> — Enter the job titles, industries, company size, geography, or buying signals you care about in natural language.</li>
-        <li><strong>Review matched prospects</strong> — See ranked leads with useful company and contact context so you can prioritize faster.</li>
-        <li><strong>Launch outreach</strong> — Generate more relevant outbound messages and manage replies without bouncing between disconnected tools.</li>
-      </ol>
-
-      <h2>Key Features</h2>
-      <dl>
-        <dt>Plain-English lead search</dt>
-        <dd>Find B2B prospects without relying on complicated filters or boolean syntax.</dd>
-        <dt>Lead prioritization</dt>
-        <dd>Review best-fit prospects first with contextual information that helps your team focus on the right accounts.</dd>
-        <dt>Personalized outreach</dt>
-        <dd>Generate outreach drafts using lead and company context so your first touch is more relevant.</dd>
-        <dt>Reply management</dt>
-        <dd>Keep conversations and follow-ups organized in one place after prospects respond.</dd>
-        <dt>Workflow automation</dt>
-        <dd>Reduce manual sales work with sequences, handoffs, and automation building blocks.</dd>
-      </dl>
-
-      <h2>Who It's For</h2>
-      <ul>
-        <li>Founder-led B2B sales teams</li>
-        <li>Outbound agencies</li>
-        <li>SDR and growth teams that need leads fast</li>
-        <li>Teams tired of manual prospect research and tool sprawl</li>
-      </ul>
-
-      <h2>Pricing</h2>
-      <p>Free ($0, 10 lead searches/month) · Starter ($39/mo, 1,000 prospects) · Growth ($89/mo, 2,500 prospects) · Pro ($179/mo, 5,000 prospects). All paid plans include a 14-day free trial. No credit card required to start.</p>
-
-      <h2>Frequently Asked Questions</h2>
-      <dl>
-        <dt>What is OutReign?</dt>
-        <dd>OutReign is a B2B prospecting and outreach platform that helps teams go from ICP definition to live outreach faster.</dd>
-        <dt>Do I need boolean search skills to use it?</dt>
-        <dd>No. OutReign is built around plain-English targeting.</dd>
-        <dt>Can I try it before paying?</dt>
-        <dd>Yes. You can start free and upgrade when you are ready.</dd>
-        <dt>Who is OutReign best for?</dt>
-        <dd>It is strongest for founder-led sales teams, outbound agencies, SDR teams, and B2B operators running outbound motions.</dd>
-        <dt>What integrations are available?</dt>
-        <dd>OutReign currently supports Google Workspace and is expanding support for tools like Slack, HubSpot, Salesforce, Calendly, and Zapier.</dd>
-        <dt>Is OutReign a fit for every business?</dt>
-        <dd>No. It is generally not the right fit for e-commerce, B2C, or companies that do not run outbound.</dd>
-      </dl>
-
-      <h2>Integrations</h2>
-      <ul>
-        <li>Google Workspace</li>
-        <li>Slack</li>
-        <li>Calendly</li>
-        <li>HubSpot</li>
-        <li>Salesforce</li>
-        <li>Zapier</li>
-      </ul>
-
-      <h2>Important Pages</h2>
-      <nav>
-        <ul>
-          <li><a href="https://outreign.io/">Homepage</a></li>
-          <li><a href="https://outreign.io/pricing">Pricing</a></li>
-          <li><a href="https://outreign.io/api-docs">API Documentation</a></li>
-          <li><a href="https://outreign.io/help">Help Center</a></li>
-          <li><a href="https://outreign.io/privacy">Privacy Policy</a></li>
-          <li><a href="https://outreign.io/terms">Terms of Service</a></li>
-          <li><a href="https://outreign.io/security">Security</a></li>
-          <li><a href="https://outreign.io/vs-apollo">OutReign vs Apollo</a></li>
-          <li><a href="https://outreign.io/vs-instantly">OutReign vs Instantly</a></li>
-          <li><a href="https://outreign.io/partners">Partners</a></li>
-        </ul>
-      </nav>
-
-      <footer>
-        <a href="https://plugyourbuild.com/listing/outreign-b8ad99" rel="dofollow">
-          <img src="https://plugyourbuild.com/api/badge/outreign-b8ad99?style=dark" alt="Listed on Plug Your Build" width="180" height="40" />
-        </a>
-      </footer>
-    </div>
-
     <noscript>
       <article style="max-width:800px;margin:0 auto;padding:2rem;font-family:system-ui,sans-serif">
-        <h1>OutReign — Know Who to Email Before Writing a Word</h1>
-        <p>OutReign helps B2B teams find who's worth emailing before writing a single word. Describe your ideal customer in plain English, get ranked verified prospects, and launch personalized email outreach — all in one workflow. First lead in under 2 minutes.</p>
+        <h1>Find who to sell to. Then close them.</h1>
+        <p>Know exactly who's ready to buy. OutReign scores every prospect by fit and intent, verifies their inbox, and drafts the opener, so your team focuses on closing.</p>
         <h2>Features</h2>
         <ul>
-          <li><strong>Plain-English Lead Search</strong> — Describe your ICP in plain English and get back ranked, verified contacts.</li>
-          <li><strong>ICP Scoring</strong> — Every prospect scored by fit so you contact the right people first.</li>
-          <li><strong>AI Email Drafts</strong> — Context-aware openers written from real company signals.</li>
-          <li><strong>Reply Management</strong> — Track every thread and follow up without a separate inbox.</li>
-          <li><strong>AI Roleplay Coach</strong> — Practice objection-handling with an AI that plays your prospect. Available on Growth and Pro plans.</li>
-          <li><strong>Sequence Automation</strong> — Multi-step email sequences with branching and A/B testing.</li>
+          <li><strong>Plain-English lead search</strong>: no boolean syntax or filter UI.</li>
+          <li><strong>ICP Builder</strong>: fit and intent scoring on every prospect.</li>
+          <li><strong>SMTP-verified email enrichment</strong>: verified contacts from public records and licensed data partnerships, validated by SMTP handshake before delivery.</li>
+          <li><strong>AI email drafting</strong>: openers written from the prospect's role, company news, and growth signals.</li>
+          <li><strong>Email Quality Checker</strong>: pre-send scoring on spam triggers, readability, and personalization.</li>
+          <li><strong>Sequence automation</strong>: send-time optimization, branching, and A/B testing.</li>
+          <li><strong>Unified reply inbox</strong>: AI-drafted responses with automatic reply classification.</li>
+          <li><strong>Deliverability suite</strong>: deliverability dashboard, mailbox warmup, and DNS health checks.</li>
+          <li><strong>ICP lookalike discovery</strong>: find more accounts that resemble your best-fit customers.</li>
+          <li><strong>AI SDR agent</strong>: sources leads, sends first touch, classifies replies, handles objections, and books meetings via Calendly. Growth 10 per day, Pro 50 per day, Agency 200 per day.</li>
         </ul>
         <h2>Pricing</h2>
-        <p>Free ($0, 10 searches/month) · Starter ($39/mo) · Growth ($89/mo) · Pro ($179/mo). 14-day free trial on all paid plans.</p>
+        <p>Pricing scales by prospects contacted per month, not per seat. Seats are unlimited on paid plans.</p>
+        <ul>
+          <li><strong>Explore, $0</strong>: 100 lead searches per month, up to 25 results per search, 100 emails per month.</li>
+          <li><strong>Starter, $39/mo</strong>: 1,000 prospects per month.</li>
+          <li><strong>Growth, $89/mo</strong>: 2,500 prospects per month.</li>
+          <li><strong>Pro, $179/mo</strong>: 5,000 prospects per month.</li>
+          <li><strong>Agency, $249/mo</strong>: 15,000 prospects per month.</li>
+        </ul>
+        <p>All four paid plans include a 14-day free trial and a 30-day money-back guarantee. Save 20% with yearly billing. One-time credit packs are available: 200 prospects for $37.50, 400 prospects for $67.50, and 600 prospects for $90.</p>
         <p><a href="https://outreign.io/pricing">View full pricing</a> · <a href="https://outreign.io/help">Help Center</a> · <a href="https://outreign.io/privacy">Privacy</a> · <a href="https://outreign.io/terms">Terms</a></p>
         <footer>
           <a href="https://plugyourbuild.com/listing/outreign-b8ad99" rel="dofollow">
