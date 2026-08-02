@@ -644,8 +644,14 @@ serve(async (req) => {
     console.log('User check:', { userId: user.id, isAdmin });
 
     // Enforce credit limits for non-admin users.
-    // Free accounts get 10 lifetime leads — no subscription required.
-    // Paid accounts use their monthly allotment.
+    // Free accounts get the free allowance — no subscription required.
+    // Paid accounts use their monthly allotment. See PLAN_SEARCH_LIMITS.
+    //
+    // Resolved once, here, and reused for every tier decision in this request
+    // (daily limit, credit balance, results per search). Resolving it twice is
+    // what let the results cap default to a different plan than the credit
+    // check, so a row-less account was metered as free but capped as growth.
+    let userPlan = 'free';
     if (!isAdmin) {
       const { data: subscription, error: subError } = await supabase
         .from('subscriptions')
@@ -667,8 +673,8 @@ serve(async (req) => {
       }
 
       // Resolve plan — no subscription row = free tier.
-      const plan = subscription?.plan || 'free';
-      const planConfig = getPlanSearchLimits(plan);
+      userPlan = subscription?.plan || 'free';
+      const planConfig = getPlanSearchLimits(userPlan);
 
       // Check daily limit reset
       const now = new Date();
@@ -708,8 +714,8 @@ serve(async (req) => {
       // Check credits — free users get 100, paid users get their plan allotment.
       const remainingCredits = subscription?.search_credits_remaining ?? planConfig.monthlySearchCredits;
       if (remainingCredits <= 0) {
-        const isFree = plan === 'free';
-        console.log('Credits exhausted:', { userId: user.id, plan, remaining: remainingCredits });
+        const isFree = userPlan === 'free';
+        console.log('Credits exhausted:', { userId: user.id, plan: userPlan, remaining: remainingCredits });
         return new Response(
           JSON.stringify({
             error: isFree
@@ -752,7 +758,7 @@ serve(async (req) => {
 
       console.log('Credit deducted:', { 
         userId: user.id, 
-        plan,
+        plan: userPlan,
         newRemaining, 
         newDailyUsed, 
         dailyLimit: planConfig.dailySearchLimit 
@@ -857,16 +863,10 @@ serve(async (req) => {
     // Enforce plan-based maxResultsPerSearch limit
     const page = filters.page || 1;
     
-    // Look up actual plan from subscription if not admin
-    let maxResults = 100; // default for admin
-    if (!isAdmin) {
-      const { data: subForLimits } = await supabase
-        .from('subscriptions')
-        .select('plan')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      maxResults = getPlanSearchLimits(subForLimits?.plan || 'growth').maxResultsPerSearch;
-    }
+    // Reuse the plan resolved above rather than re-reading the subscription:
+    // one lookup, one tier, so the results cap can never disagree with the
+    // tier the credit was charged against. Admins get the pro cap.
+    const maxResults = getPlanSearchLimits(isAdmin ? 'pro' : userPlan).maxResultsPerSearch;
     
     const limit = Math.min(filters.limit || 10, maxResults);
     const offset = (page - 1) * limit;
