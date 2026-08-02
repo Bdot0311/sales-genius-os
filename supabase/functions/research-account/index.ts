@@ -78,7 +78,13 @@ serve(async (req) => {
     // Only signals with a source url can become a rendered claim.
     const sourced = raw.filter((r) => r.source).slice(0, 12);
 
-    // Cap: consume one unit only when we actually research (cache miss).
+    // Nothing researchable: do not spend a quota unit and do not cache an empty
+    // result (which would hide this account's why-now for STALE_DAYS).
+    if (!sourced.length) {
+      return json({ claims: [], from_cache: false, no_signals: true, researched_at: null });
+    }
+
+    // Cap: consume one unit only when we actually have something to research.
     const remaining = await supabase.rpc("consume_research", { p_user_id: user.id, p_cap: cap });
     if ((remaining.data as number) === -1) {
       return json({ error: "daily research limit reached. it resets tomorrow.", error_code: "cap_reached", remaining: 0 }, 429);
