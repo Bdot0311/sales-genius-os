@@ -101,7 +101,7 @@ const slotToTitle = (s: Slot): string | undefined => {
             ) : (
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs text-muted-foreground">no contact yet</span>
-                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => sourceRole(s.label)}>
+                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => sourceRole(s)}>
                   <UserPlus className="w-3 h-3 mr-1" />source this role
                 </Button>
               </div>
