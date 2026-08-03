@@ -276,10 +276,13 @@ export const PLAN_FEATURES = {
 
     // AI SDR Agent — Growth tier: monitor + reply to interested only, deliverability check
     aiAgentTier: 'growth' as 'growth',
-    agentMaxDailyReplies: 10,
+    agentBuilds: 3,
+    agentMaxDailyReplies: 50,
+    agentDailyLeadSourcing: 300,
     agentMinDelayMinutes: 30,
+    agentAutoSend: true,
     agentDeliverabilityCheck: true,
-    agentAutoHandleObjections: false,
+    agentAutoHandleObjections: true,
     agentAutoBookMeetings: false,
   },
 
