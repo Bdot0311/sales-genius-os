@@ -3037,6 +3037,57 @@ export type Database = {
         }
         Relationships: []
       }
+      search_usage_events: {
+        Row: {
+          created_at: string
+          credit_balance_after: number | null
+          credits_charged: number
+          error_code: string | null
+          filters: Json
+          id: string
+          provider: string
+          provider_source: string | null
+          provider_total: number | null
+          results_count: number
+          search_type: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credit_balance_after?: number | null
+          credits_charged?: number
+          error_code?: string | null
+          filters?: Json
+          id?: string
+          provider?: string
+          provider_source?: string | null
+          provider_total?: number | null
+          results_count?: number
+          search_type?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credit_balance_after?: number | null
+          credits_charged?: number
+          error_code?: string | null
+          filters?: Json
+          id?: string
+          provider?: string
+          provider_source?: string | null
+          provider_total?: number | null
+          results_count?: number
+          search_type?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       security_events: {
         Row: {
           created_at: string
