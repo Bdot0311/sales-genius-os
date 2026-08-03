@@ -1293,7 +1293,17 @@ ${icpContext || "No ICP profile is saved yet. Tell the user to save one on the I
       .update({ updated_at: new Date().toISOString() })
       .eq("id", threadId);
 
+    await captureServerEvent("agent_chat_turn_completed", userId, {
+      thread_id: threadId,
+      tools_used: toolEvents.map((t) => t.name),
+      tool_count: toolEvents.length,
+      had_error: toolEvents.some((t) => t.status === "error"),
+      drafts_created: toolEvents.reduce((n, t) => n + (t.drafts?.length ?? 0), 0),
+      approvals_requested: toolEvents.filter((t) => !!t.approval_id).length,
+    });
+
     return json({ message: saved, toolEvents });
+
   } catch (error) {
     console.error("agent-chat error", error);
     return json({ error: "The agent hit an unexpected error." }, 500);
