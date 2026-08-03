@@ -1041,6 +1041,7 @@ serve(async (req) => {
 
       if (mappedLeads.length === 0) {
         await refundCredit('empty_result');
+        await updateUsageEvent('empty', 0, 'empty_result');
         return new Response(
           JSON.stringify({ success: true, leads: [], total: 0, from_cache: false, empty_companies: emptyCompanies,
             message: 'No contacts found at the selected companies. Try broadening the role filter.' }),
@@ -1049,6 +1050,7 @@ serve(async (req) => {
       }
 
       const pageLeads = mappedLeads.slice(offset, offset + limit);
+      await updateUsageEvent('success', pageLeads.length, undefined, 'api', mappedLeads.length);
       return new Response(
         JSON.stringify({ success: true, leads: pageLeads, total: mappedLeads.length, from_cache: false, empty_companies: emptyCompanies }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
