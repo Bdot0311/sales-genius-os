@@ -846,50 +846,8 @@ serve(async (req) => {
       });
     }
 
-    // Record every search in the usage-events log so we can audit, report, and
-    // optimize provider spend. Captured even for admins so the dataset is complete.
-    try {
-      const { data: usageEvent } = await supabase
-        .from('search_usage_events')
-        .insert({
-          user_id: user.id,
-          search_type: 'lead_search',
-          filters: filters as any,
-          provider: 'railway',
-          credits_charged: creditWasCharged ? 1 : 0,
-          credit_balance_after: creditBalanceAfter,
-          status: 'started',
-        })
-        .select('id')
-        .single();
-      if (usageEvent) usageEventId = usageEvent.id;
-    } catch (e) {
-      console.error('Failed to create search usage event:', e);
-    }
-
-    const updateUsageEvent = async (
-      status: string,
-      resultsCount = 0,
-      errorCode?: string,
-      providerSource?: string,
-      providerTotal?: number
-    ) => {
-      if (!usageEventId) return;
-      try {
-        await supabase
-          .from('search_usage_events')
-          .update({
-            results_count: resultsCount,
-            provider_source: providerSource,
-            provider_total: providerTotal,
-            status,
-            error_code: errorCode,
-          })
-          .eq('id', usageEventId);
-      } catch (e) {
-        console.error('Failed to update search usage event:', e);
-      }
-    };
+    // Ensure admin runs are also audited (non-admin rows were created earlier).
+    await createUsageEvent();
 
     // Undo what this search consumed when it fails or comes back empty. The
     // daily count is always released; the credit only if one was actually
