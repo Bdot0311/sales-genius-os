@@ -52,6 +52,7 @@ const freePlan: FreePlan = {
     "View-only dashboard access",
     "Summary analytics",
     "Help center access",
+    "🤖 Explore Agent — 1 agent build, drafts leads + replies for your approval (3/day)",
   ],
   cta: "Book a setup call",
   ctaRoute: "https://calendly.com/bdotindustries/30min",
@@ -77,7 +78,7 @@ const paidPlans: PaidPlan[] = [
       "AI email generator",
       "Sequence templates",
       "Standard support",
-      "AI SDR Agent: not included",
+      "🤖 Starter Agent — 1 agent build, sends first-touch, 15 auto-replies/day",
     ],
     monthlyPriceId: STRIPE_PRICE_IDS.starter_monthly,
     yearlyPriceId: STRIPE_PRICE_IDS.starter_yearly,
@@ -101,7 +102,7 @@ const paidPlans: PaidPlan[] = [
       "ICP lookalike discovery",
       "AI personalized outreach",
       "Priority support",
-      "🤖 Growth Agent — finds leads, sends first-touch, 10 auto-replies/day",
+      "🤖 Growth Agent — 3 agent builds, objection handling, 50 auto-replies/day",
     ],
     highlighted: true,
     monthlyPriceId: STRIPE_PRICE_IDS.growth_monthly,
@@ -126,7 +127,7 @@ const paidPlans: PaidPlan[] = [
       "CRM integrations",
       "Team collaboration",
       "Premium support",
-      "🤖 Pro Agent — full cycle: sourcing, sending, objections, meetings, 50 auto-replies/day",
+      "🤖 Pro Agent — 5 agent builds, meeting booking, 150 auto-replies/day",
     ],
     monthlyPriceId: STRIPE_PRICE_IDS.pro_monthly,
     yearlyPriceId: STRIPE_PRICE_IDS.pro_yearly,
@@ -151,7 +152,7 @@ const paidPlans: PaidPlan[] = [
       "Referral & reseller program",
       "Priority API access",
       "Dedicated account support",
-      "🤖 Elite Agent — full cycle at scale, 200 auto-replies/day, fully autonomous",
+      "🤖 Elite Agent — unlimited agent builds, fully autonomous, 500 auto-replies/day",
     ],
     monthlyPriceId: STRIPE_PRICE_IDS.agency_monthly,
     yearlyPriceId: STRIPE_PRICE_IDS.agency_yearly,
@@ -223,15 +224,21 @@ const comparisonCategories = [
   {
     name: "AI SDR Agent",
     features: [
-      { name: "Agent tier", free: "—", starter: "—", growth: "Growth", pro: "Pro", agency: "Elite" },
-      { name: "Daily autonomous replies", free: "—", starter: "—", growth: "10/day", pro: "50/day", agency: "200/day" },
-      { name: "Minimum reply delay", free: "—", starter: "—", growth: "30 min", pro: "10 min", agency: "5 min" },
-      { name: "Autonomous lead sourcing", free: false, starter: false, growth: true, pro: true, agency: true },
-      { name: "Sends first-touch outreach", free: false, starter: false, growth: true, pro: true, agency: true },
-      { name: "Reply to interested prospects", free: false, starter: false, growth: true, pro: true, agency: true },
-      { name: "Deliverability check on replies", free: false, starter: false, growth: true, pro: true, agency: true },
-      { name: "Auto handle objections", free: false, starter: false, growth: false, pro: true, agency: true },
+      { name: "Agent tier", free: "Explore", starter: "Starter", growth: "Growth", pro: "Pro", agency: "Elite" },
+      { name: "Agent builds", free: "1", starter: "1", growth: "3", pro: "5", agency: "Unlimited" },
+      { name: "Daily autonomous replies", free: "3 drafts/day", starter: "15/day", growth: "50/day", pro: "150/day", agency: "500/day" },
+      { name: "Daily agent lead sourcing", free: "25", starter: "100", growth: "300", pro: "750", agency: "Unlimited" },
+      { name: "Minimum reply delay", free: "120 min", starter: "60 min", growth: "30 min", pro: "10 min", agency: "5 min" },
+      { name: "Per-agent roles & labelling", free: false, starter: false, growth: true, pro: true, agency: true },
+      { name: "Autonomous lead sourcing", free: true, starter: true, growth: true, pro: true, agency: true },
+      { name: "Drafts first-touch outreach", free: true, starter: true, growth: true, pro: true, agency: true },
+      { name: "Sends outreach automatically", free: false, starter: true, growth: true, pro: true, agency: true },
+      { name: "Reply to interested prospects", free: "Drafts only", starter: true, growth: true, pro: true, agency: true },
+      { name: "Deliverability check on replies", free: true, starter: true, growth: true, pro: true, agency: true },
+      { name: "Auto handle objections", free: false, starter: false, growth: true, pro: true, agency: true },
       { name: "Auto book meetings (Calendly)", free: false, starter: false, growth: false, pro: true, agency: true },
+      { name: "Buying committee mapping & why-now research", free: false, starter: false, growth: false, pro: true, agency: true },
+      { name: "Priority agent processing", free: false, starter: false, growth: false, pro: false, agency: true },
     ],
   },
   {
@@ -258,8 +265,8 @@ const creditFAQs = [
   { question: "Can I upgrade, downgrade, or cancel anytime?", answer: "Yes. Upgrades happen instantly with your new allocation. Downgrades and cancellations apply at the end of your billing cycle." },
   { question: "Is there a free trial?", answer: "Yes. All four paid plans start with a 14-day free trial. You add a card at signup, use the full plan for two weeks, and you are not charged until day 15. Cancel before then and you pay nothing. The Explore plan is free forever and needs no trial." },
   { question: "Is there a money-back guarantee?", answer: "Yes, we offer a 30-day money-back guarantee on all paid plans. The trial and the guarantee work together: 14 days to try a plan before your first charge, then 30 days after it to request a full refund." },
-  { question: "What is the AI SDR Agent?", answer: "The AI SDR Agent is an autonomous sales rep built into OutReign. It sources leads that match your ICP, writes and sends the first-touch email from your Gmail, then monitors threads, classifies prospect replies (interested, objection, meeting request, etc.), and replies in your voice. Available on Growth, Pro, and Agency plans with increasing daily reply limits and capabilities." },
-  { question: "What's the difference between Growth, Pro, and Elite Agent?", answer: "Growth Agent (10 auto-replies/day) sources leads, sends first-touch outreach, and auto-replies to interested prospects. Pro Agent (50 replies/day) adds objection handling and automatic meeting booking via Calendly. Elite Agent on Agency (200 replies/day) is the full package — fully autonomous with all capabilities and the shortest reply delay (5 min)." },
+  { question: "What is the AI SDR Agent?", answer: "The AI SDR Agent is an autonomous sales rep built into OutReign. It sources leads that match your ICP, writes and sends the first-touch email from your Gmail, then monitors threads, classifies prospect replies (interested, objection, meeting request, etc.), and replies in your voice. Every plan includes the AI SDR — higher tiers unlock more agent builds, more daily volume, and more the agent can do on its own." },
+  { question: "How does the AI SDR differ by plan?", answer: "Explore: 1 agent that sources 25 leads/day and drafts outreach and up to 3 replies/day for your approval. Starter: 1 agent that sends autonomously with 15 replies/day and 100 leads/day. Growth: 3 agent builds — label each with its own ICP, persona and campaign — 300 leads/day, 50 replies/day, plus objection handling. Pro: 5 agent builds, 750 leads/day, 150 replies/day, plus automatic meeting booking, committee mapping and why-now research. Agency (Elite): unlimited agent builds, unlimited sourcing, 500 replies/day, fully autonomous with priority processing." },
   { question: "Does the AI SDR Agent pass a spam/deliverability check?", answer: "Yes. Every reply the agent generates is scanned for spam trigger words before it's sent. If a reply fails the check, it's blocked and logged — your sender reputation is never put at risk by the agent." },
 ];
 
@@ -378,17 +385,19 @@ export const Pricing = () => {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold" style={{ color: "hsl(0 0% 92%)" }}>
-              NEW — Full-cycle AI SDR included on Growth, Pro & Agency
+              Full-cycle AI SDR included on every plan — volume scales with your tier
             </p>
             <p className="text-xs mt-0.5" style={{ color: "hsl(0 0% 100% / 0.5)" }}>
-              Your AI sales rep finds leads, writes and sends the first email, then handles replies, objections, and meeting booking — autonomously.
+              Your AI sales rep finds leads, writes and sends the first email, then handles replies, objections, and meeting booking. Every plan gets an agent — higher tiers add agent builds, daily volume, and autonomy.
             </p>
           </div>
           <div className="hidden sm:flex gap-2 flex-shrink-0">
             {[
-              { label: "Growth", sub: "10/day" },
-              { label: "Pro", sub: "50/day" },
-              { label: "Elite", sub: "200/day" },
+              { label: "Explore", sub: "1 agent" },
+              { label: "Starter", sub: "15/day" },
+              { label: "Growth", sub: "3 agents" },
+              { label: "Pro", sub: "5 agents" },
+              { label: "Elite", sub: "Unlimited" },
             ].map((t) => (
               <div
                 key={t.label}
