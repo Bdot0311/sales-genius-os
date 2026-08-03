@@ -23,6 +23,7 @@ import {
 import { Plus, Trash2, Loader2, Save } from "lucide-react";
 import type { AgentConfig } from "@/pages/Agent";
 import { ProspectingSourceHelper, type ICPSnapshot } from "@/components/agent/ProspectingSourceHelper";
+import { ObjectionLibrary } from "@/components/agent/ObjectionLibrary";
 
 
 interface ConfigTabProps {
