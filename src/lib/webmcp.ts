@@ -39,11 +39,11 @@ const PAGES: Record<string, string> = {
 };
 
 const PLANS = [
-  { name: "Explore (Free)", price: "$0/mo", includes: "100 lead searches per month, up to 25 results per search, 100 emails per month, view-only dashboard. No AI SDR agent." },
+  { name: "Explore (Free)", price: "$0/mo", includes: "100 lead searches per month, up to 25 results per search, 100 emails per month, view-only dashboard, Explore AI SDR agent (1 agent build, 25 leads/day sourcing, 3 draft replies/day for approval)." },
   { name: "Starter", price: "$39/mo", includes: "1,000 prospects per month, 100 per day, 50,000 emails per month, ICP Builder (3 profiles), AI email generator" },
-  { name: "Growth", price: "$89/mo", includes: "2,500 prospects per month, 250 per day, 250,000 emails per month, unified reply inbox, ICP lookalike discovery, Growth AI SDR agent (10 replies per day)" },
-  { name: "Pro", price: "$179/mo", includes: "5,000 prospects per month, 500 per day, 1,000,000 emails per month, sequence branching and A/B testing, CRM integrations, Pro AI SDR agent (50 replies per day)" },
-  { name: "Agency", price: "$249/mo", includes: "15,000 prospects per month, 1,500 per day, unlimited emails, white-label client portal, Elite AI SDR agent (200 replies per day)" },
+  { name: "Growth", price: "$89/mo", includes: "2,500 prospects per month, 250 per day, 250,000 emails per month, unified reply inbox, ICP lookalike discovery, Growth AI SDR agent (3 agent builds, 300 leads/day, 50 replies/day, objection handling)" },
+  { name: "Pro", price: "$179/mo", includes: "5,000 prospects per month, 500 per day, 1,000,000 emails per month, sequence branching and A/B testing, CRM integrations, Pro AI SDR agent (5 agent builds, 750 leads/day, 150 replies/day, meeting booking)" },
+  { name: "Agency", price: "$249/mo", includes: "15,000 prospects per month, 1,500 per day, unlimited emails, white-label client portal, Elite AI SDR agent (unlimited agent builds, unlimited sourcing, 500 replies/day)" },
 ];
 
 const text = (value: string) => ({ content: [{ type: "text" as const, text: value }] });
