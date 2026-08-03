@@ -40,7 +40,7 @@ export default defineTool({
       const { data, error } = await supabase
         .from("agent_configs")
         .update(clean)
-        .eq("user_id", userId)
+        .eq("id", existing.id)
         .select("enabled, agent_name, persona, tone, updated_at")
         .single();
       if (error) return err(error.message);

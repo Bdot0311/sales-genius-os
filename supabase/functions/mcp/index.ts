@@ -556,7 +556,7 @@ var update_agent_config_default = defineTool15({
     const { data: existing, error: exErr } = await supabase.from("agent_configs").select("id").eq("user_id", userId).maybeSingle();
     if (exErr) return err(exErr.message);
     if (existing) {
-      const { data: data2, error: error2 } = await supabase.from("agent_configs").update(clean).eq("user_id", userId).select("enabled, agent_name, persona, tone, updated_at").single();
+      const { data: data2, error: error2 } = await supabase.from("agent_configs").update(clean).eq("id", existing.id).select("enabled, agent_name, persona, tone, updated_at").single();
       if (error2) return err(error2.message);
       return ok(data2, "agent_config");
     }
