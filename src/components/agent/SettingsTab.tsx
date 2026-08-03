@@ -60,7 +60,7 @@ export function SettingsTab({
 
   const tierInfo = agentTier ? TIER_LABELS[agentTier] : null;
   // Cap input to plan maximum
-  const effectiveMax = Math.min(planMaxDailyReplies || 200, 200);
+  const effectiveMax = Math.max(1, planMaxDailyReplies || 3);
 
   const handleSaveLimits = async () => {
     if (!userId) {
