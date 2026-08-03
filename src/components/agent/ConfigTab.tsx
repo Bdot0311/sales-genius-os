@@ -23,6 +23,7 @@ import {
 import { Plus, Trash2, Loader2, Save } from "lucide-react";
 import type { AgentConfig } from "@/pages/Agent";
 import { ProspectingSourceHelper, type ICPSnapshot } from "@/components/agent/ProspectingSourceHelper";
+import { ObjectionLibrary } from "@/components/agent/ObjectionLibrary";
 
 
 interface ConfigTabProps {
@@ -455,38 +456,7 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
       </Card>
 
       {/* Objection Handling */}
-      <Card className="border-border/60 bg-card/60">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold">
-            Objection Handling
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Accordion type="multiple" className="space-y-1">
-            {OBJECTION_PRESETS.map((obj) => (
-              <AccordionItem
-                key={obj.key}
-                value={obj.key}
-                className="border border-border/40 rounded-lg px-3 overflow-hidden"
-              >
-                <AccordionTrigger className="text-sm font-medium py-3 hover:no-underline">
-                  {obj.label}
-                </AccordionTrigger>
-                <AccordionContent className="pb-3">
-                  <Textarea
-                    placeholder={`How should the agent respond when a prospect says "${obj.label.toLowerCase()}"?`}
-                    rows={3}
-                    value={objectionResponses[obj.key] ?? ""}
-                    onChange={(e) =>
-                      handleObjectionChange(obj.key, e.target.value)
-                    }
-                  />
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        </CardContent>
-      </Card>
+      <ObjectionLibrary />
 
       {/* Auto-reply settings */}
       <Card className="border-border/60 bg-card/60">
