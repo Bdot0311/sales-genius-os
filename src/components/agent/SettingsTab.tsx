@@ -32,6 +32,8 @@ interface SettingsTabProps {
 }
 
 const TIER_LABELS: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  free:    { label: "Explore Agent",  color: "text-slate-300", bg: "bg-slate-500/10", border: "border-slate-500/30" },
+  starter: { label: "Starter Agent",  color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/30" },
   growth: { label: "Growth Agent", color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/30" },
   pro:    { label: "Pro Agent",    color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/30" },
   elite:  { label: "Elite Agent",  color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/30" },
