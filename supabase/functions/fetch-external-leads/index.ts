@@ -892,6 +892,31 @@ serve(async (req) => {
     const limit = Math.min(filters.limit || 10, maxResults);
     const offset = (page - 1) * limit;
 
+    // Record what this search cost upstream. Paid searches spend no credits, so
+    // search_transactions no longer sees them and the daily cap is the only
+    // bound on provider spend — this is the data needed to size that cap
+    // against reality. Best-effort and never fatal: telemetry must not fail a
+    // search the user already paid for in provider calls.
+    let usageRecorded = false;
+    const recordSearchUsage = async (resultsReturned: number, providerHit: boolean) => {
+      if (usageRecorded) return;
+      usageRecorded = true;
+      try {
+        await supabase.from('search_usage_events').insert({
+          user_id: user.id,
+          plan: isAdmin ? 'admin' : userPlan,
+          is_admin: isAdmin,
+          provider_hit: providerHit,
+          results_returned: resultsReturned,
+          requested_limit: filters.limit ?? null,
+          max_results_allowed: maxResults,
+          charged_credit: creditWasCharged,
+        });
+      } catch (e) {
+        console.error('Failed to record search usage:', e);
+      }
+    };
+
     // Normalize all values
     const normalizedIndustry = normalizeIndustry(filters.industry || icpIndustries[0] || '');
     const normalizedSeniority = normalizeSeniority(filters.seniority || icpSeniorities[0] || '');
@@ -987,6 +1012,7 @@ serve(async (req) => {
 
       if (mappedLeads.length === 0) {
         await refundCredit('empty_result');
+        await recordSearchUsage(0, true);
         return new Response(
           JSON.stringify({ success: true, leads: [], total: 0, from_cache: false, empty_companies: emptyCompanies,
             message: 'No contacts found at the selected companies. Try broadening the role filter.' }),
@@ -995,6 +1021,7 @@ serve(async (req) => {
       }
 
       const pageLeads = mappedLeads.slice(offset, offset + limit);
+      await recordSearchUsage(pageLeads.length, true);
       return new Response(
         JSON.stringify({ success: true, leads: pageLeads, total: mappedLeads.length, from_cache: false, empty_companies: emptyCompanies }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -1333,6 +1360,7 @@ serve(async (req) => {
       } catch (probeErr) { console.log('Schema probe failed:', probeErr); }
 
       await refundCredit('empty_result');
+      await recordSearchUsage(0, !data.from_cache);
       return new Response(
         JSON.stringify({ success: true, leads: [], total: 0, from_cache: false,
           message: 'No leads found for this search. Try different search criteria.' }),
@@ -1354,6 +1382,10 @@ serve(async (req) => {
     if (leads.length > 0) {
       console.log('First processed lead:', JSON.stringify(leads[0], null, 2));
     }
+
+    // from_cache means the backend served this without calling the provider,
+    // so it cost nothing upstream and must not count toward provider spend.
+    await recordSearchUsage(leads.length, !data.from_cache);
 
     return new Response(
       JSON.stringify({ 
