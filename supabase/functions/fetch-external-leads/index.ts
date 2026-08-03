@@ -730,6 +730,7 @@ serve(async (req) => {
       const remainingCredits = subscription?.search_credits_remaining ?? planConfig.monthlySearchCredits;
       if (chargesPerSearch && remainingCredits <= 0) {
         console.log('Free search allowance exhausted:', { userId: user.id, remaining: remainingCredits });
+        await updateUsageEvent('error', 0, 'credits_exhausted');
         return new Response(
           JSON.stringify({
             error: `You've used your ${planConfig.monthlySearchCredits} free lead searches. `
