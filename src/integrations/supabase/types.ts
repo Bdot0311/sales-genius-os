@@ -3051,6 +3051,8 @@ export type Database = {
           error_code: string | null
           filters: Json
           id: string
+          is_admin: boolean
+          plan: string
           provider: string
           provider_source: string | null
           provider_total: number | null
@@ -3067,6 +3069,8 @@ export type Database = {
           error_code?: string | null
           filters?: Json
           id?: string
+          is_admin?: boolean
+          plan?: string
           provider?: string
           provider_source?: string | null
           provider_total?: number | null
@@ -3083,6 +3087,8 @@ export type Database = {
           error_code?: string | null
           filters?: Json
           id?: string
+          is_admin?: boolean
+          plan?: string
           provider?: string
           provider_source?: string | null
           provider_total?: number | null
