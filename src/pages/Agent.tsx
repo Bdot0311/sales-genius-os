@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useSubscription } from "@/hooks/use-subscription";
+import { getAgentTier, getNextPlan, PLAN_FEATURES, type PlanType } from "@/lib/plan-features";
 import { OverviewTab } from "@/components/agent/OverviewTab";
 import { InboxTab } from "@/components/agent/InboxTab";
 import { ConfigTab } from "@/components/agent/ConfigTab";
