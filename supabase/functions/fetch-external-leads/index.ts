@@ -719,59 +719,6 @@ serve(async (req) => {
     let creditBalanceAfter: number | null = null;
     let usageEventId: string | null = null;
 
-    async function updateUsageEvent(
-      status: string,
-      resultsCount = 0,
-      errorCode?: string,
-      providerSource?: string,
-      providerTotal?: number,
-      creditUpdate?: { creditsCharged?: number; creditBalanceAfter?: number | null }
-    ) {
-      if (!usageEventId) return;
-      const update: Record<string, unknown> = {
-        results_count: resultsCount,
-        provider_source: providerSource,
-        provider_total: providerTotal,
-        status,
-        error_code: errorCode,
-      };
-      if (creditUpdate?.creditsCharged !== undefined) {
-        update.credits_charged = creditUpdate.creditsCharged;
-      }
-      if (creditUpdate?.creditBalanceAfter !== undefined) {
-        update.credit_balance_after = creditUpdate.creditBalanceAfter;
-      }
-      try {
-        await supabase
-          .from('search_usage_events')
-          .update(update)
-          .eq('id', usageEventId);
-      } catch (e) {
-        console.error('Failed to update search usage event:', e);
-      }
-    }
-
-    async function createUsageEvent(creditsCharged = 0, balanceAfter: number | null = null) {
-      if (usageEventId) return;
-      try {
-        const { data: usageEvent } = await supabase
-          .from('search_usage_events')
-          .insert({
-            user_id: user.id,
-            search_type: 'lead_search',
-            filters: filters as any,
-            provider: 'railway',
-            credits_charged: creditsCharged,
-            credit_balance_after: balanceAfter,
-            status: 'started',
-          })
-          .select('id')
-          .single();
-        if (usageEvent) usageEventId = usageEvent.id;
-      } catch (e) {
-        console.error('Failed to create search usage event:', e);
-      }
-    }
 
     if (!isAdmin) {
       const { data: subscription, error: subError } = await supabase
