@@ -104,11 +104,11 @@ serve(async (req) => {
     const cacheKey = `posthog_insights_${range}`;
     const { data: cached } = await supabase
       .from("api_cache")
-      .select("response, expires_at")
+      .select("cache_value, expires_at")
       .eq("cache_key", cacheKey)
       .maybeSingle();
     if (cached?.expires_at && new Date(cached.expires_at).getTime() > Date.now()) {
-      return json({ ...(cached.response as Record<string, unknown>), cached: true });
+      return json({ ...(cached.cache_value as Record<string, unknown>), cached: true });
     }
 
     const since = `now() - INTERVAL ${days} DAY`;
@@ -223,7 +223,8 @@ serve(async (req) => {
     // 5-minute cache keeps us far inside PostHog's rate limits.
     await supabase.from("api_cache").upsert({
       cache_key: cacheKey,
-      response: payload,
+      cache_value: payload,
+      ttl_seconds: 300,
       expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
     }, { onConflict: "cache_key" });
 
