@@ -252,6 +252,35 @@
 
 
 # SPA fallback — keep last.
+# The /guides/* paths were retired in favour of /blog/*. They were handled by a
+# client-side <Navigate>, which returns 200 with the SPA shell — search engines
+# see a page, not a redirect, so all three sat in Search Console as discovered
+# and never indexed. A 301 consolidates them onto the blog URLs and passes the
+# signal along. They must precede the SPA fallback below.
+[[redirects]]
+  from = "/guides"
+  to = "/blog"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/guides/email-warmup"
+  to = "/blog/email-warmup"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/guides/b2b-icp-criteria-template"
+  to = "/blog/b2b-icp-criteria-template"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/guides/*"
+  to = "/blog"
+  status = 301
+  force = true
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

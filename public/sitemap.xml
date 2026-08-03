@@ -119,20 +119,8 @@
   </url>
 
   <!-- Legacy redirect: Guides index -->
-  <url>
-    <loc>https://outreign.io/guides</loc>
-    <lastmod>2026-07-10</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.3</priority>
-  </url>
 
   <!-- Legacy redirect: Email Warmup Guide -->
-  <url>
-    <loc>https://outreign.io/guides/email-warmup</loc>
-    <lastmod>2026-07-10</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.3</priority>
-  </url>
 
   <!-- Blog: B2B ICP Criteria & Template -->
   <url>
@@ -168,12 +156,6 @@
 
 
   <!-- Legacy redirect: B2B ICP Criteria Guide -->
-  <url>
-    <loc>https://outreign.io/guides/b2b-icp-criteria-template</loc>
-    <lastmod>2026-07-10</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.3</priority>
-  </url>
 
 
 
