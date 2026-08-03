@@ -59,6 +59,65 @@ function buildIcpExcluder(filters: ExternalLeadFilters): ((lead: any) => boolean
   };
 }
 
+async function createUsageEvent(
+  supabase: any,
+  filters: ExternalLeadFilters,
+  userId: string,
+  creditsCharged = 0,
+  balanceAfter: number | null = null
+): Promise<string | null> {
+  try {
+    const { data } = await supabase
+      .from('search_usage_events')
+      .insert({
+        user_id: userId,
+        search_type: 'lead_search',
+        filters: filters as any,
+        provider: 'railway',
+        credits_charged: creditsCharged,
+        credit_balance_after: balanceAfter,
+        status: 'started',
+      })
+      .select('id')
+      .single();
+    return data?.id || null;
+  } catch (e) {
+    console.error('Failed to create search usage event:', e);
+    return null;
+  }
+}
+
+async function updateUsageEvent(
+  supabase: any,
+  usageEventId: string | null,
+  status: string,
+  resultsCount = 0,
+  errorCode?: string,
+  providerSource?: string,
+  providerTotal?: number,
+  creditUpdate?: { creditsCharged?: number; creditBalanceAfter?: number | null }
+) {
+  if (!usageEventId) return;
+  const update: Record<string, unknown> = {
+    results_count: resultsCount,
+    provider_source: providerSource,
+    provider_total: providerTotal,
+    status,
+    error_code: errorCode,
+  };
+  if (creditUpdate?.creditsCharged !== undefined) {
+    update.credits_charged = creditUpdate.creditsCharged;
+  }
+  if (creditUpdate?.creditBalanceAfter !== undefined) {
+    update.credit_balance_after = creditUpdate.creditBalanceAfter;
+  }
+  try {
+    await supabase.from('search_usage_events').update(update).eq('id', usageEventId);
+  } catch (e) {
+    console.error('Failed to update search usage event:', e);
+  }
+}
+
 
 interface LeadScores {
   icp_score: number;
