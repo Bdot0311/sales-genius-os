@@ -668,6 +668,8 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+  let supabase: any = null;
+  let usageEventId: string | null = null;
 
   try {
     const filters: ExternalLeadFilters = await req.json();
