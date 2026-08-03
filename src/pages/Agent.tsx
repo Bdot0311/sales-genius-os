@@ -347,6 +347,60 @@ const Agent = () => {
           )}
         </div>
 
+        {/* Plan tier panel */}
+        <Card className="p-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <Zap className="w-4 h-4 text-primary" />
+                <p className="text-sm font-semibold">{tierSpec.label}</p>
+                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
+                  {PLAN_FEATURES[currentPlan].name} plan
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">
+                Included on every plan — higher tiers unlock more agent builds, more daily
+                volume, and more the agent is allowed to do on its own.
+              </p>
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5">
+                {tierSpec.can.map((c) => (
+                  <li key={c} className="text-xs text-muted-foreground flex items-start gap-2">
+                    <span className="mt-1.5 w-1 h-1 rounded-full bg-primary flex-shrink-0" />
+                    {c}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="flex flex-col gap-2 items-end">
+              <div className="flex gap-4 text-right">
+                <div>
+                  <p className="text-[11px] text-muted-foreground">Agent builds</p>
+                  <p className="text-sm font-semibold">{fmt(tierSpec.builds)}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-muted-foreground">Replies / day</p>
+                  <p className="text-sm font-semibold">{fmt(tierSpec.dailyReplies)}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-muted-foreground">Leads / day</p>
+                  <p className="text-sm font-semibold">{fmt(tierSpec.dailyLeadSourcing)}</p>
+                </div>
+              </div>
+              {nextPlan && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => navigate("/pricing")}
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  Upgrade for more agent volume
+                </Button>
+              )}
+            </div>
+          </div>
+        </Card>
+
         {/* Stats row */}
         {loading ? (
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
