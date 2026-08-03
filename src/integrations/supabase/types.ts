@@ -353,6 +353,7 @@ export type Database = {
           icp_profile_id: string | null
           icp_snapshot: Json | null
           id: string
+          is_primary: boolean
           max_daily_auto_replies: number | null
           max_daily_new_emails: number
           objection_responses: Json | null
@@ -362,6 +363,7 @@ export type Database = {
           prospecting_industry: string | null
           prospecting_job_title: string | null
           reply_delay_minutes: number | null
+          role: string
           signature: string | null
           tone: string | null
           updated_at: string | null
@@ -384,6 +386,7 @@ export type Database = {
           icp_profile_id?: string | null
           icp_snapshot?: Json | null
           id?: string
+          is_primary?: boolean
           max_daily_auto_replies?: number | null
           max_daily_new_emails?: number
           objection_responses?: Json | null
@@ -393,6 +396,7 @@ export type Database = {
           prospecting_industry?: string | null
           prospecting_job_title?: string | null
           reply_delay_minutes?: number | null
+          role?: string
           signature?: string | null
           tone?: string | null
           updated_at?: string | null
@@ -415,6 +419,7 @@ export type Database = {
           icp_profile_id?: string | null
           icp_snapshot?: Json | null
           id?: string
+          is_primary?: boolean
           max_daily_auto_replies?: number | null
           max_daily_new_emails?: number
           objection_responses?: Json | null
@@ -424,6 +429,7 @@ export type Database = {
           prospecting_industry?: string | null
           prospecting_job_title?: string | null
           reply_delay_minutes?: number | null
+          role?: string
           signature?: string | null
           tone?: string | null
           updated_at?: string | null
