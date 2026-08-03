@@ -360,7 +360,28 @@ const usePostHogIdentity = () => {
         if (isPostHogEnabled) {
           posthog.identify(session.user.id, {
             ...(session.user.email ? { email: session.user.email } : {}),
+            ...(session.user.created_at ? { signup_date: session.user.created_at } : {}),
           });
+          // Plan/account properties come from the subscription row so every
+          // funnel, insight and replay can be sliced by tier.
+          void (async () => {
+            try {
+              const { data } = await supabase
+                .from("subscriptions")
+                .select("plan, status, account_status, is_trial, trial_ends_at")
+                .eq("user_id", session.user.id)
+                .maybeSingle();
+              if (!data) return;
+              posthog.setPersonProperties({
+                plan: data.plan,
+                subscription_status: data.status,
+                account_status: data.account_status,
+                is_trial: !!data.is_trial,
+                trial_ends_at: data.trial_ends_at ?? null,
+              });
+              if (data.plan) posthog.group("plan", String(data.plan), { name: String(data.plan) });
+            } catch { /* analytics must never break auth */ }
+          })();
         }
         heycatch.setIdentity(
           session.user.id,
@@ -378,6 +399,25 @@ const usePostHogIdentity = () => {
     return () => subscription.unsubscribe();
   }, []);
 };
+
+/**
+ * SPA pageviews. Without this a visitor going landing -> pricing -> auth counts
+ * as one pageview, which wrecks bounce rate and session duration.
+ */
+const RouteAnalytics = () => {
+  const location = useLocation();
+  const lastPath = useRef<string | null>(null);
+
+  useEffect(() => {
+    const path = location.pathname + location.search;
+    if (lastPath.current === path) return;
+    lastPath.current = path;
+    capturePageview(path, { referrer: document.referrer || undefined });
+  }, [location.pathname, location.search]);
+
+  return null;
+};
+
 
 
 const App = () => {
