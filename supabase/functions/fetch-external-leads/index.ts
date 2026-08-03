@@ -63,6 +63,8 @@ async function createUsageEvent(
   supabase: any,
   filters: ExternalLeadFilters,
   userId: string,
+  plan = 'free',
+  isAdmin = false,
   creditsCharged = 0,
   balanceAfter: number | null = null
 ): Promise<string | null> {
@@ -74,6 +76,10 @@ async function createUsageEvent(
         search_type: 'lead_search',
         filters: filters as any,
         provider: 'railway',
+        // Denormalised on purpose: the tier at the time of the search, so a
+        // later upgrade or downgrade does not rewrite history.
+        plan,
+        is_admin: isAdmin,
         credits_charged: creditsCharged,
         credit_balance_after: balanceAfter,
         status: 'started',
@@ -733,8 +739,14 @@ serve(async (req) => {
         throw new Error('Failed to verify subscription');
       }
 
+      // Resolve plan — no subscription row = free tier. Resolved before the
+      // audit row is written so every event carries the tier it ran under;
+      // grouping spend by tier is the point of the table.
+      userPlan = subscription?.plan || 'free';
+      const planConfig = getPlanSearchLimits(userPlan);
+
       // Create the audit row for this search before any gate so failures are recorded.
-      usageEventId = await createUsageEvent(supabase, filters, user.id);
+      usageEventId = await createUsageEvent(supabase, filters, user.id, userPlan, false);
 
       // Hard-lock only explicitly locked accounts.
       if (subscription?.account_status === 'locked') {
@@ -744,10 +756,6 @@ serve(async (req) => {
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-
-      // Resolve plan — no subscription row = free tier.
-      userPlan = subscription?.plan || 'free';
-      const planConfig = getPlanSearchLimits(userPlan);
 
       // Check daily limit reset
       const now = new Date();
@@ -859,8 +867,13 @@ serve(async (req) => {
       });
     }
 
-    // Ensure admin runs are also audited (non-admin rows were created earlier).
-    usageEventId = await createUsageEvent(supabase, filters, user.id);
+    // Ensure admin runs are also audited. Guarded because non-admins already
+    // have a row from the block above — running this unconditionally wrote a
+    // second row per search and left the first stranded at 'started', which
+    // double-counts every search and skews any status breakdown.
+    if (!usageEventId) {
+      usageEventId = await createUsageEvent(supabase, filters, user.id, userPlan, isAdmin);
+    }
 
     // Undo what this search consumed when it fails or comes back empty. The
     // daily count is always released; the credit only if one was actually
