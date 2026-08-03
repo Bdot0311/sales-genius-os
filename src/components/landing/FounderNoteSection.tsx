@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import founderAvatar from "@/assets/founder-brandon.png";
+import founderAvatar from "@/assets/founder-brandon.jpg";
 export const FounderNoteSection = () => {
   const [isVisible, setIsVisible] = useState(false);
   const ref = useRef<HTMLElement>(null);
@@ -114,6 +114,8 @@ export const FounderNoteSection = () => {
                 alt="Brandon, Founder of OutReign"
                 width={40}
                 height={40}
+                loading="lazy"
+                decoding="async"
                 className="w-10 h-10 rounded-full shrink-0 object-cover"
                 style={{ boxShadow: "0 0 0 1px hsl(261 75% 55% / 0.4)" }}
               />
