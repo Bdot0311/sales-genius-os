@@ -1,9 +1,11 @@
-import { Component, Suspense, lazy, useState, useEffect, type ComponentType, type ErrorInfo, type ReactNode } from "react";
+import { Component, Suspense, lazy, useState, useEffect, useRef, type ComponentType, type ErrorInfo, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { isPostHogEnabled, posthog } from "@/lib/posthog";
+import { capturePageview } from "@/lib/analytics-events";
 import { analytics as heycatch } from "@/lib/heycatch";
+
 
 import Index from "./pages/Index";
 
