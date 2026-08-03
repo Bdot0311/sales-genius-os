@@ -29,6 +29,8 @@ import { InboxTab } from "@/components/agent/InboxTab";
 import { ConfigTab } from "@/components/agent/ConfigTab";
 import { SettingsTab } from "@/components/agent/SettingsTab";
 import { AgentTestDialog } from "@/components/agent/AgentTestDialog";
+import { AgentSwitcher } from "@/components/agent/AgentSwitcher";
+import { roleLabel } from "@/components/agent/AgentRoles";
 
 
 export interface AgentConfig {
@@ -36,6 +38,8 @@ export interface AgentConfig {
   user_id: string;
   enabled: boolean;
   agent_name: string | null;
+  role: string | null;
+  is_primary: boolean | null;
   persona: string | null;
   tone: string | null;
   company_context: string | null;
@@ -83,7 +87,8 @@ interface AgentStats {
 const Agent = () => {
   const navigate = useNavigate();
   const { subscription, loading: subLoading } = useSubscription();
-  const [config, setConfig] = useState<AgentConfig | null>(null);
+  const [agents, setAgents] = useState<AgentConfig[]>([]);
+  const [activeAgentId, setActiveAgentId] = useState<string | null>(null);
   const [actions, setActions] = useState<AgentAction[]>([]);
   const [stats, setStats] = useState<AgentStats>({
     activeThreads: 0,
@@ -109,13 +114,20 @@ const Agent = () => {
       const uid = session.user.id;
       setUserId(uid);
 
-      // Load agent config
-      const { data: configData } = await (supabase as any)
+      // Load all agent builds for this user
+      const { data: configRows } = await (supabase as any)
         .from("agent_configs")
         .select("*")
         .eq("user_id", uid)
-        .maybeSingle();
-      setConfig(configData ?? null);
+        .order("is_primary", { ascending: false })
+        .order("created_at", { ascending: true });
+      const agentList: AgentConfig[] = configRows ?? [];
+      setAgents(agentList);
+      setActiveAgentId((prev) =>
+        prev && agentList.some((a) => a.id === prev)
+          ? prev
+          : agentList[0]?.id ?? null
+      );
 
       // Load Gmail integrations (users may have more than one Google mailbox).
       // Only read client-visible columns; token/config fields are intentionally hidden.
