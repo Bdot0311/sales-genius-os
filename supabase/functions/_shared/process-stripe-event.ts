@@ -161,7 +161,9 @@ async function autoPauseAccount(
     user_id: userId,
     related_entity: (details.stripe_subscription_id as string) ?? null,
   });
+  await captureServerEvent("billing_account_auto_paused", userId, { reason, ...details });
   log("account auto-paused", { email, reason });
+
 }
 
 /** Starts (or keeps) the grace window after a failed payment. Returns the deadline. */
@@ -182,7 +184,9 @@ async function startGracePeriod(
     log("grace period start failed", { error: error.message });
     return null;
   }
+  await captureServerEvent("billing_grace_period_started", userId, { reason, days, grace_ends_at: data ?? null, ...details });
   return (data as string) ?? null;
+
 }
 
 /**
@@ -237,7 +241,9 @@ async function autoResumeAccount(
     user_id: userId,
     related_entity: (details.stripe_subscription_id as string) ?? null,
   });
+  await captureServerEvent("billing_account_auto_resumed", userId, { reason, ...details });
   log("account auto-resumed", { email, reason });
+
 }
 
 async function resetDunningState(supabase: SupabaseClient, userId: string) {
