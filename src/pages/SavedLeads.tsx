@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { LeadAssignmentDialog } from "@/components/dashboard/LeadAssignmentDialog";
 import { LeadDetailSheet } from "@/components/dashboard/LeadDetailSheet";
-import { Search, Download, ArrowUpDown, Trash2, UserPlus, LayoutGrid, Table as TableIcon, ArrowLeft, CheckCircle, Sparkles, AlertCircle, Filter } from "lucide-react";
+import { Search, Download, ArrowUpDown, Trash2, UserPlus, LayoutGrid, Table as TableIcon, ArrowLeft, CheckCircle, Sparkles, AlertCircle, Filter, Gauge } from "lucide-react";
 import { IntentScoreBadge } from "@/components/dashboard/IntentScoreBadge";
 import { LeadTierBadge } from "@/components/dashboard/LeadTierBadge";
 import { Progress } from "@/components/ui/progress";
@@ -86,6 +86,8 @@ const SavedLeads = () => {
   const [isEnriching, setIsEnriching] = useState(false);
   const [bulkEnriching, setBulkEnriching] = useState(false);
   const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0, succeeded: 0, failed: 0, skipped: 0 });
+  const [scoring, setScoring] = useState(false);
+  const [scoreProgress, setScoreProgress] = useState({ current: 0, total: 0 });
   const [filterIntentLabel, setFilterIntentLabel] = useState<string>("all");
   const [filterIndustry, setFilterIndustry] = useState<string>("all");
   const [filterCompanySize, setFilterCompanySize] = useState<string>("all");
@@ -195,6 +197,8 @@ const SavedLeads = () => {
       }
       return sortOrder === "asc" ? comparison : -comparison;
     });
+
+  const unscoredLeadIds = filteredAndSortedLeads.filter((l) => !l.tier).map((l) => l.id);
 
   const handleExport = (leadsToExport = filteredAndSortedLeads) => {
     const csv = [
@@ -373,6 +377,54 @@ const SavedLeads = () => {
     setSelectedLeads(new Set());
   };
 
+  // Force Lead Score v2 tiering on demand. Calls score-lead-v2 per lead (the
+  // same deterministic engine that runs on enrichment) and writes the A/B/C
+  // tier. Used by the per-row "Score" button and the bulk score actions.
+  const handleScoreLeads = async (leadIds: string[]) => {
+    if (leadIds.length === 0) {
+      toast({ title: "Nothing to score", description: "These leads are already tiered." });
+      return;
+    }
+    setScoring(true);
+    setScoreProgress({ current: 0, total: leadIds.length });
+    let ok = 0;
+    let failed = 0;
+    let gated = false;
+    for (let i = 0; i < leadIds.length; i++) {
+      setScoreProgress({ current: i + 1, total: leadIds.length });
+      try {
+        const { data, error } = await supabase.functions.invoke("score-lead-v2", {
+          body: { leadId: leadIds[i] },
+        });
+        const errMsg = (error as any)?.message || data?.error;
+        if (errMsg) {
+          if (/paid plan|upgrade/i.test(String(errMsg))) gated = true;
+          failed++;
+        } else {
+          ok++;
+        }
+      } catch {
+        failed++;
+      }
+    }
+    await fetchLeads();
+    setScoring(false);
+    setSelectedLeads(new Set());
+    if (gated && ok === 0) {
+      toast({
+        title: "Scoring is a paid feature",
+        description: "Lead tiering is available on paid plans.",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Scoring complete",
+        description: `${ok} lead${ok === 1 ? "" : "s"} tiered${failed ? ` · ${failed} failed` : ""}.`,
+        variant: failed && ok === 0 ? "destructive" : "default",
+      });
+    }
+  };
+
   const getScoreBadge = (score?: number | null) => {
     if (!score) return null;
     let color = "bg-muted text-muted-foreground";
@@ -505,6 +557,14 @@ const SavedLeads = () => {
                       ? `Enriching ${bulkProgress.current}/${bulkProgress.total}...` 
                       : `Enrich (${selectedLeads.size})`}
                   </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleScoreLeads(Array.from(selectedLeads))}
+                    disabled={scoring}
+                  >
+                    <Gauge className={`w-4 h-4 mr-2 ${scoring ? "animate-spin" : ""}`} />
+                    {scoring ? `Scoring ${scoreProgress.current}/${scoreProgress.total}...` : `Score (${selectedLeads.size})`}
+                  </Button>
                   <Button variant="outline" onClick={() => setShowAssignDialog(true)}>
                     <UserPlus className="w-4 h-4 mr-2" />
                     Assign ({selectedLeads.size})
@@ -520,6 +580,17 @@ const SavedLeads = () => {
                 </>
               )}
               
+              {selectedLeads.size === 0 && unscoredLeadIds.length > 0 && (
+                <Button
+                  variant="outline"
+                  onClick={() => handleScoreLeads(unscoredLeadIds)}
+                  disabled={scoring}
+                >
+                  <Gauge className={`w-4 h-4 mr-2 ${scoring ? "animate-spin" : ""}`} />
+                  {scoring ? `Scoring ${scoreProgress.current}/${scoreProgress.total}...` : `Score ${unscoredLeadIds.length} untiered`}
+                </Button>
+              )}
+
               {selectedLeads.size === 0 && (
                 <Button variant="outline" onClick={() => handleExport()}>
                   <Download className="w-4 h-4 mr-2" />
@@ -556,6 +627,17 @@ const SavedLeads = () => {
                   </span>
                 </div>
                 <Progress value={(bulkProgress.current / bulkProgress.total) * 100} className="h-2" />
+              </div>
+            )}
+
+            {scoring && scoreProgress.total > 0 && (
+              <div className="space-y-2 p-4 border rounded-lg bg-muted/30">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    Scoring leads... {scoreProgress.current}/{scoreProgress.total}
+                  </span>
+                </div>
+                <Progress value={(scoreProgress.current / scoreProgress.total) * 100} className="h-2" />
               </div>
             )}
 
@@ -612,7 +694,20 @@ const SavedLeads = () => {
                           />
                         </td>
                         <td className="p-3" onClick={(e) => e.stopPropagation()}>
-                          <LeadTierBadge lead={lead} />
+                          {lead.tier ? (
+                            <LeadTierBadge lead={lead} />
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                              onClick={() => handleScoreLeads([lead.id])}
+                              disabled={scoring}
+                            >
+                              <Gauge className="w-3 h-3 mr-1" />
+                              Score
+                            </Button>
+                          )}
                         </td>
                         <td className="p-3">
                           <div>
@@ -683,7 +778,20 @@ const SavedLeads = () => {
                           <div className="flex items-center gap-3 flex-wrap">
                             <h3 className="font-semibold text-lg">{lead.contact_name}</h3>
                             <span onClick={(e) => e.stopPropagation()}>
-                              <LeadTierBadge lead={lead} />
+                              {lead.tier ? (
+                                <LeadTierBadge lead={lead} />
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                                  onClick={() => handleScoreLeads([lead.id])}
+                                  disabled={scoring}
+                                >
+                                  <Gauge className="w-3 h-3 mr-1" />
+                                  Score
+                                </Button>
+                              )}
                             </span>
                             {getScoreBadge(lead.icp_score)}
                             <span onClick={(e) => e.stopPropagation()}>
