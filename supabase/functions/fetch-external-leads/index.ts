@@ -684,7 +684,7 @@ serve(async (req) => {
     // Verify user is authenticated
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    supabase = createClient(supabaseUrl, supabaseKey);
 
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
@@ -719,7 +719,6 @@ serve(async (req) => {
     let creditWasCharged = false;
     let dailyWasCounted = false;
     let creditBalanceAfter: number | null = null;
-    let usageEventId: string | null = null;
 
 
     if (!isAdmin) {
