@@ -1189,6 +1189,7 @@ serve(async (req) => {
     if (response.status === 402) {
       console.log('PDL credits exhausted (402) - returning empty results');
       await refundCredit('provider_credits_exhausted');
+      await updateUsageEvent('error', 0, 'credits_exhausted');
       return new Response(
         JSON.stringify({ 
           error: 'Search credits exhausted. Please add more credits to continue searching.',
