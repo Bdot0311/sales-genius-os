@@ -836,6 +836,12 @@ serve(async (req) => {
         });
       }
 
+      // Update the audit row with the actual credit impact of this search.
+      await updateUsageEvent('started', 0, undefined, undefined, undefined, {
+        creditsCharged: creditWasCharged ? 1 : 0,
+        creditBalanceAfter,
+      });
+
       console.log('Search recorded:', {
         userId: user.id,
         plan: userPlan,
