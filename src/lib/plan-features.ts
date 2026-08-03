@@ -91,10 +91,13 @@ export const PLAN_FEATURES = {
     recommendationLevel: 'none',
 
     // AI SDR Agent
-    aiAgentTier: null as null,
-    agentMaxDailyReplies: 0,
-    agentMinDelayMinutes: 60,
-    agentDeliverabilityCheck: false,
+    aiAgentTier: 'free' as 'free',
+    agentBuilds: 1,
+    agentMaxDailyReplies: 3,
+    agentDailyLeadSourcing: 25,
+    agentMinDelayMinutes: 120,
+    agentAutoSend: false,
+    agentDeliverabilityCheck: true,
     agentAutoHandleObjections: false,
     agentAutoBookMeetings: false,
   },
