@@ -1270,6 +1270,7 @@ serve(async (req) => {
       const errorText = await response.text();
       console.error('Railway API error:', response.status, errorText);
       await refundCredit(`upstream_${response.status}`);
+      await updateUsageEvent('error', 0, 'upstream_unavailable');
       return new Response(
         JSON.stringify({
           error: 'The lead data provider is unavailable right now. Your search credit was not used — please try again shortly.',
