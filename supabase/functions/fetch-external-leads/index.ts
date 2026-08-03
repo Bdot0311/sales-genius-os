@@ -747,7 +747,10 @@ serve(async (req) => {
       const newDailyUsed = dailyUsed + 1;
       const update: Record<string, unknown> = { daily_searches_used: newDailyUsed };
       const newRemaining = remainingCredits - 1;
-      if (chargesPerSearch) update.search_credits_remaining = newRemaining;
+      if (chargesPerSearch) {
+        update.search_credits_remaining = newRemaining;
+        creditBalanceAfter = newRemaining;
+      }
 
       const { error: updateError } = await supabase
         .from('subscriptions')
