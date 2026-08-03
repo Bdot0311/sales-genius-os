@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 import { SEOMonitorTab } from "@/components/admin/SEOMonitorTab";
+import { ProductAnalyticsTab } from "@/components/admin/ProductAnalyticsTab";
+
 
 interface SubscriptionData {
   user_id: string;
