@@ -59,6 +59,71 @@ function buildIcpExcluder(filters: ExternalLeadFilters): ((lead: any) => boolean
   };
 }
 
+async function createUsageEvent(
+  supabase: any,
+  filters: ExternalLeadFilters,
+  userId: string,
+  plan = 'free',
+  isAdmin = false,
+  creditsCharged = 0,
+  balanceAfter: number | null = null
+): Promise<string | null> {
+  try {
+    const { data } = await supabase
+      .from('search_usage_events')
+      .insert({
+        user_id: userId,
+        search_type: 'lead_search',
+        filters: filters as any,
+        provider: 'railway',
+        // Denormalised on purpose: the tier at the time of the search, so a
+        // later upgrade or downgrade does not rewrite history.
+        plan,
+        is_admin: isAdmin,
+        credits_charged: creditsCharged,
+        credit_balance_after: balanceAfter,
+        status: 'started',
+      })
+      .select('id')
+      .single();
+    return data?.id || null;
+  } catch (e) {
+    console.error('Failed to create search usage event:', e);
+    return null;
+  }
+}
+
+async function updateUsageEvent(
+  supabase: any,
+  usageEventId: string | null,
+  status: string,
+  resultsCount = 0,
+  errorCode?: string,
+  providerSource?: string,
+  providerTotal?: number,
+  creditUpdate?: { creditsCharged?: number; creditBalanceAfter?: number | null }
+) {
+  if (!usageEventId) return;
+  const update: Record<string, unknown> = {
+    results_count: resultsCount,
+    provider_source: providerSource,
+    provider_total: providerTotal,
+    status,
+    error_code: errorCode,
+  };
+  if (creditUpdate?.creditsCharged !== undefined) {
+    update.credits_charged = creditUpdate.creditsCharged;
+  }
+  if (creditUpdate?.creditBalanceAfter !== undefined) {
+    update.credit_balance_after = creditUpdate.creditBalanceAfter;
+  }
+  try {
+    await supabase.from('search_usage_events').update(update).eq('id', usageEventId);
+  } catch (e) {
+    console.error('Failed to update search usage event:', e);
+  }
+}
+
 
 interface LeadScores {
   icp_score: number;
@@ -609,6 +674,8 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+  let supabase: any = null;
+  let usageEventId: string | null = null;
 
   try {
     const filters: ExternalLeadFilters = await req.json();
@@ -623,7 +690,7 @@ serve(async (req) => {
     // Verify user is authenticated
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    supabase = createClient(supabaseUrl, supabaseKey);
 
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
@@ -657,6 +724,9 @@ serve(async (req) => {
     let chargesPerSearch = false;
     let creditWasCharged = false;
     let dailyWasCounted = false;
+    let creditBalanceAfter: number | null = null;
+
+
     if (!isAdmin) {
       const { data: subscription, error: subError } = await supabase
         .from('subscriptions')
@@ -669,17 +739,23 @@ serve(async (req) => {
         throw new Error('Failed to verify subscription');
       }
 
+      // Resolve plan — no subscription row = free tier. Resolved before the
+      // audit row is written so every event carries the tier it ran under;
+      // grouping spend by tier is the point of the table.
+      userPlan = subscription?.plan || 'free';
+      const planConfig = getPlanSearchLimits(userPlan);
+
+      // Create the audit row for this search before any gate so failures are recorded.
+      usageEventId = await createUsageEvent(supabase, filters, user.id, userPlan, false);
+
       // Hard-lock only explicitly locked accounts.
       if (subscription?.account_status === 'locked') {
+        await updateUsageEvent(supabase, usageEventId, 'error', 0, 'account_locked');
         return new Response(
           JSON.stringify({ error: 'Account is locked. Please contact support.', error_code: 'account_locked', leads: [] }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-
-      // Resolve plan — no subscription row = free tier.
-      userPlan = subscription?.plan || 'free';
-      const planConfig = getPlanSearchLimits(userPlan);
 
       // Check daily limit reset
       const now = new Date();
@@ -704,6 +780,7 @@ serve(async (req) => {
       // Check daily limit
       if (dailyUsed >= planConfig.dailySearchLimit) {
         console.log('Daily limit reached:', { userId: user.id, dailyUsed, limit: planConfig.dailySearchLimit });
+        await updateUsageEvent(supabase, usageEventId, 'error', 0, 'daily_limit_reached');
         return new Response(
           JSON.stringify({ 
             error: 'Daily search limit reached. Try again tomorrow.',
@@ -726,6 +803,7 @@ serve(async (req) => {
       const remainingCredits = subscription?.search_credits_remaining ?? planConfig.monthlySearchCredits;
       if (chargesPerSearch && remainingCredits <= 0) {
         console.log('Free search allowance exhausted:', { userId: user.id, remaining: remainingCredits });
+        await updateUsageEvent(supabase, usageEventId, 'error', 0, 'credits_exhausted');
         return new Response(
           JSON.stringify({
             error: `You've used your ${planConfig.monthlySearchCredits} free lead searches. `
@@ -745,7 +823,10 @@ serve(async (req) => {
       const newDailyUsed = dailyUsed + 1;
       const update: Record<string, unknown> = { daily_searches_used: newDailyUsed };
       const newRemaining = remainingCredits - 1;
-      if (chargesPerSearch) update.search_credits_remaining = newRemaining;
+      if (chargesPerSearch) {
+        update.search_credits_remaining = newRemaining;
+        creditBalanceAfter = newRemaining;
+      }
 
       const { error: updateError } = await supabase
         .from('subscriptions')
@@ -770,6 +851,12 @@ serve(async (req) => {
         });
       }
 
+      // Update the audit row with the actual credit impact of this search.
+      await updateUsageEvent(supabase, usageEventId, 'started', 0, undefined, undefined, undefined, {
+        creditsCharged: creditWasCharged ? 1 : 0,
+        creditBalanceAfter,
+      });
+
       console.log('Search recorded:', {
         userId: user.id,
         plan: userPlan,
@@ -778,6 +865,14 @@ serve(async (req) => {
         newDailyUsed,
         dailyLimit: planConfig.dailySearchLimit
       });
+    }
+
+    // Ensure admin runs are also audited. Guarded because non-admins already
+    // have a row from the block above — running this unconditionally wrote a
+    // second row per search and left the first stranded at 'started', which
+    // double-counts every search and skews any status breakdown.
+    if (!usageEventId) {
+      usageEventId = await createUsageEvent(supabase, filters, user.id, userPlan, isAdmin);
     }
 
     // Undo what this search consumed when it fails or comes back empty. The
@@ -824,6 +919,7 @@ serve(async (req) => {
     if (!railwayBaseUrl) {
       console.error('RAILWAY_LEADS_API_URL not configured');
       await refundCredit('provider_not_configured');
+      await updateUsageEvent(supabase, usageEventId, 'error', 0, 'provider_not_configured');
       return new Response(
         JSON.stringify({ error: 'Lead data provider not configured', leads: [] }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -891,31 +987,6 @@ serve(async (req) => {
     
     const limit = Math.min(filters.limit || 10, maxResults);
     const offset = (page - 1) * limit;
-
-    // Record what this search cost upstream. Paid searches spend no credits, so
-    // search_transactions no longer sees them and the daily cap is the only
-    // bound on provider spend — this is the data needed to size that cap
-    // against reality. Best-effort and never fatal: telemetry must not fail a
-    // search the user already paid for in provider calls.
-    let usageRecorded = false;
-    const recordSearchUsage = async (resultsReturned: number, providerHit: boolean) => {
-      if (usageRecorded) return;
-      usageRecorded = true;
-      try {
-        await supabase.from('search_usage_events').insert({
-          user_id: user.id,
-          plan: isAdmin ? 'admin' : userPlan,
-          is_admin: isAdmin,
-          provider_hit: providerHit,
-          results_returned: resultsReturned,
-          requested_limit: filters.limit ?? null,
-          max_results_allowed: maxResults,
-          charged_credit: creditWasCharged,
-        });
-      } catch (e) {
-        console.error('Failed to record search usage:', e);
-      }
-    };
 
     // Normalize all values
     const normalizedIndustry = normalizeIndustry(filters.industry || icpIndustries[0] || '');
@@ -1012,7 +1083,7 @@ serve(async (req) => {
 
       if (mappedLeads.length === 0) {
         await refundCredit('empty_result');
-        await recordSearchUsage(0, true);
+        await updateUsageEvent(supabase, usageEventId, 'empty', 0, 'empty_result');
         return new Response(
           JSON.stringify({ success: true, leads: [], total: 0, from_cache: false, empty_companies: emptyCompanies,
             message: 'No contacts found at the selected companies. Try broadening the role filter.' }),
@@ -1021,7 +1092,7 @@ serve(async (req) => {
       }
 
       const pageLeads = mappedLeads.slice(offset, offset + limit);
-      await recordSearchUsage(pageLeads.length, true);
+      await updateUsageEvent(supabase, usageEventId, 'success', pageLeads.length, undefined, 'api', mappedLeads.length);
       return new Response(
         JSON.stringify({ success: true, leads: pageLeads, total: mappedLeads.length, from_cache: false, empty_companies: emptyCompanies }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -1117,6 +1188,7 @@ serve(async (req) => {
 
         if (icpLeads.length > 0) {
           console.log(`[icp-fanout] ${variants.length} variants → ${icpLeads.length} unique in-ICP leads`);
+          await updateUsageEvent(supabase, usageEventId, 'success', icpLeads.length, undefined, 'api', icpLeads.length);
           return new Response(
             JSON.stringify({
               success: true,
@@ -1148,6 +1220,7 @@ serve(async (req) => {
     } catch (fetchError) {
       console.error('Fetch to Railway failed entirely:', fetchError);
       await refundCredit('network_error');
+      await updateUsageEvent(supabase, usageEventId, 'error', 0, 'network_error');
       return new Response(
         JSON.stringify({ error: 'Could not reach lead data provider.', error_code: 'network_error', leads: [] }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -1158,6 +1231,7 @@ serve(async (req) => {
     if (response.status === 402) {
       console.log('PDL credits exhausted (402) - returning empty results');
       await refundCredit('provider_credits_exhausted');
+      await updateUsageEvent(supabase, usageEventId, 'error', 0, 'credits_exhausted');
       return new Response(
         JSON.stringify({ 
           error: 'Search credits exhausted. Please add more credits to continue searching.',
@@ -1221,6 +1295,7 @@ serve(async (req) => {
         // Don't dress an upstream rejection up as a successful empty search —
         // the user needs to know the provider refused the query (credit refunded).
         await refundCredit('upstream_400');
+        await updateUsageEvent(supabase, usageEventId, 'error', 0, 'upstream_rejected');
         return new Response(
           JSON.stringify({
             error: 'The lead data provider rejected this search. Your search credit was not used — try simpler filters or a different location.',
@@ -1237,6 +1312,7 @@ serve(async (req) => {
       const errorText = await response.text();
       console.error('Railway API error:', response.status, errorText);
       await refundCredit(`upstream_${response.status}`);
+      await updateUsageEvent(supabase, usageEventId, 'error', 0, 'upstream_unavailable');
       return new Response(
         JSON.stringify({
           error: 'The lead data provider is unavailable right now. Your search credit was not used — please try again shortly.',
@@ -1260,6 +1336,7 @@ serve(async (req) => {
     } catch (parseErr) {
       console.error('Failed to parse Railway response as JSON:', parseErr);
       await refundCredit('invalid_provider_response');
+      await updateUsageEvent(supabase, usageEventId, 'error', 0, 'invalid_provider_response');
       return new Response(
         JSON.stringify({ error: 'Invalid response from lead provider.', leads: [] }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -1360,7 +1437,7 @@ serve(async (req) => {
       } catch (probeErr) { console.log('Schema probe failed:', probeErr); }
 
       await refundCredit('empty_result');
-      await recordSearchUsage(0, !data.from_cache);
+      await updateUsageEvent(supabase, usageEventId, 'empty', 0, 'empty_result');
       return new Response(
         JSON.stringify({ success: true, leads: [], total: 0, from_cache: false,
           message: 'No leads found for this search. Try different search criteria.' }),
@@ -1383,10 +1460,7 @@ serve(async (req) => {
       console.log('First processed lead:', JSON.stringify(leads[0], null, 2));
     }
 
-    // from_cache means the backend served this without calling the provider,
-    // so it cost nothing upstream and must not count toward provider spend.
-    await recordSearchUsage(leads.length, !data.from_cache);
-
+    await updateUsageEvent(supabase, usageEventId, 'success', leads.length, undefined, data.source || 'api', data.total || leads.length);
     return new Response(
       JSON.stringify({ 
         success: true,
@@ -1405,11 +1479,13 @@ serve(async (req) => {
     const clientMessage = isAuthError 
       ? 'Authentication required. Please sign in again.'
       : 'Failed to fetch leads. Please try again.';
+    const finalErrorCode = isAuthError ? 'auth_error' : 'fetch_error';
+    await updateUsageEvent(supabase, usageEventId, 'error', 0, finalErrorCode);
     
     return new Response(
       JSON.stringify({ 
         error: clientMessage,
-        error_code: isAuthError ? 'auth_error' : 'fetch_error',
+        error_code: finalErrorCode,
         leads: [] 
       }),
       { 
