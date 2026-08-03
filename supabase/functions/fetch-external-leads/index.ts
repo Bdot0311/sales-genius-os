@@ -673,6 +673,7 @@ serve(async (req) => {
 
       // Hard-lock only explicitly locked accounts.
       if (subscription?.account_status === 'locked') {
+        await updateUsageEvent('error', 0, 'account_locked');
         return new Response(
           JSON.stringify({ error: 'Account is locked. Please contact support.', error_code: 'account_locked', leads: [] }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
