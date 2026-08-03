@@ -1437,11 +1437,13 @@ serve(async (req) => {
     const clientMessage = isAuthError 
       ? 'Authentication required. Please sign in again.'
       : 'Failed to fetch leads. Please try again.';
+    const finalErrorCode = isAuthError ? 'auth_error' : 'fetch_error';
+    await updateUsageEvent('error', 0, finalErrorCode);
     
     return new Response(
       JSON.stringify({ 
         error: clientMessage,
-        error_code: isAuthError ? 'auth_error' : 'fetch_error',
+        error_code: finalErrorCode,
         leads: [] 
       }),
       { 
