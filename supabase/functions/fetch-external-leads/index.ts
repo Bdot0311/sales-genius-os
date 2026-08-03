@@ -1146,6 +1146,7 @@ serve(async (req) => {
 
         if (icpLeads.length > 0) {
           console.log(`[icp-fanout] ${variants.length} variants → ${icpLeads.length} unique in-ICP leads`);
+          await updateUsageEvent('success', icpLeads.length, undefined, 'api', icpLeads.length);
           return new Response(
             JSON.stringify({
               success: true,
