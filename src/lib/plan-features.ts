@@ -478,8 +478,11 @@ export const PLAN_FEATURES = {
 
     // AI SDR Agent — Pro tier: full features, high limits
     aiAgentTier: 'pro' as 'pro',
-    agentMaxDailyReplies: 50,
+    agentBuilds: 5,
+    agentMaxDailyReplies: 150,
+    agentDailyLeadSourcing: 750,
     agentMinDelayMinutes: 10,
+    agentAutoSend: true,
     agentDeliverabilityCheck: true,
     agentAutoHandleObjections: true,
     agentAutoBookMeetings: true,
