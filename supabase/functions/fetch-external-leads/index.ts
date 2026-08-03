@@ -32,6 +32,13 @@ interface ExternalLeadFilters {
   exclude_keywords?: string[];
   /** When true, never relax ICP filters to backfill results (agent searches). */
   strict?: boolean;
+  /**
+   * When true, a search that finds nothing may retry without industry/keywords.
+   * Off by default: results that do not match the stated ICP are worse than no
+   * results, because nothing tells the user they stopped matching. The UI sets
+   * this only when the user explicitly asks to broaden.
+   */
+  relax?: boolean;
   /** When true, drop leads the user already has saved so runs don't repeat. */
   exclude_seen?: boolean;
 }
@@ -1022,9 +1029,28 @@ serve(async (req) => {
                            requestBody.keywords;
     
     if (!hasSearchParam) {
-      console.warn('No search parameters provided, adding default job_title');
-      requestBody.job_title = 'CEO';
+      // Defaulting to job_title 'CEO' here meant a query the parser could not
+      // read came back as a list of CEOs — leads with no relation to what was
+      // typed. Nothing is better than something wrong: say so and let the user
+      // rephrase.
+      console.warn('No usable search parameters parsed from the query');
+      await refundCredit('unparsed_query');
+      await updateUsageEvent(supabase, usageEventId, 'error', 0, 'unparsed_query');
+      return new Response(
+        JSON.stringify({
+          error: 'Could not tell what to search for from that description. '
+            + 'Name a role and something to narrow it — e.g. "VP of Sales at SaaS companies in the US".',
+          error_code: 'unparsed_query',
+          leads: [],
+          total: 0,
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
+
+    // Filters dropped by an opt-in broadening retry, reported to the caller so
+    // the UI can say the results are wider than what was asked for.
+    let relaxedFilters: string[] = [];
 
     console.log('=== REQUEST TO RAILWAY ===');
     console.log('URL:', railwayUrl);
@@ -1381,43 +1407,39 @@ serve(async (req) => {
       return [];
     };
 
-    if (!filters.strict && rawLeads.length === 0 && (requestBody.industry || requestBody.location || requestBody.keywords || requestBody.company_size)) {
-      // Retry 1: drop the "soft" filters that most often over-constrain (industry +
-      // keywords), keep job_title + location + seniority + company_size. This is the
-      // common case for generated ICPs, which carry a non-canonical industry and a
-      // long keyword list with no location.
-      if (requestBody.industry || requestBody.keywords) {
-        const relaxed = { ...requestBody };
-        delete relaxed.industry;
-        delete relaxed.keywords;
-        console.log('0 results — retrying without industry/keywords:', JSON.stringify(relaxed));
-        try {
-          const r = await fetch(railwayUrl, { method: 'POST', headers: railwayHeaders, body: JSON.stringify(relaxed) });
-          if (r.ok) {
-            const d = await r.json();
-            console.log('Relaxed retry response (first 1000):', JSON.stringify(d).substring(0, 1000));
-            rawLeads = parseLeadsFromData(d);
+    // Broadening the ICP when the exact search finds nothing is opt-in, and it
+    // reports what it dropped.
+    //
+    // This used to run on every search and say nothing. An ICP that found no
+    // exact matches was retried without industry and keywords, and then with
+    // nothing but the job title, and whatever came back was returned as though
+    // it matched. "Founders at pre-revenue SaaS companies with 1-10 staff" came
+    // back as founders of any company of any size in any industry — the leads
+    // looked random because, relative to what was asked for, they were.
+    //
+    // Only industry and keywords are ever dropped now, and only when the caller
+    // asks. Falling back to the job title alone is gone: it discards the entire
+    // ICP, and the backend refuses a title-only search for that very reason.
+    if (filters.relax && !filters.strict && rawLeads.length === 0
+        && (requestBody.industry || requestBody.keywords)) {
+      const relaxed = { ...requestBody };
+      delete relaxed.industry;
+      delete relaxed.keywords;
+      console.log('0 results — caller asked to broaden, retrying without industry/keywords:', JSON.stringify(relaxed));
+      try {
+        const r = await fetch(railwayUrl, { method: 'POST', headers: railwayHeaders, body: JSON.stringify(relaxed) });
+        if (r.ok) {
+          const d = await r.json();
+          console.log('Relaxed retry response (first 1000):', JSON.stringify(d).substring(0, 1000));
+          rawLeads = parseLeadsFromData(d);
+          if (rawLeads.length > 0) {
+            relaxedFilters = [
+              ...(requestBody.industry ? ['industry'] : []),
+              ...(requestBody.keywords ? ['keywords'] : []),
+            ];
           }
-        } catch (e) { console.log('Relaxed retry failed:', e); }
-      }
-
-      // Retry 2: if still 0, fall back to job_title (+ seniority) only. Fires even
-      // without a location, so title-only searches still surface leads.
-      if (rawLeads.length === 0 && (requestBody.job_title || requestBody.seniority)) {
-        const jobOnly: Record<string, any> = { limit: requestBody.limit };
-        if (requestBody.job_title) jobOnly.job_title = requestBody.job_title;
-        if (requestBody.seniority) jobOnly.seniority = requestBody.seniority;
-        if (requestBody.offset) jobOnly.offset = requestBody.offset;
-        console.log('0 results — final retry, job title only:', JSON.stringify(jobOnly));
-        try {
-          const r = await fetch(railwayUrl, { method: 'POST', headers: railwayHeaders, body: JSON.stringify(jobOnly) });
-          if (r.ok) {
-            const d = await r.json();
-            console.log('Job-only retry response (first 1000):', JSON.stringify(d).substring(0, 1000));
-            rawLeads = parseLeadsFromData(d);
-          }
-        } catch (e) { console.log('Job-only retry failed:', e); }
-      }
+        }
+      } catch (e) { console.log('Relaxed retry failed:', e); }
     }
 
     // If all retries exhausted, log schema for diagnosis and refund.
@@ -1466,7 +1488,12 @@ serve(async (req) => {
         success: true,
         leads,
         total: data.total || leads.length,
-        from_cache: data.from_cache || false
+        from_cache: data.from_cache || false,
+        // What was actually sent upstream. Without this a dropped or rewritten
+        // filter is invisible, and the user has no way to tell why the leads do
+        // not look like their ICP.
+        applied_filters: requestBody,
+        relaxed_filters: relaxedFilters,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
