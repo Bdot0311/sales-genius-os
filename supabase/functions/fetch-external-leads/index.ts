@@ -1395,6 +1395,7 @@ serve(async (req) => {
       } catch (probeErr) { console.log('Schema probe failed:', probeErr); }
 
       await refundCredit('empty_result');
+      await updateUsageEvent('empty', 0, 'empty_result');
       return new Response(
         JSON.stringify({ success: true, leads: [], total: 0, from_cache: false,
           message: 'No leads found for this search. Try different search criteria.' }),
