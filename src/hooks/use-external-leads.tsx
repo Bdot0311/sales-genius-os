@@ -17,6 +17,16 @@ export interface ExternalLeadFilters {
   keywords?: string[];
   limit?: number;
   page?: number;
+  /** Opt in to retrying without industry/keywords when nothing matches. */
+  relax?: boolean;
+}
+
+/** What the search actually ran with, as reported by the edge function. */
+export interface SearchDisclosure {
+  /** The filters sent upstream, after normalisation. */
+  applied: Record<string, unknown> | null;
+  /** Filters dropped by an opt-in broadening retry — empty when none were. */
+  relaxed: string[];
 }
 
 export interface LeadScores {
@@ -59,12 +69,16 @@ export function useExternalLeads() {
     pageSize: 10,
   });
   const [lastFilters, setLastFilters] = useState<ExternalLeadFilters | null>(null);
+  // Surfacing what the search actually ran with is the difference between
+  // "these leads look random" and "industry was dropped, here is why".
+  const [disclosure, setDisclosure] = useState<SearchDisclosure>({ applied: null, relaxed: [] });
   const { toast } = useToast();
 
   const fetchLeads = async (filters: ExternalLeadFilters, isPageChange = false) => {
     // Clear previous results immediately when starting a new search (not page change)
     if (!isPageChange) {
       setLeads([]);
+      setDisclosure({ applied: null, relaxed: [] });
       setPagination({
         currentPage: 1,
         totalPages: 1,
@@ -95,6 +109,10 @@ export function useExternalLeads() {
       // Only set leads that were returned for this specific search
       const newLeads = data.leads || [];
       setLeads(newLeads);
+      setDisclosure({
+        applied: data.applied_filters ?? null,
+        relaxed: Array.isArray(data.relaxed_filters) ? data.relaxed_filters : [],
+      });
       
       // Update pagination info
       const pageSize = filters.limit || 10;
@@ -329,6 +347,7 @@ export function useExternalLeads() {
 
   const clearLeads = () => {
     setLeads([]);
+    setDisclosure({ applied: null, relaxed: [] });
     setPagination({
       currentPage: 1,
       totalPages: 1,
@@ -343,6 +362,7 @@ export function useExternalLeads() {
     loading,
     activatingLead,
     pagination,
+    disclosure,
     fetchLeads,
     activateLead,
     clearLeads,

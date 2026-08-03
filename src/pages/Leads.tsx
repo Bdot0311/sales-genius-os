@@ -43,6 +43,7 @@ const Leads = () => {
     loading: externalLoading,
     activatingLead: externalActivating,
     pagination,
+    disclosure,
     fetchLeads: fetchExternalLeads,
     activateLead: activateExternalLead,
     clearLeads: clearExternalLeads,
@@ -420,6 +421,13 @@ const Leads = () => {
                 </div>
               ) : externalLeads.length > 0 ? (
                 <div className="space-y-4">
+                  {disclosure.relaxed.length > 0 && (
+                    <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
+                      No exact matches, so these results ignore your{" "}
+                      <span className="font-medium">{disclosure.relaxed.join(" and ")}</span>{" "}
+                      {disclosure.relaxed.length > 1 ? "filters" : "filter"}. They are broader than what you asked for.
+                    </div>
+                  )}
                   <ExternalLeadsTable
                     leads={externalLeads}
                     activatingLead={externalActivating}
@@ -511,8 +519,23 @@ const Leads = () => {
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  No leads found matching your criteria. Try a different query.
+                <div className="text-center py-8 space-y-3">
+                  <p className="text-muted-foreground">
+                    No leads match that exactly. Nothing broader is shown by default — results
+                    that stopped matching your description are worse than none.
+                  </p>
+                  {(externalFilters.industry || externalFilters.keywords?.length) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        fetchExternalLeads({ ...externalFilters, relax: true, page: 1 })
+                      }
+                      disabled={externalLoading}
+                    >
+                      Search again without the industry filter
+                    </Button>
+                  )}
                 </div>
               )}
             </CardContent>
