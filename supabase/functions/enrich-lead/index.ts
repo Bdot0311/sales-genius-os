@@ -327,6 +327,26 @@ serve(async (req) => {
       } catch (scoreErr) {
         console.error('Error calling score-lead after enrichment:', scoreErr);
       }
+
+      // Also run Lead Score v2 so the A/B/C tier (and fit/intent breakdown the
+      // Leads table reads) is populated automatically on enrichment. Kept
+      // separate from score-lead above: v1 writes icp_score, v2 writes tier.
+      // Non-blocking and gated to paid plans server-side; failures are logged.
+      try {
+        const tierRes = await fetch(`${supabaseUrl}/functions/v1/score-lead-v2`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': authHeader,
+            'apikey': supabaseKey,
+          },
+          body: JSON.stringify({ leadId }),
+        });
+        if (!tierRes.ok) console.error('score-lead-v2 returned', tierRes.status);
+        else console.log('Lead tiered after enrichment:', leadId);
+      } catch (tierErr) {
+        console.error('Error calling score-lead-v2 after enrichment:', tierErr);
+      }
     }
 
     console.log('Lead enriched successfully:', leadId, 'fields:', enrichedFields);
