@@ -38,9 +38,26 @@ const Index = () => {
   const [mountVideo, setMountVideo] = useState(false);
   const navigate = useNavigate();
 
-  // Defer the heavy background video until the browser is idle so it does
-  // not compete with hero paint / FCP.
+  // The cinematic background video is a ~16MB download. It is a decoration, not
+  // content, so it only loads for visitors who can clearly afford it: a large
+  // pointer-capable screen, motion allowed, no data-saver, and a fast network.
+  // Everyone else (all mobile, slow 3G, reduced-motion, data-saver) gets the
+  // purple gradient background instantly and never pays for the video.
   useEffect(() => {
+    const canAffordVideo = () => {
+      if (typeof window === "undefined") return false;
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
+      if (!window.matchMedia("(min-width: 1024px) and (hover: hover) and (pointer: fine)").matches) return false;
+      const conn = (navigator as unknown as {
+        connection?: { saveData?: boolean; effectiveType?: string };
+      }).connection;
+      if (conn?.saveData) return false;
+      if (conn?.effectiveType && !["4g", "5g"].includes(conn.effectiveType)) return false;
+      return true;
+    };
+
+    if (!canAffordVideo()) return;
+
     const idle = (window as unknown as { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number }).requestIdleCallback;
     const handle = idle
       ? idle(() => setMountVideo(true), { timeout: 2000 })

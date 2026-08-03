@@ -18,12 +18,26 @@ export const ExitIntentModal = () => {
     if (!isDesktop) return;
 
     let armed = false;
+    let engaged = false;
+
+    // Only interrupt visitors who actually engaged with the page. Firing a
+    // popup at someone who never scrolled is the definition of a bad exit
+    // experience and pushes them straight out.
+    const onScroll = () => {
+      const scrolled = window.scrollY / Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+      if (scrolled > 0.2) {
+        engaged = true;
+        window.removeEventListener("scroll", onScroll);
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+
     const armTimer = window.setTimeout(() => {
       armed = true;
     }, 8000); // wait 8s before arming so we don't fire on accidental tab-switch
 
     const handler = (e: MouseEvent) => {
-      if (!armed) return;
+      if (!armed || !engaged) return;
       // Only fire when cursor leaves toward the top (address bar / tab close)
       if (e.clientY > 0) return;
       if (sessionStorage.getItem(STORAGE_KEY)) return;
@@ -34,6 +48,7 @@ export const ExitIntentModal = () => {
     document.addEventListener("mouseleave", handler);
     return () => {
       window.clearTimeout(armTimer);
+      window.removeEventListener("scroll", onScroll);
       document.removeEventListener("mouseleave", handler);
     };
   }, []);
