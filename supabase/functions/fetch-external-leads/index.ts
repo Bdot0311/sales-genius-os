@@ -657,6 +657,8 @@ serve(async (req) => {
     let chargesPerSearch = false;
     let creditWasCharged = false;
     let dailyWasCounted = false;
+    let creditBalanceAfter: number | null = null;
+    let usageEventId: string | null = null;
     if (!isAdmin) {
       const { data: subscription, error: subError } = await supabase
         .from('subscriptions')
