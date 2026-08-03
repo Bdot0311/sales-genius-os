@@ -100,11 +100,13 @@ Visual pipeline view showing leads by stage: Contacted → Replied → Intereste
 On Growth and above, OutReign finds more accounts that resemble your best-fit customers. Point it at a closed deal or a high-scoring account and it surfaces similar companies so you can expand a working ICP without starting a new search from scratch.
 
 ### 11. AI SDR Agent
-The AI SDR agent is an autonomous email sales rep built into OutReign, available on Growth, Pro, and Agency plans. It sources leads that match your ICP, writes and sends the first-touch email from your Gmail, then monitors threads, classifies prospect replies, and replies in your voice. Every reply passes a spam and deliverability check before it sends, so the agent never puts your sender reputation at risk.
+The AI SDR agent is an autonomous email sales rep built into OutReign, included on every plan — with agent builds, daily volume and autonomy scaling by tier. It sources leads that match your ICP, writes and sends the first-touch email from your Gmail, then monitors threads, classifies prospect replies, and replies in your voice. Every reply passes a spam and deliverability check before it sends, so the agent never puts your sender reputation at risk.
 
-- **Growth Agent**: 10 autonomous replies per day, 30-minute minimum reply delay. Sources leads, sends first touch, and replies to interested prospects.
-- **Pro Agent**: 50 autonomous replies per day, 10-minute minimum reply delay. Adds objection handling and automatic meeting booking via Calendly.
-- **Elite Agent (Agency)**: 200 autonomous replies per day, 5-minute minimum reply delay. Fully autonomous full-cycle outreach at scale.
+- **Explore Agent (Free)**: 1 agent build, sources 25 leads per day, drafts first-touch emails and up to 3 replies per day for your approval, 120-minute minimum reply delay.
+- **Starter Agent**: 1 agent build, sources 100 leads per day, sends outreach autonomously, 15 autonomous replies per day, 60-minute minimum delay.
+- **Growth Agent**: 3 agent builds (each with its own ICP, persona and campaign label), 300 leads per day, 50 autonomous replies per day, objection handling, 30-minute minimum delay.
+- **Pro Agent**: 5 agent builds, 750 leads per day, 150 autonomous replies per day, objection handling plus automatic meeting booking via Calendly, buying-committee mapping and why-now research, 10-minute minimum delay.
+- **Elite Agent (Agency)**: Unlimited agent builds, unlimited lead sourcing, 500 autonomous replies per day, fully autonomous full-cycle outreach with priority processing, 5-minute minimum delay.
 
 ---
 
@@ -142,7 +144,7 @@ All prices are in USD. Pricing scales by verified prospects contacted per month,
 - ICP Builder (10 profiles)
 - AI personalized outreach
 - Priority support
-- Growth AI SDR agent: 10 autonomous replies per day, 30-minute minimum reply delay
+- Growth AI SDR agent: 3 agent builds, 300 leads/day, 50 autonomous replies per day, objection handling, 30-minute minimum reply delay
 
 ### Pro Plan — $179/month
 - 5,000 verified prospects per month, 500 per day
@@ -153,7 +155,7 @@ All prices are in USD. Pricing scales by verified prospects contacted per month,
 - CRM integrations (HubSpot, Salesforce)
 - Team collaboration
 - Premium support
-- Pro AI SDR agent: 50 autonomous replies per day, 10-minute minimum reply delay
+- Pro AI SDR agent: 5 agent builds, 750 leads/day, 150 autonomous replies per day, meeting booking, 10-minute minimum reply delay
 
 ### Agency Plan — $249/month
 - 15,000 verified prospects per month, 1,500 per day

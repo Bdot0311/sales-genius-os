@@ -189,7 +189,7 @@ export const SoftwareApplicationSchema = () => {
           "priceCurrency": "USD",
           "priceValidUntil": "2027-12-31",
           "availability": "https://schema.org/InStock",
-          "description": "For growing teams. 2,500 verified prospects per month, unified reply inbox, deliverability suite, Growth AI SDR agent. 14-day free trial."
+          "description": "For growing teams. 2,500 verified prospects per month, unified reply inbox, deliverability suite, Growth AI SDR agent (3 agent builds, 50 replies/day). 14-day free trial."
         },
         {
           "@type": "Offer",
@@ -198,7 +198,7 @@ export const SoftwareApplicationSchema = () => {
           "priceCurrency": "USD",
           "priceValidUntil": "2027-12-31",
           "availability": "https://schema.org/InStock",
-          "description": "High-volume outbound. 5,000 verified prospects per month, sequence branching and A/B testing, CRM integrations, Pro AI SDR agent. 14-day free trial."
+          "description": "High-volume outbound. 5,000 verified prospects per month, sequence branching and A/B testing, CRM integrations, Pro AI SDR agent (5 agent builds, 150 replies/day). 14-day free trial."
         },
         {
           "@type": "Offer",
@@ -207,7 +207,7 @@ export const SoftwareApplicationSchema = () => {
           "priceCurrency": "USD",
           "priceValidUntil": "2027-12-31",
           "availability": "https://schema.org/InStock",
-          "description": "For agencies. 15,000 verified prospects per month, white-label client portal, branded PDF reports, Elite AI SDR agent. 14-day free trial."
+          "description": "For agencies. 15,000 verified prospects per month, white-label client portal, branded PDF reports, Elite AI SDR agent (unlimited agent builds, 500 replies/day). 14-day free trial."
         }
       ]
     },
@@ -221,7 +221,7 @@ export const SoftwareApplicationSchema = () => {
       "Sequence automation with branching and A/B testing",
       "Deliverability dashboard and mailbox warmup",
       "ICP lookalike discovery",
-      "Autonomous AI SDR agent (Growth, Pro, Agency)",
+      "Autonomous AI SDR agent on every plan (volume scales by tier)",
       "CRM integration (HubSpot, Salesforce) on Pro and above",
       "Gmail integration for email delivery",
       "White-label client portal (Agency)"
