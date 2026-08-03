@@ -10,12 +10,17 @@ describe("normalizeCompanySizeBucket", () => {
     }
   });
 
-  it("snaps an arbitrary range onto the bucket holding its floor", () => {
-    expect(normalizeCompanySizeBucket("2-10")).toBe("1-10");
-    expect(normalizeCompanySizeBucket("5-25")).toBe("1-10");
-    expect(normalizeCompanySizeBucket("20-100")).toBe("11-50");
-    expect(normalizeCompanySizeBucket("300-400")).toBe("201-500");
-    expect(normalizeCompanySizeBucket("5000-10000")).toBe("1000+");
+  it("keeps an exact range the backend can honour", () => {
+    // The backend turns "2-10" into headcount >= 2 and <= 10, so rounding it to
+    // "1-10" would search for companies the user did not ask for.
+    expect(normalizeCompanySizeBucket("2-10")).toBe("2-10");
+    expect(normalizeCompanySizeBucket("20-100")).toBe("20-100");
+    expect(normalizeCompanySizeBucket("5000+")).toBe("5000+");
+  });
+
+  it("snaps a range it cannot read onto the bucket holding its floor", () => {
+    expect(normalizeCompanySizeBucket("around 20 to 100 staff")).toBe("11-50");
+    expect(normalizeCompanySizeBucket("roughly 300 people")).toBe("201-500");
   });
 
   it("treats an upper-bound phrase as starting from one", () => {
@@ -66,7 +71,7 @@ describe("buildExternalFilters", () => {
   it("keeps a company size the provider does not name directly", () => {
     const filters = buildExternalFilters({ companySizes: ["2-10"] }, 10);
 
-    expect(filters.company_size).toBe("1-10");
+    expect(filters.company_size).toBe("2-10");
   });
 
   it("demotes a bare B2B industry to a keyword rather than filtering on it", () => {

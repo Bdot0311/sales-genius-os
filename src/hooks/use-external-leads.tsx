@@ -14,6 +14,13 @@ export interface ExternalLeadFilters {
   company_domain?: string;
   companies?: Array<{ name?: string; domain?: string }>;
   seniority?: string;
+  seniority_levels?: string[];
+  job_titles?: string[];
+  industries?: string[];
+  countries?: string[];
+  exclude_titles?: string[];
+  exclude_industries?: string[];
+  exclude_keywords?: string[];
   keywords?: string[];
   limit?: number;
   page?: number;

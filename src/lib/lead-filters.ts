@@ -6,10 +6,17 @@ import { ExternalLeadFilters } from "@/hooks/use-external-leads";
 // lead-search pipeline.
 export interface ParsedIcpFilters {
   jobTitles?: string[];
+  seniorities?: string[];
   industries?: string[];
   companySizes?: string[];
   locations?: string[];
   keywords?: string[];
+  // Explicit negatives from the query ("founders, not co-founders"). The edge
+  // function filters these out of the results; before the parser extracted
+  // them they were simply lost.
+  excludeTitles?: string[];
+  excludeIndustries?: string[];
+  excludeKeywords?: string[];
   limit?: number;
 }
 
@@ -28,17 +35,23 @@ const SIZE_BUCKET_MAX: Array<[string, number]> = [
 ];
 
 /**
- * Snap a free-form headcount range onto the buckets the provider accepts.
+ * Resolve a free-form headcount into something the backend can read.
  *
- * The parser is an LLM and returns whatever the user typed — "2-10", "under 50",
- * "50-100". Anything outside the six known buckets was dropped silently, so
- * "SaaS companies with 2-10 people" searched every company size. Mapping onto
- * the containing bucket keeps the constraint instead of discarding it.
+ * Anything outside the six standard buckets used to be dropped silently, so
+ * "SaaS companies with 2-10 people" searched every company size. An exact range
+ * is kept as-is because the backend reads it numerically; only a range it could
+ * not parse is snapped onto the bucket containing its floor.
  */
 export function normalizeCompanySizeBucket(raw: string | undefined): string | undefined {
   const value = raw?.trim();
   if (!value) return undefined;
   if (ALLOWED_SIZE_SET.has(value)) return value;
+
+  // The backend reads any "N-M" as a headcount range and "N+" as a lower bound,
+  // so an exact range the user gave is kept rather than rounded to the nearest
+  // standard bucket — "2-10" searches 2 to 10, not 1 to 10.
+  const exact = value.replace(/\s+/g, "");
+  if (/^\d+[-–]\d+$/.test(exact) || /^\d+\+$/.test(exact)) return exact.replace("–", "-");
 
   const numbers = value.match(/\d[\d,]*/g)?.map((n) => Number(n.replace(/,/g, "")));
   if (!numbers?.length) return undefined;
@@ -56,10 +69,14 @@ export function normalizeCompanySizeBucket(raw: string | undefined): string | un
 }
 
 // Maps the structured ICP filters to the ExternalLeadFilters the fetch-external-leads
-// edge function consumes. Extracted verbatim from the original inline mapping in
-// Leads.tsx so the describe flow's behavior is unchanged; the website flow reuses it.
-// Railway/data-source quirks preserved: first job title only (no boolean OR),
-// drop generic "B2B" industry, only known size buckets.
+// edge function consumes. Both the "Describe your ICP" and "Analyze your website"
+// flows go through here, so there is one mapping into the search pipeline.
+//
+// The provider takes a single value per field, so each singular field carries
+// the first value and the plural field carries the whole list for the edge
+// function to fan out over. Generic "B2B" is demoted to a keyword because it
+// matches no industry taxonomy, and headcount ranges are snapped onto a bucket
+// the backend can read numerically.
 export function buildExternalFilters(
   aiFilters: ParsedIcpFilters,
   pageSize: number,
@@ -87,8 +104,8 @@ export function buildExternalFilters(
     newFilters.keywords = [...(newFilters.keywords || []), ...industries];
   }
 
-  // Company size: snap onto a known bucket rather than dropping what doesn't
-  // already match one.
+  // Company size: resolve to a readable range rather than dropping anything
+  // that isn't already one of the six standard buckets.
   const size = normalizeCompanySizeBucket(aiFilters.companySizes?.[0]);
   if (size) {
     newFilters.company_size = size;
@@ -99,6 +116,20 @@ export function buildExternalFilters(
     newFilters.country = locations[0];
     if (locations.length > 1) newFilters.countries = locations;
   }
+
+  const seniorities = (aiFilters.seniorities || []).map((s) => s.trim()).filter(Boolean);
+  if (seniorities.length) {
+    newFilters.seniority = seniorities[0];
+    if (seniorities.length > 1) newFilters.seniority_levels = seniorities;
+  }
+
+  // Negatives are honoured by the edge function's ICP excluder.
+  const excludeTitles = (aiFilters.excludeTitles || []).filter(Boolean);
+  if (excludeTitles.length) newFilters.exclude_titles = excludeTitles;
+  const excludeIndustries = (aiFilters.excludeIndustries || []).filter(Boolean);
+  if (excludeIndustries.length) newFilters.exclude_industries = excludeIndustries;
+  const excludeKeywords = (aiFilters.excludeKeywords || []).filter(Boolean);
+  if (excludeKeywords.length) newFilters.exclude_keywords = excludeKeywords;
 
   // Pass keywords for fallback extraction in edge function
   if (aiFilters.keywords?.length) {
