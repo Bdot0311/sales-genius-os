@@ -859,7 +859,7 @@ serve(async (req) => {
     }
 
     // Ensure admin runs are also audited (non-admin rows were created earlier).
-    await createUsageEvent();
+    usageEventId = await createUsageEvent(supabase, filters, user.id);
 
     // Undo what this search consumed when it fails or comes back empty. The
     // daily count is always released; the credit only if one was actually
