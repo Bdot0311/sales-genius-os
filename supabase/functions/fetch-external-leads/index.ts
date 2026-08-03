@@ -1178,6 +1178,7 @@ serve(async (req) => {
     } catch (fetchError) {
       console.error('Fetch to Railway failed entirely:', fetchError);
       await refundCredit('network_error');
+      await updateUsageEvent('error', 0, 'network_error');
       return new Response(
         JSON.stringify({ error: 'Could not reach lead data provider.', error_code: 'network_error', leads: [] }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
