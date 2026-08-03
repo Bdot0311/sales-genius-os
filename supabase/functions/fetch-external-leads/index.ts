@@ -707,6 +707,7 @@ serve(async (req) => {
       // Check daily limit
       if (dailyUsed >= planConfig.dailySearchLimit) {
         console.log('Daily limit reached:', { userId: user.id, dailyUsed, limit: planConfig.dailySearchLimit });
+        await updateUsageEvent('error', 0, 'daily_limit_reached');
         return new Response(
           JSON.stringify({ 
             error: 'Daily search limit reached. Try again tomorrow.',
