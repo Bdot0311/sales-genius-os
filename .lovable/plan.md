@@ -1,63 +1,45 @@
-## Goal
+# Wire PostHog in properly (frontend + server + admin dashboard)
 
-Every generated email should be grounded in real, per-lead research instead of generic filler. Today research is a hidden Gemini-grounded call buried inside `generate-email` (`generate-email/index.ts:583-676`), invisible to users, cached only 24h in `api_cache`, and completely bypassed by the AI SDR path (`agent-chat/index.ts:577-590` forwards only `lead`, `goal`, `tone`).
+PostHog is already partly in the app: it initializes from two manually-set variables, identifies signed-in users, and captures 16 product events (lead search, enrichment, ICP created, workflows, meetings, coaching). What's missing is the important half — no pageviews, no session replay, no funnel/conversion events from the backend, and nothing readable inside OutReign. Now that the connector is linked, its credentials become the single source of truth.
 
-Plan: extract research into its own service that scrapes the lead's company website, stores a durable per-lead research brief, keeps it fresh, and surfaces it in both Outreach Studio and the AI SDR chat.
+## 1. Switch to the connector and fix initialization
 
-## 1. New edge function: `research-lead`
+- Read the connector's project key and region instead of the hand-set variables (keep the old ones as a fallback so nothing goes dark mid-deploy), and derive the correct EU/US ingest host from the region.
+- Enable **automatic pageview tracking on route changes**. Right now a visitor moving from the landing page to Pricing to Auth registers as a single pageview, which is a large part of why the bounce rate reads 65% and session durations look like 17 seconds. This alone will make your bounce and time-on-site numbers trustworthy.
+- Enable **session replay with masking**: all text inputs, email addresses, and password fields masked, recordings on for a sampled share of sessions. This is what will actually show you where people abandon the landing page.
+- Attach **person + group properties** on identify: plan tier, account status, trial state, signup date — so every funnel and replay can be sliced by plan. Group analytics keyed by plan lets you compare Free vs paid behaviour.
+- Send **Core Web Vitals** (LCP, INP, CLS) as events so the performance work from the bounce-rate fixes is measurable rather than assumed.
+- Respect Do Not Track and skip all capture inside the Lovable preview iframe so your own building sessions don't pollute the data.
 
-Scrapes the lead's own company site — same technique already proven in `analyze-domain/index.ts` (domain normalization, homepage + candidate paths, HTML→text, timeouts).
+## 2. Server-side events (the ones the browser can never see)
 
-- Input: `{ leadId, force?: boolean }`. Auth required; ownership verified against `leads.user_id`.
-- Resolve domain from `company_website`, else derive from `contact_email` domain (skip free-mail domains), else fail gracefully.
-- Fetch homepage plus high-signal paths: `/about`, `/pricing`, `/product(s)`, `/customers`, `/case-studies`, `/careers`, `/blog`, `/news` (max ~6 pages, 10s timeout each, best effort).
-- Feed extracted text + the lead's existing DB context (`job_title`, `industry`, `signals`, `technologies`, `intent_reasons`, `recommended_angle`) to Lovable AI (`google/gemini-2.5-flash`) and return a structured brief:
-  - `what_they_do` — one line, plain language
-  - `who_they_sell_to` — their customer
-  - `observations[]` — 3–5 concrete, quotable facts (each with the source URL it came from)
-  - `hooks[]` — 2–3 personalization angles tied to a specific observation
-  - `avoid[]` — claims not supported by the site
-  - `confidence` — high/medium/low (low when the site is JS-rendered/thin, same signal `analyze-domain` uses)
-- Strict no-invention rule: if nothing verifiable is found, return `confidence: "low"` with empty observations rather than plausible-sounding filler (matches existing `NO_HALLUCINATION_RULE` posture and the project's no-fabrication rule).
-- Rate limited per user via the existing `_shared/rate-limit.ts`. Returns 200 with `{ error, error_code }` on soft failures, per project convention.
+A shared backend capture helper, wired into the moments that matter and happen outside the browser:
 
-## 2. Storage + freshness
+- **Signup** — new user created, with plan and source.
+- **Billing lifecycle** — subscription started, upgraded, downgraded, cancelled, invoice failed, auto-paused, grace period started/expired. These come from Stripe webhooks, so the browser never sees them; without this, revenue and churn are invisible in PostHog.
+- **Activation milestones** — first search, first enriched lead, first email sent, first sequence launched, mirrored from the existing activation tracking so the activation funnel is queryable.
+- **AI SDR usage** — agent run started/completed, drafts generated, replies handled, plus failures with a reason. This tells you which tier actually uses the agent.
 
-Migration adds to `public.leads`:
-- `research_brief jsonb`
-- `research_sources text[]`
-- `research_confidence text`
-- `researched_at timestamptz`
+Events are keyed by the same user ID the frontend identifies with, so browser and server events land on one person timeline.
 
-Freshness policy (cache **and** always-current):
-- Reuse the stored brief if `researched_at` is within a TTL (14 days).
-- If stale, or if the lead's signals/enrichment changed after `researched_at` (`updated_at`/`enriched_at` newer), re-research automatically before generating.
-- `force: true` (manual "Refresh research" button) always re-scrapes.
-- Research is written to the lead row, so the brief is reusable across Outreach Studio, bulk send, sequences, and the agent — one scrape, many emails.
+## 3. In-app product analytics dashboard
 
-## 3. Wire into `generate-email`
+A new **Product analytics** tab on the admin Analytics page, fed by a backend function that queries PostHog (never from the browser, so no key is exposed):
 
-- Replace the private `researchLead()` helper with: read the lead's stored brief → if missing/stale, call `research-lead` inline → inject the structured brief into the prompt.
-- Also start using lead fields the prompt ignores today: `signals`, `signal_type`, `intent_reasons`, `recommended_angle`, `linkedin_url`.
-- Precision-edit requests (`goal: custom` + `customInstruction`) keep skipping research, as now.
-- Response gains `research: { observations, hooks, sources, confidence, researched_at }` alongside the existing `email` field — additive, so the public `rest-api` proxy (`rest-api/index.ts:440`) keeps working unchanged.
-- Guardrail: research failure never blocks generation — it degrades to the current behavior and reports low confidence.
+- Visitors, pageviews, sessions, bounce rate, and average session duration over 24h / 7d / 30d.
+- Trend chart of visitors and signups.
+- Top pages and top referrers — this is what would have shown you the directory-referral traffic spike immediately.
+- Signup → first search → first email → paid conversion funnel.
+- Retention grid and live event feed for debugging.
+- Deep links into PostHog for replays.
 
-## 4. Wire into the AI SDR agent
-
-- Add a `research_leads` tool to `agent-chat` (batched, reusing the existing `mapLimit` + wall-clock budget helpers).
-- `draft_outreach` auto-researches any lead with a missing/stale brief before drafting, and forwards the richer context (`businessDescription` from the agent's ICP snapshot, `senderName`/`senderCompany` from profile) that the UI path already sends but the agent path drops.
-- Agent chat surfaces a short "Researched N leads" activity line, and each draft card shows the observation the email was built on.
-
-## 5. UI: show the brief
-
-- **Outreach Studio** (`src/pages/Outreach.tsx`): a collapsible "Lead research" panel above the composer showing `what_they_do`, observations with source links, hooks, confidence badge, `researched_at`, and a "Refresh research" button. Low-confidence state says plainly that the site was thin so the email leans on enrichment data.
-- **AI SDR chat**: research findings rendered in the draft card (`src/components/agent/ChatDraftCard.tsx`) so the user can see why the email says what it says before approving.
-- New shared component `src/components/outreach/LeadResearchPanel.tsx` used by both surfaces. Semantic tokens only, no hardcoded colors.
+**One thing this needs from you:** reading data out of PostHog requires a *personal API key* (starts with `phx_`), which the connector does not provide — the connector only gives the write/ingest key. After you approve, I'll ask for it with a short note on where to generate it in PostHog (Settings → Personal API keys, scoped read-only to this project). Everything in sections 1 and 2 works without it; only the dashboard in section 3 depends on it.
 
 ## Technical notes
 
-- No new secrets or connectors — scraping is direct `fetch`, reasoning uses the existing Lovable AI gateway key.
-- Cost/latency: one scrape+model call per lead per 14 days instead of per email; bulk send and sequences benefit most.
-- `api_cache` remains for the transitional path; the durable brief on `leads` becomes the source of truth.
-- Files touched: new `supabase/functions/research-lead/index.ts`, new `_shared/lead-research.ts` (brief types + freshness helper), edits to `generate-email/index.ts`, `agent-chat/index.ts`, `src/pages/Outreach.tsx`, `src/components/agent/ChatDraftCard.tsx`, `src/components/outreach/BulkSendDialog.tsx`, plus one migration.
+- `src/lib/posthog.ts` becomes the single init: `VITE_LOVABLE_CONNECTOR_POSTHOG_API_KEY` + `VITE_LOVABLE_CONNECTOR_POSTHOG_REGION` → `https://eu.i.posthog.com` / `https://us.i.posthog.com`, with legacy `VITE_POSTHOG_KEY`/`VITE_POSTHOG_HOST` as fallback. Config: `capture_pageview: false` with manual capture from a route-change listener in `App.tsx` (React Router), `session_recording` with `maskAllInputs: true` and email/text masking, `autocapture` on, exception autocapture kept as-is.
+- New `src/lib/analytics-events.ts` consolidates the existing gtag-only `Analytics` helper and PostHog into one call site, so each event fires to both instead of the current split where funnel events only reach gtag.
+- New `supabase/functions/_shared/posthog.ts`: `captureServerEvent({ distinctId, event, properties })` POSTing to `{host}/i/v0/e/` with `POSTHOG_API_KEY` from the connector's server-side variable. Fire-and-forget, never blocks or fails the caller. Wired into `notify-new-signup`, `_shared/process-stripe-event.ts`, `agent-run`, `agent-chat`.
+- New `supabase/functions/posthog-insights/index.ts`: admin-gated (JWT + `has_role(auth.uid(),'admin')`), validated query params, calls PostHog's HogQL query endpoint with `POSTHOG_PERSONAL_API_KEY` and `POSTHOG_PROJECT_ID`, returns shaped JSON. Short-TTL cache in the existing `api_cache` table to stay well inside PostHog rate limits.
+- New `src/components/admin/ProductAnalyticsTab.tsx` added as a tab in `src/pages/admin/Analytics.tsx`, using the existing recharts/ChartContainer patterns. Degrades to a clear "personal API key not configured" state rather than erroring.
+- No database schema changes. No changes to Supabase-generated files.
