@@ -237,9 +237,7 @@ export const AISdrSection = () => {
                   transitionDelay: "80ms",
                 }}
               >
-                An AI SDR on
-                <br />
-                every plan.{" "}
+                An AI SDR on every plan.
                 <br />
                 Full cycle,{" "}
                 <span
