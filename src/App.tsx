@@ -431,7 +431,9 @@ const App = () => {
   <QueryClientProvider client={queryClient}>
     <DeferredUIShell>
       <BrowserRouter>
+        <RouteAnalytics />
         <ChunkErrorBoundary>
+
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<Index />} />
