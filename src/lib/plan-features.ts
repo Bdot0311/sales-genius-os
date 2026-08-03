@@ -701,3 +701,110 @@ export const formatLimit = (limit: number): string => {
   if (limit === -1) return 'Unlimited';
   return limit.toLocaleString();
 };
+
+// ── AI SDR Agent tiers ───────────────────────────────────────────────────────
+// Every plan now includes the AI SDR Agent. Plans differ in how many agents you
+// can build, how much volume each can push, and what the agent is allowed to do.
+export type AgentTierId = 'free' | 'starter' | 'growth' | 'pro' | 'elite';
+
+export interface AgentTierSpec {
+  id: AgentTierId;
+  plan: PlanType;
+  label: string;
+  builds: number; // -1 = unlimited
+  dailyReplies: number;
+  dailyLeadSourcing: number; // -1 = unlimited
+  minDelayMinutes: number;
+  autoSend: boolean;
+  can: string[];
+}
+
+export const AGENT_TIERS: Record<AgentTierId, AgentTierSpec> = {
+  free: {
+    id: 'free',
+    plan: 'free',
+    label: 'Starter Agent (Explore)',
+    builds: 1,
+    dailyReplies: 3,
+    dailyLeadSourcing: 25,
+    minDelayMinutes: 120,
+    autoSend: false,
+    can: [
+      'Sources up to 25 ICP-matched leads/day',
+      'Drafts first-touch emails for your approval',
+      'Drafts up to 3 replies/day (you send)',
+      'Deliverability check on every draft',
+    ],
+  },
+  starter: {
+    id: 'starter',
+    plan: 'starter',
+    label: 'Starter Agent',
+    builds: 1,
+    dailyReplies: 15,
+    dailyLeadSourcing: 100,
+    minDelayMinutes: 60,
+    autoSend: true,
+    can: [
+      'Sources up to 100 ICP-matched leads/day',
+      'Sends first-touch outreach from your Gmail',
+      'Auto-replies to interested prospects (15/day)',
+      'Deliverability check on every send',
+    ],
+  },
+  growth: {
+    id: 'growth',
+    plan: 'growth',
+    label: 'Growth Agent',
+    builds: 3,
+    dailyReplies: 50,
+    dailyLeadSourcing: 300,
+    minDelayMinutes: 30,
+    autoSend: true,
+    can: [
+      '3 agent builds — assign each its own ICP, persona and campaign',
+      'Sources up to 300 leads/day per account',
+      'Full 4-touch playbook sequences',
+      'Auto-replies (50/day) + objection handling',
+    ],
+  },
+  pro: {
+    id: 'pro',
+    plan: 'pro',
+    label: 'Pro Agent',
+    builds: 5,
+    dailyReplies: 150,
+    dailyLeadSourcing: 750,
+    minDelayMinutes: 10,
+    autoSend: true,
+    can: [
+      '5 agent builds with per-agent roles and territories',
+      'Sources up to 750 leads/day',
+      'Objection handling + automatic meeting booking',
+      'Auto-replies (150/day), 10-minute reply pace',
+      'Buying-committee mapping & why-now research',
+    ],
+  },
+  elite: {
+    id: 'elite',
+    plan: 'agency',
+    label: 'Elite Agent',
+    builds: -1,
+    dailyReplies: 500,
+    dailyLeadSourcing: -1,
+    minDelayMinutes: 5,
+    autoSend: true,
+    can: [
+      'Unlimited agent builds — one per client or market',
+      'Unlimited daily lead sourcing',
+      'Fully autonomous: source, send, object-handle, book',
+      'Auto-replies (500/day), 5-minute reply pace',
+      'Priority processing + white-label client reporting',
+    ],
+  },
+};
+
+export const getAgentTier = (plan: PlanType): AgentTierSpec => {
+  const tier = (PLAN_FEATURES[plan]?.aiAgentTier ?? 'free') as AgentTierId;
+  return AGENT_TIERS[tier] ?? AGENT_TIERS.free;
+};
