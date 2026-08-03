@@ -1418,6 +1418,7 @@ serve(async (req) => {
       console.log('First processed lead:', JSON.stringify(leads[0], null, 2));
     }
 
+    await updateUsageEvent('success', leads.length, undefined, data.source || 'api', data.total || leads.length);
     return new Response(
       JSON.stringify({ 
         success: true,
