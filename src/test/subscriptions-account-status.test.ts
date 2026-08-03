@@ -75,7 +75,9 @@ describe("subscriptions.account_status writes satisfy the DB check constraint", 
       .pop();
     expect(latestWithTrigger, "handle_new_user_subscription migration not found").toBeTruthy();
     const sql = readFileSync(latestWithTrigger!, "utf8");
-    expect(sql).not.toMatch(/account_status[^;]*'free'/);
+    // plan = 'free', but status/account_status must both be 'active'
+    expect(sql).toMatch(/'free',\s*'active',\s*'active'/);
+    expect(sql).not.toMatch(/account_status\s*=\s*'free'/);
     void migrations;
   });
 });
