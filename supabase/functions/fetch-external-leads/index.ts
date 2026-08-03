@@ -1253,6 +1253,7 @@ serve(async (req) => {
         // Don't dress an upstream rejection up as a successful empty search —
         // the user needs to know the provider refused the query (credit refunded).
         await refundCredit('upstream_400');
+        await updateUsageEvent('error', 0, 'upstream_rejected');
         return new Response(
           JSON.stringify({
             error: 'The lead data provider rejected this search. Your search credit was not used — try simpler filters or a different location.',
