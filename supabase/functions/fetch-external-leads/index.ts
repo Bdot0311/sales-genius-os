@@ -1294,6 +1294,7 @@ serve(async (req) => {
     } catch (parseErr) {
       console.error('Failed to parse Railway response as JSON:', parseErr);
       await refundCredit('invalid_provider_response');
+      await updateUsageEvent('error', 0, 'invalid_provider_response');
       return new Response(
         JSON.stringify({ error: 'Invalid response from lead provider.', leads: [] }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
