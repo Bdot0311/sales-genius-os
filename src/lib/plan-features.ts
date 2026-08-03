@@ -183,10 +183,13 @@ export const PLAN_FEATURES = {
     recommendationLevel: 'basic',
 
     // AI SDR Agent
-    aiAgentTier: null as null,
-    agentMaxDailyReplies: 0,
+    aiAgentTier: 'starter' as 'starter',
+    agentBuilds: 1,
+    agentMaxDailyReplies: 15,
+    agentDailyLeadSourcing: 100,
     agentMinDelayMinutes: 60,
-    agentDeliverabilityCheck: false,
+    agentAutoSend: true,
+    agentDeliverabilityCheck: true,
     agentAutoHandleObjections: false,
     agentAutoBookMeetings: false,
   },
