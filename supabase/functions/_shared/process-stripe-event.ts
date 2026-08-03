@@ -6,6 +6,8 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { logSystemAlert } from "./alerts.ts";
 import { trackBusinessEvent } from "./heycatch.ts";
+import { captureServerEvent } from "./posthog.ts";
+
 
 const PRICE_TO_PLAN: Record<string, { plan: 'starter' | 'growth' | 'pro' | 'agency', credits: number, dailyLimit: number, leadsLimit: number, isYearly: boolean }> = {
   'price_1T8tywFTerosS6hi0fHQuybr': { plan: 'starter', credits: 1000, dailyLimit: 100, leadsLimit: 1000, isYearly: false },
@@ -159,7 +161,9 @@ async function autoPauseAccount(
     user_id: userId,
     related_entity: (details.stripe_subscription_id as string) ?? null,
   });
+  await captureServerEvent("billing_account_auto_paused", userId, { reason, ...details });
   log("account auto-paused", { email, reason });
+
 }
 
 /** Starts (or keeps) the grace window after a failed payment. Returns the deadline. */
@@ -180,7 +184,9 @@ async function startGracePeriod(
     log("grace period start failed", { error: error.message });
     return null;
   }
+  await captureServerEvent("billing_grace_period_started", userId, { reason, days, grace_ends_at: data ?? null, ...details });
   return (data as string) ?? null;
+
 }
 
 /**
@@ -235,7 +241,9 @@ async function autoResumeAccount(
     user_id: userId,
     related_entity: (details.stripe_subscription_id as string) ?? null,
   });
+  await captureServerEvent("billing_account_auto_resumed", userId, { reason, ...details });
   log("account auto-resumed", { email, reason });
+
 }
 
 async function resetDunningState(supabase: SupabaseClient, userId: string) {
@@ -260,8 +268,32 @@ async function applyEvent(
   });
   if (error) throw new Error(`apply_stripe_event_to_subscription failed: ${error.message}`);
   const row = Array.isArray(data) ? data[0] : data;
-  return { applied: !!row?.applied, reason: row?.reason ?? 'unknown' };
+  const applied = !!row?.applied;
+
+  // Billing lifecycle events happen entirely in webhooks — the browser never
+  // sees them, so without this PostHog has no revenue or churn signal.
+  if (applied) {
+    await captureServerEvent(
+      `billing_${event.type.replace(/\./g, '_')}`,
+      userId,
+      {
+        stripe_event_type: event.type,
+        stripe_event_id: event.id,
+        ...(updates.plan ? { plan: updates.plan } : {}),
+        ...(updates.status ? { subscription_status: updates.status } : {}),
+        ...(updates.account_status ? { account_status: updates.account_status } : {}),
+      },
+      {
+        ...(updates.plan ? { plan: updates.plan } : {}),
+        ...(updates.status ? { subscription_status: updates.status } : {}),
+        ...(updates.account_status ? { account_status: updates.account_status } : {}),
+      },
+    );
+  }
+
+  return { applied, reason: row?.reason ?? 'unknown' };
 }
+
 
 export async function processStripeEvent(
   event: Stripe.Event,

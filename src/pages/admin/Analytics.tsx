@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 import { SEOMonitorTab } from "@/components/admin/SEOMonitorTab";
+import { ProductAnalyticsTab } from "@/components/admin/ProductAnalyticsTab";
+
 
 interface SubscriptionData {
   user_id: string;
@@ -252,17 +254,26 @@ const AdminAnalytics = () => {
         </Card>
       </div>
 
-      <Tabs defaultValue={new URLSearchParams(window.location.search).get("tab") === "seo" ? "seo" : "growth"} className="space-y-4">
+      <Tabs defaultValue={(() => {
+        const tab = new URLSearchParams(window.location.search).get("tab");
+        return tab === "seo" || tab === "product" ? tab : "growth";
+      })()} className="space-y-4">
         <TabsList>
           <TabsTrigger value="growth">User Growth</TabsTrigger>
           <TabsTrigger value="revenue">Revenue</TabsTrigger>
           <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
+          <TabsTrigger value="product">Product Analytics</TabsTrigger>
           <TabsTrigger value="seo">SEO Monitor</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="product">
+          <ProductAnalyticsTab />
+        </TabsContent>
 
         <TabsContent value="seo">
           <SEOMonitorTab />
         </TabsContent>
+
 
 
         <TabsContent value="growth" className="space-y-4">

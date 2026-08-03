@@ -1,9 +1,11 @@
-import { Component, Suspense, lazy, useState, useEffect, type ComponentType, type ErrorInfo, type ReactNode } from "react";
+import { Component, Suspense, lazy, useState, useEffect, useRef, type ComponentType, type ErrorInfo, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { isPostHogEnabled, posthog } from "@/lib/posthog";
+import { capturePageview } from "@/lib/analytics-events";
 import { analytics as heycatch } from "@/lib/heycatch";
+
 
 import Index from "./pages/Index";
 
@@ -360,7 +362,30 @@ const usePostHogIdentity = () => {
         if (isPostHogEnabled) {
           posthog.identify(session.user.id, {
             ...(session.user.email ? { email: session.user.email } : {}),
+            ...(session.user.created_at ? { signup_date: session.user.created_at } : {}),
           });
+          // Plan/account properties come from the subscription row so every
+          // funnel, insight and replay can be sliced by tier.
+          void (async () => {
+            try {
+              const { data } = await supabase
+                .from("subscriptions")
+                .select("plan, status, account_status, trial_end_date")
+                .eq("user_id", session.user.id)
+                .maybeSingle();
+              if (!data) return;
+              const trialEnd = data.trial_end_date;
+              posthog.setPersonProperties({
+                plan: data.plan,
+                subscription_status: data.status,
+                account_status: data.account_status,
+                is_trial: !!trialEnd && new Date(trialEnd).getTime() > Date.now(),
+                trial_end_date: trialEnd ?? null,
+              });
+
+              if (data.plan) posthog.group("plan", String(data.plan), { name: String(data.plan) });
+            } catch { /* analytics must never break auth */ }
+          })();
         }
         heycatch.setIdentity(
           session.user.id,
@@ -379,6 +404,25 @@ const usePostHogIdentity = () => {
   }, []);
 };
 
+/**
+ * SPA pageviews. Without this a visitor going landing -> pricing -> auth counts
+ * as one pageview, which wrecks bounce rate and session duration.
+ */
+const RouteAnalytics = () => {
+  const location = useLocation();
+  const lastPath = useRef<string | null>(null);
+
+  useEffect(() => {
+    const path = location.pathname + location.search;
+    if (lastPath.current === path) return;
+    lastPath.current = path;
+    capturePageview(path, { referrer: document.referrer || undefined });
+  }, [location.pathname, location.search]);
+
+  return null;
+};
+
+
 
 const App = () => {
   useJwtSanityCheck();
@@ -387,7 +431,9 @@ const App = () => {
   <QueryClientProvider client={queryClient}>
     <DeferredUIShell>
       <BrowserRouter>
+        <RouteAnalytics />
         <ChunkErrorBoundary>
+
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<Index />} />

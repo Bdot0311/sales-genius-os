@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, requireServiceRole } from "../_shared/internal-auth.ts";
+import { captureServerEvent } from "../_shared/posthog.ts";
+
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -43,6 +45,17 @@ serve(async (req) => {
 
     const displayName = (record?.full_name || '').toString().trim() || userEmail.split('@')[0];
     const userId = record?.id || userEmail;
+
+    // Product analytics: signup is created server-side by a DB trigger, so the
+    // browser cannot be the source of truth for it.
+    await captureServerEvent(
+      'signup_created',
+      userId,
+      { email: userEmail, name: displayName, plan: 'free' },
+      { email: userEmail, name: displayName, plan: 'free', signup_date: record?.created_at ?? new Date().toISOString() },
+    );
+
+
 
     // 1. Admin notification
     const { error: notifyErr } = await supabase.functions.invoke('send-transactional-email', {

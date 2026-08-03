@@ -1,11 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { captureServerEvent } from "../_shared/posthog.ts";
 import {
   PLAYBOOK_SYSTEM_RULES,
   buildTouchPrompt,
   parseTouches,
   scheduleFollowUps,
 } from "../_shared/cold-email-playbook.ts";
+
 
 
 const corsHeaders = {
@@ -1284,7 +1286,21 @@ Output ONLY the reply body. No subject line or signature.`;
       },
     });
 
+    await captureServerEvent("agent_run_completed", user.id, {
+      mode: approvalMode ? "approval" : "autonomous",
+      threads_checked: threadsChecked,
+      leads_found: leadsFound,
+      outreach_drafted: outreachDrafted,
+      outreach_sent: outreachSent,
+      pending_approvals: pendingApprovals,
+      replies_processed: repliesProcessed,
+      replies_sent: repliesSent,
+      meetings_booked: meetingsBooked,
+      error_count: Array.isArray(errors) ? errors.length : 0,
+    });
+
     return new Response(
+
       JSON.stringify({
         success: true,
         mode: approvalMode ? "approval" : "autonomous",
