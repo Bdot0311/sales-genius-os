@@ -497,7 +497,7 @@ var get_agent_stats_default = defineTool14({
     const [configRes, actionsRes] = await Promise.all([
       supabase.from("agent_configs").select(
         "enabled, agent_name, persona, tone, can_reply_interested, can_handle_objections, can_book_meetings, max_daily_auto_replies, reply_delay_minutes, updated_at"
-      ).eq("user_id", ctx.getUserId()).maybeSingle(),
+      ).eq("user_id", ctx.getUserId()).order("is_primary", { ascending: false }).limit(1).maybeSingle(),
       supabase.from("agent_actions").select("action_type, status, classification, created_at").eq("user_id", ctx.getUserId()).gte("created_at", since).limit(1e3)
     ]);
     if (configRes.error) return err(configRes.error.message);
@@ -553,7 +553,7 @@ var update_agent_config_default = defineTool15({
     if (Object.keys(clean).length === 0) return err("No fields to update.");
     const supabase = supabaseForUser6(ctx);
     const userId = ctx.getUserId();
-    const { data: existing, error: exErr } = await supabase.from("agent_configs").select("id").eq("user_id", userId).maybeSingle();
+    const { data: existing, error: exErr } = await supabase.from("agent_configs").select("id").eq("user_id", userId).order("is_primary", { ascending: false }).limit(1).maybeSingle();
     if (exErr) return err(exErr.message);
     if (existing) {
       const { data: data2, error: error2 } = await supabase.from("agent_configs").update(clean).eq("id", existing.id).select("enabled, agent_name, persona, tone, updated_at").single();

@@ -24,6 +24,8 @@ export default defineTool({
           "enabled, agent_name, persona, tone, can_reply_interested, can_handle_objections, can_book_meetings, max_daily_auto_replies, reply_delay_minutes, updated_at"
         )
         .eq("user_id", ctx.getUserId())
+        .order("is_primary", { ascending: false })
+        .limit(1)
         .maybeSingle(),
       supabase
         .from("agent_actions")

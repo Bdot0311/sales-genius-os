@@ -33,6 +33,8 @@ export default defineTool({
       .from("agent_configs")
       .select("id")
       .eq("user_id", userId)
+      .order("is_primary", { ascending: false })
+      .limit(1)
       .maybeSingle();
     if (exErr) return err(exErr.message);
 
