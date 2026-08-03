@@ -23,8 +23,11 @@ export function captureEvent(event: string, props?: Props) {
     if (isPostHogEnabled) posthog.capture(event, properties);
   } catch { /* analytics must never break the app */ }
   try {
-    void heycatch.trackEvent(event, properties);
+    // HeyCatch reserves the "$" prefix for its own built-in events (it tracks
+    // pageviews itself), so only forward our own custom events to it.
+    if (!event.startsWith("$")) void heycatch.trackEvent(event, properties);
   } catch { /* noop */ }
+
   try {
     if (typeof window !== "undefined" && typeof window.gtag === "function") {
       window.gtag("event", event, properties);
