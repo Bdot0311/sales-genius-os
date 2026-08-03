@@ -237,7 +237,7 @@ export const AISdrSection = () => {
                   transitionDelay: "80ms",
                 }}
               >
-                One AI SDR.
+                An AI SDR on every plan.
                 <br />
                 Full cycle,{" "}
                 <span
@@ -260,7 +260,7 @@ export const AISdrSection = () => {
                 className={`text-base leading-relaxed mb-8 max-w-[480px] transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
                 style={{ color: "hsl(0 0% 100% / 0.65)", transitionDelay: "160ms" }}
               >
-                Connect your Gmail and OutReign runs the whole cycle: it sources leads that match your ICP, writes and sends the first touch, then classifies replies, handles objections, and books meetings — in your voice, on your schedule.
+                Connect your Gmail and OutReign runs the whole cycle: it sources leads that match your ICP, writes and sends the first touch, then classifies replies, handles objections, and books meetings — in your voice, on your schedule. Included on every plan, from Explore to Agency — your tier decides how many agents you build and how much volume they push.
               </p>
 
               {/* Capability grid */}

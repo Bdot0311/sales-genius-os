@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useSubscription } from "@/hooks/use-subscription";
+import { getAgentTier, getNextPlan, PLAN_FEATURES, type PlanType } from "@/lib/plan-features";
 import { OverviewTab } from "@/components/agent/OverviewTab";
 import { InboxTab } from "@/components/agent/InboxTab";
 import { ConfigTab } from "@/components/agent/ConfigTab";
@@ -272,49 +273,14 @@ const Agent = () => {
     },
   ];
 
-  const agentTier = (subscription?.features as any)?.aiAgentTier ?? null;
-  const planMaxDailyReplies = (subscription?.features as any)?.agentMaxDailyReplies ?? 0;
-  const hasAgent = !!agentTier;
+  const currentPlan = (subscription?.plan ?? "free") as PlanType;
+  const tierSpec = getAgentTier(currentPlan);
+  const agentTier = tierSpec.id;
+  const planMaxDailyReplies =
+    (subscription?.features as any)?.agentMaxDailyReplies ?? tierSpec.dailyReplies;
+  const nextPlan = getNextPlan(currentPlan);
+  const fmt = (n: number) => (n === -1 ? "Unlimited" : n.toLocaleString());
 
-  // Upgrade wall for free / starter
-  if (!subLoading && !hasAgent) {
-    return (
-      <DashboardLayout>
-        <PageHeader
-          title="AI Sales Agent"
-          description="Finds leads, writes and sends first-touch outreach, then handles replies — end to end"
-        />
-        <div className="mt-12 flex flex-col items-center text-center max-w-lg mx-auto gap-6">
-          <div className="p-4 rounded-full bg-primary/10">
-            <Lock className="w-8 h-8 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold mb-2">AI SDR requires Growth or higher</h2>
-            <p className="text-sm text-muted-foreground">
-              The AI Sales Agent is available on <strong>Growth</strong>, <strong>Pro</strong>, and <strong>Agency</strong> plans.
-              Upgrade to put a fully autonomous SDR to work — sourcing leads, sending outreach, and handling replies.
-            </p>
-          </div>
-          <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-3 text-left">
-            {[
-              { tier: "Growth", desc: "Lead sourcing, first-touch outreach, inbox monitoring, 10 auto-replies/day" },
-              { tier: "Pro", desc: "Full cycle: sourcing, sending, objection handling, meeting booking, 50 auto-replies/day" },
-              { tier: "Elite", desc: "Full cycle at scale, 200 auto-replies/day, priority processing — Agency plan" },
-            ].map((t) => (
-              <div key={t.tier} className="p-4 rounded-xl border border-border/60 bg-card/60">
-                <p className="text-sm font-semibold mb-1">{t.tier} Agent</p>
-                <p className="text-xs text-muted-foreground">{t.desc}</p>
-              </div>
-            ))}
-          </div>
-          <Button onClick={() => navigate("/pricing")} className="gap-2">
-            <Zap className="w-4 h-4" />
-            Upgrade to unlock AI SDR
-          </Button>
-        </div>
-      </DashboardLayout>
-    );
-  }
 
   return (
     <DashboardLayout>
@@ -380,6 +346,60 @@ const Agent = () => {
             </span>
           )}
         </div>
+
+        {/* Plan tier panel */}
+        <Card className="p-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <Zap className="w-4 h-4 text-primary" />
+                <p className="text-sm font-semibold">{tierSpec.label}</p>
+                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
+                  {PLAN_FEATURES[currentPlan].name} plan
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">
+                Included on every plan — higher tiers unlock more agent builds, more daily
+                volume, and more the agent is allowed to do on its own.
+              </p>
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5">
+                {tierSpec.can.map((c) => (
+                  <li key={c} className="text-xs text-muted-foreground flex items-start gap-2">
+                    <span className="mt-1.5 w-1 h-1 rounded-full bg-primary flex-shrink-0" />
+                    {c}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="flex flex-col gap-2 items-end">
+              <div className="flex gap-4 text-right">
+                <div>
+                  <p className="text-[11px] text-muted-foreground">Agent builds</p>
+                  <p className="text-sm font-semibold">{fmt(tierSpec.builds)}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-muted-foreground">Replies / day</p>
+                  <p className="text-sm font-semibold">{fmt(tierSpec.dailyReplies)}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-muted-foreground">Leads / day</p>
+                  <p className="text-sm font-semibold">{fmt(tierSpec.dailyLeadSourcing)}</p>
+                </div>
+              </div>
+              {nextPlan && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => navigate("/pricing")}
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  Upgrade for more agent volume
+                </Button>
+              )}
+            </div>
+          </div>
+        </Card>
 
         {/* Stats row */}
         {loading ? (
