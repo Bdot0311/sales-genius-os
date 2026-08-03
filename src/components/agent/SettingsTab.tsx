@@ -81,7 +81,7 @@ export function SettingsTab({
 
       const { data, error } = await (supabase as any)
         .from("agent_configs")
-        .upsert(payload, { onConflict: "user_id" })
+        .upsert(payload, { onConflict: "id" })
         .select("*")
         .maybeSingle();
 

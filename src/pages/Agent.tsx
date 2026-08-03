@@ -29,6 +29,8 @@ import { InboxTab } from "@/components/agent/InboxTab";
 import { ConfigTab } from "@/components/agent/ConfigTab";
 import { SettingsTab } from "@/components/agent/SettingsTab";
 import { AgentTestDialog } from "@/components/agent/AgentTestDialog";
+import { AgentSwitcher } from "@/components/agent/AgentSwitcher";
+import { roleLabel } from "@/components/agent/AgentRoles";
 
 
 export interface AgentConfig {
@@ -36,6 +38,8 @@ export interface AgentConfig {
   user_id: string;
   enabled: boolean;
   agent_name: string | null;
+  role: string | null;
+  is_primary: boolean | null;
   persona: string | null;
   tone: string | null;
   company_context: string | null;
@@ -83,7 +87,8 @@ interface AgentStats {
 const Agent = () => {
   const navigate = useNavigate();
   const { subscription, loading: subLoading } = useSubscription();
-  const [config, setConfig] = useState<AgentConfig | null>(null);
+  const [agents, setAgents] = useState<AgentConfig[]>([]);
+  const [activeAgentId, setActiveAgentId] = useState<string | null>(null);
   const [actions, setActions] = useState<AgentAction[]>([]);
   const [stats, setStats] = useState<AgentStats>({
     activeThreads: 0,
@@ -109,13 +114,20 @@ const Agent = () => {
       const uid = session.user.id;
       setUserId(uid);
 
-      // Load agent config
-      const { data: configData } = await (supabase as any)
+      // Load all agent builds for this user
+      const { data: configRows } = await (supabase as any)
         .from("agent_configs")
         .select("*")
         .eq("user_id", uid)
-        .maybeSingle();
-      setConfig(configData ?? null);
+        .order("is_primary", { ascending: false })
+        .order("created_at", { ascending: true });
+      const agentList: AgentConfig[] = configRows ?? [];
+      setAgents(agentList);
+      setActiveAgentId((prev) =>
+        prev && agentList.some((a) => a.id === prev)
+          ? prev
+          : agentList[0]?.id ?? null
+      );
 
       // Load Gmail integrations (users may have more than one Google mailbox).
       // Only read client-visible columns; token/config fields are intentionally hidden.
@@ -197,6 +209,20 @@ const Agent = () => {
 
 
 
+  const config = agents.find((a) => a.id === activeAgentId) ?? null;
+
+  // Merge a saved/updated agent row back into the list (used by child tabs)
+  const setConfig = useCallback((updated: AgentConfig | null) => {
+    if (!updated) return;
+    setAgents((prev) => {
+      const exists = prev.some((a) => a.id === updated.id);
+      return exists
+        ? prev.map((a) => (a.id === updated.id ? updated : a))
+        : [...prev, updated];
+    });
+    setActiveAgentId(updated.id);
+  }, []);
+
   const handleToggle = async () => {
     if (!userId) return;
     setToggling(true);
@@ -207,10 +233,11 @@ const Agent = () => {
         enabled: newEnabled,
       };
       if (config?.id) upsertPayload.id = config.id;
+      if (!config?.id) upsertPayload.is_primary = agents.length === 0;
 
       const { data: updated, error } = await (supabase as any)
         .from("agent_configs")
-        .upsert(upsertPayload, { onConflict: "user_id" })
+        .upsert(upsertPayload, { onConflict: "id" })
         .select("*")
         .maybeSingle();
       if (error) throw error;
@@ -321,6 +348,11 @@ const Agent = () => {
             <span className="text-sm font-medium">
               {config?.agent_name ?? "AI Agent"}
             </span>
+            {config && (
+              <Badge variant="outline" className="text-[10px]">
+                {roleLabel(config.role)}
+              </Badge>
+            )}
           </div>
           <Badge
             variant="outline"
@@ -346,6 +378,17 @@ const Agent = () => {
             </span>
           )}
         </div>
+
+        {/* Agent builds */}
+        <AgentSwitcher
+          agents={agents}
+          activeAgentId={activeAgentId}
+          userId={userId}
+          maxBuilds={tierSpec.builds}
+          loading={loading}
+          onSelect={setActiveAgentId}
+          onChanged={loadData}
+        />
 
         {/* Plan tier panel */}
         <Card className="p-5">
@@ -434,7 +477,7 @@ const Agent = () => {
         )}
 
         {/* No-config prompt */}
-        {!loading && config === null && (
+        {!loading && agents.length > 0 && config === null && (
           <Card className="p-6 border-dashed border-2 border-primary/20 bg-primary/5">
             <div className="flex items-start gap-4">
               <div className="p-3 rounded-full bg-primary/15 flex-shrink-0">

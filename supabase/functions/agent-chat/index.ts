@@ -495,7 +495,7 @@ serve(async (req) => {
 
     // --- context ---------------------------------------------------------
     const [{ data: config }, { data: profile }, { data: savedIcp }] = await Promise.all([
-      admin.from("agent_configs").select("*").eq("user_id", userId).maybeSingle(),
+      admin.from("agent_configs").select("*").eq("user_id", userId).order("is_primary", { ascending: false }).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
       admin.from("profiles").select("full_name, company_name").eq("id", userId).maybeSingle(),
       admin
         .from("icp_profiles")

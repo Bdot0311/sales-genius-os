@@ -170,6 +170,9 @@ serve(async (req) => {
       .from("agent_configs")
       .select("*")
       .eq("user_id", user.id)
+      .order("is_primary", { ascending: false })
+      .order("updated_at", { ascending: false })
+      .limit(1)
       .single();
 
     if (configError || !agentConfig) {

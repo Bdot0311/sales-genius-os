@@ -24,6 +24,7 @@ import { Plus, Trash2, Loader2, Save } from "lucide-react";
 import type { AgentConfig } from "@/pages/Agent";
 import { ProspectingSourceHelper, type ICPSnapshot } from "@/components/agent/ProspectingSourceHelper";
 import { ObjectionLibrary } from "@/components/agent/ObjectionLibrary";
+import { AGENT_ROLES, roleDescription, type AgentRole } from "@/components/agent/AgentRoles";
 
 
 interface ConfigTabProps {
@@ -50,6 +51,7 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
   const [agentName, setAgentName] = useState("");
   const [persona, setPersona] = useState("");
   const [tone, setTone] = useState("professional");
+  const [role, setRole] = useState<AgentRole>("full_cycle");
   const [companyContext, setCompanyContext] = useState("");
   const [valueProps, setValueProps] = useState<string[]>([""]);
   const [objectionResponses, setObjectionResponses] = useState<
@@ -77,6 +79,7 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
     setAgentName(config.agent_name ?? "");
     setPersona(config.persona ?? "");
     setTone(config.tone ?? "professional");
+    setRole(((config.role as AgentRole) ?? "full_cycle"));
     setCompanyContext(config.company_context ?? "");
     setValueProps(
       config.value_props && config.value_props.length > 0
@@ -133,6 +136,7 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
         agent_name: agentName.trim() || null,
         persona: persona.trim() || null,
         tone,
+        role,
         company_context: companyContext.trim() || null,
         value_props: filteredValueProps.length > 0 ? filteredValueProps : null,
         objection_responses:
@@ -158,7 +162,7 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
 
       const { data, error } = await (supabase as any)
         .from("agent_configs")
-        .upsert(payload, { onConflict: "user_id" })
+        .upsert(payload, { onConflict: "id" })
         .select("*")
         .maybeSingle();
 
@@ -191,6 +195,22 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
               value={agentName}
               onChange={(e) => setAgentName(e.target.value)}
             />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="agent-role">Role</Label>
+            <Select value={role} onValueChange={(v) => setRole(v as AgentRole)}>
+              <SelectTrigger id="agent-role">
+                <SelectValue placeholder="Select role" />
+              </SelectTrigger>
+              <SelectContent>
+                {AGENT_ROLES.map((r) => (
+                  <SelectItem key={r.value} value={r.value}>
+                    {r.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">{roleDescription(role)}</p>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="persona">Persona</Label>
