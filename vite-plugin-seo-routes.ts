@@ -1,4 +1,6 @@
 import type { Plugin } from "vite";
+import { blogPosts } from "./src/data/blog-posts";
+import { helpArticles, helpCategories } from "./src/components/help/helpArticles";
 
 /**
  * Build-time per-route head injection.
@@ -16,6 +18,20 @@ import type { Plugin } from "vite";
  * index.html are no worse off than before (runtime SEOHead still corrects the
  * head for real users). Values here mirror each page's SEOHead props so the
  * build-time and runtime <head> agree.
+ *
+ * Content routes (blog posts, help articles and categories) are generated from
+ * the same data the app renders, so prerender coverage cannot drift from the
+ * content or the sitemap. Before that, only the 13 marketing routes below had
+ * a head of their own and every article served the homepage's — including its
+ * canonical, which is why Search Console reported a crawled blog post as
+ * "Duplicate without user-selected canonical".
+ *
+ * Each emitted page also carries a static index of internal links. The only
+ * links in the shipped HTML used to sit inside <noscript>, which Googlebot
+ * ignores because it executes JavaScript, so every article was reachable from
+ * the sitemap alone and sat at "Discovered - currently not indexed" with no
+ * crawl. The index renders inside #root, which createRoot() replaces on mount,
+ * so it costs real users nothing and mirrors the links the app itself renders.
  */
 
 const DOMAIN = "https://outreign.io";
@@ -108,7 +124,89 @@ const ROUTES: RouteMeta[] = [
     description:
       "Honest comparison of OutReign and ZoomInfo. ZoomInfo is enterprise B2B data with intent signals. OutReign is self-serve outbound for founders and small teams.",
   },
+  // The rest of the public routes carried in sitemap.xml. Titles and
+  // descriptions mirror each page's SEOHead; /connect and /install have no
+  // SEOHead at all, so these are the only per-route metadata they get.
+  {
+    path: "/connect",
+    title: "Connect OutReign to Claude and other MCP clients",
+    description:
+      "Add the OutReign MCP server to Claude, Cursor or any MCP client to search prospects and draft outreach from your assistant.",
+  },
+  {
+    path: "/privacy",
+    title: "Privacy Policy & Data Protection | OutReign",
+    description:
+      "Learn how OutReign collects, uses, and protects your personal data. We're committed to transparency and GDPR/CCPA compliance.",
+  },
+  {
+    path: "/terms",
+    title: "Terms of Service - User Agreement & Policies | OutReign",
+    description:
+      "Review the OutReign Terms of Service. Understand your rights and responsibilities when using our AI-powered sales platform.",
+  },
+  {
+    path: "/api-docs",
+    title: "API Documentation – OutReign Developer Portal",
+    description:
+      "Complete OutReign REST API reference with code examples in JavaScript, Python, PHP & cURL. Manage leads, deals, contacts, workflows & outreach programmatically.",
+  },
+  {
+    path: "/api-status",
+    title: "API Status & System Uptime - OutReign Developer Platform",
+    description:
+      "Real-time OutReign API status, system uptime monitoring, and incident history. Check REST API, GraphQL, webhooks, and edge function availability.",
+  },
+  {
+    path: "/request-integration",
+    title: "Request a new integration | OutReign",
+    description:
+      "Tell us which tool you'd like OutReign to integrate with. We prioritize integrations based on customer demand.",
+  },
+  {
+    path: "/install",
+    title: "Install OutReign on your phone or desktop",
+    description:
+      "Add OutReign to your home screen for full-screen access, offline support and push notifications. Step-by-step instructions for iOS, Android and desktop.",
+  },
 ];
+
+/** Truncate to a length search engines will actually show, on a word boundary. */
+const clampDescription = (text: string, max = 158): string => {
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (clean.length <= max) return clean;
+  const cut = clean.slice(0, max);
+  const lastSpace = cut.lastIndexOf(" ");
+  return `${(lastSpace > 40 ? cut.slice(0, lastSpace) : cut).replace(/[.,;:]$/, "")}…`;
+};
+
+// Content routes, generated from the data the app renders so the two cannot
+// drift. Titles mirror the pattern each page's SEOHead uses.
+const CONTENT_ROUTES: RouteMeta[] = [
+  {
+    path: "/blog",
+    title: "OutReign Blog — B2B Outbound, ICP and Lead Generation Guides",
+    description:
+      "Practical guides on building an ICP, scoring leads, finding verified B2B contacts and running cold email that gets replies.",
+  },
+  ...blogPosts.map((post) => ({
+    path: `/blog/${post.slug}`,
+    title: `${post.title} | OutReign`,
+    description: clampDescription(post.description),
+  })),
+  ...helpCategories.map((category) => ({
+    path: `/help/category/${category.id}`,
+    title: `${category.title} — OutReign Help Center`,
+    description: clampDescription(category.description),
+  })),
+  ...helpArticles.map((article) => ({
+    path: `/help/article/${article.slug}`,
+    title: `${article.title} — OutReign Help Center`,
+    description: clampDescription(article.description),
+  })),
+];
+
+const ALL_ROUTES: RouteMeta[] = [...ROUTES, ...CONTENT_ROUTES];
 
 const escapeHtml = (value: string): string =>
   value
@@ -119,6 +217,44 @@ const escapeHtml = (value: string): string =>
 
 const canonicalFor = (path: string): string =>
   path === "/" ? `${DOMAIN}/` : `${DOMAIN}${path.replace(/\/$/, "")}`;
+
+/**
+ * A static list of every public URL, rendered into #root.
+ *
+ * createRoot() replaces the container's children on mount, so this is gone
+ * before a real user paints — but it is present in the HTML a crawler fetches
+ * before it decides whether a URL is worth rendering. It deliberately sits
+ * outside <noscript>: Googlebot executes JavaScript and therefore never reads
+ * noscript content, which is where the site's only internal links used to be.
+ *
+ * The links mirror what the rendered app shows, so this is a prerender of the
+ * real navigation rather than crawler-only content.
+ */
+function renderLinkIndex(currentPath: string): string {
+  const group = (heading: string, routes: RouteMeta[]) => {
+    const items = routes
+      .filter((r) => r.path !== currentPath)
+      .map(
+        (r) =>
+          `<li><a href="${escapeHtml(canonicalFor(r.path))}">${escapeHtml(r.title)}</a></li>`,
+      )
+      .join("");
+    return items ? `<h2>${escapeHtml(heading)}</h2><ul>${items}</ul>` : "";
+  };
+
+  const isBlog = (r: RouteMeta) => r.path.startsWith("/blog");
+  const isHelp = (r: RouteMeta) => r.path.startsWith("/help");
+
+  return [
+    '<nav aria-label="Site index">',
+    group("Product", ROUTES),
+    group("Guides and articles", CONTENT_ROUTES.filter(isBlog)),
+    group("Help center", CONTENT_ROUTES.filter(isHelp)),
+    "</nav>",
+  ]
+    .filter(Boolean)
+    .join("");
+}
 
 /** Rewrite the head tags in a copy of index.html for one route. */
 function renderRouteHtml(baseHtml: string, meta: RouteMeta): string {
@@ -142,6 +278,14 @@ function renderRouteHtml(baseHtml: string, meta: RouteMeta): string {
   for (const [pattern, value] of replacements) {
     html = html.replace(pattern, value);
   }
+
+  // Seed #root with the link index. React clears the container on mount, so
+  // this never reaches a rendered page.
+  html = html.replace(
+    /<div id="root"><\/div>/,
+    `<div id="root">${renderLinkIndex(meta.path)}</div>`,
+  );
+
   return html;
 }
 
@@ -158,7 +302,7 @@ export function seoRoutesPlugin(): Plugin {
       }
       const baseHtml = indexAsset.source;
 
-      for (const meta of ROUTES) {
+      for (const meta of ALL_ROUTES) {
         const html = renderRouteHtml(baseHtml, meta);
         if (meta.path === "/") {
           // Rewrite the root index.html in place so the homepage (and the SPA
@@ -172,6 +316,10 @@ export function seoRoutesPlugin(): Plugin {
           });
         }
       }
+      this.info(
+        `seo-routes: emitted ${ALL_ROUTES.length} routes ` +
+          `(${ROUTES.length} marketing, ${CONTENT_ROUTES.length} content)`,
+      );
     },
   };
 }
