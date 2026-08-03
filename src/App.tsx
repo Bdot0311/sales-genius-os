@@ -368,17 +368,19 @@ const usePostHogIdentity = () => {
             try {
               const { data } = await supabase
                 .from("subscriptions")
-                .select("plan, status, account_status, is_trial, trial_ends_at")
+                .select("plan, status, account_status, trial_end_date")
                 .eq("user_id", session.user.id)
                 .maybeSingle();
               if (!data) return;
+              const trialEnd = data.trial_end_date;
               posthog.setPersonProperties({
                 plan: data.plan,
                 subscription_status: data.status,
                 account_status: data.account_status,
-                is_trial: !!data.is_trial,
-                trial_ends_at: data.trial_ends_at ?? null,
+                is_trial: !!trialEnd && new Date(trialEnd).getTime() > Date.now(),
+                trial_end_date: trialEnd ?? null,
               });
+
               if (data.plan) posthog.group("plan", String(data.plan), { name: String(data.plan) });
             } catch { /* analytics must never break auth */ }
           })();
