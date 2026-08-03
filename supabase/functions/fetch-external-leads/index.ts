@@ -733,7 +733,7 @@ serve(async (req) => {
       }
 
       // Create the audit row for this search before any gate so failures are recorded.
-      await createUsageEvent(supabase, filters, user.id);
+      usageEventId = await createUsageEvent(supabase, filters, user.id);
 
       // Hard-lock only explicitly locked accounts.
       if (subscription?.account_status === 'locked') {
