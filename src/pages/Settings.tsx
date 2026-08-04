@@ -38,6 +38,7 @@ import { useAdmin } from "@/hooks/use-admin";
 import { SupportAccessCard } from "@/components/settings/SupportAccessCard";
 
 const Settings = () => {
+  const [searchParams] = useSearchParams();
   const { subscription, loading: subLoading } = useSubscription();
   const { usage, loading: usageLoading } = useLeadsUsage();
   const { manualSync } = useSubscriptionSync();
