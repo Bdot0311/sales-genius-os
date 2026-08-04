@@ -244,16 +244,15 @@ All colors MUST be HSL. Using 8px spacing scale.
       padding-right: max(var(--mobile-page-gutter), env(safe-area-inset-right, 0px)) !important;
     }
 
-    .dashboard-page-gutters > :where(div, section, article):not([class*="border-b"]) {
-      padding-left: max(var(--mobile-page-gutter), env(safe-area-inset-left, 0px)) !important;
-      padding-right: max(var(--mobile-page-gutter), env(safe-area-inset-right, 0px)) !important;
-    }
-
-    .dashboard-page-gutters > :where([class*="border-b"]) > div {
+    /* The dashboard <main> already applies its own horizontal padding.
+       Only add safe-area insets here — do NOT re-pad child sections, which
+       previously double-padded every page and squeezed cards. */
+    .dashboard-page-gutters {
       padding-left: max(var(--mobile-page-gutter), env(safe-area-inset-left, 0px)) !important;
       padding-right: max(var(--mobile-page-gutter), env(safe-area-inset-right, 0px)) !important;
     }
   }
+
 
   #root {
     width: 100%;
