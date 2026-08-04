@@ -1,0 +1,25 @@
+name: Schema reference check
+
+# Catches the recurring class of runtime 500s where code references a Supabase
+# column that does not exist in the live schema (e.g. leads.country). Runs on
+# every PR and on pushes to main so an auto-generated edit that reintroduces one
+# fails here instead of reaching a live user.
+#
+# To make this BLOCK merges, add it as a required status check in
+# Settings → Branches → branch protection for main.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  schema-refs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check DB column references against generated types
+        run: node scripts/check-schema-refs.mjs
