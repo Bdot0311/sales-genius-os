@@ -397,10 +397,27 @@ export async function processStripeEvent(
     if (!userId) throw new Error(`user not found for ${customer.email}`);
     const planDetails = PRICE_TO_PLAN[priceId] || PRICE_TO_PLAN['price_1SmM2hFTerosS6hiiDXBDIxl'];
     const periodEndIso = new Date(sub.current_period_end * 1000).toISOString();
+    const isEntitled = sub.status === 'active' || sub.status === 'trialing';
+    const accountStatus = sub.status === 'trialing'
+      ? 'trial'
+      : sub.status === 'active'
+        ? 'active'
+        : sub.status === 'past_due'
+          ? 'past_due'
+          : sub.status === 'paused'
+            ? 'paused'
+            : 'cancelled';
     const result = await applyEvent(supabase, userId, event, {
       plan: planDetails.plan,
-      status: sub.status === 'active' ? 'active' : 'inactive',
-      account_status: sub.status === 'active' ? 'active' : sub.status,
+      // Stripe's `trialing` status is fully entitled. Keep the internal billing
+      // status active so get_user_plan returns the selected paid tier, while
+      // account_status/trial_end_date retain the trial lifecycle for banners
+      // and expiry enforcement.
+      status: isEntitled ? 'active' : 'inactive',
+      account_status: accountStatus,
+      trial_end_date: sub.status === 'trialing' && sub.trial_end
+        ? new Date(sub.trial_end * 1000).toISOString()
+        : null,
       stripe_subscription_id: sub.id,
       search_credits_base: planDetails.credits,
       leads_limit: planDetails.leadsLimit,

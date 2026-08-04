@@ -99,7 +99,11 @@ const OnboardingStatus = () => {
 
   const emailVerified = !!user?.email_confirmed_at;
   const planProvisioned = !!subscription;
-  const planActive = subscription?.status === "active" && subscription?.account_status === "active";
+  const trialEndTime = subscription?.trial_end_date ? new Date(subscription.trial_end_date).getTime() : 0;
+  const planActive = subscription?.status === "active" && (
+    subscription?.account_status === "active" ||
+    (subscription?.account_status === "trial" && trialEndTime > Date.now())
+  );
 
   const emailState: StepState = loading ? "loading" : emailVerified ? "ok" : "pending";
   const planState: StepState = loading ? "loading" : !planProvisioned ? "error" : planActive ? "ok" : "pending";
