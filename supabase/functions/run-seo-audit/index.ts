@@ -236,7 +236,7 @@ async function notifyAdmins(supabase: ReturnType<typeof createClient>, newIssues
 
   const { data: subs } = await supabase
     .from("push_subscriptions")
-    .select("endpoint, p256dh, auth, user_id")
+    .select("endpoint, p256dh:p256dh_key, auth:auth_key, user_id")
     .in("user_id", adminIds);
 
   const top = newIssues.slice(0, 3).map((i) => i.title).join(" · ");
