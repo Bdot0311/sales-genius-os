@@ -15,7 +15,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { toast } from "sonner";
-import { CreditCard, TrendingUp, Check, RefreshCw, User, Save, Loader2, Palette, Activity, Bell, Key, GitBranch, Code2, Webhook, FileText, RotateCcw, Users, History, FileSearch, Globe, Coins, ExternalLink, Settings2, Copy, MapPin, Shield, AlertTriangle, Building2, KeyRound } from "lucide-react";
+import { CreditCard, TrendingUp, Check, RefreshCw, User, Save, Loader2, Palette, Activity, Bell, Key, Webhook, FileText, RotateCcw, Users, History, Globe, Coins, ExternalLink, Settings2, Copy, MapPin, Shield, AlertTriangle, Building2, KeyRound } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { CAN_SPAM_PENALTY, generateComplianceFooter } from "@/lib/compliance";
 import { Switch } from "@/components/ui/switch";
@@ -26,13 +26,6 @@ import { WhiteLabelTab } from "@/components/settings/WhiteLabelTab";
 import { WebhooksTab } from "@/components/settings/WebhooksTab";
 import { TeamActivityTab } from "@/components/settings/TeamActivityTab";
 import { CustomDomainTab } from "@/components/settings/CustomDomainTab";
-import { AuditLogsTab } from "@/components/settings/AuditLogsTab";
-import { MonitoringDashboard } from "@/components/settings/MonitoringDashboard";
-import { AlertRulesTab } from "@/components/settings/AlertRulesTab";
-import { WebhookDeliveryLogs } from "@/components/settings/WebhookDeliveryLogs";
-import { APIVersionsTab } from "@/components/settings/APIVersionsTab";
-import { WebhookReplayTab } from "@/components/settings/WebhookReplayTab";
-import { GraphQLPlayground } from "@/components/settings/GraphQLPlayground";
 import { CreditsUsageTab } from "@/components/settings/CreditsUsageTab";
 import { ChangePasswordCard } from "@/components/settings/ChangePasswordCard";
 import NotificationsTab from "@/components/settings/NotificationsTab";
@@ -291,15 +284,8 @@ const Settings = () => {
                 {row1}
                 {showPro && (
                   <TabsList className={`${gridCls} border-t pt-2`}>
-                    <TabsTrigger value="monitoring" className={tabBase}><Activity className="h-4 w-4" />Monitor</TabsTrigger>
-                    <TabsTrigger value="alerts" className={tabBase}><Bell className="h-4 w-4" />Alerts</TabsTrigger>
                     <TabsTrigger value="api-keys" className={tabBase}><Key className="h-4 w-4" />API Keys</TabsTrigger>
-                    <TabsTrigger value="api-versions" className={tabBase}><GitBranch className="h-4 w-4" />Versions</TabsTrigger>
-                    <TabsTrigger value="graphql" className={tabBase}><Code2 className="h-4 w-4" />GraphQL</TabsTrigger>
                     <TabsTrigger value="webhooks" className={tabBase}><Webhook className="h-4 w-4" />Webhooks</TabsTrigger>
-                    <TabsTrigger value="webhook-logs" className={tabBase}><FileText className="h-4 w-4" />Logs</TabsTrigger>
-                    <TabsTrigger value="webhook-replay" className={tabBase}><RotateCcw className="h-4 w-4" />Replay</TabsTrigger>
-                    <TabsTrigger value="audit" className={tabBase}><FileSearch className="h-4 w-4" />Audit</TabsTrigger>
                   </TabsList>
                 )}
               </div>
@@ -730,14 +716,6 @@ const Settings = () => {
 
           {(isAdmin || subscription?.plan === 'pro' || subscription?.plan === 'agency') && (
             <>
-              <TabsContent value="monitoring">
-                <MonitoringDashboard />
-              </TabsContent>
-
-              <TabsContent value="alerts">
-                <AlertRulesTab />
-              </TabsContent>
-
               <TabsContent value="api-keys">
                 <APIKeysTab />
               </TabsContent>
@@ -750,29 +728,9 @@ const Settings = () => {
                 <WebhooksTab />
               </TabsContent>
 
-              <TabsContent value="webhook-logs">
-                <WebhookDeliveryLogs />
+              <TabsContent value="activity">
+                <TeamActivityTab />
               </TabsContent>
-
-              <TabsContent value="webhook-replay">
-                <WebhookReplayTab />
-              </TabsContent>
-
-              <TabsContent value="api-versions">
-                <APIVersionsTab />
-              </TabsContent>
-
-              <TabsContent value="graphql">
-                <GraphQLPlayground />
-              </TabsContent>
-
-            <TabsContent value="activity">
-              <TeamActivityTab />
-            </TabsContent>
-
-            <TabsContent value="audit">
-              <AuditLogsTab />
-            </TabsContent>
             </>
           )}
         </Tabs>
