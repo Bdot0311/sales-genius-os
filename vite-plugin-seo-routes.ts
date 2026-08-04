@@ -246,7 +246,10 @@ function renderLinkIndex(currentPath: string): string {
   const isHelp = (r: RouteMeta) => r.path.startsWith("/help");
 
   return [
-    '<nav aria-label="Site index">',
+    // Visually hidden via inline styles (no stylesheet dependency) so real
+    // visitors never see a flash of unstyled link text before the CSS and the
+    // React bundle land. Crawlers still parse the markup and follow the links.
+    '<nav aria-label="Site index" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0">',
     group("Product", ROUTES),
     group("Guides and articles", CONTENT_ROUTES.filter(isBlog)),
     group("Help center", CONTENT_ROUTES.filter(isHelp)),
