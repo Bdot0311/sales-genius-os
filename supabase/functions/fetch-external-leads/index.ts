@@ -16,6 +16,7 @@ const corsHeaders = {
 };
 
 interface ExternalLeadFilters {
+  query?: string;
   job_title?: string;
   industry?: string;
   company_size?: string;
@@ -890,6 +891,10 @@ serve(async (req) => {
 
     // Build raw body, we'll strip empty values before sending
     const rawBody: Record<string, any> = {
+      // Railway has a first-class semantic parser. Preserve the user's full
+      // request instead of requiring every extracted qualifier to occur as a
+      // literal keyword. Structured fields remain alongside it as hard bounds.
+      query: filters.query?.trim() || undefined,
       job_title: jobTitle || undefined,
       location: normalizedCountry || undefined,
       industry: normalizedIndustry || undefined,
@@ -897,7 +902,9 @@ serve(async (req) => {
       company_domain: filters.company_domain || undefined,
       company_size: normalizedCompanySize || undefined,
       seniority: normalizedSeniority || undefined,
-      keywords: nonJobKeywords.length > 0 ? nonJobKeywords.join(', ') : undefined,
+      // `query` carries nuanced product/funding/use-case language. Sending the
+      // same phrases as `keywords` as well makes them an accidental AND clause.
+      keywords: !filters.query && nonJobKeywords.length > 0 ? nonJobKeywords.join(', ') : undefined,
       limit,
       ...(page > 1 ? { offset } : {}),
     };
@@ -908,7 +915,7 @@ serve(async (req) => {
     );
 
     // Check if we have at least one search parameter (besides limit/offset)
-    const hasSearchParam = requestBody.job_title || requestBody.location ||
+    const hasSearchParam = requestBody.query || requestBody.job_title || requestBody.location ||
                            requestBody.industry || requestBody.company ||
                            requestBody.company_domain ||
                            requestBody.company_size || requestBody.seniority ||

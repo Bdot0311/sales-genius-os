@@ -99,4 +99,15 @@ describe("buildExternalFilters", () => {
   it("carries the page size through as the limit", () => {
     expect(buildExternalFilters({}, 25).limit).toBe(25);
   });
+
+  it("preserves the original description for semantic provider search", () => {
+    const query = "Founders and CTOs at AI companion startups in the US under 50 employees";
+    const filters = buildExternalFilters(
+      { jobTitles: ["Founder", "CTO"], keywords: ["AI companion", "seed", "Series A"] },
+      10,
+      query,
+    );
+
+    expect(filters.query).toBe(query);
+  });
 });

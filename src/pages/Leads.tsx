@@ -244,7 +244,11 @@ const Leads = () => {
                   if (error) throw error;
                   
                   const aiFilters = (data?.filters || {}) as ParsedIcpFilters;
-                  const newFilters = buildExternalFilters(aiFilters, pageSize);
+                  // Keep the original sentence. The provider's semantic parser
+                  // can understand product/use-case qualifiers; flattening every
+                  // phrase into one comma-separated keyword filter made all of
+                  // them mandatory and turned valid niche searches into zero.
+                  const newFilters = buildExternalFilters(aiFilters, pageSize, query);
 
                   setExternalFilters(newFilters);
                   fetchExternalLeads(newFilters);

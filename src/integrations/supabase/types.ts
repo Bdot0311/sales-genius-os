@@ -1731,11 +1731,15 @@ export type Database = {
           departments: Json | null
           disqualifiers: string | null
           event_triggers: Json | null
+          exclude_b2c: boolean
           exclude_company_sizes: Json | null
           exclude_domains: Json | null
           exclude_geographies: Json | null
+          exclude_headcount_ceiling: number | null
           exclude_industries: Json | null
           exclude_keywords: Json | null
+          exclude_non_english: boolean
+          exclude_regulated: Json
           exclude_tech_stack: Json | null
           exclude_titles: Json | null
           funding_stages: Json | null
@@ -1776,11 +1780,15 @@ export type Database = {
           departments?: Json | null
           disqualifiers?: string | null
           event_triggers?: Json | null
+          exclude_b2c?: boolean
           exclude_company_sizes?: Json | null
           exclude_domains?: Json | null
           exclude_geographies?: Json | null
+          exclude_headcount_ceiling?: number | null
           exclude_industries?: Json | null
           exclude_keywords?: Json | null
+          exclude_non_english?: boolean
+          exclude_regulated?: Json
           exclude_tech_stack?: Json | null
           exclude_titles?: Json | null
           funding_stages?: Json | null
@@ -1821,11 +1829,15 @@ export type Database = {
           departments?: Json | null
           disqualifiers?: string | null
           event_triggers?: Json | null
+          exclude_b2c?: boolean
           exclude_company_sizes?: Json | null
           exclude_domains?: Json | null
           exclude_geographies?: Json | null
+          exclude_headcount_ceiling?: number | null
           exclude_industries?: Json | null
           exclude_keywords?: Json | null
+          exclude_non_english?: boolean
+          exclude_regulated?: Json
           exclude_tech_stack?: Json | null
           exclude_titles?: Json | null
           funding_stages?: Json | null

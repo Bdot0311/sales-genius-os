@@ -80,8 +80,10 @@ export function normalizeCompanySizeBucket(raw: string | undefined): string | un
 export function buildExternalFilters(
   aiFilters: ParsedIcpFilters,
   pageSize: number,
+  originalQuery?: string,
 ): ExternalLeadFilters {
   const newFilters: ExternalLeadFilters = { limit: pageSize };
+  if (originalQuery?.trim()) newFilters.query = originalQuery.trim();
 
   // The provider takes one value per field, so the singular fields carry the
   // first of each. The plural fields carry the rest: the edge function fans a
