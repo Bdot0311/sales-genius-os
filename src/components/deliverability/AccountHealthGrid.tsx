@@ -90,14 +90,24 @@ const AccountCard = ({ account, snapshots }: { account: SendingAccount; snapshot
             <div className="text-right text-xs text-muted-foreground">
               <div>{latest.volume} sent / 30d</div>
               <div>{latest.bounce_rate}% bounce · {latest.complaint_rate}% complaint</div>
+              <div>{latest.open_rate}% open</div>
             </div>
           )}
         </div>
 
         {account.reputation_score === null && (
-          <p className="text-xs text-muted-foreground">
-            Not enough recent volume to score yet. Keep sending; reputation updates nightly.
-          </p>
+          <div className="space-y-1.5">
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-primary/60"
+                style={{ width: `${Math.min(100, ((latest?.volume ?? 0) / MIN_VOLUME_FOR_SCORE) * 100)}%` }}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {latest?.volume ?? 0} of {MIN_VOLUME_FOR_SCORE} sends needed before a reputation score is
+              calculated. Rates above are live; the score unlocks at meaningful volume.
+            </p>
+          </div>
         )}
 
         <ReputationTrend snapshots={snapshots} />
@@ -107,10 +117,18 @@ const AccountCard = ({ account, snapshots }: { account: SendingAccount; snapshot
         )}
 
         {/* Daily usage */}
-        <p className="text-xs text-muted-foreground">
-          {account.sent_today_date === new Date().toISOString().slice(0, 10) ? account.sent_today : 0}
-          {" / "}{account.daily_limit} sent today
-        </p>
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>
+            {account.sent_today_date === new Date().toISOString().slice(0, 10) ? account.sent_today : 0}
+            {" / "}{account.daily_limit} sent today
+          </span>
+          <span>
+            {account.last_sent_at
+              ? `Last sent ${new Date(account.last_sent_at).toLocaleDateString()}`
+              : "No sends yet"}
+          </span>
+        </div>
+
 
         {/* Controls */}
         <div className="flex items-center justify-between border-t border-border/50 pt-3">
