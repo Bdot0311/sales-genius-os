@@ -71,8 +71,9 @@ describe("toSizeBucket", () => {
     expect(toSizeBucket("roughly 300 people")).toBe("201-500");
   });
 
-  it("treats an upper-bound phrase as starting from one", () => {
-    expect(toSizeBucket("under 50 people")).toBe("1-10");
+  it("preserves the full range in an upper-bound phrase", () => {
+    expect(toSizeBucket("under 50 people")).toBe("1-50");
+    expect(toSizeBucket("up to 200 employees")).toBe("1-200");
   });
 
   it("returns null when there is no size to read", () => {

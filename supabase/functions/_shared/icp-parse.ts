@@ -93,7 +93,14 @@ export function toSizeBucket(raw: string): string | null {
   if (!numbers?.length) return null;
 
   const upperBoundOnly = /\b(under|below|less than|up to|fewer than)\b|^</i.test(raw);
-  const anchor = upperBoundOnly ? 1 : Math.min(...numbers);
+  if (upperBoundOnly) {
+    // Preserve the whole requested ceiling. Mapping "under 50" to the first
+    // bucket (1-10) silently excluded companies with 11-49 employees.
+    const ceiling = Math.max(...numbers);
+    return ceiling > 0 ? `1-${ceiling}` : null;
+  }
+
+  const anchor = Math.min(...numbers);
 
   const buckets: Array<[string, number]> = [
     ["1-10", 10],
