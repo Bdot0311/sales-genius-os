@@ -174,18 +174,27 @@ All colors MUST be HSL. Using 8px spacing scale.
       gap: 0.5rem;
     }
 
-    /* Tab bars, filter rows and chip rows: scroll instead of wrapping into
-       a tall stack that pushes cards off screen. */
+    /* Tab bars: scroll horizontally instead of squeezing every trigger to an
+       unreadable sliver or wrapping into a tall stack. */
     [role="tablist"] {
+      display: flex !important;
+      grid-template-columns: none !important;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
       scrollbar-width: none;
       justify-content: flex-start;
+      width: 100%;
     }
 
     [role="tablist"]::-webkit-scrollbar {
       display: none;
     }
+
+    [role="tablist"] > * {
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
 
     [role="tablist"] > * {
       flex-shrink: 0;
