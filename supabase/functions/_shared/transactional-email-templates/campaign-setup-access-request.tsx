@@ -71,7 +71,7 @@ const main = { backgroundColor: '#ffffff', fontFamily: '-apple-system, BlinkMacS
 const container = { padding: '40px 24px', maxWidth: '560px', margin: '0 auto' }
 const h1 = { fontSize: '24px', fontWeight: '700' as const, color: '#111827', margin: '0 0 20px', lineHeight: '1.3' }
 const text = { fontSize: '15px', color: '#374151', lineHeight: '1.7', margin: '0 0 18px' }
-const quote = { fontSize: '15px', color: '#374151', lineHeight: '1.7', margin: '0 0 18px', padding: '12px 16px', borderLeft: '3px solid #d1d5db', backgroundColor: '#f9fafb' }
+
 const offerSection = { backgroundColor: '#f5f3ff', borderLeft: '3px solid #7c3aed', borderRadius: '4px', padding: '20px 22px', margin: '24px 0' }
 const offerHeading = { fontSize: '14px', fontWeight: '700' as const, color: '#111827', margin: '0 0 12px' }
 const offerItem = { fontSize: '14px', color: '#374151', lineHeight: '1.7', margin: '0 0 6px' }
