@@ -144,7 +144,29 @@ serve(async (req) => {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const reqBody: { mode?: string; agentId?: string } = await req.json().catch(() => ({}));
+  const reqBody: { mode?: string; agentId?: string; trigger?: string } = await req.json().catch(() => ({}));
+
+  // Every invocation gets a run id so the UI can group the audit trail into
+  // discrete runs, and record *why* a run produced nothing.
+  const runId = crypto.randomUUID();
+  const triggerSource = typeof reqBody.trigger === "string" ? reqBody.trigger : "manual";
+  const auditClient = createClient(supabaseUrl, serviceKey);
+  let auditUserId: string | null = null;
+  let auditAgentId: string | null = null;
+
+  const logRunEvent = async (row: Record<string, unknown>) => {
+    if (!auditUserId) return;
+    try {
+      await auditClient.from("agent_actions").insert({
+        user_id: auditUserId,
+        agent_config_id: auditAgentId,
+        run_id: runId,
+        ...row,
+      });
+    } catch (logErr) {
+      console.error("agent-run audit log failed:", logErr);
+    }
+  };
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -168,6 +190,8 @@ serve(async (req) => {
       });
     }
 
+    auditUserId = user.id;
+
     // ── Agent resolution ──────────────────────────────────────────────────
     // A user can own several agent builds. When no specific agent is named we
     // fan out over every enabled build (each one runs as its own invocation of
@@ -184,6 +208,12 @@ serve(async (req) => {
         .eq("user_id", user.id)
         .maybeSingle();
       if (!data) {
+        await logRunEvent({
+          action_type: "skipped",
+          status: "skipped",
+          description: "Run skipped: this agent build no longer exists.",
+          metadata: { phase: "run", reason: "agent_not_found", trigger: triggerSource, requested_agent_id: requestedAgentId },
+        });
         return new Response(
           JSON.stringify({ success: false, message: "Agent not found" }),
           { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -207,7 +237,7 @@ serve(async (req) => {
               const res = await fetch(`${supabaseUrl}/functions/v1/agent-run`, {
                 method: "POST",
                 headers: { Authorization: authHeader, "Content-Type": "application/json" },
-                body: JSON.stringify({ ...reqBody, agentId: a.id }),
+                body: JSON.stringify({ ...reqBody, agentId: a.id, trigger: triggerSource }),
               });
               const payload = await res.json().catch(() => ({}));
               return { agentId: a.id, agentName: a.agent_name, role: a.role ?? "full_cycle", ...payload };
@@ -252,6 +282,12 @@ serve(async (req) => {
     }
 
     if (!agentConfig) {
+      await logRunEvent({
+        action_type: "skipped",
+        status: "skipped",
+        description: "Run skipped: no agent build has been set up yet.",
+        metadata: { phase: "run", reason: "no_agent_configured", trigger: triggerSource },
+      });
       return new Response(
         JSON.stringify({ success: false, message: "Agent is not enabled" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -261,6 +297,13 @@ serve(async (req) => {
     const config = agentConfig as unknown as AgentConfig;
 
     if (!config.enabled) {
+      auditAgentId = config.id;
+      await logRunEvent({
+        action_type: "skipped",
+        status: "skipped",
+        description: `Run skipped: ${config.agent_name || "this agent"} is switched off.`,
+        metadata: { phase: "run", reason: "agent_disabled", trigger: triggerSource },
+      });
       return new Response(
         JSON.stringify({ success: false, message: "Agent is not enabled" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -275,8 +318,9 @@ serve(async (req) => {
     const runReplies = agentRole === "full_cycle" || agentRole === "replies";
 
     // Every action row is attributed to the agent build that produced it.
+    auditAgentId = config.id;
     const logAction = (row: Record<string, unknown>) =>
-      adminClient.from("agent_actions").insert({ agent_config_id: config.id, ...row });
+      adminClient.from("agent_actions").insert({ agent_config_id: config.id, run_id: runId, ...row });
 
     // Reply capacity stays per user, not per agent, so extra builds never
     // multiply the volume the plan allows.
@@ -1380,6 +1424,9 @@ Output ONLY the reply body. No subject line or signature.`;
       description: runSummary,
       metadata: {
         mode: approvalMode ? "approval" : "autonomous",
+        trigger: triggerSource,
+        role: agentRole,
+        agent_name: config.agent_name ?? null,
         threads_checked: threadsChecked,
         leads_found: leadsFound,
         outreach_drafted: outreachDrafted,
@@ -1430,6 +1477,13 @@ Output ONLY the reply body. No subject line or signature.`;
     );
   } catch (err: any) {
     console.error("agent-run error:", err);
+    await logRunEvent({
+      action_type: "error",
+      status: "failed",
+      description: "Run failed before it could finish.",
+      error_message: err?.message ?? "Unknown error",
+      metadata: { phase: "run", trigger: triggerSource },
+    });
     return new Response(
       JSON.stringify({ error: err.message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
