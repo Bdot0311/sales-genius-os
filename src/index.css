@@ -196,9 +196,6 @@ All colors MUST be HSL. Using 8px spacing scale.
     }
 
 
-    [role="tablist"] > * {
-      flex-shrink: 0;
-    }
 
     /* Dialogs/sheets must never exceed the screen */
     [role="dialog"] {
