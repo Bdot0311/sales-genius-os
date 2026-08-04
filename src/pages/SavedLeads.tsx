@@ -389,38 +389,54 @@ const SavedLeads = () => {
     setScoreProgress({ current: 0, total: leadIds.length });
     let ok = 0;
     let failed = 0;
-    let gated = false;
+    let firstError = "";
     for (let i = 0; i < leadIds.length; i++) {
       setScoreProgress({ current: i + 1, total: leadIds.length });
       try {
         const { data, error } = await supabase.functions.invoke("score-lead-v2", {
           body: { leadId: leadIds[i] },
         });
-        const errMsg = (error as any)?.message || data?.error;
-        if (errMsg) {
-          if (/paid plan|upgrade/i.test(String(errMsg))) gated = true;
+        if (error) {
+          // supabase-js hides the function's real message behind a generic
+          // "non-2xx status" error. The raw Response is on error.context, so
+          // read the real { error, error_code } body from it.
+          let detail = (error as any)?.message || "request failed";
+          try {
+            const res = (error as any)?.context;
+            const body = res && typeof res.clone === "function" ? await res.clone().json() : null;
+            if (body?.error) detail = body.error;
+            else if (body?.error_code) detail = body.error_code;
+          } catch { /* body wasn't JSON */ }
+          if (!firstError) firstError = detail;
+          console.error("[score-lead-v2] failed", { leadId: leadIds[i], detail, error });
+          failed++;
+        } else if (data?.error) {
+          if (!firstError) firstError = String(data.error);
+          console.error("[score-lead-v2] returned error", data.error);
           failed++;
         } else {
           ok++;
         }
-      } catch {
+      } catch (e: any) {
+        if (!firstError) firstError = e?.message || "unexpected error";
+        console.error("[score-lead-v2] threw", e);
         failed++;
       }
     }
     await fetchLeads();
     setScoring(false);
     setSelectedLeads(new Set());
-    if (gated && ok === 0) {
+    if (ok === 0 && failed > 0) {
       toast({
-        title: "Scoring is a paid feature",
-        description: "Lead tiering is available on paid plans.",
+        title: "Scoring failed",
+        description: firstError || "Could not score these leads. Check the console for details.",
         variant: "destructive",
       });
     } else {
       toast({
         title: "Scoring complete",
-        description: `${ok} lead${ok === 1 ? "" : "s"} tiered${failed ? ` · ${failed} failed` : ""}.`,
-        variant: failed && ok === 0 ? "destructive" : "default",
+        description: `${ok} lead${ok === 1 ? "" : "s"} tiered${failed ? ` · ${failed} failed (${firstError})` : ""}.`,
+        variant: failed ? "destructive" : "default",
       });
     }
   };
