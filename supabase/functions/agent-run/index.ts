@@ -284,52 +284,64 @@ serve(async (req) => {
           .select("id", { count: "exact", head: true })
           .eq("user_id", user.id)
           .eq("source", "ai_agent");
-        const searchPage = Math.floor((agentLeadCount ?? 0) / target) + 1;
-        const searchRes = await fetch(`${supabaseUrl}/functions/v1/fetch-external-leads`, {
-          method: "POST",
-          headers: { Authorization: authHeader, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            // The saved ICP profile is the source of truth. The legacy single-field
-            // targeting on agent_configs is only a fallback for users with no ICP.
-            job_title: icpList(icpSnapshot?.target_titles)[0] || config.prospecting_job_title || undefined,
-            job_titles: icpList(icpSnapshot?.target_titles).length
-              ? icpList(icpSnapshot?.target_titles)
-              : undefined,
-            industry: icpList(icpSnapshot?.industries)[0] || config.prospecting_industry || undefined,
-            industries: icpList(icpSnapshot?.industries).length ? icpList(icpSnapshot?.industries) : undefined,
-            country: icpList(icpSnapshot?.geographies)[0] || config.prospecting_country || undefined,
-            countries: icpList(icpSnapshot?.geographies).length ? icpList(icpSnapshot?.geographies) : undefined,
-            company_size:
-              icpSnapshot?.company_size_bucket ||
-              bucketFromRange(icpSnapshot?.company_size_min, icpSnapshot?.company_size_max) ||
-              config.prospecting_company_size ||
-              undefined,
-            seniority: icpList(icpSnapshot?.seniority_levels)[0] || undefined,
-            seniority_levels: icpList(icpSnapshot?.seniority_levels).length
-              ? icpList(icpSnapshot?.seniority_levels)
-              : undefined,
-            keywords: icpList(icpSnapshot?.intent_keywords).length
-              ? icpList(icpSnapshot?.intent_keywords)
-              : undefined,
-            exclude_titles: icpList(icpSnapshot?.exclude_titles).length
-              ? icpList(icpSnapshot?.exclude_titles)
-              : undefined,
-            exclude_industries: icpList(icpSnapshot?.exclude_industries).length
-              ? icpList(icpSnapshot?.exclude_industries)
-              : undefined,
-            exclude_keywords: icpList(icpSnapshot?.exclude_keywords).length
-              ? icpList(icpSnapshot?.exclude_keywords)
-              : undefined,
-            limit: target,
-            page: searchPage,
-            // Never relax the saved ICP, and never return people already saved.
-            strict: Boolean(icpSnapshot),
-            exclude_seen: true,
-          }),
-
-        });
-        const searchData = await searchRes.json().catch(() => ({}));
-        const foundLeads: any[] = Array.isArray(searchData?.leads) ? searchData.leads : [];
+        let searchPage = Math.floor((agentLeadCount ?? 0) / target) + 1;
+        const searchBody: Record<string, unknown> = {
+          // The saved ICP profile is the source of truth. The legacy single-field
+          // targeting on agent_configs is only a fallback for users with no ICP.
+          job_title: icpList(icpSnapshot?.target_titles)[0] || config.prospecting_job_title || undefined,
+          job_titles: icpList(icpSnapshot?.target_titles).length
+            ? icpList(icpSnapshot?.target_titles)
+            : undefined,
+          industry: icpList(icpSnapshot?.industries)[0] || config.prospecting_industry || undefined,
+          industries: icpList(icpSnapshot?.industries).length ? icpList(icpSnapshot?.industries) : undefined,
+          country: icpList(icpSnapshot?.geographies)[0] || config.prospecting_country || undefined,
+          countries: icpList(icpSnapshot?.geographies).length ? icpList(icpSnapshot?.geographies) : undefined,
+          company_size:
+            icpSnapshot?.company_size_bucket ||
+            bucketFromRange(icpSnapshot?.company_size_min, icpSnapshot?.company_size_max) ||
+            config.prospecting_company_size ||
+            undefined,
+          seniority: icpList(icpSnapshot?.seniority_levels)[0] || undefined,
+          seniority_levels: icpList(icpSnapshot?.seniority_levels).length
+            ? icpList(icpSnapshot?.seniority_levels)
+            : undefined,
+          keywords: icpList(icpSnapshot?.intent_keywords).length
+            ? icpList(icpSnapshot?.intent_keywords)
+            : undefined,
+          exclude_titles: icpList(icpSnapshot?.exclude_titles).length
+            ? icpList(icpSnapshot?.exclude_titles)
+            : undefined,
+          exclude_industries: icpList(icpSnapshot?.exclude_industries).length
+            ? icpList(icpSnapshot?.exclude_industries)
+            : undefined,
+          exclude_keywords: icpList(icpSnapshot?.exclude_keywords).length
+            ? icpList(icpSnapshot?.exclude_keywords)
+            : undefined,
+          limit: target,
+          // Never relax the saved ICP, and never return people already saved.
+          strict: Boolean(icpSnapshot),
+          exclude_seen: true,
+        };
+        const runSearch = async (pg: number) => {
+          const r = await fetch(`${supabaseUrl}/functions/v1/fetch-external-leads`, {
+            method: "POST",
+            headers: { Authorization: authHeader, "Content-Type": "application/json" },
+            body: JSON.stringify({ ...searchBody, page: pg }),
+          });
+          return await r.json().catch(() => ({}));
+        };
+        let searchData = await runSearch(searchPage);
+        let foundLeads: any[] = Array.isArray(searchData?.leads) ? searchData.leads : [];
+        // searchPage is derived from cumulative agent-sourced count, which
+        // overshoots once the ICP is exhausted or after the ICP changes (the
+        // counter is global). If an advanced page comes back empty, retry from
+        // page 1; exclude_seen keeps already-saved leads out, so page 1 only
+        // returns genuinely new matches.
+        if (foundLeads.length === 0 && !searchData?.error && searchPage > 1) {
+          searchPage = 1;
+          searchData = await runSearch(searchPage);
+          foundLeads = Array.isArray(searchData?.leads) ? searchData.leads : [];
+        }
 
         for (const l of foundLeads) {
           const email = (l.business_email || "").trim().toLowerCase();
