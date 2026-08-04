@@ -26,6 +26,7 @@ import { useSubscription } from "@/hooks/use-subscription";
 import { getAgentTier, getNextPlan, PLAN_FEATURES, type PlanType } from "@/lib/plan-features";
 import { OverviewTab } from "@/components/agent/OverviewTab";
 import { InboxTab } from "@/components/agent/InboxTab";
+import { HistoryTab } from "@/components/agent/HistoryTab";
 import { ConfigTab } from "@/components/agent/ConfigTab";
 import { SettingsTab } from "@/components/agent/SettingsTab";
 import { AgentTestDialog } from "@/components/agent/AgentTestDialog";
@@ -504,6 +505,7 @@ const Agent = () => {
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="inbox">Inbox</TabsTrigger>
             <TabsTrigger value="configuration">Configuration</TabsTrigger>
+            <TabsTrigger value="history">History</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
 
@@ -527,6 +529,10 @@ const Agent = () => {
               userId={userId}
               onSaved={setConfig}
             />
+          </TabsContent>
+
+          <TabsContent value="history">
+            <HistoryTab agents={agents} userId={userId} />
           </TabsContent>
 
           <TabsContent value="settings">
