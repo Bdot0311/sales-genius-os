@@ -481,7 +481,11 @@ ${unsubscribeFooterHtml}
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ raw: encodedEmail }),
+        body: JSON.stringify(
+          typeof threadId === 'string' && threadId
+            ? { raw: encodedEmail, threadId }
+            : { raw: encodedEmail }
+        ),
       });
 
       if (!gmailResponse.ok) {
