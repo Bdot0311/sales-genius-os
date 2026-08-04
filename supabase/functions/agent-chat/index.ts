@@ -1039,13 +1039,26 @@ serve(async (req) => {
             .select("id", { count: "exact", head: true })
             .eq("user_id", userId)
             .in("source", ["ai_agent", "ai_sdr_chat"]);
-          const page = Math.floor((sourcedCount ?? 0) / want) + 1;
+          let page = Math.floor((sourcedCount ?? 0) / want) + 1;
 
-          const res = await invokeFn(
+          let res = await invokeFn(
             "fetch-external-leads",
             icpSearchBody(icpSnapshot, { limit: want, page }),
           );
-          const found: any[] = Array.isArray(res?.leads) ? res.leads : [];
+          let found: any[] = Array.isArray(res?.leads) ? res.leads : [];
+          // The page is derived from cumulative sourced count, which overshoots
+          // once the ICP is exhausted or after the ICP changes (the counter is
+          // global). If an advanced page comes back empty, retry from page 1 so
+          // we still surface genuinely new people; exclude_seen keeps already
+          // saved leads out, so page 1 only returns unseen matches.
+          if (found.length === 0 && !res?.error && page > 1) {
+            page = 1;
+            res = await invokeFn(
+              "fetch-external-leads",
+              icpSearchBody(icpSnapshot, { limit: want, page }),
+            );
+            found = Array.isArray(res?.leads) ? res.leads : [];
+          }
           const saved: string[] = [];
           for (const l of found) {
             const email = String(l.business_email ?? "").trim().toLowerCase();
