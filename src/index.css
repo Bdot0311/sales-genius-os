@@ -10,7 +10,9 @@ All colors MUST be HSL. Using 8px spacing scale.
 
 @layer base {
   :root {
-    --mobile-page-gutter: clamp(2rem, 10vw, 3rem);
+    /* Phone gutter: tight enough that cards get real width on a 360–430px screen */
+    --mobile-page-gutter: 1rem;
+
 
     --background: 261 75% 2%;
     --foreground: 0 0% 95%;
@@ -100,8 +102,12 @@ All colors MUST be HSL. Using 8px spacing scale.
     word-break: break-word;
   }
 
-  /* Wide tables get a horizontal scroll container automatically on mobile */
+  /* ---- Phone layout rules (<=768px) ----
+     Keep these minimal: they fix page gutters and let wide content scroll.
+     They must NOT compress content into a narrower box than the screen. */
   @media (max-width: 768px) {
+    /* Wide tables scroll horizontally instead of being crushed into the
+       viewport (which stacked cell text vertically). */
     table {
       display: block;
       max-width: 100%;
@@ -116,24 +122,29 @@ All colors MUST be HSL. Using 8px spacing scale.
       padding-right: max(var(--mobile-page-gutter), env(safe-area-inset-right, 0px)) !important;
     }
 
-    .min-w-max {
-      min-width: 100% !important;
+    /* Full-height shells: use the small viewport unit so iOS browser chrome
+       does not push content off screen, but keep the flex column intact. */
+    .h-screen {
+      height: 100svh;
     }
 
-    .w-80 {
-      width: 100% !important;
-    }
-
-    .h-screen,
-    .min-h-screen,
-    [class*="h-[calc(100vh"],
-    [class*="h-[calc(100dvh"],
-    [class*="h-[calc(100svh"] {
+    .min-h-screen {
       min-height: 100svh;
-      height: auto !important;
     }
 
-    .px-6 {
+    /* Fixed-width panels/inputs must never exceed the screen */
+    .w-72,
+    .w-80,
+    .w-96 {
+      max-width: 100%;
+    }
+
+
+
+
+    .px-6,
+    .px-8,
+    .px-10 {
       padding-left: max(var(--mobile-page-gutter), env(safe-area-inset-left, 0px)) !important;
       padding-right: max(var(--mobile-page-gutter), env(safe-area-inset-right, 0px)) !important;
     }
@@ -149,18 +160,56 @@ All colors MUST be HSL. Using 8px spacing scale.
       padding-bottom: 4rem !important;
     }
 
-    .grid-cols-2,
+    /* Collapse only genuinely wide grids. 2-up grids fit fine on a phone and
+       stacking them made stat cards look broken/oversized. */
     .grid-cols-3,
     .grid-cols-4,
     .grid-cols-5,
     .grid-cols-6 {
-      grid-template-columns: minmax(0, 1fr) !important;
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
 
-    .flex-nowrap {
-      flex-wrap: wrap !important;
+    .grid-cols-5,
+    .grid-cols-6 {
+      gap: 0.5rem;
+    }
+
+    /* Tab bars: scroll horizontally instead of squeezing every trigger to an
+       unreadable sliver or wrapping into a tall stack. */
+    [role="tablist"] {
+      display: flex !important;
+      grid-template-columns: none !important;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      justify-content: flex-start;
+      width: 100%;
+    }
+
+    [role="tablist"]::-webkit-scrollbar {
+      display: none;
+    }
+
+    [role="tablist"] > * {
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+
+
+    /* Dialogs/sheets must never exceed the screen */
+    [role="dialog"] {
+      max-width: calc(100vw - 1.5rem);
+    }
+
+    /* Touch targets */
+    button,
+    [role="button"],
+    a[role="link"] {
+      touch-action: manipulation;
     }
   }
+
 
   /* Clamp ONLY explicitly oversized display text on small screens.
      Do NOT touch bare h1/h2 — page titles already use sane Tailwind sizes
@@ -195,16 +244,15 @@ All colors MUST be HSL. Using 8px spacing scale.
       padding-right: max(var(--mobile-page-gutter), env(safe-area-inset-right, 0px)) !important;
     }
 
-    .dashboard-page-gutters > :where(div, section, article):not([class*="border-b"]) {
-      padding-left: max(var(--mobile-page-gutter), env(safe-area-inset-left, 0px)) !important;
-      padding-right: max(var(--mobile-page-gutter), env(safe-area-inset-right, 0px)) !important;
-    }
-
-    .dashboard-page-gutters > :where([class*="border-b"]) > div {
+    /* The dashboard <main> already applies its own horizontal padding.
+       Only add safe-area insets here — do NOT re-pad child sections, which
+       previously double-padded every page and squeezed cards. */
+    .dashboard-page-gutters {
       padding-left: max(var(--mobile-page-gutter), env(safe-area-inset-left, 0px)) !important;
       padding-right: max(var(--mobile-page-gutter), env(safe-area-inset-right, 0px)) !important;
     }
   }
+
 
   #root {
     width: 100%;
