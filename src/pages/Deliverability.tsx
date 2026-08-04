@@ -105,7 +105,7 @@ const Deliverability = () => {
           </div>
         ) : (
           <>
-            <HealthOverview accounts={accounts} alerts={alerts} domains={domains} />
+            <HealthOverview accounts={accounts} alerts={alerts} domains={domains} snapshots={snapshots} />
 
             <section>
               <SectionHeading title="Alerts" sub="Reputation drops, auth failures, and blacklist listings surface here." />
