@@ -87,6 +87,7 @@ const Admin = () => {
               <Route path="signup-logs" element={<AdminSignupLogs />} />
               <Route path="re-engagement" element={<AdminReEngagement />} />
               <Route path="realtime" element={<AdminRealtimeHealth />} />
+              <Route path="health" element={<AdminSystemHealth />} />
               <Route path="activation" element={<AdminActivation />} />
               <Route path="campaign-setup" element={<AdminCampaignSetup />} />
               <Route path="*" element={<Navigate to="/admin" replace />} />
