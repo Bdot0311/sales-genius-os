@@ -25,10 +25,11 @@ const Dashboard = () => {
     meetingsThisWeek: 0,
   });
 
+  const [tourPending, setTourPending] = useState(false);
+  const quickstartDone = () => !!localStorage.getItem('outreign_quickstart_done');
+
   useEffect(() => {
-    if (!localStorage.getItem('outreign_quickstart_done')) {
-      setShowWizard(true);
-    }
+    if (!quickstartDone()) setShowWizard(true);
   }, []);
 
   useEffect(() => {
@@ -64,7 +65,12 @@ const Dashboard = () => {
         .select("completed_tour")
         .eq("user_id", user.id)
         .single();
-      if (!data || !data.completed_tour) setShowTour(true);
+      if (!data || !data.completed_tour) {
+        // Never overlap the tour with the quick-start wizard — the tour waits
+        // until onboarding is finished (or already was).
+        if (quickstartDone()) setShowTour(true);
+        else setTourPending(true);
+      }
     } catch (error) {
       console.error("Error checking first visit:", error);
     }
@@ -195,7 +201,13 @@ const Dashboard = () => {
       <QuickStartWizard
         open={showWizard}
         onOpenChange={(open) => {
-          if (!open) localStorage.setItem('outreign_quickstart_done', '1');
+          if (!open) {
+            localStorage.setItem('outreign_quickstart_done', '1');
+            if (tourPending) {
+              setTourPending(false);
+              setShowTour(true);
+            }
+          }
           setShowWizard(open);
         }}
       />

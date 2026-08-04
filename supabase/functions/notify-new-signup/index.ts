@@ -46,13 +46,32 @@ serve(async (req) => {
     const displayName = (record?.full_name || '').toString().trim() || userEmail.split('@')[0];
     const userId = record?.id || userEmail;
 
+    // Read the real plan instead of assuming "free" — paid signups come through
+    // checkout and their subscription row may land a moment after the profile.
+    let plan = 'free';
+    if (record?.id) {
+      for (let attempt = 0; attempt < 4; attempt++) {
+        const { data: sub } = await supabase
+          .from('subscriptions')
+          .select('plan')
+          .eq('user_id', record.id)
+          .maybeSingle();
+        if (sub?.plan) {
+          plan = sub.plan;
+          if (sub.plan !== 'free') break;
+        }
+        await new Promise((r) => setTimeout(r, 1500));
+      }
+    }
+    const planLabel = plan.charAt(0).toUpperCase() + plan.slice(1);
+
     // Product analytics: signup is created server-side by a DB trigger, so the
     // browser cannot be the source of truth for it.
     await captureServerEvent(
       'signup_created',
       userId,
-      { email: userEmail, name: displayName, plan: 'free' },
-      { email: userEmail, name: displayName, plan: 'free', signup_date: record?.created_at ?? new Date().toISOString() },
+      { email: userEmail, name: displayName, plan },
+      { email: userEmail, name: displayName, plan, signup_date: record?.created_at ?? new Date().toISOString() },
     );
 
 
@@ -66,7 +85,7 @@ serve(async (req) => {
         templateData: {
           userName: fullName,
           userEmail: userEmail,
-          plan: 'Free',
+          plan: planLabel,
           signupDate: signupTime,
         },
       },

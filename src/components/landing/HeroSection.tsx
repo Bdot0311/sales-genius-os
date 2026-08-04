@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, ChevronDown } from "lucide-react";
 import { motion } from "motion/react";
-import { CAMPAIGN_SETUP_BOOKING_URL, logCampaignSetupRequest } from "@/lib/campaign-setup";
+import { CAMPAIGN_SETUP_BOOKING_URL, openCampaignSetupBooking } from "@/lib/campaign-setup";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -116,7 +116,7 @@ export const HeroSection = () => {
         >
           <motion.a
             href={CAMPAIGN_SETUP_BOOKING_URL}
-            onClick={() => { void logCampaignSetupRequest("hero_book_setup"); }}
+            onClick={(e) => { e.preventDefault(); void openCampaignSetupBooking("hero_book_setup"); }}
             target="_blank"
             rel="noopener noreferrer"
             className="cta-pill-glow inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-full px-8 text-sm font-semibold text-white group sm:w-auto"

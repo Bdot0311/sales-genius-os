@@ -57,6 +57,8 @@ serve(async (req) => {
 
     // Get Calendly user info
     let calendlyEmail = null;
+    let calendlyUserUri: string | null = null;
+    let calendlyOrgUri: string | null = null;
     try {
       const userRes = await fetch("https://api.calendly.com/users/me", {
         headers: { Authorization: `Bearer ${tokens.access_token}` },
@@ -64,14 +66,48 @@ serve(async (req) => {
       if (userRes.ok) {
         const userInfo = await userRes.json();
         calendlyEmail = userInfo.resource?.email;
+        calendlyUserUri = userInfo.resource?.uri ?? null;
+        calendlyOrgUri = userInfo.resource?.current_organization ?? null;
       }
     } catch (e) { console.warn("Could not fetch Calendly user info:", e); }
+
+    // Register the booking webhook so booked meetings land in campaign setup
+    // requests with the invitee's real name, email and meeting time.
+    let webhookRegistered = false;
+    const signingKey = Deno.env.get("CALENDLY_WEBHOOK_SIGNING_KEY");
+    if (calendlyOrgUri && calendlyUserUri) {
+      try {
+        const hookRes = await fetch("https://api.calendly.com/webhook_subscriptions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${tokens.access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/calendly-webhook`,
+            events: ["invitee.created", "invitee.canceled"],
+            organization: calendlyOrgUri,
+            user: calendlyUserUri,
+            scope: "user",
+            ...(signingKey ? { signing_key: signingKey } : {}),
+          }),
+        });
+        const hookText = await hookRes.text();
+        webhookRegistered = hookRes.ok;
+        if (!hookRes.ok) console.warn(`Calendly webhook registration failed [${hookRes.status}]: ${hookText}`);
+      } catch (e) {
+        console.warn("Calendly webhook registration error:", e);
+      }
+    }
 
     const config = {
       accessToken: tokens.access_token,
       refreshToken: tokens.refresh_token,
       expiresAt: Date.now() + tokens.expires_in * 1000,
       calendlyEmail,
+      calendlyUserUri,
+      calendlyOrgUri,
+      webhookRegistered,
     };
 
     const { data: existing } = await supabase
