@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Mail, Pause, Play, Loader2 } from "lucide-react";
-import { reputationDisplay } from "@/lib/reputation";
+import { reputationDisplay, MIN_VOLUME_FOR_SCORE } from "@/lib/reputation";
 import { useUpdateAccount, useToggleWarmup } from "@/hooks/use-deliverability";
 import { ReputationTrend } from "./ReputationTrend";
 import { SendingControlsDialog } from "./SendingControlsDialog";
