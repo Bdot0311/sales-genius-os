@@ -18,7 +18,7 @@ export function PageHeader({ title, description, breadcrumbs, actions }: PageHea
   const navigate = useNavigate();
   return (
     <div className="border-b border-border/60 bg-background/80 backdrop-blur-sm">
-      <div className="px-[var(--mobile-page-gutter)] pt-4 pb-4 sm:px-6">
+      <div className="pt-4 pb-4">
         {breadcrumbs && breadcrumbs.length > 0 && (
           <div className="flex items-center gap-1 mb-2">
             {breadcrumbs.map((crumb, i) => (
