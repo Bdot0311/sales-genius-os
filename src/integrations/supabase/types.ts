@@ -2079,6 +2079,7 @@ export type Database = {
           contact_email: string | null
           contact_name: string
           contact_phone: string | null
+          country: string | null
           created_at: string
           department: string | null
           employee_count: string | null
@@ -2128,6 +2129,7 @@ export type Database = {
           contact_email?: string | null
           contact_name: string
           contact_phone?: string | null
+          country?: string | null
           created_at?: string
           department?: string | null
           employee_count?: string | null
@@ -2177,6 +2179,7 @@ export type Database = {
           contact_email?: string | null
           contact_name?: string
           contact_phone?: string | null
+          country?: string | null
           created_at?: string
           department?: string | null
           employee_count?: string | null
