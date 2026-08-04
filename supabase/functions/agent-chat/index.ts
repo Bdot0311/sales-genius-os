@@ -294,7 +294,7 @@ serve(async (req) => {
 
     const payload = await req.json().catch(() => ({} as Record<string, unknown>));
     const threadId = String(payload.threadId ?? "");
-    const requestedAgentId = typeof payload.agentId === "string" ? payload.agentId : null;
+    let requestedAgentId = typeof payload.agentId === "string" ? payload.agentId : null;
     const action = String(payload.action ?? "chat");
     if (!threadId) return json({ error: "Missing threadId" }, 400);
 
@@ -464,11 +464,19 @@ serve(async (req) => {
 
     const { data: thread } = await admin
       .from("agent_chat_threads")
-      .select("id, user_id, title, autonomy")
+      .select("id, user_id, title, autonomy, agent_config_id")
       .eq("id", threadId)
       .eq("user_id", userId)
       .maybeSingle();
     if (!thread) return json({ error: "Conversation not found" }, 404);
+
+    // The conversation is bound to an agent build, so chatting with a
+    // non-primary agent uses that build's persona, ICP and capabilities.
+    requestedAgentId = requestedAgentId ?? ((thread as any).agent_config_id ?? null);
+    if (typeof payload.agentId === "string" && payload.agentId &&
+        (thread as any).agent_config_id !== payload.agentId) {
+      await admin.from("agent_chat_threads").update({ agent_config_id: payload.agentId }).eq("id", threadId);
+    }
 
     const autonomous = thread.autonomy === "autonomous";
 
