@@ -256,7 +256,13 @@ const Leads = () => {
                 } catch (error) {
                   console.error('AI parsing failed, using fallback:', error);
                   const lowerQuery = query.toLowerCase();
-                  const newFilters: ExternalLeadFilters = { limit: pageSize };
+                  // Always forward the raw sentence to the provider's semantic
+                  // parser. Without this, if parse-lead-query fails and the regex
+                  // below extracts no title/industry, the search goes out with no
+                  // parameters and the backend rejects it ("could not tell what to
+                  // search for") — so every fallback search failed. The regex
+                  // fields below still layer on as structured hints when present.
+                  const newFilters: ExternalLeadFilters = { limit: pageSize, query };
 
                   // Job title extraction — order matters, check longer titles first
                   const titlePatterns: [RegExp, string][] = [

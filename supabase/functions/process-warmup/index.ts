@@ -106,33 +106,16 @@ serve(async (req) => {
           console.warn("warmup_logs not available, using running totals:", logErr);
         }
 
-        // Update mailbox — only set fields that exist (base fields always exist)
-        const mailboxUpdate: any = {
-          current_week: newWeek,
-          last_warmup_run: new Date().toISOString(),
-        };
-
-        // Conditionally add new fields (graceful if migration hasn't run)
-        try {
-          mailboxUpdate.warmup_sent_today = emailsSent;
-          mailboxUpdate.warmup_replied_today = emailsReplied;
-          mailboxUpdate.total_warmup_sent = totalSent;
-          mailboxUpdate.total_warmup_replied = totalReplied;
-        } catch (_) {
-          // Fields not available yet
-        }
-
+        // Update the mailbox's warmup week. Only current_week exists on the
+        // mailbox_warmup table; the per-day and total counters live in
+        // warmup_logs (handled above), so writing them here just made every
+        // update fail against the real schema and the week never advanced.
         const { error: updateErr } = await supabase
           .from("mailbox_warmup")
-          .update(mailboxUpdate)
+          .update({ current_week: newWeek })
           .eq("id", mb.id);
-
         if (updateErr) {
-          // Try with only base fields if new columns don't exist
-          await supabase
-            .from("mailbox_warmup")
-            .update({ current_week: newWeek, last_warmup_run: new Date().toISOString() })
-            .eq("id", mb.id);
+          console.error(`mailbox_warmup week update failed for ${mb.id}:`, updateErr.message);
         }
 
         results.push({ mailbox_id: mb.id, week: newWeek, sent: emailsSent, replied: emailsReplied });

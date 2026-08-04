@@ -52,7 +52,7 @@ serve(async (req) => {
 
     // Gather the account's real detected signals from its leads.
     const { data: leads } = await supabase
-      .from("leads").select("id, buying_signals, hiring_signals, signal_type, signal_date, intent_reasons")
+      .from("leads").select("id, signals, signal_type, signal_date, intent_reasons")
       .eq("user_id", user.id).eq("company_name", company.name).limit(50);
     const leadIds = (leads || []).map((l: any) => l.id);
     let events: any[] = [];
@@ -70,7 +70,7 @@ serve(async (req) => {
       raw.push({ text: String(e.signal_type || "").replace(/_/g, " "), date: e.occurred_at || null, source: (e.metadata?.source_url as string) || defaultSource });
     }
     for (const l of leads || []) {
-      for (const s of [...(l.buying_signals || []), ...(l.hiring_signals || [])]) {
+      for (const s of (l.signals || [])) {
         if (typeof s === "string" && s.trim()) raw.push({ text: s.trim(), date: l.signal_date || null, source: defaultSource });
       }
       if (l.signal_type && l.signal_type !== "manual") raw.push({ text: String(l.signal_type).replace(/_/g, " "), date: l.signal_date || null, source: defaultSource });

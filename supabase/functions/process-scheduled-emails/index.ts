@@ -102,7 +102,7 @@ serve(async (req) => {
           console.log(`Recipient ${email.to_email} unsubscribed, skipping ${email.id}`);
           await supabase
             .from('sent_emails')
-            .update({ status: 'failed', error_message: 'recipient_unsubscribed' } as any)
+            .update({ status: 'failed' })
             .eq('id', email.id);
           failed++;
           continue;
