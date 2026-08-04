@@ -10,7 +10,9 @@ All colors MUST be HSL. Using 8px spacing scale.
 
 @layer base {
   :root {
-    --mobile-page-gutter: clamp(2rem, 10vw, 3rem);
+    /* Phone gutter: tight enough that cards get real width on a 360–430px screen */
+    --mobile-page-gutter: 1rem;
+
 
     --background: 261 75% 2%;
     --foreground: 0 0% 95%;
