@@ -1,11 +1,47 @@
 {
   "version": 1,
   "skills": {
+    "b2b-cold-email-copywriting": {
+      "source": "swan-gtm/gtm-skills",
+      "sourceType": "github",
+      "skillPath": "skills/tim-yakubson/b2b-cold-email-copywriting/SKILL.md",
+      "computedHash": "4517179f1bb250a67f6fa61db844527f0fc1491bedbd390160da0c302b50c4e2"
+    },
+    "cold-email-4-sequence": {
+      "source": "swan-gtm/gtm-skills",
+      "sourceType": "github",
+      "skillPath": "skills/alex-vacca/cold-email-4-sequence/SKILL.md",
+      "computedHash": "44b7266e2e5c209d747891d4fce77d0f6e678d42cea96a1e75a4cbc50b67b23d"
+    },
+    "cold-email-strategist": {
+      "source": "swan-gtm/gtm-skills",
+      "sourceType": "github",
+      "skillPath": "skills/alex-vacca/cold-email-strategist/SKILL.md",
+      "computedHash": "8ec3a2b2915cfaad25ce8878a93992db5ca570ba04d1f18b0753785b0736cc35"
+    },
+    "cold-email-templates-34": {
+      "source": "swan-gtm/gtm-skills",
+      "sourceType": "github",
+      "skillPath": "skills/alex-vacca/cold-email-templates-34/SKILL.md",
+      "computedHash": "2b5dbcfc0b614bc1e5e26756f1e5bac09ccc0bea2c047d677acb90d99faf13d9"
+    },
+    "email-writing-frameworks": {
+      "source": "swan-gtm/gtm-skills",
+      "sourceType": "github",
+      "skillPath": "skills/alex-vacca/email-writing-frameworks/SKILL.md",
+      "computedHash": "bc14bc606b32fb07099547c6c9a7f84d94dbbe862eb05aece2e31ef58561324f"
+    },
     "impeccable": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",
       "skillPath": "skill/SKILL.md",
       "computedHash": "8cdf2e788eaca3af7d02026ef9cec55b506100a00d130f938e3fb1ad669c0ad0"
+    },
+    "outreach-messaging": {
+      "source": "swan-gtm/gtm-skills",
+      "sourceType": "github",
+      "skillPath": "skills/maja-voje/outreach-messaging/SKILL.md",
+      "computedHash": "f9cc5b21d4e577f0058ce2afd1541ff5a872f3a1843306eba5543cc81a6946f8"
     }
   }
 }
