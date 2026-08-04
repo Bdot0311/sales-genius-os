@@ -25,10 +25,11 @@ const Dashboard = () => {
     meetingsThisWeek: 0,
   });
 
+  const [tourPending, setTourPending] = useState(false);
+  const quickstartDone = () => !!localStorage.getItem('outreign_quickstart_done');
+
   useEffect(() => {
-    if (!localStorage.getItem('outreign_quickstart_done')) {
-      setShowWizard(true);
-    }
+    if (!quickstartDone()) setShowWizard(true);
   }, []);
 
   useEffect(() => {
