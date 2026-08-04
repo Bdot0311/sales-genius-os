@@ -11,17 +11,25 @@ interface Props {
  * a trend needs more than one point).
  */
 export const ReputationTrend = ({ snapshots, className }: Props) => {
-  const points = snapshots
+  const scored = snapshots
     .filter((s) => s.reputation_score !== null)
     .map((s) => ({ date: s.snapshot_date, value: s.reputation_score as number }));
+
+  // Until a score exists, show the daily send-volume trend instead of an empty
+  // placeholder — it's real data from the same snapshots.
+  const isVolume = scored.length < 2;
+  const points = isVolume
+    ? snapshots.map((s) => ({ date: s.snapshot_date, value: s.volume ?? 0 }))
+    : scored;
 
   if (points.length < 2) {
     return (
       <div className={`text-xs text-muted-foreground ${className ?? ""}`}>
-        Trend appears after a few days of scored sending.
+        Trend appears after a few days of sending.
       </div>
     );
   }
+
 
   const w = 160;
   const h = 40;
