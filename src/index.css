@@ -106,13 +106,11 @@ All colors MUST be HSL. Using 8px spacing scale.
      Keep these minimal: they fix page gutters and let wide content scroll.
      They must NOT compress content into a narrower box than the screen. */
   @media (max-width: 768px) {
-    /* Wide tables scroll horizontally at their natural width instead of
-       being crushed into the viewport (which stacked text vertically). */
+    /* Wide tables scroll horizontally instead of being crushed into the
+       viewport (which stacked cell text vertically). */
     table {
       display: block;
-      width: max-content;
-      min-width: 100%;
-      max-width: none;
+      max-width: 100%;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
     }
@@ -126,16 +124,23 @@ All colors MUST be HSL. Using 8px spacing scale.
 
     /* Full-height shells: use the small viewport unit so iOS browser chrome
        does not push content off screen, but keep the flex column intact. */
-    .h-screen,
-    [class*="h-[calc(100vh"],
-    [class*="h-[calc(100dvh"],
-    [class*="h-[calc(100svh"] {
+    .h-screen {
       height: 100svh;
     }
 
     .min-h-screen {
       min-height: 100svh;
     }
+
+    /* Fixed-width panels/inputs must never exceed the screen */
+    .w-72,
+    .w-80,
+    .w-96,
+    [class*="w-\[3"],
+    [class*="w-\[4"] {
+      max-width: 100%;
+    }
+
 
     .px-6,
     .px-8,
