@@ -484,7 +484,7 @@ import { z as z14 } from "npm:zod@^3.25.76";
 var get_agent_stats_default = defineTool14({
   name: "get_agent_stats",
   title: "Get AI agent stats",
-  description: "Return the signed-in user's AI SDR agent configuration and recent activity: whether the agent is enabled, its persona/tone, and counts of agent actions in the last N days broken down by action_type and status.",
+  description: "Return every AI SDR agent build the signed-in user owns (name, role, enabled state, persona/tone, limits) plus recent activity: counts of agent actions in the last N days broken down by action_type, status and agent.",
   inputSchema: {
     days: z14.number().int().min(1).max(90).optional().describe("Look-back window in days (default 7).")
   },
@@ -496,29 +496,39 @@ var get_agent_stats_default = defineTool14({
     const since = new Date(Date.now() - window * 24 * 60 * 60 * 1e3).toISOString();
     const [configRes, actionsRes] = await Promise.all([
       supabase.from("agent_configs").select(
-        "enabled, agent_name, persona, tone, can_reply_interested, can_handle_objections, can_book_meetings, max_daily_auto_replies, reply_delay_minutes, updated_at"
-      ).eq("user_id", ctx.getUserId()).order("is_primary", { ascending: false }).limit(1).maybeSingle(),
-      supabase.from("agent_actions").select("action_type, status, classification, created_at").eq("user_id", ctx.getUserId()).gte("created_at", since).limit(1e3)
+        "id, is_primary, role, enabled, agent_name, persona, tone, can_find_leads, can_send_outreach, can_reply_interested, can_handle_objections, can_book_meetings, max_daily_auto_replies, max_daily_new_emails, daily_lead_target, reply_delay_minutes, updated_at"
+      ).eq("user_id", ctx.getUserId()).order("is_primary", { ascending: false }).order("updated_at", { ascending: false }),
+      supabase.from("agent_actions").select("action_type, status, classification, agent_config_id, created_at").eq("user_id", ctx.getUserId()).gte("created_at", since).limit(1e3)
     ]);
     if (configRes.error) return err(configRes.error.message);
     if (actionsRes.error) return err(actionsRes.error.message);
+    const agents = configRes.data ?? [];
     const actions = actionsRes.data ?? [];
     const byType = {};
     const byStatus = {};
     const byClassification = {};
+    const byAgent = {};
+    const nameFor = (id) => agents.find((a) => a.id === id)?.agent_name ?? "unattributed";
     for (const a of actions) {
       byType[a.action_type ?? "unknown"] = (byType[a.action_type ?? "unknown"] ?? 0) + 1;
       if (a.status) byStatus[a.status] = (byStatus[a.status] ?? 0) + 1;
       if (a.classification) byClassification[a.classification] = (byClassification[a.classification] ?? 0) + 1;
+      const label = nameFor(a.agent_config_id ?? null);
+      byAgent[label] = (byAgent[label] ?? 0) + 1;
     }
     return ok(
       {
-        config: configRes.data ?? null,
+        agents,
+        agent_count: agents.length,
+        enabled_agent_count: agents.filter((a) => a.enabled).length,
+        // Kept for backwards compatibility with older clients.
+        config: agents[0] ?? null,
         window_days: window,
         total_actions: actions.length,
         by_action_type: byType,
         by_status: byStatus,
-        by_classification: byClassification
+        by_classification: byClassification,
+        by_agent: byAgent
       },
       "agent_stats"
     );
@@ -533,8 +543,11 @@ var update_agent_config_default = defineTool15({
   title: "Update AI agent config",
   description: "Update the signed-in user's AI SDR agent configuration \u2014 toggle enabled, change persona/tone/signature, adjust reply capabilities and daily limits. Creates the row if it does not yet exist.",
   inputSchema: {
+    agent_id: z15.string().uuid().optional().describe("Which agent build to update. Defaults to the primary agent."),
+    agent_name_match: z15.string().trim().optional().describe("Alternative to agent_id: match an agent by name."),
     enabled: z15.boolean().optional(),
     agent_name: z15.string().trim().optional(),
+    role: z15.enum(["full_cycle", "lead_gen", "outreach", "replies"]).optional(),
     persona: z15.string().trim().optional(),
     tone: z15.string().trim().optional(),
     company_context: z15.string().trim().optional(),
@@ -549,18 +562,23 @@ var update_agent_config_default = defineTool15({
   annotations: { readOnlyHint: false, idempotentHint: true, openWorldHint: false },
   handler: async (patch, ctx) => {
     if (!ctx.isAuthenticated()) return notAuthed();
-    const clean = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== void 0));
+    const { agent_id: agentId, agent_name_match: agentNameMatch, ...fields } = patch;
+    const clean = Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== void 0));
     if (Object.keys(clean).length === 0) return err("No fields to update.");
     const supabase = supabaseForUser6(ctx);
     const userId = ctx.getUserId();
-    const { data: existing, error: exErr } = await supabase.from("agent_configs").select("id").eq("user_id", userId).order("is_primary", { ascending: false }).limit(1).maybeSingle();
+    let lookup = supabase.from("agent_configs").select("id").eq("user_id", userId);
+    if (agentId) lookup = lookup.eq("id", agentId);
+    else if (agentNameMatch) lookup = lookup.ilike("agent_name", agentNameMatch);
+    const { data: existing, error: exErr } = await lookup.order("is_primary", { ascending: false }).limit(1).maybeSingle();
     if (exErr) return err(exErr.message);
+    if ((agentId || agentNameMatch) && !existing) return err("No matching agent build found.");
     if (existing) {
-      const { data: data2, error: error2 } = await supabase.from("agent_configs").update(clean).eq("id", existing.id).select("enabled, agent_name, persona, tone, updated_at").single();
+      const { data: data2, error: error2 } = await supabase.from("agent_configs").update(clean).eq("id", existing.id).select("id, enabled, agent_name, role, persona, tone, updated_at").single();
       if (error2) return err(error2.message);
       return ok(data2, "agent_config");
     }
-    const { data, error } = await supabase.from("agent_configs").insert({ user_id: userId, ...clean }).select("enabled, agent_name, persona, tone, updated_at").single();
+    const { data, error } = await supabase.from("agent_configs").insert({ user_id: userId, ...clean }).select("id, enabled, agent_name, role, persona, tone, updated_at").single();
     if (error) return err(error.message);
     return ok(data, "agent_config");
   }

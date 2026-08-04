@@ -8,8 +8,11 @@ export default defineTool({
   description:
     "Update the signed-in user's AI SDR agent configuration — toggle enabled, change persona/tone/signature, adjust reply capabilities and daily limits. Creates the row if it does not yet exist.",
   inputSchema: {
+    agent_id: z.string().uuid().optional().describe("Which agent build to update. Defaults to the primary agent."),
+    agent_name_match: z.string().trim().optional().describe("Alternative to agent_id: match an agent by name."),
     enabled: z.boolean().optional(),
     agent_name: z.string().trim().optional(),
+    role: z.enum(["full_cycle", "lead_gen", "outreach", "replies"]).optional(),
     persona: z.string().trim().optional(),
     tone: z.string().trim().optional(),
     company_context: z.string().trim().optional(),
@@ -24,26 +27,32 @@ export default defineTool({
   annotations: { readOnlyHint: false, idempotentHint: true, openWorldHint: false },
   handler: async (patch, ctx) => {
     if (!ctx.isAuthenticated()) return notAuthed();
-    const clean = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined));
+    const { agent_id: agentId, agent_name_match: agentNameMatch, ...fields } = patch as Record<string, unknown> & {
+      agent_id?: string;
+      agent_name_match?: string;
+    };
+    const clean = Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== undefined));
     if (Object.keys(clean).length === 0) return err("No fields to update.");
     const supabase = supabaseForUser(ctx);
 
     const userId = ctx.getUserId();
-    const { data: existing, error: exErr } = await supabase
-      .from("agent_configs")
-      .select("id")
-      .eq("user_id", userId)
+    let lookup = supabase.from("agent_configs").select("id").eq("user_id", userId);
+    if (agentId) lookup = lookup.eq("id", agentId);
+    else if (agentNameMatch) lookup = lookup.ilike("agent_name", agentNameMatch);
+    const { data: existing, error: exErr } = await lookup
       .order("is_primary", { ascending: false })
       .limit(1)
       .maybeSingle();
     if (exErr) return err(exErr.message);
+    if ((agentId || agentNameMatch) && !existing) return err("No matching agent build found.");
+
 
     if (existing) {
       const { data, error } = await supabase
         .from("agent_configs")
         .update(clean)
         .eq("id", existing.id)
-        .select("enabled, agent_name, persona, tone, updated_at")
+        .select("id, enabled, agent_name, role, persona, tone, updated_at")
         .single();
       if (error) return err(error.message);
       return ok(data, "agent_config");
@@ -52,7 +61,7 @@ export default defineTool({
     const { data, error } = await supabase
       .from("agent_configs")
       .insert({ user_id: userId, ...clean })
-      .select("enabled, agent_name, persona, tone, updated_at")
+      .select("id, enabled, agent_name, role, persona, tone, updated_at")
       .single();
     if (error) return err(error.message);
     return ok(data, "agent_config");

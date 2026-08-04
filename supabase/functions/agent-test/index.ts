@@ -170,6 +170,7 @@ serve(async (req) => {
       integrationRowId?: string;
       includeRealReplies?: boolean;
       customReplies?: { label?: string; body?: string; subject?: string }[];
+      agentId?: string;
     } = {};
     try {
       payload = await req.json();
@@ -177,10 +178,13 @@ serve(async (req) => {
       payload = {};
     }
 
-    const { data: config } = await adminClient
-      .from("agent_configs")
-      .select("*")
-      .eq("user_id", user.id)
+    // Test the agent build the caller picked in the switcher; fall back to the
+    // primary build when none is named.
+    let configQuery = adminClient.from("agent_configs").select("*").eq("user_id", user.id);
+    if (typeof payload.agentId === "string" && payload.agentId) {
+      configQuery = configQuery.eq("id", payload.agentId);
+    }
+    const { data: config } = await configQuery
       .order("is_primary", { ascending: false })
       .order("updated_at", { ascending: false })
       .limit(1)

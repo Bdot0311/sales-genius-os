@@ -335,7 +335,7 @@ const Agent = () => {
               <MessageSquare className="w-4 h-4" />
               Chat with agent
             </Button>
-            <AgentTestDialog disabled={loading} />
+            <AgentTestDialog disabled={loading} agentId={activeAgentId} />
           </div>
         }
       />

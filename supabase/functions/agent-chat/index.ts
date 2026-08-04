@@ -294,6 +294,7 @@ serve(async (req) => {
 
     const payload = await req.json().catch(() => ({} as Record<string, unknown>));
     const threadId = String(payload.threadId ?? "");
+    const requestedAgentId = typeof payload.agentId === "string" ? payload.agentId : null;
     const action = String(payload.action ?? "chat");
     if (!threadId) return json({ error: "Missing threadId" }, 400);
 
@@ -417,7 +418,7 @@ serve(async (req) => {
           ? `Enrollment failed: ${error.message}`
           : `Approved — ${approval.company_name ?? approval.prospect_email ?? "the lead"} was enrolled in the sequence.`;
       } else if (approval.kind === "agent_run") {
-        const r = await callFn("agent-run", { mode: "autonomous" });
+        const r = await callFn("agent-run", { mode: "autonomous", agentId: requestedAgentId ?? undefined });
         failed = Boolean(r?.error);
         outcome = failed
           ? `Agent run failed: ${String(r?.error).slice(0, 200)}`
@@ -496,7 +497,9 @@ serve(async (req) => {
 
     // --- context ---------------------------------------------------------
     const [{ data: config }, { data: profile }, { data: savedIcp }] = await Promise.all([
-      admin.from("agent_configs").select("*").eq("user_id", userId).order("is_primary", { ascending: false }).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
+      requestedAgentId
+        ? admin.from("agent_configs").select("*").eq("id", requestedAgentId).eq("user_id", userId).maybeSingle()
+        : admin.from("agent_configs").select("*").eq("user_id", userId).order("is_primary", { ascending: false }).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
       admin.from("profiles").select("full_name, company_name").eq("id", userId).maybeSingle(),
       admin
         .from("icp_profiles")
@@ -1141,7 +1144,7 @@ serve(async (req) => {
                 "Nothing ran yet. An approve/reject card is shown to the user right here in the chat.",
             };
           }
-          const r = await invokeFn("agent-run", { mode: "autonomous" });
+          const r = await invokeFn("agent-run", { mode: "autonomous", agentId: (config as any)?.id });
           toolEvents.push({
             name,
             label: "Ran agent (autonomous)",

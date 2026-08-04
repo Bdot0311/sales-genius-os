@@ -152,6 +152,7 @@ export type Database = {
       agent_actions: {
         Row: {
           action_type: string
+          agent_config_id: string | null
           classification: string | null
           created_at: string | null
           description: string | null
@@ -167,6 +168,7 @@ export type Database = {
         }
         Insert: {
           action_type: string
+          agent_config_id?: string | null
           classification?: string | null
           created_at?: string | null
           description?: string | null
@@ -182,6 +184,7 @@ export type Database = {
         }
         Update: {
           action_type?: string
+          agent_config_id?: string | null
           classification?: string | null
           created_at?: string | null
           description?: string | null
@@ -196,6 +199,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "agent_actions_agent_config_id_fkey"
+            columns: ["agent_config_id"]
+            isOneToOne: false
+            referencedRelation: "agent_configs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "agent_actions_sent_email_id_fkey"
             columns: ["sent_email_id"]
@@ -311,6 +321,7 @@ export type Database = {
       }
       agent_chat_threads: {
         Row: {
+          agent_config_id: string | null
           autonomy: string
           created_at: string
           id: string
@@ -319,6 +330,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          agent_config_id?: string | null
           autonomy?: string
           created_at?: string
           id?: string
@@ -327,6 +339,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          agent_config_id?: string | null
           autonomy?: string
           created_at?: string
           id?: string
@@ -334,7 +347,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "agent_chat_threads_agent_config_id_fkey"
+            columns: ["agent_config_id"]
+            isOneToOne: false
+            referencedRelation: "agent_configs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       agent_configs: {
         Row: {

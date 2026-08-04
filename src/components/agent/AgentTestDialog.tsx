@@ -60,7 +60,7 @@ const ACTION_LABELS: Record<string, string> = {
   error: "Error",
 };
 
-export function AgentTestDialog({ disabled }: { disabled?: boolean }) {
+export function AgentTestDialog({ disabled, agentId }: { disabled?: boolean; agentId?: string | null }) {
   const [open, setOpen] = useState(false);
   const [running, setRunning] = useState(false);
   const [sending, setSending] = useState(false);
@@ -121,7 +121,11 @@ export function AgentTestDialog({ disabled }: { disabled?: boolean }) {
 
   const invokeTest = async (body: Record<string, unknown>) => {
     const { data, error } = await supabase.functions.invoke("agent-test", {
-      body: selectedMailbox ? { ...body, integrationRowId: selectedMailbox } : body,
+      body: {
+        ...body,
+        ...(selectedMailbox ? { integrationRowId: selectedMailbox } : {}),
+        ...(agentId ? { agentId } : {}),
+      },
     });
 
     if (error) throw error;
