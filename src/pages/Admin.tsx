@@ -22,6 +22,7 @@ import AdminRealtimeHealth from "./admin/RealtimeHealth";
 import AdminActivation from "./admin/Activation";
 import AdminCampaignSetup from "./admin/CampaignSetup";
 import AdminBilling from "./admin/Billing";
+import AdminSystemHealth from "./admin/SystemHealth";
 
 const Admin = () => {
   const navigate = useNavigate();
