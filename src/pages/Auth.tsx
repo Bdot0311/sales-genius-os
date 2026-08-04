@@ -303,9 +303,13 @@ const Auth = () => {
           </div>
         ) : null}
         <div className="text-center px-0 space-y-2">
+          {!wlSettings?.company_name && (
+            <h1 className="text-2xl font-semibold tracking-tight">Sign in to OutReign</h1>
+          )}
           <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
             Already have access? Sign in below. New here? You can explore the workflow first, then choose the plan that fits your outbound needs.
           </p>
+
           <p className="text-xs text-muted-foreground/80 max-w-sm mx-auto leading-relaxed">
             If your account needs a paid plan to continue, OutReign will point you to pricing during setup.
           </p>
