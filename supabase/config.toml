@@ -80,8 +80,6 @@ project_id = "ghgfjnepvxvxrncmskys"
   [functions.slack-oauth-callback]
     verify_jwt = false
 
-  [functions.graphql-api]
-    verify_jwt = false
   [functions.handle-email-suppression]
     verify_jwt = false
   [functions.handle-email-unsubscribe]
