@@ -4798,6 +4798,7 @@ export type Database = {
       }
     }
     Functions: {
+      _system_health_checks: { Args: never; Returns: Json }
       admin_delete_user: { Args: { _user_id: string }; Returns: undefined }
       admin_get_activation_dropoff_alerts: {
         Args: never
@@ -5216,6 +5217,7 @@ export type Database = {
         Returns: undefined
       }
       seed_personas: { Args: { p_user_id: string }; Returns: undefined }
+      system_health_alert: { Args: never; Returns: undefined }
       touch_last_active: { Args: never; Returns: undefined }
       trg_activation_ensure_row: {
         Args: { _signed_up: string; _uid: string }
