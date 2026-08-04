@@ -1,0 +1,1 @@
+DELETE FROM public.campaign_setup_requests WHERE id = '03677aeb-8e69-4ae8-bec2-54c9dc46ffb7';
