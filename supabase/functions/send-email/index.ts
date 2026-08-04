@@ -43,7 +43,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { to, subject, body, integrationId, integrationRowId, leadId, templateId } = await req.json();
+    const { to, subject, body, integrationId, integrationRowId, leadId, templateId, threadId } = await req.json();
     
     console.log('Send email request received:', { to, subject, integrationId, leadId, templateId });
 
@@ -481,7 +481,11 @@ ${unsubscribeFooterHtml}
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ raw: encodedEmail }),
+        body: JSON.stringify(
+          typeof threadId === 'string' && threadId
+            ? { raw: encodedEmail, threadId }
+            : { raw: encodedEmail }
+        ),
       });
 
       if (!gmailResponse.ok) {
