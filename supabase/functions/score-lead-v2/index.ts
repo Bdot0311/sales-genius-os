@@ -102,7 +102,7 @@ serve(async (req) => {
         .eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle();
       const { data: sampleLeads } = await supabase
         .from("leads")
-        .select("id, industry, company_size, job_title, country, company_name, contact_name")
+        .select("id, industry, company_size, job_title, company_name, contact_name")
         .eq("user_id", user.id).order("created_at", { ascending: false }).limit(sampleLimit);
       const nowMs = Date.parse(new Date().toISOString());
       const preview = [];
@@ -140,7 +140,7 @@ serve(async (req) => {
     // Load the lead (scoped to the user), the ICP, the signal events, the rubric.
     const { data: lead, error: leadErr } = await supabase
       .from("leads")
-      .select("id, industry, company_size, job_title, country, company_name")
+      .select("id, industry, company_size, job_title, company_name")
       .eq("id", leadId).eq("user_id", user.id).maybeSingle();
     if (leadErr) return json({ error: "could not load lead", error_code: "db_error" }, 500);
     if (!lead) return json({ error: "lead not found", error_code: "not_found" }, 404);
