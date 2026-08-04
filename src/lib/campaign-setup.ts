@@ -24,10 +24,42 @@ export const logCampaignSetupRequest = async (source: string, plan?: string | nu
   }
 };
 
-/** Logs the request (best effort) and opens the booking page. */
+/**
+ * Builds the Calendly link with tracking + prefill so the Calendly webhook can
+ * attribute the booked meeting back to the exact click that produced it.
+ */
+export const buildCampaignSetupBookingUrl = (
+  requestId?: string | null,
+  prefill?: { name?: string | null; email?: string | null },
+) => {
+  const url = new URL(CAMPAIGN_SETUP_BOOKING_URL);
+  if (requestId) url.searchParams.set("utm_content", requestId);
+  url.searchParams.set("utm_source", "outreign");
+  url.searchParams.set("utm_campaign", "campaign-setup");
+  if (prefill?.name) url.searchParams.set("name", prefill.name);
+  if (prefill?.email) url.searchParams.set("email", prefill.email);
+  return url.toString();
+};
+
+/** Logs the request (best effort) and opens the booking page with tracking. */
 export const openCampaignSetupBooking = async (source: string, plan?: string | null) => {
   const win = window.open("", "_blank", "noopener,noreferrer");
-  await logCampaignSetupRequest(source, plan);
-  if (win) win.location.href = CAMPAIGN_SETUP_BOOKING_URL;
-  else window.open(CAMPAIGN_SETUP_BOOKING_URL, "_blank", "noopener,noreferrer");
+
+  let prefill: { name?: string | null; email?: string | null } | undefined;
+  try {
+    const { data } = await supabase.auth.getUser();
+    if (data?.user) {
+      prefill = {
+        email: data.user.email ?? null,
+        name: (data.user.user_metadata?.full_name as string | undefined) ?? null,
+      };
+    }
+  } catch {
+    /* signed out — keep the booking anonymous */
+  }
+
+  const id = await logCampaignSetupRequest(source, plan);
+  const target = buildCampaignSetupBookingUrl(id, prefill);
+  if (win) win.location.href = target;
+  else window.open(target, "_blank", "noopener,noreferrer");
 };
