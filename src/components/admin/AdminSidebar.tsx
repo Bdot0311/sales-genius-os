@@ -16,6 +16,7 @@ import {
 
 const menuItems = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard, exact: true },
+  { title: "System Health", url: "/admin/health", icon: HeartPulse },
   { title: "Users", url: "/admin/users", icon: Users },
   { title: "Activation", url: "/admin/activation", icon: TrendingUp },
   { title: "Campaign Setup", url: "/admin/campaign-setup", icon: KeyRound },
