@@ -3037,6 +3037,30 @@ export type Database = {
         }
         Relationships: []
       }
+      schema_contract: {
+        Row: {
+          column_name: string
+          created_at: string
+          id: string
+          note: string | null
+          table_name: string
+        }
+        Insert: {
+          column_name: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          table_name: string
+        }
+        Update: {
+          column_name?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          table_name?: string
+        }
+        Relationships: []
+      }
       scoring_rubric: {
         Row: {
           created_at: string
@@ -4774,6 +4798,7 @@ export type Database = {
       }
     }
     Functions: {
+      _system_health_checks: { Args: never; Returns: Json }
       admin_delete_user: { Args: { _user_id: string }; Returns: undefined }
       admin_get_activation_dropoff_alerts: {
         Args: never
@@ -4932,6 +4957,7 @@ export type Database = {
         Args: { _trial_days?: number; _user_id: string }
         Returns: undefined
       }
+      admin_system_healthcheck: { Args: never; Returns: Json }
       admin_unlock_user: { Args: { _user_id: string }; Returns: undefined }
       admin_update_subscription: {
         Args: {
@@ -5191,6 +5217,7 @@ export type Database = {
         Returns: undefined
       }
       seed_personas: { Args: { p_user_id: string }; Returns: undefined }
+      system_health_alert: { Args: never; Returns: undefined }
       touch_last_active: { Args: never; Returns: undefined }
       trg_activation_ensure_row: {
         Args: { _signed_up: string; _uid: string }

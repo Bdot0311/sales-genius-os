@@ -22,6 +22,7 @@ import AdminRealtimeHealth from "./admin/RealtimeHealth";
 import AdminActivation from "./admin/Activation";
 import AdminCampaignSetup from "./admin/CampaignSetup";
 import AdminBilling from "./admin/Billing";
+import AdminSystemHealth from "./admin/SystemHealth";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -86,6 +87,7 @@ const Admin = () => {
               <Route path="signup-logs" element={<AdminSignupLogs />} />
               <Route path="re-engagement" element={<AdminReEngagement />} />
               <Route path="realtime" element={<AdminRealtimeHealth />} />
+              <Route path="health" element={<AdminSystemHealth />} />
               <Route path="activation" element={<AdminActivation />} />
               <Route path="campaign-setup" element={<AdminCampaignSetup />} />
               <Route path="*" element={<Navigate to="/admin" replace />} />
