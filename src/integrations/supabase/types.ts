@@ -161,6 +161,7 @@ export type Database = {
           metadata: Json | null
           prospect_email: string | null
           reply_content: string | null
+          run_id: string | null
           sent_email_id: string | null
           status: string | null
           subject: string | null
@@ -177,6 +178,7 @@ export type Database = {
           metadata?: Json | null
           prospect_email?: string | null
           reply_content?: string | null
+          run_id?: string | null
           sent_email_id?: string | null
           status?: string | null
           subject?: string | null
@@ -193,6 +195,7 @@ export type Database = {
           metadata?: Json | null
           prospect_email?: string | null
           reply_content?: string | null
+          run_id?: string | null
           sent_email_id?: string | null
           status?: string | null
           subject?: string | null
