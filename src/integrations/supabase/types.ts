@@ -3037,6 +3037,30 @@ export type Database = {
         }
         Relationships: []
       }
+      schema_contract: {
+        Row: {
+          column_name: string
+          created_at: string
+          id: string
+          note: string | null
+          table_name: string
+        }
+        Insert: {
+          column_name: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          table_name: string
+        }
+        Update: {
+          column_name?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          table_name?: string
+        }
+        Relationships: []
+      }
       scoring_rubric: {
         Row: {
           created_at: string
@@ -4932,6 +4956,7 @@ export type Database = {
         Args: { _trial_days?: number; _user_id: string }
         Returns: undefined
       }
+      admin_system_healthcheck: { Args: never; Returns: Json }
       admin_unlock_user: { Args: { _user_id: string }; Returns: undefined }
       admin_update_subscription: {
         Args: {
