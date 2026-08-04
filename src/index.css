@@ -135,11 +135,11 @@ All colors MUST be HSL. Using 8px spacing scale.
     /* Fixed-width panels/inputs must never exceed the screen */
     .w-72,
     .w-80,
-    .w-96,
-    [class*="w-\[3"],
-    [class*="w-\[4"] {
+    .w-96 {
       max-width: 100%;
     }
+
+
 
 
     .px-6,
