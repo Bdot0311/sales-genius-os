@@ -30,6 +30,7 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import { ChatDraftCard, type ChatDraft } from "@/components/agent/ChatDraftCard";
+import { roleLabel } from "@/components/agent/AgentRoles";
 
 
 interface Thread {
@@ -37,6 +38,15 @@ interface Thread {
   title: string;
   autonomy: "approval" | "autonomous";
   updated_at: string;
+  agent_config_id?: string | null;
+}
+
+interface AgentOption {
+  id: string;
+  agent_name: string | null;
+  role: string | null;
+  enabled: boolean | null;
+  is_primary: boolean | null;
 }
 
 interface ToolEvent {
@@ -75,6 +85,8 @@ const AgentChat = () => {
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [autonomy, setAutonomy] = useState<"approval" | "autonomous">("approval");
+  const [agents, setAgents] = useState<AgentOption[]>([]);
+  const [agentId, setAgentId] = useState<string | null>(null);
   const [approvalStatus, setApprovalStatus] = useState<Record<string, string>>({});
   const [resolving, setResolving] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -84,12 +96,29 @@ const AgentChat = () => {
   const loadThreads = useCallback(async () => {
     const { data } = await supabase
       .from("agent_chat_threads")
-      .select("id, title, autonomy, updated_at")
+      .select("id, title, autonomy, updated_at, agent_config_id")
       .order("updated_at", { ascending: false })
       .limit(50);
     const list = (data ?? []) as Thread[];
     setThreads(list);
     return list;
+  }, []);
+
+  // Every agent build the user owns, so a conversation can be pointed at a
+  // non-primary build (e.g. a lead-gen only agent).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("agent_configs")
+        .select("id, agent_name, role, enabled, is_primary")
+        .order("is_primary", { ascending: false })
+        .order("updated_at", { ascending: false });
+      if (!cancelled) setAgents((data ?? []) as AgentOption[]);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const createThread = useCallback(async () => {
@@ -103,7 +132,7 @@ const AgentChat = () => {
     const { data, error } = await supabase
       .from("agent_chat_threads")
       .insert({ user_id: session.user.id })
-      .select("id, title, autonomy, updated_at")
+      .select("id, title, autonomy, updated_at, agent_config_id")
       .single();
     if (error) {
       toast.error("Could not start a conversation");
@@ -128,7 +157,7 @@ const AgentChat = () => {
       }
       const { data: thread } = await supabase
         .from("agent_chat_threads")
-        .select("id, title, autonomy, updated_at")
+        .select("id, title, autonomy, updated_at, agent_config_id")
         .eq("id", threadId)
         .maybeSingle();
       if (cancelled) return;
@@ -137,6 +166,7 @@ const AgentChat = () => {
         return;
       }
       setAutonomy((thread as Thread).autonomy);
+      setAgentId((thread as Thread).agent_config_id ?? null);
       const { data: msgs } = await supabase
         .from("agent_chat_messages")
         .select("id, role, content, tool_events, created_at")
@@ -182,6 +212,13 @@ const AgentChat = () => {
     );
   };
 
+  const handleAgentChange = async (value: string) => {
+    const next = value === "primary" ? null : value;
+    setAgentId(next);
+    if (!threadId) return;
+    await supabase.from("agent_chat_threads").update({ agent_config_id: next }).eq("id", threadId);
+  };
+
   const handleSend = async (text?: string) => {
     const content = (text ?? input).trim();
     if (!content || !threadId || sending) return;
@@ -197,7 +234,7 @@ const AgentChat = () => {
     setMessages((prev) => [...prev, optimistic]);
     try {
       const { data, error } = await supabase.functions.invoke("agent-chat", {
-        body: { threadId, message: content },
+        body: { threadId, message: content, ...(agentId ? { agentId } : {}) },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
@@ -258,7 +295,7 @@ const AgentChat = () => {
     setResolving(approvalId);
     try {
       const { data, error } = await supabase.functions.invoke("agent-chat", {
-        body: { threadId, action: "resolve_approval", approvalId, decision },
+        body: { threadId, action: "resolve_approval", approvalId, decision, ...(agentId ? { agentId } : {}) },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
@@ -352,6 +389,22 @@ const AgentChat = () => {
                 </p>
               </div>
             </div>
+            <div className="flex items-center gap-2">
+            {agents.length > 1 && (
+              <Select value={agentId ?? "primary"} onValueChange={handleAgentChange}>
+                <SelectTrigger className="w-[190px]" aria-label="Agent build">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="primary">Primary agent</SelectItem>
+                  {agents.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      {(a.agent_name || "Agent") + " · " + roleLabel(a.role)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             <Select value={autonomy} onValueChange={(v) => handleAutonomyChange(v as any)}>
               <SelectTrigger className="w-[168px]" aria-label="Autonomy">
                 <SelectValue />
@@ -361,6 +414,7 @@ const AgentChat = () => {
                 <SelectItem value="autonomous">Full autonomy</SelectItem>
               </SelectContent>
             </Select>
+            </div>
           </div>
 
           <ScrollArea className="flex-1 px-4">
