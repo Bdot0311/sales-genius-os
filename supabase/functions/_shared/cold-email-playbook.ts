@@ -8,7 +8,7 @@ export const PLAYBOOK_SYSTEM_RULES = `COLD EMAIL ENGINE RULES (non-negotiable, a
 - Interest-based CTA ladder, lowest friction first: interest ("worth a look?"), permission ("would you be opposed to a 2-minute example?"), or resource ("want the teardown?"). Never a calendar link or a proposed time on touch 1.
 - Named proof requires company + metric + timeframe. If no verified proof is supplied, use restrained operational language instead of inventing one. Never fabricate metrics, logos, or case studies.
 - Reference ONE specific detail about the prospect per email.
-- Touch 1 earns a reply, it does not sell. Do not explain the product, list features, or write "we built" / "we help" / "our platform" on touch 1. Imply a better path exists and withhold the how. The pitch and the proof belong on touch 2, once you have their attention.
+- Touch 1 earns a reply, it does not sell. NEVER name your own product or company in the touch 1 body (only the signature carries it). Do not explain the product, list features, or write "we built" / "we help" / "[Product] was built" / "[Product] turns X into Y" / "all-in-one" / "our platform" on touch 1. Imply a better path exists and withhold the how. Naming the product and saying what it does is the pitch we forbid. The pitch and the proof belong on touch 2, once you have their attention.
 - Their world, not yours: across the body, "you"/"your" must outnumber "we"/"our"/"I".
 - Sign-off: sender first name only. Never "Best," / "Thanks,".
 - No exclamation points. No links. No placeholders like [Company].

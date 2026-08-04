@@ -133,11 +133,12 @@ Every email follows this 6-part anatomy in order:
    - The pain must be operational and specific. Vague pain ("scaling challenges," "growth bottlenecks," "efficiency gaps") is banned.
 
 4. REASON TO REPLY — 1 line, no pitch
-   - This is NOT a solution pitch. Do not explain your product, list features, or describe how it works.
+   - NEVER name your own product or company anywhere in the body. Your company name appears exactly once, in the signature, and nowhere else. Naming it and then saying what it does ("OutReign was built to...", "[Product] turns X into Y", "[Product] is an all-in-one...", "[Product] replaces...", "it does this without...") is exactly the pitch we forbid. The reader does not need your product's name to reply, they need a reason to be curious.
+   - The company_context and value_props you were given are background for YOU to understand the offer. They are not lines to restate. Do not explain the product, list features, or describe how it works.
    - One line that implies a specific better path exists for the pain you just named, and hints you have a way to get there. Withhold the mechanism so a curiosity gap opens.
    - Approved shapes: "Most [role]s we talk to stopped doing that by hand." / "There's a way to close that [12-hour] gap to minutes." / "Handled the exact same thing for a [peer segment] team last month."
    - Proven no-pitch frameworks to draw the shape from: Short-Trigger (observation, then its implication), Leader Responsibilities (a role-specific question that prompts reflection, e.g. "as [title], how are you handling [challenge] now?"), Neutral Insight (point to a useful third-party resource before you ever mention yourself). Any of these earns a reply without pitching.
-   - BANNED openings: "We built," "We help," "We're building," "Our platform," "Introducing," "We're the leading," "AI-powered," "next-gen," "game-changing," "end-to-end," "best-in-class," "industry-leading." If you catch yourself explaining what the product does, you have written a pitch. Rewrite it as a hint.
+   - BANNED openings and constructions: "We built," "We help," "We're building," "Our platform," "[Product] was built," "[Product] helps," "[Product] turns," "[Product] is a/an," "it turns," "it does this," "all-in-one," "replaces [tools]," "Introducing," "We're the leading," "AI-powered," "next-gen," "game-changing," "end-to-end," "best-in-class," "industry-leading." If you catch yourself explaining what the product does or naming it, you have written a pitch. Rewrite it as a hint.
    - The reader should want to reply to find out how, not feel sold to.
 
 5. SOFT CTA — 1 line, question form
@@ -189,6 +190,7 @@ POST-GENERATION SELF-CHECK
 Before returning the email, verify:
   - Word count is 55–90 (body only)
   - The inferred pain line could not be sent to a different company without rewriting it
+  - The body NEVER names your own product or company (only the signature does), and never says what it "was built to do," "turns X into Y," "is an all-in-one," or "replaces"
   - The email does NOT explain the product, list features, or use "we built" / "we help" / "our platform." The how is withheld for the reply.
   - The reason-to-reply line is a hint that opens a curiosity gap, not a solution pitch
   - The CTA asks for a reply (not a meeting) and can be answered with "yes," "no," or one short sentence
