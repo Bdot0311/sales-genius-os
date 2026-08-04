@@ -26,9 +26,8 @@ const Email = ({ name, note, days = 14 }: Props) => (
           {name ? `${name} — ready for us to build your campaigns?` : 'Ready for us to build your campaigns?'}
         </Heading>
         <Text style={text}>
-          {note ? `${note} ` : ''}
-          I'm {FOUNDER_NAME}, founder of {SITE_NAME}. My team can set up your first campaigns for you, but we
-          need your permission first. Nobody on our side can enter your account without you approving it.
+          {note ? `${note} ` : 'Following up on our call. '}
+          My team can set up your first campaigns for you, but we need your permission first. Nobody on our side can enter your account without you approving it.
         </Text>
 
         <Section style={offerSection}>
@@ -52,7 +51,6 @@ const Email = ({ name, note, days = 14 }: Props) => (
         <Hr style={hr} />
         <Text style={signature}>
           — {FOUNDER_NAME}<br />
-          Founder, {SITE_NAME}<br />
           <Link href={`mailto:${SUPPORT_EMAIL}`} style={link}>{SUPPORT_EMAIL}</Link>
         </Text>
       </Container>
