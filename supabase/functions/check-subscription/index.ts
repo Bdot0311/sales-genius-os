@@ -163,14 +163,19 @@ serve(async (req) => {
     const customerId = customers.data[0].id;
     logStep('Found Stripe customer', { customerId });
 
-    // Get active subscriptions
+    // Fetch all statuses because Stripe represents a valid free trial as
+    // `trialing`, not `active`. Trialing subscriptions receive their selected
+    // tier exactly like active subscriptions.
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
-      status: 'active',
-      limit: 1,
+      status: 'all',
+      limit: 10,
     });
 
-    const hasActiveSub = subscriptions.data.length > 0;
+    const entitledSubscription = subscriptions.data.find((subscription) =>
+      subscription.status === 'active' || subscription.status === 'trialing'
+    );
+    const hasActiveSub = Boolean(entitledSubscription);
     let plan: 'free' | 'starter' | 'growth' | 'pro' | 'agency' = 'free';
     let subscriptionEnd: string | null = null;
     let stripeSubscriptionId: string | null = null;
@@ -179,7 +184,8 @@ serve(async (req) => {
     let addonPriceId: string | null = null;
 
     if (hasActiveSub) {
-      const subscription = subscriptions.data[0];
+      const subscription = entitledSubscription;
+      if (!subscription) throw new Error('Entitled subscription could not be resolved');
       subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
       stripeSubscriptionId = subscription.id;
       
@@ -235,6 +241,10 @@ serve(async (req) => {
             user_id: userId,
             plan,
             status: 'active',
+            account_status: subscription.status === 'trialing' ? 'trial' : 'active',
+            trial_end_date: subscription.status === 'trialing' && subscription.trial_end
+              ? new Date(subscription.trial_end * 1000).toISOString()
+              : null,
             leads_limit: leadsLimit,
             stripe_customer_id: customerId,
             stripe_subscription_id: stripeSubscriptionId,

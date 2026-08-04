@@ -10,6 +10,8 @@ export interface SubscriptionStatus {
   hasStripeSubscription: boolean;
 }
 
+const PAID_PLANS = new Set(['starter', 'growth', 'pro', 'agency']);
+
 export const useSubscriptionStatus = () => {
   const [status, setStatus] = useState<SubscriptionStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -36,15 +38,21 @@ export const useSubscriptionStatus = () => {
 
       const { data, error } = await supabase
         .from('subscriptions')
-        .select('account_status, trial_end_date, stripe_subscription_id, status')
+        .select('plan, account_status, trial_end_date, stripe_subscription_id, status')
         .eq('user_id', session.user.id)
         .single();
 
       if (error) throw error;
 
-      const isTrialUser = data?.account_status === 'trial';
+      const trialEndTime = data?.trial_end_date ? new Date(data.trial_end_date).getTime() : 0;
+      const isTrialUser = data?.account_status === 'trial' && trialEndTime > Date.now();
       const hasStripeSubscription = !!data?.stripe_subscription_id;
-      const isPaidUser = hasStripeSubscription && data?.status === 'active';
+      // An unexpired trial receives the selected paid tier even when it was
+      // granted manually and therefore has no Stripe subscription ID.
+      const isPaidUser = data?.status === 'active' && (
+        (isTrialUser && PAID_PLANS.has(data?.plan || 'free')) ||
+        (data?.account_status === 'active' && hasStripeSubscription)
+      );
 
       setStatus({
         isTrialUser,

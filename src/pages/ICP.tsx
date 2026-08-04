@@ -198,7 +198,7 @@ function getCompletionScore(p: Partial<ICPProfile>): number {
 
 const ICP = () => {
   const { profiles, isLoading, error: profilesError, createProfile, updateProfile, deleteProfile } = useICPProfiles();
-  const { hasFeature, gateModalOpen, setGateModalOpen, gatedFeature, currentPlan, gatedAction, features } = usePlanFeatures();
+  const { hasFeature, gateModalOpen, setGateModalOpen, gatedFeature, currentPlan, gatedAction, features, loading: planLoading } = usePlanFeatures();
   const [editing, setEditing] = useState<Partial<ICPProfile> | null>(null);
   const [isNew, setIsNew] = useState(false);
   const [lookalikeProfile, setLookalikeProfile] = useState<ICPProfile | null>(null);
@@ -213,6 +213,7 @@ const ICP = () => {
   };
 
   const openNew = () => {
+    if (planLoading) return;
     if (icpGated) { gatedAction('icpBuilder', () => {}); return; }
     const limit = features.icpProfiles as number;
     if (limit !== -1 && profiles.length >= limit) { gatedAction('higherLimits', () => {}); return; }
@@ -247,7 +248,7 @@ const ICP = () => {
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Ideal Customer Profiles</h1>
             <p className="text-muted-foreground">Define exactly who you sell to — across firmographics, people, signals, and strategy.</p>
           </div>
-          <Button onClick={openNew}><Plus className="w-4 h-4 mr-2" />New ICP</Button>
+          <Button onClick={openNew} disabled={planLoading}><Plus className="w-4 h-4 mr-2" />New ICP</Button>
         </div>
 
         {profilesError && (
@@ -270,7 +271,7 @@ const ICP = () => {
               <p className="text-muted-foreground text-center mb-4 max-w-md">
                 Build a precise ICP across 7 dimensions — firmographics, personas, signals, exclusions, strategy, and custom scoring weights.
               </p>
-              <Button onClick={openNew}><Plus className="w-4 h-4 mr-2" />Create First ICP</Button>
+              <Button onClick={openNew} disabled={planLoading}><Plus className="w-4 h-4 mr-2" />Create First ICP</Button>
             </CardContent>
           </Card>
         ) : (

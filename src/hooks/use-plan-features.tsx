@@ -47,12 +47,16 @@ export const usePlanFeatures = () => {
 
   // Execute an action or show gate if not available
   const gatedAction = useCallback((feature: UpgradeFeature, action: () => void) => {
+    // Never show an upgrade prompt while the entitlement lookup is still in
+    // flight. This previously made the first click after navigation look like
+    // a free account, even for paid tiers and active trials.
+    if (loading) return;
     if (hasFeature(feature)) {
       action();
     } else {
       triggerGate(feature);
     }
-  }, [hasFeature, triggerGate]);
+  }, [hasFeature, loading, triggerGate]);
 
   // Check limit and execute action or show gate
   const limitedAction = useCallback((
@@ -61,12 +65,13 @@ export const usePlanFeatures = () => {
     feature: UpgradeFeature, 
     action: () => void
   ) => {
+    if (loading) return;
     if (checkLimit(current, limitKey)) {
       action();
     } else {
       triggerGate(feature);
     }
-  }, [checkLimit, triggerGate]);
+  }, [checkLimit, loading, triggerGate]);
 
   return {
     currentPlan: isAdmin ? 'agency' as PlanType : currentPlan,
