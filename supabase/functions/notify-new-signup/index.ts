@@ -85,7 +85,7 @@ serve(async (req) => {
         templateData: {
           userName: fullName,
           userEmail: userEmail,
-          plan: 'Free',
+          plan: planLabel,
           signupDate: signupTime,
         },
       },
