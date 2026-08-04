@@ -205,7 +205,7 @@
       {
         "name": "get_agent_stats",
         "title": "Get AI agent stats",
-        "description": "Return the signed-in user's AI SDR agent configuration and recent activity: whether the agent is enabled, its persona/tone, and counts of agent actions in the last N days broken down by action_type and status.",
+        "description": "Return every AI SDR agent build the signed-in user owns (name, role, enabled state, persona/tone, limits) plus recent activity: counts of agent actions in the last N days broken down by action_type, status and agent.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,
@@ -568,11 +568,29 @@
         "inputSchema": {
           "type": "object",
           "properties": {
+            "agent_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Which agent build to update. Defaults to the primary agent."
+            },
+            "agent_name_match": {
+              "type": "string",
+              "description": "Alternative to agent_id: match an agent by name."
+            },
             "enabled": {
               "type": "boolean"
             },
             "agent_name": {
               "type": "string"
+            },
+            "role": {
+              "type": "string",
+              "enum": [
+                "full_cycle",
+                "lead_gen",
+                "outreach",
+                "replies"
+              ]
             },
             "persona": {
               "type": "string"

@@ -144,7 +144,7 @@ serve(async (req) => {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const reqBody: { mode?: string } = await req.json().catch(() => ({}));
+  const reqBody: { mode?: string; agentId?: string } = await req.json().catch(() => ({}));
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -168,23 +168,97 @@ serve(async (req) => {
       });
     }
 
-    const { data: agentConfig, error: configError } = await adminClient
-      .from("agent_configs")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("is_primary", { ascending: false })
-      .order("updated_at", { ascending: false })
-      .limit(1)
-      .single();
+    // ── Agent resolution ──────────────────────────────────────────────────
+    // A user can own several agent builds. When no specific agent is named we
+    // fan out over every enabled build (each one runs as its own invocation of
+    // this function) so extra builds are not silently ignored.
+    const requestedAgentId = typeof reqBody.agentId === "string" ? reqBody.agentId : null;
 
-    if (configError || !agentConfig) {
+    let agentConfig: Record<string, any> | null = null;
+
+    if (requestedAgentId) {
+      const { data } = await adminClient
+        .from("agent_configs")
+        .select("*")
+        .eq("id", requestedAgentId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!data) {
+        return new Response(
+          JSON.stringify({ success: false, message: "Agent not found" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      agentConfig = data as Record<string, any>;
+    } else {
+      const { data: allAgents } = await adminClient
+        .from("agent_configs")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("is_primary", { ascending: false })
+        .order("updated_at", { ascending: false });
+
+      const enabledAgents = (allAgents ?? []).filter((a: any) => a.enabled);
+
+      if (enabledAgents.length > 1) {
+        const results = await Promise.all(
+          enabledAgents.map(async (a: any) => {
+            try {
+              const res = await fetch(`${supabaseUrl}/functions/v1/agent-run`, {
+                method: "POST",
+                headers: { Authorization: authHeader, "Content-Type": "application/json" },
+                body: JSON.stringify({ ...reqBody, agentId: a.id }),
+              });
+              const payload = await res.json().catch(() => ({}));
+              return { agentId: a.id, agentName: a.agent_name, role: a.role ?? "full_cycle", ...payload };
+            } catch (fanErr: any) {
+              return {
+                agentId: a.id,
+                agentName: a.agent_name,
+                role: a.role ?? "full_cycle",
+                success: false,
+                error: fanErr?.message ?? "run failed",
+              };
+            }
+          })
+        );
+
+        const total = (key: string) =>
+          results.reduce((sum, r: any) => sum + (typeof r[key] === "number" ? r[key] : 0), 0);
+
+        return new Response(
+          JSON.stringify({
+            success: results.some((r: any) => r.success),
+            multiAgent: true,
+            agentsRun: results.length,
+            summary: `Ran ${results.length} agent(s): ${results
+              .map((r: any) => `${r.agentName || "agent"} (${r.success ? "ok" : "failed"})`)
+              .join(", ")}.`,
+            leadsFound: total("leadsFound"),
+            outreachSent: total("outreachSent"),
+            outreachDrafted: total("outreachDrafted"),
+            pendingApprovals: total("pendingApprovals"),
+            repliesProcessed: total("repliesProcessed"),
+            repliesSent: total("repliesSent"),
+            meetingsBooked: total("meetingsBooked"),
+            threadsChecked: total("threadsChecked"),
+            agents: results,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      agentConfig = (enabledAgents[0] ?? (allAgents ?? [])[0] ?? null) as Record<string, any> | null;
+    }
+
+    if (!agentConfig) {
       return new Response(
         JSON.stringify({ success: false, message: "Agent is not enabled" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const config = agentConfig as AgentConfig;
+    const config = agentConfig as unknown as AgentConfig;
 
     if (!config.enabled) {
       return new Response(
@@ -193,6 +267,19 @@ serve(async (req) => {
       );
     }
 
+    // Role gating: a build labelled "lead gen" must not send outreach or answer
+    // replies, and so on. "full_cycle" runs every phase.
+    const agentRole = String((agentConfig as any).role ?? "full_cycle");
+    const runLeadGen = agentRole === "full_cycle" || agentRole === "lead_gen";
+    const runOutreach = agentRole === "full_cycle" || agentRole === "outreach";
+    const runReplies = agentRole === "full_cycle" || agentRole === "replies";
+
+    // Every action row is attributed to the agent build that produced it.
+    const logAction = (row: Record<string, unknown>) =>
+      adminClient.from("agent_actions").insert({ agent_config_id: config.id, ...row });
+
+    // Reply capacity stays per user, not per agent, so extra builds never
+    // multiply the volume the plan allows.
     const { count: dailyReplyCount } = await adminClient
       .from("agent_actions")
       .select("id", { count: "exact", head: true })
@@ -204,6 +291,7 @@ serve(async (req) => {
       0,
       (config.max_daily_auto_replies ?? 0) - (dailyReplyCount ?? 0)
     );
+
 
     const { data: senderAccounts } = await adminClient
       .from("sending_accounts")
@@ -274,7 +362,7 @@ serve(async (req) => {
     // PHASE 1 — Lead generation
     // ────────────────────────────────────────────────────────────────────────
     let leadsFound = 0;
-    if (config.can_find_leads) {
+    if (runLeadGen && config.can_find_leads) {
       try {
         const target = Math.min(Math.max(config.daily_lead_target ?? 10, 1), 25);
         // Rotate the result page as the agent accumulates leads, so consecutive
@@ -393,7 +481,7 @@ serve(async (req) => {
           }
 
           leadsFound++;
-          await adminClient.from("agent_actions").insert({
+          await logAction({
             user_id: user.id,
             action_type: "lead_found",
             status: "completed",
@@ -404,7 +492,7 @@ serve(async (req) => {
         }
 
         if (foundLeads.length === 0) {
-          await adminClient.from("agent_actions").insert({
+          await logAction({
             user_id: user.id,
             action_type: "skipped",
             status: "skipped",
@@ -424,7 +512,7 @@ serve(async (req) => {
 
 
         if (searchData?.error) {
-          await adminClient.from("agent_actions").insert({
+          await logAction({
             user_id: user.id,
             action_type: "skipped",
             status: "skipped",
@@ -434,7 +522,7 @@ serve(async (req) => {
         }
       } catch (prospectErr: any) {
         console.error("agent prospecting error:", prospectErr?.message);
-        await adminClient.from("agent_actions").insert({
+        await logAction({
           user_id: user.id,
           action_type: "error",
           status: "failed",
@@ -450,7 +538,7 @@ serve(async (req) => {
     // ────────────────────────────────────────────────────────────────────────
     let outreachSent = 0;
     let outreachDrafted = 0;
-    if (config.can_send_outreach && googleIntegrationId) {
+    if (runOutreach && config.can_send_outreach && googleIntegrationId) {
       try {
         const dailyCap = Math.min(Math.max(config.max_daily_new_emails ?? 20, 0), 100);
         const { count: sentToday } = await adminClient
@@ -475,7 +563,7 @@ serve(async (req) => {
           if (pendingLeadsError) throw pendingLeadsError;
 
           if ((pendingLeads ?? []).length === 0) {
-            await adminClient.from("agent_actions").insert({
+            await logAction({
               user_id: user.id,
               action_type: "skipped",
               status: "skipped",
@@ -489,7 +577,7 @@ serve(async (req) => {
             const to = (lead.contact_email || "").trim();
             if (!to) continue;
             if (!EMAIL_RE.test(to)) {
-              await adminClient.from("agent_actions").insert({
+              await logAction({
                 user_id: user.id,
                 action_type: "skipped",
                 status: "skipped",
@@ -546,7 +634,7 @@ ${PLAYBOOK_SYSTEM_RULES}`;
               const subject = touches[0]?.subject ?? "";
               const body = touches[0]?.body ?? "";
               if (!subject || !body) {
-                await adminClient.from("agent_actions").insert({
+                await logAction({
                   user_id: user.id,
                   action_type: "skipped",
                   status: "skipped",
@@ -560,7 +648,7 @@ ${PLAYBOOK_SYSTEM_RULES}`;
 
               const check = deliverabilityCheck(subject, body);
               if (!check.ok) {
-                await adminClient.from("agent_actions").insert({
+                await logAction({
                   user_id: user.id,
                   action_type: "skipped",
                   status: "skipped",
@@ -593,7 +681,7 @@ ${PLAYBOOK_SYSTEM_RULES}`;
 
                 });
                 if (!queued) {
-                  await adminClient.from("agent_actions").insert({
+                  await logAction({
                     user_id: user.id,
                     action_type: "error",
                     status: "failed",
@@ -604,7 +692,7 @@ ${PLAYBOOK_SYSTEM_RULES}`;
                   });
                   continue;
                 }
-                await adminClient.from("agent_actions").insert({
+                await logAction({
                   user_id: user.id,
                   action_type: "awaiting_approval",
                   status: "pending",
@@ -633,7 +721,7 @@ ${PLAYBOOK_SYSTEM_RULES}`;
               const sendData = await sendRes.json().catch(() => ({}));
 
               if (!sendRes.ok || sendData?.error) {
-                await adminClient.from("agent_actions").insert({
+                await logAction({
                   user_id: user.id,
                   action_type: "error",
                   status: "failed",
@@ -659,7 +747,7 @@ ${PLAYBOOK_SYSTEM_RULES}`;
                 touches,
               );
 
-              await adminClient.from("agent_actions").insert({
+              await logAction({
                 user_id: user.id,
                 action_type: "outreach_sent",
                 status: "completed",
@@ -680,7 +768,7 @@ ${PLAYBOOK_SYSTEM_RULES}`;
               remainingOutreach--;
             } catch (leadErr: any) {
               console.error(`outreach error for ${to}:`, leadErr?.message);
-              await adminClient.from("agent_actions").insert({
+              await logAction({
                 user_id: user.id,
                 action_type: "error",
                 status: "failed",
@@ -693,7 +781,7 @@ ${PLAYBOOK_SYSTEM_RULES}`;
         }
       } catch (outreachErr: any) {
         console.error("agent outreach error:", outreachErr?.message);
-        await adminClient.from("agent_actions").insert({
+        await logAction({
           user_id: user.id,
           action_type: "error",
           status: "failed",
@@ -702,8 +790,8 @@ ${PLAYBOOK_SYSTEM_RULES}`;
           metadata: { phase: "outreach" },
         });
       }
-    } else if (config.can_send_outreach && !googleIntegrationId) {
-      await adminClient.from("agent_actions").insert({
+    } else if (runOutreach && config.can_send_outreach && !googleIntegrationId) {
+      await logAction({
         user_id: user.id,
         action_type: "skipped",
         status: "skipped",
@@ -713,29 +801,35 @@ ${PLAYBOOK_SYSTEM_RULES}`;
     }
 
     // ────────────────────────────────────────────────────────────────────────
-    // PHASE 3 — Reply handling
+    // PHASE 3 — Reply handling (skipped for lead-gen / outreach-only builds)
     // ────────────────────────────────────────────────────────────────────────
-    const syncRes = await fetch(`${supabaseUrl}/functions/v1/inbox-sync`, {
-      method: "POST",
-      headers: {
-        Authorization: authHeader,
-        "Content-Type": "application/json",
-      },
-    });
+    let replies: Reply[] = [];
+    let threadsChecked = 0;
 
-    if (!syncRes.ok) {
-      const errBody = await syncRes.text();
-      throw new Error(`inbox-sync failed: ${errBody}`);
+    if (runReplies) {
+      const syncRes = await fetch(`${supabaseUrl}/functions/v1/inbox-sync`, {
+        method: "POST",
+        headers: {
+          Authorization: authHeader,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!syncRes.ok) {
+        const errBody = await syncRes.text();
+        throw new Error(`inbox-sync failed: ${errBody}`);
+      }
+
+      const syncData = await syncRes.json();
+
+      if (!syncData.success) {
+        throw new Error(syncData.error || "inbox-sync returned failure");
+      }
+
+      replies = syncData.replies || [];
+      threadsChecked = syncData.threadsChecked ?? 0;
     }
 
-    const syncData = await syncRes.json();
-
-    if (!syncData.success) {
-      throw new Error(syncData.error || "inbox-sync returned failure");
-    }
-
-    const replies: Reply[] = syncData.replies || [];
-    const threadsChecked: number = syncData.threadsChecked ?? 0;
 
     let repliesProcessed = 0;
     let repliesSent = 0;
@@ -791,7 +885,7 @@ Return JSON: { "classification": one of ["interested","objection","meeting_reque
           // classification stays "unknown"
         }
 
-        await adminClient.from("agent_actions").insert({
+        await logAction({
           user_id: user.id,
           sent_email_id: reply.sentEmailId,
           action_type: "classify",
@@ -807,7 +901,7 @@ Return JSON: { "classification": one of ["interested","objection","meeting_reque
 
 
         if (!reply.bodyText.trim()) {
-          await adminClient.from("agent_actions").insert({
+          await logAction({
             user_id: user.id,
             sent_email_id: reply.sentEmailId,
             action_type: "skipped",
@@ -890,7 +984,7 @@ Output ONLY the reply body. No subject line. No greeting like "Hi [name]". No si
 
           const delivCheck = deliverabilityCheck(`Re: ${reply.subject}`, generatedReply);
           if (!delivCheck.ok) {
-            await adminClient.from("agent_actions").insert({
+            await logAction({
               user_id: user.id,
               sent_email_id: reply.sentEmailId,
               action_type: "skipped",
@@ -916,7 +1010,7 @@ Output ONLY the reply body. No subject line. No greeting like "Hi [name]". No si
               reasoning,
               metadata: { phase: "reply", gmail_message_id: reply.gmailMessageId, confidence },
             });
-            await adminClient.from("agent_actions").insert({
+            await logAction({
               user_id: user.id,
               sent_email_id: reply.sentEmailId,
               action_type: "awaiting_approval",
@@ -948,7 +1042,7 @@ Output ONLY the reply body. No subject line. No greeting like "Hi [name]". No si
             }
           }
 
-          await adminClient.from("agent_actions").insert({
+          await logAction({
             user_id: user.id,
             sent_email_id: reply.sentEmailId,
             action_type: "reply_sent",
@@ -1022,7 +1116,7 @@ Output ONLY the reply body. No subject line or signature.`;
 
           const delivCheck = deliverabilityCheck(`Re: ${reply.subject}`, generatedReply);
           if (!delivCheck.ok) {
-            await adminClient.from("agent_actions").insert({
+            await logAction({
               user_id: user.id,
               sent_email_id: reply.sentEmailId,
               action_type: "skipped",
@@ -1048,7 +1142,7 @@ Output ONLY the reply body. No subject line or signature.`;
               reasoning,
               metadata: { phase: "reply", gmail_message_id: reply.gmailMessageId, confidence, objection_entry_ids: usedEntryIds },
             });
-            await adminClient.from("agent_actions").insert({
+            await logAction({
               user_id: user.id,
               sent_email_id: reply.sentEmailId,
               action_type: "awaiting_approval",
@@ -1080,7 +1174,7 @@ Output ONLY the reply body. No subject line or signature.`;
             }
           }
 
-          await adminClient.from("agent_actions").insert({
+          await logAction({
             user_id: user.id,
             sent_email_id: reply.sentEmailId,
             action_type: "reply_sent",
@@ -1129,7 +1223,7 @@ Output ONLY the reply body. No subject line or signature.`;
               reasoning,
               metadata: { phase: "reply", gmail_message_id: reply.gmailMessageId, confidence },
             });
-            await adminClient.from("agent_actions").insert({
+            await logAction({
               user_id: user.id,
               sent_email_id: reply.sentEmailId,
               action_type: "awaiting_approval",
@@ -1166,7 +1260,7 @@ Output ONLY the reply body. No subject line or signature.`;
             .update({ agent_thread_status: "meeting_booked" })
             .eq("id", reply.sentEmailId);
 
-          await adminClient.from("agent_actions").insert({
+          await logAction({
             user_id: user.id,
             sent_email_id: reply.sentEmailId,
             action_type: "meeting_booked",
@@ -1190,7 +1284,7 @@ Output ONLY the reply body. No subject line or signature.`;
             .update({ agent_thread_status: "closed" })
             .eq("id", reply.sentEmailId);
 
-          await adminClient.from("agent_actions").insert({
+          await logAction({
             user_id: user.id,
             sent_email_id: reply.sentEmailId,
             action_type: "closed_thread",
@@ -1213,7 +1307,7 @@ Output ONLY the reply body. No subject line or signature.`;
             .update({ agent_thread_status: "unsubscribed" })
             .eq("id", reply.sentEmailId);
 
-          await adminClient.from("agent_actions").insert({
+          await logAction({
             user_id: user.id,
             sent_email_id: reply.sentEmailId,
             action_type: "unsubscribed",
@@ -1240,7 +1334,7 @@ Output ONLY the reply body. No subject line or signature.`;
               ? "meeting_booking_disabled"
               : classification;
 
-          await adminClient.from("agent_actions").insert({
+          await logAction({
             user_id: user.id,
             sent_email_id: reply.sentEmailId,
             action_type: "skipped",
@@ -1258,7 +1352,7 @@ Output ONLY the reply body. No subject line or signature.`;
         errors++;
 
         try {
-          await adminClient.from("agent_actions").insert({
+          await logAction({
             user_id: user.id,
             sent_email_id: reply.sentEmailId,
             action_type: "error",
@@ -1274,11 +1368,12 @@ Output ONLY the reply body. No subject line or signature.`;
       }
     }
 
+    const agentLabel = `${config.agent_name || "Agent"} (${agentRole.replace(/_/g, " ")})`;
     const runSummary = approvalMode
-      ? `Run finished in approval mode — ${leadsFound} new lead(s) found, ${outreachDrafted} first-touch draft(s) created, ${threadsChecked} thread(s) checked, ${pendingApprovals} total draft(s) waiting for your approval.`
-      : `Run finished autonomously — ${leadsFound} lead(s) found, ${outreachSent} first-touch email(s) sent, ${threadsChecked} thread(s) checked, ${repliesSent} reply(ies) sent.`;
+      ? `${agentLabel} finished in approval mode — ${leadsFound} new lead(s) found, ${outreachDrafted} first-touch draft(s) created, ${threadsChecked} thread(s) checked, ${pendingApprovals} total draft(s) waiting for your approval.`
+      : `${agentLabel} finished autonomously — ${leadsFound} lead(s) found, ${outreachSent} first-touch email(s) sent, ${threadsChecked} thread(s) checked, ${repliesSent} reply(ies) sent.`;
 
-    await adminClient.from("agent_actions").insert({
+    await logAction({
       user_id: user.id,
       action_type: "sync",
       status: "completed",
@@ -1315,6 +1410,9 @@ Output ONLY the reply body. No subject line or signature.`;
 
       JSON.stringify({
         success: true,
+        agentId: config.id,
+        agentName: config.agent_name,
+        role: agentRole,
         mode: approvalMode ? "approval" : "autonomous",
         summary: runSummary,
         threadsChecked,
