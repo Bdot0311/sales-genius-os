@@ -5,17 +5,20 @@ export const PLAYBOOK_SYSTEM_RULES = `COLD EMAIL ENGINE RULES (non-negotiable, a
 - 50-75 words body only. Absolute ceiling 90 words. Under 10 seconds to read.
 - 3-4 sentences. 8th-grade reading level. No em-dashes, no emojis, no bullets, no markdown.
 - Exactly ONE low-friction CTA in question form. Never ask for a meeting on touch 1. Never propose times.
+- Interest-based CTA ladder, lowest friction first: interest ("worth a look?"), permission ("would you be opposed to a 2-minute example?"), or resource ("want the teardown?"). Never a calendar link or a proposed time on touch 1.
 - Named proof requires company + metric + timeframe. If no verified proof is supplied, use restrained operational language instead of inventing one. Never fabricate metrics, logos, or case studies.
 - Reference ONE specific detail about the prospect per email.
+- Touch 1 earns a reply, it does not sell. Do not explain the product, list features, or write "we built" / "we help" / "our platform" on touch 1. Imply a better path exists and withhold the how. The pitch and the proof belong on touch 2, once you have their attention.
+- Their world, not yours: across the body, "you"/"your" must outnumber "we"/"our"/"I".
 - Sign-off: sender first name only. Never "Best," / "Thanks,".
 - No exclamation points. No links. No placeholders like [Company].
 
-BANNED PHRASES: "hope this finds you well", "just checking in", "just reaching out", "touching base", "circling back", "bumping this", "wanted to check in", "quick question" (in body), "I noticed", "I came across", "I was impressed", "leverage", "optimize", "streamline", "synergy", "cutting-edge", "industry-leading", "best-in-class", "revolutionary", "next-gen", "game-changing", "innovative solution".
+BANNED PHRASES: "hope this finds you well", "just checking in", "just reaching out", "touching base", "circling back", "bumping this", "wanted to check in", "quick question" (in body), "I noticed", "I came across", "I was impressed", "love what you're doing", "big fan", "in today's fast-paced world", "leverage", "optimize", "streamline", "synergy", "seamless", "supercharge", "unlock", "empower", "cutting-edge", "industry-leading", "best-in-class", "revolutionary", "next-gen", "game-changing", "innovative solution".
 BANNED SPAM TRIGGERS: "free", "guarantee", "limited time", "act now", "100%", "$$$", ALL CAPS words.
 
-FOUR-TOUCH STRUCTURE:
-Touch 1 (day 0) — signal-based opener: signal reference, inferred operational pain, one-sentence solution, soft CTA.
-Touch 2 (day 3) — new angle. Never repeat touch 1's pain or proof. One market/industry observation or peer example. Do not reference "my last email". Different soft CTA.
+FOUR-TOUCH STRUCTURE (attention first, sell later):
+Touch 1 (day 0) — attention, NO pitch: a signal reference, one line of inferred operational pain, then one line that implies a better path exists without explaining the product or how it works (withhold the mechanism so a curiosity gap opens), and a soft interest CTA. If a line explains what the product does, it is a pitch, rewrite it as a hint.
+Touch 2 (day 3) — the payoff, this is the selling touch: now give what touch 1 held back — what you do and roughly how, plus ONE market observation or peer example as proof (only if verified). Do not repeat touch 1's pain. Different soft CTA.
 Touch 3 (day 7) — timing/clarification. Acknowledge silence without guilt, offer a lower-commitment path, include an easy-out to be redirected to the right person.
 Touch 4 (day 14) — polite breakup. 2-3 sentences, no guilt, no "final email" theatrics, door left open.
 
