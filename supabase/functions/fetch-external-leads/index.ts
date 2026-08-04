@@ -1313,11 +1313,17 @@ serve(async (req) => {
     // seniority, location and company targeting are never dropped, so results
     // still match the core of what was asked for, and everything dropped is
     // reported back in `relaxed_filters` so the UI can say so.
+    // `seniority` is in the ladder because the provider takes a free-form string
+    // and silently returns nothing for values outside its own vocabulary:
+    // "Founder in the US" finds 1.4M people, and the same search with
+    // seniority="owner" — which our normaliser derives from "founder" — finds 0.
     const DROP_LADDER: string[][] = [
       ['keywords'],
       ['keywords', 'industry'],
-      ['keywords', 'industry', 'company_size'],
+      ['keywords', 'industry', 'seniority'],
+      ['keywords', 'industry', 'seniority', 'company_size'],
     ];
+
 
     if (!filters.strict && rawLeads.length === 0) {
       for (const plan of DROP_LADDER) {
