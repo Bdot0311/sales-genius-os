@@ -26,11 +26,10 @@ const Email = ({ name, note, days = 14 }: Props) => (
           {name ? `${name} — ready for us to build your campaigns?` : 'Ready for us to build your campaigns?'}
         </Heading>
         <Text style={text}>
+          {note ? `${note} ` : ''}
           I'm {FOUNDER_NAME}, founder of {SITE_NAME}. My team can set up your first campaigns for you, but we
           need your permission first. Nobody on our side can enter your account without you approving it.
         </Text>
-
-        {note ? <Text style={quote}>{note}</Text> : null}
 
         <Section style={offerSection}>
           <Text style={offerHeading}>What granting access does:</Text>
