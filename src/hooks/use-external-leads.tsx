@@ -5,6 +5,8 @@ import { posthog } from '@/lib/posthog';
 import { classifySearchError } from '@/lib/search-error';
 
 export interface ExternalLeadFilters {
+  /** Original natural-language request for the provider's semantic parser. */
+  query?: string;
   job_title?: string;
   industry?: string;
   company_size?: string;
