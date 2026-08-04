@@ -18,7 +18,7 @@ const PRIVATE_FUNCTIONS = [
   "check-subscription", "customer-portal", "delete-sent-emails", "enrich-lead",
   "execute-workflow", "fetch-external-leads", "fetch-google-calendar-events",
   "generate-api-key", "generate-blog-post", "generate-email",
-  "generate-followup-suggestion", "get-stripe-revenue", "graphql-api",
+  "generate-followup-suggestion", "get-stripe-revenue",
   "inbox-sync", "link-agency-client", "parse-lead-query",
   "preview-transactional-email", "process-sequence-step", "purchase-credit-topup",
   "refresh-google-token", "remove-subscription-addon", "replay-webhook",

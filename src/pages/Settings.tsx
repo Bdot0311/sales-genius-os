@@ -267,7 +267,6 @@ const Settings = () => {
                 <TabsTrigger value="billing" className={tabBase}><Settings2 className="h-4 w-4" />Billing</TabsTrigger>
                 <TabsTrigger value="subscription" className={tabBase}><CreditCard className="h-4 w-4" />Plan</TabsTrigger>
                 <TabsTrigger value="credits" className={tabBase}><Coins className="h-4 w-4" />Credits</TabsTrigger>
-                <TabsTrigger value="usage" className={tabBase}><TrendingUp className="h-4 w-4" />Usage</TabsTrigger>
                 {showGrowthPlus && <TabsTrigger value="lead-scoring" className={tabBase}><Activity className="h-4 w-4" />Lead Scoring</TabsTrigger>}
                 {showGrowthPlus && <TabsTrigger value="payoff-bank" className={tabBase}><Coins className="h-4 w-4" />Payoff Bank</TabsTrigger>}
                 {showGrowthPlus && <TabsTrigger value="campaign-briefs" className={tabBase}><Activity className="h-4 w-4" />Campaign Briefs</TabsTrigger>}
@@ -664,9 +663,6 @@ const Settings = () => {
 
           <TabsContent value="credits" className="space-y-6">
             <CreditsUsageTab />
-          </TabsContent>
-
-          <TabsContent value="usage" className="space-y-6">
             {usage && (
               <Card>
                 <CardHeader>
