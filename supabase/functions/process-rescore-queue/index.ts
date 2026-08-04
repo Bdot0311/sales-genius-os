@@ -61,7 +61,7 @@ serve(async (req) => {
 
         const { data: lead } = await supabase
           .from("leads")
-          .select("id, industry, company_size, job_title, country, company_name")
+          .select("id, industry, company_size, job_title, company_name")
           .eq("id", row.lead_id).maybeSingle();
 
         if (lead) {
