@@ -52,7 +52,6 @@ const Email = ({ name, note, days = 14 }: Props) => (
         <Hr style={hr} />
         <Text style={signature}>
           — {FOUNDER_NAME}<br />
-          Founder, {SITE_NAME}<br />
           <Link href={`mailto:${SUPPORT_EMAIL}`} style={link}>{SUPPORT_EMAIL}</Link>
         </Text>
       </Container>
