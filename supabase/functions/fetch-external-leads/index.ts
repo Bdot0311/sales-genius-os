@@ -1320,7 +1320,6 @@ serve(async (req) => {
     ];
 
     if (!filters.strict && rawLeads.length === 0) {
-      for (const drops = [] as string[][]; false; ) break; // (kept for clarity)
       for (const plan of DROP_LADDER) {
         const applicable = plan.filter((k) => requestBody[k] !== undefined && requestBody[k] !== null);
         if (applicable.length === 0) continue;
