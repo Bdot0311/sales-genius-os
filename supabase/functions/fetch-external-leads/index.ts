@@ -1300,40 +1300,58 @@ serve(async (req) => {
       return [];
     };
 
-    // Broadening the ICP when the exact search finds nothing is opt-in, and it
-    // reports what it dropped.
+    // Progressive broadening when the exact search finds nothing.
     //
-    // This used to run on every search and say nothing. An ICP that found no
-    // exact matches was retried without industry and keywords, and then with
-    // nothing but the job title, and whatever came back was returned as though
-    // it matched. "Founders at pre-revenue SaaS companies with 1-10 staff" came
-    // back as founders of any company of any size in any industry — the leads
-    // looked random because, relative to what was asked for, they were.
+    // The provider's industry taxonomy rarely matches what a user types: an
+    // otherwise 1.4M-result search for "Founder in the United States" collapses
+    // to 2 results with industry="computer software", and to 0 once company_size
+    // is added. Returning "no leads found" there is wrong — the ICP exists, the
+    // secondary filters just don't resolve upstream.
     //
-    // Only industry and keywords are ever dropped now, and only when the caller
-    // asks. Falling back to the job title alone is gone: it discards the entire
-    // ICP, and the backend refuses a title-only search for that very reason.
-    if (filters.relax && !filters.strict && rawLeads.length === 0
-        && (requestBody.industry || requestBody.keywords)) {
-      const relaxed = { ...requestBody };
-      delete relaxed.industry;
-      delete relaxed.keywords;
-      console.log('0 results — caller asked to broaden, retrying without industry/keywords:', JSON.stringify(relaxed));
-      try {
-        const r = await fetch(railwayUrl, { method: 'POST', headers: railwayHeaders, body: JSON.stringify(relaxed) });
-        if (r.ok) {
-          const d = await r.json();
-          console.log('Relaxed retry response (first 1000):', JSON.stringify(d).substring(0, 1000));
-          rawLeads = parseLeadsFromData(d);
-          if (rawLeads.length > 0) {
-            relaxedFilters = [
-              ...(requestBody.industry ? ['industry'] : []),
-              ...(requestBody.keywords ? ['keywords'] : []),
-            ];
+    // So the ladder now always runs (except for strict/agent searches) and drops
+    // ONLY secondary narrowing filters, in order of least importance. Job title,
+    // seniority, location and company targeting are never dropped, so results
+    // still match the core of what was asked for, and everything dropped is
+    // reported back in `relaxed_filters` so the UI can say so.
+    const DROP_LADDER: string[][] = [
+      ['keywords'],
+      ['keywords', 'industry'],
+      ['keywords', 'industry', 'company_size'],
+    ];
+
+    if (!filters.strict && rawLeads.length === 0) {
+      for (const drops = [] as string[][]; false; ) break; // (kept for clarity)
+      for (const plan of DROP_LADDER) {
+        const applicable = plan.filter((k) => requestBody[k] !== undefined && requestBody[k] !== null);
+        if (applicable.length === 0) continue;
+
+        const relaxed: Record<string, any> = { ...requestBody };
+        for (const k of applicable) delete relaxed[k];
+
+        // Never fire a search with nothing meaningful left to match on.
+        if (!relaxed.job_title && !relaxed.seniority && !relaxed.company && !relaxed.company_domain) continue;
+
+        console.log(`0 results — broadening by dropping ${applicable.join(', ')}:`, JSON.stringify(relaxed));
+        try {
+          const r = await fetch(railwayUrl, { method: 'POST', headers: railwayHeaders, body: JSON.stringify(relaxed) });
+          if (!r.ok) {
+            console.error('Broadening retry failed with status', r.status);
+            continue;
           }
+          const d = await r.json();
+          const found = parseLeadsFromData(d);
+          console.log(`Broadening retry returned ${found.length} leads (source: ${d?.source})`);
+          if (found.length > 0) {
+            rawLeads = found;
+            relaxedFilters = applicable;
+            break;
+          }
+        } catch (e) {
+          console.log('Broadening retry failed:', e);
         }
-      } catch (e) { console.log('Relaxed retry failed:', e); }
+      }
     }
+
 
     // If all retries exhausted, log schema for diagnosis and refund.
     if (rawLeads.length === 0) {
