@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,6 +38,7 @@ import { useAdmin } from "@/hooks/use-admin";
 import { SupportAccessCard } from "@/components/settings/SupportAccessCard";
 
 const Settings = () => {
+  const [searchParams] = useSearchParams();
   const { subscription, loading: subLoading } = useSubscription();
   const { usage, loading: usageLoading } = useLeadsUsage();
   const { manualSync } = useSubscriptionSync();
@@ -253,7 +255,7 @@ const Settings = () => {
       />
       <PageHeader title="Settings" description="Account, preferences, and billing" />
       <div className="px-6 py-6 space-y-6 max-w-[1400px] mx-auto">
-        <Tabs defaultValue="profile" className="space-y-6">
+        <Tabs defaultValue={searchParams.get("tab") ?? "profile"} className="space-y-6">
           {(() => {
             const showPro = isAdmin || subscription?.plan === 'pro' || subscription?.plan === 'agency';
             const showGrowthPlus = isAdmin || ['growth', 'pro', 'agency'].includes(subscription?.plan || '');
