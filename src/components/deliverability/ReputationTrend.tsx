@@ -62,7 +62,5 @@ export const ReputationTrend = ({ snapshots, className }: Props) => {
       </span>
     </div>
   );
-
-    </div>
-  );
 };
+
