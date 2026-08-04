@@ -35,8 +35,8 @@ export const ReputationTrend = ({ snapshots, className }: Props) => {
   const h = 40;
   const pad = 3;
   const values = points.map((p) => p.value);
-  const min = Math.min(...values, 0);
-  const max = Math.max(...values, 100);
+  const min = 0;
+  const max = isVolume ? Math.max(...values, 1) : Math.max(...values, 100);
   const range = max - min || 1;
 
   const coords = points.map((p, i) => {
@@ -47,7 +47,9 @@ export const ReputationTrend = ({ snapshots, className }: Props) => {
 
   const last = values[values.length - 1];
   const first = values[0];
-  const stroke = last >= 70 ? "hsl(160 60% 45%)" : last >= 50 ? "hsl(45 93% 47%)" : "hsl(0 72% 51%)";
+  const stroke = isVolume
+    ? "hsl(var(--primary))"
+    : last >= 70 ? "hsl(160 60% 45%)" : last >= 50 ? "hsl(45 93% 47%)" : "hsl(0 72% 51%)";
   const delta = last - first;
 
   return (
@@ -55,9 +57,12 @@ export const ReputationTrend = ({ snapshots, className }: Props) => {
       <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="overflow-visible" aria-hidden="true">
         <polyline points={coords.join(" ")} fill="none" stroke={stroke} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-      <span className="text-xs tabular-nums" style={{ color: delta >= 0 ? "hsl(160 60% 50%)" : "hsl(0 72% 55%)" }}>
-        {delta >= 0 ? "+" : ""}{delta} / {points.length}d
+      <span className="text-xs tabular-nums text-muted-foreground">
+        {isVolume ? `volume · ${points.length}d` : `${delta >= 0 ? "+" : ""}${delta} / ${points.length}d`}
       </span>
+    </div>
+  );
+
     </div>
   );
 };
