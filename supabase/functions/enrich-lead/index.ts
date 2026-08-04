@@ -224,6 +224,7 @@ serve(async (req) => {
       console.error('Railway /enrich fetch failed:', fetchErr);
     }
 
+    let countryToStore: string | null = null;
     const enrichmentData: Record<string, any> = {
       enrichment_status: 'enriched',
       enriched_at: new Date().toISOString(),
@@ -253,7 +254,13 @@ serve(async (req) => {
       if (p.phone || p.phone_number || p.mobile_phone) {
         enrichmentData.contact_phone = p.phone ?? p.phone_number ?? p.mobile_phone;
       }
-      // (no `location` column on leads; skip)
+      // Country feeds the geography fit dimension in lead scoring. Written
+      // separately below (best-effort) so a missing column can't break enrichment.
+      const rawCountry = p.country ?? p.location_country ?? p.country_code ?? p.location
+        ?? c.country ?? root.country ?? null;
+      if (typeof rawCountry === 'string' && rawCountry.trim()) {
+        countryToStore = rawCountry.trim().slice(0, 100);
+      }
 
       // Company fields
       const companyName = c.name ?? c.company_name ?? root.company_name;
@@ -310,6 +317,18 @@ serve(async (req) => {
       .eq('user_id', user.id);
 
     if (updateError) throw updateError;
+
+    // Best-effort country write for geography scoring. Kept out of the main
+    // update so that on a DB where the column has not been added yet, a failure
+    // here logs and moves on instead of failing the whole enrichment.
+    if (countryToStore) {
+      const { error: countryErr } = await supabase
+        .from('leads')
+        .update({ country: countryToStore })
+        .eq('id', leadId)
+        .eq('user_id', user.id);
+      if (countryErr) console.warn('country write skipped (column may not exist yet):', countryErr.message);
+    }
 
     if (enrichedFields.length > 0) {
       try {
