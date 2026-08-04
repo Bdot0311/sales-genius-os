@@ -1049,34 +1049,55 @@ export type Database = {
       }
       campaign_setup_requests: {
         Row: {
+          access_request_count: number
+          access_requested_at: string | null
           booked_at: string | null
+          contact_email: string | null
+          contact_name: string | null
           created_at: string
+          direction: string
           id: string
+          metadata: Json
           notes: string | null
           plan: string | null
           source: string
+          status: string
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
+          access_request_count?: number
+          access_requested_at?: string | null
           booked_at?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
           created_at?: string
+          direction?: string
           id?: string
+          metadata?: Json
           notes?: string | null
           plan?: string | null
           source?: string
+          status?: string
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
+          access_request_count?: number
+          access_requested_at?: string | null
           booked_at?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
           created_at?: string
+          direction?: string
           id?: string
+          metadata?: Json
           notes?: string | null
           plan?: string | null
           source?: string
+          status?: string
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
