@@ -61,7 +61,7 @@ export function buildIcpContext(snap: Record<string, any> | null | undefined): s
 /** Builds the fetch-external-leads request body from a saved ICP snapshot. */
 export function icpSearchBody(
   snap: Record<string, any> | null | undefined,
-  opts: { limit: number; page?: number },
+  opts: { limit: number; page?: number; strict?: boolean },
 ): Record<string, unknown> {
   const s = snap ?? {};
   const titles = icpList(s.target_titles);
@@ -86,7 +86,11 @@ export function icpSearchBody(
     exclude_keywords: icpList(s.exclude_keywords).length ? icpList(s.exclude_keywords) : undefined,
     limit: opts.limit,
     page: opts.page && opts.page > 1 ? opts.page : undefined,
-    strict: Boolean(snap),
+    // strict disables the backend's broadening ladder. Defaulting it on meant an
+    // ICP whose secondary filters (industry/seniority/size) don't resolve in the
+    // provider's taxonomy returned 0 and stayed 0 — the exact case broadening
+    // exists to rescue. Callers that want the ladder pass strict: false.
+    strict: opts.strict ?? Boolean(snap),
     exclude_seen: true,
   };
 }

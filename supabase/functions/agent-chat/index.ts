@@ -1101,11 +1101,14 @@ serve(async (req) => {
           }
 
           // Build the search body. With a query, search broad on the parsed
-          // filters (ICP only scores results); without one, target the saved ICP.
+          // filters (ICP only scores results); without one, target the saved ICP
+          // but non-strict so the backend's broadening ladder runs — a strict ICP
+          // search returned 0 whenever its industry/seniority/size didn't resolve
+          // in the provider taxonomy, which is why "find leads" came back empty.
           const buildBody = (pg: number) =>
             query
               ? { ...queryFilters, limit: want, page: pg > 1 ? pg : undefined, exclude_seen: true }
-              : icpSearchBody(icpSnapshot, { limit: want, page: pg });
+              : icpSearchBody(icpSnapshot, { limit: want, page: pg, strict: false });
 
           // Advance the provider page as the account fills up so back-to-back
           // searches return different people instead of the same first page.
