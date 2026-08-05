@@ -3819,6 +3819,7 @@ export type Database = {
           auto_paused_at: string | null
           auto_resume_reason: string | null
           auto_resumed_at: string | null
+          billing_exempt: boolean
           cancel_at_period_end: boolean
           canceled_at: string | null
           created_at: string
@@ -3860,6 +3861,7 @@ export type Database = {
           auto_paused_at?: string | null
           auto_resume_reason?: string | null
           auto_resumed_at?: string | null
+          billing_exempt?: boolean
           cancel_at_period_end?: boolean
           canceled_at?: string | null
           created_at?: string
@@ -3901,6 +3903,7 @@ export type Database = {
           auto_paused_at?: string | null
           auto_resume_reason?: string | null
           auto_resumed_at?: string | null
+          billing_exempt?: boolean
           cancel_at_period_end?: boolean
           canceled_at?: string | null
           created_at?: string
