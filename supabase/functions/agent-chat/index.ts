@@ -1050,13 +1050,61 @@ serve(async (req) => {
             };
           }
           const want = Math.min(Math.max(Number(args.count) || 10, 1), 25);
-          // Build the search body. With a query, run broad on that text and let
-          // the ICP only score/qualify the results (same behaviour as the manual
-          // lead-gen search) instead of hard-filtering to the ICP; without one,
-          // target the saved ICP directly.
+
+          // With a free-text query, run the SAME pipeline the manual lead-gen
+          // search uses: parse the text into structured filters (title, industry,
+          // location, seniority, size, keywords) and search on those ALONGSIDE
+          // the raw query, non-strict. A bare-query-only request under-returns
+          // because the provider leans on the structured bounds — that regression
+          // is why the agent stopped finding leads. `strict` is deliberately
+          // absent so the backend's broadening ladder runs and the ICP only
+          // scores the results (it is not sent as a filter here at all). If the
+          // parser is unavailable we still fall back to searching the raw text.
+          // Mirror of buildExternalFilters in src/lib/lead-filters.ts.
+          let queryFilters: Record<string, unknown> | null = null;
+          if (query) {
+            const parsed = await invokeFn("parse-lead-query", { query });
+            const f = parsed && typeof parsed === "object" ? (parsed as any).filters : null;
+            if (f && typeof f === "object") {
+              const arr = (v: unknown): string[] =>
+                Array.isArray(v)
+                  ? v.filter((x) => typeof x === "string" && x.trim()).map((x) => (x as string).trim())
+                  : [];
+              const titles = arr(f.jobTitles);
+              const industries = arr(f.industries);
+              const locations = arr(f.locations);
+              const seniorities = arr(f.seniorities);
+              const keywords = arr(f.keywords);
+              const excludeTitles = arr(f.excludeTitles);
+              const excludeIndustries = arr(f.excludeIndustries);
+              const excludeKeywords = arr(f.excludeKeywords);
+              queryFilters = {
+                query,
+                job_title: titles[0] || undefined,
+                job_titles: titles.length > 1 ? titles : undefined,
+                industry: industries[0] || undefined,
+                industries: industries.length > 1 ? industries : undefined,
+                country: locations[0] || undefined,
+                countries: locations.length > 1 ? locations : undefined,
+                seniority: seniorities[0] || undefined,
+                seniority_levels: seniorities.length > 1 ? seniorities : undefined,
+                company_size: arr(f.companySizes)[0] || undefined,
+                keywords: keywords.length ? keywords : undefined,
+                exclude_titles: excludeTitles.length ? excludeTitles : undefined,
+                exclude_industries: excludeIndustries.length ? excludeIndustries : undefined,
+                exclude_keywords: excludeKeywords.length ? excludeKeywords : undefined,
+              };
+            }
+            // Parser unconfigured / failed / could not parse: still search on the
+            // raw text so the request is never empty.
+            if (!queryFilters) queryFilters = { query };
+          }
+
+          // Build the search body. With a query, search broad on the parsed
+          // filters (ICP only scores results); without one, target the saved ICP.
           const buildBody = (pg: number) =>
             query
-              ? { query, limit: want, page: pg > 1 ? pg : undefined, exclude_seen: true }
+              ? { ...queryFilters, limit: want, page: pg > 1 ? pg : undefined, exclude_seen: true }
               : icpSearchBody(icpSnapshot, { limit: want, page: pg });
 
           // Advance the provider page as the account fills up so back-to-back
