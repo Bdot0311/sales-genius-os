@@ -146,6 +146,35 @@ Deno.serve(async (req) => {
   // Create Supabase client with service role (bypasses RLS)
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
+  // 1b. Never send to reserved / synthetic test addresses. Automated smoke tests
+  // create throwaway signups, and delivering to those domains produces real hard
+  // bounces that pollute sender reputation and the health report.
+  const TEST_DOMAINS = ['outreign-tests.com', 'example.com', 'example.org', 'example.net']
+  const TEST_TLDS = ['.test', '.invalid', '.localhost', '.local']
+  const recipientDomain = effectiveRecipient.toLowerCase().split('@')[1] ?? ''
+  const isTestRecipient =
+    TEST_DOMAINS.includes(recipientDomain) || TEST_TLDS.some((tld) => recipientDomain.endsWith(tld))
+
+  if (isTestRecipient) {
+    await supabase.from('email_send_log').insert({
+      message_id: messageId,
+      template_name: templateName,
+      recipient_email: effectiveRecipient,
+      status: 'skipped',
+      error_message: 'Reserved test domain — send intentionally skipped',
+    })
+
+    console.log('Email skipped (test domain)', { effectiveRecipient, templateName })
+    return new Response(
+      JSON.stringify({ success: false, reason: 'test_domain_skipped' }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    )
+  }
+
+
   // 2. Check suppression list (fail-closed: if we can't verify, don't send)
   const { data: suppressed, error: suppressionError } = await supabase
     .from('suppressed_emails')
