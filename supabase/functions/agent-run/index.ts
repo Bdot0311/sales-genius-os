@@ -450,8 +450,11 @@ serve(async (req) => {
             ? icpList(icpSnapshot?.exclude_keywords)
             : undefined,
           limit: target,
-          // Never relax the saved ICP, and never return people already saved.
-          strict: Boolean(icpSnapshot),
+          // Non-strict so the backend's broadening ladder runs: it only drops
+          // secondary filters (industry/seniority/size) that fail to resolve in
+          // the provider taxonomy while keeping title and geography, so an ICP
+          // returns people instead of 0. Never return people already saved.
+          strict: false,
           exclude_seen: true,
         };
         const runSearch = async (pg: number) => {
