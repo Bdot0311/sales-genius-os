@@ -252,10 +252,14 @@ const TOOLS = [
     function: {
       name: "find_leads",
       description:
-        "Source brand new leads from the lead network using the user's saved ICP profile, and save them. Every search automatically excludes people already in the account and advances the result page, so repeated calls return different people. Use this when the user asks to find/source/prospect new leads.",
+        "Source brand new leads from the lead network and save them. Pass `query` with who the user asked for (any role/industry/company type, in plain English) and the search runs broad on that, using the saved ICP only to score and qualify the results — not as a hard filter. Omit `query` to instead source more people matching the saved ICP. Every search excludes people already in the account and advances the result page, so repeated calls return different people. Use this when the user asks to find/source/prospect new leads.",
       parameters: {
         type: "object",
         properties: {
+          query: {
+            type: "string",
+            description: "Plain-English description of who to find, e.g. 'GTM leaders at Series B SaaS companies in the US'. Use the user's request verbatim-ish. When set, the ICP scores results rather than filtering them, so niche or off-ICP searches still return people.",
+          },
           count: { type: "number", description: "How many new leads to source (1-25, default 10)." },
         },
       },
@@ -1036,13 +1040,25 @@ serve(async (req) => {
         }
 
         case "find_leads": {
-          if (!icpSnapshot) {
+          const query = typeof args.query === "string" ? args.query.trim() : "";
+          // Either a free-text query OR a saved ICP is enough to search. Only
+          // block when we have neither, so there is nothing to search on at all.
+          if (!query && !icpSnapshot) {
             return {
               error:
-                "No saved ICP profile found. Ask the user to save an ICP on the ICP page first — searching without it would return off-target leads.",
+                "No search query and no saved ICP. Ask the user who they want to find, or have them save an ICP on the ICP page.",
             };
           }
           const want = Math.min(Math.max(Number(args.count) || 10, 1), 25);
+          // Build the search body. With a query, run broad on that text and let
+          // the ICP only score/qualify the results (same behaviour as the manual
+          // lead-gen search) instead of hard-filtering to the ICP; without one,
+          // target the saved ICP directly.
+          const buildBody = (pg: number) =>
+            query
+              ? { query, limit: want, page: pg > 1 ? pg : undefined, exclude_seen: true }
+              : icpSearchBody(icpSnapshot, { limit: want, page: pg });
+
           // Advance the provider page as the account fills up so back-to-back
           // searches return different people instead of the same first page.
           const { count: sourcedCount } = await admin
@@ -1052,22 +1068,16 @@ serve(async (req) => {
             .in("source", ["ai_agent", "ai_sdr_chat"]);
           let page = Math.floor((sourcedCount ?? 0) / want) + 1;
 
-          let res = await invokeFn(
-            "fetch-external-leads",
-            icpSearchBody(icpSnapshot, { limit: want, page }),
-          );
+          let res = await invokeFn("fetch-external-leads", buildBody(page));
           let found: any[] = Array.isArray(res?.leads) ? res.leads : [];
           // The page is derived from cumulative sourced count, which overshoots
-          // once the ICP is exhausted or after the ICP changes (the counter is
-          // global). If an advanced page comes back empty, retry from page 1 so
-          // we still surface genuinely new people; exclude_seen keeps already
-          // saved leads out, so page 1 only returns unseen matches.
+          // once the source is exhausted or after the ICP/query changes (the
+          // counter is global). If an advanced page comes back empty, retry from
+          // page 1 so we still surface genuinely new people; exclude_seen keeps
+          // already saved leads out, so page 1 only returns unseen matches.
           if (found.length === 0 && !res?.error && page > 1) {
             page = 1;
-            res = await invokeFn(
-              "fetch-external-leads",
-              icpSearchBody(icpSnapshot, { limit: want, page }),
-            );
+            res = await invokeFn("fetch-external-leads", buildBody(page));
             found = Array.isArray(res?.leads) ? res.leads : [];
           }
           const saved: string[] = [];
@@ -1103,7 +1113,9 @@ serve(async (req) => {
             name,
             label: `Sourced ${saved.length} new lead${saved.length === 1 ? "" : "s"}`,
             status: res?.error ? "error" : "ok",
-            detail: res?.error ?? `ICP-matched, page ${page}, duplicates excluded`,
+            detail:
+              res?.error ??
+              `${query ? `query "${query}", ICP-scored` : "ICP-matched"}, page ${page}, duplicates excluded`,
           });
 
           return {
@@ -1176,7 +1188,7 @@ HOW TO WORK
 - Do several tool calls in a row when needed. Prefer batching lead ids over one-at-a-time calls. For drafting, ALWAYS pass every lead id in a single draft_outreach call via lead_ids — never fire many parallel draft_outreach calls, that trips the rate limiter.
 - draft_outreach goal must be one of: introduction, follow-up, meeting, demo, proposal. Use "introduction" for first touches.
 - Drafts are auto-saved and rendered in the chat as reviewable cards with Send now / Schedule / Discard buttons. After drafting, tell the user the drafts are below for review — never send them yourself unless the user explicitly asks you to send.
-- To source NEW people, use find_leads. It always targets the saved ICP below, excludes anyone already in the account, and advances the result page, so calling it again returns different people. Never make up targeting criteria of your own, and if there is no ICP say so instead of guessing.
+- To source NEW people, use find_leads. If the user describes who they want (any role, industry, company type, or a one-off ask that is not the ICP), pass that description as \`query\` and the search runs broad on it, using the saved ICP only to score/qualify the results. If they just say "find more leads" or "source from my ICP" with no specific target, omit \`query\` to source people matching the saved ICP. It excludes anyone already in the account and advances the result page, so calling it again returns different people. Do not refuse or narrow an off-ICP request; run it as a query and let the ICP score it. Only say you cannot search if there is neither a query nor a saved ICP.
 - Never invent leads, metrics, emails or results. Only report what the tools returned.
 - Be concise and specific. Short paragraphs, tight bullet lists, real numbers and names. No emojis, no filler.
 
@@ -1190,7 +1202,7 @@ ${PLAYBOOK_SYSTEM_RULES}
 Company context: ${config?.company_context ?? "not set"}
 Value props: ${(config?.value_props ?? []).join("; ") || "not set"}
 
-${icpContext || "No ICP profile is saved yet. Tell the user to save one on the ICP page before sourcing leads, and do not invent targeting criteria."}`;
+${icpContext || "No ICP profile is saved yet, so there is nothing to score results against. You can still source leads when the user names who they want (pass it as find_leads query), but suggest they save an ICP on the ICP page so results get qualified. Do not invent an ICP of your own."}`;
 
     const messages: any[] = [
       { role: "system", content: systemPrompt },
