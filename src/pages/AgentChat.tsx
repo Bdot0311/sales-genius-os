@@ -324,9 +324,10 @@ const AgentChat = () => {
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col lg:flex-row gap-4 h-[calc(100dvh-9rem)]">
+      <div className="flex flex-col lg:flex-row gap-4 h-[calc(100dvh-8.5rem)] min-h-0">
         {/* Threads */}
-        <Card className="lg:w-64 flex-shrink-0 p-3 flex flex-col gap-3 overflow-hidden">
+        <Card className="w-full lg:w-64 flex-shrink-0 max-h-[34vh] lg:max-h-none p-3 flex flex-col gap-3 overflow-hidden">
+
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
@@ -376,10 +377,10 @@ const AgentChat = () => {
         </Card>
 
         {/* Chat */}
-        <Card className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex items-center justify-between gap-3 border-b border-border/60 px-4 py-3">
+        <Card className="flex-1 min-h-0 min-w-0 flex flex-col overflow-hidden">
+          <div className="flex flex-col gap-2 border-b border-border/60 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4">
             <div className="flex items-center gap-2 min-w-0">
-              <div className="p-1.5 rounded-lg bg-primary/15">
+              <div className="p-1.5 rounded-lg bg-primary/15 flex-shrink-0">
                 <Bot className="w-4 h-4 text-primary" />
               </div>
               <div className="min-w-0">
@@ -389,10 +390,10 @@ const AgentChat = () => {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap sm:flex-shrink-0">
             {agents.length > 1 && (
               <Select value={agentId ?? "primary"} onValueChange={handleAgentChange}>
-                <SelectTrigger className="w-[190px]" aria-label="Agent build">
+                <SelectTrigger className="w-full min-w-0 sm:w-[190px]" aria-label="Agent build">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -406,7 +407,7 @@ const AgentChat = () => {
               </Select>
             )}
             <Select value={autonomy} onValueChange={(v) => handleAutonomyChange(v as any)}>
-              <SelectTrigger className="w-[168px]" aria-label="Autonomy">
+              <SelectTrigger className="w-full min-w-0 sm:w-[168px]" aria-label="Autonomy">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -417,8 +418,9 @@ const AgentChat = () => {
             </div>
           </div>
 
-          <ScrollArea className="flex-1 px-4">
+          <ScrollArea className="flex-1 min-h-0 px-3 sm:px-4">
             <div className="py-4 space-y-5 max-w-3xl mx-auto">
+
               {loading && (
                 <div className="flex justify-center py-10">
                   <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
@@ -454,12 +456,12 @@ const AgentChat = () => {
               {messages.map((m) =>
                 m.role === "user" ? (
                   <div key={m.id} className="flex justify-end">
-                    <div className="max-w-[85%] rounded-2xl rounded-br-sm bg-primary px-4 py-2.5 text-sm text-primary-foreground whitespace-pre-wrap">
+                    <div className="max-w-[85%] rounded-2xl rounded-br-sm bg-primary px-4 py-2.5 text-sm text-primary-foreground whitespace-pre-wrap break-words">
                       {m.content}
                     </div>
                   </div>
                 ) : (
-                  <div key={m.id} className="space-y-2">
+                  <div key={m.id} className="min-w-0 space-y-2">
                     {!!m.tool_events?.length && (
                       <div className="space-y-1">
                         {m.tool_events
@@ -467,13 +469,16 @@ const AgentChat = () => {
                           .map((e, i) => (
                             <div
                               key={`${m.id}-${i}`}
-                              className="flex items-center gap-2 text-xs text-muted-foreground"
+                              className="flex min-w-0 items-start gap-2 text-xs text-muted-foreground"
                             >
-                              {statusIcon(e.status)}
-                              <span className="font-medium text-foreground/80">{e.label}</span>
-                              <span className="truncate">— {e.detail}</span>
+                              <span className="mt-0.5 flex-shrink-0">{statusIcon(e.status)}</span>
+                              <span className="min-w-0 break-words">
+                                <span className="font-medium text-foreground/80">{e.label}</span>
+                                <span> — {e.detail}</span>
+                              </span>
                             </div>
                           ))}
+
                       </div>
                     )}
 
@@ -552,7 +557,7 @@ const AgentChat = () => {
                         );
                       })}
 
-                    <div className="prose prose-sm prose-invert max-w-none text-sm leading-relaxed">
+                    <div className="prose prose-sm prose-invert max-w-none break-words text-sm leading-relaxed [&_pre]:overflow-x-auto [&_table]:block [&_table]:overflow-x-auto">
                       <ReactMarkdown>{m.content}</ReactMarkdown>
                     </div>
                   </div>
@@ -570,7 +575,7 @@ const AgentChat = () => {
           </ScrollArea>
 
           <div className="border-t border-border/60 p-3">
-            <div className="max-w-3xl mx-auto flex items-end gap-2">
+            <div className="max-w-3xl mx-auto flex min-w-0 items-end gap-2">
               <Textarea
                 ref={inputRef}
                 value={input}
@@ -583,12 +588,14 @@ const AgentChat = () => {
                 }}
                 placeholder="e.g. Enrich the 12 leads I just saved, score them, and draft emails for anyone above 70"
                 rows={2}
-                className="resize-none"
+                className="min-w-0 flex-1 resize-none text-base sm:text-sm"
                 disabled={sending || loading}
               />
               <Button
                 size="icon"
+                className="flex-shrink-0"
                 onClick={() => handleSend()}
+
                 disabled={sending || loading || !input.trim()}
                 aria-label="Send message"
               >

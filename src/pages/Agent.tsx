@@ -316,7 +316,7 @@ const Agent = () => {
         title="AI Sales Agent"
         description="Finds leads, writes and sends first-touch outreach, then handles replies — end to end"
         actions={
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-2">
               <Switch
                 checked={isEnabled}
@@ -336,6 +336,7 @@ const Agent = () => {
               <MessageSquare className="w-4 h-4" />
               Chat with agent
             </Button>
+
             <AgentTestDialog disabled={loading} agentId={activeAgentId} />
           </div>
         }
@@ -415,8 +416,9 @@ const Agent = () => {
                 ))}
               </ul>
             </div>
-            <div className="flex flex-col gap-2 items-end">
-              <div className="flex gap-4 text-right">
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
+              <div className="flex flex-wrap gap-4 sm:text-right">
+
                 <div>
                   <p className="text-[11px] text-muted-foreground">Agent builds</p>
                   <p className="text-sm font-semibold">{fmt(tierSpec.builds)}</p>
