@@ -24,7 +24,16 @@ const LABEL_CONFIG: Record<IntentLabel, { color: string; bg: string; border: str
 
 export const IntentScoreBadge = ({ lead }: IntentScoreBadgeProps) => {
   const score = lead.intent_score;
-  const label = (lead.intent_label ?? 'Cold') as IntentLabel;
+  // Derive the label from the score so a stale intent_label can never contradict
+  // the number shown (an earlier scorer could reset intent_score to 0 while
+  // leaving the label at "Hot", producing "0 · Hot"). Thresholds mirror
+  // getIntentLabel in the score-lead function, which is the source of the label.
+  const label: IntentLabel =
+    score == null ? 'Cold'
+    : score >= 85 ? 'Very Hot'
+    : score >= 65 ? 'Hot'
+    : score >= 40 ? 'Warm'
+    : 'Cold';
   const reasons = lead.intent_reasons ?? [];
   const angle = lead.recommended_angle;
 
