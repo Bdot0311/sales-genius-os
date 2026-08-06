@@ -100,7 +100,7 @@ export const HowItWorks = () => {
     <section
       id="how-it-works"
       className="relative py-24 md:py-32 overflow-hidden"
-      style={{ background: "hsl(261 75% 2% / 0.82)" }}
+      style={{ background: "transparent" }}
       aria-labelledby="how-it-works-heading"
     >
       <div

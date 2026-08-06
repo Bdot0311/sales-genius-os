@@ -18,7 +18,7 @@ export const ProofBar = ({ metrics }: ProofBarProps) => {
       className="w-full py-4 px-6 border-t border-b"
       style={{
         borderColor: "hsl(261 75% 50% / 0.15)",
-        background: "hsl(261 75% 3% / 0.5)",
+        background: "transparent",
       }}
     >
       <div className="max-w-4xl mx-auto flex flex-wrap items-center justify-center gap-8">
