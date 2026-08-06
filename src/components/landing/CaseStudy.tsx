@@ -17,7 +17,7 @@ export const CaseStudy = ({ data }: CaseStudyProps) => {
   return (
     <section
       className="py-20 px-6"
-      style={{ background: "hsl(261 75% 3%)" }}
+      style={{ background: "transparent" }}
       aria-labelledby="case-study-heading"
     >
       <div className="max-w-2xl mx-auto text-center">
