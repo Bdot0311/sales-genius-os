@@ -147,9 +147,9 @@ export const EmailRubricPanel = ({ subject, body, onApplyBody, onApplySubject }:
           <p className="text-xs text-muted-foreground">{loading ? "scoring..." : "write an email to score it."}</p>
         )}
 
-        {/* Accept/ignore suggestions (never auto-rewrite) */}
+        {/* Apply or ignore suggestions (user stays in control) */}
         {suggestions.length > 0 && (
-          <div className="space-y-1.5 pt-1 border-t">
+          <div className="space-y-2 pt-1 border-t">
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground">suggestions</p>
             {suggestions.map((s, i) => dismissed.has(i) ? null : (
               <div key={i} className="flex items-start gap-2 text-xs">
@@ -157,13 +157,31 @@ export const EmailRubricPanel = ({ subject, body, onApplyBody, onApplySubject }:
                   <p className="text-foreground/80">{s.suggestion}</p>
                   {s.snippet && <p className="text-[11px] text-muted-foreground truncate">on: "{s.snippet}"</p>}
                 </div>
-                <button onClick={() => setDismissed((prev) => new Set(prev).add(i))} className="text-[10px] text-muted-foreground hover:text-foreground shrink-0" title="ignore">
-                  <X className="w-3.5 h-3.5" />
-                </button>
+                <div className="flex items-center gap-1 shrink-0">
+                  {canApply && (
+                    applied.has(i) ? (
+                      <Badge variant="secondary" className="text-[10px] gap-1"><Check className="w-3 h-3" />applied</Badge>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-6 px-2 text-[10px]"
+                        disabled={applyingIdx !== null}
+                        onClick={() => applySuggestion(s, i)}
+                      >
+                        {applyingIdx === i ? <Loader2 className="w-3 h-3 animate-spin" /> : "apply"}
+                      </Button>
+                    )
+                  )}
+                  <button onClick={() => setDismissed((prev) => new Set(prev).add(i))} className="text-muted-foreground hover:text-foreground" title="ignore">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         )}
+
 
         {/* Mechanical checks (always on) */}
         <div className="space-y-1.5 pt-1 border-t">
