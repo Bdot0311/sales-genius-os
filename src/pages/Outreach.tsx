@@ -1243,10 +1243,30 @@ IMMUTABLE RULES — these apply regardless of the fix task:
       }
     }
 
+    // Readability's score is bucketed in coarse steps (grade <=8 -> 100, 9-11 -> 65,
+    // >=12 -> 20), so a genuine simplification from grade 10 to 9 leaves the score
+    // unchanged and used to be rejected as "did not improve the draft". For
+    // readability, judge improvement by the actual reading grade dropping (parsed
+    // from the "Grade N" message); every other check uses the bucketed score.
+    const gradeOf = (c?: { message?: string }): number | null => {
+      const m = c?.message?.match(/Grade\s+(\d+)/i);
+      return m ? Number(m[1]) : null;
+    };
+    const checkImproved = (
+      before?: { score: number; message?: string },
+      after?: { score: number; message?: string },
+    ): boolean => {
+      if (checkLabel === 'Readability') {
+        const b = gradeOf(before), a = gradeOf(after);
+        if (b != null && a != null) return a < b;
+      }
+      return !after || after.score > (before?.score ?? 0);
+    };
+
     const localFixed = applyEmailQualityFix(generatedEmail, checkLabel);
     const beforeCheck = scoreEmailQuality(subjectLine, generatedEmail, isFirstTouch).checks.find((check) => check.label === checkLabel);
     const afterCheck = scoreEmailQuality(subjectLine, localFixed, isFirstTouch).checks.find((check) => check.label === checkLabel);
-    const localImproved = localFixed !== generatedEmail.trim() && (!afterCheck || afterCheck.score > (beforeCheck?.score ?? 0));
+    const localImproved = localFixed !== generatedEmail.trim() && checkImproved(beforeCheck, afterCheck);
 
     if (localImproved) {
       try {
@@ -1293,7 +1313,7 @@ Return ONLY the corrected email body. No subject line. No explanation. No "Here 
       fixed = fixed.replace(/^(?:here is|here's|below is|the (?:updated|revised|rewritten|fixed) email[:\s]*)\n+/i, '').trim();
 
       const aiCheck = scoreEmailQuality(subjectLine, fixed, isFirstTouch).checks.find((check) => check.label === checkLabel);
-      const aiImproved = fixed && fixed !== generatedEmail.trim() && (!aiCheck || aiCheck.score > (beforeCheck?.score ?? 0));
+      const aiImproved = fixed && fixed !== generatedEmail.trim() && checkImproved(beforeCheck, aiCheck);
       if (!aiImproved) throw new Error(`The ${checkLabel.toLowerCase()} fix did not improve the draft.`);
       await persistFixedDraft(fixed);
       toast({ title: `${checkLabel} fixed`, description: aiCheck ? aiCheck.message : "The draft was updated and saved." });
