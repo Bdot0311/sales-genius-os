@@ -347,6 +347,24 @@ serve(async (req) => {
         console.error('Error calling score-lead after enrichment:', scoreErr);
       }
 
+      // Detect real buying signals from the company's public ATS board (free,
+      // no setup) BEFORE v2 scores, so a live hiring event is folded into intent
+      // on this same pass. Non-blocking: a miss just leaves the quality baseline.
+      try {
+        const sigRes = await fetch(`${supabaseUrl}/functions/v1/detect-hiring-signals`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': authHeader,
+            'apikey': supabaseKey,
+          },
+          body: JSON.stringify({ leadId }),
+        });
+        if (!sigRes.ok) console.error('detect-hiring-signals returned', sigRes.status);
+      } catch (sigErr) {
+        console.error('Error calling detect-hiring-signals after enrichment:', sigErr);
+      }
+
       // Also run Lead Score v2 so the A/B/C tier (and fit/intent breakdown the
       // Leads table reads) is populated automatically on enrichment. Kept
       // separate from score-lead above: v1 writes icp_score, v2 writes tier.
