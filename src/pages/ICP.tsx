@@ -346,7 +346,7 @@ const ICP = () => {
                 {editing.id && <IcpVersionHistory icpProfileId={editing.id} />}
               </div>
               <Tabs defaultValue="basics" className="w-full">
-                <TabsList className="grid grid-cols-4 mb-4">
+                <TabsList className="grid w-full grid-cols-2 mb-4 sm:grid-cols-4">
                   <TabsTrigger value="basics">Basics</TabsTrigger>
                   <TabsTrigger value="targeting">Targeting</TabsTrigger>
                   <TabsTrigger value="signals">Signals</TabsTrigger>
