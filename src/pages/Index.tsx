@@ -165,17 +165,17 @@ const Index = () => {
         {/* Purple-tinted overlay — light enough to keep the aura visible */}
         <div
           className="absolute inset-0"
-          style={{ background: 'linear-gradient(to bottom, hsl(261 75% 4% / 0.35), hsl(261 75% 3% / 0.55))' }}
+          style={{ background: 'linear-gradient(to bottom, hsl(261 75% 4% / 0.15), hsl(261 75% 3% / 0.30))' }}
         />
         {/* Brand purple color shift — forces video hue toward violet-purple */}
         <div
           className="absolute inset-0"
-          style={{ background: 'hsl(261 75% 40%)', mixBlendMode: 'color', opacity: 0.45 }}
+          style={{ background: 'hsl(261 75% 40%)', mixBlendMode: 'color', opacity: 0.25 }}
         />
         {/* Soft vignette to keep text legible at edges */}
         <div
           className="absolute inset-0"
-          style={{ background: 'radial-gradient(ellipse at center, transparent 40%, hsl(261 75% 2% / 0.6) 100%)' }}
+          style={{ background: 'radial-gradient(ellipse at center, transparent 40%, hsl(261 75% 2% / 0.35) 100%)' }}
         />
       </div>
 
