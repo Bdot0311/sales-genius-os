@@ -324,9 +324,10 @@ const AgentChat = () => {
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col lg:flex-row gap-4 h-[calc(100dvh-9rem)]">
+      <div className="flex flex-col lg:flex-row gap-4 h-[calc(100dvh-8.5rem)] min-h-0">
         {/* Threads */}
-        <Card className="lg:w-64 flex-shrink-0 p-3 flex flex-col gap-3 overflow-hidden">
+        <Card className="w-full lg:w-64 flex-shrink-0 max-h-[34vh] lg:max-h-none p-3 flex flex-col gap-3 overflow-hidden">
+
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
