@@ -101,9 +101,9 @@ const Index = () => {
       video.style.opacity = "0";
     };
     const showVideo = () => {
-      // Keep the video at 70% opacity so it stays atmospheric and doesn't
+      // Keep the video very dim so it stays atmospheric and doesn't
       // fight the white text for attention.
-      video.style.opacity = "0.7";
+      video.style.opacity = "0.5";
     };
 
     const tryPlay = () => {
