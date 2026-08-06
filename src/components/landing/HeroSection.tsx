@@ -54,6 +54,13 @@ export const HeroSection = () => {
         aria-hidden="true"
       />
 
+      {/* Bottom fade so the mockup melds seamlessly into the hero */}
+      <div
+        className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none sm:h-48"
+        style={{ background: "linear-gradient(to top, hsl(261 75% 2%) 0%, transparent 100%)" }}
+        aria-hidden="true"
+      />
+
       <div className="noise-texture" aria-hidden="true" />
 
       <div className="relative z-10 mx-auto flex w-full max-w-[38rem] flex-col items-center px-5 text-center sm:max-w-5xl sm:px-6">
