@@ -167,17 +167,17 @@ const Index = () => {
         {/* Purple-tinted darkening overlay — keeps the video visible but text readable */}
         <div
           className="absolute inset-0"
-          style={{ background: 'linear-gradient(to bottom, hsl(261 75% 4% / 0.28), hsl(261 75% 3% / 0.48))' }}
+          style={{ background: 'linear-gradient(to bottom, hsl(261 75% 4% / 0.45), hsl(261 75% 3% / 0.72))' }}
         />
         {/* Brand purple color shift — forces video hue toward OutReign violet */}
         <div
           className="absolute inset-0"
-          style={{ background: 'hsl(263 80% 45%)', mixBlendMode: 'color', opacity: 0.4 }}
+          style={{ background: 'hsl(263 80% 45%)', mixBlendMode: 'color', opacity: 0.35 }}
         />
         {/* Vignette to keep text legible at edges */}
         <div
           className="absolute inset-0"
-          style={{ background: 'radial-gradient(ellipse at center, transparent 35%, hsl(261 75% 2% / 0.55) 100%)' }}
+          style={{ background: 'radial-gradient(ellipse at center, transparent 25%, hsl(261 75% 2% / 0.78) 100%)' }}
         />
       </div>
 
