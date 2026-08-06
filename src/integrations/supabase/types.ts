@@ -2155,6 +2155,7 @@ export type Database = {
           lead_status: string
           linkedin_url: string | null
           notes: string | null
+          pipeline_stage: string
           recommended_angle: string | null
           research_brief: Json | null
           research_confidence: string | null
@@ -2205,6 +2206,7 @@ export type Database = {
           lead_status?: string
           linkedin_url?: string | null
           notes?: string | null
+          pipeline_stage?: string
           recommended_angle?: string | null
           research_brief?: Json | null
           research_confidence?: string | null
@@ -2255,6 +2257,7 @@ export type Database = {
           lead_status?: string
           linkedin_url?: string | null
           notes?: string | null
+          pipeline_stage?: string
           recommended_angle?: string | null
           research_brief?: Json | null
           research_confidence?: string | null
