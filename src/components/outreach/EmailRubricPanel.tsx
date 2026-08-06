@@ -37,16 +37,49 @@ function barColor(score: number, weakest: boolean): string {
   return "bg-orange-500";
 }
 
-export const EmailRubricPanel = ({ subject, body }: EmailRubricPanelProps) => {
+export const EmailRubricPanel = ({ subject, body, onApplyBody, onApplySubject }: EmailRubricPanelProps) => {
   const mech = useMemo(() => computeMechanicalChecks(subject, body), [subject, body]);
 
   const [dims, setDims] = useState<Record<string, Dim> | null>(null);
   const [weakest, setWeakest] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [dismissed, setDismissed] = useState<Set<number>>(new Set());
+  const [applied, setApplied] = useState<Set<number>>(new Set());
+  const [applyingIdx, setApplyingIdx] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [gated, setGated] = useState(false);
   const reqId = useRef(0);
+
+  const canApply = Boolean(onApplyBody || onApplySubject);
+
+  const applySuggestion = async (s: Suggestion, i: number) => {
+    if (!s.snippet) { toast.error("this suggestion has no snippet to rewrite"); return; }
+    const inBody = body.includes(s.snippet);
+    const inSubject = !inBody && subject.includes(s.snippet);
+    if (!inBody && !inSubject) { toast.error("couldn't find that snippet in the current draft"); return; }
+    if (inBody && !onApplyBody) return;
+    if (inSubject && !onApplySubject) return;
+
+    setApplyingIdx(i);
+    try {
+      const { data, error } = await supabase.functions.invoke("apply-rubric-suggestion", {
+        body: { subject, body, snippet: s.snippet, suggestion: s.suggestion, dimension: s.dimension },
+      });
+      if (error) { toast.error("couldn't apply that suggestion"); return; }
+      if (data?.error) { toast.error(data.error); return; }
+      const replacement = typeof data?.replacement === "string" ? data.replacement : "";
+      if (!replacement) { toast.error("couldn't apply that suggestion"); return; }
+
+      if (inBody) onApplyBody?.(body.replace(s.snippet, replacement));
+      else onApplySubject?.(subject.replace(s.snippet, replacement));
+
+      setApplied((prev) => new Set(prev).add(i));
+      toast.success("suggestion applied");
+    } finally {
+      setApplyingIdx(null);
+    }
+  };
+
 
   // Debounced rubric fetch. Mechanical checks above are instant and deterministic.
   useEffect(() => {
