@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, ChevronDown } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { motion } from "motion/react";
 import { CAMPAIGN_SETUP_BOOKING_URL, openCampaignSetupBooking } from "@/lib/campaign-setup";
 
@@ -10,7 +10,7 @@ export const HeroSection = () => {
 
   return (
     <section
-      className="relative hero-fullscreen flex flex-col items-center justify-center overflow-hidden px-0 pt-[calc(env(safe-area-inset-top)+4.75rem)] pb-16 sm:pt-[calc(env(safe-area-inset-top)+7rem)] sm:pb-20"
+      className="relative hero-fullscreen flex flex-col items-center justify-center overflow-hidden px-0 pt-[calc(env(safe-area-inset-top)+4.75rem)] pb-4 sm:pt-[calc(env(safe-area-inset-top)+7rem)] sm:pb-8"
       aria-labelledby="hero-heading"
     >
       <div className="absolute inset-0 bg-[hsl(261,75%,3%)]/60" aria-hidden="true" />
@@ -51,6 +51,13 @@ export const HeroSection = () => {
       <div
         className="absolute top-0 left-1/2 h-[220px] w-full max-w-[420px] -translate-x-1/2 pointer-events-none sm:h-[400px] sm:max-w-[800px]"
         style={{ background: "radial-gradient(ellipse at center top, hsl(261 75% 55% / 0.08) 0%, transparent 65%)" }}
+        aria-hidden="true"
+      />
+
+      {/* Bottom fade so the mockup melds seamlessly into the hero */}
+      <div
+        className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none sm:h-48"
+        style={{ background: "linear-gradient(to top, hsl(261 75% 2%) 0%, transparent 100%)" }}
         aria-hidden="true"
       />
 
@@ -166,23 +173,6 @@ export const HeroSection = () => {
         </motion.p>
       </div>
 
-      {/* Scroll indicator */}
-      <motion.div
-        className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 pointer-events-none"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.6, delay: 1.1 }}
-        aria-hidden="true"
-      >
-        <span className="text-[10px] uppercase tracking-[0.2em] text-white/90 font-medium">scroll</span>
-        <motion.div
-          animate={{ y: [0, 5, 0] }}
-          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <ChevronDown className="h-4 w-4 text-white/90" />
-
-        </motion.div>
-      </motion.div>
     </section>
   );
 };

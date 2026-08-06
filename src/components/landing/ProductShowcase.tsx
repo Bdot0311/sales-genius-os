@@ -8,23 +8,10 @@ export const ProductShowcase = () => {
 
   return (
     <section
-      className="relative overflow-hidden pb-4 sm:pb-0"
-      style={{ background: "hsl(261 75% 2% / 0.82)" }}
+      className="relative z-10 bg-background -mt-16 sm:-mt-24 lg:-mt-32 pb-4 sm:pb-0"
       aria-label="Product preview"
     >
-      <div
-        className="absolute top-0 left-0 right-0 z-10 h-24 pointer-events-none"
-        style={{
-          background: "linear-gradient(to bottom, hsl(261 75% 2%), transparent)",
-        }}
-        aria-hidden="true"
-      />
-
       <div className="container mx-auto px-5 sm:px-8 lg:px-12">
-        <p className="pt-6 mb-6 text-center text-xs uppercase tracking-[0.25em] sm:pt-8 sm:mb-8" style={{ color: "hsl(261 75% 72%)" }}>
-          The platform
-        </p>
-
         <div
           className="relative mx-auto w-full max-w-6xl"
           onMouseEnter={() => setHovered(true)}
@@ -66,10 +53,14 @@ export const ProductShowcase = () => {
           </div>
         </div>
 
+        <p className="pt-6 mb-2 text-center text-xs uppercase tracking-[0.25em] sm:pt-8" style={{ color: "hsl(261 75% 72%)" }}>
+          The platform
+        </p>
+
         {/* Integration strip — below the mockup. Also serves as the #integrations anchor for the navbar. */}
         <IntegrationStrip
           id="integrations"
-          className="scroll-mt-24 pt-10 pb-14"
+          className="scroll-mt-24 pt-6 pb-14 sm:pt-8"
         />
 
       </div>
