@@ -2793,9 +2793,10 @@ For logos, use HTML:
                     </div>
 
                     {previewMode === "mobile" && generatedEmail ? (
-                      <div className="flex justify-center bg-gray-900 rounded-xl p-4">
+                      <div className="flex justify-center bg-gray-900 rounded-xl p-2 sm:p-4">
                         {/* iPhone mock frame */}
-                        <div className="relative w-[375px]">
+                        <div className="relative w-full max-w-[375px]">
+
                           {/* Notch bar */}
                           <div className="bg-gray-800 rounded-t-2xl h-6 flex items-center justify-center">
                             <div className="w-16 h-3 bg-gray-700 rounded-full" />
