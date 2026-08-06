@@ -2867,7 +2867,13 @@ For logos, use HTML:
                         onFix={handleQualityFix}
                         fixingCheck={fixingCheck}
                       />
-                      <EmailRubricPanel subject={subjectLine} body={generatedEmail} />
+                      <EmailRubricPanel
+                        subject={subjectLine}
+                        body={generatedEmail}
+                        onApplyBody={setGeneratedEmail}
+                        onApplySubject={setSubjectLine}
+                      />
+
                       <div className="flex gap-2">
                         <Button
                           className="flex-1"
