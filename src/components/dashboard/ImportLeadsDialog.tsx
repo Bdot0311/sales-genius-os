@@ -458,7 +458,7 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
         </DialogHeader>
 
         <Tabs defaultValue="csv" className="flex-1 min-h-0 flex flex-col overflow-hidden">
-          <TabsList className="grid w-full grid-cols-4 shrink-0">
+          <TabsList className="grid w-full grid-cols-2 shrink-0 sm:grid-cols-4">
             <TabsTrigger value="csv">CSV Upload</TabsTrigger>
             <TabsTrigger value="integrations">Integrations</TabsTrigger>
             <TabsTrigger value="schedule">Scheduled</TabsTrigger>
