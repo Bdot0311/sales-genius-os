@@ -286,6 +286,20 @@
   to = "/index.html"
   status = 200
 
+# Security headers on every response. Declared here (not only in public/_headers)
+# so they are guaranteed to be served: netlify.toml is always processed, whereas a
+# _headers file can be missed depending on the deploy. CSP is intentionally left to
+# public/_headers so it can be verified on a deploy preview before being promoted
+# here — an over-tight CSP silently breaks analytics/payments.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
 # Efficient cache headers for static assets
 [[headers]]
   for = "/assets/*"
