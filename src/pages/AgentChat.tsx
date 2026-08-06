@@ -377,10 +377,10 @@ const AgentChat = () => {
         </Card>
 
         {/* Chat */}
-        <Card className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex items-center justify-between gap-3 border-b border-border/60 px-4 py-3">
+        <Card className="flex-1 min-h-0 min-w-0 flex flex-col overflow-hidden">
+          <div className="flex flex-col gap-2 border-b border-border/60 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4">
             <div className="flex items-center gap-2 min-w-0">
-              <div className="p-1.5 rounded-lg bg-primary/15">
+              <div className="p-1.5 rounded-lg bg-primary/15 flex-shrink-0">
                 <Bot className="w-4 h-4 text-primary" />
               </div>
               <div className="min-w-0">
@@ -390,10 +390,10 @@ const AgentChat = () => {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap sm:flex-shrink-0">
             {agents.length > 1 && (
               <Select value={agentId ?? "primary"} onValueChange={handleAgentChange}>
-                <SelectTrigger className="w-[190px]" aria-label="Agent build">
+                <SelectTrigger className="w-full min-w-0 sm:w-[190px]" aria-label="Agent build">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -407,7 +407,7 @@ const AgentChat = () => {
               </Select>
             )}
             <Select value={autonomy} onValueChange={(v) => handleAutonomyChange(v as any)}>
-              <SelectTrigger className="w-[168px]" aria-label="Autonomy">
+              <SelectTrigger className="w-full min-w-0 sm:w-[168px]" aria-label="Autonomy">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -418,8 +418,9 @@ const AgentChat = () => {
             </div>
           </div>
 
-          <ScrollArea className="flex-1 px-4">
+          <ScrollArea className="flex-1 min-h-0 px-3 sm:px-4">
             <div className="py-4 space-y-5 max-w-3xl mx-auto">
+
               {loading && (
                 <div className="flex justify-center py-10">
                   <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
