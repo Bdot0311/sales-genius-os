@@ -189,11 +189,17 @@ serve(async (req) => {
     }
 
     const scoredAt = new Date().toISOString();
+    // v2 owns fit_score + tier only. It must NOT write intent_score: that column
+    // (and intent_label) belong to v1 score-lead, which sets them together from
+    // the same value. v2's intent is signal-based and 0 for a cold-sourced lead
+    // with no signal events; writing that here overwrote v1's intent_score to 0
+    // while leaving v1's intent_label (e.g. "Hot") in place, so the UI showed the
+    // contradictory "0 · Hot". v2's intent is still returned in the response and
+    // used in-memory for tier + reason; it just no longer clobbers the column.
     const { error: updErr } = await supabase
       .from("leads")
       .update({
         fit_score: result.fit_score,
-        intent_score: result.intent_score,
         tier: result.tier,
         score_reason: reason,
         scored_at: scoredAt,

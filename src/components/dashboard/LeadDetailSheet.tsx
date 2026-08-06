@@ -28,6 +28,17 @@ function toValidLinkedInUrl(raw: string | null | undefined, kind: 'profile' | 'c
   }
 }
 
+// Company websites are stored as bare domains ("disco-tec.com") because the lead
+// source gives a domain, not a URL. Used directly as an href, a bare domain is a
+// RELATIVE path, so the link opened outreign.io/disco-tec.com instead of the real
+// site. Prepend a scheme so it resolves to the external site.
+function toAbsoluteUrl(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const s = raw.trim();
+  if (!s) return null;
+  return /^https?:\/\//i.test(s) ? s : `https://${s}`;
+}
+
 
 interface Lead {
   id: string;
@@ -346,7 +357,7 @@ export const LeadDetailSheet = ({
             ) : (
               <div className="space-y-2 text-sm">
                 {lead.company_website && (
-                  <div className="flex items-center gap-2"><Globe className="w-4 h-4 text-muted-foreground" /><a href={lead.company_website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{lead.company_website}</a></div>
+                  <div className="flex items-center gap-2"><Globe className="w-4 h-4 text-muted-foreground" /><a href={toAbsoluteUrl(lead.company_website)!} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{lead.company_website}</a></div>
                 )}
                 {(() => { const u = toValidLinkedInUrl(lead.company_linkedin, 'company'); return u && (
                   <div className="flex items-center gap-2"><Linkedin className="w-4 h-4 text-muted-foreground" /><a href={u} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Company LinkedIn</a></div>
