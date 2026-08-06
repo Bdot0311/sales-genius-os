@@ -416,8 +416,9 @@ const Agent = () => {
                 ))}
               </ul>
             </div>
-            <div className="flex flex-col gap-2 items-end">
-              <div className="flex gap-4 text-right">
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
+              <div className="flex flex-wrap gap-4 sm:text-right">
+
                 <div>
                   <p className="text-[11px] text-muted-foreground">Agent builds</p>
                   <p className="text-sm font-semibold">{fmt(tierSpec.builds)}</p>
