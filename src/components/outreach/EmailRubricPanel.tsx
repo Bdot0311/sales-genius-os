@@ -98,6 +98,8 @@ export const EmailRubricPanel = ({ subject, body, onApplyBody, onApplySubject }:
           setWeakest(data.weakest || null);
           setSuggestions(Array.isArray(data.suggestions) ? data.suggestions : []);
           setDismissed(new Set());
+          setApplied(new Set());
+
         }
       } finally {
         if (id === reqId.current) setLoading(false);
