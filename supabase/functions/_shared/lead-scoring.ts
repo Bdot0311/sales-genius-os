@@ -157,6 +157,28 @@ export function deriveTier(fitScore: number, intent: IntentResult, rubric: Rubri
   return "C";
 }
 
+// Baseline "worth engaging" intent for a lead with no fired buying signals yet.
+// Signal-based intent is 0 until something fires, which for cold outbound is most
+// leads, so the displayed intent used to sit at a bare 0 and read as broken. This
+// gives a deterministic, per-lead floor from fit + seniority + data completeness
+// so intent is meaningful immediately; a real signal (e.g. a hiring event from the
+// ATS feed) then pushes it above this floor. It is capped below the top band so a
+// fired signal always stands out, and it never gates tier A (that still needs a
+// real signal via deriveTier).
+export function qualityBaseline(lead: LeadInput, fit: FitResult): number {
+  let b = Math.round(fit.score * 0.4); // 0-40 from ICP fit
+  const t = norm(lead.job_title);
+  if (/\b(founder|co-?founder|ceo|chief|owner|president|cxo|cto|cfo|coo|cmo)\b/.test(t)) b += 28;
+  else if (/\b(vp|vice president|head|director|partner)\b/.test(t)) b += 20;
+  else if (/\b(manager|lead|principal)\b/.test(t)) b += 12;
+  else if (t) b += 6;
+  if (lead.industry) b += 4;
+  if (lead.company_size) b += 4;
+  const co = norm(lead.company_name);
+  if (co && co !== "unknown") b += 4;
+  return Math.max(15, Math.min(80, b));
+}
+
 // Plain-English fallback reason. Lowercase-first, no em-dashes, no hype.
 export function buildReason(fit: FitResult, intent: IntentResult): string {
   const strong = Object.entries(fit.matched).filter(([, v]) => v).map(([k]) => k);
@@ -198,9 +220,20 @@ export function scoreLead(
   const fit = computeFit(lead, icp, rubric);
   const intent = computeIntent(events, rubric, nowMs);
   const tier = deriveTier(fit.score, intent, rubric);
+  // Displayed intent never sits at a bare 0 for a real lead: with no fired
+  // signals it shows the quality baseline; a live signal adds a boost ON TOP of
+  // that floor (additive, not max, so a real signal is always visible even when
+  // the baseline is already high), scaled by the signal's strength and recency.
+  // A signal that has fully decayed contributes nothing and falls back to the
+  // floor. Tier still keys on the real signal intent (via deriveTier above), so
+  // the baseline can never manufacture an A.
+  const baseline = qualityBaseline(lead, fit);
+  const intentScore = intent.score > 0
+    ? Math.min(100, baseline + Math.max(5, Math.round(intent.score * 0.5)))
+    : baseline;
   return {
     fit_score: fit.score,
-    intent_score: intent.score,
+    intent_score: intentScore,
     tier,
     reason: buildReason(fit, intent),
     breakdown: { fit, intent },

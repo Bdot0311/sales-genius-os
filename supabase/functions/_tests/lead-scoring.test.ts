@@ -44,8 +44,21 @@ Deno.test("determinism: same inputs return the same tier and scores", () => {
 Deno.test("strong fit with no signals is never A", () => {
   const r = scoreLead(STRONG_LEAD, ICP, [], DEFAULT_RUBRIC, NOW);
   assert(r.fit_score >= 70, `expected strong fit, got ${r.fit_score}`);
-  assertEquals(r.intent_score, 0);
+  // Displayed intent shows the quality baseline (never a bare 0), but the
+  // underlying signal intent is 0 and tier must not reach A without a signal.
+  assert(r.intent_score > 0, `baseline intent should be > 0, got ${r.intent_score}`);
+  assertEquals(r.breakdown.intent.score, 0);
   assert(r.tier !== "A", `expected B or C, got ${r.tier}`);
+});
+
+Deno.test("a fired signal raises intent above the no-signal baseline", () => {
+  const baseline = scoreLead(STRONG_LEAD, ICP, [], DEFAULT_RUBRIC, NOW).intent_score;
+  const withSignal = scoreLead(
+    STRONG_LEAD, ICP,
+    [{ signal_type: "hiring_gtm", weight: 40, occurred_at: daysAgo(1) }],
+    DEFAULT_RUBRIC, NOW,
+  ).intent_score;
+  assert(withSignal > baseline, `signal intent ${withSignal} should exceed baseline ${baseline}`);
 });
 
 Deno.test("a fired recent signal on a strong-fit lead reaches A", () => {
