@@ -2,16 +2,22 @@ import { useEffect, useMemo, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Lock, CheckCircle2, AlertCircle, XCircle, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { Loader2, Lock, CheckCircle2, AlertCircle, XCircle, X, Check } from "lucide-react";
 import { computeMechanicalChecks, Severity } from "@/lib/email-rubric";
 
 interface EmailRubricPanelProps {
   subject: string;
   body: string;
+  /** When provided, each suggestion gets an "apply" button that rewrites the snippet in place. */
+  onApplyBody?: (nextBody: string) => void;
+  onApplySubject?: (nextSubject: string) => void;
 }
 
 interface Dim { score: number; justification: string }
 interface Suggestion { snippet: string; dimension: string; suggestion: string }
+
 
 const DIM_LABEL: Record<string, string> = {
   relevance: "relevance", empathy: "empathy", payoff: "payoff",
