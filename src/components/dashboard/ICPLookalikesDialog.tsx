@@ -162,7 +162,7 @@ export function ICPLookalikesDialog({ open, onOpenChange, profile }: Props) {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-4 gap-2 py-2 border-y">
+            <div className="grid grid-cols-2 gap-2 py-2 border-y sm:grid-cols-4">
               <Stat label="Scanned" value={stats.total} />
               <Stat label="Excellent (75+)" value={stats.excellent} tone="green" />
               <Stat label="Good (50–74)" value={stats.good} tone="yellow" />
