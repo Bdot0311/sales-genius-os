@@ -37,6 +37,38 @@ function barColor(score: number, weakest: boolean): string {
   return "bg-orange-500";
 }
 
+// Locate a rubric snippet inside the draft tolerantly. The rubric returns lightly
+// normalized quotes (different case, collapsed whitespace, wrapping quotes, or a
+// trailing ellipsis when truncated), so an exact substring match fails and the
+// "apply" used to silently do nothing. Returns the matched span so the caller can
+// splice by index and rewrite the real text.
+function locateSpan(text: string, snippet: string): { start: number; end: number } | null {
+  const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const flexWs = (s: string) => esc(s).replace(/\s+/g, "\\s+");
+  const snip = snippet.replace(/^["'`\s]+|["'`\s]+$/g, "").replace(/\s*(?:\.\.\.|…)\s*$/, "").trim();
+  if (!snip) return null;
+
+  const exact = text.indexOf(snip);
+  if (exact >= 0) return { start: exact, end: exact + snip.length };
+
+  const tryRe = (pattern: string) => {
+    const m = new RegExp(pattern, "i").exec(text);
+    return m && m[0] ? { start: m.index, end: m.index + m[0].length } : null;
+  };
+
+  // case-insensitive, whitespace-flexible
+  const ci = tryRe(flexWs(snip));
+  if (ci) return ci;
+
+  // ellipsis-spanning snippet: "start ... end"
+  const parts = snip.split(/\s*(?:\.\.\.|…)\s*/);
+  if (parts.length === 2 && parts[0] && parts[1]) {
+    const span = tryRe(`${flexWs(parts[0])}[\\s\\S]*?${flexWs(parts[1])}`);
+    if (span) return span;
+  }
+  return null;
+}
+
 export const EmailRubricPanel = ({ subject, body, onApplyBody, onApplySubject }: EmailRubricPanelProps) => {
   const mech = useMemo(() => computeMechanicalChecks(subject, body), [subject, body]);
 
@@ -54,24 +86,31 @@ export const EmailRubricPanel = ({ subject, body, onApplyBody, onApplySubject }:
 
   const applySuggestion = async (s: Suggestion, i: number) => {
     if (!s.snippet) { toast.error("this suggestion has no snippet to rewrite"); return; }
-    const inBody = body.includes(s.snippet);
-    const inSubject = !inBody && subject.includes(s.snippet);
-    if (!inBody && !inSubject) { toast.error("couldn't find that snippet in the current draft"); return; }
-    if (inBody && !onApplyBody) return;
-    if (inSubject && !onApplySubject) return;
+    // Locate the snippet tolerantly in the body first, then the subject.
+    const bodySpan = onApplyBody ? locateSpan(body, s.snippet) : null;
+    const subjectSpan = !bodySpan && onApplySubject ? locateSpan(subject, s.snippet) : null;
+    if (!bodySpan && !subjectSpan) { toast.error("couldn't find that snippet in the current draft"); return; }
+
+    const target = bodySpan
+      ? { text: body, span: bodySpan, apply: onApplyBody! }
+      : { text: subject, span: subjectSpan!, apply: onApplySubject! };
+    // Rewrite the ACTUAL matched text (not the normalized snippet) so the
+    // replacement fits the draft, and splice by index so we change the exact span.
+    const matched = target.text.slice(target.span.start, target.span.end);
 
     setApplyingIdx(i);
     try {
       const { data, error } = await supabase.functions.invoke("apply-rubric-suggestion", {
-        body: { subject, body, snippet: s.snippet, suggestion: s.suggestion, dimension: s.dimension },
+        body: { subject, body, snippet: matched, suggestion: s.suggestion, dimension: s.dimension },
       });
       if (error) { toast.error("couldn't apply that suggestion"); return; }
       if (data?.error) { toast.error(data.error); return; }
       const replacement = typeof data?.replacement === "string" ? data.replacement : "";
       if (!replacement) { toast.error("couldn't apply that suggestion"); return; }
 
-      if (inBody) onApplyBody?.(body.replace(s.snippet, replacement));
-      else onApplySubject?.(subject.replace(s.snippet, replacement));
+      const next = target.text.slice(0, target.span.start) + replacement + target.text.slice(target.span.end);
+      if (next.trim() === target.text.trim()) { toast.error("that suggestion didn't change the draft"); return; }
+      target.apply(next);
 
       setApplied((prev) => new Set(prev).add(i));
       toast.success("suggestion applied");
