@@ -54,10 +54,10 @@ export const HeroSection = () => {
         aria-hidden="true"
       />
 
-      {/* Bottom fade so the mockup melds seamlessly into the hero */}
+      {/* Soft bottom fade so the mockup rises out of the hero without a hard seam */}
       <div
-        className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none sm:h-48"
-        style={{ background: "linear-gradient(to top, hsl(261 75% 2%) 0%, transparent 100%)" }}
+        className="absolute bottom-0 left-0 right-0 h-40 pointer-events-none sm:h-56"
+        style={{ background: "linear-gradient(to top, hsl(261 75% 2% / 0.65) 0%, transparent 100%)" }}
         aria-hidden="true"
       />
 
