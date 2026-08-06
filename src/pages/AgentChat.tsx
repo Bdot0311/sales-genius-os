@@ -557,7 +557,7 @@ const AgentChat = () => {
                         );
                       })}
 
-                    <div className="prose prose-sm prose-invert max-w-none text-sm leading-relaxed">
+                    <div className="prose prose-sm prose-invert max-w-none break-words text-sm leading-relaxed [&_pre]:overflow-x-auto [&_table]:block [&_table]:overflow-x-auto">
                       <ReactMarkdown>{m.content}</ReactMarkdown>
                     </div>
                   </div>
