@@ -101,7 +101,9 @@ const Index = () => {
       video.style.opacity = "0";
     };
     const showVideo = () => {
-      video.style.opacity = "1";
+      // Keep the video at 70% opacity so it stays atmospheric and doesn't
+      // fight the white text for attention.
+      video.style.opacity = "0.7";
     };
 
     const tryPlay = () => {
@@ -153,7 +155,7 @@ const Index = () => {
             width="100%"
             height="100%"
             poster="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%3E%3Crect width='16' height='9' fill='%230a0612'/%3E%3C/svg%3E"
-            style={{ transition: "opacity 400ms ease", opacity: 0 }}
+            style={{ transition: "opacity 400ms ease", opacity: 0, filter: "saturate(1.35) hue-rotate(18deg)" }}
             className="absolute inset-0 h-full w-full object-cover"
           >
             <source
@@ -162,20 +164,20 @@ const Index = () => {
             />
           </video>
         )}
-        {/* Purple-tinted overlay — light enough to keep the aura visible */}
+        {/* Purple-tinted darkening overlay — keeps the video visible but text readable */}
         <div
           className="absolute inset-0"
-          style={{ background: 'linear-gradient(to bottom, hsl(261 75% 4% / 0.15), hsl(261 75% 3% / 0.30))' }}
+          style={{ background: 'linear-gradient(to bottom, hsl(261 75% 4% / 0.28), hsl(261 75% 3% / 0.48))' }}
         />
-        {/* Brand purple color shift — forces video hue toward violet-purple */}
+        {/* Brand purple color shift — forces video hue toward OutReign violet */}
         <div
           className="absolute inset-0"
-          style={{ background: 'hsl(261 75% 40%)', mixBlendMode: 'color', opacity: 0.25 }}
+          style={{ background: 'hsl(263 80% 45%)', mixBlendMode: 'color', opacity: 0.4 }}
         />
-        {/* Soft vignette to keep text legible at edges */}
+        {/* Vignette to keep text legible at edges */}
         <div
           className="absolute inset-0"
-          style={{ background: 'radial-gradient(ellipse at center, transparent 40%, hsl(261 75% 2% / 0.35) 100%)' }}
+          style={{ background: 'radial-gradient(ellipse at center, transparent 35%, hsl(261 75% 2% / 0.55) 100%)' }}
         />
       </div>
 

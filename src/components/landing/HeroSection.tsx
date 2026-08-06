@@ -33,7 +33,7 @@ export const HeroSection = () => {
         <h1
           id="hero-heading"
           className="font-display mb-5 max-w-[13ch] text-balance sm:mb-8 sm:max-w-none"
-          style={{ fontSize: "clamp(3rem, 8vw, 5.25rem)", lineHeight: 1.02, letterSpacing: "-0.01em", fontWeight: 800 }}
+          style={{ fontSize: "clamp(3rem, 8vw, 5.25rem)", lineHeight: 1.02, letterSpacing: "-0.01em", fontWeight: 800, textShadow: "0 4px 30px rgba(0,0,0,0.35)" }}
         >
           <span className="block text-white">
             Find who to sell to.
@@ -58,7 +58,7 @@ export const HeroSection = () => {
         </h1>
 
         {/* Subhead — LCP element: rendered fully opaque, no entrance animation */}
-        <p className="mb-5 max-w-[22rem] text-base font-light leading-snug text-white/95 sm:max-w-2xl sm:text-xl sm:leading-relaxed">
+        <p className="mb-5 max-w-[22rem] text-base font-light leading-snug text-white/95 sm:max-w-2xl sm:text-xl sm:leading-relaxed" style={{ textShadow: "0 3px 20px rgba(0,0,0,0.3)" }}>
           Know exactly who's ready to buy. OutReign scores every prospect by fit and intent, verifies their inbox, and drafts the opener, so your team focuses on closing.
         </p>
 
