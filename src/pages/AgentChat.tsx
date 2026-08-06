@@ -588,12 +588,14 @@ const AgentChat = () => {
                 }}
                 placeholder="e.g. Enrich the 12 leads I just saved, score them, and draft emails for anyone above 70"
                 rows={2}
-                className="resize-none"
+                className="min-w-0 flex-1 resize-none text-base sm:text-sm"
                 disabled={sending || loading}
               />
               <Button
                 size="icon"
+                className="flex-shrink-0"
                 onClick={() => handleSend()}
+
                 disabled={sending || loading || !input.trim()}
                 aria-label="Send message"
               >
