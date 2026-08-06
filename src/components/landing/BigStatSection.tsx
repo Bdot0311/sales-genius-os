@@ -12,12 +12,6 @@ export const BigStatSection = () => {
         borderBottom: "1px solid hsl(261 75% 50% / 0.18)",
       }}
     >
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{ background: "radial-gradient(ellipse 55% 60% at 50% 50%, hsl(261 75% 55% / 0.1) 0%, transparent 70%)" }}
-        aria-hidden="true"
-      />
-
       <div className="container mx-auto px-6 max-w-3xl relative z-10">
         <div className="flex flex-col items-center text-center">
 

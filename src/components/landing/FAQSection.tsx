@@ -84,15 +84,6 @@ export const FAQSection = () => {
         style={{ background: "hsl(261 75% 50% / 0.18)" }}
       />
 
-      {/* Purple glow — left */}
-      <div
-        className="absolute top-1/2 left-0 -translate-y-1/2 w-[400px] h-[500px] pointer-events-none"
-        style={{
-          background: "radial-gradient(ellipse at left, hsl(261 75% 55% / 0.07) 0%, transparent 65%)",
-        }}
-        aria-hidden="true"
-      />
-
       <FAQSchema faqs={faqs} />
 
       <div className="container relative z-10 mx-auto px-6">

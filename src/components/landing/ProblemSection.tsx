@@ -22,12 +22,6 @@ export const ProblemSection = () => {
     >
       <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "hsl(261 75% 50% / 0.18)" }} />
 
-      <div
-        className="absolute top-0 left-0 w-[500px] h-[500px] pointer-events-none"
-        style={{ background: "radial-gradient(ellipse at top left, hsl(261 75% 55% / 0.08) 0%, transparent 65%)" }}
-        aria-hidden="true"
-      />
-
       <div className="container relative z-10 mx-auto px-6">
         <div className="max-w-4xl mx-auto text-center">
 

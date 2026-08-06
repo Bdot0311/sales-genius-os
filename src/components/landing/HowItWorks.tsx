@@ -103,11 +103,6 @@ export const HowItWorks = () => {
       style={{ background: "transparent" }}
       aria-labelledby="how-it-works-heading"
     >
-      <div
-        className="absolute top-1/2 right-0 -translate-y-1/2 w-[500px] h-[600px] pointer-events-none"
-        style={{ background: "radial-gradient(ellipse at right, hsl(261 75% 55% / 0.07) 0%, transparent 65%)" }}
-        aria-hidden="true"
-      />
       <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "hsl(261 75% 50% / 0.18)" }} />
 
       <div className="container relative z-10 mx-auto px-6">
