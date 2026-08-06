@@ -153,8 +153,8 @@ const Index = () => {
             width="100%"
             height="100%"
             poster="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%3E%3Crect width='16' height='9' fill='%230a0612'/%3E%3C/svg%3E"
-            style={{ transition: "opacity 400ms ease", opacity: 0, filter: "blur(2px) saturate(0.9)" }}
-            className="absolute inset-0 h-full w-full object-cover scale-105"
+            style={{ transition: "opacity 400ms ease", opacity: 0 }}
+            className="absolute inset-0 h-full w-full object-cover"
           >
             <source
               src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260508_064122_c4750c0e-7476-4b44-94a2-a85a65c63bf2.mp4"
@@ -162,22 +162,21 @@ const Index = () => {
             />
           </video>
         )}
-        {/* Purple-tinted overlay — darkened so section copy stays legible over the swirl */}
+        {/* Purple-tinted overlay — light enough to keep the aura visible */}
         <div
           className="absolute inset-0"
-          style={{ background: 'linear-gradient(to bottom, hsl(261 75% 4% / 0.68), hsl(261 75% 3% / 0.82))' }}
+          style={{ background: 'linear-gradient(to bottom, hsl(261 75% 4% / 0.35), hsl(261 75% 3% / 0.55))' }}
         />
         {/* Brand purple color shift — forces video hue toward violet-purple */}
         <div
           className="absolute inset-0"
-          style={{ background: 'hsl(261 75% 40%)', mixBlendMode: 'color', opacity: 0.4 }}
+          style={{ background: 'hsl(261 75% 40%)', mixBlendMode: 'color', opacity: 0.45 }}
         />
         {/* Soft vignette to keep text legible at edges */}
         <div
           className="absolute inset-0"
-          style={{ background: 'radial-gradient(ellipse at center, hsl(261 75% 2% / 0.25) 40%, hsl(261 75% 2% / 0.8) 100%)' }}
+          style={{ background: 'radial-gradient(ellipse at center, transparent 40%, hsl(261 75% 2% / 0.6) 100%)' }}
         />
-
       </div>
 
       {/* Desktop vertical guide lines */}
