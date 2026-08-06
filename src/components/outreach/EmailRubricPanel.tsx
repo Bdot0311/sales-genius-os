@@ -2,16 +2,22 @@ import { useEffect, useMemo, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Lock, CheckCircle2, AlertCircle, XCircle, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { Loader2, Lock, CheckCircle2, AlertCircle, XCircle, X, Check } from "lucide-react";
 import { computeMechanicalChecks, Severity } from "@/lib/email-rubric";
 
 interface EmailRubricPanelProps {
   subject: string;
   body: string;
+  /** When provided, each suggestion gets an "apply" button that rewrites the snippet in place. */
+  onApplyBody?: (nextBody: string) => void;
+  onApplySubject?: (nextSubject: string) => void;
 }
 
 interface Dim { score: number; justification: string }
 interface Suggestion { snippet: string; dimension: string; suggestion: string }
+
 
 const DIM_LABEL: Record<string, string> = {
   relevance: "relevance", empathy: "empathy", payoff: "payoff",
@@ -31,16 +37,49 @@ function barColor(score: number, weakest: boolean): string {
   return "bg-orange-500";
 }
 
-export const EmailRubricPanel = ({ subject, body }: EmailRubricPanelProps) => {
+export const EmailRubricPanel = ({ subject, body, onApplyBody, onApplySubject }: EmailRubricPanelProps) => {
   const mech = useMemo(() => computeMechanicalChecks(subject, body), [subject, body]);
 
   const [dims, setDims] = useState<Record<string, Dim> | null>(null);
   const [weakest, setWeakest] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [dismissed, setDismissed] = useState<Set<number>>(new Set());
+  const [applied, setApplied] = useState<Set<number>>(new Set());
+  const [applyingIdx, setApplyingIdx] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [gated, setGated] = useState(false);
   const reqId = useRef(0);
+
+  const canApply = Boolean(onApplyBody || onApplySubject);
+
+  const applySuggestion = async (s: Suggestion, i: number) => {
+    if (!s.snippet) { toast.error("this suggestion has no snippet to rewrite"); return; }
+    const inBody = body.includes(s.snippet);
+    const inSubject = !inBody && subject.includes(s.snippet);
+    if (!inBody && !inSubject) { toast.error("couldn't find that snippet in the current draft"); return; }
+    if (inBody && !onApplyBody) return;
+    if (inSubject && !onApplySubject) return;
+
+    setApplyingIdx(i);
+    try {
+      const { data, error } = await supabase.functions.invoke("apply-rubric-suggestion", {
+        body: { subject, body, snippet: s.snippet, suggestion: s.suggestion, dimension: s.dimension },
+      });
+      if (error) { toast.error("couldn't apply that suggestion"); return; }
+      if (data?.error) { toast.error(data.error); return; }
+      const replacement = typeof data?.replacement === "string" ? data.replacement : "";
+      if (!replacement) { toast.error("couldn't apply that suggestion"); return; }
+
+      if (inBody) onApplyBody?.(body.replace(s.snippet, replacement));
+      else onApplySubject?.(subject.replace(s.snippet, replacement));
+
+      setApplied((prev) => new Set(prev).add(i));
+      toast.success("suggestion applied");
+    } finally {
+      setApplyingIdx(null);
+    }
+  };
+
 
   // Debounced rubric fetch. Mechanical checks above are instant and deterministic.
   useEffect(() => {
@@ -59,6 +98,8 @@ export const EmailRubricPanel = ({ subject, body }: EmailRubricPanelProps) => {
           setWeakest(data.weakest || null);
           setSuggestions(Array.isArray(data.suggestions) ? data.suggestions : []);
           setDismissed(new Set());
+          setApplied(new Set());
+
         }
       } finally {
         if (id === reqId.current) setLoading(false);
@@ -106,9 +147,9 @@ export const EmailRubricPanel = ({ subject, body }: EmailRubricPanelProps) => {
           <p className="text-xs text-muted-foreground">{loading ? "scoring..." : "write an email to score it."}</p>
         )}
 
-        {/* Accept/ignore suggestions (never auto-rewrite) */}
+        {/* Apply or ignore suggestions (user stays in control) */}
         {suggestions.length > 0 && (
-          <div className="space-y-1.5 pt-1 border-t">
+          <div className="space-y-2 pt-1 border-t">
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground">suggestions</p>
             {suggestions.map((s, i) => dismissed.has(i) ? null : (
               <div key={i} className="flex items-start gap-2 text-xs">
@@ -116,13 +157,31 @@ export const EmailRubricPanel = ({ subject, body }: EmailRubricPanelProps) => {
                   <p className="text-foreground/80">{s.suggestion}</p>
                   {s.snippet && <p className="text-[11px] text-muted-foreground truncate">on: "{s.snippet}"</p>}
                 </div>
-                <button onClick={() => setDismissed((prev) => new Set(prev).add(i))} className="text-[10px] text-muted-foreground hover:text-foreground shrink-0" title="ignore">
-                  <X className="w-3.5 h-3.5" />
-                </button>
+                <div className="flex items-center gap-1 shrink-0">
+                  {canApply && (
+                    applied.has(i) ? (
+                      <Badge variant="secondary" className="text-[10px] gap-1"><Check className="w-3 h-3" />applied</Badge>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-6 px-2 text-[10px]"
+                        disabled={applyingIdx !== null}
+                        onClick={() => applySuggestion(s, i)}
+                      >
+                        {applyingIdx === i ? <Loader2 className="w-3 h-3 animate-spin" /> : "apply"}
+                      </Button>
+                    )
+                  )}
+                  <button onClick={() => setDismissed((prev) => new Set(prev).add(i))} className="text-muted-foreground hover:text-foreground" title="ignore">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         )}
+
 
         {/* Mechanical checks (always on) */}
         <div className="space-y-1.5 pt-1 border-t">
