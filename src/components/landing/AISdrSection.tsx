@@ -188,15 +188,6 @@ export const AISdrSection = () => {
       style={{ background: "transparent" }}
       aria-labelledby="ai-sdr-heading"
     >
-      {/* Animated background glow */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(ellipse 60% 55% at 55% 45%, hsl(261 75% 55% / 0.07) 0%, transparent 65%)",
-        }}
-        aria-hidden="true"
-      />
       <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "hsl(261 75% 50% / 0.18)" }} />
 
       <div className="container relative z-10 mx-auto px-6">

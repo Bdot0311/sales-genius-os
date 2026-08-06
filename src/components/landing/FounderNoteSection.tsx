@@ -30,16 +30,6 @@ export const FounderNoteSection = () => {
         style={{ background: "hsl(261 75% 50% / 0.18)" }}
       />
 
-      {/* Purple glow — center */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(ellipse 60% 50% at 50% 50%, hsl(261 75% 55% / 0.07) 0%, transparent 70%)",
-        }}
-        aria-hidden="true"
-      />
-
       <div className="container relative z-10 mx-auto px-6">
         <div className="max-w-3xl mx-auto">
 

@@ -34,11 +34,6 @@ export const BlogStrip = () => {
       }}
       aria-labelledby="resources-heading"
     >
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{ background: "radial-gradient(ellipse 60% 50% at 50% 50%, hsl(261 75% 55% / 0.06) 0%, transparent 65%)" }}
-        aria-hidden="true"
-      />
       <div className="mx-auto max-w-6xl relative z-10">
         <div className="mb-10 sm:mb-14">
           <p className="font-serif italic font-thin text-base text-purple-500 mb-5">

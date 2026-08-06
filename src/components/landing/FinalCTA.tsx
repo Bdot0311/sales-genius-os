@@ -11,16 +11,6 @@ export const FinalCTA = () => {
       style={{ background: "transparent" }}
       aria-labelledby="final-cta-heading"
     >
-      {/* Radial glow */}
-      <div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] rounded-full pointer-events-none"
-        style={{
-          background: "radial-gradient(circle, hsl(261 75% 50% / 0.14) 0%, hsl(280 70% 55% / 0.06) 40%, transparent 65%)",
-          filter: "blur(60px)",
-        }}
-        aria-hidden="true"
-      />
-
       <div
         className="absolute top-0 left-0 right-0 h-px"
         style={{ background: "hsl(261 75% 50% / 0.18)" }}
