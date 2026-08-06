@@ -8,7 +8,7 @@ export const ProductShowcase = () => {
 
   return (
     <section
-      className="relative z-10 bg-background -mt-16 sm:-mt-24 lg:-mt-32 pb-4 sm:pb-0"
+      className="relative z-10 -mt-[4vh] sm:-mt-[22vh] lg:-mt-[26vh] pb-4 sm:pb-0"
       aria-label="Product preview"
     >
       <div className="container mx-auto px-5 sm:px-8 lg:px-12">
