@@ -10,6 +10,7 @@ import { LeadAssignmentDialog } from "@/components/dashboard/LeadAssignmentDialo
 import { LeadDetailSheet } from "@/components/dashboard/LeadDetailSheet";
 import { Search, Download, ArrowUpDown, Trash2, UserPlus, LayoutGrid, Table as TableIcon, ArrowLeft, CheckCircle, Sparkles, AlertCircle, Filter, Gauge } from "lucide-react";
 import { IntentScoreBadge } from "@/components/dashboard/IntentScoreBadge";
+import { LeadStageSelect, LEAD_STAGES } from "@/components/dashboard/LeadStageSelect";
 import { LeadTierBadge } from "@/components/dashboard/LeadTierBadge";
 import { Progress } from "@/components/ui/progress";
 import { useState, useEffect } from "react";
@@ -51,6 +52,7 @@ interface Lead {
   score_reason?: string | null;
   score_breakdown?: any;
   signal_date?: string | null;
+  pipeline_stage?: string | null;
 }
 
 const getEnrichmentBadge = (lead: Lead) => {
@@ -92,6 +94,8 @@ const SavedLeads = () => {
   const [filterIndustry, setFilterIndustry] = useState<string>("all");
   const [filterCompanySize, setFilterCompanySize] = useState<string>("all");
   const [filterSeniority, setFilterSeniority] = useState<string>("all");
+  const [filterStage, setFilterStage] = useState<string>("all");
+  const [updatingStage, setUpdatingStage] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -158,6 +162,7 @@ const SavedLeads = () => {
       if (filterIndustry !== "all" && lead.industry !== filterIndustry) return false;
       if (filterCompanySize !== "all" && lead.company_size !== filterCompanySize) return false;
       if (filterSeniority !== "all" && lead.seniority !== filterSeniority) return false;
+      if (filterStage !== "all" && (lead.pipeline_stage || "new") !== filterStage) return false;
       return true;
     })
     .sort((a, b) => {
@@ -441,6 +446,26 @@ const SavedLeads = () => {
     }
   };
 
+  const handleStageChange = async (leadId: string, stage: string) => {
+    const previous = leads.find((l) => l.id === leadId)?.pipeline_stage || "new";
+    setUpdatingStage(leadId);
+    setLeads((prev) => prev.map((l) => (l.id === leadId ? { ...l, pipeline_stage: stage } : l)));
+    const { error } = await supabase
+      .from("leads")
+      .update({ pipeline_stage: stage } as any)
+      .eq("id", leadId);
+    setUpdatingStage(null);
+    if (error) {
+      setLeads((prev) => prev.map((l) => (l.id === leadId ? { ...l, pipeline_stage: previous } : l)));
+      toast({ title: "Could not update label", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({
+      title: "Label updated",
+      description: LEAD_STAGES.find((s) => s.value === stage)?.label ?? stage,
+    });
+  };
+
   const getScoreBadge = (score?: number | null) => {
     if (!score) return null;
     let color = "bg-muted text-muted-foreground";
@@ -508,6 +533,19 @@ const SavedLeads = () => {
                   <SelectItem value="Hot">Hot</SelectItem>
                   <SelectItem value="Warm">Warm</SelectItem>
                   <SelectItem value="Cold">Cold</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={filterStage} onValueChange={setFilterStage}>
+                <SelectTrigger className="w-[160px]">
+                  <Filter className="w-3 h-3 mr-1 text-muted-foreground" />
+                  <SelectValue placeholder="Label" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Labels</SelectItem>
+                  {LEAD_STAGES.map((stage) => (
+                    <SelectItem key={stage.value} value={stage.value}>{stage.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
 
@@ -689,6 +727,7 @@ const SavedLeads = () => {
                       <th className="p-3 text-left text-sm font-medium">Contact</th>
                       <th className="p-3 text-left text-sm font-medium">Company</th>
                       <th className="p-3 text-left text-sm font-medium">Industry</th>
+                      <th className="p-3 text-left text-sm font-medium">Label</th>
                       <th className="p-3 text-left text-sm font-medium">Status</th>
                       <th className="p-3 text-left text-sm font-medium">ICP Score</th>
                       <th className="p-3 text-left text-sm font-medium">Intent</th>
@@ -740,6 +779,13 @@ const SavedLeads = () => {
                         </td>
                         <td className="p-3">
                           {lead.industry && <Badge variant="outline">{lead.industry}</Badge>}
+                        </td>
+                        <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                          <LeadStageSelect
+                            value={lead.pipeline_stage}
+                            onChange={(stage) => handleStageChange(lead.id, stage)}
+                            disabled={updatingStage === lead.id}
+                          />
                         </td>
                         <td className="p-3">
                           {getEnrichmentBadge(lead)}
@@ -814,6 +860,13 @@ const SavedLeads = () => {
                               <IntentScoreBadge lead={lead} />
                             </span>
                             {getEnrichmentBadge(lead)}
+                            <span onClick={(e) => e.stopPropagation()}>
+                              <LeadStageSelect
+                                value={lead.pipeline_stage}
+                                onChange={(stage) => handleStageChange(lead.id, stage)}
+                                disabled={updatingStage === lead.id}
+                              />
+                            </span>
                           </div>
                           <p className="text-sm text-muted-foreground">{lead.company_name}</p>
                           {lead.job_title && (
