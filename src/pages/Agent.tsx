@@ -316,7 +316,7 @@ const Agent = () => {
         title="AI Sales Agent"
         description="Finds leads, writes and sends first-touch outreach, then handles replies — end to end"
         actions={
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-2">
               <Switch
                 checked={isEnabled}
@@ -336,6 +336,7 @@ const Agent = () => {
               <MessageSquare className="w-4 h-4" />
               Chat with agent
             </Button>
+
             <AgentTestDialog disabled={loading} agentId={activeAgentId} />
           </div>
         }
