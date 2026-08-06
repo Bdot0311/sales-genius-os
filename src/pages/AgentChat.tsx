@@ -575,7 +575,7 @@ const AgentChat = () => {
           </ScrollArea>
 
           <div className="border-t border-border/60 p-3">
-            <div className="max-w-3xl mx-auto flex items-end gap-2">
+            <div className="max-w-3xl mx-auto flex min-w-0 items-end gap-2">
               <Textarea
                 ref={inputRef}
                 value={input}
