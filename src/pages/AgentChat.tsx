@@ -456,12 +456,12 @@ const AgentChat = () => {
               {messages.map((m) =>
                 m.role === "user" ? (
                   <div key={m.id} className="flex justify-end">
-                    <div className="max-w-[85%] rounded-2xl rounded-br-sm bg-primary px-4 py-2.5 text-sm text-primary-foreground whitespace-pre-wrap">
+                    <div className="max-w-[85%] rounded-2xl rounded-br-sm bg-primary px-4 py-2.5 text-sm text-primary-foreground whitespace-pre-wrap break-words">
                       {m.content}
                     </div>
                   </div>
                 ) : (
-                  <div key={m.id} className="space-y-2">
+                  <div key={m.id} className="min-w-0 space-y-2">
                     {!!m.tool_events?.length && (
                       <div className="space-y-1">
                         {m.tool_events
@@ -469,13 +469,16 @@ const AgentChat = () => {
                           .map((e, i) => (
                             <div
                               key={`${m.id}-${i}`}
-                              className="flex items-center gap-2 text-xs text-muted-foreground"
+                              className="flex min-w-0 items-start gap-2 text-xs text-muted-foreground"
                             >
-                              {statusIcon(e.status)}
-                              <span className="font-medium text-foreground/80">{e.label}</span>
-                              <span className="truncate">— {e.detail}</span>
+                              <span className="mt-0.5 flex-shrink-0">{statusIcon(e.status)}</span>
+                              <span className="min-w-0 break-words">
+                                <span className="font-medium text-foreground/80">{e.label}</span>
+                                <span> — {e.detail}</span>
+                              </span>
                             </div>
                           ))}
+
                       </div>
                     )}
 
