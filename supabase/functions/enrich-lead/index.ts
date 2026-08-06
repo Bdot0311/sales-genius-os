@@ -365,6 +365,23 @@ serve(async (req) => {
         console.error('Error calling detect-hiring-signals after enrichment:', sigErr);
       }
 
+      // Funding signal from SEC Form D (free, no setup), same pattern: write to
+      // signal_events before v2 scores so a recent raise lifts intent this pass.
+      try {
+        const fundRes = await fetch(`${supabaseUrl}/functions/v1/detect-funding-signals`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': authHeader,
+            'apikey': supabaseKey,
+          },
+          body: JSON.stringify({ leadId }),
+        });
+        if (!fundRes.ok) console.error('detect-funding-signals returned', fundRes.status);
+      } catch (fundErr) {
+        console.error('Error calling detect-funding-signals after enrichment:', fundErr);
+      }
+
       // Also run Lead Score v2 so the A/B/C tier (and fit/intent breakdown the
       // Leads table reads) is populated automatically on enrichment. Kept
       // separate from score-lead above: v1 writes icp_score, v2 writes tier.
