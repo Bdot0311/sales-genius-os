@@ -145,6 +145,10 @@ export const OrganizationSchema = ({
 
 // Software Application Schema - Enhanced with more details
 export const SoftwareApplicationSchema = () => {
+  // Skipped during the homepage prerender — JSON-LD is hoistable and would only
+  // pollute the #root string hydrateRoot() adopts; re-applied on the client.
+  if (import.meta.env.SSR) return null;
+
   const schema = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
@@ -238,6 +242,9 @@ export const SoftwareApplicationSchema = () => {
 
 // FAQ Schema for rich snippets - Enhanced
 export const FAQSchema = ({ faqs }: FAQSchemaProps) => {
+  // Skipped during the homepage prerender — see SoftwareApplicationSchema.
+  if (import.meta.env.SSR) return null;
+
   const schema = {
     "@context": "https://schema.org",
     "@type": "FAQPage",

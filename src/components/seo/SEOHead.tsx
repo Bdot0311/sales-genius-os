@@ -58,8 +58,15 @@ export const SEOHead = ({
   preloadImages = [],
   articleContent
 }: SEOHeadProps) => {
+  // Skipped during the homepage prerender (import.meta.env.SSR): the per-route
+  // <head> is baked into index.html at build time by vite-plugin-seo-routes, so
+  // emitting these hoistable tags into the server markup would only pollute the
+  // #root string that hydrateRoot() adopts. React 19 re-applies them on the
+  // client on mount. Dead-code-eliminated from the client bundle (SSR === false).
+  if (import.meta.env.SSR) return null;
+
   const location = useLocation();
-  
+
   // Generate full title with site name
   const fullTitle = formatPageTitle(title);
   
