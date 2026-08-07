@@ -612,8 +612,8 @@ export const AgencyAdminTab = () => {
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
-      </Dialog>
       </AlertDialog>
+
     </div>
   );
 };
