@@ -38,6 +38,12 @@ const defineGlobal = (name, value) => {
 };
 defineGlobal("localStorage", noopStorage);
 defineGlobal("sessionStorage", noopStorage);
+// Supabase's createClient() constructs a RealtimeClient at module load, which
+// throws on Node < 22 ("detected without native WebSocket support"). Netlify
+// builds on Node 20. The prerender never opens a realtime connection (no
+// effects run during renderToString), so a never-instantiated stub is enough
+// to satisfy the WebSocket constructor check.
+defineGlobal("WebSocket", class {});
 
 if (!existsSync(SSR_ENTRY)) {
   console.error(`[prerender] SSR bundle missing at ${SSR_ENTRY}. Run "vite build --ssr src/entry-server.tsx --outDir .ssr-dist" first.`);
