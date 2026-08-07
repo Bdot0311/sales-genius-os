@@ -996,8 +996,10 @@ All colors MUST be HSL. Using 8px spacing scale.
 }
 
 @media (max-width: 640px) {
+  /* Shorter than the viewport on phones so the product mockup can rise into
+     the hero the same way it does on desktop instead of sitting below the fold. */
   .hero-fullscreen {
-    min-height: 100svh;
+    min-height: auto;
   }
 }
 
