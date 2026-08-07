@@ -277,7 +277,6 @@ const Settings = () => {
                   <TabsTrigger value="agency-portal" className={tabBase}><Building2 className="h-4 w-4" />Agency Portal</TabsTrigger>
                   {isAgency && <TabsTrigger value="agency-admin" className={tabBase}><ShieldCheck className="h-4 w-4" />Agency Admin</TabsTrigger>}
                   <TabsTrigger value="support-access" className={tabBase}><KeyRound className="h-4 w-4" />Support Access</TabsTrigger>
-                  {showPro && <TabsTrigger value="team" className={tabBase}><Users className="h-4 w-4" />Team</TabsTrigger>}
                   {showPro && <TabsTrigger value="activity" className={tabBase}><History className="h-4 w-4" />Activity</TabsTrigger>}
                   {showPro && <TabsTrigger value="api-keys" className={tabBase}><Key className="h-4 w-4" />API Keys</TabsTrigger>}
                   {showPro && <TabsTrigger value="webhooks" className={tabBase}><Webhook className="h-4 w-4" />Webhooks</TabsTrigger>}
@@ -715,10 +714,6 @@ const Settings = () => {
             <>
               <TabsContent value="api-keys">
                 <APIKeysTab />
-              </TabsContent>
-
-              <TabsContent value="team">
-                <TeamMembersTab />
               </TabsContent>
 
               <TabsContent value="webhooks">
