@@ -24,6 +24,7 @@ import { PLAN_FEATURES } from "@/lib/plan-features";
 import { APIKeysTab } from "@/components/settings/APIKeysTab";
 import { WhiteLabelTab } from "@/components/settings/WhiteLabelTab";
 import { WebhooksTab } from "@/components/settings/WebhooksTab";
+import { TeamActivityTab } from "@/components/settings/TeamActivityTab";
 import { CustomDomainTab } from "@/components/settings/CustomDomainTab";
 import { CreditsUsageTab } from "@/components/settings/CreditsUsageTab";
 import { ChangePasswordCard } from "@/components/settings/ChangePasswordCard";
