@@ -16,7 +16,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { toast } from "sonner";
-import { CreditCard, TrendingUp, Check, RefreshCw, User, Save, Loader2, Palette, Activity, Bell, Key, Webhook, FileText, RotateCcw, Users, History, Globe, Coins, ExternalLink, Settings2, Copy, MapPin, Shield, AlertTriangle, Building2, KeyRound } from "lucide-react";
+import { CreditCard, TrendingUp, Check, RefreshCw, User, Save, Loader2, Palette, Activity, Bell, Key, Webhook, FileText, RotateCcw, Users, History, Globe, Coins, ExternalLink, Settings2, Copy, MapPin, Shield, AlertTriangle, Building2, KeyRound, ShieldCheck } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { CAN_SPAM_PENALTY, generateComplianceFooter } from "@/lib/compliance";
 import { Switch } from "@/components/ui/switch";
@@ -31,6 +31,7 @@ import { CreditsUsageTab } from "@/components/settings/CreditsUsageTab";
 import { ChangePasswordCard } from "@/components/settings/ChangePasswordCard";
 import NotificationsTab from "@/components/settings/NotificationsTab";
 import { AgencyPortalTab } from "@/components/settings/AgencyPortalTab";
+import { AgencyAdminTab } from "@/components/settings/AgencyAdminTab";
 import { LeadScoringTab } from "@/components/settings/LeadScoringTab";
 import { PayoffBankTab } from "@/components/settings/PayoffBankTab";
 import { CampaignBriefsTab } from "@/components/settings/CampaignBriefsTab";
@@ -258,6 +259,7 @@ const Settings = () => {
         <Tabs defaultValue={searchParams.get("tab") ?? "profile"} className="space-y-6">
           {(() => {
             const showPro = isAdmin || subscription?.plan === 'pro' || subscription?.plan === 'agency';
+            const isAgency = isAdmin || subscription?.plan === 'agency';
             const showGrowthPlus = isAdmin || ['growth', 'pro', 'agency'].includes(subscription?.plan || '');
             const tabBase = "data-[state=active]:bg-muted hover:bg-muted/50 gap-2 justify-center";
             // Responsive grid: 2 cols (mobile) → 3 (sm) → 5 (md) → 10 (lg).
@@ -275,6 +277,7 @@ const Settings = () => {
                 <TabsTrigger value="notifications" className={tabBase}><Bell className="h-4 w-4" />Notifications</TabsTrigger>
                 <TabsTrigger value="white-label" className={tabBase}><Palette className="h-4 w-4" />White Label</TabsTrigger>
                 <TabsTrigger value="agency-portal" className={tabBase}><Building2 className="h-4 w-4" />Agency Portal</TabsTrigger>
+                {isAgency && <TabsTrigger value="agency-admin" className={tabBase}><ShieldCheck className="h-4 w-4" />Agency Admin</TabsTrigger>}
                 <TabsTrigger value="support-access" className={tabBase}><KeyRound className="h-4 w-4" />Support Access</TabsTrigger>
                 {showPro && <TabsTrigger value="team" className={tabBase}><Users className="h-4 w-4" />Team</TabsTrigger>}
                 {showPro && <TabsTrigger value="activity" className={tabBase}><History className="h-4 w-4" />Activity</TabsTrigger>}
@@ -703,6 +706,12 @@ const Settings = () => {
             <NotificationsTab />
           </TabsContent>
 
+
+          {(isAdmin || subscription?.plan === 'agency') && (
+            <TabsContent value="agency-admin" className="space-y-6">
+              <AgencyAdminTab />
+            </TabsContent>
+          )}
 
           <TabsContent value="agency-portal" className="space-y-6">
             <AgencyPortalTab />

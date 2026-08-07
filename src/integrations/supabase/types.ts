@@ -105,13 +105,18 @@ export type Database = {
         Row: {
           agency_earnings_cents: number
           agency_id: string
+          archived: boolean
+          assigned_member_id: string | null
+          client_name: string | null
           client_user_id: string | null
+          company_domain: string | null
           created_at: string
           id: string
           invite_email: string | null
           invite_token: string
           joined_at: string | null
           monthly_value_cents: number
+          notes: string | null
           plan: string | null
           status: string
           total_earnings_cents: number
@@ -120,13 +125,18 @@ export type Database = {
         Insert: {
           agency_earnings_cents?: number
           agency_id: string
+          archived?: boolean
+          assigned_member_id?: string | null
+          client_name?: string | null
           client_user_id?: string | null
+          company_domain?: string | null
           created_at?: string
           id?: string
           invite_email?: string | null
           invite_token?: string
           joined_at?: string | null
           monthly_value_cents?: number
+          notes?: string | null
           plan?: string | null
           status?: string
           total_earnings_cents?: number
@@ -135,19 +145,32 @@ export type Database = {
         Update: {
           agency_earnings_cents?: number
           agency_id?: string
+          archived?: boolean
+          assigned_member_id?: string | null
+          client_name?: string | null
           client_user_id?: string | null
+          company_domain?: string | null
           created_at?: string
           id?: string
           invite_email?: string | null
           invite_token?: string
           joined_at?: string | null
           monthly_value_cents?: number
+          notes?: string | null
           plan?: string | null
           status?: string
           total_earnings_cents?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "agency_clients_assigned_member_id_fkey"
+            columns: ["assigned_member_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       agent_actions: {
         Row: {
@@ -4988,6 +5011,17 @@ export type Database = {
       admin_upsert_vault_secret: {
         Args: { _name: string; _secret: string }
         Returns: undefined
+      }
+      agency_client_stats: {
+        Args: never
+        Returns: {
+          client_id: string
+          client_user_id: string
+          emails_sent_count: number
+          last_activity_at: string
+          leads_count: number
+          sequences_count: number
+        }[]
       }
       apply_stripe_event_to_subscription: {
         Args: {
