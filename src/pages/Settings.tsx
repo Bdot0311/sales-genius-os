@@ -260,9 +260,9 @@ const Settings = () => {
             const showPro = isAdmin || subscription?.plan === 'pro' || subscription?.plan === 'agency';
             const isAgency = isAdmin || subscription?.plan === 'agency';
             const showGrowthPlus = isAdmin || ['growth', 'pro', 'agency'].includes(subscription?.plan || '');
-            const tabBase = "data-[state=active]:bg-muted data-[state=active]:text-foreground hover:bg-muted/50 gap-2 justify-center";
-            // Single wrapping list — no horizontal scroll, left-aligned on all breakpoints.
-            const listCls = "flex flex-wrap h-auto overflow-visible items-center justify-start sm:justify-start gap-2 bg-transparent p-0 w-full";
+            const tabBase = "min-w-0 min-h-11 w-full whitespace-normal px-2 py-2 text-center leading-tight data-[state=active]:bg-muted data-[state=active]:text-foreground hover:bg-muted/50 gap-1.5 justify-center";
+            // Fixed tracks prevent variable-width labels from colliding and keep desktop tabs to two rows.
+            const listCls = "grid h-auto w-full grid-cols-2 gap-2 overflow-visible bg-transparent p-0 sm:grid-cols-4 md:grid-cols-8";
             return (
               <div className="bg-card border rounded-lg p-3 mb-6">
                 <TabsList className={listCls}>
