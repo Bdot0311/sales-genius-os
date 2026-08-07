@@ -16,13 +16,12 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { toast } from "sonner";
-import { CreditCard, TrendingUp, Check, RefreshCw, User, Save, Loader2, Palette, Activity, Bell, Key, Webhook, FileText, RotateCcw, Users, History, Globe, Coins, ExternalLink, Settings2, Copy, MapPin, Shield, AlertTriangle, Building2, KeyRound, ShieldCheck } from "lucide-react";
+import { CreditCard, TrendingUp, Check, RefreshCw, User, Save, Loader2, Palette, Activity, Bell, Key, Webhook, FileText, RotateCcw, History, Globe, Coins, ExternalLink, Settings2, Copy, MapPin, Shield, AlertTriangle, Building2, KeyRound, ShieldCheck } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { CAN_SPAM_PENALTY, generateComplianceFooter } from "@/lib/compliance";
 import { Switch } from "@/components/ui/switch";
 import { PLAN_FEATURES } from "@/lib/plan-features";
 import { APIKeysTab } from "@/components/settings/APIKeysTab";
-import { TeamMembersTab } from "@/components/settings/TeamMembersTab";
 import { WhiteLabelTab } from "@/components/settings/WhiteLabelTab";
 import { WebhooksTab } from "@/components/settings/WebhooksTab";
 import { TeamActivityTab } from "@/components/settings/TeamActivityTab";
@@ -279,7 +278,6 @@ const Settings = () => {
                   <TabsTrigger value="agency-portal" className={tabBase}><Building2 className="h-4 w-4" />Agency Portal</TabsTrigger>
                   {isAgency && <TabsTrigger value="agency-admin" className={tabBase}><ShieldCheck className="h-4 w-4" />Agency Admin</TabsTrigger>}
                   <TabsTrigger value="support-access" className={tabBase}><KeyRound className="h-4 w-4" />Support Access</TabsTrigger>
-                  {showPro && <TabsTrigger value="team" className={tabBase}><Users className="h-4 w-4" />Team</TabsTrigger>}
                   {showPro && <TabsTrigger value="activity" className={tabBase}><History className="h-4 w-4" />Activity</TabsTrigger>}
                   {showPro && <TabsTrigger value="api-keys" className={tabBase}><Key className="h-4 w-4" />API Keys</TabsTrigger>}
                   {showPro && <TabsTrigger value="webhooks" className={tabBase}><Webhook className="h-4 w-4" />Webhooks</TabsTrigger>}
@@ -717,10 +715,6 @@ const Settings = () => {
             <>
               <TabsContent value="api-keys">
                 <APIKeysTab />
-              </TabsContent>
-
-              <TabsContent value="team">
-                <TeamMembersTab />
               </TabsContent>
 
               <TabsContent value="webhooks">
