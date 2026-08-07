@@ -38,6 +38,16 @@ const Index = () => {
   const [mountVideo, setMountVideo] = useState(false);
   const navigate = useNavigate();
 
+  // The homepage is prerendered to static HTML and adopted via hydrateRoot
+  // (see scripts/prerender.mjs + src/main.tsx). Only the above-the-fold hero is
+  // prerendered; the code-split below-the-fold sections mount one render after
+  // hydration. Gating them on state (false on the server AND on the client's
+  // first paint) guarantees the hydrated markup matches deterministically —
+  // unlike gating on lazy-chunk readiness, which races with hydration. On
+  // non-prerendered mounts (createRoot) this just defers the sections by a tick.
+  const [showBelowFold, setShowBelowFold] = useState(false);
+  useEffect(() => setShowBelowFold(true), []);
+
   // The cinematic background video is a ~16MB download. It is a decoration, not
   // content, so it only loads for visitors who can clearly afford it: a large
   // pointer-capable screen, motion allowed, no data-saver, and a fast network.
@@ -189,21 +199,29 @@ const Index = () => {
           <article>
             <HeroSection />
             <ProductShowcase />
-            <DeferredSection><ProblemSection /></DeferredSection>
-            <DeferredSection><HowItWorks /></DeferredSection>
-            <DeferredSection><ModulesSection /></DeferredSection>
-            <DeferredSection><AISdrSection /></DeferredSection>
-            <DeferredSection><BigStatSection /></DeferredSection>
-            <DeferredSection><DifferentiationSection /></DeferredSection>
-            <DeferredSection><FounderNoteSection /></DeferredSection>
-            <DeferredSection><FAQSection /></DeferredSection>
-            <DeferredSection><BlogStrip /></DeferredSection>
-            <DeferredSection><FinalCTA /></DeferredSection>
-            <DeferredSection><TrustBar /></DeferredSection>
+            {showBelowFold && (
+              <>
+                <DeferredSection><ProblemSection /></DeferredSection>
+                <DeferredSection><HowItWorks /></DeferredSection>
+                <DeferredSection><ModulesSection /></DeferredSection>
+                <DeferredSection><AISdrSection /></DeferredSection>
+                <DeferredSection><BigStatSection /></DeferredSection>
+                <DeferredSection><DifferentiationSection /></DeferredSection>
+                <DeferredSection><FounderNoteSection /></DeferredSection>
+                <DeferredSection><FAQSection /></DeferredSection>
+                <DeferredSection><BlogStrip /></DeferredSection>
+                <DeferredSection><FinalCTA /></DeferredSection>
+                <DeferredSection><TrustBar /></DeferredSection>
+              </>
+            )}
           </article>
         </main>
-        <DeferredSection><FooterSection /></DeferredSection>
-        <DeferredSection><ExitIntentModal /></DeferredSection>
+        {showBelowFold && (
+          <>
+            <DeferredSection><FooterSection /></DeferredSection>
+            <DeferredSection><ExitIntentModal /></DeferredSection>
+          </>
+        )}
       </div>
     </>
   );

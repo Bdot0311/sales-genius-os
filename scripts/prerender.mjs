@@ -49,7 +49,20 @@ if (!existsSync(DIST_INDEX)) {
 }
 
 const { render } = await import(pathToFileURL(SSR_ENTRY).href);
-const appHtml = render("/");
+let appHtml = render("/");
+
+// React 19 hoists <link>/<title>/<meta> to <head> on the client (e.g. the
+// <link rel="preload"> it auto-generates for the Navbar logo's
+// fetchPriority="high" <img>), so those never stay in the client's #root.
+// renderToString can't hoist and emits them inline, which would mismatch the
+// client tree — strip them. JSON-LD (<script type="application/ld+json">) is
+// NOT hoisted: React keeps it inline at the component's position, so it must
+// stay in the server markup to match. The head metadata is already baked into
+// index.html by vite-plugin-seo-routes.
+appHtml = appHtml
+  .replace(/<link\b[^>]*>/gi, "")
+  .replace(/<title\b[^>]*>[\s\S]*?<\/title>/gi, "")
+  .replace(/<meta\b[^>]*>/gi, "");
 
 if (!appHtml || appHtml.length < 500) {
   console.error(`[prerender] Rendered homepage markup is suspiciously small (${appHtml?.length ?? 0} bytes). Aborting without changes.`);
@@ -59,12 +72,17 @@ if (!appHtml || appHtml.length < 500) {
 let html = readFileSync(DIST_INDEX, "utf8");
 
 // vite-plugin-seo-routes rewrites the homepage #root to
-// `<div id="root"><nav …site index…></nav></div>` (the nav has no nested
-// <div>, so the first </div> after the marker is the container's own).
-const rootRe = /<div id="root">([\s\S]*?)<\/div>(\s*<script type="module")/;
+// `<div id="root"><nav …site index…></nav></div>`. That nav has no nested
+// <div>, so the first </div> after the marker is the container's own close.
+const rootRe = /<div id="root">([\s\S]*?)<\/div>/;
 const match = html.match(rootRe);
 if (!match) {
   console.error('[prerender] Could not locate <div id="root">…</div> in dist/index.html. Aborting without changes.');
+  process.exit(1);
+}
+const linkIndex = match[1].trim();
+if (!/aria-label="Site index"/.test(linkIndex)) {
+  console.error('[prerender] #root did not contain the expected crawler link-index; the container may have nested <div>s that break the match. Aborting without changes.');
   process.exit(1);
 }
 
@@ -72,8 +90,7 @@ if (!match) {
 // sibling before it. React never touches it (so it stays for crawlers) and it
 // no longer participates in hydration. The hero goes inside #root, marked so
 // main.tsx hydrates rather than re-renders from scratch.
-const linkIndex = match[1].trim();
-const replacement = `${linkIndex}<div id="root" data-prerendered="true">${appHtml}</div>$2`;
+const replacement = `${linkIndex}<div id="root" data-prerendered="true">${appHtml}</div>`;
 html = html.replace(rootRe, replacement);
 
 writeFileSync(DIST_INDEX, html, "utf8");

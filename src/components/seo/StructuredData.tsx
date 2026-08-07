@@ -145,10 +145,10 @@ export const OrganizationSchema = ({
 
 // Software Application Schema - Enhanced with more details
 export const SoftwareApplicationSchema = () => {
-  // Skipped during the homepage prerender — JSON-LD is hoistable and would only
-  // pollute the #root string hydrateRoot() adopts; re-applied on the client.
-  if (import.meta.env.SSR) return null;
-
+  // Rendered during the homepage prerender too: JSON-LD is a non-hoistable
+  // inline <script>, so it occupies a real #root position on the client.
+  // Emitting it on the server as well keeps the markup hydrateRoot() adopts
+  // identical (the schema is static, so the JSON is byte-for-byte the same).
   const schema = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
@@ -242,9 +242,7 @@ export const SoftwareApplicationSchema = () => {
 
 // FAQ Schema for rich snippets - Enhanced
 export const FAQSchema = ({ faqs }: FAQSchemaProps) => {
-  // Skipped during the homepage prerender — see SoftwareApplicationSchema.
-  if (import.meta.env.SSR) return null;
-
+  // Rendered during the homepage prerender too — see SoftwareApplicationSchema.
   const schema = {
     "@context": "https://schema.org",
     "@type": "FAQPage",

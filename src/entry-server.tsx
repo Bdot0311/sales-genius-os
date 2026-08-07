@@ -1,7 +1,18 @@
+import { Suspense } from "react";
 import { renderToString } from "react-dom/server";
 import { StaticRouter } from "react-router-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Index from "./pages/Index";
+
+// Mirrors src/App.tsx's PageLoader so the Suspense boundary the client mounts
+// around the routed page has an identical fallback here. Index isn't lazy, so
+// this never actually renders — but the boundary must exist on both sides or
+// hydrateRoot() reports a structural mismatch at the Suspense.
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+  </div>
+);
 
 /**
  * Server entry for the build-time homepage prerender.
@@ -22,7 +33,9 @@ export function render(url = "/"): string {
   return renderToString(
     <QueryClientProvider client={queryClient}>
       <StaticRouter location={url}>
-        <Index />
+        <Suspense fallback={<PageLoader />}>
+          <Index />
+        </Suspense>
       </StaticRouter>
     </QueryClientProvider>,
   );
