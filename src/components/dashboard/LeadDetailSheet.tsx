@@ -235,14 +235,14 @@ export const LeadDetailSheet = ({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
-        <SheetHeader>
-          <div className="flex items-start justify-between">
-            <div>
-              <SheetTitle className="text-2xl">{lead.company_name}</SheetTitle>
-              <p className="text-muted-foreground mt-1">{lead.contact_name}</p>
+      <SheetContent className="w-full sm:max-w-2xl overflow-y-auto overflow-x-hidden">
+        <SheetHeader className="pr-8">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0 text-left">
+              <SheetTitle className="text-xl leading-snug break-words sm:text-2xl">{lead.company_name}</SheetTitle>
+              <p className="text-muted-foreground mt-1 break-words">{lead.contact_name}</p>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap sm:justify-end">
               <PresenceIndicator recordKey={open ? `lead:${lead.id}` : null} editing={editing} className="mr-1" />
               {getEnrichmentStatusBadge(lead.enrichment_status)}
               {lead.icp_score !== null && (
