@@ -261,8 +261,8 @@ const Settings = () => {
             const isAgency = isAdmin || subscription?.plan === 'agency';
             const showGrowthPlus = isAdmin || ['growth', 'pro', 'agency'].includes(subscription?.plan || '');
             const tabBase = "data-[state=active]:bg-muted data-[state=active]:text-foreground hover:bg-muted/50 gap-2 justify-center";
-            // Single wrapping list — no horizontal scroll, every tab always visible.
-            const listCls = "flex flex-wrap h-auto overflow-visible items-stretch justify-start gap-2 bg-transparent p-0 w-full";
+            // Single wrapping list — no horizontal scroll, left-aligned on all breakpoints.
+            const listCls = "flex flex-wrap h-auto overflow-visible items-center justify-start sm:justify-start gap-2 bg-transparent p-0 w-full";
             return (
               <div className="bg-card border rounded-lg p-3 mb-6">
                 <TabsList className={listCls}>
