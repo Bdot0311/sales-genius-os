@@ -995,13 +995,8 @@ All colors MUST be HSL. Using 8px spacing scale.
   min-height: 100svh;
 }
 
-@media (max-width: 640px) {
-  /* Shorter than the viewport on phones so the product mockup can rise into
-     the hero the same way it does on desktop instead of sitting below the fold. */
-  .hero-fullscreen {
-    min-height: auto;
-  }
-}
+
+
 
 /* Animated border for CTA pill */
 @keyframes border-spin {
