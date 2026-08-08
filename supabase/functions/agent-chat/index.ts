@@ -55,9 +55,26 @@ type ToolEvent = {
 const LEAD_FIELDS =
   "id, company_name, contact_name, contact_email, job_title, industry, company_website, linkedin_url, lead_status, icp_score, intent_score, intent_label, signal_score, signals, notes, last_contacted_at, created_at";
 
+// Mirrors the client-side draft -> HTML conversion used by the chat draft cards
+// so a scheduled send renders identically to an immediate one.
+const draftBodyToHtml = (body: string) => {
+  const escaped = body
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  const paragraphs = escaped
+    .split("\n")
+    .map((line) => (line.trim() ? `<p>${line.trim()}</p>` : ""))
+    .filter(Boolean)
+    .join("\n");
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.6;color:#333;max-width:600px;margin:0 auto;padding:20px}p{margin:0 0 16px}</style></head><body>${paragraphs}</body></html>`;
+};
+
 const MUTATING_TOOLS = new Set([
   "send_outreach",
   "send_drafts",
+  "schedule_drafts",
+  "cancel_scheduled_email",
   "enroll_lead_in_sequence",
   "run_full_agent",
 ]);
@@ -68,6 +85,7 @@ const PARALLEL_SAFE_TOOLS = new Set([
   "get_lead",
   "list_mailboxes",
   "list_drafts",
+  "list_scheduled_emails",
   "list_sequences",
   "list_recent_replies",
   "get_agent_status",
@@ -225,6 +243,59 @@ const TOOLS = [
           from_email: { type: "string", description: "Mailbox address to send from, e.g. brandon@example.com" },
           all_pending: { type: "boolean", description: "Send every saved draft (max 20) when no ids are given" },
         },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "schedule_drafts",
+      description:
+        "Schedule already-saved drafts to be sent automatically at a future date and time. Use this whenever the user asks to send later, tomorrow, next week, or at a specific time. Pass send_at as an ISO 8601 timestamp (UTC), or send_at_local plus the user's timezone offset. The drafts are queued and sent by the scheduler — nothing is sent now.",
+      parameters: {
+        type: "object",
+        properties: {
+          draft_ids: { type: "array", items: { type: "string" }, description: "Draft ids to schedule" },
+          lead_ids: { type: "array", items: { type: "string" }, description: "Schedule the latest draft for each of these leads" },
+          all_pending: { type: "boolean", description: "Schedule every saved draft (max 20) when no ids are given" },
+          send_at: {
+            type: "string",
+            description: "When to send, ISO 8601 with timezone, e.g. 2026-08-12T13:00:00Z. Must be in the future.",
+          },
+          stagger_minutes: {
+            type: "number",
+            description: "Optional gap in minutes between each scheduled email so they don't all go out at once.",
+          },
+          from_email: { type: "string", description: "Mailbox address to send from, e.g. brandon@example.com" },
+        },
+        required: ["send_at"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_scheduled_emails",
+      description:
+        "List emails already queued to send in the future (id, recipient, subject, scheduled time). Use this to show the user what is scheduled or to get ids before cancelling.",
+      parameters: {
+        type: "object",
+        properties: { limit: { type: "number", description: "Default 20, max 50" } },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "cancel_scheduled_email",
+      description:
+        "Cancel a scheduled email before it sends, restoring it as a saved draft. Get ids from list_scheduled_emails.",
+      parameters: {
+        type: "object",
+        properties: {
+          scheduled_ids: { type: "array", items: { type: "string" }, description: "Ids from list_scheduled_emails" },
+        },
+        required: ["scheduled_ids"],
       },
     },
   },
@@ -615,12 +686,17 @@ serve(async (req) => {
 
     const toolEvents: ToolEvent[] = [];
 
-    type Mailbox = { integrationRowId: string; email: string; status: string | null };
+    type Mailbox = {
+      integrationRowId: string;
+      email: string;
+      status: string | null;
+      sendingAccountId?: string | null;
+    };
 
     const loadMailboxes = async () => {
       const { data } = await admin
         .from("sending_accounts")
-        .select("integration_id, email, status")
+        .select("id, integration_id, email, status")
         .eq("user_id", userId)
         .order("created_at", { ascending: true });
       return (data ?? []).filter((a: any) => a.integration_id && a.email);
@@ -643,12 +719,12 @@ serve(async (req) => {
         if (!match) return { error: `No connected mailbox for ${fromEmail}. Connected mailboxes: ${list}.` };
         if (match.status === "paused" || match.status === "disabled")
           return { error: `${match.email} is ${match.status}. Resume it on the Deliverability page or pick another mailbox.` };
-        return { integrationRowId: match.integration_id, email: match.email, status: match.status };
+        return { integrationRowId: match.integration_id, email: match.email, status: match.status, sendingAccountId: match.id };
       }
       if (sendable.length === 0)
         return { error: `Every connected mailbox is paused or disabled (${list}). Resume one on the Deliverability page.` };
       if (sendable.length === 1)
-        return { integrationRowId: sendable[0].integration_id, email: sendable[0].email, status: sendable[0].status };
+        return { integrationRowId: sendable[0].integration_id, email: sendable[0].email, status: sendable[0].status, sendingAccountId: sendable[0].id };
       return {
         error: `Several mailboxes are connected (${sendable.map((a: any) => a.email).join(", ")}). Ask the user which one to send from and pass it as from_email.`,
       };
@@ -985,7 +1061,7 @@ serve(async (req) => {
           return {
             goal,
             note:
-              "Drafts are saved and shown to the user in the chat with Send / Schedule controls. Remember each draft_id — if the user then says to send them, call send_drafts with those draft_ids (plus from_email if they named an inbox). Do not send until they ask." +
+              "Drafts are saved and shown to the user in the chat with Send / Schedule controls. Remember each draft_id — if the user then says to send them, call send_drafts with those draft_ids (plus from_email if they named an inbox); if they want them to go out later, call schedule_drafts with those draft_ids and an ISO send_at. Do not send or schedule until they ask." +
               (skipped.length
                 ? ` ${skipped.length} lead(s) were not drafted because this turn ran out of time — tell the user to reply "continue" and you'll draft the rest.`
                 : ""),
@@ -1145,6 +1221,197 @@ serve(async (req) => {
               : `Nothing was sent yet — ${queuedCount} approve/reject card(s) are shown to the user right here in the chat. Wait for their decision and never tell them to go to another page.`,
           };
         }
+
+        case "schedule_drafts": {
+          const when = new Date(String(args.send_at ?? ""));
+          if (Number.isNaN(when.getTime()))
+            return { error: "send_at must be a valid ISO 8601 timestamp, e.g. 2026-08-12T13:00:00Z" };
+          if (when.getTime() <= Date.now())
+            return { error: `send_at must be in the future (now is ${new Date().toISOString()})` };
+
+          const draftIds = (Array.isArray(args.draft_ids) ? args.draft_ids : [])
+            .filter(Boolean)
+            .map((x: any) => String(x));
+          const leadIds = (Array.isArray(args.lead_ids) ? args.lead_ids : [])
+            .filter(Boolean)
+            .map((x: any) => String(x));
+
+          let q = admin
+            .from("email_drafts")
+            .select("id, lead_id, subject, body, created_at, leads(company_name, contact_name, contact_email)")
+            .eq("user_id", userId)
+            .order("created_at", { ascending: false })
+            .limit(20);
+          if (draftIds.length) q = q.in("id", draftIds);
+          else if (leadIds.length) q = q.in("lead_id", leadIds);
+          const { data: draftRows, error: draftErr } = await q;
+          if (draftErr) return { error: draftErr.message };
+
+          let drafts = draftRows ?? [];
+          if (!draftIds.length && leadIds.length) {
+            const seen = new Set<string>();
+            drafts = drafts.filter((d: any) => {
+              if (!d.lead_id || seen.has(d.lead_id)) return false;
+              seen.add(d.lead_id);
+              return true;
+            });
+          }
+          if (drafts.length === 0)
+            return { error: "No matching saved drafts. Call list_drafts to see what exists, or draft first." };
+
+          const mailbox = await resolveMailbox(args.from_email ? String(args.from_email) : null);
+          if ("error" in mailbox) {
+            toolEvents.push({ name, label: "Scheduling blocked", status: "error", detail: mailbox.error });
+            return { error: mailbox.error };
+          }
+
+          const stagger = Math.max(0, Math.min(Number(args.stagger_minutes ?? 0) || 0, 240));
+          const results: any[] = [];
+          let index = 0;
+
+          for (const d of drafts as any[]) {
+            const to = d.leads?.contact_email ?? null;
+            const label = d.leads?.company_name ?? d.leads?.contact_name ?? to ?? "lead";
+            if (!to) {
+              results.push({ draft_id: d.id, lead: label, error: "Lead has no email address — enrich it first" });
+              continue;
+            }
+            const subject = String(d.subject ?? "").slice(0, 200);
+            const body = String(d.body ?? "");
+            if (!subject || !body) {
+              results.push({ draft_id: d.id, lead: label, error: "Draft is missing a subject or body" });
+              continue;
+            }
+            const sendAt = new Date(when.getTime() + index * stagger * 60_000);
+
+            const { error: insErr } = await admin.from("sent_emails").insert({
+              user_id: userId,
+              lead_id: d.lead_id,
+              to_email: to,
+              subject,
+              body_html: draftBodyToHtml(body),
+              body_text: body,
+              status: "scheduled",
+              scheduled_at: sendAt.toISOString(),
+              sending_account_id: mailbox.sendingAccountId ?? null,
+            });
+            if (insErr) {
+              results.push({ draft_id: d.id, lead: label, error: insErr.message });
+              continue;
+            }
+            await admin.from("email_drafts").delete().eq("id", d.id).eq("user_id", userId);
+            await admin.from("agent_actions").insert({
+              user_id: userId,
+              action_type: "outreach_scheduled",
+              status: "completed",
+              prospect_email: to,
+              subject,
+              description: `Scheduled outreach to ${to} from ${mailbox.email} for ${sendAt.toISOString()} (AI SDR chat)`,
+              metadata: {
+                source: "agent_chat",
+                thread_id: threadId,
+                from_email: mailbox.email,
+                scheduled_at: sendAt.toISOString(),
+              },
+            });
+            results.push({ draft_id: d.id, lead: label, to, scheduled_at: sendAt.toISOString() });
+            index++;
+          }
+
+          const okCount = results.filter((r) => r.scheduled_at).length;
+          toolEvents.push({
+            name,
+            label: okCount ? "Scheduled email" : "Scheduling failed",
+            status: okCount ? "ok" : "error",
+            detail: okCount
+              ? `${okCount} email(s) queued from ${mailbox.email}, first at ${when.toISOString()}`
+              : "No drafts could be scheduled",
+          });
+
+          return {
+            from: mailbox.email,
+            scheduled: okCount,
+            results,
+            note: okCount
+              ? `Queued ${okCount} email(s) from ${mailbox.email}. The scheduler sends them automatically at the times above — the user does not need to do anything. They can be cancelled with cancel_scheduled_email.`
+              : "Nothing was scheduled.",
+          };
+        }
+
+        case "list_scheduled_emails": {
+          const limit = Math.min(Math.max(Number(args.limit ?? 20) || 20, 1), 50);
+          const { data, error } = await admin
+            .from("sent_emails")
+            .select("id, lead_id, to_email, subject, scheduled_at, leads(company_name, contact_name)")
+            .eq("user_id", userId)
+            .eq("status", "scheduled")
+            .not("scheduled_at", "is", null)
+            .order("scheduled_at", { ascending: true })
+            .limit(limit);
+          if (error) return { error: error.message };
+          return {
+            now: new Date().toISOString(),
+            scheduled: (data ?? []).map((e: any) => ({
+              scheduled_id: e.id,
+              lead_id: e.lead_id,
+              to: e.to_email,
+              subject: e.subject,
+              scheduled_at: e.scheduled_at,
+              company: e.leads?.company_name ?? null,
+              contact: e.leads?.contact_name ?? null,
+            })),
+            note: "Cancel any of these with cancel_scheduled_email using scheduled_id.",
+          };
+        }
+
+        case "cancel_scheduled_email": {
+          const ids = (Array.isArray(args.scheduled_ids) ? args.scheduled_ids : [])
+            .filter(Boolean)
+            .map((x: any) => String(x));
+          if (!ids.length) return { error: "Pass scheduled_ids from list_scheduled_emails" };
+
+          const { data: rows, error } = await admin
+            .from("sent_emails")
+            .select("id, lead_id, to_email, subject, body_text, scheduled_at")
+            .eq("user_id", userId)
+            .eq("status", "scheduled")
+            .in("id", ids);
+          if (error) return { error: error.message };
+          if (!rows?.length) return { error: "No matching scheduled emails (they may have already sent)" };
+
+          const cancelled: any[] = [];
+          for (const r of rows) {
+            const { error: delErr } = await admin
+              .from("sent_emails")
+              .delete()
+              .eq("id", r.id)
+              .eq("user_id", userId)
+              .eq("status", "scheduled");
+            if (delErr) continue;
+            if (r.lead_id && r.body_text) {
+              await admin.from("email_drafts").insert({
+                user_id: userId,
+                lead_id: r.lead_id,
+                subject: r.subject,
+                body: r.body_text,
+              });
+            }
+            cancelled.push({ scheduled_id: r.id, to: r.to_email, was_scheduled_for: r.scheduled_at });
+          }
+          toolEvents.push({
+            name,
+            label: cancelled.length ? "Cancelled scheduled email" : "Cancel failed",
+            status: cancelled.length ? "ok" : "error",
+            detail: `${cancelled.length} of ${rows.length} cancelled`,
+          });
+          return {
+            cancelled: cancelled.length,
+            details: cancelled,
+            note: "Cancelled sends were restored as saved drafts so they can be edited, re-sent or re-scheduled.",
+          };
+        }
+
+
 
         case "send_outreach": {
           const lead = await loadLead(String(args.lead_id ?? ""));
@@ -1505,7 +1772,9 @@ serve(async (req) => {
 
     const systemPrompt = `You are ${config?.agent_name ?? "the OutReign AI SDR"}, an autonomous sales development rep working inside OutReign for ${profile?.full_name ?? "the user"}${profile?.company_name ? ` at ${profile.company_name}` : ""}.
 
-You can take real action on the user's account using your tools: reading their leads, enriching and scoring them, drafting cold emails and 4-touch sequences, sending or queueing outreach, enrolling leads in sequences, reviewing replies, and triggering a full agent run.
+You can take real action on the user's account using your tools: reading their leads, enriching and scoring them, drafting cold emails and 4-touch sequences, sending outreach now or scheduling it for a future date/time, cancelling scheduled sends, enrolling leads in sequences, reviewing replies, and triggering a full agent run.
+
+CURRENT TIME: ${new Date().toISOString()} (UTC). Resolve every relative time the user gives you ("tomorrow 9am", "Monday") against this.
 
 HOW TO WORK
 - When the user says something like "I just searched some leads, take it from here", find the relevant leads with list_leads first, then chain the work: enrich -> score -> draft -> send/queue. Do not ask permission for read-only or drafting steps; just do them and report back.
@@ -1513,6 +1782,7 @@ HOW TO WORK
 - draft_outreach goal must be one of: introduction, follow-up, meeting, demo, proposal. Use "introduction" for first touches.
 - Drafts are auto-saved and rendered in the chat as reviewable cards with Send now / Schedule / Discard buttons. After drafting, tell the user the drafts are below for review — do not send until they ask.
 - SENDING: when the user approves the drafts ("send them", "all good, send"), YOU send them — call send_drafts. You never need the subject or body to send a saved draft, only draft ids: use the draft_ids from your draft_outreach results, or call list_drafts (optionally with lead_ids or a name) to look them up again. Pass from_email when the user names an inbox, and use list_mailboxes if you need to know which addresses are connected. Never tell the user to click "Send now" themselves or to open another page, and never claim you lack the lead ids or draft contents — look them up with list_drafts instead.
+- SCHEDULING: you CAN send later. When the user asks for a future send ("tomorrow at 9", "Monday morning", "next week"), call schedule_drafts with the draft_ids and send_at as an absolute ISO 8601 UTC timestamp resolved from the current time given above. Use stagger_minutes when queuing several so they don't all fire at once. Confirm the exact date/time you queued, and mention it sends automatically. Use list_scheduled_emails to show what is queued and cancel_scheduled_email to call one back. Never say you cannot schedule and never tell the user to use the Schedule button themselves.
 - Use send_outreach only for a brand new email you just wrote in the conversation and have not saved as a draft.
 - To source NEW people, use find_leads. If the user describes who they want (any role, industry, company type, or a one-off ask that is not the ICP), pass that description as \`query\` and the search runs broad on it, using the saved ICP only to score/qualify the results. If they just say "find more leads" or "source from my ICP" with no specific target, omit \`query\` to source people matching the saved ICP. It excludes anyone already in the account and advances the result page, so calling it again returns different people. Do not refuse or narrow an off-ICP request; run it as a query and let the ICP score it. Only say you cannot search if there is neither a query nor a saved ICP.
 - Never invent leads, metrics, emails or results. Only report what the tools returned.
