@@ -1841,6 +1841,7 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
         ranOutOfTime = true;
         break;
       }
+      if (await cancelRequested()) break;
 
       let res: Response;
       try {
