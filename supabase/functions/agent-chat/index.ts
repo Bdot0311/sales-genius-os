@@ -710,6 +710,16 @@ serve(async (req) => {
     };
 
     const toolEvents: ToolEvent[] = [];
+    // Step timing telemetry (Agent > Performance tab reads this).
+    const turnId = crypto.randomUUID();
+    const turnStartedAt = Date.now();
+    const stepMetrics: Array<{
+      tool_name: string;
+      step_type: string;
+      duration_ms: number;
+      status: string;
+      detail: string | null;
+    }> = [];
 
     type Mailbox = {
       integrationRowId: string;
