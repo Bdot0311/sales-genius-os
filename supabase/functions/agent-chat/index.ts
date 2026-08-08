@@ -430,6 +430,8 @@ serve(async (req) => {
           subject: approval.subject,
           body: approval.body,
           leadId: approval.lead_id,
+          // Honour the mailbox the agent was told to send from.
+          integrationRowId: approval.integration_row_id ?? undefined,
         });
         failed = Boolean(r?.error);
         if (!failed) {
