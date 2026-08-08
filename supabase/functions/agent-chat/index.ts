@@ -1046,7 +1046,7 @@ serve(async (req) => {
           return {
             goal,
             note:
-              "Drafts are saved and shown to the user in the chat with Send / Schedule controls. Remember each draft_id — if the user then says to send them, call send_drafts with those draft_ids (plus from_email if they named an inbox). Do not send until they ask." +
+              "Drafts are saved and shown to the user in the chat with Send / Schedule controls. Remember each draft_id — if the user then says to send them, call send_drafts with those draft_ids (plus from_email if they named an inbox); if they want them to go out later, call schedule_drafts with those draft_ids and an ISO send_at. Do not send or schedule until they ask." +
               (skipped.length
                 ? ` ${skipped.length} lead(s) were not drafted because this turn ran out of time — tell the user to reply "continue" and you'll draft the rest.`
                 : ""),
