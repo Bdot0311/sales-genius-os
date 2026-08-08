@@ -1914,17 +1914,29 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
           console.log("approval-mode mutating tool", toolName);
         }
         let result: unknown;
+        const startedAt = Date.now();
+        let stepStatus = "success";
+        let stepDetail: string | null = null;
         try {
           result = await runTool(toolName, args);
         } catch (e) {
-          result = { error: e instanceof Error ? e.message : "tool failed" };
+          stepStatus = "error";
+          stepDetail = e instanceof Error ? e.message : "unknown error";
+          result = { error: stepDetail ?? "tool failed" };
           toolEvents.push({
             name: toolName,
             label: "Action failed",
             status: "error",
-            detail: e instanceof Error ? e.message : "unknown error",
+            detail: stepDetail ?? "unknown error",
           });
         }
+        stepMetrics.push({
+          tool_name: toolName || "unknown",
+          step_type: PARALLEL_SAFE_TOOLS.has(toolName) ? "tool_parallel" : "tool_serial",
+          duration_ms: Date.now() - startedAt,
+          status: stepStatus,
+          detail: stepDetail ? stepDetail.slice(0, 300) : null,
+        });
         return {
           role: "tool",
           tool_call_id: call.id,
