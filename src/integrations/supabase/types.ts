@@ -1468,6 +1468,21 @@ export type Database = {
         }
         Relationships: []
       }
+      demo_email_domains: {
+        Row: {
+          created_at: string
+          domain: string
+        }
+        Insert: {
+          created_at?: string
+          domain: string
+        }
+        Update: {
+          created_at?: string
+          domain?: string
+        }
+        Relationships: []
+      }
       email_drafts: {
         Row: {
           body: string | null
