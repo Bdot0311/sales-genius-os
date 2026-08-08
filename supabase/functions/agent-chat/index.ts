@@ -612,6 +612,31 @@ serve(async (req) => {
 
     const autonomous = thread.autonomy === "autonomous";
 
+    // --- stop / cancel support -------------------------------------------
+    // The UI's Stop button stamps cancel_requested_at on the thread. We clear
+    // any stale request at the start of a turn, then poll between model steps
+    // and before each mutating tool so an interrupted run never sends anything
+    // the user tried to stop.
+    await admin
+      .from("agent_chat_threads")
+      .update({ cancel_requested_at: null })
+      .eq("id", threadId);
+
+    let cancelled = false;
+    const cancelRequested = async () => {
+      if (cancelled) return true;
+      const { data } = await admin
+        .from("agent_chat_threads")
+        .select("cancel_requested_at")
+        .eq("id", threadId)
+        .maybeSingle();
+      if ((data as any)?.cancel_requested_at) {
+        cancelled = true;
+        return true;
+      }
+      return false;
+    };
+
     // --- persist the user's message -------------------------------------
     await admin.from("agent_chat_messages").insert({
       thread_id: threadId,
