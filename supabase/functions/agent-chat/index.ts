@@ -1207,6 +1207,197 @@ serve(async (req) => {
           };
         }
 
+        case "schedule_drafts": {
+          const when = new Date(String(args.send_at ?? ""));
+          if (Number.isNaN(when.getTime()))
+            return { error: "send_at must be a valid ISO 8601 timestamp, e.g. 2026-08-12T13:00:00Z" };
+          if (when.getTime() <= Date.now())
+            return { error: `send_at must be in the future (now is ${new Date().toISOString()})` };
+
+          const draftIds = (Array.isArray(args.draft_ids) ? args.draft_ids : [])
+            .filter(Boolean)
+            .map((x: any) => String(x));
+          const leadIds = (Array.isArray(args.lead_ids) ? args.lead_ids : [])
+            .filter(Boolean)
+            .map((x: any) => String(x));
+
+          let q = admin
+            .from("email_drafts")
+            .select("id, lead_id, subject, body, created_at, leads(company_name, contact_name, contact_email)")
+            .eq("user_id", userId)
+            .order("created_at", { ascending: false })
+            .limit(20);
+          if (draftIds.length) q = q.in("id", draftIds);
+          else if (leadIds.length) q = q.in("lead_id", leadIds);
+          const { data: draftRows, error: draftErr } = await q;
+          if (draftErr) return { error: draftErr.message };
+
+          let drafts = draftRows ?? [];
+          if (!draftIds.length && leadIds.length) {
+            const seen = new Set<string>();
+            drafts = drafts.filter((d: any) => {
+              if (!d.lead_id || seen.has(d.lead_id)) return false;
+              seen.add(d.lead_id);
+              return true;
+            });
+          }
+          if (drafts.length === 0)
+            return { error: "No matching saved drafts. Call list_drafts to see what exists, or draft first." };
+
+          const mailbox = await resolveMailbox(args.from_email ? String(args.from_email) : null);
+          if ("error" in mailbox) {
+            toolEvents.push({ name, label: "Scheduling blocked", status: "error", detail: mailbox.error });
+            return { error: mailbox.error };
+          }
+
+          const stagger = Math.max(0, Math.min(Number(args.stagger_minutes ?? 0) || 0, 240));
+          const results: any[] = [];
+          let index = 0;
+
+          for (const d of drafts as any[]) {
+            const to = d.leads?.contact_email ?? null;
+            const label = d.leads?.company_name ?? d.leads?.contact_name ?? to ?? "lead";
+            if (!to) {
+              results.push({ draft_id: d.id, lead: label, error: "Lead has no email address — enrich it first" });
+              continue;
+            }
+            const subject = String(d.subject ?? "").slice(0, 200);
+            const body = String(d.body ?? "");
+            if (!subject || !body) {
+              results.push({ draft_id: d.id, lead: label, error: "Draft is missing a subject or body" });
+              continue;
+            }
+            const sendAt = new Date(when.getTime() + index * stagger * 60_000);
+
+            const { error: insErr } = await admin.from("sent_emails").insert({
+              user_id: userId,
+              lead_id: d.lead_id,
+              to_email: to,
+              subject,
+              body_html: draftBodyToHtml(body),
+              body_text: body,
+              status: "scheduled",
+              scheduled_at: sendAt.toISOString(),
+              sending_account_id: mailbox.sendingAccountId ?? null,
+            });
+            if (insErr) {
+              results.push({ draft_id: d.id, lead: label, error: insErr.message });
+              continue;
+            }
+            await admin.from("email_drafts").delete().eq("id", d.id).eq("user_id", userId);
+            await admin.from("agent_actions").insert({
+              user_id: userId,
+              action_type: "outreach_scheduled",
+              status: "completed",
+              prospect_email: to,
+              subject,
+              description: `Scheduled outreach to ${to} from ${mailbox.email} for ${sendAt.toISOString()} (AI SDR chat)`,
+              metadata: {
+                source: "agent_chat",
+                thread_id: threadId,
+                from_email: mailbox.email,
+                scheduled_at: sendAt.toISOString(),
+              },
+            });
+            results.push({ draft_id: d.id, lead: label, to, scheduled_at: sendAt.toISOString() });
+            index++;
+          }
+
+          const okCount = results.filter((r) => r.scheduled_at).length;
+          toolEvents.push({
+            name,
+            label: okCount ? "Scheduled email" : "Scheduling failed",
+            status: okCount ? "ok" : "error",
+            detail: okCount
+              ? `${okCount} email(s) queued from ${mailbox.email}, first at ${when.toISOString()}`
+              : "No drafts could be scheduled",
+          });
+
+          return {
+            from: mailbox.email,
+            scheduled: okCount,
+            results,
+            note: okCount
+              ? `Queued ${okCount} email(s) from ${mailbox.email}. The scheduler sends them automatically at the times above — the user does not need to do anything. They can be cancelled with cancel_scheduled_email.`
+              : "Nothing was scheduled.",
+          };
+        }
+
+        case "list_scheduled_emails": {
+          const limit = Math.min(Math.max(Number(args.limit ?? 20) || 20, 1), 50);
+          const { data, error } = await admin
+            .from("sent_emails")
+            .select("id, lead_id, to_email, subject, scheduled_at, leads(company_name, contact_name)")
+            .eq("user_id", userId)
+            .eq("status", "scheduled")
+            .not("scheduled_at", "is", null)
+            .order("scheduled_at", { ascending: true })
+            .limit(limit);
+          if (error) return { error: error.message };
+          return {
+            now: new Date().toISOString(),
+            scheduled: (data ?? []).map((e: any) => ({
+              scheduled_id: e.id,
+              lead_id: e.lead_id,
+              to: e.to_email,
+              subject: e.subject,
+              scheduled_at: e.scheduled_at,
+              company: e.leads?.company_name ?? null,
+              contact: e.leads?.contact_name ?? null,
+            })),
+            note: "Cancel any of these with cancel_scheduled_email using scheduled_id.",
+          };
+        }
+
+        case "cancel_scheduled_email": {
+          const ids = (Array.isArray(args.scheduled_ids) ? args.scheduled_ids : [])
+            .filter(Boolean)
+            .map((x: any) => String(x));
+          if (!ids.length) return { error: "Pass scheduled_ids from list_scheduled_emails" };
+
+          const { data: rows, error } = await admin
+            .from("sent_emails")
+            .select("id, lead_id, to_email, subject, body_text, scheduled_at")
+            .eq("user_id", userId)
+            .eq("status", "scheduled")
+            .in("id", ids);
+          if (error) return { error: error.message };
+          if (!rows?.length) return { error: "No matching scheduled emails (they may have already sent)" };
+
+          const cancelled: any[] = [];
+          for (const r of rows) {
+            const { error: delErr } = await admin
+              .from("sent_emails")
+              .delete()
+              .eq("id", r.id)
+              .eq("user_id", userId)
+              .eq("status", "scheduled");
+            if (delErr) continue;
+            if (r.lead_id && r.body_text) {
+              await admin.from("email_drafts").insert({
+                user_id: userId,
+                lead_id: r.lead_id,
+                subject: r.subject,
+                body: r.body_text,
+              });
+            }
+            cancelled.push({ scheduled_id: r.id, to: r.to_email, was_scheduled_for: r.scheduled_at });
+          }
+          toolEvents.push({
+            name,
+            label: cancelled.length ? "Cancelled scheduled email" : "Cancel failed",
+            status: cancelled.length ? "ok" : "error",
+            detail: `${cancelled.length} of ${rows.length} cancelled`,
+          });
+          return {
+            cancelled: cancelled.length,
+            details: cancelled,
+            note: "Cancelled sends were restored as saved drafts so they can be edited, re-sent or re-scheduled.",
+          };
+        }
+
+
+
         case "send_outreach": {
           const lead = await loadLead(String(args.lead_id ?? ""));
           if (!lead) return { error: "Lead not found" };
