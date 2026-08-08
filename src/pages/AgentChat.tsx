@@ -31,6 +31,7 @@ import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import { ChatDraftCard, type ChatDraft } from "@/components/agent/ChatDraftCard";
 import { roleLabel } from "@/components/agent/AgentRoles";
+import { AgentWorkingIndicator } from "@/components/agent/AgentWorkingIndicator";
 
 
 interface Thread {
