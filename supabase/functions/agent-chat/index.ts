@@ -1215,6 +1215,84 @@ serve(async (req) => {
           };
         }
 
+        case "delete_drafts": {
+          const draftIds = (Array.isArray(args.draft_ids) ? args.draft_ids : [])
+            .filter(Boolean)
+            .map((x: any) => String(x));
+          const leadIds = (Array.isArray(args.lead_ids) ? args.lead_ids : [])
+            .filter(Boolean)
+            .map((x: any) => String(x));
+          if (!draftIds.length && !leadIds.length && !args.all_pending) {
+            return {
+              error:
+                "Tell me which drafts to delete: pass draft_ids, lead_ids, or all_pending: true. Use list_drafts to look them up.",
+            };
+          }
+          let q = admin.from("email_drafts").delete().eq("user_id", userId);
+          if (draftIds.length) q = q.in("id", draftIds);
+          else if (leadIds.length) q = q.in("lead_id", leadIds);
+          const { data, error } = await q.select("id, subject");
+          if (error) {
+            toolEvents.push({ name, label: "Delete failed", status: "error", detail: error.message });
+            return { error: error.message };
+          }
+          const deleted = data ?? [];
+          toolEvents.push({
+            name,
+            label: "Deleted drafts",
+            status: "ok",
+            detail: `${deleted.length} draft(s) deleted`,
+          });
+          return {
+            deleted_count: deleted.length,
+            deleted: deleted.map((d: any) => ({ draft_id: d.id, subject: d.subject })),
+            note: deleted.length
+              ? "These drafts are gone permanently."
+              : "No matching drafts were found, so nothing was deleted.",
+          };
+        }
+
+        case "delete_inbox_threads": {
+          const threadIds = (Array.isArray(args.thread_ids) ? args.thread_ids : [])
+            .filter(Boolean)
+            .map((x: any) => String(x));
+          const matchEmail = String(args.match_email ?? "").trim();
+          if (!threadIds.length && !matchEmail) {
+            return {
+              error:
+                "Tell me which inbox emails to delete: pass thread_ids or match_email. Use list_recent_replies to find them.",
+            };
+          }
+          let q = admin.from("reply_threads").delete().eq("user_id", userId);
+          if (threadIds.length) q = q.in("id", threadIds);
+          else q = q.ilike("sender_email", matchEmail);
+          const { data, error } = await q.select("id, sender_email, subject");
+          if (error) {
+            toolEvents.push({ name, label: "Delete failed", status: "error", detail: error.message });
+            return { error: error.message };
+          }
+          const deleted = data ?? [];
+          toolEvents.push({
+            name,
+            label: "Deleted inbox emails",
+            status: "ok",
+            detail: `${deleted.length} conversation email(s) deleted`,
+          });
+          return {
+            deleted_count: deleted.length,
+            deleted: deleted.map((r: any) => ({
+              thread_id: r.id,
+              from: r.sender_email,
+              subject: r.subject,
+            })),
+            note: deleted.length
+              ? "Removed from the user's inbox permanently."
+              : "No matching inbox emails were found, so nothing was deleted.",
+          };
+        }
+
+
+
         case "send_drafts": {
           const draftIds = (Array.isArray(args.draft_ids) ? args.draft_ids : [])
             .filter(Boolean)
