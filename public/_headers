@@ -15,6 +15,11 @@
   Link: </auth.md>; rel="author"; type="text/markdown"
 
 # Agent discovery documents — correct media types and short caches
+/openapi.json
+  Content-Type: application/openapi+json; charset=utf-8
+  Cache-Control: public, max-age=3600
+  Access-Control-Allow-Origin: *
+
 /.well-known/api-catalog
   Content-Type: application/linkset+json; charset=utf-8
   Cache-Control: public, max-age=3600
