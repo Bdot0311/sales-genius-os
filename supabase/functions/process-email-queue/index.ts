@@ -7,24 +7,32 @@ const DEFAULT_SEND_DELAY_MS = 200
 const DEFAULT_AUTH_TTL_MINUTES = 15
 const DEFAULT_TRANSACTIONAL_TTL_MINUTES = 60
 
-// Check if an error is a rate-limit (429) response.
-// Uses EmailAPIError.status when available (email-js >=0.x with structured errors),
-// falls back to parsing the error message for older versions.
-function isRateLimited(error: unknown): boolean {
+// Status-code detection. IMPORTANT: never substring-match the raw error text —
+// provider errors embed a request_id (random hex) that can contain "403"/"429",
+// which previously mis-classified a plain 400 as "emails disabled" and
+// dead-lettered a perfectly good email on the first attempt.
+function errorStatus(error: unknown): number | null {
   if (error && typeof error === 'object' && 'status' in error) {
-    return (error as { status: number }).status === 429
+    const s = (error as { status: unknown }).status
+    if (typeof s === 'number') return s
   }
-  return error instanceof Error && error.message.includes('429')
+  if (error instanceof Error) {
+    const m = error.message.match(/Email API error:\s*(\d{3})\b/)
+      || error.message.match(/"status"\s*:\s*(\d{3})/)
+    if (m) return Number(m[1])
+  }
+  return null
 }
 
-// Check if an error is a forbidden (403) response, which means emails are
-// disabled for this project. Retrying won't help — move straight to DLQ.
-function isForbidden(error: unknown): boolean {
-  if (error && typeof error === 'object' && 'status' in error) {
-    return (error as { status: number }).status === 403
-  }
-  return error instanceof Error && error.message.includes('403')
+function isRateLimited(error: unknown): boolean {
+  return errorStatus(error) === 429
 }
+
+// 403 means emails are disabled for the whole project — retrying won't help.
+function isForbidden(error: unknown): boolean {
+  return errorStatus(error) === 403
+}
+
 
 // Extract Retry-After seconds from a structured EmailAPIError, or default to 60s.
 function getRetryAfterSeconds(error: unknown): number {
