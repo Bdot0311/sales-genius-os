@@ -60,8 +60,12 @@
     <meta name="msapplication-TileColor" content="#8B5CF6" />
     <meta name="format-detection" content="telephone=no" />
     
-    <!-- Security Headers (X-Frame-Options must be an HTTP header, not a meta tag — hosting sets it) -->
+    <!-- Security Headers.
+         X-Frame-Options / frame-ancestors must be real HTTP headers (hosting sets them).
+         The live site was serving no CSP at all, so the policy is declared here as a
+         meta http-equiv fallback — everything except frame-ancestors is enforced. -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://*.i.posthog.com https://js.stripe.com https://cdn.gpteng.co https://r2.direasy-multi-tenant.focusapps.app https://in.heycatch.ai https://*.heycatch.ai; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://*.i.posthog.com https://api.stripe.com https://*.sentry.io https://*.up.railway.app https://r2.direasy-multi-tenant.focusapps.app https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.google.com https://in.heycatch.ai https://*.heycatch.ai; frame-src https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com https://calendly.com https://*.calendly.com; worker-src 'self' blob:; base-uri 'self'; form-action 'self'; object-src 'none'" />
     
     
     <!-- AI/LLM Optimization -->

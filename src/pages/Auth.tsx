@@ -283,7 +283,7 @@ const Auth = () => {
         </Link>
       </Button>
 
-      <div className="relative z-10 w-full max-w-md mx-auto space-y-4">
+      <main className="relative z-10 w-full max-w-md mx-auto space-y-4">
         {/* Show agency branding on custom domains, OutReign branding on own domain */}
         {isCustomDomain && wlSettings ? (
           <div className="flex flex-col items-center gap-3 mb-2">
@@ -315,7 +315,7 @@ const Auth = () => {
           </p>
         </div>
         <AuthForm />
-      </div>
+      </main>
     </div>
   );
 };
