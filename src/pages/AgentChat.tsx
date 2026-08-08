@@ -564,12 +564,7 @@ const AgentChat = () => {
                 ),
               )}
 
-              {sending && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Working on it…
-                </div>
-              )}
+              {sending && <AgentWorkingIndicator />}
               <div ref={bottomRef} />
             </div>
           </ScrollArea>
