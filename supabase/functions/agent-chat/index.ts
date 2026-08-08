@@ -58,6 +58,8 @@ const LEAD_FIELDS =
 const MUTATING_TOOLS = new Set([
   "send_outreach",
   "send_drafts",
+  "schedule_drafts",
+  "cancel_scheduled_email",
   "enroll_lead_in_sequence",
   "run_full_agent",
 ]);
@@ -68,6 +70,7 @@ const PARALLEL_SAFE_TOOLS = new Set([
   "get_lead",
   "list_mailboxes",
   "list_drafts",
+  "list_scheduled_emails",
   "list_sequences",
   "list_recent_replies",
   "get_agent_status",
