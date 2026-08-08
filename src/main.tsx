@@ -1,8 +1,6 @@
 import { createRoot, hydrateRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
-import "./lib/posthog";
-import "./lib/heycatch";
 
 
 // Self-heal stale chunk references after a redeploy. When a dynamic import
@@ -77,6 +75,11 @@ if (rootEl.dataset.prerendered === "true") {
 // window listeners above.
 const bootDeferred = () => {
   void import("./lib/sentry").then(({ initSentry }) => initSentry());
+  // Analytics SDKs (posthog-js, @heycatch/sdk) are ~470 KB of source combined.
+  // Loading them here keeps them off the LCP/TTI critical path; any event
+  // captured before they resolve is queued by their facades and replayed.
+  void import("./lib/posthog").then(({ initPostHog }) => initPostHog());
+  void import("./lib/heycatch").then(({ initHeycatch }) => initHeycatch());
   // Expose public site tools to browser AI agents (WebMCP). No-op when unsupported.
   void import("./lib/webmcp").then(({ registerWebMcpTools }) => registerWebMcpTools());
 };
