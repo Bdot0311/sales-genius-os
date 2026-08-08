@@ -75,6 +75,8 @@ const MUTATING_TOOLS = new Set([
   "send_drafts",
   "schedule_drafts",
   "cancel_scheduled_email",
+  "delete_drafts",
+  "delete_inbox_threads",
   "enroll_lead_in_sequence",
   "run_full_agent",
 ]);
@@ -296,6 +298,37 @@ const TOOLS = [
           scheduled_ids: { type: "array", items: { type: "string" }, description: "Ids from list_scheduled_emails" },
         },
         required: ["scheduled_ids"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "delete_drafts",
+      description:
+        "Permanently delete saved email drafts the user no longer wants. Pass draft_ids (from list_drafts or your own draft_outreach results), lead_ids to remove every draft for those leads, or all_pending to clear every saved draft. Deleting is irreversible — only do it when the user asks.",
+      parameters: {
+        type: "object",
+        properties: {
+          draft_ids: { type: "array", items: { type: "string" }, description: "Draft ids to delete" },
+          lead_ids: { type: "array", items: { type: "string" }, description: "Delete all drafts for these leads" },
+          all_pending: { type: "boolean", description: "Delete every saved draft for the user" },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "delete_inbox_threads",
+      description:
+        "Delete emails/conversations from the user's inbox (removes the stored reply threads). Pass thread_ids, or match_email to clear the conversation with a specific address. Irreversible — only when the user asks to delete or clean up their inbox.",
+      parameters: {
+        type: "object",
+        properties: {
+          thread_ids: { type: "array", items: { type: "string" }, description: "Reply thread ids to delete" },
+          match_email: { type: "string", description: "Delete threads with this email address" },
+        },
       },
     },
   },
@@ -1182,6 +1215,84 @@ serve(async (req) => {
           };
         }
 
+        case "delete_drafts": {
+          const draftIds = (Array.isArray(args.draft_ids) ? args.draft_ids : [])
+            .filter(Boolean)
+            .map((x: any) => String(x));
+          const leadIds = (Array.isArray(args.lead_ids) ? args.lead_ids : [])
+            .filter(Boolean)
+            .map((x: any) => String(x));
+          if (!draftIds.length && !leadIds.length && !args.all_pending) {
+            return {
+              error:
+                "Tell me which drafts to delete: pass draft_ids, lead_ids, or all_pending: true. Use list_drafts to look them up.",
+            };
+          }
+          let q = admin.from("email_drafts").delete().eq("user_id", userId);
+          if (draftIds.length) q = q.in("id", draftIds);
+          else if (leadIds.length) q = q.in("lead_id", leadIds);
+          const { data, error } = await q.select("id, subject");
+          if (error) {
+            toolEvents.push({ name, label: "Delete failed", status: "error", detail: error.message });
+            return { error: error.message };
+          }
+          const deleted = data ?? [];
+          toolEvents.push({
+            name,
+            label: "Deleted drafts",
+            status: "ok",
+            detail: `${deleted.length} draft(s) deleted`,
+          });
+          return {
+            deleted_count: deleted.length,
+            deleted: deleted.map((d: any) => ({ draft_id: d.id, subject: d.subject })),
+            note: deleted.length
+              ? "These drafts are gone permanently."
+              : "No matching drafts were found, so nothing was deleted.",
+          };
+        }
+
+        case "delete_inbox_threads": {
+          const threadIds = (Array.isArray(args.thread_ids) ? args.thread_ids : [])
+            .filter(Boolean)
+            .map((x: any) => String(x));
+          const matchEmail = String(args.match_email ?? "").trim();
+          if (!threadIds.length && !matchEmail) {
+            return {
+              error:
+                "Tell me which inbox emails to delete: pass thread_ids or match_email. Use list_recent_replies to find them.",
+            };
+          }
+          let q = admin.from("reply_threads").delete().eq("user_id", userId);
+          if (threadIds.length) q = q.in("id", threadIds);
+          else q = q.ilike("sender_email", matchEmail);
+          const { data, error } = await q.select("id, sender_email, subject");
+          if (error) {
+            toolEvents.push({ name, label: "Delete failed", status: "error", detail: error.message });
+            return { error: error.message };
+          }
+          const deleted = data ?? [];
+          toolEvents.push({
+            name,
+            label: "Deleted inbox emails",
+            status: "ok",
+            detail: `${deleted.length} conversation email(s) deleted`,
+          });
+          return {
+            deleted_count: deleted.length,
+            deleted: deleted.map((r: any) => ({
+              thread_id: r.id,
+              from: r.sender_email,
+              subject: r.subject,
+            })),
+            note: deleted.length
+              ? "Removed from the user's inbox permanently."
+              : "No matching inbox emails were found, so nothing was deleted.",
+          };
+        }
+
+
+
         case "send_drafts": {
           const draftIds = (Array.isArray(args.draft_ids) ? args.draft_ids : [])
             .filter(Boolean)
@@ -1818,6 +1929,7 @@ HOW TO WORK
 - Drafts are auto-saved and rendered in the chat as reviewable cards with Send now / Schedule / Discard buttons. After drafting, tell the user the drafts are below for review — do not send until they ask.
 - SENDING: when the user approves the drafts ("send them", "all good, send"), YOU send them — call send_drafts. You never need the subject or body to send a saved draft, only draft ids: use the draft_ids from your draft_outreach results, or call list_drafts (optionally with lead_ids or a name) to look them up again. Pass from_email when the user names an inbox, and use list_mailboxes if you need to know which addresses are connected. Never tell the user to click "Send now" themselves or to open another page, and never claim you lack the lead ids or draft contents — look them up with list_drafts instead.
 - SCHEDULING: you CAN send later. When the user asks for a future send ("tomorrow at 9", "Monday morning", "next week"), call schedule_drafts with the draft_ids and send_at as an absolute ISO 8601 UTC timestamp resolved from the current time given above. Use stagger_minutes when queuing several so they don't all fire at once. Confirm the exact date/time you queued, and mention it sends automatically. Use list_scheduled_emails to show what is queued and cancel_scheduled_email to call one back. Never say you cannot schedule and never tell the user to use the Schedule button themselves.
+- DELETING: you CAN delete emails. Use delete_drafts to remove saved drafts (by draft_ids, lead_ids, or all_pending) and delete_inbox_threads to remove inbox conversations (by thread_ids or match_email). Deletion is permanent, so only do it when the user asks, confirm briefly what you are about to delete if the request is broad ("delete all my drafts"), then do it and report the count. Never tell the user to delete things manually in the UI.
 - Use send_outreach only for a brand new email you just wrote in the conversation and have not saved as a draft.
 - To source NEW people, use find_leads. If the user describes who they want (any role, industry, company type, or a one-off ask that is not the ICP), pass that description as \`query\` and the search runs broad on it, using the saved ICP only to score/qualify the results. If they just say "find more leads" or "source from my ICP" with no specific target, omit \`query\` to source people matching the saved ICP. It excludes anyone already in the account and advances the result page, so calling it again returns different people. Do not refuse or narrow an off-ICP request; run it as a query and let the ICP score it. Only say you cannot search if there is neither a query nor a saved ICP.
 - Never invent leads, metrics, emails or results. Only report what the tools returned.
