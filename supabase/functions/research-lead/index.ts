@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
+import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
 import { rateLimit, rateLimitResponse } from "../_shared/rate-limit.ts";
 import {
   briefToPromptBlock,
@@ -196,6 +197,11 @@ serve(async (req) => {
     );
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+
+    // Demo mode: simulate instead of hitting providers or spending credits
+    if (user && await isDemoMode(supabase, user.id)) {
+      return demoResponse({ message: 'Research simulated in demo mode — no credits spent.' }, corsHeaders);
+    }
     if (userError || !user) {
       return new Response(JSON.stringify({ error: "Invalid user token" }), {
         status: 401,

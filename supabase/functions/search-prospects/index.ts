@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -32,6 +33,11 @@ serve(async (req) => {
 
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+
+    // Demo mode: simulate instead of hitting providers or spending credits
+    if (user && await isDemoMode(supabase, user.id)) {
+      return demoResponse({ prospects: [], message: 'Lead search simulated in demo mode — no credits spent.' }, corsHeaders);
+    }
     
     if (userError || !user) {
       throw new Error('Invalid user token');
