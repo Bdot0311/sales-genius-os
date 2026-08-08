@@ -1,7 +1,11 @@
-import posthog from "posthog-js";
-
 /**
- * PostHog init.
+ * Single call site for product analytics.
+ *
+ * posthog-js is ~234 KB of source and was previously a static import in the
+ * main entry chunk, so it downloaded and parsed before first paint. It is now
+ * loaded lazily (after first paint, via initPostHog() from main.tsx) behind a
+ * tiny facade: every call made before the SDK resolves is queued and replayed,
+ * so call sites keep the same synchronous `posthog.capture(...)` shape.
  *
  * Credentials come from the linked PostHog connector
  * (VITE_LOVABLE_CONNECTOR_POSTHOG_API_KEY + _REGION). The legacy hand-set
@@ -39,45 +43,99 @@ const doNotTrack = () => {
 
 const shouldInit = Boolean(apiKey && apiHost) && !isPreviewIframe() && !doNotTrack();
 
-if (shouldInit) {
-  posthog.init(apiKey as string, {
-    api_host: apiHost as string,
-    // Pageviews are captured manually on every route change (see App.tsx) —
-    // an SPA fires no navigation events, so automatic capture would record a
-    // single pageview per session and inflate bounce rate.
-    capture_pageview: false,
-    capture_pageleave: true,
-    autocapture: true,
-    persistence: "localStorage+cookie",
-    // Core Web Vitals (LCP, INP, CLS, FCP) as events, so performance work is measurable.
-    capture_performance: { web_vitals: true },
-    session_recording: {
-      maskAllInputs: true,
-      maskTextSelector: "[data-ph-mask]",
-      maskInputOptions: {
-        password: true,
-        email: true,
-        tel: true,
-        text: false,
-      },
-    },
-    // Recording starts on demand below (sampled) rather than for every session.
-    disable_session_recording: false,
-  });
+export const isPostHogEnabled = shouldInit;
+export const posthogRegion = connectorKey ? connectorRegion : undefined;
 
-  posthog.startExceptionAutocapture({
-    capture_unhandled_errors: true,
-    capture_unhandled_rejections: true,
-    capture_console_errors: false,
-  });
-} else if (!apiKey && import.meta.env.DEV) {
+type AnyFn = (...args: unknown[]) => unknown;
+type PostHogLike = Record<string, AnyFn>;
+
+let sdk: PostHogLike | null = null;
+let loading: Promise<PostHogLike | null> | null = null;
+/** Calls made before the SDK finished loading, replayed in order. */
+const queue: Array<[string, unknown[]]> = [];
+
+const flush = () => {
+  if (!sdk) {
+    queue.length = 0;
+    return;
+  }
+  for (const [method, args] of queue.splice(0)) {
+    try {
+      (sdk[method] as AnyFn | undefined)?.(...args);
+    } catch { /* analytics must never break the app */ }
+  }
+};
+
+/**
+ * Download + initialise posthog-js. Safe to call repeatedly; the import and
+ * init only happen once. Called from main.tsx once the browser is idle.
+ */
+export const initPostHog = async (): Promise<void> => {
+  if (!shouldInit || sdk) return;
+  if (!loading) {
+    loading = import("posthog-js")
+      .then((mod) => {
+        const ph = (mod.default ?? mod.posthog) as unknown as PostHogLike;
+        ph.init(apiKey as string, {
+          api_host: apiHost as string,
+          // Pageviews are captured manually on every route change (see App.tsx) —
+          // an SPA fires no navigation events, so automatic capture would record a
+          // single pageview per session and inflate bounce rate.
+          capture_pageview: false,
+          capture_pageleave: true,
+          autocapture: true,
+          persistence: "localStorage+cookie",
+          // Core Web Vitals (LCP, INP, CLS, FCP) as events, so performance work is measurable.
+          capture_performance: { web_vitals: true },
+          session_recording: {
+            maskAllInputs: true,
+            maskTextSelector: "[data-ph-mask]",
+            maskInputOptions: {
+              password: true,
+              email: true,
+              tel: true,
+              text: false,
+            },
+          },
+          disable_session_recording: false,
+        });
+        ph.startExceptionAutocapture({
+          capture_unhandled_errors: true,
+          capture_unhandled_rejections: true,
+          capture_console_errors: false,
+        });
+        return ph;
+      })
+      .catch(() => null);
+  }
+  sdk = await loading;
+  flush();
+};
+
+const call = (method: string) => (...args: unknown[]) => {
+  if (!shouldInit) return;
+  if (sdk) {
+    try {
+      (sdk[method] as AnyFn | undefined)?.(...args);
+    } catch { /* analytics must never break the app */ }
+    return;
+  }
+  // Cap the queue so a never-loading SDK can't grow memory unbounded.
+  if (queue.length < 100) queue.push([method, args]);
+  void initPostHog();
+};
+
+/** Facade with the methods this app uses. Same synchronous shape as posthog-js. */
+export const posthog = {
+  capture: call("capture"),
+  identify: call("identify"),
+  reset: call("reset"),
+  setPersonProperties: call("setPersonProperties"),
+  group: call("group"),
+};
+
+if (!apiKey && import.meta.env.DEV) {
   console.warn(
     "[posthog] No project key found (VITE_LOVABLE_CONNECTOR_POSTHOG_API_KEY or VITE_POSTHOG_KEY). Events are not being captured.",
   );
 }
-
-export const isPostHogEnabled = shouldInit;
-
-export const posthogRegion = connectorKey ? connectorRegion : undefined;
-
-export { posthog };
