@@ -1,0 +1,329 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "OutReign API",
+    "version": "1.0.0",
+    "summary": "B2B lead intelligence and outbound sales API",
+    "description": "REST API for OutReign leads, deals, activities, contacts, workflows and AI email generation. Authenticate with an X-API-Key header generated in OutReign → Settings → API Keys.",
+    "contact": { "name": "OutReign support", "email": "support@bdotindustries.com", "url": "https://outreign.io/connect" },
+    "termsOfService": "https://outreign.io/terms"
+  },
+  "servers": [
+    { "url": "https://ghgfjnepvxvxrncmskys.supabase.co/functions/v1/rest-api", "description": "Production" }
+  ],
+  "externalDocs": { "description": "Human API documentation", "url": "https://outreign.io/api-docs" },
+  "security": [{ "ApiKeyAuth": [] }],
+  "tags": [
+    { "name": "Leads" },
+    { "name": "Deals" },
+    { "name": "Activities" },
+    { "name": "Contacts" },
+    { "name": "Workflows" },
+    { "name": "Outreach" }
+  ],
+  "paths": {
+    "/leads": {
+      "get": {
+        "tags": ["Leads"],
+        "operationId": "listLeads",
+        "summary": "List leads",
+        "parameters": [
+          { "name": "industry", "in": "query", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } }
+        ],
+        "responses": { "200": { "description": "A page of leads", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LeadList" } } } } }
+      },
+      "post": {
+        "tags": ["Leads"],
+        "operationId": "createLead",
+        "summary": "Create a lead",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Lead" } } } },
+        "responses": { "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LeadEnvelope" } } } } }
+      }
+    },
+    "/leads/bulk": {
+      "post": {
+        "tags": ["Leads"],
+        "operationId": "bulkImportLeads",
+        "summary": "Bulk import up to 100 leads",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "leads": { "type": "array", "items": { "$ref": "#/components/schemas/Lead" } } }, "required": ["leads"] } } } },
+        "responses": { "201": { "description": "Import result", "content": { "application/json": { "schema": { "type": "object", "properties": { "imported": { "type": "integer" }, "failed": { "type": "integer" }, "errors": { "type": "array", "items": { "type": "string" } } } } } } } }
+      }
+    },
+    "/leads/{id}": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "get": {
+        "tags": ["Leads"],
+        "operationId": "getLead",
+        "summary": "Get a lead",
+        "responses": { "200": { "description": "The lead", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LeadEnvelope" } } } } }
+      },
+      "patch": {
+        "tags": ["Leads"],
+        "operationId": "updateLead",
+        "summary": "Update a lead",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Lead" } } } },
+        "responses": { "200": { "description": "Updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LeadEnvelope" } } } } }
+      },
+      "delete": {
+        "tags": ["Leads"],
+        "operationId": "deleteLead",
+        "summary": "Delete a lead",
+        "responses": { "200": { "description": "Deleted", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Deleted" } } } } }
+      }
+    },
+    "/leads/{id}/enrich": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "post": {
+        "tags": ["Leads"],
+        "operationId": "enrichLead",
+        "summary": "Enrich a lead",
+        "description": "Consumes one enrichment credit from the authenticated account's plan.",
+        "responses": { "200": { "description": "Enrichment result", "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "string" }, "fields_updated": { "type": "array", "items": { "type": "string" } } } } } } } }
+      }
+    },
+    "/leads/{id}/score": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "post": {
+        "tags": ["Leads"],
+        "operationId": "scoreLead",
+        "summary": "Score a lead against the saved ICP",
+        "responses": { "200": { "description": "Score", "content": { "application/json": { "schema": { "type": "object", "properties": { "icp_score": { "type": "integer" }, "explanation": { "type": "string" } } } } } } }
+      }
+    },
+    "/deals": {
+      "get": {
+        "tags": ["Deals"],
+        "operationId": "listDeals",
+        "summary": "List deals",
+        "parameters": [
+          { "name": "stage", "in": "query", "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } }
+        ],
+        "responses": { "200": { "description": "A page of deals", "content": { "application/json": { "schema": { "type": "object", "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Deal" } }, "count": { "type": "integer" } } } } } } }
+      },
+      "post": {
+        "tags": ["Deals"],
+        "operationId": "createDeal",
+        "summary": "Create a deal",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Deal" } } } },
+        "responses": { "201": { "description": "Created", "content": { "application/json": { "schema": { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/Deal" } } } } } } }
+      }
+    },
+    "/deals/{id}": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "patch": {
+        "tags": ["Deals"],
+        "operationId": "updateDeal",
+        "summary": "Update a deal",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Deal" } } } },
+        "responses": { "200": { "description": "Updated", "content": { "application/json": { "schema": { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/Deal" } } } } } } }
+      },
+      "delete": {
+        "tags": ["Deals"],
+        "operationId": "deleteDeal",
+        "summary": "Delete a deal",
+        "responses": { "200": { "description": "Deleted", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Deleted" } } } } }
+      }
+    },
+    "/activities": {
+      "get": {
+        "tags": ["Activities"],
+        "operationId": "listActivities",
+        "summary": "List activities",
+        "parameters": [
+          { "name": "type", "in": "query", "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } }
+        ],
+        "responses": { "200": { "description": "A page of activities", "content": { "application/json": { "schema": { "type": "object", "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Activity" } }, "count": { "type": "integer" } } } } } } }
+      },
+      "post": {
+        "tags": ["Activities"],
+        "operationId": "createActivity",
+        "summary": "Create an activity",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Activity" } } } },
+        "responses": { "201": { "description": "Created", "content": { "application/json": { "schema": { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/Activity" } } } } } } }
+      }
+    },
+    "/activities/{id}": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "patch": {
+        "tags": ["Activities"],
+        "operationId": "updateActivity",
+        "summary": "Update an activity",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Activity" } } } },
+        "responses": { "200": { "description": "Updated", "content": { "application/json": { "schema": { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/Activity" } } } } } } }
+      },
+      "delete": {
+        "tags": ["Activities"],
+        "operationId": "deleteActivity",
+        "summary": "Delete an activity",
+        "responses": { "200": { "description": "Deleted", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Deleted" } } } } }
+      }
+    },
+    "/contacts": {
+      "get": {
+        "tags": ["Contacts"],
+        "operationId": "listContacts",
+        "summary": "List contacts",
+        "parameters": [
+          { "name": "status", "in": "query", "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } }
+        ],
+        "responses": { "200": { "description": "A page of contacts", "content": { "application/json": { "schema": { "type": "object", "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Contact" } }, "count": { "type": "integer" } } } } } } }
+      },
+      "post": {
+        "tags": ["Contacts"],
+        "operationId": "createContact",
+        "summary": "Create a contact",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Contact" } } } },
+        "responses": { "201": { "description": "Created", "content": { "application/json": { "schema": { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/Contact" } } } } } } }
+      }
+    },
+    "/contacts/{id}": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "patch": {
+        "tags": ["Contacts"],
+        "operationId": "updateContact",
+        "summary": "Update a contact",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Contact" } } } },
+        "responses": { "200": { "description": "Updated", "content": { "application/json": { "schema": { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/Contact" } } } } } } }
+      },
+      "delete": {
+        "tags": ["Contacts"],
+        "operationId": "deleteContact",
+        "summary": "Delete a contact",
+        "responses": { "200": { "description": "Deleted", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Deleted" } } } } }
+      }
+    },
+    "/workflows": {
+      "get": {
+        "tags": ["Workflows"],
+        "operationId": "listWorkflows",
+        "summary": "List workflows",
+        "responses": { "200": { "description": "Workflows", "content": { "application/json": { "schema": { "type": "object", "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Workflow" } }, "count": { "type": "integer" } } } } } } }
+      }
+    },
+    "/workflows/{id}": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "patch": {
+        "tags": ["Workflows"],
+        "operationId": "toggleWorkflow",
+        "summary": "Enable or disable a workflow",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "active": { "type": "boolean" } } } } } },
+        "responses": { "200": { "description": "Updated", "content": { "application/json": { "schema": { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/Workflow" } } } } } } }
+      }
+    },
+    "/workflows/{id}/execute": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+      "post": {
+        "tags": ["Workflows"],
+        "operationId": "executeWorkflow",
+        "summary": "Execute a workflow",
+        "requestBody": { "required": false, "content": { "application/json": { "schema": { "type": "object", "properties": { "data": { "type": "object", "additionalProperties": true } } } } } },
+        "responses": { "200": { "description": "Execution result", "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean" }, "executed_actions": { "type": "integer" } } } } } } }
+      }
+    },
+    "/email/generate": {
+      "post": {
+        "tags": ["Outreach"],
+        "operationId": "generateEmail",
+        "summary": "Generate an AI email draft for a lead",
+        "description": "Consumes AI email credits from the authenticated account's plan.",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "leadId": { "type": "string", "format": "uuid" }, "tone": { "type": "string" }, "trigger_context": { "type": "string" } }, "required": ["leadId"] } } } },
+        "responses": { "200": { "description": "Draft", "content": { "application/json": { "schema": { "type": "object", "properties": { "subject": { "type": "string" }, "body": { "type": "string" } } } } } } }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": { "type": "apiKey", "in": "header", "name": "X-API-Key", "description": "Create keys in OutReign → Settings → API Keys." },
+      "OAuth2": {
+        "type": "oauth2",
+        "description": "Human-delegated OAuth 2.1 with PKCE, used by the OutReign MCP server.",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://ghgfjnepvxvxrncmskys.supabase.co/auth/v1/oauth/authorize",
+            "tokenUrl": "https://ghgfjnepvxvxrncmskys.supabase.co/auth/v1/oauth/token",
+            "scopes": { "openid": "Subject identifier", "profile": "Basic profile", "email": "Email address" }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Deleted": { "type": "object", "properties": { "deleted": { "type": "boolean" } } },
+      "Lead": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "readOnly": true },
+          "contact_name": { "type": "string" },
+          "contact_email": { "type": "string", "format": "email" },
+          "company_name": { "type": "string" },
+          "job_title": { "type": "string" },
+          "industry": { "type": "string" },
+          "country": { "type": "string" },
+          "linkedin_url": { "type": "string", "format": "uri" },
+          "lead_status": { "type": "string" },
+          "pipeline_stage": { "type": "string" },
+          "icp_score": { "type": "integer" },
+          "created_at": { "type": "string", "format": "date-time", "readOnly": true }
+        }
+      },
+      "LeadEnvelope": { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/Lead" } } },
+      "LeadList": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/Lead" } },
+          "count": { "type": "integer" },
+          "limit": { "type": "integer" },
+          "offset": { "type": "integer" }
+        }
+      },
+      "Deal": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "readOnly": true },
+          "title": { "type": "string" },
+          "company_name": { "type": "string" },
+          "value": { "type": "number" },
+          "stage": { "type": "string" },
+          "probability": { "type": "integer" }
+        }
+      },
+      "Activity": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "readOnly": true },
+          "subject": { "type": "string" },
+          "type": { "type": "string", "enum": ["task", "call", "email", "note"] },
+          "due_date": { "type": "string", "format": "date-time" },
+          "completed": { "type": "boolean" },
+          "lead_id": { "type": "string", "format": "uuid" }
+        }
+      },
+      "Contact": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "readOnly": true },
+          "first_name": { "type": "string" },
+          "last_name": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "job_title": { "type": "string" },
+          "lead_status": { "type": "string" }
+        }
+      },
+      "Workflow": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "readOnly": true },
+          "name": { "type": "string" },
+          "trigger": { "type": "string" },
+          "active": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}
