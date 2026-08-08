@@ -61,6 +61,26 @@ Deno.serve(async (req) => {
     });
     if (ipOk === false) return json(200, { success: true, throttled: true });
 
+    // De-dupe rapid repeat clicks (double-tap, back-and-retry). Same visitor +
+    // same source within 30 minutes reuses the existing request and does NOT
+    // send a second sales alert.
+    const dedupeSince = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    let dedupeQuery = admin
+      .from("campaign_setup_requests")
+      .select("id")
+      .eq("source", source)
+      .eq("direction", "inbound")
+      .gte("created_at", dedupeSince)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    dedupeQuery = userId
+      ? dedupeQuery.eq("user_id", userId)
+      : dedupeQuery.is("user_id", null).eq("metadata->>ip", ip);
+    const { data: existing } = await dedupeQuery.maybeSingle();
+    if (existing?.id) {
+      return json(200, { success: true, id: existing.id, deduped: true });
+    }
+
     const { data: row, error } = await admin
       .from("campaign_setup_requests")
       .insert({
@@ -79,6 +99,7 @@ Deno.serve(async (req) => {
       console.error("[log-campaign-setup-request] insert failed:", error.message);
       return json(200, { success: false, error: error.message });
     }
+
 
     // Notify sales so a booking is never silently missed.
     try {
