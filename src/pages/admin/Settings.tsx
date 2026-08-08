@@ -17,6 +17,8 @@ import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 import { Settings, CreditCard, Key, Mail, Flag, Plus, Pencil, Trash2, Loader2, Save, Info } from "lucide-react";
 import type { Json } from "@/integrations/supabase/types";
 import { EmailLogsPanel } from "@/components/admin/EmailLogsPanel";
+import { DemoModeCard } from "@/components/admin/DemoModeCard";
+
 
 function debounce<T extends (...args: any[]) => any>(fn: T, ms: number): T {
   let timer: ReturnType<typeof setTimeout>;
@@ -307,7 +309,9 @@ const AdminSettings = () => {
 
           {/* General Settings */}
           <TabsContent value="general" className="space-y-4">
+            <DemoModeCard />
             <div className="grid gap-4">
+
               <div className="flex items-center justify-between p-4 border rounded-lg">
                 <div>
                   <Label className="text-base">Maintenance Mode</Label>

@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Shield, Clock, Lock, Unlock, Trash2, KeyRound, Pencil } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import type { UserSubscription } from "@/pages/admin/Users";
+import { useDemoMode } from "@/hooks/use-demo-mode";
+import { maybeMask } from "@/lib/demo-mask";
 
 interface UserTableProps {
   subscriptions: UserSubscription[];
@@ -48,6 +50,8 @@ export const UserTable = ({
   subscriptions, loading, isUserAdmin,
   onUpdateSubscription, onLockUser, onUnlockUser, onToggleAdmin, onSetTrial, onDeleteUser, onResetPassword, onEditUser
 }: UserTableProps) => {
+  const { isDemoMode } = useDemoMode();
+
   return (
     <div className="overflow-x-auto">
       <Table>
@@ -89,8 +93,8 @@ export const UserTable = ({
                         {(sub.full_name || sub.email)?.[0]?.toUpperCase() || '?'}
                       </div>
                       <div className="min-w-0">
-                        <p className="font-medium text-sm truncate">{sub.full_name || 'No name'}</p>
-                        <p className="text-xs text-muted-foreground truncate">{sub.email}</p>
+                        <p className="font-medium text-sm truncate">{maybeMask(isDemoMode, 'name', sub.full_name) || 'No name'}</p>
+                        <p className="text-xs text-muted-foreground truncate">{maybeMask(isDemoMode, 'email', sub.email)}</p>
                         {sub.signup_source && (
                           <p className="text-[10px] text-muted-foreground truncate mt-0.5" title={sub.signup_source}>
                             via {sub.signup_source}

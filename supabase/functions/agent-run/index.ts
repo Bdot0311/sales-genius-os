@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
 import { captureServerEvent } from "../_shared/posthog.ts";
 import {
   PLAYBOOK_SYSTEM_RULES,
@@ -183,6 +184,11 @@ serve(async (req) => {
       data: { user },
       error: authError,
     } = await adminClient.auth.getUser(authHeader.replace("Bearer ", ""));
+
+    // Demo mode: simulate instead of hitting providers or spending credits
+    if (user && await isDemoMode(adminClient, user.id)) {
+      return demoResponse({ message: 'Agent run simulated in demo mode — no emails sent and no credits spent.', actions: [] }, corsHeaders);
+    }
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,

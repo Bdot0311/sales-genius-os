@@ -19,6 +19,7 @@ export type Database = {
           completed: boolean | null
           created_at: string
           deal_id: string | null
+          demo_seed: boolean
           description: string | null
           due_date: string | null
           id: string
@@ -31,6 +32,7 @@ export type Database = {
           completed?: boolean | null
           created_at?: string
           deal_id?: string | null
+          demo_seed?: boolean
           description?: string | null
           due_date?: string | null
           id?: string
@@ -43,6 +45,7 @@ export type Database = {
           completed?: boolean | null
           created_at?: string
           deal_id?: string | null
+          demo_seed?: boolean
           description?: string | null
           due_date?: string | null
           id?: string
@@ -178,6 +181,7 @@ export type Database = {
           agent_config_id: string | null
           classification: string | null
           created_at: string | null
+          demo_seed: boolean
           description: string | null
           error_message: string | null
           id: string
@@ -195,6 +199,7 @@ export type Database = {
           agent_config_id?: string | null
           classification?: string | null
           created_at?: string | null
+          demo_seed?: boolean
           description?: string | null
           error_message?: string | null
           id?: string
@@ -212,6 +217,7 @@ export type Database = {
           agent_config_id?: string | null
           classification?: string | null
           created_at?: string | null
+          demo_seed?: boolean
           description?: string | null
           error_message?: string | null
           id?: string
@@ -396,6 +402,7 @@ export type Database = {
           company_context: string | null
           created_at: string | null
           daily_lead_target: number
+          demo_seed: boolean
           enabled: boolean | null
           icp_profile_id: string | null
           icp_snapshot: Json | null
@@ -429,6 +436,7 @@ export type Database = {
           company_context?: string | null
           created_at?: string | null
           daily_lead_target?: number
+          demo_seed?: boolean
           enabled?: boolean | null
           icp_profile_id?: string | null
           icp_snapshot?: Json | null
@@ -462,6 +470,7 @@ export type Database = {
           company_context?: string | null
           created_at?: string | null
           daily_lead_target?: number
+          demo_seed?: boolean
           enabled?: boolean | null
           icp_profile_id?: string | null
           icp_snapshot?: Json | null
@@ -1191,6 +1200,7 @@ export type Database = {
           city: string | null
           country: string | null
           created_at: string
+          demo_seed: boolean
           domain: string | null
           employee_count: number | null
           id: string
@@ -1206,6 +1216,7 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string
+          demo_seed?: boolean
           domain?: string | null
           employee_count?: number | null
           id?: string
@@ -1221,6 +1232,7 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string
+          demo_seed?: boolean
           domain?: string | null
           employee_count?: number | null
           id?: string
@@ -1334,6 +1346,7 @@ export type Database = {
           company_name: string
           contact_name: string | null
           created_at: string
+          demo_seed: boolean
           expected_close_date: string | null
           id: string
           lead_id: string | null
@@ -1349,6 +1362,7 @@ export type Database = {
           company_name: string
           contact_name?: string | null
           created_at?: string
+          demo_seed?: boolean
           expected_close_date?: string | null
           id?: string
           lead_id?: string | null
@@ -1364,6 +1378,7 @@ export type Database = {
           company_name?: string
           contact_name?: string | null
           created_at?: string
+          demo_seed?: boolean
           expected_close_date?: string | null
           id?: string
           lead_id?: string | null
@@ -1568,6 +1583,7 @@ export type Database = {
           ab_test_enabled: boolean | null
           ab_test_split: number | null
           created_at: string
+          demo_seed: boolean
           description: string | null
           id: string
           name: string
@@ -1581,6 +1597,7 @@ export type Database = {
           ab_test_enabled?: boolean | null
           ab_test_split?: number | null
           created_at?: string
+          demo_seed?: boolean
           description?: string | null
           id?: string
           name: string
@@ -1594,6 +1611,7 @@ export type Database = {
           ab_test_enabled?: boolean | null
           ab_test_split?: number | null
           created_at?: string
+          demo_seed?: boolean
           description?: string | null
           id?: string
           name?: string
@@ -1751,6 +1769,7 @@ export type Database = {
           created_at: string
           customer_examples: string | null
           deal_size_range: string[] | null
+          demo_seed: boolean
           departments: Json | null
           disqualifiers: string | null
           event_triggers: Json | null
@@ -1800,6 +1819,7 @@ export type Database = {
           created_at?: string
           customer_examples?: string | null
           deal_size_range?: string[] | null
+          demo_seed?: boolean
           departments?: Json | null
           disqualifiers?: string | null
           event_triggers?: Json | null
@@ -1849,6 +1869,7 @@ export type Database = {
           created_at?: string
           customer_examples?: string | null
           deal_size_range?: string[] | null
+          demo_seed?: boolean
           departments?: Json | null
           disqualifiers?: string | null
           event_triggers?: Json | null
@@ -2161,6 +2182,7 @@ export type Database = {
           contact_phone: string | null
           country: string | null
           created_at: string
+          demo_seed: boolean
           department: string | null
           employee_count: string | null
           engagement_state: string | null
@@ -2212,6 +2234,7 @@ export type Database = {
           contact_phone?: string | null
           country?: string | null
           created_at?: string
+          demo_seed?: boolean
           department?: string | null
           employee_count?: string | null
           engagement_state?: string | null
@@ -2263,6 +2286,7 @@ export type Database = {
           contact_phone?: string | null
           country?: string | null
           created_at?: string
+          demo_seed?: boolean
           department?: string | null
           employee_count?: string | null
           engagement_state?: string | null
@@ -2526,6 +2550,7 @@ export type Database = {
       personas: {
         Row: {
           created_at: string
+          demo_seed: boolean
           function: string | null
           id: string
           label: string
@@ -2536,6 +2561,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          demo_seed?: boolean
           function?: string | null
           id?: string
           label: string
@@ -2546,6 +2572,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          demo_seed?: boolean
           function?: string | null
           id?: string
           label?: string
@@ -2866,6 +2893,7 @@ export type Database = {
         Row: {
           classification: string | null
           created_at: string
+          demo_seed: boolean
           id: string
           lead_id: string | null
           original_email_body: string | null
@@ -2879,6 +2907,7 @@ export type Database = {
         Insert: {
           classification?: string | null
           created_at?: string
+          demo_seed?: boolean
           id?: string
           lead_id?: string | null
           original_email_body?: string | null
@@ -2892,6 +2921,7 @@ export type Database = {
         Update: {
           classification?: string | null
           created_at?: string
+          demo_seed?: boolean
           id?: string
           lead_id?: string | null
           original_email_body?: string | null
@@ -2917,6 +2947,7 @@ export type Database = {
           bounce_rate: number
           complaint_rate: number
           created_at: string
+          demo_seed: boolean
           id: string
           open_rate: number
           reputation_score: number | null
@@ -2929,6 +2960,7 @@ export type Database = {
           bounce_rate?: number
           complaint_rate?: number
           created_at?: string
+          demo_seed?: boolean
           id?: string
           open_rate?: number
           reputation_score?: number | null
@@ -2941,6 +2973,7 @@ export type Database = {
           bounce_rate?: number
           complaint_rate?: number
           created_at?: string
+          demo_seed?: boolean
           id?: string
           open_rate?: number
           reputation_score?: number | null
@@ -3248,6 +3281,7 @@ export type Database = {
           auto_pause_threshold: number
           created_at: string
           daily_limit: number
+          demo_seed: boolean
           email: string
           id: string
           integration_id: string | null
@@ -3268,6 +3302,7 @@ export type Database = {
           auto_pause_threshold?: number
           created_at?: string
           daily_limit?: number
+          demo_seed?: boolean
           email: string
           id?: string
           integration_id?: string | null
@@ -3288,6 +3323,7 @@ export type Database = {
           auto_pause_threshold?: number
           created_at?: string
           daily_limit?: number
+          demo_seed?: boolean
           email?: string
           id?: string
           integration_id?: string | null
@@ -3317,6 +3353,7 @@ export type Database = {
       sending_domains: {
         Row: {
           created_at: string
+          demo_seed: boolean
           dkim_selector: string | null
           dkim_status: string
           dmarc_status: string
@@ -3330,6 +3367,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          demo_seed?: boolean
           dkim_selector?: string | null
           dkim_status?: string
           dmarc_status?: string
@@ -3343,6 +3381,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          demo_seed?: boolean
           dkim_selector?: string | null
           dkim_status?: string
           dmarc_status?: string
@@ -3364,6 +3403,7 @@ export type Database = {
           body_text: string | null
           clicked_at: string | null
           created_at: string | null
+          demo_seed: boolean
           enrollment_id: string | null
           gmail_message_id: string | null
           gmail_thread_id: string | null
@@ -3390,6 +3430,7 @@ export type Database = {
           body_text?: string | null
           clicked_at?: string | null
           created_at?: string | null
+          demo_seed?: boolean
           enrollment_id?: string | null
           gmail_message_id?: string | null
           gmail_thread_id?: string | null
@@ -3416,6 +3457,7 @@ export type Database = {
           body_text?: string | null
           clicked_at?: string | null
           created_at?: string | null
+          demo_seed?: boolean
           enrollment_id?: string | null
           gmail_message_id?: string | null
           gmail_thread_id?: string | null
@@ -3589,6 +3631,7 @@ export type Database = {
           completed_at: string | null
           created_at: string
           current_step: number
+          demo_seed: boolean
           engagement_state: string
           enrolled_at: string
           id: string
@@ -3605,6 +3648,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           current_step?: number
+          demo_seed?: boolean
           engagement_state?: string
           enrolled_at?: string
           id?: string
@@ -3621,6 +3665,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           current_step?: number
+          demo_seed?: boolean
           engagement_state?: string
           enrolled_at?: string
           id?: string
@@ -3657,6 +3702,7 @@ export type Database = {
           created_at: string
           delay_days: number
           delay_hours: number
+          demo_seed: boolean
           id: string
           is_active: boolean
           sequence_id: string
@@ -3673,6 +3719,7 @@ export type Database = {
           created_at?: string
           delay_days?: number
           delay_hours?: number
+          demo_seed?: boolean
           id?: string
           is_active?: boolean
           sequence_id: string
@@ -3689,6 +3736,7 @@ export type Database = {
           created_at?: string
           delay_days?: number
           delay_hours?: number
+          demo_seed?: boolean
           id?: string
           is_active?: boolean
           sequence_id?: string
@@ -5208,6 +5256,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: undefined
       }
+      is_demo_mode: { Args: { _user_id: string }; Returns: boolean }
       lock_expired_trials: { Args: never; Returns: undefined }
       log_security_event: {
         Args: {

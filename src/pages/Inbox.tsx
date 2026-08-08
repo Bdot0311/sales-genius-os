@@ -4,6 +4,8 @@ import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
 import { supabase } from "@/integrations/supabase/client";
+import { useDemoMode } from "@/hooks/use-demo-mode";
+import { maybeMask } from "@/lib/demo-mask";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -102,6 +104,8 @@ const normalizeSubject = (s: string | null | undefined) =>
 
 const Inbox = () => {
   const queryClient = useQueryClient();
+  const { isDemoMode } = useDemoMode();
+
   const { hasFeature, gateModalOpen, setGateModalOpen, gatedFeature, currentPlan, triggerGate } =
     usePlanFeatures();
   const inboxGated = !hasFeature("unifiedInbox");
@@ -447,7 +451,7 @@ const Inbox = () => {
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0 flex-1">
                             <p className={`text-sm truncate ${conv.unread ? "font-semibold" : ""}`}>
-                              {conv.contactName || conv.counterpart}
+                              {maybeMask(isDemoMode, conv.contactName ? 'name' : 'email', conv.contactName || conv.counterpart)}
                             </p>
                             {conv.companyName && (
                               <p className="text-xs text-muted-foreground truncate">
@@ -516,8 +520,8 @@ const Inbox = () => {
                       </Button>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {selected.contactName ? `${selected.contactName} · ` : ""}
-                      {selected.counterpart}
+                      {selected.contactName ? `${maybeMask(isDemoMode, "name", selected.contactName)} · ` : ""}
+                      {maybeMask(isDemoMode, 'email', selected.counterpart)}
                       {selected.companyName ? ` · ${selected.companyName}` : ""}
                     </p>
                   </div>
@@ -539,7 +543,7 @@ const Inbox = () => {
                             ) : (
                               <Mail className="w-3 h-3 text-muted-foreground" />
                             )}
-                            <span className="text-xs font-medium">{m.from}</span>
+                            <span className="text-xs font-medium">{maybeMask(isDemoMode, 'email', m.from)}</span>
                             <span className="text-[10px] text-muted-foreground">
                               {format(new Date(m.at), "MMM d, h:mm a")}
                             </span>
@@ -576,7 +580,7 @@ const Inbox = () => {
                     <Textarea
                       value={draftReply}
                       onChange={(e) => setDraftReply(e.target.value)}
-                      placeholder={`Reply to ${selected.counterpart}…`}
+                      placeholder={`Reply to ${maybeMask(isDemoMode, "email", selected.counterpart)}…`}
                       className="min-h-[90px] text-sm"
                     />
                     <div className="flex items-center justify-between gap-2">

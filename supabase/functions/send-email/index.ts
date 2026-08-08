@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.76.0';
+import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
 import { logSystemAlert } from "../_shared/alerts.ts";
 
 const corsHeaders = {
@@ -59,6 +60,11 @@ serve(async (req) => {
     // Get user from JWT
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+
+    // Demo mode: simulate instead of hitting providers or spending credits
+    if (user && await isDemoMode(supabase, user.id)) {
+      return demoResponse({ message: 'Email simulated in demo mode — nothing was sent.', messageId: `demo-${crypto.randomUUID()}` }, corsHeaders);
+    }
     
     console.log('User extraction result:', { 
       hasUser: !!user, 

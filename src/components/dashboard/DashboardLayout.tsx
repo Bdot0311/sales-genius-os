@@ -32,6 +32,8 @@ import {
   ShieldCheck,
   Bot,
   Plug,
+  MonitorPlay,
+
 } from "lucide-react";
 import { User } from "@supabase/supabase-js";
 import { useSubscription } from "@/hooks/use-subscription";
@@ -40,6 +42,8 @@ import { useAdmin } from "@/hooks/use-admin";
 import { useWhiteLabel } from "@/hooks/use-white-label";
 import { useSearchCredits } from "@/hooks/use-search-credits";
 import { useLiveCrmIndicators } from "@/hooks/use-live-crm-indicators";
+import { useDemoMode } from "@/hooks/use-demo-mode";
+
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -91,6 +95,8 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const { settings: whiteLabelSettings } = useWhiteLabel();
   const { credits } = useSearchCredits();
   useLiveCrmIndicators();
+  const { isDemoMode } = useDemoMode();
+
 
 
   // Calculate trial days remaining
@@ -343,7 +349,16 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <div className="flex-1 min-w-0" />
           
           <div className="flex min-w-0 flex-shrink items-center gap-1 overflow-x-auto sm:gap-3">
+            {/* Demo Mode Badge */}
+            {isDemoMode && (
+              <Badge variant="outline" className="flex items-center gap-1 border-primary/40 bg-primary/10 text-primary text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 flex-shrink-0">
+                <MonitorPlay className="w-3 h-3" />
+                <span className="hidden sm:inline">Demo Mode</span>
+              </Badge>
+            )}
+
             {/* Admin Badge - icon only on mobile */}
+
             {isAdmin && (
               <Badge variant="default" className="flex items-center gap-1 bg-primary text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 flex-shrink-0">
                 <Shield className="w-3 h-3" />
