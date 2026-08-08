@@ -2015,6 +2015,34 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
       .update({ updated_at: new Date().toISOString() })
       .eq("id", threadId);
 
+    // Persist step timing for the Performance tab. Never let telemetry break a turn.
+    try {
+      const turnStatus = cancelled
+        ? "cancelled"
+        : stepMetrics.some((m) => m.status === "error") || failureNote
+          ? "error"
+          : "success";
+      const rows = [
+        ...stepMetrics,
+        {
+          tool_name: "__turn__",
+          step_type: "turn",
+          duration_ms: Date.now() - turnStartedAt,
+          status: turnStatus,
+          detail: failureNote ? failureNote.slice(0, 300) : null,
+        },
+      ].map((m) => ({
+        ...m,
+        user_id: userId,
+        thread_id: threadId,
+        turn_id: turnId,
+        agent_config_id: requestedAgentId ?? null,
+      }));
+      await admin.from("agent_step_metrics").insert(rows);
+    } catch (e) {
+      console.error("step metrics insert failed", e);
+    }
+
     await captureServerEvent("agent_chat_turn_completed", userId, {
       thread_id: threadId,
       tools_used: toolEvents.map((t) => t.name),
