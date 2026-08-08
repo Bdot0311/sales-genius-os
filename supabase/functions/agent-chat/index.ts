@@ -602,6 +602,139 @@ serve(async (req) => {
 
     const toolEvents: ToolEvent[] = [];
 
+    type Mailbox = { integrationRowId: string; email: string; status: string | null };
+
+    const loadMailboxes = async () => {
+      const { data } = await admin
+        .from("sending_accounts")
+        .select("integration_id, email, status")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: true });
+      return (data ?? []).filter((a: any) => a.integration_id && a.email);
+    };
+
+    // Picks the mailbox to send from. `from_email` is matched against the user's
+    // connected sending accounts; with one connected mailbox we use it, and with
+    // several we ask instead of guessing which inbox a prospect hears from.
+    const resolveMailbox = async (
+      fromEmail: string | null,
+    ): Promise<Mailbox | { error: string }> => {
+      const accounts = await loadMailboxes();
+      const sendable = accounts.filter((a: any) => a.status !== "paused" && a.status !== "disabled");
+      const list = accounts.map((a: any) => a.email).join(", ");
+      if (accounts.length === 0)
+        return { error: "No mailbox is connected. Connect Gmail on the Integrations page first." };
+      if (fromEmail) {
+        const wanted = fromEmail.trim().toLowerCase();
+        const match = accounts.find((a: any) => String(a.email).toLowerCase() === wanted);
+        if (!match) return { error: `No connected mailbox for ${fromEmail}. Connected mailboxes: ${list}.` };
+        if (match.status === "paused" || match.status === "disabled")
+          return { error: `${match.email} is ${match.status}. Resume it on the Deliverability page or pick another mailbox.` };
+        return { integrationRowId: match.integration_id, email: match.email, status: match.status };
+      }
+      if (sendable.length === 0)
+        return { error: `Every connected mailbox is paused or disabled (${list}). Resume one on the Deliverability page.` };
+      if (sendable.length === 1)
+        return { integrationRowId: sendable[0].integration_id, email: sendable[0].email, status: sendable[0].status };
+      return {
+        error: `Several mailboxes are connected (${sendable.map((a: any) => a.email).join(", ")}). Ask the user which one to send from and pass it as from_email.`,
+      };
+    };
+
+    // Single send path for both send_outreach and send_drafts: in approval mode it
+    // queues an inline approve/reject card, otherwise it sends immediately.
+    const deliver = async (opts: {
+      leadId: string | null;
+      to: string;
+      contactName: string | null;
+      companyName: string | null;
+      subject: string;
+      body: string;
+      mailbox: Mailbox;
+      toolName: string;
+    }): Promise<{ sent: boolean; summary: Record<string, unknown>; result?: any }> => {
+      const { leadId, to, subject, body, mailbox, toolName } = opts;
+      if (!subject || !body) return { sent: false, summary: { error: "Subject and body are required" } };
+
+      if (!autonomous) {
+        const { data: approval, error } = await admin
+          .from("agent_approvals")
+          .insert({
+            user_id: userId,
+            kind: "outreach",
+            status: "pending",
+            lead_id: leadId,
+            integration_row_id: mailbox.integrationRowId,
+            prospect_email: to,
+            prospect_name: opts.contactName,
+            company_name: opts.companyName,
+            subject,
+            body,
+            reasoning: `Drafted in AI SDR chat — send from ${mailbox.email} once approved`,
+            metadata: { source: "agent_chat", thread_id: threadId, from_email: mailbox.email },
+          })
+          .select("id")
+          .single();
+        if (error) return { sent: false, summary: { error: error.message } };
+        toolEvents.push({
+          name: toolName,
+          label: "Waiting for your approval",
+          status: "queued",
+          detail: `Send "${subject}" to ${to} from ${mailbox.email}`,
+          approval_id: approval.id,
+          approval_kind: "outreach",
+          approval_summary: body.slice(0, 600),
+        });
+        return {
+          sent: false,
+          summary: {
+            queued_for_approval: true,
+            approval_id: approval.id,
+            message:
+              "Nothing was sent. An approve/reject card is shown to the user right here in the chat — wait for their decision.",
+          },
+        };
+      }
+
+      const r = await invokeFn("send-email", {
+        to,
+        subject,
+        body,
+        leadId: leadId ?? undefined,
+        integrationRowId: mailbox.integrationRowId,
+      });
+      const sent = !r?.error;
+      if (sent) {
+        if (leadId) {
+          await admin
+            .from("leads")
+            .update({ lead_status: "active", last_contacted_at: new Date().toISOString() })
+            .eq("id", leadId)
+            .eq("user_id", userId);
+        }
+        await admin.from("agent_actions").insert({
+          user_id: userId,
+          action_type: "outreach_sent",
+          status: "completed",
+          prospect_email: to,
+          subject,
+          description: `Sent outreach to ${to} from ${mailbox.email} (AI SDR chat)`,
+          metadata: { source: "agent_chat", thread_id: threadId, from_email: mailbox.email },
+        });
+      }
+      toolEvents.push({
+        name: toolName,
+        label: sent ? "Sent email" : "Send failed",
+        status: sent ? "ok" : "error",
+        detail: sent ? `${to} — from ${mailbox.email}` : String(r?.error ?? "unknown error"),
+      });
+      return {
+        sent,
+        summary: sent ? { sent: true, to } : { sent: false, error: String(r?.error ?? "send failed") },
+        result: r,
+      };
+    };
+
     const runTool = async (name: string, args: Record<string, any>): Promise<unknown> => {
       switch (name) {
         case "list_leads": {
