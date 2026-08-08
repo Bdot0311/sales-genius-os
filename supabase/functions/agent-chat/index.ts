@@ -1928,7 +1928,20 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
 
       const parallelResults = parallel.length ? await Promise.all(parallel.map(runOne)) : [];
       const serialResults: any[] = [];
-      for (const call of serial) serialResults.push(await runOne(call));
+      for (const call of serial) {
+        // Last gate before anything that writes or sends: if the user hit Stop
+        // while the previous action was running, don't start this one.
+        if (MUTATING_TOOLS.has(nameOf(call)) && (await cancelRequested())) {
+          toolEvents.push({
+            name: nameOf(call),
+            label: "Stopped before running",
+            status: "error",
+            detail: "You stopped this run before this action started.",
+          });
+          continue;
+        }
+        serialResults.push(await runOne(call));
+      }
 
       // Keep the tool replies in the order the model asked for them.
       const byId = new Map<string, any>();
@@ -1937,9 +1950,18 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
         const r = byId.get(call.id);
         if (r) messages.push(r);
       }
+      if (cancelled) break;
     }
 
-    if (!finalText) {
+    if (cancelled) {
+      await admin
+        .from("agent_chat_threads")
+        .update({ cancel_requested_at: null })
+        .eq("id", threadId);
+      finalText = toolEvents.length
+        ? "Stopped. Everything above was already done and is saved — nothing further ran. Tell me what to change and I'll pick it back up."
+        : "Stopped before anything ran. Nothing was sent or changed.";
+    } else if (!finalText) {
       finalText = failureNote
         ? failureNote
         : ranOutOfTime
