@@ -31,6 +31,7 @@ import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import { ChatDraftCard, type ChatDraft } from "@/components/agent/ChatDraftCard";
 import { roleLabel } from "@/components/agent/AgentRoles";
+import { AgentWorkingIndicator } from "@/components/agent/AgentWorkingIndicator";
 
 
 interface Thread {
@@ -564,12 +565,7 @@ const AgentChat = () => {
                 ),
               )}
 
-              {sending && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Working on it…
-                </div>
-              )}
+              {sending && <AgentWorkingIndicator />}
               <div ref={bottomRef} />
             </div>
           </ScrollArea>
