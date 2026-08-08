@@ -615,12 +615,17 @@ serve(async (req) => {
 
     const toolEvents: ToolEvent[] = [];
 
-    type Mailbox = { integrationRowId: string; email: string; status: string | null };
+    type Mailbox = {
+      integrationRowId: string;
+      email: string;
+      status: string | null;
+      sendingAccountId?: string | null;
+    };
 
     const loadMailboxes = async () => {
       const { data } = await admin
         .from("sending_accounts")
-        .select("integration_id, email, status")
+        .select("id, integration_id, email, status")
         .eq("user_id", userId)
         .order("created_at", { ascending: true });
       return (data ?? []).filter((a: any) => a.integration_id && a.email);
