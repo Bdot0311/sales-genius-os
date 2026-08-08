@@ -538,6 +538,10 @@ const Agent = () => {
             <HistoryTab agents={agents} userId={userId} />
           </TabsContent>
 
+          <TabsContent value="performance">
+            <PerformanceTab />
+          </TabsContent>
+
           <TabsContent value="settings">
             <SettingsTab
               config={config}
