@@ -62,6 +62,17 @@ const MUTATING_TOOLS = new Set([
   "run_full_agent",
 ]);
 
+// Read-only, DB-only tools: safe to execute concurrently within one model step.
+const PARALLEL_SAFE_TOOLS = new Set([
+  "list_leads",
+  "get_lead",
+  "list_mailboxes",
+  "list_drafts",
+  "list_sequences",
+  "list_recent_replies",
+  "get_agent_status",
+]);
+
 const TOOLS = [
   {
     type: "function",
