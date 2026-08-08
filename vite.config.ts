@@ -7,7 +7,7 @@ import { visualizer } from "rollup-plugin-visualizer";
 import { seoRoutesPlugin } from "./vite-plugin-seo-routes";
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig(({ mode, isSsrBuild }) => ({
   server: {
     host: "::",
     port: 8080,
@@ -33,6 +33,14 @@ export default defineConfig(({ mode }) => ({
       "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
     },
   },
+  ssr: {
+    // The homepage prerender (src/entry-server.tsx) is the only SSR build.
+    // resolve.alias pins react/react-dom to a single path so they get bundled,
+    // but other deps (react-query, router, motion) would stay externalized and
+    // pull a second React from node_modules — "Invalid hook call" at
+    // renderToString. Bundle everything so there is exactly one React.
+    noExternal: true,
+  },
   optimizeDeps: {
     // Pre-bundle these on server start. Anything discovered later forces a
     // mid-session re-optimization, which can swap React's prebundled chunk
@@ -48,7 +56,12 @@ export default defineConfig(({ mode }) => ({
     // Reduce unused JS by splitting vendor chunks
     rollupOptions: {
       output: {
-        manualChunks: (id) => {
+        // manualChunks is a client-bundle optimization. During the SSR build
+        // (src/entry-server.tsx, used only by the homepage prerender) it would
+        // force React into a shared chunk while Vite externalizes the rest,
+        // producing two React instances and an "Invalid hook call" at
+        // renderToString. Disable it for SSR so there is a single React.
+        manualChunks: isSsrBuild ? undefined : (id) => {
           // Vite aliases react/react-dom to local node_modules; match on the
           // resolved path so the bulky CJS production builds actually move out
           // of the main entry chunk.

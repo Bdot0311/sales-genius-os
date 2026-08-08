@@ -1,4 +1,4 @@
-import { createRoot } from "react-dom/client";
+import { createRoot, hydrateRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import "./lib/posthog";
@@ -60,7 +60,17 @@ if (typeof caches !== 'undefined') {
   }).catch(() => {});
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+const rootEl = document.getElementById("root")!;
+// The homepage ships with its hero prerendered into #root at build time
+// (scripts/prerender.mjs, marked data-prerendered). Adopt that markup instead
+// of discarding it so the hero's static paint counts as LCP. Every other route
+// still mounts fresh — including the crawler link-index the SEO plugin seeds,
+// which createRoot() clears as before.
+if (rootEl.dataset.prerendered === "true") {
+  hydrateRoot(rootEl, <App />);
+} else {
+  createRoot(rootEl).render(<App />);
+}
 
 // Error monitoring is loaded after the first paint so it stays off the LCP
 // critical path. Errors thrown before this resolves are still caught by the
