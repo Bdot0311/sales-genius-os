@@ -55,6 +55,21 @@ type ToolEvent = {
 const LEAD_FIELDS =
   "id, company_name, contact_name, contact_email, job_title, industry, company_website, linkedin_url, lead_status, icp_score, intent_score, intent_label, signal_score, signals, notes, last_contacted_at, created_at";
 
+// Mirrors the client-side draft -> HTML conversion used by the chat draft cards
+// so a scheduled send renders identically to an immediate one.
+const draftBodyToHtml = (body: string) => {
+  const escaped = body
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  const paragraphs = escaped
+    .split("\n")
+    .map((line) => (line.trim() ? `<p>${line.trim()}</p>` : ""))
+    .filter(Boolean)
+    .join("\n");
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.6;color:#333;max-width:600px;margin:0 auto;padding:20px}p{margin:0 0 16px}</style></head><body>${paragraphs}</body></html>`;
+};
+
 const MUTATING_TOOLS = new Set([
   "send_outreach",
   "send_drafts",
