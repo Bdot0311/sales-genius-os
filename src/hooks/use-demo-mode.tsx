@@ -52,8 +52,11 @@ export const useDemoMode = () => {
   useEffect(() => {
     load();
 
+    // Unique channel name per hook instance: multiple components use this hook
+    // at once, and reusing one name makes Supabase reuse an already-subscribed
+    // channel, which throws "cannot add postgres_changes callbacks ... after subscribe()".
     const channel = supabase
-      .channel("demo-mode-setting")
+      .channel(`demo-mode-setting-${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "admin_settings", filter: "setting_key=eq.demo_mode" },
@@ -63,6 +66,7 @@ export const useDemoMode = () => {
 
     return () => { supabase.removeChannel(channel); };
   }, [load]);
+
 
   const isDemoMode = state.enabled && !!userId && state.adminUserId === userId;
 
