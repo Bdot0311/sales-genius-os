@@ -65,10 +65,14 @@ export default defineConfig(({ mode, isSsrBuild }) => ({
           // Vite aliases react/react-dom to local node_modules; match on the
           // resolved path so the bulky CJS production builds actually move out
           // of the main entry chunk.
-          if (id.includes("node_modules/react") || id.includes("node_modules/react-dom") || id.includes("node_modules/scheduler")) {
+          // Match the package directory exactly. A loose `includes("node_modules/react")`
+          // prefix-matches react-day-picker, react-hook-form, react-router, etc. and
+          // dragged those lazy-route-only libraries into the eagerly module-preloaded
+          // critical chunk (553 KB raw). Anchor on the trailing slash instead.
+          if (/node_modules\/(react|react-dom|scheduler)\//.test(id)) {
             return "vendor-react";
           }
-          if (id.includes("node_modules/react-router-dom") || id.includes("node_modules/@remix-run/router")) {
+          if (/node_modules\/(react-router|react-router-dom|@remix-run\/router)\//.test(id)) {
             return "vendor-router";
           }
           if (id.includes("node_modules/@tanstack/react-query")) {
