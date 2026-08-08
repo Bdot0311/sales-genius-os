@@ -26,6 +26,7 @@ import {
   AlertTriangle,
   Clock,
   ArrowLeft,
+  Square,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -84,6 +85,7 @@ const AgentChat = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [stopping, setStopping] = useState(false);
   const [loading, setLoading] = useState(true);
   const [autonomy, setAutonomy] = useState<"approval" | "autonomous">("approval");
   const [agents, setAgents] = useState<AgentOption[]>([]);
@@ -259,8 +261,26 @@ const AgentChat = () => {
       }
     } finally {
       setSending(false);
+      setStopping(false);
       inputRef.current?.focus();
     }
+  };
+
+  // Interrupt a run in flight. The flag is picked up between the agent's steps,
+  // so anything already finished stays saved and nothing new is sent.
+  const handleStop = async () => {
+    if (!threadId || stopping) return;
+    setStopping(true);
+    const { error } = await supabase
+      .from("agent_chat_threads")
+      .update({ cancel_requested_at: new Date().toISOString() })
+      .eq("id", threadId);
+    if (error) {
+      setStopping(false);
+      toast.error("Could not stop the run — try again");
+      return;
+    }
+    toast.info("Stopping the agent after the current step…");
   };
 
   // Keep inline approval cards in sync with the stored decision.
@@ -565,7 +585,25 @@ const AgentChat = () => {
                 ),
               )}
 
-              {sending && <AgentWorkingIndicator />}
+              {sending && (
+                <div className="space-y-2">
+                  <AgentWorkingIndicator />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5"
+                    onClick={handleStop}
+                    disabled={stopping}
+                  >
+                    {stopping ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Square className="w-3.5 h-3.5" />
+                    )}
+                    {stopping ? "Stopping…" : "Stop run"}
+                  </Button>
+                </div>
+              )}
               <div ref={bottomRef} />
             </div>
           </ScrollArea>
@@ -587,20 +625,33 @@ const AgentChat = () => {
                 className="min-w-0 flex-1 resize-none text-base sm:text-sm"
                 disabled={sending || loading}
               />
-              <Button
-                size="icon"
-                className="flex-shrink-0"
-                onClick={() => handleSend()}
-
-                disabled={sending || loading || !input.trim()}
-                aria-label="Send message"
-              >
-                {sending ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
+              {sending ? (
+                <Button
+                  size="icon"
+                  variant="destructive"
+                  className="flex-shrink-0"
+                  onClick={handleStop}
+                  disabled={stopping}
+                  aria-label="Stop the agent"
+                  title="Stop the agent"
+                >
+                  {stopping ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Square className="w-4 h-4" />
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  size="icon"
+                  className="flex-shrink-0"
+                  onClick={() => handleSend()}
+                  disabled={loading || !input.trim()}
+                  aria-label="Send message"
+                >
                   <SendHorizonal className="w-4 h-4" />
-                )}
-              </Button>
+                </Button>
+              )}
             </div>
             <p className="max-w-3xl mx-auto mt-2 text-[11px] text-muted-foreground">
               {autonomy === "autonomous"
