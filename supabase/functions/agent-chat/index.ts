@@ -304,6 +304,37 @@ const TOOLS = [
   {
     type: "function",
     function: {
+      name: "delete_drafts",
+      description:
+        "Permanently delete saved email drafts the user no longer wants. Pass draft_ids (from list_drafts or your own draft_outreach results), lead_ids to remove every draft for those leads, or all_pending to clear every saved draft. Deleting is irreversible — only do it when the user asks.",
+      parameters: {
+        type: "object",
+        properties: {
+          draft_ids: { type: "array", items: { type: "string" }, description: "Draft ids to delete" },
+          lead_ids: { type: "array", items: { type: "string" }, description: "Delete all drafts for these leads" },
+          all_pending: { type: "boolean", description: "Delete every saved draft for the user" },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "delete_inbox_threads",
+      description:
+        "Delete emails/conversations from the user's inbox (removes the stored reply threads). Pass thread_ids, or match_email to clear the conversation with a specific address. Irreversible — only when the user asks to delete or clean up their inbox.",
+      parameters: {
+        type: "object",
+        properties: {
+          thread_ids: { type: "array", items: { type: "string" }, description: "Reply thread ids to delete" },
+          match_email: { type: "string", description: "Delete threads with this email address" },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "send_outreach",
       description:
         "Send a brand new email to a lead when you have the subject and body in hand. To send a draft you already created, use send_drafts instead. In approval mode this pauses and shows the user an approve/reject card inline in the chat instead of sending.",
