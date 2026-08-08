@@ -27,6 +27,7 @@ import { getAgentTier, getNextPlan, PLAN_FEATURES, type PlanType } from "@/lib/p
 import { OverviewTab } from "@/components/agent/OverviewTab";
 import { InboxTab } from "@/components/agent/InboxTab";
 import { HistoryTab } from "@/components/agent/HistoryTab";
+import { PerformanceTab } from "@/components/agent/PerformanceTab";
 import { ConfigTab } from "@/components/agent/ConfigTab";
 import { SettingsTab } from "@/components/agent/SettingsTab";
 import { AgentTestDialog } from "@/components/agent/AgentTestDialog";
