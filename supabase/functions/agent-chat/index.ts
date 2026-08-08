@@ -868,6 +868,138 @@ serve(async (req) => {
           return r;
         }
 
+        case "list_mailboxes": {
+          const accounts = await loadMailboxes();
+          toolEvents.push({
+            name,
+            label: "Listed mailboxes",
+            status: "ok",
+            detail: accounts.length
+              ? accounts.map((a) => `${a.email}${a.status && a.status !== "active" ? ` (${a.status})` : ""}`).join(", ")
+              : "no connected mailbox",
+          });
+          return {
+            mailboxes: accounts.map((a) => ({ email: a.email, status: a.status })),
+            note: accounts.length
+              ? "Pass one of these addresses as from_email when sending."
+              : "No mailbox is connected — the user needs to connect Gmail on the Integrations page before anything can be sent.",
+          };
+        }
+
+        case "list_drafts": {
+          const limit = Math.min(Math.max(Number(args.limit ?? 20) || 20, 1), 50);
+          let q = admin
+            .from("email_drafts")
+            .select("id, lead_id, subject, body, created_at, leads(company_name, contact_name, contact_email)")
+            .eq("user_id", userId)
+            .order("created_at", { ascending: false })
+            .limit(limit);
+          const leadIds = Array.isArray(args.lead_ids) ? args.lead_ids.map((x: any) => String(x)) : [];
+          if (leadIds.length) q = q.in("lead_id", leadIds);
+          const { data, error } = await q;
+          if (error) return { error: error.message };
+          const search = String(args.query ?? "").trim().toLowerCase();
+          const rows = (data ?? []).filter((d: any) =>
+            !search ||
+            [d.subject, d.leads?.company_name, d.leads?.contact_name, d.leads?.contact_email]
+              .filter(Boolean)
+              .some((v: string) => v.toLowerCase().includes(search)),
+          );
+          toolEvents.push({
+            name,
+            label: "Listed drafts",
+            status: "ok",
+            detail: `${rows.length} saved draft(s)`,
+          });
+          return {
+            drafts: rows.map((d: any) => ({
+              draft_id: d.id,
+              lead_id: d.lead_id,
+              subject: d.subject,
+              company: d.leads?.company_name ?? null,
+              contact: d.leads?.contact_name ?? null,
+              contact_email: d.leads?.contact_email ?? null,
+              created_at: d.created_at,
+            })),
+            note: "Send these with send_drafts using their draft_id — you do not need the body.",
+          };
+        }
+
+        case "send_drafts": {
+          const draftIds = (Array.isArray(args.draft_ids) ? args.draft_ids : [])
+            .filter(Boolean)
+            .map((x: any) => String(x));
+          const leadIds = (Array.isArray(args.lead_ids) ? args.lead_ids : [])
+            .filter(Boolean)
+            .map((x: any) => String(x));
+
+          let q = admin
+            .from("email_drafts")
+            .select("id, lead_id, subject, body, created_at, leads(company_name, contact_name, contact_email)")
+            .eq("user_id", userId)
+            .order("created_at", { ascending: false })
+            .limit(20);
+          if (draftIds.length) q = q.in("id", draftIds);
+          else if (leadIds.length) q = q.in("lead_id", leadIds);
+          const { data: draftRows, error: draftErr } = await q;
+          if (draftErr) return { error: draftErr.message };
+
+          let drafts = draftRows ?? [];
+          // lead_ids means "the latest draft per lead", not every draft ever written.
+          if (!draftIds.length && leadIds.length) {
+            const seen = new Set<string>();
+            drafts = drafts.filter((d: any) => {
+              if (!d.lead_id || seen.has(d.lead_id)) return false;
+              seen.add(d.lead_id);
+              return true;
+            });
+          }
+          if (drafts.length === 0)
+            return { error: "No matching saved drafts. Call list_drafts to see what exists, or draft first." };
+
+          const mailbox = await resolveMailbox(args.from_email ? String(args.from_email) : null);
+          if ("error" in mailbox) {
+            toolEvents.push({ name, label: "Send blocked", status: "error", detail: mailbox.error });
+            return { error: mailbox.error };
+          }
+
+          const results: any[] = [];
+          for (const d of drafts as any[]) {
+            const to = d.leads?.contact_email ?? null;
+            const label = d.leads?.company_name ?? d.leads?.contact_name ?? to ?? "lead";
+            if (!to) {
+              results.push({ draft_id: d.id, lead: label, error: "Lead has no email address — enrich it first" });
+              continue;
+            }
+            const outcome = await deliver({
+              leadId: d.lead_id,
+              to,
+              contactName: d.leads?.contact_name ?? null,
+              companyName: d.leads?.company_name ?? null,
+              subject: String(d.subject ?? "").slice(0, 200),
+              body: String(d.body ?? ""),
+              mailbox,
+              toolName: name,
+            });
+            results.push({ draft_id: d.id, lead: label, to, ...outcome.summary });
+            if (outcome.sent) {
+              await admin.from("email_drafts").delete().eq("id", d.id).eq("user_id", userId);
+            }
+          }
+
+          const sentCount = results.filter((r) => r.sent).length;
+          const queuedCount = results.filter((r) => r.queued_for_approval).length;
+          return {
+            from: mailbox.email,
+            sent: sentCount,
+            queued_for_approval: queuedCount,
+            results,
+            note: autonomous
+              ? `Sent ${sentCount} of ${results.length} draft(s) from ${mailbox.email}.`
+              : `Nothing was sent yet — ${queuedCount} approve/reject card(s) are shown to the user right here in the chat. Wait for their decision and never tell them to go to another page.`,
+          };
+        }
+
         case "send_outreach": {
           const lead = await loadLead(String(args.lead_id ?? ""));
           if (!lead) return { error: "Lead not found" };
@@ -876,72 +1008,23 @@ serve(async (req) => {
           const body = String(args.body ?? "");
           if (!subject || !body) return { error: "Subject and body are required" };
 
-          if (!autonomous) {
-            const { data: approval, error } = await admin
-              .from("agent_approvals")
-              .insert({
-                user_id: userId,
-                kind: "outreach",
-                status: "pending",
-                lead_id: lead.id,
-                prospect_email: lead.contact_email,
-                prospect_name: lead.contact_name,
-                company_name: lead.company_name,
-                subject,
-                body,
-                reasoning: "Drafted in AI SDR chat — awaiting your approval",
-                metadata: { source: "agent_chat", thread_id: threadId },
-              })
-              .select("id")
-              .single();
-            if (error) return { error: error.message };
-            toolEvents.push({
-              name,
-              label: "Waiting for your approval",
-              status: "queued",
-              detail: `Send "${subject}" to ${lead.contact_email}`,
-              approval_id: approval.id,
-              approval_kind: "outreach",
-              approval_summary: body.slice(0, 600),
-            });
-            return {
-              queued_for_approval: true,
-              approval_id: approval.id,
-              message:
-                "Nothing was sent. An approve/reject card is shown to the user right here in the chat — wait for their decision.",
-            };
+          const mailbox = await resolveMailbox(args.from_email ? String(args.from_email) : null);
+          if ("error" in mailbox) {
+            toolEvents.push({ name, label: "Send blocked", status: "error", detail: mailbox.error });
+            return { error: mailbox.error };
           }
 
-          const r = await invokeFn("send-email", {
+          const outcome = await deliver({
+            leadId: lead.id,
             to: lead.contact_email,
+            contactName: lead.contact_name ?? null,
+            companyName: lead.company_name ?? null,
             subject,
             body,
-            leadId: lead.id,
+            mailbox,
+            toolName: name,
           });
-          const sent = !r?.error;
-          if (sent) {
-            await admin
-              .from("leads")
-              .update({ lead_status: "active", last_contacted_at: new Date().toISOString() })
-              .eq("id", lead.id)
-              .eq("user_id", userId);
-            await admin.from("agent_actions").insert({
-              user_id: userId,
-              action_type: "outreach_sent",
-              status: "completed",
-              prospect_email: lead.contact_email,
-              subject,
-              description: `Sent outreach to ${lead.contact_email} from AI SDR chat`,
-              metadata: { source: "agent_chat", thread_id: threadId },
-            });
-          }
-          toolEvents.push({
-            name,
-            label: sent ? "Sent email" : "Send failed",
-            status: sent ? "ok" : "error",
-            detail: sent ? lead.contact_email : String(r?.error ?? "unknown error"),
-          });
-          return r;
+          return { from: mailbox.email, ...outcome.summary, ...(outcome.result ?? {}) };
         }
 
         case "list_sequences": {
