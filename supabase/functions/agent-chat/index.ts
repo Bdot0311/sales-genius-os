@@ -57,6 +57,7 @@ const LEAD_FIELDS =
 
 const MUTATING_TOOLS = new Set([
   "send_outreach",
+  "send_drafts",
   "enroll_lead_in_sequence",
   "run_full_agent",
 ]);
