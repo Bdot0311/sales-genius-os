@@ -710,6 +710,16 @@ serve(async (req) => {
     };
 
     const toolEvents: ToolEvent[] = [];
+    // Step timing telemetry (Agent > Performance tab reads this).
+    const turnId = crypto.randomUUID();
+    const turnStartedAt = Date.now();
+    const stepMetrics: Array<{
+      tool_name: string;
+      step_type: string;
+      duration_ms: number;
+      status: string;
+      detail: string | null;
+    }> = [];
 
     type Mailbox = {
       integrationRowId: string;
@@ -1904,17 +1914,29 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
           console.log("approval-mode mutating tool", toolName);
         }
         let result: unknown;
+        const startedAt = Date.now();
+        let stepStatus = "success";
+        let stepDetail: string | null = null;
         try {
           result = await runTool(toolName, args);
         } catch (e) {
-          result = { error: e instanceof Error ? e.message : "tool failed" };
+          stepStatus = "error";
+          stepDetail = e instanceof Error ? e.message : "unknown error";
+          result = { error: stepDetail ?? "tool failed" };
           toolEvents.push({
             name: toolName,
             label: "Action failed",
             status: "error",
-            detail: e instanceof Error ? e.message : "unknown error",
+            detail: stepDetail ?? "unknown error",
           });
         }
+        stepMetrics.push({
+          tool_name: toolName || "unknown",
+          step_type: PARALLEL_SAFE_TOOLS.has(toolName) ? "tool_parallel" : "tool_serial",
+          duration_ms: Date.now() - startedAt,
+          status: stepStatus,
+          detail: stepDetail ? stepDetail.slice(0, 300) : null,
+        });
         return {
           role: "tool",
           tool_call_id: call.id,
@@ -1992,6 +2014,34 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
       .from("agent_chat_threads")
       .update({ updated_at: new Date().toISOString() })
       .eq("id", threadId);
+
+    // Persist step timing for the Performance tab. Never let telemetry break a turn.
+    try {
+      const turnStatus = cancelled
+        ? "cancelled"
+        : stepMetrics.some((m) => m.status === "error") || failureNote
+          ? "error"
+          : "success";
+      const rows = [
+        ...stepMetrics,
+        {
+          tool_name: "__turn__",
+          step_type: "turn",
+          duration_ms: Date.now() - turnStartedAt,
+          status: turnStatus,
+          detail: failureNote ? failureNote.slice(0, 300) : null,
+        },
+      ].map((m) => ({
+        ...m,
+        user_id: userId,
+        thread_id: threadId,
+        turn_id: turnId,
+        agent_config_id: requestedAgentId ?? null,
+      }));
+      await admin.from("agent_step_metrics").insert(rows);
+    } catch (e) {
+      console.error("step metrics insert failed", e);
+    }
 
     await captureServerEvent("agent_chat_turn_completed", userId, {
       thread_id: threadId,

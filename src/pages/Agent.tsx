@@ -27,6 +27,7 @@ import { getAgentTier, getNextPlan, PLAN_FEATURES, type PlanType } from "@/lib/p
 import { OverviewTab } from "@/components/agent/OverviewTab";
 import { InboxTab } from "@/components/agent/InboxTab";
 import { HistoryTab } from "@/components/agent/HistoryTab";
+import { PerformanceTab } from "@/components/agent/PerformanceTab";
 import { ConfigTab } from "@/components/agent/ConfigTab";
 import { SettingsTab } from "@/components/agent/SettingsTab";
 import { AgentTestDialog } from "@/components/agent/AgentTestDialog";
@@ -508,6 +509,7 @@ const Agent = () => {
             <TabsTrigger value="inbox">Inbox</TabsTrigger>
             <TabsTrigger value="configuration">Configuration</TabsTrigger>
             <TabsTrigger value="history">History</TabsTrigger>
+            <TabsTrigger value="performance">Performance</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
 
@@ -535,6 +537,10 @@ const Agent = () => {
 
           <TabsContent value="history">
             <HistoryTab agents={agents} userId={userId} />
+          </TabsContent>
+
+          <TabsContent value="performance">
+            <PerformanceTab />
           </TabsContent>
 
           <TabsContent value="settings">

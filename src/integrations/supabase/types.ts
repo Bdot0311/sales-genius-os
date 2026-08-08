@@ -505,6 +505,48 @@ export type Database = {
           },
         ]
       }
+      agent_step_metrics: {
+        Row: {
+          agent_config_id: string | null
+          created_at: string
+          detail: string | null
+          duration_ms: number
+          id: string
+          status: string
+          step_type: string
+          thread_id: string | null
+          tool_name: string
+          turn_id: string
+          user_id: string
+        }
+        Insert: {
+          agent_config_id?: string | null
+          created_at?: string
+          detail?: string | null
+          duration_ms: number
+          id?: string
+          status?: string
+          step_type?: string
+          thread_id?: string | null
+          tool_name: string
+          turn_id: string
+          user_id: string
+        }
+        Update: {
+          agent_config_id?: string | null
+          created_at?: string
+          detail?: string | null
+          duration_ms?: number
+          id?: string
+          status?: string
+          step_type?: string
+          thread_id?: string | null
+          tool_name?: string
+          turn_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       alert_rules: {
         Row: {
           comparison_operator: string
