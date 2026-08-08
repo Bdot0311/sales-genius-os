@@ -178,15 +178,58 @@ const TOOLS = [
   {
     type: "function",
     function: {
+      name: "list_drafts",
+      description:
+        "List the user's saved email drafts (id, lead, subject, recipient). Use this to get draft ids before sending — including drafts you created in an earlier turn of this conversation.",
+      parameters: {
+        type: "object",
+        properties: {
+          lead_ids: { type: "array", items: { type: "string" }, description: "Only drafts for these leads" },
+          query: { type: "string", description: "Free-text match on subject, company or contact" },
+          limit: { type: "number", description: "Default 20, max 50" },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_mailboxes",
+      description:
+        "List the user's connected sending mailboxes (email address and status). Use this when the user names an inbox to send from, or when you need to know which mailboxes are available.",
+      parameters: { type: "object", properties: {} },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "send_drafts",
+      description:
+        "Send already-saved drafts. This is how you send emails you drafted earlier — you do NOT need the subject or body, only the draft ids (or lead ids, or nothing to send every pending draft). Optionally pass from_email to send from a specific connected mailbox. In approval mode each send pauses for the user's approval inline in the chat.",
+      parameters: {
+        type: "object",
+        properties: {
+          draft_ids: { type: "array", items: { type: "string" }, description: "Draft ids to send" },
+          lead_ids: { type: "array", items: { type: "string" }, description: "Send the latest draft for each of these leads" },
+          from_email: { type: "string", description: "Mailbox address to send from, e.g. brandon@example.com" },
+          all_pending: { type: "boolean", description: "Send every saved draft (max 20) when no ids are given" },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "send_outreach",
       description:
-        "Send an email to a lead. In approval mode this pauses and shows the user an approve/reject card inline in the chat instead of sending.",
+        "Send a brand new email to a lead when you have the subject and body in hand. To send a draft you already created, use send_drafts instead. In approval mode this pauses and shows the user an approve/reject card inline in the chat instead of sending.",
       parameters: {
         type: "object",
         properties: {
           lead_id: { type: "string" },
           subject: { type: "string" },
           body: { type: "string" },
+          from_email: { type: "string", description: "Mailbox address to send from" },
         },
         required: ["lead_id", "subject", "body"],
       },
