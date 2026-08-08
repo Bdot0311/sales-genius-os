@@ -261,8 +261,26 @@ const AgentChat = () => {
       }
     } finally {
       setSending(false);
+      setStopping(false);
       inputRef.current?.focus();
     }
+  };
+
+  // Interrupt a run in flight. The flag is picked up between the agent's steps,
+  // so anything already finished stays saved and nothing new is sent.
+  const handleStop = async () => {
+    if (!threadId || stopping) return;
+    setStopping(true);
+    const { error } = await supabase
+      .from("agent_chat_threads")
+      .update({ cancel_requested_at: new Date().toISOString() })
+      .eq("id", threadId);
+    if (error) {
+      setStopping(false);
+      toast.error("Could not stop the run — try again");
+      return;
+    }
+    toast.info("Stopping the agent after the current step…");
   };
 
   // Keep inline approval cards in sync with the stored decision.
