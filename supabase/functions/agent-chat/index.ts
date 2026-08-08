@@ -648,12 +648,12 @@ serve(async (req) => {
         if (!match) return { error: `No connected mailbox for ${fromEmail}. Connected mailboxes: ${list}.` };
         if (match.status === "paused" || match.status === "disabled")
           return { error: `${match.email} is ${match.status}. Resume it on the Deliverability page or pick another mailbox.` };
-        return { integrationRowId: match.integration_id, email: match.email, status: match.status };
+        return { integrationRowId: match.integration_id, email: match.email, status: match.status, sendingAccountId: match.id };
       }
       if (sendable.length === 0)
         return { error: `Every connected mailbox is paused or disabled (${list}). Resume one on the Deliverability page.` };
       if (sendable.length === 1)
-        return { integrationRowId: sendable[0].integration_id, email: sendable[0].email, status: sendable[0].status };
+        return { integrationRowId: sendable[0].integration_id, email: sendable[0].email, status: sendable[0].status, sendingAccountId: sendable[0].id };
       return {
         error: `Several mailboxes are connected (${sendable.map((a: any) => a.email).join(", ")}). Ask the user which one to send from and pass it as from_email.`,
       };
