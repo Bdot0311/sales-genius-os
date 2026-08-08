@@ -234,6 +234,59 @@ const TOOLS = [
   {
     type: "function",
     function: {
+      name: "schedule_drafts",
+      description:
+        "Schedule already-saved drafts to be sent automatically at a future date and time. Use this whenever the user asks to send later, tomorrow, next week, or at a specific time. Pass send_at as an ISO 8601 timestamp (UTC), or send_at_local plus the user's timezone offset. The drafts are queued and sent by the scheduler — nothing is sent now.",
+      parameters: {
+        type: "object",
+        properties: {
+          draft_ids: { type: "array", items: { type: "string" }, description: "Draft ids to schedule" },
+          lead_ids: { type: "array", items: { type: "string" }, description: "Schedule the latest draft for each of these leads" },
+          all_pending: { type: "boolean", description: "Schedule every saved draft (max 20) when no ids are given" },
+          send_at: {
+            type: "string",
+            description: "When to send, ISO 8601 with timezone, e.g. 2026-08-12T13:00:00Z. Must be in the future.",
+          },
+          stagger_minutes: {
+            type: "number",
+            description: "Optional gap in minutes between each scheduled email so they don't all go out at once.",
+          },
+          from_email: { type: "string", description: "Mailbox address to send from, e.g. brandon@example.com" },
+        },
+        required: ["send_at"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_scheduled_emails",
+      description:
+        "List emails already queued to send in the future (id, recipient, subject, scheduled time). Use this to show the user what is scheduled or to get ids before cancelling.",
+      parameters: {
+        type: "object",
+        properties: { limit: { type: "number", description: "Default 20, max 50" } },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "cancel_scheduled_email",
+      description:
+        "Cancel a scheduled email before it sends, restoring it as a saved draft. Get ids from list_scheduled_emails.",
+      parameters: {
+        type: "object",
+        properties: {
+          scheduled_ids: { type: "array", items: { type: "string" }, description: "Ids from list_scheduled_emails" },
+        },
+        required: ["scheduled_ids"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "send_outreach",
       description:
         "Send a brand new email to a lead when you have the subject and body in hand. To send a draft you already created, use send_drafts instead. In approval mode this pauses and shows the user an approve/reject card inline in the chat instead of sending.",
