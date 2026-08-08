@@ -388,6 +388,25 @@ serve(async (req) => {
         console.error('Error calling detect-funding-signals after enrichment:', fundErr);
       }
 
+      // Technographic signal from Bloomberry, same pattern. This one also writes
+      // leads.technologies, so it must run before v2 scores: the stack it fills
+      // in is what the `tech` fit dimension matches against on this same pass.
+      // Cached per domain provider-side, so a re-enrich rarely costs a credit.
+      try {
+        const techRes = await fetch(`${supabaseUrl}/functions/v1/detect-tech-signals`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': authHeader,
+            'apikey': supabaseKey,
+          },
+          body: JSON.stringify({ leadId }),
+        });
+        if (!techRes.ok) console.error('detect-tech-signals returned', techRes.status);
+      } catch (techErr) {
+        console.error('Error calling detect-tech-signals after enrichment:', techErr);
+      }
+
       // Also run Lead Score v2 so the A/B/C tier (and fit/intent breakdown the
       // Leads table reads) is populated automatically on enrichment. Kept
       // separate from score-lead above: v1 writes icp_score, v2 writes tier.

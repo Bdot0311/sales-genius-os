@@ -25,6 +25,14 @@ export interface LeadInput {
   job_title?: string | null;
   country?: string | null;
   tech_stack?: string[] | null;
+  /**
+   * The `leads` table stores technographics in `technologies` (text[]), not
+   * `tech_stack` — callers pass the raw row (`select("*")`), so reading only
+   * `tech_stack` meant the `tech` fit dimension never had a value to match and
+   * was silently skipped for every lead. Both names are accepted; `tech_stack`
+   * wins when present so existing callers keep their behaviour.
+   */
+  technologies?: string[] | null;
   company_name?: string | null;
 }
 
@@ -97,8 +105,9 @@ export function computeFit(lead: LeadInput, icp: IcpInput | null, rubric: Rubric
   const funcTargets = [...(icp.departments || []), ...(icp.target_titles || [])];
   consider("function", funcTargets.length > 0 && !!title, !!title && anyMatch(title, funcTargets));
   consider("geography", !!icp.geographies?.length, anyMatch(norm(lead.country), icp.geographies));
-  consider("tech", !!icp.tech_stack?.length && !!lead.tech_stack?.length,
-    !!lead.tech_stack?.some((t) => anyMatch(norm(t), icp.tech_stack)));
+  const leadTech = lead.tech_stack ?? lead.technologies;
+  consider("tech", !!icp.tech_stack?.length && !!leadTech?.length,
+    !!leadTech?.some((t) => anyMatch(norm(t), icp.tech_stack)));
 
   const score = possible > 0 ? Math.round((got / possible) * 100) : 0;
   return { score, matched, applicable };

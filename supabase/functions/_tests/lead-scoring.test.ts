@@ -103,3 +103,32 @@ Deno.test("reason strings contain no em-dashes and are lowercase-first", () => {
   assert(!reason.includes("!"), "no exclamation");
   assert(/^[a-z]/.test(reason), `should start lowercase: ${reason}`);
 });
+
+// The leads table stores technographics in `technologies`, and both callers
+// pass the raw row, so reading only `tech_stack` made the tech dimension
+// permanently inapplicable. These pin the alias so it cannot regress.
+Deno.test("tech fit matches on the leads `technologies` column", () => {
+  const icp = { tech_stack: ["Salesforce"] };
+  const fit = computeFit({ ...STRONG_LEAD, technologies: ["Salesforce", "Slack"] }, icp, DEFAULT_RUBRIC);
+  assertEquals(fit.applicable, ["tech"]);
+  assertEquals(fit.matched.tech, true);
+  assertEquals(fit.score, 100);
+});
+
+Deno.test("tech fit still honours the legacy tech_stack field", () => {
+  const icp = { tech_stack: ["Salesforce"] };
+  const fit = computeFit({ ...STRONG_LEAD, tech_stack: ["Salesforce"] }, icp, DEFAULT_RUBRIC);
+  assertEquals(fit.matched.tech, true);
+});
+
+Deno.test("tech fit is not applicable when the lead has no technographics", () => {
+  const fit = computeFit(STRONG_LEAD, { tech_stack: ["Salesforce"] }, DEFAULT_RUBRIC);
+  assertEquals(fit.applicable, []);
+});
+
+Deno.test("a non-matching stack scores the tech dimension zero rather than skipping it", () => {
+  const fit = computeFit({ ...STRONG_LEAD, technologies: ["HubSpot"] }, { tech_stack: ["Salesforce"] }, DEFAULT_RUBRIC);
+  assertEquals(fit.applicable, ["tech"]);
+  assertEquals(fit.matched.tech, false);
+  assertEquals(fit.score, 0);
+});
