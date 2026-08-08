@@ -75,6 +75,8 @@ const MUTATING_TOOLS = new Set([
   "send_drafts",
   "schedule_drafts",
   "cancel_scheduled_email",
+  "delete_drafts",
+  "delete_inbox_threads",
   "enroll_lead_in_sequence",
   "run_full_agent",
 ]);
