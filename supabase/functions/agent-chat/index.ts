@@ -974,7 +974,7 @@ serve(async (req) => {
           return {
             goal,
             note:
-              "Drafts are saved and shown to the user in the chat with Send / Schedule controls. Do NOT call send_outreach for these unless the user explicitly asks you to send." +
+              "Drafts are saved and shown to the user in the chat with Send / Schedule controls. Remember each draft_id — if the user then says to send them, call send_drafts with those draft_ids (plus from_email if they named an inbox). Do not send until they ask." +
               (skipped.length
                 ? ` ${skipped.length} lead(s) were not drafted because this turn ran out of time — tell the user to reply "continue" and you'll draft the rest.`
                 : ""),
