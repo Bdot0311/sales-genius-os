@@ -67,7 +67,7 @@ export const AgentWorkingIndicator = () => {
         </div>
 
         <div className="h-1 w-full max-w-md overflow-hidden rounded-full bg-muted/40">
-          <div className="h-full w-1/3 rounded-full bg-primary/70 animate-[shiny_1.8s_linear_infinite]" />
+          <div className="h-full rounded-full bg-primary/70 transition-all duration-1000 ease-out" style={{ width: `${Math.min(95, 12 + seconds * 6)}%` }} />
         </div>
 
         <p className="text-xs text-muted-foreground/70">
