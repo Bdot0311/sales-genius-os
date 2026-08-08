@@ -355,6 +355,7 @@ export type Database = {
         Row: {
           agent_config_id: string | null
           autonomy: string
+          cancel_requested_at: string | null
           created_at: string
           id: string
           title: string
@@ -364,6 +365,7 @@ export type Database = {
         Insert: {
           agent_config_id?: string | null
           autonomy?: string
+          cancel_requested_at?: string | null
           created_at?: string
           id?: string
           title?: string
@@ -373,6 +375,7 @@ export type Database = {
         Update: {
           agent_config_id?: string | null
           autonomy?: string
+          cancel_requested_at?: string | null
           created_at?: string
           id?: string
           title?: string
