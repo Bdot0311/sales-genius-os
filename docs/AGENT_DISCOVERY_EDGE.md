@@ -12,6 +12,7 @@ logic if you already have a worker).
 ```js
 const LINK_HEADER = [
   '</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"',
+  '</openapi.json>; rel="service-desc"; type="application/openapi+json"',
   '</.well-known/mcp/server-card.json>; rel="service-desc"; type="application/json"',
   '</.well-known/agent-skills/index.json>; rel="describedby"; type="application/json"',
   '</.well-known/oauth-protected-resource>; rel="oauth-protected-resource"; type="application/json"',
@@ -25,6 +26,7 @@ const CONTENT_TYPES = {
   "/.well-known/oauth-protected-resource": "application/json; charset=utf-8",
   "/.well-known/oauth-authorization-server": "application/json; charset=utf-8",
   "/.well-known/openid-configuration": "application/json; charset=utf-8",
+  "/openapi.json": "application/openapi+json; charset=utf-8",
   "/auth.md": "text/markdown; charset=utf-8",
   "/llms.txt": "text/plain; charset=utf-8",
   "/llms-full.txt": "text/plain; charset=utf-8",
