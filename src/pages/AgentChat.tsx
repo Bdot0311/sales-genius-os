@@ -26,6 +26,7 @@ import {
   AlertTriangle,
   Clock,
   ArrowLeft,
+  Square,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
