@@ -1582,7 +1582,10 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
         break;
       }
 
-      for (const call of calls) {
+      // Read-only tools are cheap and provider-free, so run them concurrently.
+      // Anything that writes, sends or hits an external provider stays serial so
+      // we don't trip rate limiters or double-send.
+      const runOne = async (call: any) => {
         let args: Record<string, any> = {};
         try {
           args = JSON.parse(call.function?.arguments ?? "{}");
@@ -1605,11 +1608,27 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
             detail: e instanceof Error ? e.message : "unknown error",
           });
         }
-        messages.push({
+        return {
           role: "tool",
           tool_call_id: call.id,
           content: JSON.stringify(result).slice(0, 12000),
-        });
+        };
+      };
+
+      const nameOf = (c: any) => c.function?.name ?? "";
+      const parallel = calls.filter((c: any) => PARALLEL_SAFE_TOOLS.has(nameOf(c)));
+      const serial = calls.filter((c: any) => !PARALLEL_SAFE_TOOLS.has(nameOf(c)));
+
+      const parallelResults = parallel.length ? await Promise.all(parallel.map(runOne)) : [];
+      const serialResults: any[] = [];
+      for (const call of serial) serialResults.push(await runOne(call));
+
+      // Keep the tool replies in the order the model asked for them.
+      const byId = new Map<string, any>();
+      for (const r of [...parallelResults, ...serialResults]) byId.set(r.tool_call_id, r);
+      for (const call of calls) {
+        const r = byId.get(call.id);
+        if (r) messages.push(r);
       }
     }
 
