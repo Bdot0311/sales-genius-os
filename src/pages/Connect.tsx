@@ -32,7 +32,7 @@ export default function Connect() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
         <Link
           to="/dashboard"
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
@@ -176,7 +176,7 @@ export default function Connect() {
             configuration. Everything runs as you: your row-level security rules apply.
           </div>
         </Card>
-      </div>
+      </main>
     </div>
   );
 }
