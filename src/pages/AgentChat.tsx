@@ -85,6 +85,7 @@ const AgentChat = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [stopping, setStopping] = useState(false);
   const [loading, setLoading] = useState(true);
   const [autonomy, setAutonomy] = useState<"approval" | "autonomous">("approval");
   const [agents, setAgents] = useState<AgentOption[]>([]);
