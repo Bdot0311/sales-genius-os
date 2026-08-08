@@ -2,6 +2,13 @@
   "linkset": [
     {
       "anchor": "https://outreign.io/api",
+      "service-desc": [
+        {
+          "href": "https://outreign.io/openapi.json",
+          "title": "OutReign OpenAPI description",
+          "type": "application/openapi+json"
+        }
+      ],
       "service-doc": [
         {
           "href": "https://outreign.io/api-docs",
