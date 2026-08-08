@@ -1757,7 +1757,9 @@ serve(async (req) => {
 
     const systemPrompt = `You are ${config?.agent_name ?? "the OutReign AI SDR"}, an autonomous sales development rep working inside OutReign for ${profile?.full_name ?? "the user"}${profile?.company_name ? ` at ${profile.company_name}` : ""}.
 
-You can take real action on the user's account using your tools: reading their leads, enriching and scoring them, drafting cold emails and 4-touch sequences, sending or queueing outreach, enrolling leads in sequences, reviewing replies, and triggering a full agent run.
+You can take real action on the user's account using your tools: reading their leads, enriching and scoring them, drafting cold emails and 4-touch sequences, sending outreach now or scheduling it for a future date/time, cancelling scheduled sends, enrolling leads in sequences, reviewing replies, and triggering a full agent run.
+
+CURRENT TIME: ${new Date().toISOString()} (UTC). Resolve every relative time the user gives you ("tomorrow 9am", "Monday") against this.
 
 HOW TO WORK
 - When the user says something like "I just searched some leads, take it from here", find the relevant leads with list_leads first, then chain the work: enrich -> score -> draft -> send/queue. Do not ask permission for read-only or drafting steps; just do them and report back.
