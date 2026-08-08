@@ -585,7 +585,25 @@ const AgentChat = () => {
                 ),
               )}
 
-              {sending && <AgentWorkingIndicator />}
+              {sending && (
+                <div className="space-y-2">
+                  <AgentWorkingIndicator />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5"
+                    onClick={handleStop}
+                    disabled={stopping}
+                  >
+                    {stopping ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Square className="w-3.5 h-3.5" />
+                    )}
+                    {stopping ? "Stopping…" : "Stop run"}
+                  </Button>
+                </div>
+              )}
               <div ref={bottomRef} />
             </div>
           </ScrollArea>
@@ -607,20 +625,33 @@ const AgentChat = () => {
                 className="min-w-0 flex-1 resize-none text-base sm:text-sm"
                 disabled={sending || loading}
               />
-              <Button
-                size="icon"
-                className="flex-shrink-0"
-                onClick={() => handleSend()}
-
-                disabled={sending || loading || !input.trim()}
-                aria-label="Send message"
-              >
-                {sending ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
+              {sending ? (
+                <Button
+                  size="icon"
+                  variant="destructive"
+                  className="flex-shrink-0"
+                  onClick={handleStop}
+                  disabled={stopping}
+                  aria-label="Stop the agent"
+                  title="Stop the agent"
+                >
+                  {stopping ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Square className="w-4 h-4" />
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  size="icon"
+                  className="flex-shrink-0"
+                  onClick={() => handleSend()}
+                  disabled={loading || !input.trim()}
+                  aria-label="Send message"
+                >
                   <SendHorizonal className="w-4 h-4" />
-                )}
-              </Button>
+                </Button>
+              )}
             </div>
             <p className="max-w-3xl mx-auto mt-2 text-[11px] text-muted-foreground">
               {autonomy === "autonomous"
