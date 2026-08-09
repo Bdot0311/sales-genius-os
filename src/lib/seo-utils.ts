@@ -1,4 +1,4 @@
-// SEO Utility Functions for OutReign
+import { BRAND } from "./brand";
 // Canonical domain for all absolute URLs
 export const CANONICAL_DOMAIN = 'https://outreign.io';
 
@@ -101,7 +101,12 @@ export function truncateText(text: string, maxLength: number): string {
  * Generate page title with site name suffix
  */
 export function formatPageTitle(title: string, siteName = 'OutReign'): string {
-  if (title.toLowerCase().includes(siteName.toLowerCase())) {
+  const lowerTitle = title.toLowerCase().trim();
+  if (lowerTitle.includes(siteName.toLowerCase())) {
+    return title;
+  }
+  // If the title is already the brand tagline, keep it as the exact homepage title.
+  if (lowerTitle === BRAND.tagline.toLowerCase()) {
     return title;
   }
   return `${title} | ${siteName}`;
