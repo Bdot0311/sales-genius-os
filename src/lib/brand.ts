@@ -2,7 +2,7 @@ export const BRAND = {
   name: "OutReign",
   domain: "outreign.io",
   url: "https://outreign.io",
-  tagline: "Find who to sell to. Then close them.",
+  tagline: "Find Who To Sell To, Then Close Them.",
   description:
     "Plain-English lead discovery and AI outreach for B2B teams that want to move from prospecting to first reply faster.",
   founderX: "https://x.com/bdot0311",

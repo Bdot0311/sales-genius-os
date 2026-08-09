@@ -12,7 +12,7 @@ serve(async (req) => {
 
   const today = new Date().toISOString().split('T')[0];
 
-  const content = `# OutReign - Find Who to Sell To. Then Actually Sell to Them.
+  const content = `# Find Who To Sell To, Then Close Them.
 # https://outreign.io
 # Last Updated: ${today}
 

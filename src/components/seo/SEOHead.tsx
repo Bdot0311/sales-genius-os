@@ -41,7 +41,7 @@ interface SEOHeadProps {
 const DEFAULT_OG_IMAGE = 'https://outreign.io/outreign-social-card.jpg';
 
 export const SEOHead = ({
-  title = "OutReign — B2B Lead Discovery & AI Outreach Platform",
+  title = "Find Who To Sell To, Then Close Them.",
   description = "Describe your ideal customer in plain English. OutReign returns ranked B2B prospects with verified emails and AI-drafted outreach in under 2 minutes.",
   canonicalUrl,
   ogImage = DEFAULT_OG_IMAGE,
