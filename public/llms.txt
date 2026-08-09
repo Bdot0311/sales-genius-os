@@ -1,4 +1,4 @@
-# OutReign — Find Who to Sell To. Then Actually Sell to Them.
+# Find Who To Sell To, Then Close Them.
 # https://outreign.io
 # Last Updated: 2026-08-01
 # For complete product documentation: https://outreign.io/llms-full.txt
