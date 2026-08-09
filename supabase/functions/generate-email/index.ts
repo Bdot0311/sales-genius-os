@@ -1015,8 +1015,20 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
     if (!response.ok) {
       const errorText = await response.text();
       console.error("AI gateway error:", response.status, errorText);
+      // Surface actionable gateway failures instead of a generic 500.
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: 'AI is rate limited right now. Wait a moment and try again.' }), {
+          status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (response.status === 402 || errorText.includes('credit_limit_reached') || errorText.includes('insufficient')) {
+        return new Response(JSON.stringify({ error: 'AI credits for this workspace are exhausted. Top up credits to keep generating emails.' }), {
+          status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
       throw new Error(`AI gateway error: ${response.status}`);
     }
+
 
     const data = await response.json();
     let email = data.choices[0].message.content.trim();
