@@ -91,15 +91,24 @@ serve(async (req) => {
     // No target given: fall back to the tools this user displaces.
     let vendorSource = "request";
     if (!vendor && !category) {
+      // icp_profiles has no unique constraint on user_id, so a user can hold
+      // several. maybeSingle() errors outright when it gets more than one, which
+      // silently read as "no competitors set" — take the newest, matching how
+      // score-lead-v2 and process-rescore-queue already resolve the same table.
       const { data: icp } = await supabase
-        .from("icp_profiles").select("exclude_tech_stack").eq("user_id", user.id).maybeSingle();
+        .from("icp_profiles").select("exclude_tech_stack")
+        .eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle();
       const competitors = toStringArray(icp?.exclude_tech_stack);
       if (!competitors.length) {
+        // 200, not 400: this is a user-correctable setup gap, not a failure, and
+        // every other soft stop in this function answers the same way. A 4xx here
+        // reached the client as an opaque FunctionsHttpError and surfaced as
+        // "could not load tech signals", hiding the one thing worth saying.
         return json({
           signals: [],
-          reason: "no vendor or category given, and no competitor tools are set on your ICP",
+          reason: "enter a tool to search, or add competitor tools to your ICP to search them automatically",
           error_code: "no_target",
-        }, 400);
+        });
       }
       vendor = competitors[0];
       vendorSource = "icp_exclude_tech_stack";

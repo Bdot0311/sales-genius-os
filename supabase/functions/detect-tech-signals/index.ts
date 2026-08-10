@@ -196,8 +196,12 @@ serve(async (req) => {
     }
 
     // --- Intent: the most actionable recent add/drop. ---
+    // Newest ICP wins. maybeSingle() alone errors when a user holds more than
+    // one icp_profiles row (there is no unique constraint on user_id), which
+    // would quietly drop every competitor weighting.
     const { data: icp } = await supabase
-      .from("icp_profiles").select("exclude_tech_stack").eq("user_id", user.id).maybeSingle();
+      .from("icp_profiles").select("exclude_tech_stack")
+      .eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle();
     const isCompetitor = competitorMatcher(toStringArray(icp?.exclude_tech_stack));
 
     // One signal per run. The engine adds a count bonus per event, so emitting
