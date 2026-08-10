@@ -26,7 +26,16 @@ interface DiscoverResponse {
   truncated?: boolean;
   cached?: boolean;
   reason?: string;
+  /** Demo mode answers under `message` rather than `reason`. */
+  message?: string;
 }
+
+/**
+ * Why an empty result came back, whichever field carries it. Without the
+ * `message` fallback a demo-mode response renders as a plain empty list with no
+ * explanation at all, which is indistinguishable from a genuine no-match.
+ */
+const explain = (d: DiscoverResponse | null): string | null => d?.reason ?? d?.message ?? null;
 
 type ChangeFilter = "removed" | "added" | "any";
 
@@ -79,7 +88,8 @@ export const TechSignalsPanel = ({ onImported }: { onImported?: () => void }) =>
       setSignals(found);
       setMeta(data ?? null);
       setSearched(true);
-      if (!found.length && data?.reason) toast.info(data.reason);
+      const why = explain(data ?? null);
+      if (!found.length && why) toast.info(why);
     } catch (e) {
       setSignals([]);
       setMeta(null);
@@ -180,7 +190,7 @@ export const TechSignalsPanel = ({ onImported }: { onImported?: () => void }) =>
           <p className="text-sm text-muted-foreground">looking for recent changes...</p>
         ) : searched && signals.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            {meta?.reason ?? "no recent changes found for that tool. try a different one or widen to either direction."}
+            {explain(meta) ?? "no recent changes found for that tool. try a different one or widen to either direction."}
           </p>
         ) : (
           <div className="divide-y rounded-md border">
