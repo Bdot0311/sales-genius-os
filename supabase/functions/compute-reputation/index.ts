@@ -22,6 +22,10 @@ interface ReputationInputRow {
   bounced: number;
   complaints: number;
   opened: number;
+  warmup_sent: number;
+  warmup_replied: number;
+  warmup_inbox: number;
+  warmup_spam: number;
 }
 
 serve(async (req) => {
@@ -52,6 +56,9 @@ serve(async (req) => {
         bounced: Number(row.bounced) || 0,
         complaints: Number(row.complaints) || 0,
         opened: Number(row.opened) || 0,
+        warmupSent: Number(row.warmup_sent) || 0,
+        warmupInbox: Number(row.warmup_inbox) || 0,
+        warmupSpam: Number(row.warmup_spam) || 0,
       });
 
       // Daily snapshot (idempotent per account/day).
@@ -61,6 +68,7 @@ serve(async (req) => {
         snapshot_date: today,
         reputation_score: result.score,
         volume: result.volume,
+        warmup_volume: result.warmupVolume,
         bounce_rate: Number((result.bounceRate * 100).toFixed(3)),
         complaint_rate: Number((result.complaintRate * 100).toFixed(3)),
         open_rate: Number((result.openRate * 100).toFixed(3)),
