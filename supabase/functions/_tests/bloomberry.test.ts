@@ -9,6 +9,7 @@
 import { assert, assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
   competitorMatcher,
+  normalizeCompanySignals,
   normalizeTech,
   recentChanges,
   toDomain,
@@ -135,4 +136,97 @@ Deno.test("toStringArray handles jsonb arrays, JSON strings and object entries",
   assertEquals(toStringArray('["A","B"]'), ["A", "B"]);
   assertEquals(toStringArray([{ name: "A" }, { name: "" }, 7]), ["A"]);
   for (const empty of [null, undefined, {}, 5]) assertEquals(toStringArray(empty), []);
+});
+
+// --- /signals/tech.json — company-level change records ---------------------
+
+Deno.test("reads company signals with an explicit change field", () => {
+  const out = normalizeCompanySignals({ results: [
+    { company: "Acme Inc", domain: "acme.com", vendor: "HubSpot", category: "CRM", change: "removed", date: daysAgo(3) },
+  ] }, NOW);
+  assertEquals(out.length, 1);
+  assertEquals(out[0].company, "Acme Inc");
+  assertEquals(out[0].domain, "acme.com");
+  assertEquals(out[0].product, "HubSpot");
+  assertEquals(out[0].category, "CRM");
+  assertEquals(out[0].change, "removed");
+});
+
+Deno.test("maps churn and adoption synonyms to a direction", () => {
+  const cases: [string, string][] = [
+    ["churned", "removed"], ["dropped", "removed"], ["cancelled", "removed"], ["lost", "removed"],
+    ["adopted", "added"], ["new", "added"], ["installed", "added"], ["won", "added"],
+  ];
+  for (const [word, expected] of cases) {
+    const out = normalizeCompanySignals({ results: [{ company: "A", vendor: "X", event: word, date: daysAgo(1) }] }, NOW);
+    assertEquals(out[0]?.change, expected, `"${word}" should be ${expected}`);
+  }
+});
+
+Deno.test("falls back to date shape when no change field is present", () => {
+  const removed = normalizeCompanySignals({ results: [{ company: "A", vendor: "X", end_date: daysAgo(2) }] }, NOW);
+  assertEquals(removed[0].change, "removed");
+  const added = normalizeCompanySignals({ results: [{ company: "B", vendor: "X", start_date: daysAgo(2) }] }, NOW);
+  assertEquals(added[0].change, "added");
+});
+
+Deno.test("a boolean change flag is honoured", () => {
+  assertEquals(normalizeCompanySignals({ results: [{ company: "A", vendor: "X", added: true }] }, NOW).length, 0,
+    "'added' is not a direction field, so this record has no determinable direction");
+  assertEquals(normalizeCompanySignals({ results: [{ company: "A", vendor: "X", change: true, date: daysAgo(1) }] }, NOW)[0].change, "added");
+  assertEquals(normalizeCompanySignals({ results: [{ company: "A", vendor: "X", change: false, date: daysAgo(1) }] }, NOW)[0].change, "removed");
+});
+
+Deno.test("records with no determinable direction are dropped, not guessed", () => {
+  const out = normalizeCompanySignals({ results: [{ company: "A", vendor: "X" }] }, NOW);
+  assertEquals(out.length, 0);
+});
+
+Deno.test("a record with neither company nor domain is skipped", () => {
+  assertEquals(normalizeCompanySignals({ results: [{ vendor: "X", change: "added", date: daysAgo(1) }] }, NOW).length, 0);
+});
+
+Deno.test("company falls back to the domain when the name is missing", () => {
+  const out = normalizeCompanySignals({ results: [{ website: "https://www.Acme.com/", vendor: "X", change: "added", date: daysAgo(1) }] }, NOW);
+  assertEquals(out[0].company, "acme.com");
+  assertEquals(out[0].domain, "acme.com");
+});
+
+Deno.test("the company name is never mistaken for the product", () => {
+  // "name" carries the company on this endpoint, so product must stay null
+  // rather than echoing the company back as the technology it moved on.
+  const out = normalizeCompanySignals({ results: [{ name: "Acme Inc", change: "removed", date: daysAgo(1) }] }, NOW);
+  assertEquals(out[0].company, "Acme Inc");
+  assertEquals(out[0].product, null);
+});
+
+Deno.test("duplicate company+product+direction records collapse", () => {
+  const out = normalizeCompanySignals({ results: [
+    { company: "Acme", vendor: "HubSpot", change: "removed", date: daysAgo(2) },
+    { company: "acme", vendor: "hubspot", change: "removed", date: daysAgo(9) },
+  ] }, NOW);
+  assertEquals(out.length, 1);
+});
+
+Deno.test("an add and a remove for the same product are kept apart", () => {
+  const out = normalizeCompanySignals({ results: [
+    { company: "Acme", vendor: "HubSpot", change: "removed", date: daysAgo(2) },
+    { company: "Acme", vendor: "HubSpot", change: "added", date: daysAgo(40) },
+  ] }, NOW);
+  assertEquals(out.length, 2);
+});
+
+Deno.test("company signals come back newest first", () => {
+  const out = normalizeCompanySignals({ results: [
+    { company: "Old", vendor: "X", change: "added", date: daysAgo(30) },
+    { company: "New", vendor: "X", change: "added", date: daysAgo(1) },
+    { company: "Mid", vendor: "X", change: "added", date: daysAgo(10) },
+  ] }, NOW);
+  assertEquals(out.map((c) => c.company), ["New", "Mid", "Old"]);
+});
+
+Deno.test("unrecognized signal payloads degrade to empty", () => {
+  for (const bad of [null, undefined, {}, "text", { results: "nope" }]) {
+    assertEquals(normalizeCompanySignals(bad, NOW).length, 0);
+  }
 });

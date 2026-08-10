@@ -7,6 +7,8 @@ project_id = "ghgfjnepvxvxrncmskys"
     verify_jwt = true
   [functions.detect-tech-signals]
     verify_jwt = true
+  [functions.discover-tech-signals]
+    verify_jwt = true
   [functions.research-account]
     verify_jwt = true
   [functions.map-account-committee]
