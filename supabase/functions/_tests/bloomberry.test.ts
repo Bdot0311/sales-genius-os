@@ -230,3 +230,95 @@ Deno.test("unrecognized signal payloads degrade to empty", () => {
     assertEquals(normalizeCompanySignals(bad, NOW).length, 0);
   }
 });
+
+// --- the confirmed /enrichments/tech.json shape ----------------------------
+// Verbatim records from a real response. These are the regression guard: the
+// alias lists were originally guesses, and three of them were wrong
+// (vendor_category, usage_started_at, and the epoch-seconds encoding), which
+// silently produced null categories and a stack that could never fire a signal.
+
+const REAL_ENRICHMENT = {
+  vendors: [
+    {
+      vendor_url: "360learning.com",
+      vendor_name: "360Learning",
+      vendor_category: "learning management",
+      usage_started_at: 1760500800,
+      vendor_upper_level_category: "HR & People Operations",
+    },
+    {
+      vendor_url: "cloud.google.com",
+      vendor_name: "Google Cloud",
+      vendor_category: "devops",
+      usage_started_at: null,
+      vendor_upper_level_category: "Development & Engineering",
+    },
+  ],
+};
+
+Deno.test("parses the real vendors[] enrichment payload", () => {
+  const out = normalizeTech(REAL_ENRICHMENT, NOW);
+  assertEquals(out.length, 2);
+  assertEquals(out[0].name, "360Learning");
+  assertEquals(out[0].category, "learning management");
+  assertEquals(out[0].end, null);
+  // 1760500800s -> 2025-10-15
+  assert(out[0].start?.startsWith("2025-10-15"), `got ${out[0].start}`);
+});
+
+Deno.test("a vendor with a null usage_started_at is still part of the stack", () => {
+  const out = normalizeTech(REAL_ENRICHMENT, NOW);
+  assertEquals(out[1].name, "Google Cloud");
+  assertEquals(out[1].start, null);
+  // No date means no signal, but it must not drop out of the current stack.
+  assertEquals(out.filter((t) => !t.end).length, 2);
+});
+
+Deno.test("falls back to the upper level category when the specific one is absent", () => {
+  const out = normalizeTech({ vendors: [
+    { vendor_name: "X", vendor_upper_level_category: "Security & Compliance" },
+  ] }, NOW);
+  assertEquals(out[0].category, "Security & Compliance");
+});
+
+Deno.test("epoch seconds and milliseconds both decode, in either field", () => {
+  const secs = normalizeTech({ vendors: [{ vendor_name: "A", usage_started_at: 1760500800 }] }, NOW);
+  const ms = normalizeTech({ vendors: [{ vendor_name: "B", usage_started_at: 1760500800000 }] }, NOW);
+  assertEquals(secs[0].start, ms[0].start);
+  assert(secs[0].start?.startsWith("2025-10-15"));
+});
+
+Deno.test("a numeric epoch delivered as a string decodes too", () => {
+  const out = normalizeTech({ vendors: [{ vendor_name: "A", usage_started_at: "1760500800" }] }, NOW);
+  assert(out[0].start?.startsWith("2025-10-15"), `got ${out[0].start}`);
+});
+
+Deno.test("a bare year is read as a year, not as an epoch", () => {
+  // 2025 seconds after the epoch is 1970. Reading it that way would report a
+  // 55-year-old adoption as fact.
+  const out = normalizeTech({ vendors: [{ vendor_name: "A", usage_started_at: "2025" }] }, NOW);
+  assert(out[0].start?.startsWith("2025-01-01"), `got ${out[0].start}`);
+});
+
+Deno.test("implausible and future epochs are rejected", () => {
+  const tooOld = normalizeTech({ vendors: [{ vendor_name: "A", usage_started_at: 100_000_000 }] }, NOW); // 1973
+  assertEquals(tooOld[0].start, null);
+  const future = normalizeTech({ vendors: [{ vendor_name: "B", usage_started_at: 4_000_000_000 }] }, NOW); // 2096
+  assertEquals(future[0].start, null);
+});
+
+Deno.test("a real recent adoption fires as an added change", () => {
+  const recentEpoch = Math.floor((NOW - 10 * 86_400_000) / 1000);
+  const tech = normalizeTech({ vendors: [{ vendor_name: "HubSpot", usage_started_at: recentEpoch }] }, NOW);
+  const changes = recentChanges(tech, 90, competitorMatcher(["HubSpot"]), NOW);
+  assertEquals(changes.length, 1);
+  assertEquals(changes[0].change, "added");
+  assertEquals(changes[0].item.name, "HubSpot");
+});
+
+Deno.test("Talka.ai's actual stack produces no change inside 90 days", () => {
+  // The live end-to-end run: 16 vendors written, no signal. Confirming that
+  // stays true once the dates actually parse, rather than by accident.
+  const tech = normalizeTech(REAL_ENRICHMENT, NOW);
+  assertEquals(recentChanges(tech, 90, never, NOW).length, 0);
+});

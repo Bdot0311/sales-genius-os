@@ -1,15 +1,22 @@
 // Parsing helpers for Bloomberry technographic responses.
 //
-// Kept separate from detect-tech-signals/index.ts so the schema handling is
-// pure and unit-testable: docs.bloomberry.com is unreachable from our network,
-// so the exact field names on /enrichments/tech.json could not be confirmed
-// against the reference. Rather than commit to one guess, each field is read
-// through an alias list covering the naming conventions the payload plausibly
-// uses, and unknown shapes degrade to "no data" instead of throwing.
+// Kept separate from the edge functions so the schema handling is pure and
+// unit-testable. It was written against field-name aliases because
+// docs.bloomberry.com is unreachable from our network; /enrichments/tech.json
+// has since been confirmed against a real response and its names now lead each
+// alias list. /signals/tech.json is still unconfirmed, so the tolerance stays.
 //
-// If Bloomberry's exact field names are confirmed later, the alias arrays below
-// are the only thing that needs to change — and adding the real name to the
-// front of a list is a safe, backwards-compatible edit.
+// Confirmed enrichment shape:
+//   { "vendors": [{ "vendor_name": "360Learning",
+//                   "vendor_category": "learning management",
+//                   "vendor_upper_level_category": "HR & People Operations",
+//                   "vendor_url": "360learning.com",
+//                   "usage_started_at": 1760500800 }] }
+//
+// Two things that shape depends on and are easy to get wrong: usage_started_at
+// is an epoch in SECONDS (see pickDate), and it is frequently null — Bloomberry
+// knows the vendor is in use without knowing when it started. A record with no
+// date is still a valid part of the stack; it simply cannot produce a signal.
 
 export const norm = (s: unknown): string => (typeof s === "string" ? s.toLowerCase().trim() : "");
 
@@ -33,12 +40,22 @@ export function toStringArray(v: unknown): string[] {
     .filter((s): s is string => typeof s === "string" && !!s.trim());
 }
 
-const LIST_KEYS = ["results", "data", "technologies", "tech", "technographics", "products", "vendors", "items", "records"];
+// The names confirmed against a real /enrichments/tech.json response lead each
+// list; the rest stay as fallbacks in case sibling endpoints differ.
+// Confirmed envelope: { vendors: [{ vendor_name, vendor_category,
+// vendor_upper_level_category, vendor_url, usage_started_at }] }.
+const LIST_KEYS = ["vendors", "results", "data", "technologies", "tech", "technographics", "products", "items", "records"];
 const NESTED_KEYS = ["company", "result", "enrichment", "response"];
-const NAME_KEYS = ["product", "product_name", "vendor", "vendor_name", "name", "technology", "tech_name", "title"];
-const CATEGORY_KEYS = ["category", "category_name", "product_category", "categories"];
-const START_KEYS = ["start_date", "started_at", "first_seen", "first_seen_date", "adopted_at", "adoption_date", "since", "date_added", "added_at"];
-const END_KEYS = ["end_date", "ended_at", "last_seen", "last_seen_date", "churned_at", "churn_date", "removed_at", "date_removed"];
+const NAME_KEYS = ["vendor_name", "product", "product_name", "vendor", "name", "technology", "tech_name", "title"];
+// vendor_category is the specific label ("learning management"); the upper
+// level ("HR & People Operations") is the fallback when the specific one is
+// absent, since a broad label still beats no category at all.
+const CATEGORY_KEYS = ["vendor_category", "category", "category_name", "product_category", "categories", "vendor_upper_level_category"];
+const START_KEYS = ["usage_started_at", "start_date", "started_at", "first_seen", "first_seen_date", "adopted_at", "adoption_date", "since", "date_added", "added_at"];
+// No end field appeared in the confirmed enrichment payload — that endpoint
+// looks like a current-stack view. These stay so a churn field is picked up
+// automatically if one exists on other records or on /signals/tech.json.
+const END_KEYS = ["usage_ended_at", "usage_stopped_at", "end_date", "ended_at", "last_seen", "last_seen_date", "churned_at", "churn_date", "removed_at", "date_removed"];
 
 /** Find the array of tech records regardless of the envelope wrapping it. */
 export function extractList(payload: unknown, depth = 0): Record<string, unknown>[] {
@@ -68,11 +85,35 @@ export function pickString(item: Record<string, unknown>, keys: string[]): strin
   return null;
 }
 
-/** Parse to ISO, rejecting unparseable values and anything in the future. */
+// Anything at or above this is an epoch rather than a bare year: 1e8 seconds is
+// 1973, and a four-digit year never reaches it. Below 1e11 the epoch is in
+// seconds (1e11 seconds is the year 5138, 1e11 milliseconds is 1973), which is
+// what Bloomberry sends — usage_started_at: 1760500800.
+const EPOCH_FLOOR = 1e8;
+const EPOCH_MS_FLOOR = 1e11;
+// Reject epochs before 1990: a stray small number would otherwise decode to a
+// 1970s date and read as a real, very old adoption.
+const MIN_PLAUSIBLE_MS = Date.parse("1990-01-01T00:00:00Z");
+
+/**
+ * Parse to ISO, rejecting unparseable values and anything in the future.
+ *
+ * Handles both ISO-ish strings and numeric epochs, in seconds or milliseconds.
+ * Date.parse cannot read an epoch — Date.parse("1760500800") does not mean
+ * 2025 — so a numeric value is converted explicitly rather than stringified.
+ */
 export function pickDate(item: Record<string, unknown>, keys: string[], nowMs = Date.now()): string | null {
   for (const k of keys) {
     const v = item[k];
     if (typeof v !== "string" && typeof v !== "number") continue;
+
+    const numeric = typeof v === "number" ? v : /^\d+$/.test(v.trim()) ? Number(v.trim()) : NaN;
+    if (Number.isFinite(numeric) && numeric >= EPOCH_FLOOR) {
+      const ms = numeric < EPOCH_MS_FLOOR ? numeric * 1000 : numeric;
+      if (ms > nowMs + 86_400_000 || ms < MIN_PLAUSIBLE_MS) continue;
+      return new Date(ms).toISOString();
+    }
+
     const t = Date.parse(String(v));
     if (Number.isNaN(t) || t > nowMs + 86_400_000) continue;
     return new Date(t).toISOString();
@@ -160,7 +201,10 @@ export function competitorMatcher(competitors: string[]): (name: string) => bool
 // ---------------------------------------------------------------------------
 
 const COMPANY_KEYS = ["company", "company_name", "organization", "organization_name", "org", "employer", "name"];
-const DOMAIN_KEYS = ["domain", "company_domain", "website", "web_site", "url", "site", "homepage"];
+// company_url leads on the assumption this endpoint mirrors the enrichment
+// endpoint's vendor_url naming. Plain "url" stays last: on a record carrying
+// both the company and the vendor, a bare url is as likely to be the vendor's.
+const DOMAIN_KEYS = ["company_url", "domain", "company_domain", "website", "web_site", "site", "homepage", "url"];
 const CHANGE_KEYS = ["change", "change_type", "event", "event_type", "type", "action", "direction", "status", "signal"];
 const CHANGE_DATE_KEYS = ["date", "changed_at", "change_date", "event_date", "observed_at", "detected_at", "occurred_at", ...START_KEYS];
 
