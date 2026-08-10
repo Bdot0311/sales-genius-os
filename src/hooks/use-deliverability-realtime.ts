@@ -9,6 +9,7 @@ const KEYS = [
   ["deliverability-alerts"],
   ["reputation-snapshots"],
   ["warmup-messages"],
+  ["deliverability-live-stats"],
 ] as const;
 
 const TABLES = [
@@ -18,6 +19,8 @@ const TABLES = [
   "reputation_snapshots",
   "warmup_messages",
   "blacklist_checks",
+  // Live stats are derived from real sends, so a new send must refresh them.
+  "sent_emails",
 ] as const;
 
 export type LiveStatus = "connecting" | "live" | "offline";
