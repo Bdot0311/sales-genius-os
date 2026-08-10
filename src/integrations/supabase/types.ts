@@ -3015,6 +3015,7 @@ export type Database = {
           snapshot_date: string
           user_id: string
           volume: number
+          warmup_volume: number
         }
         Insert: {
           bounce_rate?: number
@@ -3028,6 +3029,7 @@ export type Database = {
           snapshot_date?: string
           user_id: string
           volume?: number
+          warmup_volume?: number
         }
         Update: {
           bounce_rate?: number
@@ -3041,6 +3043,7 @@ export type Database = {
           snapshot_date?: string
           user_id?: string
           volume?: number
+          warmup_volume?: number
         }
         Relationships: [
           {
@@ -5225,6 +5228,27 @@ export type Database = {
         Returns: number
       }
       get_api_key_value: { Args: { _id: string }; Returns: string }
+      get_deliverability_live_stats: {
+        Args: { p_days?: number }
+        Returns: {
+          bounce_rate: number
+          bounced: number
+          complaint_rate: number
+          complaints: number
+          open_rate: number
+          opened: number
+          outreach_sent: number
+          reputation_score: number
+          sending_account_id: string
+          volume: number
+          warmup_inbox: number
+          warmup_inbox_rate: number
+          warmup_replied: number
+          warmup_reply_rate: number
+          warmup_sent: number
+          warmup_spam: number
+        }[]
+      }
       get_email_send_trend: {
         Args: { _days?: number }
         Returns: {
@@ -5271,6 +5295,10 @@ export type Database = {
           sending_account_id: string
           sent: number
           user_id: string
+          warmup_inbox: number
+          warmup_replied: number
+          warmup_sent: number
+          warmup_spam: number
         }[]
       }
       get_sequence_monthly_usage: {
