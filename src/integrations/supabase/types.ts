@@ -5120,6 +5120,10 @@ export type Database = {
         Args: { _name: string; _secret: string }
         Returns: undefined
       }
+      advance_lead_stage: {
+        Args: { _lead_id: string; _target: string }
+        Returns: undefined
+      }
       agency_client_stats: {
         Args: never
         Returns: {
@@ -5378,6 +5382,7 @@ export type Database = {
         Returns: undefined
       }
       seed_personas: { Args: { p_user_id: string }; Returns: undefined }
+      sweep_lead_no_response: { Args: never; Returns: number }
       system_health_alert: { Args: never; Returns: undefined }
       touch_last_active: { Args: never; Returns: undefined }
       trg_activation_ensure_row: {
