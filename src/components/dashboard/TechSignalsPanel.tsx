@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { ArrowDownRight, ArrowUpRight, Building2, Loader2, Plus, Radar } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Building2, ExternalLink, Loader2, Plus, Radar } from "lucide-react";
 
 interface TechSignal {
   company: string;
@@ -16,6 +16,13 @@ interface TechSignal {
   change: "added" | "removed";
   at: string | null;
   known: boolean;
+  id: string | null;
+  /** Where the change was observed — links straight to the proof. */
+  evidenceUrl: string | null;
+  industry: string | null;
+  country: string | null;
+  sizeRange: string | null;
+  description: string | null;
 }
 
 interface DiscoverResponse {
@@ -215,7 +222,30 @@ export const TechSignalsPanel = ({ onImported }: { onImported?: () => void }) =>
                       </span>
                       <span>·</span>
                       <span>{relativeDay(s.at)}</span>
-                      {s.domain && <><span>·</span><span className="truncate">{s.domain}</span></>}
+                      {s.evidenceUrl && (
+                        <>
+                          <span>·</span>
+                          <a
+                            href={s.evidenceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-0.5 underline hover:text-foreground"
+                          >
+                            evidence<ExternalLink className="w-2.5 h-2.5" />
+                          </a>
+                        </>
+                      )}
+                    </div>
+                    {/* Enough firmographics to disqualify without leaving the panel. */}
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                      {[s.domain, s.industry, s.sizeRange && `${s.sizeRange} staff`, s.country]
+                        .filter(Boolean)
+                        .map((bit, i) => (
+                          <span key={`${key}-bit-${i}`} className="inline-flex items-center gap-2">
+                            {i > 0 && <span aria-hidden="true">·</span>}
+                            <span className="truncate">{bit}</span>
+                          </span>
+                        ))}
                     </div>
                   </div>
                   <Button
