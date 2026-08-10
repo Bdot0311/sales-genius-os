@@ -127,7 +127,40 @@ const SavedLeads = () => {
 
   useEffect(() => {
     fetchLeads();
+
+    // Labels advance automatically when outreach happens (sent / replied), so
+    // keep the list in sync live instead of waiting for a manual refresh.
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || cancelled) return;
+      channel = supabase
+        .channel(`saved-leads-stage-${session.user.id}`)
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "leads", filter: `user_id=eq.${session.user.id}` },
+          (payload: any) => {
+            const n = payload.new || {};
+            if (!n.id) return;
+            setLeads((prev) =>
+              prev.map((l) =>
+                l.id === n.id && (l.pipeline_stage || "new") !== (n.pipeline_stage || "new")
+                  ? { ...l, pipeline_stage: n.pipeline_stage }
+                  : l
+              )
+            );
+          }
+        )
+        .subscribe();
+    })();
+
+    return () => {
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
+    };
   }, []);
+
 
   const fetchEnrichmentHistory = async (leadId: string) => {
     try {
