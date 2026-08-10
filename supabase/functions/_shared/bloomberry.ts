@@ -44,7 +44,9 @@ export function toStringArray(v: unknown): string[] {
 // list; the rest stay as fallbacks in case sibling endpoints differ.
 // Confirmed envelope: { vendors: [{ vendor_name, vendor_category,
 // vendor_upper_level_category, vendor_url, usage_started_at }] }.
-const LIST_KEYS = ["vendors", "results", "data", "technologies", "tech", "technographics", "products", "items", "records"];
+// "vendors" is the confirmed enrichment envelope, "signals" the confirmed
+// discovery one.
+const LIST_KEYS = ["vendors", "signals", "results", "data", "technologies", "tech", "technographics", "products", "items", "records"];
 const NESTED_KEYS = ["company", "result", "enrichment", "response"];
 const NAME_KEYS = ["vendor_name", "product", "product_name", "vendor", "name", "technology", "tech_name", "title"];
 // vendor_category is the specific label ("learning management"); the upper
@@ -178,15 +180,21 @@ export function recentChanges(
   });
 }
 
-/** Loose competitor match so "HubSpot" matches "HubSpot CRM" and vice versa. */
-export function competitorMatcher(competitors: string[]): (name: string) => boolean {
-  const list = competitors.map(norm).filter(Boolean);
+/**
+ * Loose name match in both directions, so "HubSpot" matches "HubSpot CRM" and
+ * "Incident.io" matches "incident.io".
+ */
+export function looseNameMatcher(names: string[]): (name: string) => boolean {
+  const list = names.map(norm).filter(Boolean);
   return (name: string) => {
     const n = norm(name);
-    if (!n) return false;
+    if (!n || !list.length) return false;
     return list.some((c) => n === c || n.includes(c) || c.includes(n));
   };
 }
+
+/** The competitor-detection use of the same matcher. */
+export const competitorMatcher = looseNameMatcher;
 
 // ---------------------------------------------------------------------------
 // /signals/tech.json — the inverse query
@@ -200,16 +208,26 @@ export function competitorMatcher(competitors: string[]): (name: string) => bool
 // Same alias-driven approach and the same reason — see the note above.
 // ---------------------------------------------------------------------------
 
-const COMPANY_KEYS = ["company", "company_name", "organization", "organization_name", "org", "employer", "name"];
-// company_url leads on the assumption this endpoint mirrors the enrichment
-// endpoint's vendor_url naming. Plain "url" stays last: on a record carrying
-// both the company and the vendor, a bare url is as likely to be the vendor's.
-const DOMAIN_KEYS = ["company_url", "domain", "company_domain", "website", "web_site", "site", "homepage", "url"];
+const COMPANY_KEYS = ["company_name", "company", "organization", "organization_name", "org", "employer", "name"];
+// `domain` is the confirmed company domain. Plain "url" stays last and
+// vendor_url is deliberately absent: a record carries both parties, and
+// vendor_url ("incident.io") is the vendor's site, not the account's.
+const DOMAIN_KEYS = ["domain", "company_url", "company_domain", "website", "web_site", "site", "homepage", "url"];
+const EVIDENCE_KEYS = ["context_url", "source_url", "evidence_url", "reference_url", "link"];
+const INDUSTRY_KEYS = ["industry", "company_industry", "sector"];
+const COUNTRY_KEYS = ["country", "company_country", "country_code"];
+const SIZE_KEYS = ["company_size_range", "size_range", "employee_range", "company_size", "headcount_range"];
+const DESCRIPTION_KEYS = ["change_description", "description", "summary"];
+const ID_KEYS = ["id", "signal_id", "change_id", "uuid"];
 const CHANGE_KEYS = ["change", "change_type", "event", "event_type", "type", "action", "direction", "status", "signal"];
 const CHANGE_DATE_KEYS = ["date", "changed_at", "change_date", "event_date", "observed_at", "detected_at", "occurred_at", ...START_KEYS];
 
-const ADDED_WORDS = ["add", "added", "adopt", "adopted", "adoption", "new", "start", "started", "gain", "gained", "won", "install", "installed", "subscribe", "subscribed"];
-const REMOVED_WORDS = ["remove", "removed", "churn", "churned", "drop", "dropped", "lost", "loss", "stop", "stopped", "uninstall", "uninstalled", "cancel", "cancelled", "canceled", "end", "ended"];
+const ADDED_WORDS = ["subscribed", "subscribe", "add", "added", "adopt", "adopted", "adoption", "new", "start", "started", "gain", "gained", "install", "installed", "won"];
+// "unsubscribed" is Bloomberry's confirmed churn value and it *contains*
+// "subscribed", so substring matching would read a churn as an adoption — the
+// one error that inverts the whole motion this feature drives. Negated forms
+// lead the list, and removals are tested before additions so they always win.
+const REMOVED_WORDS = ["unsubscribed", "unsubscribe", "remove", "removed", "churn", "churned", "drop", "dropped", "lost", "loss", "stop", "stopped", "uninstall", "uninstalled", "cancel", "cancelled", "canceled", "end", "ended"];
 
 // On this endpoint the company owns the "name" field, so the product has to be
 // read from product-specific aliases only — otherwise every record would report
@@ -244,6 +262,16 @@ export interface CompanySignal {
   category: string | null;
   change: "added" | "removed";
   at: string | null;
+  /** Provider's own signal id, used for dedupe when present. */
+  id: string | null;
+  /** Where the change was observed — real evidence, not a citation of the vendor. */
+  evidenceUrl: string | null;
+  /** Firmographics the payload already carries, so a rep can qualify in place. */
+  industry: string | null;
+  country: string | null;
+  sizeRange: string | null;
+  /** Provider's own phrasing, e.g. "unsubscribed from Incident.io". */
+  description: string | null;
 }
 
 /**
@@ -265,7 +293,10 @@ export function normalizeCompanySignals(payload: unknown, nowMs = Date.now()): C
     if (!change) continue;
 
     const product = pickString(item, PRODUCT_KEYS_FOR_SIGNALS);
-    const key = `${norm(company ?? domain)}|${norm(product)}|${change}`;
+    // The provider's own id is the most reliable dedupe key; fall back to the
+    // company/product/direction triple when a payload does not carry one.
+    const id = pickString(item, ID_KEYS);
+    const key = id ? `id:${id}` : `${norm(company ?? domain)}|${norm(product)}|${change}`;
     if (seen.has(key)) continue;
     seen.add(key);
 
@@ -279,6 +310,12 @@ export function normalizeCompanySignals(payload: unknown, nowMs = Date.now()): C
       at: change === "removed"
         ? pickDate(item, [...END_KEYS, ...CHANGE_DATE_KEYS], nowMs)
         : pickDate(item, CHANGE_DATE_KEYS, nowMs),
+      id,
+      evidenceUrl: pickString(item, EVIDENCE_KEYS),
+      industry: pickString(item, INDUSTRY_KEYS),
+      country: pickString(item, COUNTRY_KEYS),
+      sizeRange: pickString(item, SIZE_KEYS),
+      description: pickString(item, DESCRIPTION_KEYS),
     });
   }
   return out.sort((a, b) => (Date.parse(b.at ?? "") || 0) - (Date.parse(a.at ?? "") || 0));

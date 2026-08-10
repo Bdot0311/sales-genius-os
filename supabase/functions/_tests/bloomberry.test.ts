@@ -9,6 +9,7 @@
 import { assert, assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
   competitorMatcher,
+  looseNameMatcher,
   normalizeCompanySignals,
   normalizeTech,
   recentChanges,
@@ -321,4 +322,83 @@ Deno.test("Talka.ai's actual stack produces no change inside 90 days", () => {
   // stays true once the dates actually parse, rather than by accident.
   const tech = normalizeTech(REAL_ENRICHMENT, NOW);
   assertEquals(recentChanges(tech, 90, never, NOW).length, 0);
+});
+
+// --- the confirmed /signals/tech.json shape --------------------------------
+// A verbatim record from a real response. The envelope key and the churn
+// wording were both wrong in the original guess, and the churn wording was the
+// dangerous one: "unsubscribed" contains "subscribed", so substring matching
+// reported every churn as an adoption.
+
+const REAL_SIGNAL = {
+  signals: [{
+    id: "11432176",
+    domain: "inatba.org",
+    region: "Europe",
+    country: "BE",
+    industry: "Industry Associations",
+    vendor_url: "incident.io",
+    change_date: "2026-08-07T14:23:53-04:00",
+    change_type: "unsubscribed",
+    context_url: "https://app.incident.io/inatba",
+    vendor_name: "Incident.io",
+    company_name: "INATBA - International Association for Trusted Blockchain Applications",
+    vendor_category: "incident management",
+    change_description: "unsubscribed from Incident.io",
+    company_size_range: "2–10",
+  }],
+};
+
+Deno.test("parses the real signals[] discovery payload", () => {
+  const out = normalizeCompanySignals(REAL_SIGNAL, NOW);
+  assertEquals(out.length, 1);
+  const s = out[0];
+  assertEquals(s.company, "INATBA - International Association for Trusted Blockchain Applications");
+  assertEquals(s.domain, "inatba.org");
+  assertEquals(s.product, "Incident.io");
+  assertEquals(s.category, "incident management");
+  assertEquals(s.id, "11432176");
+  assertEquals(s.evidenceUrl, "https://app.incident.io/inatba");
+  assertEquals(s.industry, "Industry Associations");
+  assertEquals(s.country, "BE");
+  assertEquals(s.sizeRange, "2–10");
+  assertEquals(s.description, "unsubscribed from Incident.io");
+  assert(s.at?.startsWith("2026-08-07"), `got ${s.at}`);
+});
+
+Deno.test("unsubscribed is a churn, never an adoption", () => {
+  // The inversion guard. "unsubscribed" contains "subscribed"; if additions were
+  // tested first, or the negated form were missing, every churn would surface as
+  // a new customer and the displacement motion would run exactly backwards.
+  assertEquals(normalizeCompanySignals(REAL_SIGNAL, NOW)[0].change, "removed");
+  for (const word of ["unsubscribed", "unsubscribe", "UNSUBSCRIBED"]) {
+    const out = normalizeCompanySignals({ signals: [{ company_name: "A", vendor_name: "X", change_type: word, change_date: daysAgo(1) }] }, NOW);
+    assertEquals(out[0]?.change, "removed", `"${word}" must be a churn`);
+  }
+  const added = normalizeCompanySignals({ signals: [{ company_name: "A", vendor_name: "X", change_type: "subscribed", change_date: daysAgo(1) }] }, NOW);
+  assertEquals(added[0].change, "added");
+});
+
+Deno.test("the vendor's own url is never taken as the company domain", () => {
+  // vendor_url is "incident.io" — the tool's site. Reading it as the account's
+  // domain would send every signal to the vendor instead of the prospect.
+  assertEquals(normalizeCompanySignals(REAL_SIGNAL, NOW)[0].domain, "inatba.org");
+});
+
+Deno.test("the provider's signal id dedupes repeats of the same change", () => {
+  const dup = { signals: [REAL_SIGNAL.signals[0], { ...REAL_SIGNAL.signals[0], company_name: "Renamed" }] };
+  assertEquals(normalizeCompanySignals(dup, NOW).length, 1);
+});
+
+Deno.test("a loose vendor match filters a mixed response down to the target", () => {
+  // The live call ignored the vendor query parameter and returned everything,
+  // so the filter has to hold client-side.
+  const mixed = normalizeCompanySignals({ signals: [
+    { company_name: "A", vendor_name: "Incident.io", change_type: "unsubscribed", change_date: daysAgo(1) },
+    { company_name: "B", vendor_name: "HubSpot CRM", change_type: "unsubscribed", change_date: daysAgo(2) },
+  ] }, NOW);
+  const match = looseNameMatcher(["HubSpot"]);
+  const filtered = mixed.filter((s) => !!s.product && match(s.product));
+  assertEquals(filtered.length, 1);
+  assertEquals(filtered[0].company, "B");
 });

@@ -4,6 +4,7 @@ import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
 import { rateLimit, rateLimitResponse } from "../_shared/rate-limit.ts";
 import {
   extractList,
+  looseNameMatcher,
   norm,
   normalizeCompanySignals,
   toStringArray,
@@ -126,9 +127,14 @@ serve(async (req) => {
       // only — the real filtering happens below on the parsed records, so a
       // parameter name the provider does not recognise cannot silently widen
       // the result set beyond what the caller asked for.
+      // A live call showed limit being honoured while a `vendor` filter was
+      // not — a HubSpot search came back full of other vendors. The correct
+      // parameter name is unknown, so the plausible spellings are all sent and
+      // the result is filtered locally regardless (below). Unrecognised query
+      // parameters are ignored by the provider, so the extras cost nothing.
       const qs = new URLSearchParams({ api_key: apiKey, days: String(days), limit: String(limit) });
-      if (vendor) qs.set("vendor", vendor);
-      if (category) qs.set("category", category);
+      for (const k of ["vendor", "vendor_name", "product"]) if (vendor) qs.set(k, vendor);
+      for (const k of ["category", "vendor_category"]) if (category) qs.set(k, category);
 
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
@@ -184,7 +190,17 @@ serve(async (req) => {
     // Filter locally so the window and page size hold regardless of which
     // query parameters the provider actually honoured.
     const cutoff = Date.now() - days * 86_400_000;
-    let signals = normalizeCompanySignals(payload)
+    const parsed = normalizeCompanySignals(payload);
+
+    // The vendor/category filter is applied here, not trusted to the query
+    // string: the provider returned unrelated vendors for a named search, and
+    // showing those under a "changes for HubSpot" heading would be a lie.
+    const matchesVendor = vendor ? looseNameMatcher([vendor]) : null;
+    const matchesCategory = category ? looseNameMatcher([category]) : null;
+
+    let signals = parsed
+      .filter((s) => !matchesVendor || (!!s.product && matchesVendor(s.product)))
+      .filter((s) => !matchesCategory || (!!s.category && matchesCategory(s.category)))
       .filter((s) => !wantChange || s.change === wantChange)
       .filter((s) => !s.at || Date.parse(s.at) >= cutoff);
     const totalMatched = signals.length;
@@ -206,8 +222,19 @@ serve(async (req) => {
       }
     }
 
+    // An empty list after filtering is not the same as an empty response, and
+    // saying so is the difference between "nothing is happening" and "we asked
+    // the wrong question". Without this the panel falls back to generic copy.
+    const reason = signals.length
+      ? undefined
+      : parsed.length
+        ? `${parsed.length} recent changes came back, but none matched ${target} in the last ${days} days`
+        : "no recent changes came back for that search";
+
     return json({
       signals: signals.map((s) => ({ ...s, known: !!s.domain && known.has(norm(s.domain)) })),
+      reason,
+      returned: parsed.length,
       target,
       vendor: vendor || null,
       category: category || null,
