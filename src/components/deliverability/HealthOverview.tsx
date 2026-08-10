@@ -23,7 +23,7 @@ export function latestSnapshotByAccount(snapshots: ReputationSnapshot[]): Map<st
   return map;
 }
 
-export const HealthOverview = ({ accounts, alerts, domains, snapshots = [], stats = [] }: Props) => {
+export const HealthOverview = ({ accounts, alerts, domains, stats = [] }: Props) => {
   const { score, scored } = aggregateHealth(accounts, stats);
   const display = reputationDisplay(score);
   const criticalAlerts = alerts.filter((a) => a.severity === "critical").length;
@@ -36,7 +36,6 @@ export const HealthOverview = ({ accounts, alerts, domains, snapshots = [], stat
   const t = totalStats(stats);
   const volume = t.volume;
   const bounceRate = t.bounceRate;
-  const openRate = t.openRate;
   const remaining = Math.max(0, MIN_VOLUME_FOR_SCORE - volume);
 
   const healthSub =
