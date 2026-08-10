@@ -299,6 +299,14 @@
     X-XSS-Protection = "1; mode=block"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    # Agent discovery (RFC 8288). Declared in this same "/*" block rather than a
+    # second one: two [[headers]] rules with an identical `for` is ambiguous —
+    # whether both merge or one wins is not something to leave to chance for a
+    # header that is invisible until an agent looks for it. Values here also
+    # override public/_headers for the same path, so this list has to stay a
+    # superset of the Link lines there or entries are silently lost (that is how
+    # the openapi.json service-desc link went missing).
+    Link = '''</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json", </openapi.json>; rel="service-desc"; type="application/openapi+json", </.well-known/mcp/server-card.json>; rel="service-desc"; type="application/json", </.well-known/agent-skills/index.json>; rel="describedby"; type="application/json", </.well-known/oauth-protected-resource>; rel="oauth-protected-resource"; type="application/json", </api-docs>; rel="service-doc"; type="text/html", </llms.txt>; rel="describedby"; type="text/plain", </auth.md>; rel="author"; type="text/markdown"'''
 
 # Efficient cache headers for static assets
 [[headers]]
@@ -355,12 +363,6 @@
   for = "/manifest.webmanifest"
   [headers.values]
     Cache-Control = "no-store, no-cache, must-revalidate, max-age=0"
-
-# Agent discovery — RFC 8288 Link headers on every HTML response
-[[headers]]
-  for = "/*"
-  [headers.values]
-    Link = '''</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json", </.well-known/mcp/server-card.json>; rel="service-desc"; type="application/json", </.well-known/agent-skills/index.json>; rel="describedby"; type="application/json", </.well-known/oauth-protected-resource>; rel="oauth-protected-resource"; type="application/json", </api-docs>; rel="service-doc"; type="text/html", </llms.txt>; rel="describedby"; type="text/plain", </auth.md>; rel="author"; type="text/markdown"'''
 
 # Extensionless agent discovery documents need explicit media types
 [[headers]]
