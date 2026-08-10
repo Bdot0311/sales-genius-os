@@ -18,6 +18,8 @@ import {
   useSendingDomains,
   useReputationSnapshots,
 } from "@/hooks/use-deliverability";
+import { useDeliverabilityRealtime } from "@/hooks/use-deliverability-realtime";
+import { LiveIndicator } from "@/components/deliverability/LiveIndicator";
 
 const SectionHeading = ({ title, sub }: { title: string; sub?: string }) => (
   <div className="mb-3">
@@ -34,6 +36,7 @@ const Deliverability = () => {
   const alertsQ = useActiveAlerts();
   const domainsQ = useSendingDomains();
   const snapshotsQ = useReputationSnapshots(30);
+  const { status: liveStatus, lastUpdate } = useDeliverabilityRealtime();
 
   const accounts = accountsQ.data ?? [];
   const alerts = alertsQ.data ?? [];
@@ -54,10 +57,13 @@ const Deliverability = () => {
       <div className="mx-auto w-full max-w-5xl space-y-8 p-4 sm:p-6">
         {/* Header */}
         <div>
-          <h1 className="flex items-center gap-2 text-xl font-bold">
-            <ShieldCheck className="h-5 w-5 text-primary" />
-            Deliverability
-          </h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="flex items-center gap-2 text-xl font-bold">
+              <ShieldCheck className="h-5 w-5 text-primary" />
+              Deliverability
+            </h1>
+            {!gated && <LiveIndicator status={liveStatus} lastUpdate={lastUpdate} />}
+          </div>
           <p className="text-sm text-muted-foreground">
             Reputation, authentication, blacklists, and content risk for every sending account, in one place.
           </p>
