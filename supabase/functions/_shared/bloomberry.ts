@@ -146,3 +146,97 @@ export function competitorMatcher(competitors: string[]): (name: string) => bool
     return list.some((c) => n === c || n.includes(c) || c.includes(n));
   };
 }
+
+// ---------------------------------------------------------------------------
+// /signals/tech.json — the inverse query
+//
+// The enrichment endpoint answers "what does this company run?" (domain in,
+// stack out). The signals endpoint answers "who just started or stopped
+// running this?" (vendor or category in, companies out), newest first. That is
+// account discovery rather than lead enrichment, so it gets its own record
+// shape: the subject is a company, and the product is the thing it moved on.
+//
+// Same alias-driven approach and the same reason — see the note above.
+// ---------------------------------------------------------------------------
+
+const COMPANY_KEYS = ["company", "company_name", "organization", "organization_name", "org", "employer", "name"];
+const DOMAIN_KEYS = ["domain", "company_domain", "website", "web_site", "url", "site", "homepage"];
+const CHANGE_KEYS = ["change", "change_type", "event", "event_type", "type", "action", "direction", "status", "signal"];
+const CHANGE_DATE_KEYS = ["date", "changed_at", "change_date", "event_date", "observed_at", "detected_at", "occurred_at", ...START_KEYS];
+
+const ADDED_WORDS = ["add", "added", "adopt", "adopted", "adoption", "new", "start", "started", "gain", "gained", "won", "install", "installed", "subscribe", "subscribed"];
+const REMOVED_WORDS = ["remove", "removed", "churn", "churned", "drop", "dropped", "lost", "loss", "stop", "stopped", "uninstall", "uninstalled", "cancel", "cancelled", "canceled", "end", "ended"];
+
+// On this endpoint the company owns the "name" field, so the product has to be
+// read from product-specific aliases only — otherwise every record would report
+// the company as its own product.
+const PRODUCT_KEYS_FOR_SIGNALS = NAME_KEYS.filter((k) => k !== "name" && k !== "title");
+
+/**
+ * Read the add/remove direction from whichever field carries it, falling back
+ * to date shape: an end date means they left, otherwise they arrived.
+ */
+export function pickChange(item: Record<string, unknown>, nowMs = Date.now()): "added" | "removed" | null {
+  for (const k of CHANGE_KEYS) {
+    const v = item[k];
+    if (typeof v === "boolean") return v ? "added" : "removed";
+    if (typeof v !== "string") continue;
+    const n = norm(v);
+    if (!n) continue;
+    // Removal is checked first so a value like "churn_added_date" cannot read
+    // as an adoption on the strength of the word it happens to end with.
+    if (REMOVED_WORDS.some((w) => n === w || n.includes(w))) return "removed";
+    if (ADDED_WORDS.some((w) => n === w || n.includes(w))) return "added";
+  }
+  if (pickDate(item, END_KEYS, nowMs)) return "removed";
+  if (pickDate(item, START_KEYS, nowMs)) return "added";
+  return null;
+}
+
+export interface CompanySignal {
+  company: string;
+  domain: string | null;
+  product: string | null;
+  category: string | null;
+  change: "added" | "removed";
+  at: string | null;
+}
+
+/**
+ * Normalize a /signals/tech.json payload into company-level change records,
+ * deduped per company+product+direction and sorted newest first.
+ *
+ * Records whose direction cannot be established are dropped rather than
+ * guessed: reporting a churn as an adoption would invert the sales motion the
+ * whole feature exists to drive.
+ */
+export function normalizeCompanySignals(payload: unknown, nowMs = Date.now()): CompanySignal[] {
+  const out: CompanySignal[] = [];
+  const seen = new Set<string>();
+  for (const item of extractList(payload)) {
+    const company = pickString(item, COMPANY_KEYS);
+    const domain = toDomain(pickString(item, DOMAIN_KEYS));
+    if (!company && !domain) continue;
+    const change = pickChange(item, nowMs);
+    if (!change) continue;
+
+    const product = pickString(item, PRODUCT_KEYS_FOR_SIGNALS);
+    const key = `${norm(company ?? domain)}|${norm(product)}|${change}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    out.push({
+      company: company ?? domain!,
+      domain,
+      product,
+      category: pickString(item, CATEGORY_KEYS),
+      change,
+      // A churn is dated by when they left; an adoption by when they arrived.
+      at: change === "removed"
+        ? pickDate(item, [...END_KEYS, ...CHANGE_DATE_KEYS], nowMs)
+        : pickDate(item, CHANGE_DATE_KEYS, nowMs),
+    });
+  }
+  return out.sort((a, b) => (Date.parse(b.at ?? "") || 0) - (Date.parse(a.at ?? "") || 0));
+}
+
