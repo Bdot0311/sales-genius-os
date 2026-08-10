@@ -237,7 +237,12 @@ const AgentChat = () => {
     setMessages((prev) => [...prev, optimistic]);
     try {
       const { data, error } = await supabase.functions.invoke("agent-chat", {
-        body: { threadId, message: content, ...(agentId ? { agentId } : {}) },
+        body: {
+          threadId,
+          message: content,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          ...(agentId ? { agentId } : {}),
+        },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
@@ -316,7 +321,14 @@ const AgentChat = () => {
     setResolving(approvalId);
     try {
       const { data, error } = await supabase.functions.invoke("agent-chat", {
-        body: { threadId, action: "resolve_approval", approvalId, decision, ...(agentId ? { agentId } : {}) },
+        body: {
+          threadId,
+          action: "resolve_approval",
+          approvalId,
+          decision,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          ...(agentId ? { agentId } : {}),
+        },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);

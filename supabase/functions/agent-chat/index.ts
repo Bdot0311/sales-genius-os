@@ -253,7 +253,7 @@ const TOOLS = [
     function: {
       name: "schedule_drafts",
       description:
-        "Schedule already-saved drafts to be sent automatically at a future date and time. Use this whenever the user asks to send later, tomorrow, next week, or at a specific time. Pass send_at as an ISO 8601 timestamp (UTC), or send_at_local plus the user's timezone offset. The drafts are queued and sent by the scheduler — nothing is sent now.",
+        "Schedule already-saved drafts to be sent automatically at a future date and time. Use this whenever the user asks to send later, tomorrow, next week, or at a specific time. Prefer send_at_local (the user's local wall-clock time, e.g. 2026-08-12T09:00) — it is interpreted in the user's timezone. Only pass send_at when the user explicitly gave a UTC time. The drafts are queued and sent by the scheduler — nothing is sent now.",
       parameters: {
         type: "object",
         properties: {
@@ -262,7 +262,12 @@ const TOOLS = [
           all_pending: { type: "boolean", description: "Schedule every saved draft (max 20) when no ids are given" },
           send_at: {
             type: "string",
-            description: "When to send, ISO 8601 with timezone, e.g. 2026-08-12T13:00:00Z. Must be in the future.",
+            description: "When to send, ISO 8601 with an explicit UTC offset or Z, e.g. 2026-08-12T13:00:00Z. Only use this if the user gave you an explicit UTC time.",
+          },
+          send_at_local: {
+            type: "string",
+            description:
+              "PREFERRED. When to send in the user's own local wall-clock time, no offset, e.g. 2026-08-12T09:00. Use this for every request like \"today at 9am\" or \"tomorrow morning\" — it is converted using the user's timezone shown in CURRENT TIME.",
           },
           stagger_minutes: {
             type: "number",
@@ -270,7 +275,6 @@ const TOOLS = [
           },
           from_email: { type: "string", description: "Mailbox address to send from, e.g. brandon@example.com" },
         },
-        required: ["send_at"],
       },
     },
   },
@@ -460,6 +464,49 @@ serve(async (req) => {
     let requestedAgentId = typeof payload.agentId === "string" ? payload.agentId : null;
     const action = String(payload.action ?? "chat");
     if (!threadId) return json({ error: "Missing threadId" }, 400);
+
+    // The user's IANA timezone (sent by the client). Everything the model sees or
+    // parses as a wall-clock time is resolved against this, never against UTC —
+    // otherwise "9am today" gets queued as 09:00Z (5am in New York).
+    const userTz = (() => {
+      const tz = typeof payload.timezone === "string" ? payload.timezone.trim() : "";
+      if (!tz) return "UTC";
+      try {
+        new Intl.DateTimeFormat("en-US", { timeZone: tz });
+        return tz;
+      } catch {
+        return "UTC";
+      }
+    })();
+    const tzOffsetMs = (date: Date, tz: string) => {
+      const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: tz,
+        hour12: false,
+        year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", second: "2-digit",
+      }).formatToParts(date).reduce((acc: Record<string, string>, p) => {
+        if (p.type !== "literal") acc[p.type] = p.value;
+        return acc;
+      }, {});
+      const asUtc = Date.UTC(
+        Number(parts.year), Number(parts.month) - 1, Number(parts.day),
+        Number(parts.hour) % 24, Number(parts.minute), Number(parts.second),
+      );
+      return asUtc - date.getTime();
+    };
+    // Parse "2026-08-12T09:00" as wall-clock time in the user's timezone.
+    const parseLocalWallClock = (input: string, tz: string): Date | null => {
+      const m = input.trim().match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+      if (!m) return null;
+      const naive = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] ?? 0));
+      let guess = new Date(naive - tzOffsetMs(new Date(naive), tz));
+      guess = new Date(naive - tzOffsetMs(guess, tz));
+      return Number.isNaN(guess.getTime()) ? null : guess;
+    };
+    const formatLocal = (d: Date) =>
+      `${new Intl.DateTimeFormat("en-US", {
+        timeZone: userTz, dateStyle: "medium", timeStyle: "short", hour12: true,
+      }).format(d)} (${userTz})`;
 
     // Wall-clock budget: edge functions get killed around ~150s, which the client
     // surfaces as "Failed to send a request to the Edge Function". Stop early and
@@ -1369,11 +1416,25 @@ serve(async (req) => {
         }
 
         case "schedule_drafts": {
-          const when = new Date(String(args.send_at ?? ""));
-          if (Number.isNaN(when.getTime()))
-            return { error: "send_at must be a valid ISO 8601 timestamp, e.g. 2026-08-12T13:00:00Z" };
+          const localRaw = typeof args.send_at_local === "string" ? args.send_at_local : "";
+          const absRaw = typeof args.send_at === "string" ? args.send_at : "";
+          let when: Date | null = null;
+          if (localRaw) {
+            when = parseLocalWallClock(localRaw, userTz);
+            if (!when)
+              return { error: "send_at_local must look like 2026-08-12T09:00 (local wall-clock, no offset)" };
+          } else if (absRaw) {
+            // A bare timestamp with no offset is a wall-clock time, not UTC.
+            when = /[zZ]$|[+-]\d{2}:?\d{2}$/.test(absRaw.trim())
+              ? new Date(absRaw)
+              : parseLocalWallClock(absRaw, userTz) ?? new Date(absRaw);
+          }
+          if (!when || Number.isNaN(when.getTime()))
+            return { error: "Provide send_at_local (e.g. 2026-08-12T09:00) or send_at as ISO 8601 with an offset" };
           if (when.getTime() <= Date.now())
-            return { error: `send_at must be in the future (now is ${new Date().toISOString()})` };
+            return {
+              error: `send time must be in the future (now is ${formatLocal(new Date())})`,
+            };
 
           const draftIds = (Array.isArray(args.draft_ids) ? args.draft_ids : [])
             .filter(Boolean)
@@ -1460,7 +1521,13 @@ serve(async (req) => {
                 scheduled_at: sendAt.toISOString(),
               },
             });
-            results.push({ draft_id: d.id, lead: label, to, scheduled_at: sendAt.toISOString() });
+            results.push({
+              draft_id: d.id,
+              lead: label,
+              to,
+              scheduled_at: sendAt.toISOString(),
+              scheduled_at_local: formatLocal(sendAt),
+            });
             index++;
           }
 
@@ -1470,7 +1537,7 @@ serve(async (req) => {
             label: okCount ? "Scheduled email" : "Scheduling failed",
             status: okCount ? "ok" : "error",
             detail: okCount
-              ? `${okCount} email(s) queued from ${mailbox.email}, first at ${when.toISOString()}`
+              ? `${okCount} email(s) queued from ${mailbox.email}, first at ${formatLocal(when)}`
               : "No drafts could be scheduled",
           });
 
@@ -1497,12 +1564,15 @@ serve(async (req) => {
           if (error) return { error: error.message };
           return {
             now: new Date().toISOString(),
+            now_local: formatLocal(new Date()),
+            timezone: userTz,
             scheduled: (data ?? []).map((e: any) => ({
               scheduled_id: e.id,
               lead_id: e.lead_id,
               to: e.to_email,
               subject: e.subject,
               scheduled_at: e.scheduled_at,
+              scheduled_at_local: e.scheduled_at ? formatLocal(new Date(e.scheduled_at)) : null,
               company: e.leads?.company_name ?? null,
               contact: e.leads?.contact_name ?? null,
             })),
@@ -1920,7 +1990,7 @@ serve(async (req) => {
 
 You can take real action on the user's account using your tools: reading their leads, enriching and scoring them, drafting cold emails and 4-touch sequences, sending outreach now or scheduling it for a future date/time, cancelling scheduled sends, enrolling leads in sequences, reviewing replies, and triggering a full agent run.
 
-CURRENT TIME: ${new Date().toISOString()} (UTC). Resolve every relative time the user gives you ("tomorrow 9am", "Monday") against this.
+CURRENT TIME: ${formatLocal(new Date())} — the user's local time. In UTC that is ${new Date().toISOString()}. Every time the user mentions ("9am today", "tomorrow morning", "Monday") is in THEIR timezone (${userTz}), never UTC. Resolve relative times against their local time.
 
 HOW TO WORK
 - When the user says something like "I just searched some leads, take it from here", find the relevant leads with list_leads first, then chain the work: enrich -> score -> draft -> send/queue. Do not ask permission for read-only or drafting steps; just do them and report back.
@@ -1928,7 +1998,7 @@ HOW TO WORK
 - draft_outreach goal must be one of: introduction, follow-up, meeting, demo, proposal. Use "introduction" for first touches.
 - Drafts are auto-saved and rendered in the chat as reviewable cards with Send now / Schedule / Discard buttons. After drafting, tell the user the drafts are below for review — do not send until they ask.
 - SENDING: when the user approves the drafts ("send them", "all good, send"), YOU send them — call send_drafts. You never need the subject or body to send a saved draft, only draft ids: use the draft_ids from your draft_outreach results, or call list_drafts (optionally with lead_ids or a name) to look them up again. Pass from_email when the user names an inbox, and use list_mailboxes if you need to know which addresses are connected. Never tell the user to click "Send now" themselves or to open another page, and never claim you lack the lead ids or draft contents — look them up with list_drafts instead.
-- SCHEDULING: you CAN send later. When the user asks for a future send ("tomorrow at 9", "Monday morning", "next week"), call schedule_drafts with the draft_ids and send_at as an absolute ISO 8601 UTC timestamp resolved from the current time given above. Use stagger_minutes when queuing several so they don't all fire at once. Confirm the exact date/time you queued, and mention it sends automatically. Use list_scheduled_emails to show what is queued and cancel_scheduled_email to call one back. Never say you cannot schedule and never tell the user to use the Schedule button themselves.
+- SCHEDULING: you CAN send later. When the user asks for a future send ("tomorrow at 9", "Monday morning", "next week"), call schedule_drafts with the draft_ids and send_at_local set to their local wall-clock time with no offset (e.g. "9am today" -> send_at_local: "YYYY-MM-DDT09:00" for today's local date). Never convert to UTC yourself and never pass a bare UTC timestamp for a local time — the tool does the conversion. Use stagger_minutes when queuing several so they don't all fire at once. Confirm the exact date/time you queued, and mention it sends automatically. Use list_scheduled_emails to show what is queued and cancel_scheduled_email to call one back. Never say you cannot schedule and never tell the user to use the Schedule button themselves.
 - DELETING: you CAN delete emails. Use delete_drafts to remove saved drafts (by draft_ids, lead_ids, or all_pending) and delete_inbox_threads to remove inbox conversations (by thread_ids or match_email). Deletion is permanent, so only do it when the user asks, confirm briefly what you are about to delete if the request is broad ("delete all my drafts"), then do it and report the count. Never tell the user to delete things manually in the UI.
 - Use send_outreach only for a brand new email you just wrote in the conversation and have not saved as a draft.
 - To source NEW people, use find_leads. If the user describes who they want (any role, industry, company type, or a one-off ask that is not the ICP), pass that description as \`query\` and the search runs broad on it, using the saved ICP only to score/qualify the results. If they just say "find more leads" or "source from my ICP" with no specific target, omit \`query\` to source people matching the saved ICP. It excludes anyone already in the account and advances the result page, so calling it again returns different people. Do not refuse or narrow an off-ICP request; run it as a query and let the ICP score it. Only say you cannot search if there is neither a query nor a saved ICP.
