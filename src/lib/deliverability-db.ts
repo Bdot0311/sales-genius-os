@@ -191,3 +191,81 @@ export async function fetchRecentSnapshots(days = 30): Promise<ReputationSnapsho
   if (error) throw error;
   return (data ?? []) as ReputationSnapshot[];
 }
+
+// ---- Live stats (single source of truth) ----
+/**
+ * Per-mailbox activity computed on read from `sent_emails` + `warmup_messages`,
+ * rather than from the nightly `reputation_snapshots` rows.
+ *
+ * The suite used to mix sources — warmup counts from one table, volume from the
+ * previous night's snapshot, daily counters from the account row — so the panels
+ * disagreed with each other and only moved once a day. Everything now reads this
+ * one RPC, so the numbers reconcile and update the moment a send is recorded.
+ */
+export interface LiveStats {
+  sending_account_id: string;
+  outreach_sent: number;
+  bounced: number;
+  complaints: number;
+  opened: number;
+  warmup_sent: number;
+  warmup_replied: number;
+  warmup_inbox: number;
+  warmup_spam: number;
+  /** Outreach + warmup: the volume the reputation score unlocks on. */
+  volume: number;
+  bounce_rate: number | null;
+  complaint_rate: number | null;
+  open_rate: number | null;
+  warmup_reply_rate: number | null;
+  warmup_inbox_rate: number | null;
+  reputation_score: number | null;
+}
+
+export async function fetchLiveStats(days = 30): Promise<LiveStats[]> {
+  const { data, error } = await sb.rpc("get_deliverability_live_stats", { p_days: days });
+  if (error) throw error;
+  return ((data ?? []) as LiveStats[]).map((r) => ({
+    ...r,
+    outreach_sent: Number(r.outreach_sent) || 0,
+    bounced: Number(r.bounced) || 0,
+    complaints: Number(r.complaints) || 0,
+    opened: Number(r.opened) || 0,
+    warmup_sent: Number(r.warmup_sent) || 0,
+    warmup_replied: Number(r.warmup_replied) || 0,
+    warmup_inbox: Number(r.warmup_inbox) || 0,
+    warmup_spam: Number(r.warmup_spam) || 0,
+    volume: Number(r.volume) || 0,
+  }));
+}
+
+/** Sum live stats across mailboxes, keeping rates on their real denominators. */
+export function totalStats(stats: LiveStats[]) {
+  const sum = (f: (s: LiveStats) => number) => stats.reduce((t, s) => t + f(s), 0);
+  const outreach = sum((s) => s.outreach_sent);
+  const warmup = sum((s) => s.warmup_sent);
+  const bounced = sum((s) => s.bounced);
+  const complaints = sum((s) => s.complaints);
+  const opened = sum((s) => s.opened);
+  const replied = sum((s) => s.warmup_replied);
+  const inbox = sum((s) => s.warmup_inbox);
+  const spam = sum((s) => s.warmup_spam);
+  const classified = inbox + spam;
+  return {
+    outreach,
+    warmup,
+    volume: outreach + warmup,
+    bounced,
+    complaints,
+    opened,
+    replied,
+    inbox,
+    spam,
+    classified,
+    bounceRate: outreach > 0 ? (bounced / outreach) * 100 : null,
+    complaintRate: outreach > 0 ? (complaints / outreach) * 100 : null,
+    openRate: outreach > 0 ? (opened / outreach) * 100 : null,
+    replyRate: warmup > 0 ? (replied / warmup) * 100 : null,
+    inboxRate: classified > 0 ? (inbox / classified) * 100 : null,
+  };
+}
