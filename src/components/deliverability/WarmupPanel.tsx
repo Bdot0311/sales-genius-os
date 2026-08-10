@@ -4,12 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Flame, Play, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { useWarmupMessages } from "@/hooks/use-deliverability";
+import { useLiveStats } from "@/hooks/use-deliverability";
 import { runWarmupNow } from "@/lib/deliverability-api";
-import type { SendingAccount } from "@/lib/deliverability-db";
+import { totalStats, type SendingAccount } from "@/lib/deliverability-db";
 
 export const WarmupPanel = ({ accounts }: { accounts: SendingAccount[] }) => {
-  const { data: messages = [], isLoading } = useWarmupMessages(30);
+  // Same live source as the overview and the mailbox cards.
+  const { data: stats = [], isLoading } = useLiveStats(30);
   const qc = useQueryClient();
   const [running, setRunning] = useState(false);
   const warmingCount = accounts.filter((a) => a.warmup_enabled).length;
@@ -24,6 +25,7 @@ export const WarmupPanel = ({ accounts }: { accounts: SendingAccount[] }) => {
         toast.success(`Warmup ran: ${r.sent ?? 0} sent, ${r.replied ?? 0} replied${r.recovered ? `, ${r.recovered} recovered from spam` : ""}.`);
       }
       qc.invalidateQueries({ queryKey: ["warmup-messages"] });
+      qc.invalidateQueries({ queryKey: ["deliverability-live-stats"] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not run warmup");
     } finally {
@@ -31,12 +33,13 @@ export const WarmupPanel = ({ accounts }: { accounts: SendingAccount[] }) => {
     }
   };
 
-  const sent = messages.length;
-  const replied = messages.filter((m) => m.replied_at).length;
-  const withFolder = messages.filter((m) => m.folder_detected && m.folder_detected !== "unknown");
-  const inbox = withFolder.filter((m) => m.folder_detected === "inbox").length;
-  const inboxRate = withFolder.length > 0 ? Math.round((inbox / withFolder.length) * 100) : null;
-  const replyRate = sent > 0 ? Math.round((replied / sent) * 100) : null;
+  const t = totalStats(stats);
+  const sent = t.warmup;
+  const replied = t.replied;
+  const inbox = t.inbox;
+  const classified = t.classified;
+  const inboxRate = t.inboxRate === null ? null : Math.round(t.inboxRate);
+  const replyRate = t.replyRate === null ? null : Math.round(t.replyRate);
 
   return (
     <Card className="border-border/50">
@@ -77,12 +80,13 @@ export const WarmupPanel = ({ accounts }: { accounts: SendingAccount[] }) => {
               <Stat
                 label="Inbox placement"
                 value={inboxRate === null ? "—" : `${inboxRate}%`}
-                sub={withFolder.length > 0 ? `${inbox}/${withFolder.length} landed` : "measuring"}
+                sub={classified > 0 ? `${inbox}/${classified} landed` : "measuring"}
                 tone={inboxRate === null ? undefined : inboxRate >= 90 ? "good" : inboxRate >= 70 ? "warn" : "bad"}
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              Messages that land in spam are automatically moved to the inbox to aid recovery. Placement
+              Warmup sends count toward the {t.volume} total 30-day volume behind the health score above.
+              Messages that land in spam are automatically moved to the inbox to aid recovery, and placement
               is measured only on messages the worker could classify.
             </p>
           </>

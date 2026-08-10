@@ -17,6 +17,7 @@ import {
   useActiveAlerts,
   useSendingDomains,
   useReputationSnapshots,
+  useLiveStats,
 } from "@/hooks/use-deliverability";
 import { useDeliverabilityRealtime } from "@/hooks/use-deliverability-realtime";
 import { LiveIndicator } from "@/components/deliverability/LiveIndicator";
@@ -36,12 +37,14 @@ const Deliverability = () => {
   const alertsQ = useActiveAlerts();
   const domainsQ = useSendingDomains();
   const snapshotsQ = useReputationSnapshots(30);
+  const statsQ = useLiveStats(30);
   const { status: liveStatus, lastUpdate } = useDeliverabilityRealtime();
 
   const accounts = accountsQ.data ?? [];
   const alerts = alertsQ.data ?? [];
   const domains = domainsQ.data ?? [];
   const snapshots = snapshotsQ.data ?? [];
+  const stats = statsQ.data ?? [];
 
   const loading = accountsQ.isLoading || alertsQ.isLoading || domainsQ.isLoading;
   const errored = accountsQ.isError || alertsQ.isError || domainsQ.isError;
@@ -50,6 +53,7 @@ const Deliverability = () => {
     alertsQ.refetch();
     domainsQ.refetch();
     snapshotsQ.refetch();
+    statsQ.refetch();
   };
 
   return (
@@ -111,7 +115,7 @@ const Deliverability = () => {
           </div>
         ) : (
           <>
-            <HealthOverview accounts={accounts} alerts={alerts} domains={domains} snapshots={snapshots} />
+            <HealthOverview accounts={accounts} alerts={alerts} domains={domains} snapshots={snapshots} stats={stats} />
 
             <section>
               <SectionHeading title="Alerts" sub="Reputation drops, auth failures, and blacklist listings surface here." />
@@ -120,7 +124,7 @@ const Deliverability = () => {
 
             <section>
               <SectionHeading title="Sending accounts" sub="Per-account reputation, updated nightly from real send data." />
-              <AccountHealthGrid accounts={accounts} snapshots={snapshots} />
+              <AccountHealthGrid accounts={accounts} snapshots={snapshots} stats={stats} />
             </section>
 
             <section>

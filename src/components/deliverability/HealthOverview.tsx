@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { ShieldCheck, AlertTriangle, Send, Globe } from "lucide-react";
 import { reputationDisplay, MIN_VOLUME_FOR_SCORE } from "@/lib/reputation";
-import type { SendingAccount, DeliverabilityAlert, SendingDomain, ReputationSnapshot } from "@/lib/deliverability-db";
+import { totalStats, type SendingAccount, type DeliverabilityAlert, type SendingDomain, type ReputationSnapshot, type LiveStats } from "@/lib/deliverability-db";
 import { aggregateHealth } from "@/hooks/use-deliverability";
 
 interface Props {
@@ -10,6 +10,7 @@ interface Props {
   alerts: DeliverabilityAlert[];
   domains: SendingDomain[];
   snapshots?: ReputationSnapshot[];
+  stats?: LiveStats[];
 }
 
 /** Latest snapshot per account — compute-reputation writes a rolling 30-day row daily. */
@@ -22,22 +23,19 @@ export function latestSnapshotByAccount(snapshots: ReputationSnapshot[]): Map<st
   return map;
 }
 
-export const HealthOverview = ({ accounts, alerts, domains, snapshots = [] }: Props) => {
-  const { score, scored } = aggregateHealth(accounts);
+export const HealthOverview = ({ accounts, alerts, domains, stats = [] }: Props) => {
+  const { score, scored } = aggregateHealth(accounts, stats);
   const display = reputationDisplay(score);
   const criticalAlerts = alerts.filter((a) => a.severity === "critical").length;
   const authIssues = domains.filter(
     (d) => d.spf_status === "fail" || d.dkim_status === "fail" || d.dmarc_status === "fail",
   ).length;
 
-  // Real 30-day activity across the user's mailboxes.
-  const latest = latestSnapshotByAccount(snapshots);
-  const rows = accounts.map((a) => latest.get(a.id)).filter(Boolean) as ReputationSnapshot[];
-  const volume = rows.reduce((s, r) => s + (r.volume ?? 0), 0);
-  const bounces = rows.reduce((s, r) => s + ((r.bounce_rate ?? 0) / 100) * (r.volume ?? 0), 0);
-  const opens = rows.reduce((s, r) => s + ((r.open_rate ?? 0) / 100) * (r.volume ?? 0), 0);
-  const bounceRate = volume > 0 ? (bounces / volume) * 100 : null;
-  const openRate = volume > 0 ? (opens / volume) * 100 : null;
+  // Live 30-day activity across the user's mailboxes — same source as the
+  // mailbox cards and the warmup panel, so all three always reconcile.
+  const t = totalStats(stats);
+  const volume = t.volume;
+  const bounceRate = t.bounceRate;
   const remaining = Math.max(0, MIN_VOLUME_FOR_SCORE - volume);
 
   const healthSub =
@@ -84,7 +82,9 @@ export const HealthOverview = ({ accounts, alerts, domains, snapshots = [] }: Pr
         sub={
           volume === 0
             ? `${accounts.length} mailbox${accounts.length === 1 ? "" : "es"} connected`
-            : `${bounceRate!.toFixed(1)}% bounce · ${openRate!.toFixed(0)}% open`
+            : `${t.outreach} outreach · ${t.warmup} warmup${
+                bounceRate !== null ? ` · ${bounceRate.toFixed(1)}% bounce` : ""
+              }`
         }
         tone={bounceRate === null ? undefined : bounceRate >= 5 ? "bad" : bounceRate >= 2 ? "warn" : "good"}
       />

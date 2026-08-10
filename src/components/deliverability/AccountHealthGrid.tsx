@@ -7,14 +7,15 @@ import { reputationDisplay, MIN_VOLUME_FOR_SCORE } from "@/lib/reputation";
 import { useUpdateAccount, useToggleWarmup } from "@/hooks/use-deliverability";
 import { ReputationTrend } from "./ReputationTrend";
 import { SendingControlsDialog } from "./SendingControlsDialog";
-import type { SendingAccount, ReputationSnapshot } from "@/lib/deliverability-db";
+import type { SendingAccount, ReputationSnapshot, LiveStats } from "@/lib/deliverability-db";
 
 interface Props {
   accounts: SendingAccount[];
   snapshots: ReputationSnapshot[];
+  stats?: LiveStats[];
 }
 
-export const AccountHealthGrid = ({ accounts, snapshots }: Props) => {
+export const AccountHealthGrid = ({ accounts, snapshots, stats = [] }: Props) => {
   if (accounts.length === 0) {
     return (
       <Card className="border-border/50">
@@ -33,17 +34,25 @@ export const AccountHealthGrid = ({ accounts, snapshots }: Props) => {
           key={acct.id}
           account={acct}
           snapshots={snapshots.filter((s) => s.sending_account_id === acct.id)}
+          stats={stats.find((s) => s.sending_account_id === acct.id)}
         />
       ))}
     </div>
   );
 };
 
-const AccountCard = ({ account, snapshots }: { account: SendingAccount; snapshots: ReputationSnapshot[] }) => {
+const AccountCard = ({ account, snapshots, stats }: {
+  account: SendingAccount;
+  snapshots: ReputationSnapshot[];
+  stats?: LiveStats;
+}) => {
   const update = useUpdateAccount();
   const toggleWarmup = useToggleWarmup();
-  const display = reputationDisplay(account.reputation_score);
-  const latest = snapshots[snapshots.length - 1];
+  // Live stats win over the nightly persisted score: they include warmup volume
+  // and move the instant a send lands, which is what the rest of the page shows.
+  const score = stats ? stats.reputation_score : account.reputation_score;
+  const display = reputationDisplay(score);
+  const volume = stats?.volume ?? snapshots[snapshots.length - 1]?.volume ?? 0;
   const isPaused = account.status === "paused";
 
   const togglePause = () => {
@@ -82,30 +91,32 @@ const AccountCard = ({ account, snapshots }: { account: SendingAccount; snapshot
         <div className="flex items-center justify-between">
           <div>
             <span className={`text-3xl font-bold tabular-nums ${display.color}`}>
-              {account.reputation_score ?? "—"}
+              {score ?? "—"}
             </span>
             <span className="ml-2 text-xs text-muted-foreground">{display.label}</span>
           </div>
-          {latest && (
+          {stats && (
             <div className="text-right text-xs text-muted-foreground">
-              <div>{latest.volume} sent / 30d</div>
-              <div>{latest.bounce_rate}% bounce · {latest.complaint_rate}% complaint</div>
-              <div>{latest.open_rate}% open</div>
+              <div>{volume} sent / 30d</div>
+              <div>{stats.outreach_sent} outreach · {stats.warmup_sent} warmup</div>
+              <div>
+                {stats.bounce_rate ?? 0}% bounce · {stats.open_rate ?? 0}% open
+              </div>
             </div>
           )}
         </div>
 
-        {account.reputation_score === null && (
+        {score === null && (
           <div className="space-y-1.5">
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
               <div
                 className="h-full rounded-full bg-primary/60"
-                style={{ width: `${Math.min(100, ((latest?.volume ?? 0) / MIN_VOLUME_FOR_SCORE) * 100)}%` }}
+                style={{ width: `${Math.min(100, (volume / MIN_VOLUME_FOR_SCORE) * 100)}%` }}
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              {latest?.volume ?? 0} of {MIN_VOLUME_FOR_SCORE} sends needed before a reputation score is
-              calculated. Rates above are live; the score unlocks at meaningful volume.
+              {volume} of {MIN_VOLUME_FOR_SCORE} sends needed before a reputation score is calculated.
+              Outreach and warmup both count. Rates above are live.
             </p>
           </div>
         )}
