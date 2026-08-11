@@ -339,6 +339,22 @@ const TOOLS = [
   {
     type: "function",
     function: {
+      name: "delete_leads",
+      description:
+        "Permanently delete saved lead records from the user's account (and any drafts attached to them). Pass lead_ids from list_leads, or match_company / match_name to find them. Irreversible — only when the user asks to delete or clean up leads.",
+      parameters: {
+        type: "object",
+        properties: {
+          lead_ids: { type: "array", items: { type: "string" }, description: "Lead ids to delete" },
+          match_company: { type: "string", description: "Delete leads whose company name matches this text" },
+          match_name: { type: "string", description: "Delete leads whose contact name matches this text" },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "send_outreach",
       description:
         "Send a brand new email to a lead when you have the subject and body in hand. To send a draft you already created, use send_drafts instead. In approval mode this pauses and shows the user an approve/reject card inline in the chat instead of sending.",
