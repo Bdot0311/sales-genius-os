@@ -448,6 +448,28 @@ const TOOLS = [
   {
     type: "function",
     function: {
+      name: "search_companies",
+      description:
+        "Search for target COMPANIES (accounts) by name, brand or keyword — returns matching companies with domain, location and employee range. Use this when the user wants to identify or verify target accounts (e.g. 'find companies like Notion', 'is Acme in the network?', 'give me the domain for Stripe') BEFORE sourcing people. To source actual people/contacts use find_leads instead. Results are not saved; feed a company name or domain into find_leads' query to prospect people there.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: "Company name, brand or keyword to search for (at least 2 characters).",
+          },
+          queries: {
+            type: "array",
+            items: { type: "string" },
+            description: "Optional: search several companies in one call (max 5).",
+          },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "run_full_agent",
       description:
         "Trigger a full AI SDR run: source new leads from the ICP, generate sequences and send or queue first touches, then handle replies.",
