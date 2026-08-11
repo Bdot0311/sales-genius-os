@@ -31,6 +31,13 @@ window.addEventListener("unhandledrejection", (e) => {
   const reason: any = (e as PromiseRejectionEvent)?.reason;
   const msg = String(reason?.message || reason || "");
   if (isChunkLoadError(msg)) { tryReload(); return; }
+  // Suppress rejections whose reason is a DOM Event (CustomEvent/ErrorEvent etc.).
+  // Safari + browser extensions / third-party scripts reject with Event objects that
+  // carry no stack or message, so they are pure noise.
+  if (typeof Event !== "undefined" && reason instanceof Event) {
+    e.preventDefault();
+    return;
+  }
   // Suppress empty-object rejections (non-actionable, typically from third-party scripts).
   if (reason && typeof reason === "object" && !(reason instanceof Error) && !msg.length && Object.keys(reason).length === 0) {
     e.preventDefault();
