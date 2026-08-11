@@ -28,6 +28,15 @@ interface ExternalLeadFilters {
   keywords?: string[];
   limit?: number;
   page?: number;
+  /**
+   * Opaque provider cursor, echoed from a previous response's `next_cursor`.
+   *
+   * The backend has always paged by cursor and returned one; nothing here ever
+   * sent or read it, so paging fell back to offsets and stopped at the
+   * provider's row ceiling. Passing it through is what lets a run page past
+   * that.
+   */
+  cursor?: string;
   // ─── Full-ICP filters (sent by the AI SDR agent and ICP-driven searches) ───
   // The upstream provider only accepts one value per field, so multi-value ICP
   // filters are fanned out into several searches and merged here.
@@ -906,7 +915,9 @@ serve(async (req) => {
       // same phrases as `keywords` as well makes them an accidental AND clause.
       keywords: !filters.query && nonJobKeywords.length > 0 ? nonJobKeywords.join(', ') : undefined,
       limit,
-      ...(page > 1 ? { offset } : {}),
+      // A cursor supersedes the offset: it is the provider's own position, and
+      // sending both would ask for the same rows twice over.
+      ...(filters.cursor ? { cursor: filters.cursor } : page > 1 ? { offset } : {}),
     };
 
     // CRITICAL: Strip empty/null/undefined values so Railway doesn't build broken PDL queries
@@ -1408,6 +1419,10 @@ serve(async (req) => {
         // What was actually sent upstream. Without this a dropped or rewritten
         // filter is invisible, and the user has no way to tell why the leads do
         // not look like their ICP.
+        // Echoed back so the caller can ask for the page after this one. Absent
+        // when the provider has no more rows, which is how the UI knows it has
+        // reached the end rather than guessing from a total.
+        next_cursor: data.next_cursor ?? null,
         applied_filters: requestBody,
         relaxed_filters: relaxedFilters,
       }),

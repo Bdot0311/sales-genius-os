@@ -519,7 +519,10 @@ const Leads = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => goToPage(pagination.currentPage + 1)}
-                          disabled={pagination.currentPage >= pagination.totalPages || externalLoading}
+                          // hasNextPage follows the provider's cursor when there
+                          // is one; the page count is an estimate and would stop
+                          // paging early.
+                          disabled={!pagination.hasNextPage || externalLoading}
                         >
                           Next
                           <ChevronRight className="w-4 h-4 ml-1" />
