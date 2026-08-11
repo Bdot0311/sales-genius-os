@@ -189,7 +189,6 @@ export function shouldIndexPage(path: string): boolean {
     '/pipeline',
     '/leads',
     '/analytics',
-    '/automations',
     '/outreach',
     '/calendar',
     '/coach',

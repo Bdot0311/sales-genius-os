@@ -13,7 +13,6 @@ import {
   Calendar,
   TrendingUp,
   Mic,
-  Workflow,
   BarChart3,
   LogOut,
   Menu,
@@ -75,7 +74,6 @@ const navSections = [
     label: "PLATFORM",
     items: [
       { name: "Deliverability", icon: ShieldCheck, href: "/dashboard/deliverability" },
-      { name: "Automations", icon: Workflow, href: "/dashboard/automations" },
       { name: "Integrations", icon: Puzzle, href: "/integrations" },
       { name: "Connect AI", icon: Plug, href: "/connect" },
       { name: "Settings", icon: Settings, href: "/settings" },

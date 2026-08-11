@@ -270,7 +270,6 @@ The OutReign dashboard is your command center for sales operations.
 - **Outreach** - Email composition and history
 - **Calendar** - Scheduled activities
 - **Analytics** - Performance metrics
-- **Automations** - Workflow builder
 - **AI Coach** - Sales coaching assistant
 
 #### Top Bar

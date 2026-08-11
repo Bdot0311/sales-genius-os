@@ -36,7 +36,6 @@ const Pipeline = lazy(() => import("./pages/Pipeline"));
 const Outreach = lazy(() => import("./pages/Outreach"));
 const Calendar = lazy(() => import("./pages/Calendar"));
 const Analytics = lazy(() => import("./pages/Analytics"));
-const Automations = lazy(() => import("./pages/Automations"));
 const SequenceDetail = lazy(() => import("./pages/SequenceDetail"));
 const DashboardIntegrations = lazy(() => import("./pages/DashboardIntegrations"));
 const PricingPage = lazy(() => import("./pages/PricingPage"));
@@ -479,7 +478,7 @@ const App = () => {
               <Route path="/dashboard/playbook" element={<Navigate to="/dashboard/coach/playbooks" replace />} />
               <Route path="/dashboard/calendar" element={<MaintenanceGuard><Calendar /></MaintenanceGuard>} />
               <Route path="/dashboard/analytics" element={<MaintenanceGuard><Analytics /></MaintenanceGuard>} />
-              <Route path="/dashboard/automations" element={<MaintenanceGuard><Automations /></MaintenanceGuard>} />
+              <Route path="/dashboard/automations" element={<Navigate to="/dashboard/agent" replace />} />
               <Route path="/dashboard/sequences/:id" element={<MaintenanceGuard><SequenceDetail /></MaintenanceGuard>} />
               <Route path="/dashboard/sequences" element={<MaintenanceGuard><Sequences /></MaintenanceGuard>} />
               <Route path="/dashboard/message-blocks" element={<MaintenanceGuard><MessageBlocks /></MaintenanceGuard>} />
