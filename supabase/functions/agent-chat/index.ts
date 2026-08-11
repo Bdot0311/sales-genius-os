@@ -92,6 +92,7 @@ const PARALLEL_SAFE_TOOLS = new Set([
   "list_sequences",
   "list_recent_replies",
   "get_agent_status",
+  "search_companies",
 ]);
 
 const TOOLS = [
@@ -441,6 +442,28 @@ const TOOLS = [
             description: "Plain-English description of who to find, e.g. 'GTM leaders at Series B SaaS companies in the US'. Use the user's request verbatim-ish. When set, the ICP scores results rather than filtering them, so niche or off-ICP searches still return people.",
           },
           count: { type: "number", description: "How many new leads to source (1-25, default 10)." },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "search_companies",
+      description:
+        "Search for target COMPANIES (accounts) by name, brand or keyword — returns matching companies with domain, location and employee range. Use this when the user wants to identify or verify target accounts (e.g. 'find companies like Notion', 'is Acme in the network?', 'give me the domain for Stripe') BEFORE sourcing people. To source actual people/contacts use find_leads instead. Results are not saved; feed a company name or domain into find_leads' query to prospect people there.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: "Company name, brand or keyword to search for (at least 2 characters).",
+          },
+          queries: {
+            type: "array",
+            items: { type: "string" },
+            description: "Optional: search several companies in one call (max 5).",
+          },
         },
       },
     },
@@ -1870,6 +1893,42 @@ serve(async (req) => {
           };
         }
 
+        case "search_companies": {
+          const raw = [
+            ...(typeof args.query === "string" ? [args.query] : []),
+            ...(Array.isArray(args.queries) ? args.queries : []),
+          ]
+            .map((q: any) => String(q ?? "").trim())
+            .filter((q) => q.length >= 2);
+          const queries = [...new Set(raw)].slice(0, 5);
+          if (!queries.length) {
+            toolEvents.push({ name, label: "Company search", status: "error", detail: "no query" });
+            return { error: "Give a company name or keyword of at least 2 characters." };
+          }
+          const results = await Promise.all(
+            queries.map(async (q) => {
+              const res = await invokeFn("search-companies", { query: q });
+              const companies = Array.isArray(res?.companies) ? res.companies : [];
+              return { query: q, companies, error: res?.error ?? undefined };
+            }),
+          );
+          const total = results.reduce((n, r) => n + r.companies.length, 0);
+          toolEvents.push({
+            name,
+            label: "Searched companies",
+            status: total ? "ok" : "error",
+            detail: total
+              ? `${total} match${total === 1 ? "" : "es"} for ${queries.join(", ")}`
+              : `no matches for ${queries.join(", ")}`,
+          });
+          return {
+            results,
+            note: total
+              ? "These are target accounts only — no people were saved. To prospect contacts at one of them, call find_leads with the company name or domain in the query."
+              : "No companies matched. Try a shorter or differently spelled name.",
+          };
+        }
+
         case "find_leads": {
           const query = typeof args.query === "string" ? args.query.trim() : "";
           // Either a free-text query OR a saved ICP is enough to search. Only
@@ -2076,6 +2135,7 @@ HOW TO WORK
 - SCHEDULING: you CAN send later. When the user asks for a future send ("tomorrow at 9", "Monday morning", "next week"), call schedule_drafts with the draft_ids and send_at_local set to their local wall-clock time with no offset (e.g. "9am today" -> send_at_local: "YYYY-MM-DDT09:00" for today's local date). Never convert to UTC yourself and never pass a bare UTC timestamp for a local time — the tool does the conversion. Use stagger_minutes when queuing several so they don't all fire at once. Confirm the exact date/time you queued, and mention it sends automatically. Use list_scheduled_emails to show what is queued and cancel_scheduled_email to call one back. Never say you cannot schedule and never tell the user to use the Schedule button themselves.
 - DELETING: you CAN delete emails AND lead records. Use delete_drafts to remove saved drafts (by draft_ids, lead_ids, or all_pending), delete_inbox_threads to remove inbox conversations (by thread_ids or match_email), and delete_leads to permanently remove saved lead records (by lead_ids, match_company or match_name — it also clears any drafts attached to them). Deletion is permanent, so only do it when the user asks, confirm briefly what you are about to delete if the request is broad ("delete all my drafts", "delete all my leads"), then do it and report the count. Never say you lack a way to delete leads and never tell the user to delete things manually in the UI.
 - Use send_outreach only for a brand new email you just wrote in the conversation and have not saved as a draft.
+- To identify or verify target COMPANIES (accounts), use search_companies — it returns company name, domain, location and size and saves nothing. Use it when the user asks about companies rather than people, or to resolve a company name/domain before prospecting; then pass that company into find_leads to source contacts there.
 - To source NEW people, use find_leads. If the user describes who they want (any role, industry, company type, or a one-off ask that is not the ICP), pass that description as \`query\` and the search runs broad on it, using the saved ICP only to score/qualify the results. If they just say "find more leads" or "source from my ICP" with no specific target, omit \`query\` to source people matching the saved ICP. It excludes anyone already in the account and advances the result page, so calling it again returns different people. Do not refuse or narrow an off-ICP request; run it as a query and let the ICP score it. Only say you cannot search if there is neither a query nor a saved ICP.
 - Never invent leads, metrics, emails or results. Only report what the tools returned.
 - Be concise and specific. Short paragraphs, tight bullet lists, real numbers and names. No emojis, no filler.
