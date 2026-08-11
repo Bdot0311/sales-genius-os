@@ -49,6 +49,12 @@ export function initSentry() {
       ) {
         return null;
       }
+      // Drop promise rejections whose reason is a DOM Event (CustomEvent, ErrorEvent...).
+      // Sentry reports these as `Event \`CustomEvent\` (type=unhandledrejection) captured
+      // as promise rejection` — no stack, no message, not actionable (Safari/extensions).
+      if (typeof Event !== "undefined" && ex instanceof Event) return null;
+      if (/captured as promise rejection/i.test(String(event.message || ""))) return null;
+      if (event.exception?.values?.some((v) => /^(Custom)?Event$/.test(v.type ?? ""))) return null;
       // Drop empty-object promise rejections — no stack, no message, not actionable.
       // Typically thrown by third-party scripts or aborted fetches that reject with `{}`.
       if (
