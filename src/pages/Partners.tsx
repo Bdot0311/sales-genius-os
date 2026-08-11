@@ -68,7 +68,18 @@ const partners: Partner[] = [
     monogram: "P",
     logoUrl: "https://framerusercontent.com/images/39fyEOtCcOB32LXhx9xwQSSs.png",
   },
+  {
+    name: "ChurnAutopsy",
+    url: "https://churnautopsy.org",
+    category: "Churn diagnostics",
+    pitch:
+      "Find out why customers actually leave. ChurnAutopsy digs into cancellation signals and turns them into clear, fixable reasons instead of guesswork.",
+    fit: "OutReign fills the top of your funnel; ChurnAutopsy tells you why revenue leaks out the bottom, so the accounts you win are the ones that stay.",
+    monogram: "C",
+    logoUrl: churnAutopsyLogo.url,
+  },
 ];
+
 
 /** Logo tile: real logo on a light chip, gradient monogram if it can't load. */
 function PartnerLogo({ partner }: { partner: Partner }) {
