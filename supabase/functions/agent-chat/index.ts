@@ -1354,6 +1354,64 @@ serve(async (req) => {
           };
         }
 
+        case "delete_leads": {
+          const leadIds = (Array.isArray(args.lead_ids) ? args.lead_ids : [])
+            .filter(Boolean)
+            .map((x: any) => String(x));
+          const matchCompany = String(args.match_company ?? "").trim();
+          const matchName = String(args.match_name ?? "").trim();
+          if (!leadIds.length && !matchCompany && !matchName) {
+            return {
+              error:
+                "Tell me which leads to delete: pass lead_ids, match_company or match_name. Use list_leads to look them up.",
+            };
+          }
+
+          let targetIds = leadIds;
+          if (!targetIds.length) {
+            let lookup = admin.from("leads").select("id").eq("user_id", userId);
+            if (matchCompany) lookup = lookup.ilike("company_name", `%${matchCompany}%`);
+            if (matchName) lookup = lookup.ilike("contact_name", `%${matchName}%`);
+            const { data: found, error: lookupError } = await lookup.limit(200);
+            if (lookupError) return { error: lookupError.message };
+            targetIds = (found ?? []).map((l: any) => l.id);
+          }
+          if (!targetIds.length) {
+            return { deleted_count: 0, note: "No matching leads were found, so nothing was deleted." };
+          }
+
+          // Remove dependent rows first so the lead delete cannot be blocked.
+          await admin.from("email_drafts").delete().eq("user_id", userId).in("lead_id", targetIds);
+
+          const { data, error } = await admin
+            .from("leads")
+            .delete()
+            .eq("user_id", userId)
+            .in("id", targetIds)
+            .select("id, contact_name, company_name");
+          if (error) {
+            toolEvents.push({ name, label: "Delete failed", status: "error", detail: error.message });
+            return { error: error.message };
+          }
+          const deleted = data ?? [];
+          toolEvents.push({
+            name,
+            label: "Deleted leads",
+            status: "ok",
+            detail: `${deleted.length} lead(s) deleted`,
+          });
+          return {
+            deleted_count: deleted.length,
+            deleted: deleted.map((l: any) => ({
+              lead_id: l.id,
+              contact: l.contact_name,
+              company: l.company_name,
+            })),
+            note: deleted.length
+              ? "These lead records and their drafts are gone permanently."
+              : "No matching leads were found, so nothing was deleted.",
+          };
+        }
 
 
         case "send_drafts": {
