@@ -1892,6 +1892,42 @@ serve(async (req) => {
           };
         }
 
+        case "search_companies": {
+          const raw = [
+            ...(typeof args.query === "string" ? [args.query] : []),
+            ...(Array.isArray(args.queries) ? args.queries : []),
+          ]
+            .map((q: any) => String(q ?? "").trim())
+            .filter((q) => q.length >= 2);
+          const queries = [...new Set(raw)].slice(0, 5);
+          if (!queries.length) {
+            toolEvents.push({ name, label: "Company search", status: "error", detail: "no query" });
+            return { error: "Give a company name or keyword of at least 2 characters." };
+          }
+          const results = await Promise.all(
+            queries.map(async (q) => {
+              const res = await invokeFn("search-companies", { query: q });
+              const companies = Array.isArray(res?.companies) ? res.companies : [];
+              return { query: q, companies, error: res?.error ?? undefined };
+            }),
+          );
+          const total = results.reduce((n, r) => n + r.companies.length, 0);
+          toolEvents.push({
+            name,
+            label: "Searched companies",
+            status: total ? "ok" : "error",
+            detail: total
+              ? `${total} match${total === 1 ? "" : "es"} for ${queries.join(", ")}`
+              : `no matches for ${queries.join(", ")}`,
+          });
+          return {
+            results,
+            note: total
+              ? "These are target accounts only — no people were saved. To prospect contacts at one of them, call find_leads with the company name or domain in the query."
+              : "No companies matched. Try a shorter or differently spelled name.",
+          };
+        }
+
         case "find_leads": {
           const query = typeof args.query === "string" ? args.query.trim() : "";
           // Either a free-text query OR a saved ICP is enough to search. Only
