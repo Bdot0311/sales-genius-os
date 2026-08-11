@@ -611,66 +611,8 @@ Our AI uses a proven structure:
     `,
     readTime: 4,
     tags: ['email', 'AI', 'outreach', 'cold email'],
-    relatedArticles: ['gs-4', 'ft-2'],
+    relatedArticles: ['gs-4', 'ft-3'],
     popular: true
-  },
-  {
-    id: 'ft-2',
-    slug: 'workflow-automations',
-    title: 'Setting Up Workflow Automations',
-    category: 'features',
-    description: 'Automate repetitive tasks with visual workflows',
-    content: `
-## Setting Up Workflow Automations
-
-Automate your sales processes with visual workflow builders.
-
-### Creating a Workflow
-
-1. Go to **Automations** from the sidebar
-2. Click **"New Workflow"**
-3. Drag and drop workflow components
-4. Configure triggers and actions
-5. Save and activate
-
-### Workflow Components
-
-#### Triggers (Start the workflow)
-- New lead added
-- Lead stage changed
-- Deal value updated
-- Time-based (daily, weekly)
-
-#### Conditions (Decision points)
-- If lead score > X
-- If industry equals Y
-- If no activity in Z days
-
-#### Actions (Do something)
-- Send email
-- Create activity
-- Update lead status
-- Add to list
-- Notify team member
-
-### Example: Follow-up Automation
-
-**Trigger:** New lead added
-**Condition:** Has email address
-**Action 1:** Send welcome email (Day 0)
-**Action 2:** Create follow-up task (Day 3)
-**Action 3:** If no response, send reminder (Day 7)
-
-### Best Practices
-
-- Start simple, then add complexity
-- Test workflows with dummy leads
-- Monitor automation logs
-- Set up alerts for failures
-    `,
-    readTime: 5,
-    tags: ['automation', 'workflow', 'productivity'],
-    relatedArticles: ['ft-1', 'ft-5']
   },
   {
     id: 'ft-3',
@@ -978,7 +920,7 @@ OutReign (New Lead) → Google Sheets (Add Row)
     `,
     readTime: 4,
     tags: ['zapier', 'automation', 'integration'],
-    relatedArticles: ['ft-2', 'int-1']
+    relatedArticles: ['int-1']
   },
   {
     id: 'int-3',
