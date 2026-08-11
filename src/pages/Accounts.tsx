@@ -10,6 +10,14 @@ import { Building2, ChevronRight } from "lucide-react";
 
 interface Company { id: string; name: string; domain: string | null }
 
+/** Older imports could land without a name — fall back to the domain root so the
+ *  list never renders a blank row. */
+const displayName = (c: Company) =>
+  c.name?.trim() ||
+  (c.domain
+    ? c.domain.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0].split(".")[0]
+    : "untitled account");
+
 const Accounts = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [selected, setSelected] = useState<Company | null>(null);
@@ -47,7 +55,7 @@ const Accounts = () => {
                 onClick={() => setSelected(c)}
                 className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-md text-left text-sm ${selected?.id === c.id ? "bg-muted" : "hover:bg-muted/40"}`}
               >
-                <span className="flex items-center gap-2 min-w-0"><Building2 className="w-3.5 h-3.5 shrink-0 text-muted-foreground" /><span className="truncate">{c.name}</span></span>
+                <span className="flex items-center gap-2 min-w-0"><Building2 className="w-3.5 h-3.5 shrink-0 text-muted-foreground" /><span className="truncate">{displayName(c)}</span></span>
                 <ChevronRight className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
               </button>
             ))}
@@ -57,7 +65,7 @@ const Accounts = () => {
         <div className="space-y-6">
           {selected ? (
             <>
-              <AccountCommittee companyId={selected.id} companyName={selected.name} companyDomain={selected.domain || undefined} />
+              <AccountCommittee companyId={selected.id} companyName={displayName(selected)} companyDomain={selected.domain || undefined} />
               <WhyNowPanel companyId={selected.id} />
             </>
           ) : !loading && (

@@ -119,7 +119,7 @@ export const TechSignalsPanel = ({ onImported }: { onImported?: () => void }) =>
       // stack that says otherwise would mislead every downstream score.
       const { error } = await supabase.from("companies").insert({
         user_id: session.user.id,
-        name: s.company,
+        name: s.company?.trim() || s.domain?.replace(/^www\./, "").split(".")[0] || "untitled account",
         domain: s.domain,
       });
       if (error) {
