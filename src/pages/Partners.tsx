@@ -6,6 +6,7 @@ import { FooterSection } from "@/components/landing/FooterSection";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { BRAND } from "@/lib/brand";
 import saleseqLogo from "@/assets/saleseq-logo.png.asset.json";
+import churnAutopsyLogo from "@/assets/churnautopsy-logo.png.asset.json";
 
 
 type Partner = {
