@@ -3,6 +3,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { posthog } from '@/lib/posthog';
 import { classifySearchError } from '@/lib/search-error';
+import {
+  cursorForPage,
+  hasNextPage as computeHasNextPage,
+  recordCursor,
+  resetTrail,
+} from '@/lib/cursor-trail';
 
 export interface ExternalLeadFilters {
   /** Original natural-language request for the provider's semantic parser. */
@@ -28,6 +34,8 @@ export interface ExternalLeadFilters {
   page?: number;
   /** Opt in to retrying without industry/keywords when nothing matches. */
   relax?: boolean;
+  /** Opaque provider cursor, echoed from a previous response's next_cursor. */
+  cursor?: string;
 }
 
 /** What the search actually ran with, as reported by the edge function. */
@@ -65,6 +73,14 @@ export interface PaginationInfo {
   totalPages: number;
   totalResults: number;
   pageSize: number;
+  /**
+   * Whether another page can actually be fetched.
+   *
+   * Derived from the provider's cursor when there is one, because a cursor is
+   * the provider saying "there is more" — the row total is an estimate and
+   * cannot be trusted to decide when to stop.
+   */
+  hasNextPage: boolean;
 }
 
 export function useExternalLeads() {
@@ -76,7 +92,11 @@ export function useExternalLeads() {
     totalPages: 1,
     totalResults: 0,
     pageSize: 10,
+    hasNextPage: false,
   });
+  // A cursor only ever points forward, so the trail remembers the one that
+  // fetched each page — see lib/cursor-trail.
+  const [cursors, setCursors] = useState<(string | null)[]>(resetTrail);
   const [lastFilters, setLastFilters] = useState<ExternalLeadFilters | null>(null);
   // Surfacing what the search actually ran with is the difference between
   // "these leads look random" and "industry was dropped, here is why".
@@ -93,7 +113,9 @@ export function useExternalLeads() {
         totalPages: 1,
         totalResults: 0,
         pageSize: filters.limit || 10,
+        hasNextPage: false,
       });
+      setCursors(resetTrail());
     }
     setLoading(true);
     setLastFilters(filters);
@@ -129,11 +151,15 @@ export function useExternalLeads() {
       const currentPage = filters.page || 1;
       const totalPages = Math.max(1, Math.ceil(total / pageSize));
       
+      const nextCursor: string | null = data.next_cursor ?? null;
+      setCursors((prev) => recordCursor(prev, currentPage, nextCursor));
+
       setPagination({
         currentPage,
         totalPages,
         totalResults: total,
         pageSize,
+        hasNextPage: computeHasNextPage(nextCursor, currentPage, totalPages),
       });
       
       posthog.capture('lead_search_completed', {
@@ -189,10 +215,13 @@ export function useExternalLeads() {
   };
 
   const goToPage = async (page: number) => {
-    if (!lastFilters || page < 1 || page > pagination.totalPages) return;
-    
-    const filtersWithPage = { ...lastFilters, page };
-    await fetchLeads(filtersWithPage, true);
+    if (!lastFilters || page < 1) return;
+    // A cursor can reach past the row ceiling that bounds offset paging, so the
+    // totalPages estimate must not veto a page the provider is offering.
+    const cursor = cursorForPage(cursors, page);
+    if (page > pagination.totalPages && !cursor) return;
+
+    await fetchLeads({ ...lastFilters, page, cursor }, true);
   };
 
   const activateLead = async (lead: ExternalLead) => {
@@ -356,12 +385,14 @@ export function useExternalLeads() {
 
   const clearLeads = () => {
     setLeads([]);
+    setCursors(resetTrail());
     setDisclosure({ applied: null, relaxed: [] });
     setPagination({
       currentPage: 1,
       totalPages: 1,
       totalResults: 0,
       pageSize: 10,
+      hasNextPage: false,
     });
     setLastFilters(null);
   };
