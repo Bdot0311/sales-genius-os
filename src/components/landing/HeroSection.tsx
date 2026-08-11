@@ -10,7 +10,7 @@ export const HeroSection = () => {
 
   return (
     <section
-      className="relative hero-fullscreen flex flex-col items-center justify-start overflow-hidden px-0 pt-[calc(env(safe-area-inset-top)+3.5rem)] pb-28 sm:pt-[calc(env(safe-area-inset-top)+7.5rem)] sm:pb-44"
+      className="relative flex flex-col items-center justify-start overflow-hidden px-0 pt-[calc(env(safe-area-inset-top)+3.5rem)] pb-28 sm:pt-[calc(env(safe-area-inset-top)+7.5rem)] sm:pb-44"
       aria-labelledby="hero-heading"
     >
       <div className="relative z-20 mx-auto flex w-full max-w-[38rem] flex-col items-center px-5 text-center sm:max-w-5xl sm:px-6">
