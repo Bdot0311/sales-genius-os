@@ -707,11 +707,15 @@ serve(async (req) => {
                 continue;
               }
 
-              const firstName = (lead.contact_name || "").split(" ")[0] || "there";
-              const senderFirstName =
-                (config.agent_name ?? "").split(" ")[0] ||
-                (senderEmail ?? "").split("@")[0] ||
-                "there";
+               const firstName = (lead.contact_name || "").split(" ")[0] || "there";
+               // Rotate the sending mailbox/domain per lead.
+               const sender = nextSender();
+               const leadSenderEmail = sender.email ?? senderEmail;
+               const leadIntegrationId = sender.integration_id ?? googleIntegrationId;
+               const senderFirstName =
+                 (config.agent_name ?? "").split(" ")[0] ||
+                 (leadSenderEmail ?? "").split("@")[0] ||
+                 "there";
               const outreachSystemPrompt = `You are ${config.agent_name ?? "a sales rep"} writing outbound for a B2B founder. Persona: ${config.persona ?? "direct and helpful"}. Tone: ${config.tone ?? "professional"}.
 Company context: ${config.company_context ?? ""}
 Value propositions:
