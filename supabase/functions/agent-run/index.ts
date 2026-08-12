@@ -821,6 +821,7 @@ ${PLAYBOOK_SYSTEM_RULES}`;
                   subject,
                   body,
                   integrationRowId: leadIntegrationId,
+                    appendSignature: true,
                   leadId: lead.id,
                 }),
               });
@@ -1140,6 +1141,7 @@ Output ONLY the reply body. No subject line. No greeting like "Hi [name]". No si
                 subject: `Re: ${reply.subject}`,
                 body: generatedReply,
                 integrationRowId: googleIntegrationId,
+                  appendSignature: true,
               }),
             });
             const sendData = await sendRes.json().catch(() => ({}));
@@ -1272,6 +1274,7 @@ Output ONLY the reply body. No subject line or signature.`;
                 subject: `Re: ${reply.subject}`,
                 body: generatedReply,
                 integrationRowId: googleIntegrationId,
+                  appendSignature: true,
               }),
             });
             const sendData = await sendRes.json().catch(() => ({}));
@@ -1353,6 +1356,7 @@ Output ONLY the reply body. No subject line or signature.`;
                 subject: `Re: ${reply.subject}`,
                 body: meetingReply,
                 integrationRowId: googleIntegrationId,
+                  appendSignature: true,
               }),
             });
             const sendData = await sendRes.json().catch(() => ({}));
