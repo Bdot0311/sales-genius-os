@@ -843,8 +843,9 @@ const Outreach = () => {
       // Use upsert so it works even if the profile row doesn't exist yet
       const { error } = await supabase
         .from("profiles")
-        .update({ email_signature: signature })
+        .update({ email_signature: signature, signature_source: signature ? "custom" : "none" })
         .eq("id", user.id);
+      setSignatureSource(signature ? "custom" : "none");
 
       if (error) throw error;
 
