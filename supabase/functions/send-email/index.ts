@@ -373,6 +373,15 @@ serve(async (req) => {
 
     // Send email based on integration type
     if (integrationId === 'google' || !integrationId) {
+      // Optional signature append (used by the AI SDR / automated sends).
+      // Outreach Studio composes the signature into the body itself, so it
+      // does not set appendSignature and never double-appends.
+      let body = rawBody as string;
+      if (appendSignature) {
+        const sig = await getSignatureHtml(supabase, user.id, accessToken);
+        body = appendSignatureToBody(body, sig);
+      }
+
       // Format body as proper HTML email if it's not already HTML
       const isHtml = body.trim().startsWith('<') && (body.includes('<html') || body.includes('<div') || body.includes('<p') || body.includes('<br'));
       
