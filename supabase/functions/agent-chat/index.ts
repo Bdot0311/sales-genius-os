@@ -238,13 +238,18 @@ const TOOLS = [
     function: {
       name: "send_drafts",
       description:
-        "Send already-saved drafts. This is how you send emails you drafted earlier — you do NOT need the subject or body, only the draft ids (or lead ids, or nothing to send every pending draft). Optionally pass from_email to send from a specific connected mailbox. In approval mode each send pauses for the user's approval inline in the chat.",
+        "Send already-saved drafts. This is how you send emails you drafted earlier — you do NOT need the subject or body, only the draft ids (or lead ids, or nothing to send every pending draft). Pass from_email to force one mailbox, or from_emails to rotate across specific mailboxes/domains. When neither is given, sends are automatically rotated across every healthy connected mailbox (least-used domain first). In approval mode each send pauses for the user's approval inline in the chat.",
       parameters: {
         type: "object",
         properties: {
           draft_ids: { type: "array", items: { type: "string" }, description: "Draft ids to send" },
           lead_ids: { type: "array", items: { type: "string" }, description: "Send the latest draft for each of these leads" },
-          from_email: { type: "string", description: "Mailbox address to send from, e.g. brandon@example.com" },
+          from_email: { type: "string", description: "Single mailbox address to send everything from, e.g. brandon@example.com" },
+          from_emails: {
+            type: "array",
+            items: { type: "string" },
+            description: "Rotate sends across these connected mailbox addresses (multi-domain sending)",
+          },
           all_pending: { type: "boolean", description: "Send every saved draft (max 20) when no ids are given" },
         },
       },
@@ -275,7 +280,12 @@ const TOOLS = [
             type: "number",
             description: "Optional gap in minutes between each scheduled email so they don't all go out at once.",
           },
-          from_email: { type: "string", description: "Mailbox address to send from, e.g. brandon@example.com" },
+          from_email: { type: "string", description: "Single mailbox address to schedule everything from, e.g. brandon@example.com" },
+          from_emails: {
+            type: "array",
+            items: { type: "string" },
+            description: "Rotate the scheduled sends across these connected mailbox addresses (multi-domain sending)",
+          },
         },
       },
     },
@@ -857,32 +867,77 @@ serve(async (req) => {
       return (data ?? []).filter((a: any) => a.integration_id && a.email);
     };
 
-    // Picks the mailbox to send from. `from_email` is matched against the user's
-    // connected sending accounts; with one connected mailbox we use it, and with
-    // several we ask instead of guessing which inbox a prospect hears from.
-    const resolveMailbox = async (
+    const toMailbox = (a: any): Mailbox => ({
+      integrationRowId: a.integration_id,
+      email: a.email,
+      status: a.status,
+      sendingAccountId: a.id,
+    });
+
+    // Orders mailboxes so the least-recently-used domain goes first. This keeps
+    // volume spread across every connected sending domain instead of hammering one.
+    const orderByLoad = async (accounts: any[]) => {
+      if (accounts.length < 2) return accounts;
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data } = await admin
+        .from("sent_emails")
+        .select("sending_account_id, created_at")
+        .eq("user_id", userId)
+        .gte("created_at", since)
+        .not("sending_account_id", "is", null);
+      const counts = new Map<string, number>();
+      for (const row of data ?? []) {
+        const key = String((row as any).sending_account_id);
+        counts.set(key, (counts.get(key) ?? 0) + 1);
+      }
+      return [...accounts].sort(
+        (a, b) => (counts.get(String(a.id)) ?? 0) - (counts.get(String(b.id)) ?? 0),
+      );
+    };
+
+    // Resolves the pool of mailboxes to send from. Explicit from_email/from_emails
+    // wins; otherwise every healthy mailbox is used in rotation so multi-domain
+    // outbound spreads naturally across domains.
+    const resolveMailboxPool = async (
       fromEmail: string | null,
-    ): Promise<Mailbox | { error: string }> => {
+      fromEmails?: unknown,
+    ): Promise<{ pool: Mailbox[] } | { error: string }> => {
       const accounts = await loadMailboxes();
       const sendable = accounts.filter((a: any) => a.status !== "paused" && a.status !== "disabled");
       const list = accounts.map((a: any) => a.email).join(", ");
       if (accounts.length === 0)
         return { error: "No mailbox is connected. Connect Gmail on the Integrations page first." };
-      if (fromEmail) {
-        const wanted = fromEmail.trim().toLowerCase();
-        const match = accounts.find((a: any) => String(a.email).toLowerCase() === wanted);
-        if (!match) return { error: `No connected mailbox for ${fromEmail}. Connected mailboxes: ${list}.` };
-        if (match.status === "paused" || match.status === "disabled")
-          return { error: `${match.email} is ${match.status}. Resume it on the Deliverability page or pick another mailbox.` };
-        return { integrationRowId: match.integration_id, email: match.email, status: match.status, sendingAccountId: match.id };
+
+      const wantedList: string[] = [];
+      if (Array.isArray(fromEmails)) {
+        for (const v of fromEmails) if (typeof v === "string" && v.trim()) wantedList.push(v.trim().toLowerCase());
       }
+      if (fromEmail && fromEmail.trim()) wantedList.push(fromEmail.trim().toLowerCase());
+
+      if (wantedList.length > 0) {
+        const picked: Mailbox[] = [];
+        for (const wanted of [...new Set(wantedList)]) {
+          const match = accounts.find((a: any) => String(a.email).toLowerCase() === wanted);
+          if (!match) return { error: `No connected mailbox for ${wanted}. Connected mailboxes: ${list}.` };
+          if (match.status === "paused" || match.status === "disabled")
+            return { error: `${match.email} is ${match.status}. Resume it on the Deliverability page or pick another mailbox.` };
+          picked.push(toMailbox(match));
+        }
+        return { pool: picked };
+      }
+
       if (sendable.length === 0)
         return { error: `Every connected mailbox is paused or disabled (${list}). Resume one on the Deliverability page.` };
-      if (sendable.length === 1)
-        return { integrationRowId: sendable[0].integration_id, email: sendable[0].email, status: sendable[0].status, sendingAccountId: sendable[0].id };
-      return {
-        error: `Several mailboxes are connected (${sendable.map((a: any) => a.email).join(", ")}). Ask the user which one to send from and pass it as from_email.`,
-      };
+      const ordered = await orderByLoad(sendable);
+      return { pool: ordered.map(toMailbox) };
+    };
+
+    const resolveMailbox = async (
+      fromEmail: string | null,
+    ): Promise<Mailbox | { error: string }> => {
+      const res = await resolveMailboxPool(fromEmail);
+      if ("error" in res) return res;
+      return res.pool[0];
     };
 
     // Single send path for both send_outreach and send_drafts: in approval mode it
@@ -1470,13 +1525,18 @@ serve(async (req) => {
           if (drafts.length === 0)
             return { error: "No matching saved drafts. Call list_drafts to see what exists, or draft first." };
 
-          const mailbox = await resolveMailbox(args.from_email ? String(args.from_email) : null);
-          if ("error" in mailbox) {
-            toolEvents.push({ name, label: "Send blocked", status: "error", detail: mailbox.error });
-            return { error: mailbox.error };
+          const poolRes = await resolveMailboxPool(
+            args.from_email ? String(args.from_email) : null,
+            args.from_emails,
+          );
+          if ("error" in poolRes) {
+            toolEvents.push({ name, label: "Send blocked", status: "error", detail: poolRes.error });
+            return { error: poolRes.error };
           }
+          const pool = poolRes.pool;
 
           const results: any[] = [];
+          let rotation = 0;
           for (const d of drafts as any[]) {
             const to = d.leads?.contact_email ?? null;
             const label = d.leads?.company_name ?? d.leads?.contact_name ?? to ?? "lead";
@@ -1484,6 +1544,8 @@ serve(async (req) => {
               results.push({ draft_id: d.id, lead: label, error: "Lead has no email address — enrich it first" });
               continue;
             }
+            const mailbox = pool[rotation % pool.length];
+            rotation++;
             const outcome = await deliver({
               leadId: d.lead_id,
               to,
@@ -1494,7 +1556,7 @@ serve(async (req) => {
               mailbox,
               toolName: name,
             });
-            results.push({ draft_id: d.id, lead: label, to, ...outcome.summary });
+            results.push({ draft_id: d.id, lead: label, to, from: mailbox.email, ...outcome.summary });
             if (outcome.sent) {
               await admin.from("email_drafts").delete().eq("id", d.id).eq("user_id", userId);
             }
@@ -1502,13 +1564,15 @@ serve(async (req) => {
 
           const sentCount = results.filter((r) => r.sent).length;
           const queuedCount = results.filter((r) => r.queued_for_approval).length;
+          const usedFrom = [...new Set(results.map((r) => r.from).filter(Boolean))];
           return {
-            from: mailbox.email,
+            from: usedFrom.join(", ") || pool[0].email,
+            rotated_across: usedFrom.length,
             sent: sentCount,
             queued_for_approval: queuedCount,
             results,
             note: autonomous
-              ? `Sent ${sentCount} of ${results.length} draft(s) from ${mailbox.email}.`
+              ? `Sent ${sentCount} of ${results.length} draft(s), rotated across ${usedFrom.length || 1} mailbox(es): ${usedFrom.join(", ") || pool[0].email}.`
               : `Nothing was sent yet — ${queuedCount} approve/reject card(s) are shown to the user right here in the chat. Wait for their decision and never tell them to go to another page.`,
           };
         }
@@ -1564,11 +1628,16 @@ serve(async (req) => {
           if (drafts.length === 0)
             return { error: "No matching saved drafts. Call list_drafts to see what exists, or draft first." };
 
-          const mailbox = await resolveMailbox(args.from_email ? String(args.from_email) : null);
-          if ("error" in mailbox) {
-            toolEvents.push({ name, label: "Scheduling blocked", status: "error", detail: mailbox.error });
-            return { error: mailbox.error };
+          const poolRes = await resolveMailboxPool(
+            args.from_email ? String(args.from_email) : null,
+            args.from_emails,
+          );
+          if ("error" in poolRes) {
+            toolEvents.push({ name, label: "Scheduling blocked", status: "error", detail: poolRes.error });
+            return { error: poolRes.error };
           }
+          const pool = poolRes.pool;
+
 
           const stagger = Math.max(0, Math.min(Number(args.stagger_minutes ?? 0) || 0, 240));
           const results: any[] = [];
@@ -1588,6 +1657,7 @@ serve(async (req) => {
               continue;
             }
             const sendAt = new Date(when.getTime() + index * stagger * 60_000);
+            const mailbox = pool[index % pool.length];
 
             const { error: insErr } = await admin.from("sent_emails").insert({
               user_id: userId,
@@ -1623,6 +1693,7 @@ serve(async (req) => {
               draft_id: d.id,
               lead: label,
               to,
+              from: mailbox.email,
               scheduled_at: sendAt.toISOString(),
               scheduled_at_local: formatLocal(sendAt),
             });
@@ -1630,21 +1701,23 @@ serve(async (req) => {
           }
 
           const okCount = results.filter((r) => r.scheduled_at).length;
+          const usedFrom = [...new Set(results.map((r) => r.from).filter(Boolean))];
           toolEvents.push({
             name,
             label: okCount ? "Scheduled email" : "Scheduling failed",
             status: okCount ? "ok" : "error",
             detail: okCount
-              ? `${okCount} email(s) queued from ${mailbox.email}, first at ${formatLocal(when)}`
+              ? `${okCount} email(s) queued from ${usedFrom.join(", ")}, first at ${formatLocal(when)}`
               : "No drafts could be scheduled",
           });
 
           return {
-            from: mailbox.email,
+            from: usedFrom.join(", ") || pool[0].email,
+            rotated_across: usedFrom.length,
             scheduled: okCount,
             results,
             note: okCount
-              ? `Queued ${okCount} email(s) from ${mailbox.email}. The scheduler sends them automatically at the times above — the user does not need to do anything. They can be cancelled with cancel_scheduled_email.`
+              ? `Queued ${okCount} email(s) rotated across ${usedFrom.join(", ")}. The scheduler sends them automatically at the times above — the user does not need to do anything. They can be cancelled with cancel_scheduled_email.`
               : "Nothing was scheduled.",
           };
         }
@@ -2131,7 +2204,7 @@ HOW TO WORK
 - Do several tool calls in a row when needed. Prefer batching lead ids over one-at-a-time calls. For drafting, ALWAYS pass every lead id in a single draft_outreach call via lead_ids — never fire many parallel draft_outreach calls, that trips the rate limiter.
 - draft_outreach goal must be one of: introduction, follow-up, meeting, demo, proposal. Use "introduction" for first touches.
 - Drafts are auto-saved and rendered in the chat as reviewable cards with Send now / Schedule / Discard buttons. After drafting, tell the user the drafts are below for review — do not send until they ask.
-- SENDING: when the user approves the drafts ("send them", "all good, send"), YOU send them — call send_drafts. You never need the subject or body to send a saved draft, only draft ids: use the draft_ids from your draft_outreach results, or call list_drafts (optionally with lead_ids or a name) to look them up again. Pass from_email when the user names an inbox, and use list_mailboxes if you need to know which addresses are connected. Never tell the user to click "Send now" themselves or to open another page, and never claim you lack the lead ids or draft contents — look them up with list_drafts instead.
+- SENDING: when the user approves the drafts ("send them", "all good, send"), YOU send them — call send_drafts. You never need the subject or body to send a saved draft, only draft ids: use the draft_ids from your draft_outreach results, or call list_drafts (optionally with lead_ids or a name) to look them up again. Pass from_email when the user names one inbox, or from_emails to rotate across several. When they do not name one, leave both off: sends automatically rotate across every healthy connected mailbox (least-used domain first), which is what you want for outbound volume. Use list_mailboxes if you need to know which addresses are connected, and never claim you can only send from one domain. Never tell the user to click "Send now" themselves or to open another page, and never claim you lack the lead ids or draft contents — look them up with list_drafts instead.
 - SCHEDULING: you CAN send later. When the user asks for a future send ("tomorrow at 9", "Monday morning", "next week"), call schedule_drafts with the draft_ids and send_at_local set to their local wall-clock time with no offset (e.g. "9am today" -> send_at_local: "YYYY-MM-DDT09:00" for today's local date). Never convert to UTC yourself and never pass a bare UTC timestamp for a local time — the tool does the conversion. Use stagger_minutes when queuing several so they don't all fire at once. Confirm the exact date/time you queued, and mention it sends automatically. Use list_scheduled_emails to show what is queued and cancel_scheduled_email to call one back. Never say you cannot schedule and never tell the user to use the Schedule button themselves.
 - DELETING: you CAN delete emails AND lead records. Use delete_drafts to remove saved drafts (by draft_ids, lead_ids, or all_pending), delete_inbox_threads to remove inbox conversations (by thread_ids or match_email), and delete_leads to permanently remove saved lead records (by lead_ids, match_company or match_name — it also clears any drafts attached to them). Deletion is permanent, so only do it when the user asks, confirm briefly what you are about to delete if the request is broad ("delete all my drafts", "delete all my leads"), then do it and report the count. Never say you lack a way to delete leads and never tell the user to delete things manually in the UI.
 - Use send_outreach only for a brand new email you just wrote in the conversation and have not saved as a draft.

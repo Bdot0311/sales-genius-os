@@ -351,12 +351,15 @@ serve(async (req) => {
       .not("integration_id", "is", null)
       .order("updated_at", { ascending: false });
 
-    const activeSender = (senderAccounts ?? []).find(
+    // Every healthy mailbox is a candidate sender. Outbound rotates across all of
+    // them so volume spreads over each connected domain instead of one inbox.
+    const senderPool = (senderAccounts ?? []).filter(
       (account) =>
         account.integration_id &&
         account.status !== "paused" &&
         account.status !== "disabled"
     );
+    const activeSender = senderPool[0];
 
     let googleIntegrationId: string | null = activeSender?.integration_id ?? null;
     const senderEmail: string | null = activeSender?.email ?? null;
@@ -374,6 +377,52 @@ serve(async (req) => {
 
       googleIntegrationId = integration?.id ?? null;
     }
+
+    // Sends already made in the last 24h per mailbox, so the least-used domain
+    // starts the rotation.
+    const rotationOrder: { integration_id: string; email: string | null }[] = await (async () => {
+      if (senderPool.length < 2)
+        return senderPool.length === 1
+          ? [{ integration_id: senderPool[0].integration_id as string, email: senderPool[0].email ?? null }]
+          : googleIntegrationId
+          ? [{ integration_id: googleIntegrationId, email: senderEmail }]
+          : [];
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data: recent } = await adminClient
+        .from("sent_emails")
+        .select("sending_account_id")
+        .eq("user_id", user.id)
+        .gte("created_at", since)
+        .not("sending_account_id", "is", null);
+      const { data: accountIds } = await adminClient
+        .from("sending_accounts")
+        .select("id, integration_id")
+        .eq("user_id", user.id);
+      const idByIntegration = new Map<string, string>();
+      for (const a of accountIds ?? []) {
+        if ((a as any).integration_id) idByIntegration.set(String((a as any).integration_id), String((a as any).id));
+      }
+      const counts = new Map<string, number>();
+      for (const r of recent ?? []) {
+        const key = String((r as any).sending_account_id);
+        counts.set(key, (counts.get(key) ?? 0) + 1);
+      }
+      return [...senderPool]
+        .sort((a, b) => {
+          const ca = counts.get(idByIntegration.get(String(a.integration_id)) ?? "") ?? 0;
+          const cb = counts.get(idByIntegration.get(String(b.integration_id)) ?? "") ?? 0;
+          return ca - cb;
+        })
+        .map((a) => ({ integration_id: a.integration_id as string, email: a.email ?? null }));
+    })();
+
+    let rotationIndex = 0;
+    const nextSender = () => {
+      if (rotationOrder.length === 0) return { integration_id: googleIntegrationId as string, email: senderEmail };
+      const pick = rotationOrder[rotationIndex % rotationOrder.length];
+      rotationIndex++;
+      return pick;
+    };
 
     const icpSnapshot = (config as any).icp_snapshot ?? null;
     const icpContext = buildIcpContext(icpSnapshot);
@@ -658,11 +707,15 @@ serve(async (req) => {
                 continue;
               }
 
-              const firstName = (lead.contact_name || "").split(" ")[0] || "there";
-              const senderFirstName =
-                (config.agent_name ?? "").split(" ")[0] ||
-                (senderEmail ?? "").split("@")[0] ||
-                "there";
+               const firstName = (lead.contact_name || "").split(" ")[0] || "there";
+               // Rotate the sending mailbox/domain per lead.
+               const sender = nextSender();
+               const leadSenderEmail = sender.email ?? senderEmail;
+               const leadIntegrationId = sender.integration_id ?? googleIntegrationId;
+               const senderFirstName =
+                 (config.agent_name ?? "").split(" ")[0] ||
+                 (leadSenderEmail ?? "").split("@")[0] ||
+                 "there";
               const outreachSystemPrompt = `You are ${config.agent_name ?? "a sales rep"} writing outbound for a B2B founder. Persona: ${config.persona ?? "direct and helpful"}. Tone: ${config.tone ?? "professional"}.
 Company context: ${config.company_context ?? ""}
 Value propositions:
@@ -717,7 +770,7 @@ ${PLAYBOOK_SYSTEM_RULES}`;
                 const queued = await queueApproval({
                   kind: "outreach",
                   lead_id: lead.id,
-                  integration_row_id: googleIntegrationId,
+                  integration_row_id: leadIntegrationId,
                   prospect_email: to,
                   prospect_name: lead.contact_name ?? null,
                   company_name: lead.company_name ?? null,
@@ -727,7 +780,7 @@ ${PLAYBOOK_SYSTEM_RULES}`;
                   metadata: {
                     phase: "outreach",
                     job_title: lead.job_title ?? null,
-                    sender_email: senderEmail,
+                    sender_email: leadSenderEmail,
                     playbook: "cold_email_engine_4_touch",
                     follow_up_touches: touches.slice(1, 4),
                   },
@@ -752,8 +805,8 @@ ${PLAYBOOK_SYSTEM_RULES}`;
                   prospect_email: to,
                   subject,
                   reply_content: body,
-                  description: `Drafted a first-touch email to ${lead.contact_name ?? to} at ${lead.company_name ?? "their company"} — waiting for your approval${senderEmail ? ` from ${senderEmail}` : ""}`,
-                  metadata: { phase: "outreach", lead_id: lead.id, sender_email: senderEmail },
+                  description: `Drafted a first-touch email to ${lead.contact_name ?? to} at ${lead.company_name ?? "their company"} — waiting for your approval${leadSenderEmail ? ` from ${leadSenderEmail}` : ""}`,
+                  metadata: { phase: "outreach", lead_id: lead.id, sender_email: leadSenderEmail },
                 });
                 outreachDrafted++;
                 remainingOutreach--;
@@ -767,7 +820,7 @@ ${PLAYBOOK_SYSTEM_RULES}`;
                   to,
                   subject,
                   body,
-                  integrationRowId: googleIntegrationId,
+                  integrationRowId: leadIntegrationId,
                   leadId: lead.id,
                 }),
               });
