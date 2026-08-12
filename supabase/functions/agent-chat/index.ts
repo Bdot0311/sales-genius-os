@@ -857,32 +857,77 @@ serve(async (req) => {
       return (data ?? []).filter((a: any) => a.integration_id && a.email);
     };
 
-    // Picks the mailbox to send from. `from_email` is matched against the user's
-    // connected sending accounts; with one connected mailbox we use it, and with
-    // several we ask instead of guessing which inbox a prospect hears from.
-    const resolveMailbox = async (
+    const toMailbox = (a: any): Mailbox => ({
+      integrationRowId: a.integration_id,
+      email: a.email,
+      status: a.status,
+      sendingAccountId: a.id,
+    });
+
+    // Orders mailboxes so the least-recently-used domain goes first. This keeps
+    // volume spread across every connected sending domain instead of hammering one.
+    const orderByLoad = async (accounts: any[]) => {
+      if (accounts.length < 2) return accounts;
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data } = await admin
+        .from("sent_emails")
+        .select("sending_account_id, created_at")
+        .eq("user_id", userId)
+        .gte("created_at", since)
+        .not("sending_account_id", "is", null);
+      const counts = new Map<string, number>();
+      for (const row of data ?? []) {
+        const key = String((row as any).sending_account_id);
+        counts.set(key, (counts.get(key) ?? 0) + 1);
+      }
+      return [...accounts].sort(
+        (a, b) => (counts.get(String(a.id)) ?? 0) - (counts.get(String(b.id)) ?? 0),
+      );
+    };
+
+    // Resolves the pool of mailboxes to send from. Explicit from_email/from_emails
+    // wins; otherwise every healthy mailbox is used in rotation so multi-domain
+    // outbound spreads naturally across domains.
+    const resolveMailboxPool = async (
       fromEmail: string | null,
-    ): Promise<Mailbox | { error: string }> => {
+      fromEmails?: unknown,
+    ): Promise<{ pool: Mailbox[] } | { error: string }> => {
       const accounts = await loadMailboxes();
       const sendable = accounts.filter((a: any) => a.status !== "paused" && a.status !== "disabled");
       const list = accounts.map((a: any) => a.email).join(", ");
       if (accounts.length === 0)
         return { error: "No mailbox is connected. Connect Gmail on the Integrations page first." };
-      if (fromEmail) {
-        const wanted = fromEmail.trim().toLowerCase();
-        const match = accounts.find((a: any) => String(a.email).toLowerCase() === wanted);
-        if (!match) return { error: `No connected mailbox for ${fromEmail}. Connected mailboxes: ${list}.` };
-        if (match.status === "paused" || match.status === "disabled")
-          return { error: `${match.email} is ${match.status}. Resume it on the Deliverability page or pick another mailbox.` };
-        return { integrationRowId: match.integration_id, email: match.email, status: match.status, sendingAccountId: match.id };
+
+      const wantedList: string[] = [];
+      if (Array.isArray(fromEmails)) {
+        for (const v of fromEmails) if (typeof v === "string" && v.trim()) wantedList.push(v.trim().toLowerCase());
       }
+      if (fromEmail && fromEmail.trim()) wantedList.push(fromEmail.trim().toLowerCase());
+
+      if (wantedList.length > 0) {
+        const picked: Mailbox[] = [];
+        for (const wanted of [...new Set(wantedList)]) {
+          const match = accounts.find((a: any) => String(a.email).toLowerCase() === wanted);
+          if (!match) return { error: `No connected mailbox for ${wanted}. Connected mailboxes: ${list}.` };
+          if (match.status === "paused" || match.status === "disabled")
+            return { error: `${match.email} is ${match.status}. Resume it on the Deliverability page or pick another mailbox.` };
+          picked.push(toMailbox(match));
+        }
+        return { pool: picked };
+      }
+
       if (sendable.length === 0)
         return { error: `Every connected mailbox is paused or disabled (${list}). Resume one on the Deliverability page.` };
-      if (sendable.length === 1)
-        return { integrationRowId: sendable[0].integration_id, email: sendable[0].email, status: sendable[0].status, sendingAccountId: sendable[0].id };
-      return {
-        error: `Several mailboxes are connected (${sendable.map((a: any) => a.email).join(", ")}). Ask the user which one to send from and pass it as from_email.`,
-      };
+      const ordered = await orderByLoad(sendable);
+      return { pool: ordered.map(toMailbox) };
+    };
+
+    const resolveMailbox = async (
+      fromEmail: string | null,
+    ): Promise<Mailbox | { error: string }> => {
+      const res = await resolveMailboxPool(fromEmail);
+      if ("error" in res) return res;
+      return res.pool[0];
     };
 
     // Single send path for both send_outreach and send_drafts: in approval mode it
