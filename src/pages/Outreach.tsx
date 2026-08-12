@@ -563,16 +563,50 @@ const Outreach = () => {
     
     const { data } = await supabase
       .from("profiles")
-      .select("email_signature, full_name, email")
+      .select("email_signature, signature_source, full_name, email")
       .eq("id", user.id)
       .maybeSingle();
     
     if (data?.email_signature) {
       setSignature(data.email_signature);
     }
+    setSignatureSource(
+      (data?.signature_source as SignatureSource | null) ?? (data?.email_signature ? "custom" : null),
+    );
 
     const defaultName = data?.full_name?.trim() || data?.email?.split("@")[0] || user.email?.split("@")[0] || "";
     setSenderProfileName(defaultName);
+  };
+
+  // Pull the signature the user already has configured in Gmail.
+  const importGmailSignature = async () => {
+    setIsFetchingGmailSignature(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("gmail-signature", { body: {} });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (!data?.signature) {
+        toast({
+          title: "No Gmail signature found",
+          description: data?.message ?? "Add one in Gmail, or write a custom signature here.",
+        });
+        return;
+      }
+      setSignature(data.signature);
+      setSignatureSource("gmail");
+      await supabase
+        .from("profiles")
+        .update({ signature_source: "gmail", email_signature: data.signature })
+        .eq("id", (await supabase.auth.getUser()).data.user!.id);
+      toast({
+        title: "Gmail signature connected",
+        description: "Outreach Studio and the AI SDR will use your Gmail signature.",
+      });
+    } catch (e: any) {
+      toast({ title: "Couldn't read your Gmail signature", description: e.message, variant: "destructive" });
+    } finally {
+      setIsFetchingGmailSignature(false);
+    }
   };
 
   const loadComplianceSettings = async () => {
