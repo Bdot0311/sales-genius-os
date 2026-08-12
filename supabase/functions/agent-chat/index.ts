@@ -1618,11 +1618,16 @@ serve(async (req) => {
           if (drafts.length === 0)
             return { error: "No matching saved drafts. Call list_drafts to see what exists, or draft first." };
 
-          const mailbox = await resolveMailbox(args.from_email ? String(args.from_email) : null);
-          if ("error" in mailbox) {
-            toolEvents.push({ name, label: "Scheduling blocked", status: "error", detail: mailbox.error });
-            return { error: mailbox.error };
+          const poolRes = await resolveMailboxPool(
+            args.from_email ? String(args.from_email) : null,
+            args.from_emails,
+          );
+          if ("error" in poolRes) {
+            toolEvents.push({ name, label: "Scheduling blocked", status: "error", detail: poolRes.error });
+            return { error: poolRes.error };
           }
+          const pool = poolRes.pool;
+
 
           const stagger = Math.max(0, Math.min(Number(args.stagger_minutes ?? 0) || 0, 240));
           const results: any[] = [];
