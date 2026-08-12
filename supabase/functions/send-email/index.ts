@@ -45,7 +45,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { to, subject, body, integrationId, integrationRowId, leadId, templateId, threadId, appendSignature } = await req.json();
+    const { to, subject, body: rawBody, integrationId, integrationRowId, leadId, templateId, threadId, appendSignature } = await req.json();
     
     console.log('Send email request received:', { to, subject, integrationId, leadId, templateId });
 
