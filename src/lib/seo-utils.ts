@@ -4,7 +4,7 @@ export const CANONICAL_DOMAIN = 'https://outreign.io';
 
 // Social card version. Bump this when the social preview image changes so
 // X/LinkedIn/Facebook see a brand-new og:image URL and re-scrape it.
-export const SOCIAL_CARD_VERSION = '5';
+export const SOCIAL_CARD_VERSION = '6';
 
 /**
  * Appends a stable version query param to social images for cache busting.
