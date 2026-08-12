@@ -351,12 +351,15 @@ serve(async (req) => {
       .not("integration_id", "is", null)
       .order("updated_at", { ascending: false });
 
-    const activeSender = (senderAccounts ?? []).find(
+    // Every healthy mailbox is a candidate sender. Outbound rotates across all of
+    // them so volume spreads over each connected domain instead of one inbox.
+    const senderPool = (senderAccounts ?? []).filter(
       (account) =>
         account.integration_id &&
         account.status !== "paused" &&
         account.status !== "disabled"
     );
+    const activeSender = senderPool[0];
 
     let googleIntegrationId: string | null = activeSender?.integration_id ?? null;
     const senderEmail: string | null = activeSender?.email ?? null;
@@ -374,6 +377,52 @@ serve(async (req) => {
 
       googleIntegrationId = integration?.id ?? null;
     }
+
+    // Sends already made in the last 24h per mailbox, so the least-used domain
+    // starts the rotation.
+    const rotationOrder: { integration_id: string; email: string | null }[] = await (async () => {
+      if (senderPool.length < 2)
+        return senderPool.length === 1
+          ? [{ integration_id: senderPool[0].integration_id as string, email: senderPool[0].email ?? null }]
+          : googleIntegrationId
+          ? [{ integration_id: googleIntegrationId, email: senderEmail }]
+          : [];
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data: recent } = await adminClient
+        .from("sent_emails")
+        .select("sending_account_id")
+        .eq("user_id", user.id)
+        .gte("created_at", since)
+        .not("sending_account_id", "is", null);
+      const { data: accountIds } = await adminClient
+        .from("sending_accounts")
+        .select("id, integration_id")
+        .eq("user_id", user.id);
+      const idByIntegration = new Map<string, string>();
+      for (const a of accountIds ?? []) {
+        if ((a as any).integration_id) idByIntegration.set(String((a as any).integration_id), String((a as any).id));
+      }
+      const counts = new Map<string, number>();
+      for (const r of recent ?? []) {
+        const key = String((r as any).sending_account_id);
+        counts.set(key, (counts.get(key) ?? 0) + 1);
+      }
+      return [...senderPool]
+        .sort((a, b) => {
+          const ca = counts.get(idByIntegration.get(String(a.integration_id)) ?? "") ?? 0;
+          const cb = counts.get(idByIntegration.get(String(b.integration_id)) ?? "") ?? 0;
+          return ca - cb;
+        })
+        .map((a) => ({ integration_id: a.integration_id as string, email: a.email ?? null }));
+    })();
+
+    let rotationIndex = 0;
+    const nextSender = () => {
+      if (rotationOrder.length === 0) return { integration_id: googleIntegrationId as string, email: senderEmail };
+      const pick = rotationOrder[rotationIndex % rotationOrder.length];
+      rotationIndex++;
+      return pick;
+    };
 
     const icpSnapshot = (config as any).icp_snapshot ?? null;
     const icpContext = buildIcpContext(icpSnapshot);
