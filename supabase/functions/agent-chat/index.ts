@@ -1515,13 +1515,18 @@ serve(async (req) => {
           if (drafts.length === 0)
             return { error: "No matching saved drafts. Call list_drafts to see what exists, or draft first." };
 
-          const mailbox = await resolveMailbox(args.from_email ? String(args.from_email) : null);
-          if ("error" in mailbox) {
-            toolEvents.push({ name, label: "Send blocked", status: "error", detail: mailbox.error });
-            return { error: mailbox.error };
+          const poolRes = await resolveMailboxPool(
+            args.from_email ? String(args.from_email) : null,
+            args.from_emails,
+          );
+          if ("error" in poolRes) {
+            toolEvents.push({ name, label: "Send blocked", status: "error", detail: poolRes.error });
+            return { error: poolRes.error };
           }
+          const pool = poolRes.pool;
 
           const results: any[] = [];
+          let rotation = 0;
           for (const d of drafts as any[]) {
             const to = d.leads?.contact_email ?? null;
             const label = d.leads?.company_name ?? d.leads?.contact_name ?? to ?? "lead";
@@ -1529,6 +1534,8 @@ serve(async (req) => {
               results.push({ draft_id: d.id, lead: label, error: "Lead has no email address — enrich it first" });
               continue;
             }
+            const mailbox = pool[rotation % pool.length];
+            rotation++;
             const outcome = await deliver({
               leadId: d.lead_id,
               to,
@@ -1539,7 +1546,7 @@ serve(async (req) => {
               mailbox,
               toolName: name,
             });
-            results.push({ draft_id: d.id, lead: label, to, ...outcome.summary });
+            results.push({ draft_id: d.id, lead: label, to, from: mailbox.email, ...outcome.summary });
             if (outcome.sent) {
               await admin.from("email_drafts").delete().eq("id", d.id).eq("user_id", userId);
             }
@@ -1547,13 +1554,15 @@ serve(async (req) => {
 
           const sentCount = results.filter((r) => r.sent).length;
           const queuedCount = results.filter((r) => r.queued_for_approval).length;
+          const usedFrom = [...new Set(results.map((r) => r.from).filter(Boolean))];
           return {
-            from: mailbox.email,
+            from: usedFrom.join(", ") || pool[0].email,
+            rotated_across: usedFrom.length,
             sent: sentCount,
             queued_for_approval: queuedCount,
             results,
             note: autonomous
-              ? `Sent ${sentCount} of ${results.length} draft(s) from ${mailbox.email}.`
+              ? `Sent ${sentCount} of ${results.length} draft(s), rotated across ${usedFrom.length || 1} mailbox(es): ${usedFrom.join(", ") || pool[0].email}.`
               : `Nothing was sent yet — ${queuedCount} approve/reject card(s) are shown to the user right here in the chat. Wait for their decision and never tell them to go to another page.`,
           };
         }
