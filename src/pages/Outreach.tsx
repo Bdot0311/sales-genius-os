@@ -2156,8 +2156,9 @@ For logos, use HTML:
                       "Save Signature"
                     )}
                   </Button>
-                </div>
+                 </div>
               </div>
+              )}
             </DialogContent>
             </Dialog>
           </div>
