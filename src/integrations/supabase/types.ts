@@ -2234,6 +2234,7 @@ export type Database = {
           annual_revenue: string | null
           company_description: string | null
           company_linkedin: string | null
+          company_id: string | null
           company_name: string
           company_size: string | null
           company_website: string | null
@@ -2286,6 +2287,7 @@ export type Database = {
           annual_revenue?: string | null
           company_description?: string | null
           company_linkedin?: string | null
+          company_id: string | null
           company_name: string
           company_size?: string | null
           company_website?: string | null
@@ -2338,6 +2340,7 @@ export type Database = {
           annual_revenue?: string | null
           company_description?: string | null
           company_linkedin?: string | null
+          company_id: string | null
           company_name?: string
           company_size?: string | null
           company_website?: string | null
@@ -2386,7 +2389,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "leads_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       login_history: {
         Row: {
