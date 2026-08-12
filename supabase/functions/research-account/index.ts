@@ -51,14 +51,22 @@ serve(async (req) => {
     }
 
     // Gather the account's real detected signals from its leads.
-    // leads has no company_id, so the account's own name is the only join. Match
-    // case-insensitively: companies and leads are populated from different
-    // flows (activation, tech-signal import, manual entry) and a difference in
-    // casing alone used to read as "this account has no leads at all".
-    const { data: leads } = await supabase
-      .from("leads")
-      .select("id, signals, signal_type, signal_date, intent_reasons, company_website, company_linkedin, linkedin_url")
-      .eq("user_id", user.id).ilike("company_name", company.name).limit(50);
+    // company_id is the authoritative link. The name match stays as a fallback
+    // for leads created before the column existed and never backfilled — and it
+    // is case-insensitive because companies and leads are populated by
+    // different flows that do not agree on casing.
+    const leadCols =
+      "id, signals, signal_type, signal_date, intent_reasons, company_website, company_linkedin, linkedin_url";
+    const { data: linkedLeads } = await supabase
+      .from("leads").select(leadCols)
+      .eq("user_id", user.id).eq("company_id", companyId).limit(50);
+    let leads = linkedLeads || [];
+    if (!leads.length) {
+      const { data: byName } = await supabase
+        .from("leads").select(leadCols)
+        .eq("user_id", user.id).ilike("company_name", company.name).limit(50);
+      leads = byName || [];
+    }
     const leadIds = (leads || []).map((l: any) => l.id);
     let events: any[] = [];
     if (leadIds.length) {

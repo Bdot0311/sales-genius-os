@@ -327,6 +327,10 @@ export function useExternalLeads() {
         .insert({
           user_id: userId,
           company_name: lead.company_name,
+          // The account row was just resolved or created above. Linking here is
+          // what lets per-account features find this lead without matching on a
+          // name string that different flows spell differently.
+          company_id: companyId,
           contact_name: lead.contact_name,
           contact_email: lead.business_email,
           industry: lead.industry,
