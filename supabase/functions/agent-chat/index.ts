@@ -644,6 +644,7 @@ serve(async (req) => {
           leadId: approval.lead_id,
           // Honour the mailbox the agent was told to send from.
           integrationRowId: approval.integration_row_id ?? undefined,
+          appendSignature: true,
         });
         failed = Boolean(r?.error);
         if (!failed) {
