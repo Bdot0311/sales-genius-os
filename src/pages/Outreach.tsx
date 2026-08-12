@@ -330,6 +330,9 @@ const Outreach = () => {
   const [senderProfileName, setSenderProfileName] = useState("");
   const [signatureDialogOpen, setSignatureDialogOpen] = useState(false);
   const [isSavingSignature, setIsSavingSignature] = useState(false);
+  // Signature is optional: pull from Gmail, write a custom one, or skip entirely.
+  const [signatureSource, setSignatureSource] = useState<SignatureSource | null>(null);
+  const [isFetchingGmailSignature, setIsFetchingGmailSignature] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
