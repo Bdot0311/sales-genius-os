@@ -1647,6 +1647,7 @@ serve(async (req) => {
               continue;
             }
             const sendAt = new Date(when.getTime() + index * stagger * 60_000);
+            const mailbox = pool[index % pool.length];
 
             const { error: insErr } = await admin.from("sent_emails").insert({
               user_id: userId,
@@ -1682,6 +1683,7 @@ serve(async (req) => {
               draft_id: d.id,
               lead: label,
               to,
+              from: mailbox.email,
               scheduled_at: sendAt.toISOString(),
               scheduled_at_local: formatLocal(sendAt),
             });
@@ -1689,21 +1691,23 @@ serve(async (req) => {
           }
 
           const okCount = results.filter((r) => r.scheduled_at).length;
+          const usedFrom = [...new Set(results.map((r) => r.from).filter(Boolean))];
           toolEvents.push({
             name,
             label: okCount ? "Scheduled email" : "Scheduling failed",
             status: okCount ? "ok" : "error",
             detail: okCount
-              ? `${okCount} email(s) queued from ${mailbox.email}, first at ${formatLocal(when)}`
+              ? `${okCount} email(s) queued from ${usedFrom.join(", ")}, first at ${formatLocal(when)}`
               : "No drafts could be scheduled",
           });
 
           return {
-            from: mailbox.email,
+            from: usedFrom.join(", ") || pool[0].email,
+            rotated_across: usedFrom.length,
             scheduled: okCount,
             results,
             note: okCount
-              ? `Queued ${okCount} email(s) from ${mailbox.email}. The scheduler sends them automatically at the times above — the user does not need to do anything. They can be cancelled with cancel_scheduled_email.`
+              ? `Queued ${okCount} email(s) rotated across ${usedFrom.join(", ")}. The scheduler sends them automatically at the times above — the user does not need to do anything. They can be cancelled with cancel_scheduled_email.`
               : "Nothing was scheduled.",
           };
         }
