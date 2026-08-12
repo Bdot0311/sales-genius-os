@@ -770,7 +770,7 @@ ${PLAYBOOK_SYSTEM_RULES}`;
                 const queued = await queueApproval({
                   kind: "outreach",
                   lead_id: lead.id,
-                  integration_row_id: googleIntegrationId,
+                  integration_row_id: leadIntegrationId,
                   prospect_email: to,
                   prospect_name: lead.contact_name ?? null,
                   company_name: lead.company_name ?? null,
@@ -780,7 +780,7 @@ ${PLAYBOOK_SYSTEM_RULES}`;
                   metadata: {
                     phase: "outreach",
                     job_title: lead.job_title ?? null,
-                    sender_email: senderEmail,
+                    sender_email: leadSenderEmail,
                     playbook: "cold_email_engine_4_touch",
                     follow_up_touches: touches.slice(1, 4),
                   },
@@ -805,8 +805,8 @@ ${PLAYBOOK_SYSTEM_RULES}`;
                   prospect_email: to,
                   subject,
                   reply_content: body,
-                  description: `Drafted a first-touch email to ${lead.contact_name ?? to} at ${lead.company_name ?? "their company"} — waiting for your approval${senderEmail ? ` from ${senderEmail}` : ""}`,
-                  metadata: { phase: "outreach", lead_id: lead.id, sender_email: senderEmail },
+                  description: `Drafted a first-touch email to ${lead.contact_name ?? to} at ${lead.company_name ?? "their company"} — waiting for your approval${leadSenderEmail ? ` from ${leadSenderEmail}` : ""}`,
+                  metadata: { phase: "outreach", lead_id: lead.id, sender_email: leadSenderEmail },
                 });
                 outreachDrafted++;
                 remainingOutreach--;
@@ -820,7 +820,7 @@ ${PLAYBOOK_SYSTEM_RULES}`;
                   to,
                   subject,
                   body,
-                  integrationRowId: googleIntegrationId,
+                  integrationRowId: leadIntegrationId,
                   leadId: lead.id,
                 }),
               });
