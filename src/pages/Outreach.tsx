@@ -150,6 +150,9 @@ const EMAIL_TEMPLATES = [
 // cold introduction template when no buying signal is detected.
 type EmailTemplate = (typeof EMAIL_TEMPLATES)[number];
 
+// Where the sending signature comes from.
+type SignatureSource = "gmail" | "custom" | "none";
+
 function pickBestTemplate(lead: any): { template: EmailTemplate; reason: string } {
   const intro = EMAIL_TEMPLATES.find((t) => t.value === "introduction")!;
   if (!lead) return { template: intro, reason: "no lead data yet" };
