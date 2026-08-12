@@ -1997,6 +1997,89 @@ ${formattedBody}
               <DialogHeader>
                 <DialogTitle>Email Signature</DialogTitle>
               </DialogHeader>
+              {signatureSource === null ? (
+                /* Step 1 — do you already have a signature in Gmail? */
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Do you already have a signature set up in Gmail? If so, Outreach Studio and the AI SDR
+                    will use it — no need to retype it here.
+                  </p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Button
+                      variant="outline"
+                      className="h-auto flex-col items-start gap-1 p-4 text-left"
+                      onClick={importGmailSignature}
+                      disabled={isFetchingGmailSignature}
+                    >
+                      <span className="flex items-center gap-2 font-medium">
+                        {isFetchingGmailSignature && <Loader2 className="w-4 h-4 animate-spin" />}
+                        Yes — use my Gmail signature
+                      </span>
+                      <span className="text-xs text-muted-foreground whitespace-normal">
+                        We pull it straight from your connected mailbox.
+                      </span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="h-auto flex-col items-start gap-1 p-4 text-left"
+                      onClick={() => setSignatureSource("custom")}
+                    >
+                      <span className="font-medium">No — add one here</span>
+                      <span className="text-xs text-muted-foreground whitespace-normal">
+                        Write a signature we append to every send.
+                      </span>
+                    </Button>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={async () => {
+                        setSignatureSource("none");
+                        const { data: { user } } = await supabase.auth.getUser();
+                        if (user) await supabase.from("profiles").update({ signature_source: "none" }).eq("id", user.id);
+                        setSignatureDialogOpen(false);
+                        toast({ title: "No signature", description: "Emails will send without a signature." });
+                      }}
+                    >
+                      Skip — no signature
+                    </Button>
+                  </div>
+                </div>
+              ) : signatureSource === "gmail" ? (
+                /* Gmail-sourced signature: read-only preview + switch option */
+                <div className="space-y-4">
+                  <div className="rounded-lg border bg-muted/40 p-3 text-sm">
+                    Using your <span className="font-medium">Gmail signature</span>. Outreach Studio and the AI
+                    SDR append it automatically and refresh it from Gmail on every send.
+                  </div>
+                  {signature && (
+                    <div>
+                      <Label className="text-muted-foreground">Preview</Label>
+                      <div
+                        className="mt-2 p-4 border rounded-lg bg-background prose prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(signature.replace(/\n/g, "<br/>")) }}
+                      />
+                    </div>
+                  )}
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <Button variant="outline" onClick={importGmailSignature} disabled={isFetchingGmailSignature}>
+                      {isFetchingGmailSignature ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Refreshing...
+                        </>
+                      ) : (
+                        "Refresh from Gmail"
+                      )}
+                    </Button>
+                    <Button variant="ghost" onClick={() => setSignatureSource("custom")}>
+                      Use a custom signature instead
+                    </Button>
+                    <Button onClick={() => setSignatureDialogOpen(false)}>Done</Button>
+                  </div>
+                </div>
+              ) : (
               <div className="space-y-4">
                 <div>
                   <Label>Your Signature (supports HTML for logos/images)</Label>
