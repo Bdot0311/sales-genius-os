@@ -10,7 +10,8 @@
     "build:client": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "skills:build": "node scripts/build-skills.mjs"
   },
   "dependencies": {
     "@heycatch/sdk": "^0.7.0",

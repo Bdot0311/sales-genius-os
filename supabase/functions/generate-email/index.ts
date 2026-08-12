@@ -1,4 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// Frameworks come from the GTM skills at request time rather than being retyped
+// here — see _shared/email-skills.ts.
+import { composeSkillContext, skillNamesUsed } from "../_shared/email-skills.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {
   briefToPromptBlock,
@@ -137,7 +140,7 @@ Every email follows this 6-part anatomy in order:
    - The company_context and value_props you were given are background for YOU to understand the offer. They are not lines to restate. Do not explain the product, list features, or describe how it works.
    - One line that implies a specific better path exists for the pain you just named, and hints you have a way to get there. Withhold the mechanism so a curiosity gap opens.
    - Approved shapes: "Most [role]s we talk to stopped doing that by hand." / "There's a way to close that [12-hour] gap to minutes." / "Handled the exact same thing for a [peer segment] team last month."
-   - Proven no-pitch frameworks to draw the shape from: Short-Trigger (observation, then its implication), Leader Responsibilities (a role-specific question that prompts reflection, e.g. "as [title], how are you handling [challenge] now?"), Neutral Insight (point to a useful third-party resource before you ever mention yourself). Any of these earns a reply without pitching.
+   - Draw the shape from the no-pitch frameworks in the reference material below (Short-Trigger, Leader Responsibilities, Neutral Insight and the rest). Any of them earns a reply without pitching.
    - BANNED openings and constructions: "We built," "We help," "We're building," "Our platform," "[Product] was built," "[Product] helps," "[Product] turns," "[Product] is a/an," "it turns," "it does this," "all-in-one," "replaces [tools]," "Introducing," "We're the leading," "AI-powered," "next-gen," "game-changing," "end-to-end," "best-in-class," "industry-leading." If you catch yourself explaining what the product does or naming it, you have written a pitch. Rewrite it as a hint.
    - The reader should want to reply to find out how, not feel sold to.
 
@@ -248,7 +251,7 @@ const cleanGeneratedEmail = (rawEmail: string, preserveSubject = false) => {
 };
 
 // ─── Template-specific system prompts ─────────────────────────────────────────
-const getSystemPrompt = (
+const getGoalPrompt = (
   goal: string,
   tone: string,
   use4Sentence: boolean,
@@ -517,7 +520,29 @@ ${SIGNOFF_RULES}`;
   }
 };
 
+/**
+ * The goal's prompt plus the GTM skills that define its framework.
+ *
+ * The skills are appended rather than prepended so the house rules in the goal
+ * prompt — brevity, banned phrases, sign-off, claim handling — read as the
+ * stronger instruction. Those are product policy the quality checker enforces,
+ * and reference material must not be able to relax them.
+ */
+const getSystemPrompt = (
+  goal: string,
+  tone: string,
+  use4Sentence: boolean,
+  templateDescription: string,
+  templateValue: string = ''
+): string => {
+  const prompt = getGoalPrompt(goal, tone, use4Sentence, templateDescription, templateValue);
+  const usesTemplate = Boolean(templateValue || templateDescription);
+  console.log('[generate-email] skills:', skillNamesUsed({ goal, usesTemplate }).join(', '));
+  return `${prompt}${composeSkillContext({ goal, usesTemplate })}`;
+};
+
 // ─── Subject line system prompt ───────────────────────────────────────────────
+
 const SUBJECT_SYSTEM_PROMPT = `You are an expert B2B cold email copywriter writing subject lines that get opened.
 
 RULES — non-negotiable:
