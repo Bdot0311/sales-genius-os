@@ -1640,6 +1640,8 @@ serve(async (req) => {
 
 
           const stagger = Math.max(0, Math.min(Number(args.stagger_minutes ?? 0) || 0, 240));
+          // Scheduled sends bypass send-email, so bake the signature in now.
+          const scheduleSignature = await getSignatureHtml(admin, userId, null);
           const results: any[] = [];
           let index = 0;
 
