@@ -1002,6 +1002,7 @@ serve(async (req) => {
         body,
         leadId: leadId ?? undefined,
         integrationRowId: mailbox.integrationRowId,
+        appendSignature: true,
       });
       const sent = !r?.error;
       if (sent) {
