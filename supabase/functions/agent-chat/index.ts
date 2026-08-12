@@ -280,7 +280,12 @@ const TOOLS = [
             type: "number",
             description: "Optional gap in minutes between each scheduled email so they don't all go out at once.",
           },
-          from_email: { type: "string", description: "Mailbox address to send from, e.g. brandon@example.com" },
+          from_email: { type: "string", description: "Single mailbox address to schedule everything from, e.g. brandon@example.com" },
+          from_emails: {
+            type: "array",
+            items: { type: "string" },
+            description: "Rotate the scheduled sends across these connected mailbox addresses (multi-domain sending)",
+          },
         },
       },
     },
