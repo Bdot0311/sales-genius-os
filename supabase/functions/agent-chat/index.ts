@@ -238,13 +238,18 @@ const TOOLS = [
     function: {
       name: "send_drafts",
       description:
-        "Send already-saved drafts. This is how you send emails you drafted earlier — you do NOT need the subject or body, only the draft ids (or lead ids, or nothing to send every pending draft). Optionally pass from_email to send from a specific connected mailbox. In approval mode each send pauses for the user's approval inline in the chat.",
+        "Send already-saved drafts. This is how you send emails you drafted earlier — you do NOT need the subject or body, only the draft ids (or lead ids, or nothing to send every pending draft). Pass from_email to force one mailbox, or from_emails to rotate across specific mailboxes/domains. When neither is given, sends are automatically rotated across every healthy connected mailbox (least-used domain first). In approval mode each send pauses for the user's approval inline in the chat.",
       parameters: {
         type: "object",
         properties: {
           draft_ids: { type: "array", items: { type: "string" }, description: "Draft ids to send" },
           lead_ids: { type: "array", items: { type: "string" }, description: "Send the latest draft for each of these leads" },
-          from_email: { type: "string", description: "Mailbox address to send from, e.g. brandon@example.com" },
+          from_email: { type: "string", description: "Single mailbox address to send everything from, e.g. brandon@example.com" },
+          from_emails: {
+            type: "array",
+            items: { type: "string" },
+            description: "Rotate sends across these connected mailbox addresses (multi-domain sending)",
+          },
           all_pending: { type: "boolean", description: "Send every saved draft (max 20) when no ids are given" },
         },
       },
