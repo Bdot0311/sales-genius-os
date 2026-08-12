@@ -2740,6 +2740,7 @@ export type Database = {
           include_unsubscribe: boolean | null
           last_sign_in_at: string | null
           physical_address: string | null
+          signature_source: string | null
           signup_source: string | null
           social_proof: string | null
           updated_at: string
@@ -2756,6 +2757,7 @@ export type Database = {
           include_unsubscribe?: boolean | null
           last_sign_in_at?: string | null
           physical_address?: string | null
+          signature_source?: string | null
           signup_source?: string | null
           social_proof?: string | null
           updated_at?: string
@@ -2772,6 +2774,7 @@ export type Database = {
           include_unsubscribe?: boolean | null
           last_sign_in_at?: string | null
           physical_address?: string | null
+          signature_source?: string | null
           signup_source?: string | null
           social_proof?: string | null
           updated_at?: string

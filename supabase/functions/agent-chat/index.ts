@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { PLAYBOOK_SYSTEM_RULES } from "../_shared/cold-email-playbook.ts";
 import { buildIcpContext, icpSearchBody } from "../_shared/icp-context.ts";
 import { captureServerEvent } from "../_shared/posthog.ts";
+import { getSignatureHtml, appendSignatureToBody } from "../_shared/signature.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -644,6 +645,7 @@ serve(async (req) => {
           leadId: approval.lead_id,
           // Honour the mailbox the agent was told to send from.
           integrationRowId: approval.integration_row_id ?? undefined,
+          appendSignature: true,
         });
         failed = Boolean(r?.error);
         if (!failed) {
@@ -1001,6 +1003,7 @@ serve(async (req) => {
         body,
         leadId: leadId ?? undefined,
         integrationRowId: mailbox.integrationRowId,
+        appendSignature: true,
       });
       const sent = !r?.error;
       if (sent) {
@@ -1640,6 +1643,8 @@ serve(async (req) => {
 
 
           const stagger = Math.max(0, Math.min(Number(args.stagger_minutes ?? 0) || 0, 240));
+          // Scheduled sends bypass send-email, so bake the signature in now.
+          const scheduleSignature = await getSignatureHtml(admin, userId, null);
           const results: any[] = [];
           let index = 0;
 
@@ -1664,8 +1669,8 @@ serve(async (req) => {
               lead_id: d.lead_id,
               to_email: to,
               subject,
-              body_html: draftBodyToHtml(body),
-              body_text: body,
+              body_html: draftBodyToHtml(appendSignatureToBody(body, scheduleSignature)),
+              body_text: appendSignatureToBody(body, scheduleSignature),
               status: "scheduled",
               scheduled_at: sendAt.toISOString(),
               sending_account_id: mailbox.sendingAccountId ?? null,

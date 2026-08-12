@@ -150,6 +150,9 @@ const EMAIL_TEMPLATES = [
 // cold introduction template when no buying signal is detected.
 type EmailTemplate = (typeof EMAIL_TEMPLATES)[number];
 
+// Where the sending signature comes from.
+type SignatureSource = "gmail" | "custom" | "none";
+
 function pickBestTemplate(lead: any): { template: EmailTemplate; reason: string } {
   const intro = EMAIL_TEMPLATES.find((t) => t.value === "introduction")!;
   if (!lead) return { template: intro, reason: "no lead data yet" };
@@ -330,6 +333,9 @@ const Outreach = () => {
   const [senderProfileName, setSenderProfileName] = useState("");
   const [signatureDialogOpen, setSignatureDialogOpen] = useState(false);
   const [isSavingSignature, setIsSavingSignature] = useState(false);
+  // Signature is optional: pull from Gmail, write a custom one, or skip entirely.
+  const [signatureSource, setSignatureSource] = useState<SignatureSource | null>(null);
+  const [isFetchingGmailSignature, setIsFetchingGmailSignature] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
@@ -563,16 +569,50 @@ const Outreach = () => {
     
     const { data } = await supabase
       .from("profiles")
-      .select("email_signature, full_name, email")
+      .select("email_signature, signature_source, full_name, email")
       .eq("id", user.id)
       .maybeSingle();
     
     if (data?.email_signature) {
       setSignature(data.email_signature);
     }
+    setSignatureSource(
+      (data?.signature_source as SignatureSource | null) ?? (data?.email_signature ? "custom" : null),
+    );
 
     const defaultName = data?.full_name?.trim() || data?.email?.split("@")[0] || user.email?.split("@")[0] || "";
     setSenderProfileName(defaultName);
+  };
+
+  // Pull the signature the user already has configured in Gmail.
+  const importGmailSignature = async () => {
+    setIsFetchingGmailSignature(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("gmail-signature", { body: {} });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (!data?.signature) {
+        toast({
+          title: "No Gmail signature found",
+          description: data?.message ?? "Add one in Gmail, or write a custom signature here.",
+        });
+        return;
+      }
+      setSignature(data.signature);
+      setSignatureSource("gmail");
+      await supabase
+        .from("profiles")
+        .update({ signature_source: "gmail", email_signature: data.signature })
+        .eq("id", (await supabase.auth.getUser()).data.user!.id);
+      toast({
+        title: "Gmail signature connected",
+        description: "Outreach Studio and the AI SDR will use your Gmail signature.",
+      });
+    } catch (e: any) {
+      toast({ title: "Couldn't read your Gmail signature", description: e.message, variant: "destructive" });
+    } finally {
+      setIsFetchingGmailSignature(false);
+    }
   };
 
   const loadComplianceSettings = async () => {
@@ -803,8 +843,9 @@ const Outreach = () => {
       // Use upsert so it works even if the profile row doesn't exist yet
       const { error } = await supabase
         .from("profiles")
-        .update({ email_signature: signature })
+        .update({ email_signature: signature, signature_source: signature ? "custom" : "none" })
         .eq("id", user.id);
+      setSignatureSource(signature ? "custom" : "none");
 
       if (error) throw error;
 
@@ -1956,6 +1997,89 @@ ${formattedBody}
               <DialogHeader>
                 <DialogTitle>Email Signature</DialogTitle>
               </DialogHeader>
+              {signatureSource === null ? (
+                /* Step 1 — do you already have a signature in Gmail? */
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Do you already have a signature set up in Gmail? If so, Outreach Studio and the AI SDR
+                    will use it — no need to retype it here.
+                  </p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Button
+                      variant="outline"
+                      className="h-auto flex-col items-start gap-1 p-4 text-left"
+                      onClick={importGmailSignature}
+                      disabled={isFetchingGmailSignature}
+                    >
+                      <span className="flex items-center gap-2 font-medium">
+                        {isFetchingGmailSignature && <Loader2 className="w-4 h-4 animate-spin" />}
+                        Yes — use my Gmail signature
+                      </span>
+                      <span className="text-xs text-muted-foreground whitespace-normal">
+                        We pull it straight from your connected mailbox.
+                      </span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="h-auto flex-col items-start gap-1 p-4 text-left"
+                      onClick={() => setSignatureSource("custom")}
+                    >
+                      <span className="font-medium">No — add one here</span>
+                      <span className="text-xs text-muted-foreground whitespace-normal">
+                        Write a signature we append to every send.
+                      </span>
+                    </Button>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={async () => {
+                        setSignatureSource("none");
+                        const { data: { user } } = await supabase.auth.getUser();
+                        if (user) await supabase.from("profiles").update({ signature_source: "none" }).eq("id", user.id);
+                        setSignatureDialogOpen(false);
+                        toast({ title: "No signature", description: "Emails will send without a signature." });
+                      }}
+                    >
+                      Skip — no signature
+                    </Button>
+                  </div>
+                </div>
+              ) : signatureSource === "gmail" ? (
+                /* Gmail-sourced signature: read-only preview + switch option */
+                <div className="space-y-4">
+                  <div className="rounded-lg border bg-muted/40 p-3 text-sm">
+                    Using your <span className="font-medium">Gmail signature</span>. Outreach Studio and the AI
+                    SDR append it automatically and refresh it from Gmail on every send.
+                  </div>
+                  {signature && (
+                    <div>
+                      <Label className="text-muted-foreground">Preview</Label>
+                      <div
+                        className="mt-2 p-4 border rounded-lg bg-background prose prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(signature.replace(/\n/g, "<br/>")) }}
+                      />
+                    </div>
+                  )}
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <Button variant="outline" onClick={importGmailSignature} disabled={isFetchingGmailSignature}>
+                      {isFetchingGmailSignature ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Refreshing...
+                        </>
+                      ) : (
+                        "Refresh from Gmail"
+                      )}
+                    </Button>
+                    <Button variant="ghost" onClick={() => setSignatureSource("custom")}>
+                      Use a custom signature instead
+                    </Button>
+                    <Button onClick={() => setSignatureDialogOpen(false)}>Done</Button>
+                  </div>
+                </div>
+              ) : (
               <div className="space-y-4">
                 <div>
                   <Label>Your Signature (supports HTML for logos/images)</Label>
@@ -2032,8 +2156,9 @@ For logos, use HTML:
                       "Save Signature"
                     )}
                   </Button>
-                </div>
+                 </div>
               </div>
+              )}
             </DialogContent>
             </Dialog>
           </div>

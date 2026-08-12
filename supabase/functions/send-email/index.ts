@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.76.0';
 import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
 import { logSystemAlert } from "../_shared/alerts.ts";
+import { getSignatureHtml, appendSignatureToBody } from "../_shared/signature.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -44,7 +45,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { to, subject, body, integrationId, integrationRowId, leadId, templateId, threadId } = await req.json();
+    const { to, subject, body: rawBody, integrationId, integrationRowId, leadId, templateId, threadId, appendSignature } = await req.json();
     
     console.log('Send email request received:', { to, subject, integrationId, leadId, templateId });
 
@@ -372,6 +373,15 @@ serve(async (req) => {
 
     // Send email based on integration type
     if (integrationId === 'google' || !integrationId) {
+      // Optional signature append (used by the AI SDR / automated sends).
+      // Outreach Studio composes the signature into the body itself, so it
+      // does not set appendSignature and never double-appends.
+      let body = rawBody as string;
+      if (appendSignature) {
+        const sig = await getSignatureHtml(supabase, user.id, accessToken);
+        body = appendSignatureToBody(body, sig);
+      }
+
       // Format body as proper HTML email if it's not already HTML
       const isHtml = body.trim().startsWith('<') && (body.includes('<html') || body.includes('<div') || body.includes('<p') || body.includes('<br'));
       
