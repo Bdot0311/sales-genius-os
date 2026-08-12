@@ -23,6 +23,9 @@ export const WhyNowPanel = ({ companyId }: { companyId: string }) => {
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
   const [remaining, setRemaining] = useState<number | null>(null);
+  // Why a run came back empty. "no signals" covered three different situations
+  // and none of them were actionable without knowing which one applied.
+  const [reason, setReason] = useState<string | null>(null);
 
   const loadCache = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -36,6 +39,7 @@ export const WhyNowPanel = ({ companyId }: { companyId: string }) => {
 
   const research = async () => {
     setRunning(true);
+    setReason(null);
     try {
       const { data, error } = await supabase.functions.invoke("research-account", { body: { companyId, force: true } });
       if (error) throw error;
@@ -45,7 +49,10 @@ export const WhyNowPanel = ({ companyId }: { companyId: string }) => {
       setClaims(Array.isArray(data?.claims) ? data.claims : []);
       setResearchedAt(data?.researched_at || null);
       if (typeof data?.remaining === "number") setRemaining(data.remaining);
-      if (!data?.claims?.length) toast("no sourced signals to build a why-now from yet.");
+      if (!data?.claims?.length) {
+        setReason(typeof data?.reason === "string" ? data.reason : null);
+        toast(data?.reason || "no sourced signals to build a why-now from yet.");
+      }
     } catch (e: any) {
       toast.error(e?.message || "could not research this account");
     } finally { setRunning(false); }
@@ -66,7 +73,9 @@ export const WhyNowPanel = ({ companyId }: { companyId: string }) => {
         {loading ? (
           <div className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="w-3.5 h-3.5 animate-spin" />loading...</div>
         ) : claims.length === 0 ? (
-          <p className="text-xs text-muted-foreground">no why-now yet. run research to pull sourced reasons from this account's detected signals.</p>
+          <p className="text-xs text-muted-foreground">
+            {reason ?? "no why-now yet. run research to pull sourced reasons from this account's detected signals."}
+          </p>
         ) : (
           claims.map((c, i) => (
             <div key={i} className="flex items-start gap-2 text-xs py-1.5 border-b border-border/40 last:border-0">

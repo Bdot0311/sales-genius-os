@@ -51,9 +51,14 @@ serve(async (req) => {
     }
 
     // Gather the account's real detected signals from its leads.
+    // leads has no company_id, so the account's own name is the only join. Match
+    // case-insensitively: companies and leads are populated from different
+    // flows (activation, tech-signal import, manual entry) and a difference in
+    // casing alone used to read as "this account has no leads at all".
     const { data: leads } = await supabase
-      .from("leads").select("id, signals, signal_type, signal_date, intent_reasons")
-      .eq("user_id", user.id).eq("company_name", company.name).limit(50);
+      .from("leads")
+      .select("id, signals, signal_type, signal_date, intent_reasons, company_website, company_linkedin, linkedin_url")
+      .eq("user_id", user.id).ilike("company_name", company.name).limit(50);
     const leadIds = (leads || []).map((l: any) => l.id);
     let events: any[] = [];
     if (leadIds.length) {
@@ -62,26 +67,50 @@ serve(async (req) => {
     }
 
     // Build raw signals with a recency and a verifiable source url.
-    const domainUrl = company.domain ? `https://${String(company.domain).replace(/^https?:\/\//, "")}` : null;
-    const defaultSource = company.linkedin_url || domainUrl;
+    const asUrl = (v: unknown): string | null => {
+      const t = String(v ?? "").trim();
+      if (!t) return null;
+      return /^https?:\/\//i.test(t) ? t : `https://${t.replace(/^\/+/, "")}`;
+    };
+    const domainUrl = asUrl(company.domain);
+    const companySource = company.linkedin_url || domainUrl;
+    // A lead carries its own company URLs. Falling back to them keeps a real
+    // signal researchable when the companies row is thin — an account added by
+    // name alone has no domain, which used to discard every signal it had.
+    const leadSource = (l: any) =>
+      companySource || asUrl(l?.company_website) || l?.company_linkedin || l?.linkedin_url || null;
+    const anyLeadSource = (leads || []).map(leadSource).find(Boolean) || null;
+
     type Raw = { text: string; date: string | null; source: string | null };
     const raw: Raw[] = [];
     for (const e of events) {
-      raw.push({ text: String(e.signal_type || "").replace(/_/g, " "), date: e.occurred_at || null, source: (e.metadata?.source_url as string) || defaultSource });
+      raw.push({ text: String(e.signal_type || "").replace(/_/g, " "), date: e.occurred_at || null, source: (e.metadata?.source_url as string) || anyLeadSource });
     }
     for (const l of leads || []) {
+      const src = leadSource(l);
       for (const s of (l.signals || [])) {
-        if (typeof s === "string" && s.trim()) raw.push({ text: s.trim(), date: l.signal_date || null, source: defaultSource });
+        if (typeof s === "string" && s.trim()) raw.push({ text: s.trim(), date: l.signal_date || null, source: src });
       }
-      if (l.signal_type && l.signal_type !== "manual") raw.push({ text: String(l.signal_type).replace(/_/g, " "), date: l.signal_date || null, source: defaultSource });
+      if (l.signal_type && l.signal_type !== "manual") raw.push({ text: String(l.signal_type).replace(/_/g, " "), date: l.signal_date || null, source: src });
     }
-    // Only signals with a source url can become a rendered claim.
+    // Only signals with a source url can become a rendered claim: a why-now
+    // reason that cannot be checked must never reach a sent email.
     const sourced = raw.filter((r) => r.source).slice(0, 12);
 
     // Nothing researchable: do not spend a quota unit and do not cache an empty
     // result (which would hide this account's why-now for STALE_DAYS).
     if (!sourced.length) {
-      return json({ claims: [], from_cache: false, no_signals: true, researched_at: null });
+      // "no signals" covered three different situations and the user could not
+      // tell which, so none of them were actionable. Name the one that applies.
+      const reason = !(leads || []).length
+        ? "no leads saved against this account yet, so there is nothing to read signals from"
+        : !raw.length
+          ? "this account's leads have no detected signals yet — run enrichment or a signal scan on them"
+          : "signals were found but none had a checkable source url, so no claim could be sourced";
+      return json({
+        claims: [], from_cache: false, no_signals: true, researched_at: null,
+        reason, leads_found: (leads || []).length, signals_found: raw.length,
+      });
     }
 
     // Cap: consume one unit only when we actually have something to research.
