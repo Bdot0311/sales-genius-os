@@ -10,6 +10,7 @@ import { ExternalLeadsTable } from "@/components/dashboard/ExternalLeadsTable";
 import { AILeadCommand } from "@/components/dashboard/AILeadCommand";
 import { DomainICPBuilder } from "@/components/dashboard/DomainICPBuilder";
 import { TargetCompanies } from "@/components/dashboard/TargetCompanies";
+import { TechSignalsPanel } from "@/components/dashboard/TechSignalsPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { buildExternalFilters, ParsedIcpFilters } from "@/lib/lead-filters";
 import { Sparkles, Loader2, Users, RefreshCw, Lock, CreditCard, ChevronLeft, ChevronRight } from "lucide-react";
@@ -380,6 +381,16 @@ const Leads = () => {
                 />
               </TabsContent>
             </Tabs>
+
+            {/* Finding accounts by a technology change is prospecting, not
+                account management: it returns companies you do not have yet.
+                It belongs here beside the other ways of starting a search,
+                rather than inside one account's detail view where the tool
+                field reads as if it were about that account. Leads it brings in
+                are scored like any other — enrichment runs detect-tech-signals,
+                which writes a tech_stack_change signal_event that feeds the
+                lead's intent score. */}
+            <TechSignalsPanel onImported={fetchLeads} />
 
             {/* AI-Discovered Leads Section */}
             {showExternalLeads && (

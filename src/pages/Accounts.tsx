@@ -5,7 +5,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { AccountCommittee } from "@/components/dashboard/AccountCommittee";
 import { WhyNowPanel } from "@/components/dashboard/WhyNowPanel";
-import { TechSignalsPanel } from "@/components/dashboard/TechSignalsPanel";
 import { Building2, ChevronRight } from "lucide-react";
 
 interface Company { id: string; name: string; domain: string | null }
@@ -71,9 +70,6 @@ const Accounts = () => {
           ) : !loading && (
             <p className="text-sm text-muted-foreground">pick an account to see its committee.</p>
           )}
-          {/* Sits below the committee so it reads as "find more accounts" once
-              there are some, and as the obvious next step when there are none. */}
-          <TechSignalsPanel onImported={loadCompanies} />
         </div>
       </div>
     </DashboardLayout>
