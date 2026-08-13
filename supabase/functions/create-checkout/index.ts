@@ -31,7 +31,13 @@ serve(async (req) => {
   }
 
   try {
-    const { priceId } = await req.json();
+    const { priceId, posthogDistinctId } = await req.json();
+    // Browser-supplied PostHog distinct id. Never generated server-side: a
+    // fabricated id would look like a valid join and mis-attribute the visit.
+    const distinctId =
+      typeof posthogDistinctId === 'string' && posthogDistinctId.length > 0 && posthogDistinctId.length <= 200
+        ? posthogDistinctId
+        : undefined;
 
     if (!priceId || typeof priceId !== 'string' || !(priceId in planMap)) {
       return new Response(

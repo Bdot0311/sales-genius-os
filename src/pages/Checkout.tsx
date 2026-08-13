@@ -7,6 +7,7 @@ import {
 } from "@stripe/react-stripe-js";
 import { supabase } from "@/integrations/supabase/client";
 import { STRIPE_PRICE_IDS } from "@/lib/stripe-config";
+import { posthog } from "@/lib/posthog";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
