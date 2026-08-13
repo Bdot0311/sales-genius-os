@@ -89,6 +89,8 @@ serve(async (req) => {
       subscription_data: {
         trial_period_days: 14,
       },
+      // Join key for analytics: byte-identical to the id passed to posthog.identify.
+      ...(userId ? { metadata: { user_id: userId } } : {}),
     };
 
     // If we have an existing customer, attach them; otherwise let Stripe collect email
