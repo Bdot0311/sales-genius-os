@@ -3287,6 +3287,7 @@ export type Database = {
           status: string
           updated_at: string
           user_id: string
+          provider_breakdown: Json | null
         }
         Insert: {
           created_at?: string
@@ -3305,6 +3306,7 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id: string
+          provider_breakdown?: Json | null
         }
         Update: {
           created_at?: string
@@ -3323,6 +3325,7 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id?: string
+          provider_breakdown?: Json | null
         }
         Relationships: []
       }

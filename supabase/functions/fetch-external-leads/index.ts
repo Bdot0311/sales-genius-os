@@ -134,7 +134,11 @@ async function updateUsageEvent(
   errorCode?: string,
   providerSource?: string,
   providerTotal?: number,
-  creditUpdate?: { creditsCharged?: number; creditBalanceAfter?: number | null }
+  creditUpdate?: { creditsCharged?: number; creditBalanceAfter?: number | null },
+  // Per-provider outcome. Searches call every configured provider and the
+  // providers bill per result returned, so this is what the search actually
+  // cost and where: a provider that surfaced nothing charged nothing.
+  providerBreakdown?: unknown,
 ) {
   if (!usageEventId) return;
   const update: Record<string, unknown> = {
@@ -144,6 +148,9 @@ async function updateUsageEvent(
     status,
     error_code: errorCode,
   };
+  if (providerBreakdown !== undefined) {
+    update.provider_breakdown = providerBreakdown;
+  }
   if (creditUpdate?.creditsCharged !== undefined) {
     update.credits_charged = creditUpdate.creditsCharged;
   }
@@ -1410,7 +1417,15 @@ serve(async (req) => {
       console.log('First processed lead:', JSON.stringify(leads[0], null, 2));
     }
 
-    await updateUsageEvent(supabase, usageEventId, 'success', leads.length, undefined, data.source || 'api', data.total || leads.length);
+    // `provider` names the providers that contributed, joined ("bytemine+crustdata"),
+    // and provider_attempts carries the per-provider counts behind it. Recording
+    // data.source here instead only ever said "api", which does not distinguish
+    // one provider from three.
+    await updateUsageEvent(
+      supabase, usageEventId, 'success', leads.length, undefined,
+      data.provider || data.source || 'api', data.total || leads.length,
+      undefined, data.provider_attempts ?? null,
+    );
     return new Response(
       JSON.stringify({ 
         success: true,
