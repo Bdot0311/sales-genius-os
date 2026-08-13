@@ -140,6 +140,7 @@ export function useExternalLeads() {
       // Only set leads that were returned for this specific search
       const newLeads = data.leads || [];
       setLeads(newLeads);
+      posthog.capture('scan_run');
       setDisclosure({
         applied: data.applied_filters ?? null,
         relaxed: Array.isArray(data.relaxed_filters) ? data.relaxed_filters : [],

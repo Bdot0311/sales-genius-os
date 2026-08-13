@@ -49,6 +49,7 @@ serve(async (req) => {
     // Try to get authenticated user (optional)
     let userEmail: string | undefined;
     let customerId: string | undefined;
+    let userId: string | undefined;
 
     const authHeader = req.headers.get('Authorization');
     if (authHeader && authHeader !== 'Bearer ') {
@@ -59,6 +60,7 @@ serve(async (req) => {
         );
         const token = authHeader.replace('Bearer ', '');
         const { data } = await supabaseClient.auth.getUser(token);
+        if (data.user?.id) userId = data.user.id;
         if (data.user?.email) {
           userEmail = data.user.email;
           // Check for existing Stripe customer
@@ -87,6 +89,8 @@ serve(async (req) => {
       subscription_data: {
         trial_period_days: 14,
       },
+      // Join key for analytics: byte-identical to the id passed to posthog.identify.
+      ...(userId ? { metadata: { user_id: userId } } : {}),
     };
 
     // If we have an existing customer, attach them; otherwise let Stripe collect email
