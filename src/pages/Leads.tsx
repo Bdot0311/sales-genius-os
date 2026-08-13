@@ -11,7 +11,6 @@ import { AILeadCommand } from "@/components/dashboard/AILeadCommand";
 import { DomainICPBuilder } from "@/components/dashboard/DomainICPBuilder";
 import { TargetCompanies } from "@/components/dashboard/TargetCompanies";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TechChangeSearch, TechChange } from "@/components/dashboard/TechChangeSearch";
 import { buildExternalFilters, ParsedIcpFilters } from "@/lib/lead-filters";
 import { Sparkles, Loader2, Users, RefreshCw, Lock, CreditCard, ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -210,7 +209,6 @@ const Leads = () => {
                 <TabsTrigger value="describe">Describe your ICP</TabsTrigger>
                 <TabsTrigger value="website">Analyze your website</TabsTrigger>
                 <TabsTrigger value="companies">Target companies</TabsTrigger>
-                <TabsTrigger value="tech">Tool change</TabsTrigger>
               </TabsList>
 
               <TabsContent value="describe">
@@ -379,27 +377,6 @@ const Leads = () => {
                 <TargetCompanies
                   onFindLeads={handleCompaniesFindLeads}
                   isSearching={externalLoading}
-                />
-              </TabsContent>
-
-              <TabsContent value="tech">
-                <TechChangeSearch
-                  isSearching={externalLoading}
-                  onFindLeads={({ vendor, change, jobTitle }) => {
-                    // The edge function resolves this to the companies the
-                    // change happened at and searches those, so nothing else
-                    // needs to know it was a technographic search.
-                    const newFilters = {
-                      tech_vendor: vendor || undefined,
-                      tech_change: change as TechChange,
-                      job_title: jobTitle || undefined,
-                      limit: 25,
-                      page: 1,
-                    };
-                    setShowExternalLeads(true);
-                    setExternalFilters(newFilters);
-                    fetchExternalLeads(newFilters);
-                  }}
                 />
               </TabsContent>
             </Tabs>

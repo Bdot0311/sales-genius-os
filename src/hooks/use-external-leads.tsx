@@ -36,23 +36,6 @@ export interface ExternalLeadFilters {
   relax?: boolean;
   /** Opaque provider cursor, echoed from a previous response's next_cursor. */
   cursor?: string;
-  /**
-   * Find people at companies that recently changed a tool.
-   *
-   * Resolved server-side to the companies the change happened at, then searched
-   * as if the user had named those accounts. No provider can express "dropped a
-   * tool last month", so it cannot be passed through as an ordinary filter.
-   * Blank vendor falls back to the ICP's competitor list.
-   */
-  tech_vendor?: string;
-  tech_change?: 'added' | 'removed';
-}
-
-/** Where a tech-change search got its company list. */
-export interface TechChangeSource {
-  vendor: string | null;
-  change: string;
-  matched: number;
 }
 
 /** What the search actually ran with, as reported by the edge function. */
