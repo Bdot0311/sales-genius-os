@@ -4,6 +4,7 @@ import {
   DEFAULT_RUBRIC,
   RubricWeights,
   scoreLead,
+  scoreUpdate,
   SignalEventInput,
 } from "../_shared/lead-scoring.ts";
 import { REASON_SYSTEM_PROMPT, reasonUserPayload } from "./prompt.ts";
@@ -204,35 +205,13 @@ serve(async (req) => {
     // (e.g. an ATS hiring event) is present, so it is never a bare 0. The label is
     // derived from that same number so the two can never disagree (the old
     // "0 · Hot" came from writing the score without updating the label).
-    const s = result.intent_score;
-    const intentLabel = s >= 85 ? "Very Hot" : s >= 65 ? "Hot" : s >= 40 ? "Warm" : "Cold";
-
-    // icp_score is the fit score. They were separate numbers from separate
-    // scorers: the v1 scorer wrote its own blend of fit, contact quality and
-    // data freshness into `icp_score` *and* into `intent_score`, so the two
-    // badges sitting next to each other in the UI showed the identical value
-    // and neither one meant what its label said. Fit is measured against the
-    // ICP here, so this is the only place that can answer "does this lead match
-    // my ICP" — and intent is measured from fired signals, so the two now move
-    // independently, which is the entire point of showing both.
-    //
-    // Null rather than 0 when the user has no ICP profile: nothing has been
-    // stated to match against, so the honest answer is "unknown", and the badge
-    // renders "—". A 0 would read as "matches nothing".
-    const icpScore = icpRow ? result.fit_score : null;
-
+    // One payload, shared with process-rescore-queue so a lead scored by the
+    // batch drainer and one scored here can never end up with different columns
+    // set. icp_score is the fit score; null when the user has stated no ICP,
+    // because 0 would read as "matches nothing" rather than "nothing asked for".
     const { error: updErr } = await supabase
       .from("leads")
-      .update({
-        fit_score: result.fit_score,
-        icp_score: icpScore,
-        intent_score: result.intent_score,
-        intent_label: intentLabel,
-        tier: result.tier,
-        score_reason: reason,
-        scored_at: scoredAt,
-        score_breakdown: result.breakdown,
-      })
+      .update(scoreUpdate(result, !!icpRow, scoredAt, reason))
       .eq("id", leadId).eq("user_id", user.id);
     if (updErr) return json({ error: "could not save score", error_code: "db_error" }, 500);
 

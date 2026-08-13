@@ -248,3 +248,41 @@ export function scoreLead(
     breakdown: { fit, intent },
   };
 }
+
+/** The label shown beside the intent score. Derived, never stored independently. */
+export function intentLabelFor(intentScore: number): string {
+  return intentScore >= 85 ? "Very Hot"
+    : intentScore >= 65 ? "Hot"
+    : intentScore >= 40 ? "Warm"
+    : "Cold";
+}
+
+/**
+ * The columns a score writes on the leads row.
+ *
+ * Shared because there are two writers — score-lead-v2 for a single lead and
+ * process-rescore-queue for a batch — and they had already drifted: the queue
+ * wrote fit_score but not icp_score, so a lead rescored through the queue kept
+ * whatever icp_score was last written to it by a different scorer entirely.
+ *
+ * `hasIcp` decides between a number and null. With no ICP profile there is
+ * nothing to measure fit against, and 0 would read as "matches nothing" rather
+ * than "nothing was asked for".
+ */
+export function scoreUpdate(
+  result: ScoreResult,
+  hasIcp: boolean,
+  scoredAt: string,
+  reason?: string,
+): Record<string, unknown> {
+  return {
+    fit_score: result.fit_score,
+    icp_score: hasIcp ? result.fit_score : null,
+    intent_score: result.intent_score,
+    intent_label: intentLabelFor(result.intent_score),
+    tier: result.tier,
+    score_reason: reason ?? result.reason,
+    scored_at: scoredAt,
+    score_breakdown: result.breakdown,
+  };
+}

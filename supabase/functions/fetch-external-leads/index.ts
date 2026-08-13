@@ -67,6 +67,14 @@ interface ExternalLeadFilters {
   relax?: boolean;
   /** When true, drop leads the user already has saved so runs don't repeat. */
   exclude_seen?: boolean;
+  // ─── Technographic change ───────────────────────────────────────────────
+  // "people at companies that just dropped HubSpot". Resolved to a company
+  // list before the search runs, then fanned out through the same path an
+  // explicit company list uses — see the targetCompanies block below.
+  /** Vendor to watch. Blank falls back to the ICP's competitor list. */
+  tech_vendor?: string;
+  /** "removed" = churned off it, "added" = just adopted it. */
+  tech_change?: 'added' | 'removed';
 }
 
 const strList = (v: unknown): string[] =>
@@ -950,7 +958,62 @@ serve(async (req) => {
     // this single invocation (one credit total — already deducted above) and merge
     // the results. Per-company misses are reported via empty_companies, not a
     // global error, so other companies still return.
-    const targetCompanies = Array.isArray(filters.companies) ? filters.companies : [];
+    let targetCompanies = Array.isArray(filters.companies) ? filters.companies : [];
+
+    // A technographic change resolves to the companies it happened at, and the
+    // search then runs against those companies. Doing it this way rather than
+    // as a provider filter is what makes it a real constraint: no provider can
+    // express "dropped a tool last month", so asking for it any other way would
+    // quietly return people who did not.
+    //
+    // An explicit company list wins — if the user named accounts, a tool filter
+    // is a narrowing of that list, not a replacement for it.
+    let techSource: { vendor: string | null; change: string; matched: number } | null = null;
+    if ((filters.tech_vendor || filters.tech_change) && targetCompanies.length === 0) {
+      try {
+        const discovered = await fetch(`${supabaseUrl}/functions/v1/discover-tech-signals`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: authHeader!, apikey: supabaseKey },
+          body: JSON.stringify({
+            vendor: filters.tech_vendor?.trim() || undefined,
+            change: filters.tech_change || 'removed',
+          }),
+        });
+        const payload = discovered.ok ? await discovered.json() : null;
+        const found = Array.isArray(payload?.signals) ? payload.signals : [];
+        targetCompanies = found
+          .filter((sig: any) => sig?.domain || sig?.company)
+          .slice(0, 10)
+          .map((sig: any) => ({ name: sig.company || undefined, domain: sig.domain || undefined }));
+        techSource = {
+          vendor: payload?.target ?? filters.tech_vendor ?? null,
+          change: filters.tech_change || 'removed',
+          matched: found.length,
+        };
+        console.log('[tech-change] resolved to', targetCompanies.length, 'companies');
+      } catch (e) {
+        console.error('[tech-change] discovery failed:', e);
+      }
+
+      // Nothing changed hands, so there is nobody to search for. Running the
+      // rest of the search without the constraint would answer a different
+      // question and charge for it.
+      if (targetCompanies.length === 0) {
+        await refundCredit('no_tech_matches');
+        await updateUsageEvent(supabase, usageEventId, 'empty', 0, 'no_tech_matches');
+        return new Response(
+          JSON.stringify({
+            success: true, leads: [], total: 0, from_cache: false,
+            tech_change: techSource,
+            message: `No companies ${filters.tech_change === 'added' ? 'adopted' : 'dropped'} `
+              + `${techSource?.vendor || 'that tool'} recently. Your search credit was not used — `
+              + 'try another tool or widen the time frame.',
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     if (targetCompanies.length > 0) {
       const targets = targetCompanies.slice(0, 10);
       const perCompany = Math.min(Math.max(limit, 10), 25);
@@ -1000,7 +1063,8 @@ serve(async (req) => {
       const pageLeads = mappedLeads.slice(offset, offset + limit);
       await updateUsageEvent(supabase, usageEventId, 'success', pageLeads.length, undefined, 'api', mappedLeads.length);
       return new Response(
-        JSON.stringify({ success: true, leads: pageLeads, total: mappedLeads.length, from_cache: false, empty_companies: emptyCompanies }),
+        JSON.stringify({ success: true, leads: pageLeads, total: mappedLeads.length, from_cache: false,
+          empty_companies: emptyCompanies, tech_change: techSource }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

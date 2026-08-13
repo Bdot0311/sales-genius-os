@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
-import { DEFAULT_RUBRIC, RubricWeights, scoreLead, SignalEventInput } from "../_shared/lead-scoring.ts";
+import { DEFAULT_RUBRIC, RubricWeights, scoreLead, scoreUpdate, SignalEventInput } from "../_shared/lead-scoring.ts";
 
 // Drains the rescore_queue. Called by pg_cron (trigger_rescore_queue). Scores
 // each queued lead with the deterministic engine and writes the result. Uses
@@ -76,14 +76,12 @@ serve(async (req) => {
             nowMs,
           );
 
-          await supabase.from("leads").update({
-            fit_score: result.fit_score,
-            intent_score: result.intent_score,
-            tier: result.tier,
-            score_reason: result.reason,
-            scored_at: new Date().toISOString(),
-            score_breakdown: result.breakdown,
-          }).eq("id", row.lead_id);
+          // Same payload score-lead-v2 writes. This used to set fit_score but
+          // not icp_score, so a queued rescore left the ICP badge showing
+          // whatever a different scorer had last put there.
+          await supabase.from("leads").update(
+            scoreUpdate(result, !!icpCache.get(row.user_id), new Date().toISOString()),
+          ).eq("id", row.lead_id);
         }
 
         await supabase.from("rescore_queue").update({ status: "done", processed_at: new Date().toISOString() }).eq("id", row.id);

@@ -3,7 +3,9 @@ import {
   computeFit,
   computeIntent,
   DEFAULT_RUBRIC,
+  intentLabelFor,
   scoreLead,
+  scoreUpdate,
   type IcpInput,
   type LeadInput,
   type SignalEventInput,
@@ -130,5 +132,46 @@ describe("fit is measured against the stated ICP", () => {
 
     expect(computeFit(running, techIcp, DEFAULT_RUBRIC).score).toBe(100);
     expect(computeFit(IN_ICP, techIcp, DEFAULT_RUBRIC).applicable).toEqual([]);
+  });
+});
+
+describe("scoreUpdate is the one payload both writers use", () => {
+  // score-lead-v2 and process-rescore-queue had already drifted: the queue set
+  // fit_score but not icp_score, so a lead rescored by the batch drainer kept
+  // whatever a different scorer had last written to the ICP column.
+  const result = scoreLead(IN_ICP, ICP, [techChange(1)], DEFAULT_RUBRIC, NOW);
+  const at = "2026-08-13T00:00:00.000Z";
+
+  it("writes icp_score as the fit score when an ICP exists", () => {
+    const row = scoreUpdate(result, true, at);
+
+    expect(row.icp_score).toBe(result.fit_score);
+    expect(row.fit_score).toBe(result.fit_score);
+  });
+
+  it("writes null, not zero, when no ICP was stated", () => {
+    expect(scoreUpdate(result, false, at).icp_score).toBeNull();
+    // fit_score keeps the raw computation; only the displayed column goes null.
+    expect(scoreUpdate(result, false, at).fit_score).toBe(result.fit_score);
+  });
+
+  it("derives the label from the score it writes", () => {
+    const row = scoreUpdate(result, true, at);
+
+    expect(row.intent_label).toBe(intentLabelFor(result.intent_score));
+  });
+
+  it("covers every column a score owns", () => {
+    // A column missing here is a column left holding a stale value.
+    expect(Object.keys(scoreUpdate(result, true, at)).sort()).toEqual([
+      "fit_score", "icp_score", "intent_label", "intent_score",
+      "score_breakdown", "score_reason", "scored_at", "tier",
+    ]);
+  });
+
+  it("prefers a supplied reason over the deterministic one", () => {
+    expect(scoreUpdate(result, true, at, "just dropped a competitor").score_reason)
+      .toBe("just dropped a competitor");
+    expect(scoreUpdate(result, true, at).score_reason).toBe(result.reason);
   });
 });
