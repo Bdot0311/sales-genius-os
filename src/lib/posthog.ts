@@ -132,6 +132,21 @@ export const posthog = {
   reset: call("reset"),
   setPersonProperties: call("setPersonProperties"),
   group: call("group"),
+  /**
+   * Browser-only distinct id, used as a join key for server-side records
+   * (e.g. Stripe Checkout metadata). Returns undefined when the SDK has not
+   * loaded yet or analytics is disabled — callers must omit the field then
+   * rather than substitute a generated id.
+   */
+  get_distinct_id: (): string | undefined => {
+    if (!shouldInit || !sdk) return undefined;
+    try {
+      const id = (sdk["get_distinct_id"] as AnyFn | undefined)?.();
+      return typeof id === "string" && id ? id : undefined;
+    } catch {
+      return undefined;
+    }
+  },
 };
 
 if (!apiKey && import.meta.env.DEV) {
