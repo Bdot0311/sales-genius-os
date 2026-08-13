@@ -54,8 +54,10 @@ const Checkout = () => {
   const priceId = priceIdMap[key];
 
   const fetchClientSecret = useCallback(async () => {
+    // Browser-only join key: lets guest purchases be traced back to the visit.
+    const distinctId = posthog.get_distinct_id();
     const { data, error } = await supabase.functions.invoke("create-checkout", {
-      body: { priceId },
+      body: { priceId, ...(distinctId ? { posthogDistinctId: distinctId } : {}) },
     });
 
     if (error || !data?.clientSecret) {
