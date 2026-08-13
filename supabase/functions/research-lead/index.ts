@@ -34,7 +34,7 @@ const BROWSER_UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0 Safari/537.36";
 
 const LEAD_SELECT =
-  "id, user_id, company_name, contact_name, contact_email, company_website, job_title, department, seniority, industry, company_size, employee_count, technologies, company_description, notes, signals, signal_type, intent_reasons, recommended_angle, linkedin_url, company_linkedin, research_brief, research_sources, research_confidence, researched_at, updated_at, enriched_at";
+  "id, user_id, company_name, contact_name, contact_email, company_website, job_title, department, seniority, industry, company_size, employee_count, technologies, company_description, notes, signals, signal_type, intent_reasons, recommended_angle, linkedin_url, company_linkedin, research_brief, research_sources, research_confidence, researched_at, updated_at, enriched_at, icp_score, intent_score, intent_label, tier, score_reason";
 
 function extractText(html: string): { text: string; meta: string } {
   const metaBits: string[] = [];
@@ -334,6 +334,22 @@ serve(async (req) => {
       leadContextLines.push(`- Known signals: ${lead.signals.slice(0, 6).join(", ")}`);
     }
     if (lead.recommended_angle) leadContextLines.push(`- Suggested angle: ${lead.recommended_angle}`);
+
+    // The scores are the research brief's brief. Intent says whether something
+    // has actually happened at this account — a tech-stack change, a raise, a
+    // hiring burst — and fit says how close they are to who the user sells to.
+    // Researching without them produced the same generic brief for a lead with
+    // a fresh competitor churn as for one with nothing on record.
+    if (lead.icp_score != null) {
+      leadContextLines.push(`- ICP fit: ${lead.icp_score}/100${lead.tier ? ` (tier ${lead.tier})` : ""}`);
+    }
+    if (lead.intent_score != null) {
+      leadContextLines.push(
+        `- Buying intent: ${lead.intent_score}/100${lead.intent_label ? ` (${lead.intent_label})` : ""}` +
+        ` — lead the brief with what drove this if it is high, and say plainly that nothing has fired if it is low`,
+      );
+    }
+    if (lead.score_reason) leadContextLines.push(`- Why it scored that way: ${lead.score_reason}`);
 
     let result: ModelResult;
     try {

@@ -424,13 +424,21 @@ serve(async (req) => {
         enrichedAt:      lead.enriched_at,
       });
 
-      // Persist all intent fields
+      // Qualitative fields only.
+      //
+      // icp_score, intent_score and intent_label are owned by score-lead-v2,
+      // which measures fit against the ICP and intent from fired signal_events.
+      // This scorer wrote both headline numbers from one blend of fit, contact
+      // quality and data freshness — the same value in each column — so the two
+      // badges always matched and neither reflected a buying signal. A lead
+      // whose company had just dropped a competitor scored exactly like one with
+      // no signals at all, because nothing here ever read signal_events.
+      //
+      // The reasons, angle and signal layers below are still this function's:
+      // they describe the lead's data, not its score.
       await supabaseService
         .from('leads')
         .update({
-          icp_score:          result.score,
-          intent_score:       result.intent_score,
-          intent_label:       result.intent_label,
           intent_reasons:     result.intent_reasons,
           recommended_angle:  result.recommended_angle,
           signal_type:        result.signal_type,

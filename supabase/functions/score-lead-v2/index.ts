@@ -124,18 +124,26 @@ serve(async (req) => {
     const leadId = typeof body.leadId === "string" ? body.leadId : "";
     if (!leadId) return json({ error: "leadId is required", error_code: "invalid_input" }, 400);
 
-    // Tier gating (server-side): scoring is a paid-plan feature. Admins bypass.
+    // The deterministic score itself is not gated.
+    //
+    // It is arithmetic over rows already loaded for this request, it costs
+    // nothing to produce, and it is the number the rest of the product reads:
+    // search ranks on it, research leads with it, and the email generator opens
+    // on the signal behind it. Returning 403 here left those features reading a
+    // score written by the v1 scorer, which had no buying signal in it at all —
+    // a lead with a fresh tech-stack change scored identically to one with
+    // nothing. Withholding the number did not sell a plan, it just made intent
+    // mean nothing on the plan most leads are scored on.
+    //
+    // What stays paid is the part that costs something: the model-written
+    // reason below, and rubric editing above.
     const { data: adminRole } = await supabase
       .from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
     const isAdmin = adminRole?.role === "admin";
-    if (!isAdmin) {
-      const { data: sub } = await supabase
-        .from("subscriptions").select("plan").eq("user_id", user.id).maybeSingle();
-      const plan = (sub?.plan || "free").toLowerCase();
-      if (!PAID_PLANS.has(plan)) {
-        return json({ error: "lead scoring is available on paid plans.", error_code: "upgrade_required" }, 403);
-      }
-    }
+    const { data: planRow } = await supabase
+      .from("subscriptions").select("plan").eq("user_id", user.id).maybeSingle();
+    const plan = (planRow?.plan || "free").toLowerCase();
+    const paid = isAdmin || PAID_PLANS.has(plan);
 
     // Load the lead (scoped to the user), the ICP, the signal events, the rubric.
     const { data: lead, error: leadErr } = await supabase
@@ -169,10 +177,12 @@ serve(async (req) => {
       nowMs,
     );
 
-    // Reason: try the model, fall back to the deterministic sentence.
+    // Reason: try the model, fall back to the deterministic sentence. The
+    // deterministic one is always a complete answer, so a free plan gets the
+    // same score with a plainer sentence attached to it.
     const apiKey = Deno.env.get("LOVABLE_API_KEY");
     let reason = result.reason;
-    if (apiKey) {
+    if (apiKey && paid) {
       const polished = await polishReason(
         reasonUserPayload({
           tier: result.tier,
@@ -196,10 +206,26 @@ serve(async (req) => {
     // "0 · Hot" came from writing the score without updating the label).
     const s = result.intent_score;
     const intentLabel = s >= 85 ? "Very Hot" : s >= 65 ? "Hot" : s >= 40 ? "Warm" : "Cold";
+
+    // icp_score is the fit score. They were separate numbers from separate
+    // scorers: the v1 scorer wrote its own blend of fit, contact quality and
+    // data freshness into `icp_score` *and* into `intent_score`, so the two
+    // badges sitting next to each other in the UI showed the identical value
+    // and neither one meant what its label said. Fit is measured against the
+    // ICP here, so this is the only place that can answer "does this lead match
+    // my ICP" — and intent is measured from fired signals, so the two now move
+    // independently, which is the entire point of showing both.
+    //
+    // Null rather than 0 when the user has no ICP profile: nothing has been
+    // stated to match against, so the honest answer is "unknown", and the badge
+    // renders "—". A 0 would read as "matches nothing".
+    const icpScore = icpRow ? result.fit_score : null;
+
     const { error: updErr } = await supabase
       .from("leads")
       .update({
         fit_score: result.fit_score,
+        icp_score: icpScore,
         intent_score: result.intent_score,
         intent_label: intentLabel,
         tier: result.tier,

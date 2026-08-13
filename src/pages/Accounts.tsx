@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { AccountCommittee } from "@/components/dashboard/AccountCommittee";
 import { WhyNowPanel } from "@/components/dashboard/WhyNowPanel";
+import { TechSignalsPanel } from "@/components/dashboard/TechSignalsPanel";
 import { Building2, ChevronRight } from "lucide-react";
 
 interface Company { id: string; name: string; domain: string | null }
@@ -70,6 +71,17 @@ const Accounts = () => {
           ) : !loading && (
             <p className="text-sm text-muted-foreground">pick an account to see its committee.</p>
           )}
+
+          {/* Account discovery by technology change.
+              It lives here because what it returns is accounts — companies you
+              do not have yet — which is this page's subject. On the Leads page
+              it read as a second, separate way to search for people, which is
+              what made tech signals look like a feature of their own rather
+              than what they are: an input. The scoring half needs no surface at
+              all. Enrichment runs detect-tech-signals on every lead, which
+              writes a tech_stack_change row to signal_events, which is what the
+              intent score beside the ICP score is computed from. */}
+          <TechSignalsPanel onImported={loadCompanies} />
         </div>
       </div>
     </DashboardLayout>
