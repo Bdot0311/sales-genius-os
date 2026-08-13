@@ -464,14 +464,21 @@ serve(async (req) => {
     if (runLeadGen && config.can_find_leads) {
       try {
         const target = Math.min(Math.max(config.daily_lead_target ?? 10, 1), 25);
-        // Rotate the result page as the agent accumulates leads, so consecutive
-        // runs don't keep pulling the same first page from the provider.
-        const { count: agentLeadCount } = await adminClient
-          .from("leads")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", user.id)
-          .eq("source", "ai_agent");
-        let searchPage = Math.floor((agentLeadCount ?? 0) / target) + 1;
+        // Where this agent got to last run.
+        //
+        // The page used to be derived from a count of leads the agent had
+        // already saved, which only advances when a run saves something. A run
+        // that saved nothing — everything on the page already seen, deduped, or
+        // without an email — left the count unchanged, so the next run asked
+        // for the same page, got the same people, saved nothing again, and
+        // never moved. That is the agent showing the same leads every day.
+        //
+        // Position is now the agent's own, advanced once per run whatever the
+        // run produced, and reset when the ICP changes because a page number
+        // means nothing against a different result set.
+        const storedPage = Number(config.search_page) || 1;
+        const icpChanged = (config.search_page_icp_id ?? null) !== (config.icp_profile_id ?? null);
+        let searchPage = icpChanged ? 1 : storedPage;
         const searchBody: Record<string, unknown> = {
           // The saved ICP profile is the source of truth. The legacy single-field
           // targeting on agent_configs is only a fallback for users with no ICP.
@@ -522,16 +529,30 @@ serve(async (req) => {
         };
         let searchData = await runSearch(searchPage);
         let foundLeads: any[] = Array.isArray(searchData?.leads) ? searchData.leads : [];
-        // searchPage is derived from cumulative agent-sourced count, which
-        // overshoots once the ICP is exhausted or after the ICP changes (the
-        // counter is global). If an advanced page comes back empty, retry from
-        // page 1; exclude_seen keeps already-saved leads out, so page 1 only
-        // returns genuinely new matches.
+        // An empty advanced page means the result set is exhausted, so wrap to
+        // the start. exclude_seen keeps everything already saved out, so page 1
+        // returns only genuinely new matches — and the wrap is recorded below
+        // rather than left implicit, or the next run would resume past the end
+        // again and find nothing a second time.
+        let wrapped = false;
         if (foundLeads.length === 0 && !searchData?.error && searchPage > 1) {
           searchPage = 1;
+          wrapped = true;
           searchData = await runSearch(searchPage);
           foundLeads = Array.isArray(searchData?.leads) ? searchData.leads : [];
         }
+
+        // Advance past the page just read, whatever it yielded. This is the
+        // whole fix: a run that saves nothing still moves the agent forward.
+        // Capped because the providers refuse deep offsets — Crustdata stops at
+        // 100 rows — and a position past the ceiling would return nothing
+        // forever.
+        const MAX_SEARCH_PAGE = 10;
+        const nextPage = wrapped || searchPage >= MAX_SEARCH_PAGE ? 2 : searchPage + 1;
+        await adminClient
+          .from("agent_configs")
+          .update({ search_page: nextPage, search_page_icp_id: config.icp_profile_id ?? null })
+          .eq("id", config.id);
 
         for (const l of foundLeads) {
           const email = (l.business_email || "").trim().toLowerCase();
