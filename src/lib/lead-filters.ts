@@ -82,7 +82,12 @@ export function buildExternalFilters(
   pageSize: number,
   originalQuery?: string,
 ): ExternalLeadFilters {
-  const newFilters: ExternalLeadFilters = { limit: pageSize };
+  // Leads already saved are dropped from results. Without this every search
+  // re-showed the people from the last one: the provider returns its first page
+  // for a given filter set, and that page does not change because you saved
+  // some of it. The agent has always done this; the manual search did not, so
+  // it was the surface where the repetition was most obvious.
+  const newFilters: ExternalLeadFilters = { limit: pageSize, exclude_seen: true };
   if (originalQuery?.trim()) newFilters.query = originalQuery.trim();
 
   // The provider takes one value per field, so the singular fields carry the

@@ -426,6 +426,8 @@ export type Database = {
           updated_at: string | null
           user_id: string
           value_props: Json | null
+          search_page: number
+          search_page_icp_id: string | null
         }
         Insert: {
           agent_name?: string | null
@@ -460,6 +462,8 @@ export type Database = {
           updated_at?: string | null
           user_id: string
           value_props?: Json | null
+          search_page?: number
+          search_page_icp_id?: string | null
         }
         Update: {
           agent_name?: string | null
@@ -494,6 +498,8 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
           value_props?: Json | null
+          search_page?: number
+          search_page_icp_id?: string | null
         }
         Relationships: [
           {
@@ -3281,6 +3287,7 @@ export type Database = {
           status: string
           updated_at: string
           user_id: string
+          provider_breakdown: Json | null
         }
         Insert: {
           created_at?: string
@@ -3299,6 +3306,7 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id: string
+          provider_breakdown?: Json | null
         }
         Update: {
           created_at?: string
@@ -3317,6 +3325,7 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id?: string
+          provider_breakdown?: Json | null
         }
         Relationships: []
       }

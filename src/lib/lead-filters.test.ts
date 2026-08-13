@@ -111,3 +111,22 @@ describe("buildExternalFilters", () => {
     expect(filters.query).toBe(query);
   });
 });
+
+describe("repeat suppression", () => {
+  it("always excludes leads the user already has", () => {
+    // Without this every search re-showed the last search's people: the
+    // provider returns its first page for a given filter set, and that page
+    // does not change because you saved some of it.
+    expect(buildExternalFilters({ jobTitles: ["VP Sales"] }, 25).exclude_seen).toBe(true);
+  });
+
+  it("keeps the original sentence so two different searches differ", () => {
+    // The backend hashes the resolved params to key its cache. Two different
+    // sentences that parse to the same coarse filters were the same request.
+    const a = buildExternalFilters({ jobTitles: ["VP Sales"] }, 25, "VP Sales at AI SaaS");
+    const b = buildExternalFilters({ jobTitles: ["VP Sales"] }, 25, "VP Sales at fintechs");
+
+    expect(a.query).toBe("VP Sales at AI SaaS");
+    expect(a.query).not.toBe(b.query);
+  });
+});
