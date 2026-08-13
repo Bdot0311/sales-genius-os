@@ -17,6 +17,7 @@ import {
   normalizeCountry,
   normalizeIndustry,
   normalizeSeniority,
+  semanticTermsIn,
 } from "./icp-vocab.ts";
 
 /** Raw shape requested from the model, before any validation. */
@@ -122,6 +123,10 @@ export function toSizeBucket(raw: string): string | null {
  * industry filter — that filter would match nothing — they are demoted to
  * keywords, where they still influence ranking without silently zeroing the
  * result set. Same for sizes that cannot be read as a range.
+ *
+ * An industry that *does* resolve but loses meaning in the process — "AI SaaS"
+ * becoming "computer software" — is sent as both, because the taxonomy value
+ * alone is a far broader search than the one that was asked for.
  */
 export function normalizeIcp(raw: RawIcpParse): ParsedIcp {
   const jobTitles = toStringArray(raw.jobTitles);
@@ -136,8 +141,16 @@ export function normalizeIcp(raw: RawIcpParse): ParsedIcp {
       continue;
     }
     const normalized = normalizeIndustry(value);
-    if (normalized) industries.push(normalized);
-    else demoted.push(value);
+    if (!normalized) {
+      demoted.push(value);
+      continue;
+    }
+    industries.push(normalized);
+    // The taxonomy value is kept as a supporting filter, but a term it cannot
+    // express has to travel as a keyword too. "AI SaaS" resolves to computer
+    // software, which is every software company on earth; searching only that
+    // is what returned aerospace and venture capital for an AI query.
+    if (semanticTermsIn(value).length) demoted.push(value);
   }
 
   const companySizes: string[] = [];
