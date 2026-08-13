@@ -65,8 +65,25 @@ serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) return json({ error: "Authorization required" }, 401);
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const { data: { user }, error: userErr } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
-    if (userErr || !user) return json({ error: "Invalid user token" }, 401);
+
+    // Two callers. A signed-in user carries their own token; the scheduled
+    // account discovery in import-tech-accounts carries the service role key
+    // and names the user it is running for, because there is no session behind
+    // a cron job. The service key is never exposed to a browser, so presenting
+    // it is proof enough to act on someone's behalf.
+    const rawToken = authHeader.replace(/^Bearer\s+/i, "").trim();
+    const isService = !!rawToken && rawToken === (Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
+    const preParsed = isService ? await req.clone().json().catch(() => ({})) : {};
+    const onBehalfOf = typeof preParsed?.userId === "string" ? preParsed.userId : "";
+
+    let user: { id: string } | null = null;
+    if (isService && onBehalfOf) {
+      user = { id: onBehalfOf };
+    } else {
+      const { data: { user: authed }, error: userErr } = await supabase.auth.getUser(rawToken);
+      if (userErr || !authed) return json({ error: "Invalid user token" }, 401);
+      user = authed;
+    }
 
     if (await isDemoMode(supabase, user.id)) {
       return demoResponse({ signals: [], message: "Tech signal discovery simulated in demo mode — no credits spent." }, corsHeaders);

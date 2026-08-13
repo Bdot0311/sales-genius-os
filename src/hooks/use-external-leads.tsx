@@ -47,8 +47,10 @@ export interface SearchDisclosure {
 }
 
 export interface LeadScores {
-  icp_score: number;
-  intent_score: number;
+  /** Null when the user has stated no ICP — nothing to measure fit against. */
+  icp_score: number | null;
+  /** Null in search: intent needs fired signals, which need enrichment. */
+  intent_score: number | null;
   enrichment_score: number;
   overall_score: number;
 }
@@ -341,7 +343,11 @@ export function useExternalLeads() {
           company_website: lead.company_domain ? `https://${lead.company_domain}` : undefined,
           source: 'OutReign',
           lead_status: 'active',
-          icp_score: lead.scores.overall_score,
+          // The fit score, not the overall blend. overall_score mixes fit with
+          // data completeness, so saving it here put a third different number
+          // in the column the ICP badge reads. Null when no ICP is set; the
+          // scorer overwrites this on enrichment either way.
+          icp_score: lead.scores.icp_score,
           enrichment_status: 'enriched',
           enriched_at: new Date().toISOString(),
         })

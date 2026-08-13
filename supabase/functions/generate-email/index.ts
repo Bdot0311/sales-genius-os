@@ -186,6 +186,7 @@ DELIVERABILITY GUARDRAILS
 - No urgency manufacturing ("closing this offer Friday")
 
 PERSONALIZATION DEPTH RULES
+- buying_intent is measured, not decorative. When it is high, a real event fired at that account and company_signal names it — that event is the opener, and the email should read as though you wrote it because of it. When it says not scored, nothing has happened: do not invent urgency, do not write "I noticed", do not imply a trigger. Earn the reply on relevance instead. Claiming a change that did not happen is the fastest way to lose the account.
 - The specific_observation reference and the company_signal-driven pain must connect to each other. Don't reference their new product launch in the opener and then infer pain about their hiring. Pick one thread and pull it through.
 - If the prospect is a founder, write founder-to-founder. If the prospect is a VP or director, write peer-to-peer with operational specificity. Adjust tone, never structure.
 
@@ -764,14 +765,58 @@ STRICT RULES:
     let researchSources: string[] = [];
     let researchedAt: string | null = null;
     let websiteResearchBlock = '';
+    let leadIntent: {
+      icp_score: number | null;
+      intent_score: number | null;
+      intent_label: string | null;
+      score_reason: string | null;
+    } | null = null;
+    /** The most recent fired signal, written the way an opener would say it. */
+    let leadSignal: string | null = null;
 
     if (!isPrecisionEditPre && lead.id) {
       try {
         const { data: leadRow } = await serviceClient
           .from('leads')
-          .select('research_brief, research_sources, research_confidence, researched_at, updated_at, enriched_at')
+          .select('research_brief, research_sources, research_confidence, researched_at, updated_at, enriched_at, icp_score, intent_score, intent_label, score_reason')
           .eq('id', lead.id)
           .maybeSingle();
+
+        // The scores, and the event behind them.
+        //
+        // The email generator had signal_* goal prompts the whole time, but they
+        // only fired when the user hand-picked that goal — nothing read the
+        // lead's own detected signals. So a lead whose company dropped a
+        // competitor last week got the same opener as one with nothing on
+        // record, while the fact that would have earned the reply sat unused in
+        // signal_events.
+        if (leadRow) {
+          leadIntent = {
+            icp_score: leadRow.icp_score as number | null,
+            intent_score: leadRow.intent_score as number | null,
+            intent_label: leadRow.intent_label as string | null,
+            score_reason: leadRow.score_reason as string | null,
+          };
+        }
+        const { data: recentEvents } = await serviceClient
+          .from('signal_events')
+          .select('signal_type, occurred_at, metadata')
+          .eq('lead_id', lead.id)
+          .order('occurred_at', { ascending: false })
+          .limit(1);
+        const top = recentEvents?.[0];
+        if (top) {
+          const meta = (top.metadata ?? {}) as Record<string, unknown>;
+          const days = Math.round((Date.now() - Date.parse(top.occurred_at as string)) / 86_400_000);
+          const when = !Number.isFinite(days) ? 'recently'
+            : days <= 0 ? 'today' : days === 1 ? 'yesterday' : `${days} days ago`;
+          // Spelled out rather than passed as a type name: "dropped Salesforce
+          // 6 days ago" is an opener, "tech_stack_change" is not.
+          const what = top.signal_type === 'tech_stack_change'
+            ? `${meta.change === 'removed' ? 'stopped using' : 'started using'} ${meta.product || 'a tracked tool'}`
+            : String(top.signal_type || '').replace(/_/g, ' ');
+          leadSignal = `${what} (${when})`;
+        }
 
         if (leadRow && isResearchFresh(leadRow as Record<string, unknown>)) {
           researchBrief = leadRow.research_brief as LeadResearchBrief;
@@ -970,6 +1015,9 @@ Count your words. If over ${wordLimitNote}, ${goal === '4ps_followup' || goal ==
       systemPrompt = getSystemPrompt(goal, tone, use4SentenceFramework, templateDescription, templateValue);
 
       const companySignalParts = [
+        // First, because it is the only part of this list that is time-bound —
+        // the reason to write today rather than last month.
+        leadSignal && `Recent change: they ${leadSignal}`,
         sanitizedJobTitle      && `Job title: ${sanitizedJobTitle}`,
         sanitizedSeniority     && `Seniority: ${sanitizedSeniority}`,
         sanitizedCompanySize   && `Company size: ${sanitizedCompanySize}`,
@@ -985,6 +1033,16 @@ first_name: ${firstName}
 prospect_company: ${sanitizedCompanyName}
 specific_observation: ${triggerContext || 'not provided — infer from company context and industry'}
 company_signal: ${companySignalParts || 'not provided — use industry and role context'}
+buying_intent: ${
+  leadIntent?.intent_score == null
+    ? 'not scored — no signal has fired for this account, so do not imply urgency or reference a recent change'
+    : `${leadIntent.intent_score}/100${leadIntent.intent_label ? ` (${leadIntent.intent_label})` : ''}` +
+      `${leadIntent.score_reason ? ` — ${leadIntent.score_reason}` : ''}` +
+      `${leadIntent.intent_score >= 65
+        ? '. Something real just happened here: open on it.'
+        : '. Nothing urgent has fired: earn the reply on relevance, not on a manufactured trigger.'}`
+}
+icp_fit: ${leadIntent?.icp_score == null ? 'unknown' : `${leadIntent.icp_score}/100`}
 sender_name: ${senderName || 'Sender'}
 sender_company: ${senderCompany || (businessDescription ? businessDescription.split(/[\s\n]/)[0] : 'OutReign')}
 verified_proof: ${socialProof || (businessDescription ? `product capabilities from sender: ${businessDescription}` : 'none — do not cite any customers, metrics, or percentages in the solution line; describe the product benefit in plain terms only')}

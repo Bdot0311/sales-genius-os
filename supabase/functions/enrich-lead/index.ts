@@ -407,10 +407,13 @@ serve(async (req) => {
         console.error('Error calling detect-tech-signals after enrichment:', techErr);
       }
 
-      // Also run Lead Score v2 so the A/B/C tier (and fit/intent breakdown the
-      // Leads table reads) is populated automatically on enrichment. Kept
-      // separate from score-lead above: v1 writes icp_score, v2 writes tier.
-      // Non-blocking and gated to paid plans server-side; failures are logged.
+      // Lead Score v2, last, because it is the one that scores. It reads the
+      // signal_events the three detectors above just wrote, so a tech-stack
+      // change, a raise or a hiring burst found on this pass is in the intent
+      // score by the time the user sees the lead. It owns icp_score,
+      // intent_score, intent_label and tier; score-lead above contributes only
+      // the qualitative reasons and signal layers.
+      // Non-blocking; failures are logged and leave the lead unscored.
       try {
         const tierRes = await fetch(`${supabaseUrl}/functions/v1/score-lead-v2`, {
           method: 'POST',

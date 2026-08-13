@@ -10,6 +10,14 @@ import {
   normalizeCompanySize,
   semanticTermsIn,
 } from "../_shared/icp-vocab.ts";
+// The same fit engine the saved-lead scorer uses, so a lead's ICP score in
+// search is the number it keeps once saved.
+import {
+  computeFit,
+  DEFAULT_RUBRIC,
+  type IcpInput,
+  type LeadInput,
+} from "../_shared/lead-scoring.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -151,8 +159,10 @@ async function updateUsageEvent(
 
 
 interface LeadScores {
-  icp_score: number;
-  intent_score: number;
+  /** Null when the user has stated no ICP — nothing to measure against. */
+  icp_score: number | null;
+  /** Always null in search: intent needs fired signals, which need enrichment. */
+  intent_score: number | null;
   enrichment_score: number;
   overall_score: number;
 }
@@ -229,107 +239,52 @@ function hashString(str: string): number {
   return Math.abs(hash);
 }
 
-// Calculate scores with per-lead variation using multiple signals
-function calculateScores(lead: any): LeadScores {
-  // Create a unique seed from lead-specific data for deterministic variation
+/**
+ * Score a search result.
+ *
+ * `icp_score` is measured against the user's actual ICP profile, by the same
+ * computeFit the saved-lead scorer uses, so the number a lead shows in search is
+ * the number it keeps after saving. It used to be a generic seniority table —
+ * CEO 38, VP 22, director 18 — plus a hash-derived jitter of ±5 per lead, which
+ * meant it never consulted the ICP at all: a CEO outside every stated industry,
+ * size band and geography still scored 78.
+ *
+ * `intent_score` is null. Intent is measured from fired signals, and a lead
+ * nobody has researched yet has none — the score arrives once it is saved and
+ * enriched, which is when the tech, funding and hiring detectors run. The old
+ * value was a base of 35 plus points for having "sales" in the job title, plus
+ * its own jitter axis. It moved between leads, so it looked like a measurement,
+ * but nothing in it had anything to do with buying intent.
+ */
+function calculateScores(lead: any, icp: IcpInput | null): LeadScores {
+  // Kept for the enrichment axis only — completeness genuinely varies per lead
+  // and this keeps ordering stable across repeated searches.
   const seedStr = `${lead.contact_name || ''}|${lead.company_name || ''}|${lead.company_domain || ''}|${lead.job_title || ''}`;
   const seed = hashString(seedStr);
-  // Small deterministic offset (-5 to +5) unique per lead
-  const variation = (seed % 11) - 5;
 
-  let icpScore = 40;
-  let intentScore = 35;
   let enrichmentScore = 30;
 
-  // === ICP SCORING (job title depth) ===
   const jobTitle = (lead.job_title || '').toLowerCase();
   const jobTitleWords = jobTitle.split(/[\s,/]+/).filter(Boolean);
-  
-  // Seniority-based scoring with more granularity
-  if (jobTitle.includes('ceo') || jobTitle.includes('chief executive')) {
-    icpScore += 38;
-  } else if (jobTitle.includes('founder') || jobTitle.includes('co-founder')) {
-    icpScore += 35;
-  } else if (jobTitle.includes('owner') || jobTitle.includes('president')) {
-    icpScore += 32;
-  } else if (jobTitle.includes('cto') || jobTitle.includes('chief technology')) {
-    icpScore += 30;
-  } else if (jobTitle.includes('cfo') || jobTitle.includes('chief financial')) {
-    icpScore += 28;
-  } else if (jobTitle.includes('coo') || jobTitle.includes('cmo') || jobTitle.includes('cro') || jobTitle.includes('cio')) {
-    icpScore += 26;
-  } else if (jobTitle.includes('vp') || jobTitle.includes('vice president')) {
-    icpScore += 22;
-  } else if (jobTitle.includes('director')) {
-    icpScore += 18;
-  } else if (jobTitle.includes('head of') || jobTitle.includes('head,')) {
-    icpScore += 16;
-  } else if (jobTitle.includes('senior') && (jobTitle.includes('manager') || jobTitle.includes('lead'))) {
-    icpScore += 14;
-  } else if (jobTitle.includes('manager')) {
-    icpScore += 10;
-  } else if (jobTitle.includes('lead') || jobTitle.includes('principal')) {
-    icpScore += 8;
-  } else if (jobTitle.includes('senior')) {
-    icpScore += 6;
-  } else if (jobTitle.includes('specialist') || jobTitle.includes('analyst') || jobTitle.includes('coordinator')) {
-    icpScore += 2;
-  }
 
-  // Bonus for revenue/growth/sales-related titles (high buying intent)
-  if (jobTitle.includes('revenue') || jobTitle.includes('growth') || jobTitle.includes('sales') || jobTitle.includes('business development')) {
-    intentScore += 15;
-  }
-  if (jobTitle.includes('marketing') || jobTitle.includes('demand gen') || jobTitle.includes('partnerships')) {
-    intentScore += 10;
-  }
-  if (jobTitle.includes('operations') || jobTitle.includes('strategy')) {
-    intentScore += 7;
-  }
-
-  // Title word count bonus (more specific titles = better data)
-  if (jobTitleWords.length >= 4) {
-    enrichmentScore += 3;
-  }
-
-  // === COMPANY SIZE SCORING ===
-  const companySize = (lead.company_size || lead.employee_count || '').toString();
-  if (companySize.includes('10001') || companySize.includes('5001')) {
-    icpScore += 6;
-    intentScore += 12;
-  } else if (companySize.includes('1001') || companySize.includes('501')) {
-    icpScore += 10;
-    intentScore += 14;
-  } else if (companySize.includes('201') || companySize.includes('500')) {
-    icpScore += 12;
-    intentScore += 10;
-  } else if (companySize.includes('51') || companySize.includes('200')) {
-    icpScore += 8;
-    intentScore += 8;
-  } else if (companySize.includes('11') || companySize.includes('50')) {
-    icpScore += 4;
-    intentScore += 4;
-  } else if (companySize.includes('1-10') || companySize.includes('micro')) {
-    icpScore += 2;
-    intentScore += 2;
-  }
-
-  // === INDUSTRY SCORING ===
-  const industry = (lead.industry || '').toLowerCase();
-  // High-value industries for SaaS
-  if (industry.includes('software') || industry.includes('technology') || industry.includes('information technology')) {
-    intentScore += 8;
-  } else if (industry.includes('financial') || industry.includes('banking') || industry.includes('insurance')) {
-    intentScore += 7;
-  } else if (industry.includes('consulting') || industry.includes('marketing')) {
-    intentScore += 6;
-  } else if (industry.includes('health') || industry.includes('education')) {
-    intentScore += 4;
-  } else if (industry.includes('retail') || industry.includes('manufacturing')) {
-    intentScore += 3;
-  } else if (industry) {
-    intentScore += 2; // Any known industry is better than none
-  }
+  // === ICP FIT — measured against the user's stated ICP ===
+  // computeFit only counts dimensions the ICP actually specifies, so a lead is
+  // not penalised for a criterion left blank, and returns null-equivalent when
+  // there is no ICP at all: nothing has been stated to match against, so the
+  // honest answer is "unknown" rather than a number.
+  const icpScore = icp
+    ? computeFit(
+        {
+          job_title: lead.job_title,
+          industry: lead.industry,
+          company_size: lead.company_size,
+          country: lead.country,
+          technologies: lead.technologies ?? null,
+        } as LeadInput,
+        icp,
+        DEFAULT_RUBRIC,
+      ).score
+    : null;
 
   // === ENRICHMENT / DATA COMPLETENESS SCORING ===
   const email = lead.business_email || lead.email || '';
@@ -348,22 +303,20 @@ function calculateScores(lead: any): LeadScores {
   if (lead.contact_name) enrichmentScore += 2;
   if (lead.seniority) enrichmentScore += 3;
   if (lead.department) enrichmentScore += 2;
-
-  // === APPLY PER-LEAD VARIATION ===
-  icpScore += variation;
-  intentScore += (seed % 7) - 3; // different variation axis
-  enrichmentScore += ((seed >> 3) % 5) - 2; // yet another axis
-
-  // Cap scores at 0-100
-  icpScore = Math.max(5, Math.min(100, icpScore));
-  intentScore = Math.max(5, Math.min(100, intentScore));
+  if (jobTitleWords.length >= 4) enrichmentScore += 3;
+  enrichmentScore += ((seed >> 3) % 5) - 2;
   enrichmentScore = Math.max(5, Math.min(100, enrichmentScore));
 
-  const overallScore = Math.round((icpScore * 0.4) + (intentScore * 0.3) + (enrichmentScore * 0.3));
+  // Intent is absent from the overall score rather than weighted at a made-up
+  // value: it is genuinely unknown until the lead is enriched, and folding a
+  // placeholder in would rank leads by a number nobody measured.
+  const overallScore = icpScore == null
+    ? enrichmentScore
+    : Math.round(icpScore * 0.65 + enrichmentScore * 0.35);
 
   return {
     icp_score: icpScore,
-    intent_score: intentScore,
+    intent_score: null,
     enrichment_score: enrichmentScore,
     overall_score: Math.max(5, Math.min(100, overallScore)),
   };
@@ -373,7 +326,11 @@ function calculateScores(lead: any): LeadScores {
 function generateScoreExplanation(lead: any, scores: LeadScores): string {
   const parts: string[] = [];
   
-  if (scores.icp_score >= 85) {
+  // No ICP stated means nothing to match against; claiming a "low ICP match"
+  // would blame the lead for a profile the user never filled in.
+  if (scores.icp_score == null) {
+    parts.push('No ICP set — add one to score fit');
+  } else if (scores.icp_score >= 85) {
     parts.push('Excellent ICP match');
   } else if (scores.icp_score >= 70) {
     parts.push('Strong ICP match');
@@ -400,7 +357,9 @@ function generateScoreExplanation(lead: any, scores: LeadScores): string {
     parts.push('Management level');
   }
 
-  if (scores.intent_score >= 60) {
+  // Intent is unknown until the lead is enriched and the signal detectors run,
+  // so search never claims it. The old branch fired on a made-up number.
+  if (scores.intent_score != null && scores.intent_score >= 60) {
     parts.push('High buying intent signals');
   }
 
@@ -473,7 +432,10 @@ function generateBuyingSignals(lead: any): string[] {
 }
 
 // Map Railway response to ScoredLead format — handles many field name conventions
-function mapRailwayLead(lead: any): ScoredLead {
+const makeLeadMapper = (icp: IcpInput | null) => (lead: any): ScoredLead =>
+  mapRailwayLead(lead, icp);
+
+function mapRailwayLead(lead: any, icp: IcpInput | null = null): ScoredLead {
   // Resolve field names across common API conventions
   const firstName = lead.first_name || lead.firstName || '';
   const lastName = lead.last_name || lead.lastName || '';
@@ -504,7 +466,7 @@ function mapRailwayLead(lead: any): ScoredLead {
     linkedin_url: linkedinUrl,
   };
 
-  const scores = calculateScores(normalised);
+  const scores = calculateScores(normalised, icp);
 
   return {
     ...normalised,
@@ -534,7 +496,7 @@ async function fetchCacheAllFallback(railwayBaseUrl: string): Promise<{ leads: S
     console.log('Cache all response:', JSON.stringify(data).substring(0, 500));
     
     if (data.leads && Array.isArray(data.leads) && data.leads.length > 0) {
-      const leads = data.leads.map(mapRailwayLead);
+      const leads = data.leads.map((l: any) => mapRailwayLead(l));
       return { leads, from_cache: true };
     }
     
@@ -602,6 +564,19 @@ serve(async (req) => {
     if (userError || !user) {
       throw new Error('Invalid user token');
     }
+
+    // The stated ICP, loaded once and used to score every result in this
+    // search. Without it the ICP score was a generic seniority table that gave
+    // the same answer to every user regardless of who they actually sell to.
+    const { data: icpProfile } = await supabase
+      .from('icp_profiles')
+      .select('industries, company_size_min, company_size_max, seniority_levels, departments, target_titles, geographies, tech_stack')
+      .eq('user_id', user.id)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const icpForScoring = (icpProfile as IcpInput | null) ?? null;
+    const mapLead = makeLeadMapper(icpForScoring);
 
     // CRITICAL: Check if user is admin (bypass all credit checks)
     const { data: adminRole } = await supabase
@@ -976,6 +951,7 @@ serve(async (req) => {
     // the results. Per-company misses are reported via empty_companies, not a
     // global error, so other companies still return.
     const targetCompanies = Array.isArray(filters.companies) ? filters.companies : [];
+
     if (targetCompanies.length > 0) {
       const targets = targetCompanies.slice(0, 10);
       const perCompany = Math.min(Math.max(limit, 10), 25);
@@ -1008,7 +984,7 @@ serve(async (req) => {
       }
 
       const mappedLeads: ScoredLead[] = collected
-        .map(mapRailwayLead)
+        .map(mapLead)
         .filter((l) => l.contact_name || l.company_name)
         .sort((a, b) => b.scores.overall_score - a.scores.overall_score);
 
@@ -1025,7 +1001,8 @@ serve(async (req) => {
       const pageLeads = mappedLeads.slice(offset, offset + limit);
       await updateUsageEvent(supabase, usageEventId, 'success', pageLeads.length, undefined, 'api', mappedLeads.length);
       return new Response(
-        JSON.stringify({ success: true, leads: pageLeads, total: mappedLeads.length, from_cache: false, empty_companies: emptyCompanies }),
+        JSON.stringify({ success: true, leads: pageLeads, total: mappedLeads.length, from_cache: false,
+          empty_companies: emptyCompanies }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -1105,7 +1082,7 @@ serve(async (req) => {
       if (collectedIcp.length > 0) {
         const seen = new Set<string>();
         const dedupedIcp: ScoredLead[] = collectedIcp
-          .map(mapRailwayLead)
+          .map(mapLead)
           .filter((l) => l.contact_name || l.company_name)
           .filter((l) => (icpExcluder ? icpExcluder(l) : true))
           .filter((l) => {
@@ -1420,7 +1397,7 @@ serve(async (req) => {
 
     // Map leads to expected format
     const mapped: ScoredLead[] = rawLeads
-      .map(mapRailwayLead)
+      .map(mapLead)
       .filter(lead => lead.contact_name || lead.company_name)
       .filter(lead => (icpExcluder ? icpExcluder(lead) : true))
       .sort((a, b) => b.scores.overall_score - a.scores.overall_score);

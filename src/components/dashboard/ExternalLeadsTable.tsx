@@ -18,7 +18,23 @@ export function ExternalLeadsTable({ leads, activatingLead, onActivateLead }: Ex
     return 'bg-orange-500';
   };
 
-  const getScoreBadge = (score: number, label: string) => {
+  // A null score is not zero. Intent is null in search because it is measured
+  // from fired signals and an unresearched lead has none; ICP fit is null when
+  // the user has stated no ICP. Both mean "not measured", and printing a number
+  // for either would be a claim nobody made.
+  const getScoreBadge = (score: number | null | undefined, label: string) => {
+    if (score == null) {
+      return (
+        <div className="flex items-center gap-1">
+          <div className="w-2 h-2 rounded-full bg-muted" />
+          <span className="text-xs text-muted-foreground">
+            {label}: <span title={label === 'Intent'
+              ? 'measured once the lead is saved and enriched'
+              : 'set an ICP to score fit'}>—</span>
+          </span>
+        </div>
+      );
+    }
     const color = getScoreColor(score);
     return (
       <div className="flex items-center gap-1">

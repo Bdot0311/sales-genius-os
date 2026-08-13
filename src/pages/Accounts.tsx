@@ -70,6 +70,7 @@ const Accounts = () => {
           ) : !loading && (
             <p className="text-sm text-muted-foreground">pick an account to see its committee.</p>
           )}
+
         </div>
       </div>
     </DashboardLayout>
