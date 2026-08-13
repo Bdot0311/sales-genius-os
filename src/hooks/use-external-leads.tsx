@@ -36,6 +36,8 @@ export interface ExternalLeadFilters {
   relax?: boolean;
   /** Opaque provider cursor, echoed from a previous response's next_cursor. */
   cursor?: string;
+  /** Skip leads the user has already been shown. */
+  exclude_seen?: boolean;
 }
 
 /** What the search actually ran with, as reported by the edge function. */
