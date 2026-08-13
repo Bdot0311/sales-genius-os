@@ -113,15 +113,53 @@ export const COMPANY_SIZE_MAP: Record<string, string> = {
   '10001+': '10001+', 'mega': '10001+',
 };
 
+/**
+ * Terms no provider taxonomy can express.
+ *
+ * Every provider classifies companies with LinkedIn's industry list, which has
+ * no AI category — the nearest value is "computer software", meaning every
+ * software company there is. A term listed here still resolves to that value as
+ * a supporting filter, but it must also travel as a keyword, or the word that
+ * defined the ICP is gone by the time a provider sees the search.
+ *
+ * Ordered longest-first so "ai saas" is recognised ahead of the "ai" inside it.
+ */
+export const SEMANTIC_ONLY_TERMS = [
+  'artificial intelligence', 'computer vision', 'machine learning',
+  'deep learning', 'generative ai', 'ai saas', 'gen ai', 'genai', 'mlops',
+  'ai/ml', 'llms', 'llm', 'nlp', 'ai', 'ml',
+];
+
+/** The parts of a query that no industry taxonomy can carry. */
+export function semanticTermsIn(raw: string): string[] {
+  const lower = (raw || '').toLowerCase();
+  const found: string[] = [];
+  for (const term of SEMANTIC_ONLY_TERMS) {
+    // Deliberately not \b: that matches the "ai" inside "email" and "retail".
+    const pattern = new RegExp(`(?<![a-z0-9])${term.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}(?![a-z0-9])`);
+    if (!pattern.test(lower)) continue;
+    if (found.some((seen) => seen.includes(term))) continue;
+    found.push(term);
+  }
+  return found;
+}
+
 // Normalize industry value to PDL-compatible format
 export function normalizeIndustry(raw: string): string {
   if (!raw) return '';
   const lower = raw.trim().toLowerCase();
   // Check exact match first
   if (INDUSTRY_MAP[lower]) return INDUSTRY_MAP[lower];
-  // Check if any key is contained in the input
-  for (const [key, value] of Object.entries(INDUSTRY_MAP)) {
-    if (lower.includes(key)) return value;
+  // Then whole-word containment, longest key first so "machine learning" is not
+  // decided by the "ai" that a plain substring test would find inside it.
+  //
+  // Substring matching is what made every AI search generic: "ai saas" contains
+  // "ai", so it resolved to computer software and the segment was lost. Worse in
+  // the other direction — "email marketing" and "retail" also contain "ai".
+  const keys = Object.keys(INDUSTRY_MAP).sort((a, b) => b.length - a.length);
+  for (const key of keys) {
+    const pattern = new RegExp(`(?<![a-z0-9])${key.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}(?![a-z0-9])`);
+    if (pattern.test(lower)) return INDUSTRY_MAP[key];
   }
   // If no match, pass through as-is (Railway/PDL may still match it)
   return raw.trim();

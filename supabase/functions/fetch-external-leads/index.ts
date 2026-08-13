@@ -8,6 +8,7 @@ import {
   normalizeIndustry,
   normalizeSeniority,
   normalizeCompanySize,
+  semanticTermsIn,
 } from "../_shared/icp-vocab.ts";
 
 const corsHeaders = {
@@ -1172,52 +1173,61 @@ serve(async (req) => {
       );
     }
 
-    // On 400, progressively drop filters the provider doesn't support and retry.
+    // On 400, retry once without the specific filter the provider rejected.
     // Common causes: unrecognised location string, unsupported industry / company_size filter field.
     if (response.status === 400) {
       const errBody = await response.text().catch(() => '');
-      console.warn('Railway returned 400, attempting filter-relaxation retries:', errBody.substring(0, 500));
+      console.warn('Railway returned 400:', errBody.substring(0, 500));
 
       const unsupported = /unsupported filter field/i.test(errBody);
       const mentions = (field: string) => errBody.toLowerCase().includes(field);
 
-      // Build an ordered list of filter-drop attempts.
-      const dropPlans: string[][] = [];
+      // Retry only with the filter the provider actually named, and only when
+      // it named one.
+      //
+      // This used to be a blind ladder: drop location, then industry, then all
+      // three at once, and if that emptied the request, substitute
+      // `job_title = 'CEO'`. That last step turned a rejected search into an
+      // unfiltered global search for CEOs, returned as though it matched the
+      // ICP — which is where the aerospace and venture-capital leads came from.
+      // A search the provider refused is an error to report, not a different
+      // search to run.
+      const offending: string[] = [];
       if (unsupported) {
-        const offending: string[] = [];
         if (mentions('industry') && requestBody.industry) offending.push('industry');
         if ((mentions('employee_count') || mentions('company_size')) && requestBody.company_size) offending.push('company_size');
         if (mentions('location') && requestBody.location) offending.push('location');
-        if (offending.length) dropPlans.push(offending);
-      }
-      if (requestBody.location) dropPlans.push(['location']);
-      if (requestBody.industry) dropPlans.push(['industry']);
-      if (requestBody.industry || requestBody.company_size || requestBody.location) {
-        dropPlans.push(['industry', 'company_size', 'location']);
       }
 
       let recovered = false;
-      for (const drops of dropPlans) {
+      // An agent search states its ICP exactly; widening it is never a favour.
+      if (offending.length && !filters.strict) {
         const retryBody: Record<string, any> = { ...requestBody };
-        for (const key of drops) delete retryBody[key];
-        if (!retryBody.job_title && !retryBody.seniority && !retryBody.keywords && !retryBody.company && !retryBody.company_domain) {
-          retryBody.job_title = 'CEO';
-        }
-        console.log('Retrying Railway search without:', drops.join(', '));
-        try {
-          const retryRes = await fetch(railwayUrl, {
-            method: 'POST',
-            headers: railwayHeaders,
-            body: JSON.stringify(retryBody),
-          });
-          if (retryRes.ok) {
-            response = retryRes;
-            recovered = true;
-            break;
+        for (const key of offending) delete retryBody[key];
+
+        // Without something to match on, the "retry" is a different search.
+        const stillTargeted = retryBody.job_title || retryBody.seniority ||
+          retryBody.keywords || retryBody.company || retryBody.company_domain;
+
+        if (stillTargeted) {
+          console.log('Provider rejected', offending.join(', '), '— retrying without it');
+          try {
+            const retryRes = await fetch(railwayUrl, {
+              method: 'POST',
+              headers: railwayHeaders,
+              body: JSON.stringify(retryBody),
+            });
+            if (retryRes.ok) {
+              response = retryRes;
+              recovered = true;
+              // Say so: these results are wider than what was asked for.
+              relaxedFilters = offending;
+            } else {
+              console.error('Railway retry failed:', retryRes.status);
+            }
+          } catch (retryErr) {
+            console.error('Railway retry fetch failed:', retryErr);
           }
-          console.error('Railway retry failed:', retryRes.status);
-        } catch (retryErr) {
-          console.error('Railway retry fetch failed:', retryErr);
         }
       }
 
@@ -1226,10 +1236,16 @@ serve(async (req) => {
         // the user needs to know the provider refused the query (credit refunded).
         await refundCredit('upstream_400');
         await updateUsageEvent(supabase, usageEventId, 'error', 0, 'upstream_rejected');
+        // Naming the filter beats "try simpler filters": the user can only fix
+        // what they can see, and the provider told us which one it choked on.
+        const named = offending.length
+          ? ` It could not handle: ${offending.join(', ')}.`
+          : '';
         return new Response(
           JSON.stringify({
-            error: 'The lead data provider rejected this search. Your search credit was not used — try simpler filters or a different location.',
+            error: `The lead data provider rejected this search.${named} Your search credit was not used — adjust that filter and try again.`,
             error_code: 'upstream_rejected',
+            rejected_filters: offending,
             leads: [],
             total: 0,
           }),
@@ -1336,9 +1352,17 @@ serve(async (req) => {
     ];
 
 
+    // `keywords` leads the ladder because it was historically a junk drawer.
+    // It is now where a term no taxonomy can express travels — "AI SaaS" sends
+    // industry=computer software *and* keywords="ai saas", because the industry
+    // value on its own is every software company there is. Dropping the keyword
+    // then leaves exactly the over-broad search this was meant to stop.
+    const keywordIsDefining = semanticTermsIn(String(requestBody.keywords ?? '')).length > 0;
+
     if (!filters.strict && rawLeads.length === 0) {
       for (const plan of DROP_LADDER) {
-        const applicable = plan.filter((k) => requestBody[k] !== undefined && requestBody[k] !== null);
+        const applicable = plan.filter((k) => requestBody[k] !== undefined && requestBody[k] !== null)
+          .filter((k) => !(k === 'keywords' && keywordIsDefining));
         if (applicable.length === 0) continue;
 
         const relaxed: Record<string, any> = { ...requestBody };
