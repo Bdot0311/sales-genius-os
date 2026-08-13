@@ -7,6 +7,7 @@ import {
 } from "@stripe/react-stripe-js";
 import { supabase } from "@/integrations/supabase/client";
 import { STRIPE_PRICE_IDS } from "@/lib/stripe-config";
+import { posthog } from "@/lib/posthog";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -54,8 +55,10 @@ const Checkout = () => {
   const priceId = priceIdMap[key];
 
   const fetchClientSecret = useCallback(async () => {
+    // Browser-only join key: lets guest purchases be traced back to the visit.
+    const distinctId = posthog.get_distinct_id();
     const { data, error } = await supabase.functions.invoke("create-checkout", {
-      body: { priceId },
+      body: { priceId, ...(distinctId ? { posthogDistinctId: distinctId } : {}) },
     });
 
     if (error || !data?.clientSecret) {

@@ -31,7 +31,13 @@ serve(async (req) => {
   }
 
   try {
-    const { priceId } = await req.json();
+    const { priceId, posthogDistinctId } = await req.json();
+    // Browser-supplied PostHog distinct id. Never generated server-side: a
+    // fabricated id would look like a valid join and mis-attribute the visit.
+    const distinctId =
+      typeof posthogDistinctId === 'string' && posthogDistinctId.length > 0 && posthogDistinctId.length <= 200
+        ? posthogDistinctId
+        : undefined;
 
     if (!priceId || typeof priceId !== 'string' || !(priceId in planMap)) {
       return new Response(
@@ -89,8 +95,12 @@ serve(async (req) => {
       subscription_data: {
         trial_period_days: 14,
       },
-      // Join key for analytics: byte-identical to the id passed to posthog.identify.
-      ...(userId ? { metadata: { user_id: userId } } : {}),
+      // Join keys for analytics: user_id is byte-identical to the id passed to
+      // posthog.identify; posthog_distinct_id traces guest checkouts too.
+      metadata: {
+        ...(userId ? { user_id: userId } : {}),
+        ...(distinctId ? { posthog_distinct_id: distinctId } : {}),
+      },
     };
 
     // If we have an existing customer, attach them; otherwise let Stripe collect email
