@@ -831,7 +831,17 @@ export const EmailPerformanceStats = () => {
                     </TableHeader>
                     <TableBody>
                       {byHour.map((h) => (
-                        <TableRow key={h.hour}>
+                        <TableRow
+                          key={h.hour}
+                          className="cursor-pointer"
+                          onClick={() =>
+                            openEmails(
+                              `Sends at ${String(h.hour).padStart(2, "0")}:00`,
+                              "Every email sent during this hour of the day (your local time).",
+                              sent.filter((e) => new Date(e.sent_at || e.created_at).getHours() === h.hour),
+                            )
+                          }
+                        >
                           <TableCell className="font-mono text-xs">{String(h.hour).padStart(2, "0")}:00</TableCell>
                           <TableCell className="text-right">{h.sent}</TableCell>
                           <TableCell className="text-right">{h.openRate}%</TableCell>
