@@ -904,10 +904,21 @@ function EmailDetailTable({
   );
 }
 
-function FunnelRow({ label, value, base }: { label: string; value: number; base: number }) {
+function FunnelRow({ label, value, base, onClick }: { label: string; value: number; base: number; onClick?: () => void }) {
   const share = pct(value, base);
   return (
-    <div>
+    <div
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={(e) => {
+        if (onClick && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      className={onClick ? "cursor-pointer rounded-md -mx-2 px-2 py-1 transition-colors hover:bg-muted/50" : undefined}
+    >
       <div className="flex items-center justify-between mb-1 text-xs">
         <span className="text-muted-foreground">{label}</span>
         <span className="font-medium">
