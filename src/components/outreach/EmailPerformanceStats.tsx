@@ -340,16 +340,53 @@ export const EmailPerformanceStats = () => {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
-        <Kpi icon={<Mail className="w-4 h-4" />} label="Emails Sent" value={String(totals.sent)} hint={`${totals.uniqueContacts} contacts`} />
-        <Kpi icon={<Eye className="w-4 h-4" />} label="Open Rate" value={`${totals.openRate}%`} hint={`${totals.opened} opens`} />
-        <Kpi icon={<MessageSquareReply className="w-4 h-4" />} label="Reply Rate" value={`${totals.replyRate}%`} hint={`${totals.replied} replies`} />
-        <Kpi icon={<MousePointerClick className="w-4 h-4" />} label="Click Rate" value={`${totals.clickRate}%`} hint={`${totals.clicked} clicks`} />
-        <Kpi icon={<Target className="w-4 h-4" />} label="Positive Replies" value={String(totals.positive)} hint={`${totals.positiveRate}% of replies`} />
+        <Kpi
+          icon={<Mail className="w-4 h-4" />}
+          label="Emails Sent"
+          value={String(totals.sent)}
+          hint={`${totals.uniqueContacts} contacts`}
+          onClick={() => openEmails("Emails sent", `Every email sent in the last ${days} days.`, sent)}
+        />
+        <Kpi
+          icon={<Eye className="w-4 h-4" />}
+          label="Open Rate"
+          value={`${totals.openRate}%`}
+          hint={`${totals.opened} opens`}
+          onClick={() => openEmails("Opened emails", "Sends where the tracking pixel registered at least one open.", sent.filter((e) => e.opened_at))}
+        />
+        <Kpi
+          icon={<MessageSquareReply className="w-4 h-4" />}
+          label="Reply Rate"
+          value={`${totals.replyRate}%`}
+          hint={`${totals.replied} replies`}
+          onClick={() => openEmails("Replied emails", "Sends that received a reply.", sent.filter((e) => e.replied_at))}
+        />
+        <Kpi
+          icon={<MousePointerClick className="w-4 h-4" />}
+          label="Click Rate"
+          value={`${totals.clickRate}%`}
+          hint={`${totals.clicked} clicks`}
+          onClick={() => openEmails("Clicked emails", "Sends where a link was clicked.", sent.filter((e) => e.clicked_at))}
+        />
+        <Kpi
+          icon={<Target className="w-4 h-4" />}
+          label="Positive Replies"
+          value={String(totals.positive)}
+          hint={`${totals.positiveRate}% of replies`}
+          onClick={() =>
+            setDrill({
+              title: "Positive replies",
+              description: "Replies classified as interested or scored 70+ intent.",
+              replyRows: replies.filter((r) => (r.intent_score ?? 0) >= 70 || r.intent_classification === "interested"),
+            })
+          }
+        />
         <Kpi
           icon={<Handshake className="w-4 h-4" />}
           label="Conversions"
           value={String(totals.meetings)}
           hint={`${totals.won} won · ${totals.conversionRate}% of sends`}
+          onClick={() => setDrill({ title: "Conversions", description: "Deals created in this window.", dealRows: deals })}
         />
       </div>
 
