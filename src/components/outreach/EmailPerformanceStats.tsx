@@ -767,9 +767,32 @@ export const EmailPerformanceStats = () => {
   );
 };
 
-function Kpi({ icon, label, value, hint }: { icon: React.ReactNode; label: string; value: string; hint?: string }) {
+function Kpi({
+  icon,
+  label,
+  value,
+  hint,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  hint?: string;
+  onClick?: () => void;
+}) {
   return (
-    <Card>
+    <Card
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={(e) => {
+        if (onClick && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      className={onClick ? "cursor-pointer transition-colors hover:border-primary/50 hover:bg-muted/40" : undefined}
+    >
       <CardContent className="p-4">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           {icon}
@@ -782,11 +805,101 @@ function Kpi({ icon, label, value, hint }: { icon: React.ReactNode; label: strin
   );
 }
 
-function MiniStat({ label, value, tone }: { label: string; value: number; tone?: "danger" }) {
+function MiniStat({
+  label,
+  value,
+  tone,
+  onClick,
+}: {
+  label: string;
+  value: number;
+  tone?: "danger";
+  onClick?: () => void;
+}) {
   return (
-    <div className="border rounded-lg p-3">
+    <div
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={(e) => {
+        if (onClick && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      className={`border rounded-lg p-3 ${onClick ? "cursor-pointer transition-colors hover:border-primary/50 hover:bg-muted/40" : ""}`}
+    >
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className={`text-xl font-bold ${tone === "danger" ? "text-destructive" : ""}`}>{value}</p>
+    </div>
+  );
+}
+
+function EmailDetailTable({
+  emails,
+  mailboxLabel,
+}: {
+  emails: SentEmail[];
+  mailboxLabel: (id: string | null) => string;
+}) {
+  if (emails.length === 0) {
+    return <p className="text-sm text-muted-foreground">No emails match this metric in the selected window.</p>;
+  }
+  const opened = emails.filter((e) => e.opened_at).length;
+  const replied = emails.filter((e) => e.replied_at).length;
+  const clicked = emails.filter((e) => e.clicked_at).length;
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <MiniStat label="Emails" value={emails.length} />
+        <MiniStat label="Opened" value={opened} />
+        <MiniStat label="Replied" value={replied} />
+        <MiniStat label="Clicked" value={clicked} />
+      </div>
+      <div className="overflow-x-auto">
+        <Table className="min-w-[720px]">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Recipient</TableHead>
+              <TableHead>Subject</TableHead>
+              <TableHead>Mailbox</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Engagement</TableHead>
+              <TableHead>Date</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {emails.slice(0, 200).map((e) => (
+              <TableRow key={e.id}>
+                <TableCell className="text-sm max-w-[180px] truncate" title={e.to_email ?? ""}>
+                  {e.to_email || "—"}
+                </TableCell>
+                <TableCell className="text-sm max-w-[220px] truncate" title={e.subject ?? ""}>
+                  {e.subject || "(no subject)"}
+                </TableCell>
+                <TableCell className="text-xs max-w-[160px] truncate" title={mailboxLabel(e.sending_account_id)}>
+                  {mailboxLabel(e.sending_account_id)}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={e.status === "failed" ? "destructive" : e.status === "scheduled" ? "outline" : "secondary"}>
+                    {e.status ?? "unknown"}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-xs space-x-1">
+                  {e.opened_at && <Badge variant="outline">Open</Badge>}
+                  {e.clicked_at && <Badge variant="outline">Click</Badge>}
+                  {e.replied_at && <Badge variant="outline">Reply</Badge>}
+                  {!e.opened_at && !e.clicked_at && !e.replied_at && <span className="text-muted-foreground">—</span>}
+                </TableCell>
+                <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                  {new Date(e.sent_at || e.created_at).toLocaleString()}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+      {emails.length > 200 && <p className="text-xs text-muted-foreground">Showing the 200 most recent of {emails.length}.</p>}
     </div>
   );
 }
