@@ -318,6 +318,28 @@ serve(async (req) => {
       if (replyErr) console.error(`Failed to mark reply on ${sentEmailId}:`, replyErr.message);
     }
 
+    // Classify new replies so positive-reply analytics are real (opt-in so the
+    // agent, which classifies replies itself, doesn't double-analyze).
+    if (payload.analyzeReplies) {
+      for (const r of replies) {
+        try {
+          const res = await fetch(`${supabaseUrl}/functions/v1/analyze-reply`, {
+            method: "POST",
+            headers: { Authorization: authHeader, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              replyContent: r.bodyText,
+              sentEmailId: r.sentEmailId,
+              gmailMessageId: r.gmailMessageId,
+            }),
+          });
+          if (!res.ok) console.error(`analyze-reply ${res.status}: ${await res.text()}`);
+        } catch (e: any) {
+          console.error("analyze-reply failed:", e.message);
+        }
+      }
+    }
+
+
     return new Response(
       JSON.stringify({
         success: true,
