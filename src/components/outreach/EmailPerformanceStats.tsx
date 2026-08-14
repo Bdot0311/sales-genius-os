@@ -1,91 +1,149 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BarChart3, Mail, MousePointerClick, MessageSquareReply, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { LiveIndicator } from "@/components/deliverability/LiveIndicator";
 import type { LiveStatus } from "@/hooks/use-deliverability-realtime";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  Line,
+  ResponsiveContainer,
+  Tooltip as ReTooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import {
+  BarChart3,
+  Clock,
+  Eye,
+  Handshake,
+  Inbox,
+  Mail,
+  MessageSquareReply,
+  MousePointerClick,
+  Server,
+  Target,
+  Workflow,
+} from "lucide-react";
 
+type SentEmail = {
+  id: string;
+  subject: string | null;
+  to_email: string | null;
+  status: string | null;
+  sent_at: string | null;
+  created_at: string;
+  opened_at: string | null;
+  replied_at: string | null;
+  clicked_at: string | null;
+  template_id: string | null;
+  sequence_id: string | null;
+  sequence_step: number | null;
+  sending_account_id: string | null;
+  lead_id: string | null;
+};
 
-interface TemplatePerformance {
-  template_id: string;
-  template_name: string;
-  total_sent: number;
-  total_opened: number;
-  total_replied: number;
-  total_clicked: number;
-  open_rate: number;
-  reply_rate: number;
-  click_rate: number;
+type ReplyRow = {
+  id: string;
+  intent_classification: string | null;
+  intent_score: number | null;
+  requires_human_action: boolean | null;
+  created_at: string;
+};
+
+type DealRow = { id: string; stage: string | null; value: number | null; created_at: string };
+
+const RANGES = [
+  { label: "7d", days: 7 },
+  { label: "30d", days: 30 },
+  { label: "90d", days: 90 },
+  { label: "All", days: 3650 },
+];
+
+const pct = (num: number, den: number) => (den > 0 ? Math.round((num / den) * 1000) / 10 : 0);
+const dayKey = (iso: string) => iso.slice(0, 10);
+
+function rateBadge(rate: number, type: "open" | "reply" | "click") {
+  const t = type === "open" ? { good: 40, ok: 20 } : type === "reply" ? { good: 10, ok: 5 } : { good: 5, ok: 2 };
+  if (rate >= t.good) return <Badge className="bg-primary text-primary-foreground">Excellent</Badge>;
+  if (rate >= t.ok) return <Badge variant="secondary">Average</Badge>;
+  return <Badge variant="outline">Needs Work</Badge>;
 }
 
 export const EmailPerformanceStats = () => {
-  const [performance, setPerformance] = useState<TemplatePerformance[]>([]);
   const [loading, setLoading] = useState(true);
-  const [overallStats, setOverallStats] = useState({
-    totalSent: 0,
-    totalOpened: 0,
-    totalReplied: 0,
-    avgOpenRate: 0,
-    avgReplyRate: 0,
-  });
-
+  const [days, setDays] = useState(30);
+  const [emails, setEmails] = useState<SentEmail[]>([]);
+  const [replies, setReplies] = useState<ReplyRow[]>([]);
+  const [deals, setDeals] = useState<DealRow[]>([]);
+  const [templateNames, setTemplateNames] = useState<Record<string, string>>({});
+  const [sequenceNames, setSequenceNames] = useState<Record<string, string>>({});
+  const [mailboxes, setMailboxes] = useState<Record<string, { email: string; status: string | null; reputation: number | null }>>({});
   const [liveStatus, setLiveStatus] = useState<LiveStatus>("connecting");
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
-  const loadPerformance = useCallback(async () => {
+  const load = useCallback(async () => {
+    const since = new Date(Date.now() - days * 86_400_000).toISOString();
     try {
-      // Load template performance from view
-      const { data: templateData, error: templateError } = await supabase
-        .from('template_performance')
-        .select('*')
-        .order('total_sent', { ascending: false });
+      const [e, r, d, t, s, m] = await Promise.all([
+        supabase
+          .from("sent_emails")
+          .select(
+            "id, subject, to_email, status, sent_at, created_at, opened_at, replied_at, clicked_at, template_id, sequence_id, sequence_step, sending_account_id, lead_id",
+          )
+          .gte("created_at", since)
+          .order("created_at", { ascending: false })
+          .limit(5000),
+        supabase
+          .from("reply_analysis")
+          .select("id, intent_classification, intent_score, requires_human_action, created_at")
+          .gte("created_at", since)
+          .limit(2000),
+        supabase.from("deals").select("id, stage, value, created_at").gte("created_at", since).limit(2000),
+        supabase.from("email_templates").select("id, name"),
+        supabase.from("email_sequences").select("id, name"),
+        supabase.from("sending_accounts").select("id, email, status, reputation_score"),
+      ]);
 
-      if (templateError) {
-        console.error('Error loading template performance:', templateError);
-      } else {
-        setPerformance(templateData || []);
-      }
-
-      // Load overall stats from sent_emails
-      const { data: emailStats, error: statsError } = await supabase
-        .from('sent_emails')
-        .select('id, opened_at, replied_at');
-
-      if (!statsError && emailStats) {
-        const totalSent = emailStats.length;
-        const totalOpened = emailStats.filter(e => e.opened_at).length;
-        const totalReplied = emailStats.filter(e => e.replied_at).length;
-        
-        setOverallStats({
-          totalSent,
-          totalOpened,
-          totalReplied,
-          avgOpenRate: totalSent > 0 ? Math.round((totalOpened / totalSent) * 100) : 0,
-          avgReplyRate: totalSent > 0 ? Math.round((totalReplied / totalSent) * 100) : 0,
-        });
-      }
+      setEmails((e.data as SentEmail[]) ?? []);
+      setReplies((r.data as ReplyRow[]) ?? []);
+      setDeals((d.data as DealRow[]) ?? []);
+      setTemplateNames(Object.fromEntries(((t.data as { id: string; name: string }[]) ?? []).map((x) => [x.id, x.name])));
+      setSequenceNames(Object.fromEntries(((s.data as { id: string; name: string }[]) ?? []).map((x) => [x.id, x.name])));
+      setMailboxes(
+        Object.fromEntries(
+          ((m.data as { id: string; email: string; status: string | null; reputation_score: number | null }[]) ?? []).map((x) => [
+            x.id,
+            { email: x.email, status: x.status, reputation: x.reputation_score },
+          ]),
+        ),
+      );
       setLastUpdate(new Date());
-    } catch (error) {
-      console.error('Error loading performance:', error);
+    } catch (err) {
+      console.error("Error loading email analytics:", err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [days]);
 
-  const reload = useRef(loadPerformance);
-  reload.current = loadPerformance;
+  const reload = useRef(load);
+  reload.current = load;
 
   useEffect(() => {
     void reload.current();
-  }, []);
+  }, [days]);
 
-  // Realtime: any send / open / reply / click updates the numbers instantly.
+  // Realtime: any send / open / reply / click / deal updates the numbers instantly.
   useEffect(() => {
-    const channel = supabase.channel(`email-performance-${Math.random().toString(36).slice(2)}`);
-    for (const table of ["sent_emails", "email_drafts"]) {
+    const channel = supabase.channel(`email-analytics-${Math.random().toString(36).slice(2)}`);
+    for (const table of ["sent_emails", "email_drafts", "reply_analysis", "deals", "sending_accounts"]) {
       channel.on("postgres_changes", { event: "*", schema: "public", table }, () => {
         void reload.current();
       });
@@ -106,7 +164,9 @@ export const EmailPerformanceStats = () => {
       void reload.current();
     };
     const id = window.setInterval(tick, 30_000);
-    const onVisible = () => { if (document.visibilityState === "visible") tick(); };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") tick();
+    };
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("focus", tick);
     return () => {
@@ -116,164 +176,568 @@ export const EmailPerformanceStats = () => {
     };
   }, []);
 
+  const sent = useMemo(() => emails.filter((e) => e.status === "sent" || !!e.sent_at), [emails]);
 
-  const getPerformanceBadge = (rate: number, type: 'open' | 'reply') => {
-    const thresholds = type === 'open' 
-      ? { good: 40, average: 20 }
-      : { good: 10, average: 5 };
+  const totals = useMemo(() => {
+    const opened = sent.filter((e) => e.opened_at).length;
+    const replied = sent.filter((e) => e.replied_at).length;
+    const clicked = sent.filter((e) => e.clicked_at).length;
+    const failed = emails.filter((e) => e.status === "failed").length;
+    const scheduled = emails.filter((e) => e.status === "scheduled").length;
+    const positive = replies.filter((r) => (r.intent_score ?? 0) >= 70 || r.intent_classification === "interested").length;
+    const won = deals.filter((d) => (d.stage || "").toLowerCase() === "won" || (d.stage || "").toLowerCase() === "closed_won");
+    return {
+      sent: sent.length,
+      opened,
+      replied,
+      clicked,
+      failed,
+      scheduled,
+      uniqueContacts: new Set(sent.map((e) => e.to_email)).size,
+      openRate: pct(opened, sent.length),
+      replyRate: pct(replied, sent.length),
+      clickRate: pct(clicked, sent.length),
+      positive,
+      positiveRate: pct(positive, replies.length),
+      meetings: deals.length,
+      won: won.length,
+      wonValue: won.reduce((a, b) => a + (b.value ?? 0), 0),
+      conversionRate: pct(deals.length, sent.length),
+    };
+  }, [sent, emails, replies, deals]);
 
-    if (rate >= thresholds.good) {
-      return <Badge className="bg-primary text-primary-foreground">Excellent</Badge>;
-    } else if (rate >= thresholds.average) {
-      return <Badge variant="secondary">Average</Badge>;
-    } else {
-      return <Badge variant="outline">Needs Work</Badge>;
+  const trend = useMemo(() => {
+    const buckets = new Map<string, { day: string; sent: number; opened: number; replied: number; clicked: number }>();
+    const span = Math.min(days, 90);
+    for (let i = span - 1; i >= 0; i--) {
+      const k = dayKey(new Date(Date.now() - i * 86_400_000).toISOString());
+      buckets.set(k, { day: k, sent: 0, opened: 0, replied: 0, clicked: 0 });
     }
-  };
+    for (const e of sent) {
+      const k = dayKey(e.sent_at || e.created_at);
+      const b = buckets.get(k);
+      if (!b) continue;
+      b.sent++;
+      if (e.opened_at) b.opened++;
+      if (e.replied_at) b.replied++;
+      if (e.clicked_at) b.clicked++;
+    }
+    return [...buckets.values()].map((b) => ({
+      ...b,
+      label: b.day.slice(5),
+      openRate: pct(b.opened, b.sent),
+      replyRate: pct(b.replied, b.sent),
+    }));
+  }, [sent, days]);
+
+  const byHour = useMemo(() => {
+    const rows = Array.from({ length: 24 }, (_, h) => ({ hour: h, sent: 0, opened: 0, replied: 0 }));
+    for (const e of sent) {
+      const h = new Date(e.sent_at || e.created_at).getHours();
+      rows[h].sent++;
+      if (e.opened_at) rows[h].opened++;
+      if (e.replied_at) rows[h].replied++;
+    }
+    return rows
+      .filter((r) => r.sent > 0)
+      .map((r) => ({ ...r, openRate: pct(r.opened, r.sent), replyRate: pct(r.replied, r.sent) }))
+      .sort((a, b) => b.replyRate - a.replyRate || b.openRate - a.openRate);
+  }, [sent]);
+
+  const group = useCallback(
+    (keyOf: (e: SentEmail) => string | null, nameOf: (k: string) => string) => {
+      const map = new Map<string, { key: string; name: string; sent: number; opened: number; replied: number; clicked: number }>();
+      for (const e of sent) {
+        const k = keyOf(e);
+        if (!k) continue;
+        const row = map.get(k) ?? { key: k, name: nameOf(k), sent: 0, opened: 0, replied: 0, clicked: 0 };
+        row.sent++;
+        if (e.opened_at) row.opened++;
+        if (e.replied_at) row.replied++;
+        if (e.clicked_at) row.clicked++;
+        map.set(k, row);
+      }
+      return [...map.values()]
+        .map((r) => ({ ...r, openRate: pct(r.opened, r.sent), replyRate: pct(r.replied, r.sent), clickRate: pct(r.clicked, r.sent) }))
+        .sort((a, b) => b.sent - a.sent);
+    },
+    [sent],
+  );
+
+  const templates = useMemo(
+    () => group((e) => e.template_id, (k) => templateNames[k] || "Untitled template"),
+    [group, templateNames],
+  );
+  const sequences = useMemo(
+    () => group((e) => e.sequence_id, (k) => sequenceNames[k] || "Untitled sequence"),
+    [group, sequenceNames],
+  );
+  const accounts = useMemo(
+    () => group((e) => e.sending_account_id, (k) => mailboxes[k]?.email || "Unknown mailbox"),
+    [group, mailboxes],
+  );
+  const domains = useMemo(
+    () => group((e) => (e.to_email || "").split("@")[1] || null, (k) => k),
+    [group],
+  );
+  const steps = useMemo(
+    () => group((e) => (e.sequence_step ? String(e.sequence_step) : null), (k) => `Step ${k}`).sort((a, b) => Number(a.key) - Number(b.key)),
+    [group],
+  );
+  const subjects = useMemo(
+    () => group((e) => (e.subject || "").trim() || null, (k) => k).slice(0, 15),
+    [group],
+  );
+
+  const replyBreakdown = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const r of replies) {
+      const k = r.intent_classification || "unclassified";
+      map.set(k, (map.get(k) ?? 0) + 1);
+    }
+    return [...map.entries()].map(([k, v]) => ({ label: k, count: v, share: pct(v, replies.length) })).sort((a, b) => b.count - a.count);
+  }, [replies]);
 
   if (loading) {
     return (
       <div className="space-y-4">
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-48 w-full" />
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-64 w-full" />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-1">
+          {RANGES.map((r) => (
+            <Button key={r.label} size="sm" variant={days === r.days ? "secondary" : "ghost"} onClick={() => setDays(r.days)}>
+              {r.label}
+            </Button>
+          ))}
+        </div>
         <LiveIndicator status={liveStatus} lastUpdate={lastUpdate} />
       </div>
 
-      {/* Overall Stats */}
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Mail className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{overallStats.totalSent}</p>
-                <p className="text-xs text-muted-foreground">Emails Sent</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-secondary/50 rounded-lg">
-                <Eye className="w-5 h-5 text-secondary-foreground" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{overallStats.avgOpenRate}%</p>
-                <p className="text-xs text-muted-foreground">Avg Open Rate</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-accent/50 rounded-lg">
-                <MessageSquareReply className="w-5 h-5 text-accent-foreground" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{overallStats.avgReplyRate}%</p>
-                <p className="text-xs text-muted-foreground">Avg Reply Rate</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-muted rounded-lg">
-                <BarChart3 className="w-5 h-5 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{performance.length}</p>
-                <p className="text-xs text-muted-foreground">Templates Used</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+        <Kpi icon={<Mail className="w-4 h-4" />} label="Emails Sent" value={String(totals.sent)} hint={`${totals.uniqueContacts} contacts`} />
+        <Kpi icon={<Eye className="w-4 h-4" />} label="Open Rate" value={`${totals.openRate}%`} hint={`${totals.opened} opens`} />
+        <Kpi icon={<MessageSquareReply className="w-4 h-4" />} label="Reply Rate" value={`${totals.replyRate}%`} hint={`${totals.replied} replies`} />
+        <Kpi icon={<MousePointerClick className="w-4 h-4" />} label="Click Rate" value={`${totals.clickRate}%`} hint={`${totals.clicked} clicks`} />
+        <Kpi icon={<Target className="w-4 h-4" />} label="Positive Replies" value={String(totals.positive)} hint={`${totals.positiveRate}% of replies`} />
+        <Kpi
+          icon={<Handshake className="w-4 h-4" />}
+          label="Conversions"
+          value={String(totals.meetings)}
+          hint={`${totals.won} won · ${totals.conversionRate}% of sends`}
+        />
       </div>
 
-      {/* Template Performance Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <BarChart3 className="w-5 h-5" />
-            Template Performance
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {performance.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>No template performance data yet</p>
-              <p className="text-sm">Send emails using templates to see metrics here</p>
-            </div>
+      <Tabs defaultValue="overview">
+        <TabsList className="flex w-full flex-wrap h-auto justify-start">
+          <TabsTrigger value="overview" className="gap-1"><BarChart3 className="w-4 h-4" />Overview</TabsTrigger>
+          <TabsTrigger value="engagement" className="gap-1"><Eye className="w-4 h-4" />Engagement</TabsTrigger>
+          <TabsTrigger value="templates" className="gap-1"><Mail className="w-4 h-4" />Templates</TabsTrigger>
+          <TabsTrigger value="sequences" className="gap-1"><Workflow className="w-4 h-4" />Sequences</TabsTrigger>
+          <TabsTrigger value="mailboxes" className="gap-1"><Server className="w-4 h-4" />Mailboxes</TabsTrigger>
+          <TabsTrigger value="replies" className="gap-1"><Inbox className="w-4 h-4" />Replies</TabsTrigger>
+          <TabsTrigger value="timing" className="gap-1"><Clock className="w-4 h-4" />Timing</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="mt-4 space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Send &amp; engagement volume</CardTitle>
+              <CardDescription>Sends, opens, replies and clicks per day — streaming live.</CardDescription>
+            </CardHeader>
+            <CardContent className="h-[280px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={trend}>
+                  <defs>
+                    <linearGradient id="gSent" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.45} />
+                      <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} interval="preserveStartEnd" />
+                  <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} allowDecimals={false} />
+                  <ReTooltip
+                    contentStyle={{
+                      background: "hsl(var(--popover))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                  />
+                  <Area type="monotone" dataKey="sent" stroke="hsl(var(--primary))" fill="url(#gSent)" strokeWidth={2} name="Sent" />
+                  <Line type="monotone" dataKey="opened" stroke="hsl(var(--chart-2, var(--muted-foreground)))" strokeWidth={2} dot={false} name="Opened" />
+                  <Line type="monotone" dataKey="replied" stroke="hsl(var(--destructive))" strokeWidth={2} dot={false} name="Replied" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Outbound funnel</CardTitle>
+                <CardDescription>From send to closed revenue.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <FunnelRow label="Sent" value={totals.sent} base={totals.sent} />
+                <FunnelRow label="Opened" value={totals.opened} base={totals.sent} />
+                <FunnelRow label="Clicked" value={totals.clicked} base={totals.sent} />
+                <FunnelRow label="Replied" value={totals.replied} base={totals.sent} />
+                <FunnelRow label="Positive replies" value={totals.positive} base={totals.sent} />
+                <FunnelRow label="Deals created" value={totals.meetings} base={totals.sent} />
+                <FunnelRow label="Won" value={totals.won} base={totals.sent} />
+                <p className="text-xs text-muted-foreground">
+                  Closed value in range: <span className="font-medium text-foreground">${totals.wonValue.toLocaleString()}</span>
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Delivery health</CardTitle>
+                <CardDescription>Send outcomes in the selected window.</CardDescription>
+              </CardHeader>
+              <CardContent className="grid grid-cols-2 gap-3">
+                <MiniStat label="Delivered" value={totals.sent} />
+                <MiniStat label="Failed" value={totals.failed} tone="danger" />
+                <MiniStat label="Scheduled" value={totals.scheduled} />
+                <MiniStat label="Unique contacts" value={totals.uniqueContacts} />
+                <MiniStat label="Recipient domains" value={domains.length} />
+                <MiniStat label="Active mailboxes" value={accounts.length} />
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="engagement" className="mt-4 space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Open &amp; reply rate over time</CardTitle>
+              <CardDescription>Daily rates — watch for deliverability dips.</CardDescription>
+            </CardHeader>
+            <CardContent className="h-[260px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={trend}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} interval="preserveStartEnd" />
+                  <YAxis unit="%" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                  <ReTooltip
+                    contentStyle={{
+                      background: "hsl(var(--popover))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                  />
+                  <Area type="monotone" dataKey="openRate" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.15} name="Open rate" />
+                  <Line type="monotone" dataKey="replyRate" stroke="hsl(var(--destructive))" strokeWidth={2} dot={false} name="Reply rate" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <RateTable
+            title="Top subject lines"
+            description="Ranked by volume — compare open and reply performance."
+            firstCol="Subject"
+            rows={subjects}
+          />
+          <RateTable
+            title="Recipient domains"
+            description="How different inbox providers treat your mail."
+            firstCol="Domain"
+            rows={domains.slice(0, 15)}
+          />
+        </TabsContent>
+
+        <TabsContent value="templates" className="mt-4 space-y-4">
+          {templates.length === 0 ? (
+            <Empty text="No template performance data yet" hint="Send emails using templates to see metrics here" />
           ) : (
-            <div className="space-y-4">
-              {performance.map((template) => (
-                <div key={template.template_id} className="border rounded-lg p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-medium">{template.template_name}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {template.total_sent} emails sent
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      {getPerformanceBadge(template.open_rate, 'open')}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Eye className="w-3 h-3" /> Open Rate
-                        </span>
-                        <span className="text-xs font-medium">{template.open_rate}%</span>
+            <div className="space-y-3">
+              {templates.map((t) => (
+                <Card key={t.key}>
+                  <CardContent className="pt-6 space-y-3">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div>
+                        <h4 className="font-medium">{t.name}</h4>
+                        <p className="text-sm text-muted-foreground">{t.sent} emails sent</p>
                       </div>
-                      <Progress value={template.open_rate} className="h-2" />
+                      {rateBadge(t.replyRate, "reply")}
                     </div>
-
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs text-muted-foreground flex items-center gap-1">
-                          <MessageSquareReply className="w-3 h-3" /> Reply Rate
-                        </span>
-                        <span className="text-xs font-medium">{template.reply_rate}%</span>
-                      </div>
-                      <Progress value={template.reply_rate * 5} className="h-2" />
+                    <div className="grid gap-4 sm:grid-cols-3">
+                      <Meter icon={<Eye className="w-3 h-3" />} label="Open Rate" value={t.openRate} scale={1} />
+                      <Meter icon={<MessageSquareReply className="w-3 h-3" />} label="Reply Rate" value={t.replyRate} scale={5} />
+                      <Meter icon={<MousePointerClick className="w-3 h-3" />} label="Click Rate" value={t.clickRate} scale={5} />
                     </div>
-
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs text-muted-foreground flex items-center gap-1">
-                          <MousePointerClick className="w-3 h-3" /> Click Rate
-                        </span>
-                        <span className="text-xs font-medium">{template.click_rate}%</span>
-                      </div>
-                      <Progress value={template.click_rate * 5} className="h-2" />
-                    </div>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </TabsContent>
+
+        <TabsContent value="sequences" className="mt-4 space-y-4">
+          <RateTable
+            title="Sequence performance"
+            description="Which sequences actually generate replies."
+            firstCol="Sequence"
+            rows={sequences}
+            empty="No sequence sends in this window"
+          />
+          <RateTable
+            title="Step performance"
+            description="Where in the cadence replies come from."
+            firstCol="Step"
+            rows={steps}
+            empty="No multi-step sends in this window"
+          />
+        </TabsContent>
+
+        <TabsContent value="mailboxes" className="mt-4 space-y-4">
+          {accounts.length === 0 ? (
+            <Empty text="No mailbox sends in this window" hint="Connect a mailbox and start sending" />
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Mailbox performance</CardTitle>
+                <CardDescription>Volume, engagement and reputation per sending account.</CardDescription>
+              </CardHeader>
+              <CardContent className="overflow-x-auto">
+                <Table className="min-w-[720px]">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Mailbox</TableHead>
+                      <TableHead className="text-right">Sent</TableHead>
+                      <TableHead className="text-right">Open</TableHead>
+                      <TableHead className="text-right">Reply</TableHead>
+                      <TableHead className="text-right">Reputation</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {accounts.map((a) => (
+                      <TableRow key={a.key}>
+                        <TableCell className="text-sm">{a.name}</TableCell>
+                        <TableCell className="text-right">{a.sent}</TableCell>
+                        <TableCell className="text-right">{a.openRate}%</TableCell>
+                        <TableCell className="text-right">{a.replyRate}%</TableCell>
+                        <TableCell className="text-right">{mailboxes[a.key]?.reputation ?? "—"}</TableCell>
+                        <TableCell>
+                          <Badge variant={mailboxes[a.key]?.status === "active" ? "secondary" : "outline"}>
+                            {mailboxes[a.key]?.status ?? "unknown"}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="replies" className="mt-4 space-y-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <MiniStat label="Replies analyzed" value={replies.length} />
+            <MiniStat label="Positive" value={totals.positive} />
+            <MiniStat label="Needs your action" value={replies.filter((r) => r.requires_human_action).length} />
+            <MiniStat
+              label="Avg intent score"
+              value={replies.length ? Math.round(replies.reduce((a, b) => a + (b.intent_score ?? 0), 0) / replies.length) : 0}
+            />
+          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Reply intent breakdown</CardTitle>
+              <CardDescription>Classification of every analyzed reply in this window.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {replyBreakdown.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No replies analyzed yet.</p>
+              ) : (
+                replyBreakdown.map((r) => (
+                  <div key={r.label}>
+                    <div className="flex items-center justify-between mb-1 text-xs">
+                      <span className="capitalize text-muted-foreground">{r.label.replace(/_/g, " ")}</span>
+                      <span className="font-medium">
+                        {r.count} · {r.share}%
+                      </span>
+                    </div>
+                    <Progress value={r.share} className="h-2" />
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="timing" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Best send times</CardTitle>
+              <CardDescription>Hour of day (your local time) ranked by reply rate.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {byHour.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Not enough sends yet.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table className="min-w-[520px]">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Hour</TableHead>
+                        <TableHead className="text-right">Sent</TableHead>
+                        <TableHead className="text-right">Open rate</TableHead>
+                        <TableHead className="text-right">Reply rate</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {byHour.map((h) => (
+                        <TableRow key={h.hour}>
+                          <TableCell className="font-mono text-xs">{String(h.hour).padStart(2, "0")}:00</TableCell>
+                          <TableCell className="text-right">{h.sent}</TableCell>
+                          <TableCell className="text-right">{h.openRate}%</TableCell>
+                          <TableCell className="text-right">{h.replyRate}%</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      <p className="text-xs text-muted-foreground text-center">
+        Reply rate is your primary metric — opens are directional only.
+      </p>
     </div>
   );
 };
+
+function Kpi({ icon, label, value, hint }: { icon: React.ReactNode; label: string; value: string; hint?: string }) {
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          {icon}
+          <span>{label}</span>
+        </div>
+        <p className="mt-1 text-2xl font-bold">{value}</p>
+        {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+      </CardContent>
+    </Card>
+  );
+}
+
+function MiniStat({ label, value, tone }: { label: string; value: number; tone?: "danger" }) {
+  return (
+    <div className="border rounded-lg p-3">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className={`text-xl font-bold ${tone === "danger" ? "text-destructive" : ""}`}>{value}</p>
+    </div>
+  );
+}
+
+function FunnelRow({ label, value, base }: { label: string; value: number; base: number }) {
+  const share = pct(value, base);
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1 text-xs">
+        <span className="text-muted-foreground">{label}</span>
+        <span className="font-medium">
+          {value} · {share}%
+        </span>
+      </div>
+      <Progress value={share} className="h-2" />
+    </div>
+  );
+}
+
+function Meter({ icon, label, value, scale }: { icon: React.ReactNode; label: string; value: number; scale: number }) {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-xs text-muted-foreground flex items-center gap-1">
+          {icon} {label}
+        </span>
+        <span className="text-xs font-medium">{value}%</span>
+      </div>
+      <Progress value={Math.min(100, value * scale)} className="h-2" />
+    </div>
+  );
+}
+
+function RateTable({
+  title,
+  description,
+  firstCol,
+  rows,
+  empty = "No data in this window",
+}: {
+  title: string;
+  description: string;
+  firstCol: string;
+  rows: { key: string; name: string; sent: number; openRate: number; replyRate: number; clickRate: number }[];
+  empty?: string;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {rows.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{empty}</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table className="min-w-[600px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{firstCol}</TableHead>
+                  <TableHead className="text-right">Sent</TableHead>
+                  <TableHead className="text-right">Open</TableHead>
+                  <TableHead className="text-right">Reply</TableHead>
+                  <TableHead className="text-right">Click</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((r) => (
+                  <TableRow key={r.key}>
+                    <TableCell className="text-sm max-w-[280px] truncate" title={r.name}>
+                      {r.name}
+                    </TableCell>
+                    <TableCell className="text-right">{r.sent}</TableCell>
+                    <TableCell className="text-right">{r.openRate}%</TableCell>
+                    <TableCell className="text-right">{r.replyRate}%</TableCell>
+                    <TableCell className="text-right">{r.clickRate}%</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function Empty({ text, hint }: { text: string; hint: string }) {
+  return (
+    <div className="text-center py-10 text-muted-foreground">
+      <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-50" />
+      <p>{text}</p>
+      <p className="text-sm">{hint}</p>
+    </div>
+  );
+}
