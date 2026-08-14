@@ -199,26 +199,16 @@ export const AISdrSection = () => {
             {/* Left: copy */}
             <div>
               {/* Label */}
-              <div
-                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-6 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-                style={{
-                  background: "hsl(261 75% 50% / 0.1)",
-                  border: "1px solid hsl(261 75% 50% / 0.3)",
-                }}
+              <p
+                className={`font-serif italic font-thin text-base text-purple-500 mb-5 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
               >
-                <span
-                  className="inline-block w-1.5 h-1.5 rounded-full animate-pulse"
-                  style={{ background: "hsl(142 70% 50%)" }}
-                />
-                <span className="text-xs font-semibold tracking-wide" style={{ color: "hsl(261 75% 70%)" }}>
-                  NEW · AI SDR
-                </span>
-              </div>
+                The AI SDR
+              </p>
 
               {/* Headline */}
               <h2
                 id="ai-sdr-heading"
-                className={`mb-5 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+                className={`font-display mb-5 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
                 style={{
                   fontSize: "clamp(2.2rem, 4.5vw, 3.5rem)",
                   fontWeight: 800,
