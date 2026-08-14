@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
 import { corsHeaders, requireServiceRole } from "../_shared/internal-auth.ts";
+import { injectClickTracking } from "../_shared/click-tracking.ts";
 
 // RFC 2047 MIME encode subject for non-ASCII characters
 const mimeEncodeSubject = (subject: string) => {
