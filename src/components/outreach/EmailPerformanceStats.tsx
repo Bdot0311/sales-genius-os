@@ -950,12 +950,14 @@ function RateTable({
   firstCol,
   rows,
   empty = "No data in this window",
+  onRowClick,
 }: {
   title: string;
   description: string;
   firstCol: string;
   rows: { key: string; name: string; sent: number; openRate: number; replyRate: number; clickRate: number }[];
   empty?: string;
+  onRowClick?: (row: { key: string; name: string }) => void;
 }) {
   return (
     <Card>
@@ -980,7 +982,11 @@ function RateTable({
               </TableHeader>
               <TableBody>
                 {rows.map((r) => (
-                  <TableRow key={r.key}>
+                  <TableRow
+                    key={r.key}
+                    onClick={onRowClick ? () => onRowClick(r) : undefined}
+                    className={onRowClick ? "cursor-pointer" : undefined}
+                  >
                     <TableCell className="text-sm max-w-[280px] truncate" title={r.name}>
                       {r.name}
                     </TableCell>
