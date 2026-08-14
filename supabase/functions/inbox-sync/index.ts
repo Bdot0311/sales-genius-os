@@ -120,7 +120,7 @@ serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, serviceKey);
 
-    let payload: { testEmail?: string; includeOwnReplies?: boolean } = {};
+    let payload: { testEmail?: string; includeOwnReplies?: boolean; analyzeReplies?: boolean } = {};
     try {
       payload = await req.json();
     } catch {

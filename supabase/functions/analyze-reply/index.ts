@@ -35,7 +35,7 @@ serve(async (req) => {
       });
     }
 
-    const { replyContent, leadId, sentEmailId, conversationHistory } = await req.json();
+    const { replyContent, leadId, sentEmailId, conversationHistory, gmailMessageId } = await req.json();
 
     if (!replyContent) {
       return new Response(JSON.stringify({ error: 'Reply content is required' }), {
@@ -167,6 +167,7 @@ Priority rules:
           ...analysis.detected_signals,
           triage_category: analysis.triage_category || 'soft_no',
           priority: analysis.priority ?? 2,
+          ...(gmailMessageId ? { gmail_message_id: gmailMessageId } : {}),
         },
         requires_human_action: analysis.requires_human_action,
         analyzed_at: new Date().toISOString(),
