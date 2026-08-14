@@ -35,6 +35,7 @@ const EMAIL_SKILLS = [
   "cold-email-strategist",
   "cold-email-templates-34",
   "email-writing-frameworks",
+  "frontal-messaging-templates",
   "outreach-messaging",
 ];
 

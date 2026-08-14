@@ -31,6 +31,12 @@
       "skillPath": "skills/alex-vacca/email-writing-frameworks/SKILL.md",
       "computedHash": "bc14bc606b32fb07099547c6c9a7f84d94dbbe862eb05aece2e31ef58561324f"
     },
+    "frontal-messaging-templates": {
+      "source": "swan-gtm/gtm-skills",
+      "sourceType": "github",
+      "skillPath": "skills/alex-vacca/frontal-messaging-templates/SKILL.md",
+      "computedHash": "ae6468c515e6d447373b13179411da32552072ca5d17d64a6b9fb6eac606be86"
+    },
     "impeccable": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",
