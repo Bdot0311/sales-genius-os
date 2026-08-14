@@ -207,8 +207,10 @@ export const EmailPerformanceStats = () => {
     const opened = sent.filter((e) => e.opened_at).length;
     const replied = sent.filter((e) => e.replied_at).length;
     const clicked = sent.filter((e) => e.clicked_at).length;
-    const failed = emails.filter((e) => e.status === "failed").length;
+    const bounced = emails.filter((e) => e.status === "bounced").length;
+    const failed = emails.filter((e) => e.status === "failed").length + bounced;
     const scheduled = emails.filter((e) => e.status === "scheduled").length;
+
     const positive = replies.filter((r) => (r.intent_score ?? 0) >= 70 || r.intent_classification === "interested").length;
     const won = deals.filter((d) => (d.stage || "").toLowerCase() === "won" || (d.stage || "").toLowerCase() === "closed_won");
     return {
