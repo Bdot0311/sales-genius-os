@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 
@@ -83,6 +84,7 @@ const StatCard = ({ title, value, sub, icon: Icon, color, bg }: any) => (
 );
 
 const Analytics = () => {
+  const navigate = useNavigate();
   const { currentPlan, features, loading: planLoading, gateModalOpen, setGateModalOpen, gatedFeature, triggerGate } = usePlanFeatures();
 
   const [rangeDays, setRangeDays] = useState(30);
@@ -358,7 +360,7 @@ const Analytics = () => {
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
               <TabsTrigger value="leads">Leads</TabsTrigger>
-              <TabsTrigger value="outreach">Outreach</TabsTrigger>
+
               <TabsTrigger value="sources">Sources</TabsTrigger>
               <TabsTrigger value="activity">Activity</TabsTrigger>
               <TabsTrigger value="benchmarks">Benchmarks</TabsTrigger>
@@ -374,11 +376,20 @@ const Analytics = () => {
               <StatCard title="Avg Deal Size" value={money(m.avgDealSize)} sub={m.avgSalesCycleDays !== null ? `${m.avgSalesCycleDays}d avg cycle` : "Cycle: n/a"} icon={TrendingUp} color="text-orange-500" bg="bg-orange-500/10" />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-              <StatCard title="Emails Sent" value={m.sentCount.toLocaleString()} sub={`${m.replied} replies`} icon={Mail} color="text-cyan-500" bg="bg-cyan-500/10" />
-              <StatCard title="Open Rate" value={`${m.openRate}%`} sub="Tracked opens" icon={Eye} color="text-indigo-500" bg="bg-indigo-500/10" />
-              <StatCard title="Reply Rate" value={`${m.replyRate}%`} sub={`${m.clickRate}% click rate`} icon={MessageSquareReply} color="text-emerald-500" bg="bg-emerald-500/10" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <StatCard title="Weighted Forecast" value={money(m.weighted)} sub="Value × probability" icon={Gauge} color="text-pink-500" bg="bg-pink-500/10" />
+              <Card className="p-5 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium">Email analytics</p>
+                  <p className="text-xs text-muted-foreground">
+                    Opens, replies, clicks, templates, sequences, mailboxes and timing live in one place.
+                  </p>
+                </div>
+                <Button size="sm" variant="outline" className="gap-1.5 shrink-0" onClick={() => navigate("/outreach?tab=performance")}>
+                  <Mail className="w-3.5 h-3.5" />
+                  Performance
+                </Button>
+              </Card>
             </div>
 
             <Card className="p-5">
@@ -549,29 +560,6 @@ const Analytics = () => {
             </Card>
           </TabsContent>
 
-          {/* OUTREACH */}
-          <TabsContent value="outreach" className="space-y-6 mt-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-              <StatCard title="Emails Sent" value={m.sentCount.toLocaleString()} sub={`${rangeDays > 365 ? "all time" : `last ${rangeDays}d`}`} icon={Mail} color="text-cyan-500" bg="bg-cyan-500/10" />
-              <StatCard title="Open Rate" value={`${m.openRate}%`} sub="Pixel-tracked" icon={Eye} color="text-indigo-500" bg="bg-indigo-500/10" />
-              <StatCard title="Reply Rate" value={`${m.replyRate}%`} sub={`${m.replied} replies`} icon={MessageSquareReply} color="text-emerald-500" bg="bg-emerald-500/10" />
-              <StatCard title="Click Rate" value={`${m.clickRate}%`} sub="Tracked links" icon={Target} color="text-orange-500" bg="bg-orange-500/10" />
-            </div>
-            <Card className="p-5">
-              <h2 className="text-lg font-semibold mb-4">Send volume vs. replies</h2>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={m.series}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="day" className="text-xs" /><YAxis className="text-xs" allowDecimals={false} /><Tooltip /><Legend />
-                  <Line type="monotone" dataKey="emails" name="Emails sent" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="replies" name="Replies" stroke="#22c55e" strokeWidth={2} dot={false} />
-                </LineChart>
-              </ResponsiveContainer>
-              <p className="text-xs text-muted-foreground mt-3">
-                Deeper email analytics — subject lines, templates, sequences, mailboxes and send timing — live under Outreach → Performance.
-              </p>
-            </Card>
-          </TabsContent>
 
           {/* SOURCES */}
           <TabsContent value="sources" className="space-y-6 mt-6">
