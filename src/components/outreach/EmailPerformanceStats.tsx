@@ -534,17 +534,30 @@ export const EmailPerformanceStats = () => {
               <CardContent className="grid grid-cols-2 gap-3">
                 <MiniStat label="Delivered" value={totals.sent} onClick={() => openEmails("Delivered emails", "Successfully sent emails.", sent)} />
                 <MiniStat
-                  label="Failed"
+                  label="Failed / bounced"
                   value={totals.failed}
                   tone="danger"
                   onClick={() =>
                     openEmails(
-                      "Failed sends",
-                      "These emails never left the mailbox. Common causes: mailbox disconnected or paused, Gmail rate limits, or an invalid recipient address.",
-                      emails.filter((e) => e.status === "failed"),
+                      "Failed & bounced sends",
+                      "Emails that never reached the recipient — send failures (mailbox disconnected, paused, rate limited) plus bounces detected from mailbox delivery notifications.",
+                      emails.filter((e) => e.status === "failed" || e.status === "bounced"),
                     )
                   }
                 />
+                <MiniStat
+                  label="Bounced"
+                  value={totals.bounced}
+                  tone="danger"
+                  onClick={() =>
+                    openEmails(
+                      "Bounced emails",
+                      "Delivery notifications found in your connected inboxes — hard bounces are also suppressed from future sends.",
+                      emails.filter((e) => e.status === "bounced"),
+                    )
+                  }
+                />
+
                 <MiniStat
                   label="Scheduled"
                   value={totals.scheduled}
