@@ -267,7 +267,7 @@ serve(async (req) => {
             : fromHeader.trim();
 
           // Bounce/DSN notifications are not replies — sync-bounces handles them.
-          if (/mailer-daemon|postmaster/i.test(normalize(fromEmail)) ||
+          if (/mailer-daemon|postmaster/i.test(fromEmail.toLowerCase()) ||
               /delivery status notification|undelivered mail|undeliverable|delivery incomplete/i.test(subjectHeader)) {
             continue;
           }
