@@ -201,14 +201,39 @@ export const EmailPerformanceStats = () => {
     };
   }, []);
 
+  // Monitor connected inboxes for delivery-failure notices so bounces show up
+  // here without waiting for a manual inbox sync.
+  useEffect(() => {
+    let running = false;
+    const scan = async () => {
+      if (running) return;
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+      running = true;
+      try {
+        const { data } = await supabase.functions.invoke("sync-bounces", { body: {} });
+        if ((data as { bounces?: number } | null)?.bounces) void reload.current();
+      } catch {
+        // Non-fatal: the tiles still reflect stored data.
+      } finally {
+        running = false;
+      }
+    };
+    void scan();
+    const id = window.setInterval(scan, 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+
+
   const sent = useMemo(() => emails.filter((e) => e.status === "sent" || !!e.sent_at), [emails]);
 
   const totals = useMemo(() => {
     const opened = sent.filter((e) => e.opened_at).length;
     const replied = sent.filter((e) => e.replied_at).length;
     const clicked = sent.filter((e) => e.clicked_at).length;
-    const failed = emails.filter((e) => e.status === "failed").length;
+    const bounced = emails.filter((e) => e.status === "bounced").length;
+    const failed = emails.filter((e) => e.status === "failed").length + bounced;
     const scheduled = emails.filter((e) => e.status === "scheduled").length;
+
     const positive = replies.filter((r) => (r.intent_score ?? 0) >= 70 || r.intent_classification === "interested").length;
     const won = deals.filter((d) => (d.stage || "").toLowerCase() === "won" || (d.stage || "").toLowerCase() === "closed_won");
     return {
@@ -217,7 +242,9 @@ export const EmailPerformanceStats = () => {
       replied,
       clicked,
       failed,
+      bounced,
       scheduled,
+
       uniqueContacts: new Set(sent.map((e) => e.to_email)).size,
       openRate: pct(opened, sent.length),
       replyRate: pct(replied, sent.length),
@@ -530,17 +557,30 @@ export const EmailPerformanceStats = () => {
               <CardContent className="grid grid-cols-2 gap-3">
                 <MiniStat label="Delivered" value={totals.sent} onClick={() => openEmails("Delivered emails", "Successfully sent emails.", sent)} />
                 <MiniStat
-                  label="Failed"
+                  label="Failed / bounced"
                   value={totals.failed}
                   tone="danger"
                   onClick={() =>
                     openEmails(
-                      "Failed sends",
-                      "These emails never left the mailbox. Common causes: mailbox disconnected or paused, Gmail rate limits, or an invalid recipient address.",
-                      emails.filter((e) => e.status === "failed"),
+                      "Failed & bounced sends",
+                      "Emails that never reached the recipient — send failures (mailbox disconnected, paused, rate limited) plus bounces detected from mailbox delivery notifications.",
+                      emails.filter((e) => e.status === "failed" || e.status === "bounced"),
                     )
                   }
                 />
+                <MiniStat
+                  label="Bounced"
+                  value={totals.bounced}
+                  tone="danger"
+                  onClick={() =>
+                    openEmails(
+                      "Bounced emails",
+                      "Delivery notifications found in your connected inboxes — hard bounces are also suppressed from future sends.",
+                      emails.filter((e) => e.status === "bounced"),
+                    )
+                  }
+                />
+
                 <MiniStat
                   label="Scheduled"
                   value={totals.scheduled}

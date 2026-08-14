@@ -266,6 +266,12 @@ serve(async (req) => {
             ? fromHeader.match(/<(.+?)>/)![1]
             : fromHeader.trim();
 
+          // Bounce/DSN notifications are not replies — sync-bounces handles them.
+          if (/mailer-daemon|postmaster/i.test(fromEmail.toLowerCase()) ||
+              /delivery status notification|undelivered mail|undeliverable|delivery incomplete/i.test(subjectHeader)) {
+            continue;
+          }
+
           // Skip messages sent by any of the user's own connected mailboxes
           const ownEmails = Object.values(mailboxes)
             .map((m) => m.email.toLowerCase())
@@ -274,6 +280,7 @@ serve(async (req) => {
           if (ownEmails.includes(normalizedFromEmail) && normalizedFromEmail !== allowedOwnReplyEmail) {
             continue;
           }
+
 
           const internalDate = parseInt(message.internalDate || "0", 10);
           if (internalDate <= sentAt) continue;
