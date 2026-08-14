@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { PLAYBOOK_SYSTEM_RULES } from "../_shared/cold-email-playbook.ts";
+import { playbookSystemRules } from "../_shared/cold-email-playbook.ts";
 import { buildIcpContext, icpSearchBody } from "../_shared/icp-context.ts";
 import { captureServerEvent } from "../_shared/posthog.ts";
 import { getSignatureHtml, appendSignatureToBody } from "../_shared/signature.ts";
@@ -2223,7 +2223,7 @@ This conversation is in ${autonomous ? "FULL AUTONOMY mode: sending, enrolling a
 ${autonomous ? "" : "If the user asks you to just get on with it without approving each step, tell them they can switch this conversation to full autonomy with the mode selector at the top of the chat."}
 
 COLD EMAIL RULES (apply to every draft you write or review)
-${PLAYBOOK_SYSTEM_RULES}
+${playbookSystemRules()}
 
 Company context: ${config?.company_context ?? "not set"}
 Value props: ${(config?.value_props ?? []).join("; ") || "not set"}
