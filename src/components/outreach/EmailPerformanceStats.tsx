@@ -299,6 +299,24 @@ export const EmailPerformanceStats = () => {
     return [...map.entries()].map(([k, v]) => ({ label: k, count: v, share: pct(v, replies.length) })).sort((a, b) => b.count - a.count);
   }, [replies]);
 
+  // ---- Drill-down ----
+  const [drill, setDrill] = useState<{
+    title: string;
+    description?: string;
+    emails?: SentEmail[];
+    replyRows?: ReplyRow[];
+    dealRows?: DealRow[];
+  } | null>(null);
+
+  const openEmails = useCallback(
+    (title: string, description: string, list: SentEmail[]) => setDrill({ title, description, emails: list }),
+    [],
+  );
+
+  const mailboxLabel = useCallback((id: string | null) => (id ? mailboxes[id]?.email ?? "Unknown mailbox" : "—"), [mailboxes]);
+
+
+
   if (loading) {
     return (
       <div className="space-y-4">
