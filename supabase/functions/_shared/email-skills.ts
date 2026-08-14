@@ -31,10 +31,14 @@ const BY_GOAL: Record<string, EmailSkillName[]> = {
   // Trigger-led first touches. email-writing-frameworks holds Short-Trigger,
   // Neutral Insight, Leader Responsibilities, Do the Maths and Challenge of
   // Similar Companies — the shapes these goals draw from.
-  "4ts": ["email-writing-frameworks"],
-  elusive: ["email-writing-frameworks"],
-  proximity: ["email-writing-frameworks"],
-  introduction: ["email-writing-frameworks", "outreach-messaging"],
+  // frontal-messaging-templates carries six alternative first-touch structures
+  // (Ask Before Pitch, Not Too Different Persona, Upfront Value, Leverage
+  // Content, Why Are You Paying, Case Study Reference). They are shapes rather
+  // than angles, which is what a first touch needs to vary between prospects.
+  "4ts": ["email-writing-frameworks", "frontal-messaging-templates"],
+  elusive: ["email-writing-frameworks", "frontal-messaging-templates"],
+  proximity: ["email-writing-frameworks", "frontal-messaging-templates"],
+  introduction: ["email-writing-frameworks", "frontal-messaging-templates", "outreach-messaging"],
 
   // Anything later in a sequence needs the position, not just the shape:
   // what email 3 does that email 1 did not, and how a break-up is written.
@@ -62,6 +66,14 @@ export interface SkillContextOptions {
   goal?: string;
   /** True when the request names a template, which pulls the template library. */
   usesTemplate?: boolean;
+  /**
+   * Which A/B variant this is; 0 or absent for the original.
+   *
+   * A variant is only worth testing if it differs structurally. Variants pull
+   * the Frontal templates whatever the goal, so variant 2 can be a different
+   * message shape rather than the same shape reworded.
+   */
+  variantNum?: number;
   /** Ceiling on injected skill text. Generous by default; exists to be visible. */
   maxTokens?: number;
 }
@@ -73,8 +85,13 @@ export interface SkillContextOptions {
  * user actually asked for survives and the general principles are what get cut.
  */
 export function skillsForGoal(options: SkillContextOptions = {}): EmailSkillName[] {
-  const { goal, usesTemplate } = options;
+  const { goal, usesTemplate, variantNum } = options;
   const picked: EmailSkillName[] = [];
+
+  // A variant leads with the Frontal templates: it is being generated to be
+  // compared against the original, and two emails in the same shape with
+  // different words do not tell the sender which shape works.
+  if ((variantNum ?? 0) > 0) picked.push("frontal-messaging-templates");
 
   for (const name of BY_GOAL[String(goal ?? "").toLowerCase()] ?? []) {
     if (!picked.includes(name)) picked.push(name);

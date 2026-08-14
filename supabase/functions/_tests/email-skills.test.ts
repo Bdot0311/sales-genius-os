@@ -73,3 +73,43 @@ Deno.test("the truncation budget drops the core skill before the routed one", ()
 Deno.test("a tiny budget yields no skills rather than a truncated fragment", () => {
   assertEquals(composeSkillContext({ goal: "introduction", maxTokens: 1 }), "");
 });
+
+// --- A/B variants ----------------------------------------------------------
+// A variant only earns its cost if it differs structurally. The Frontal
+// templates are six alternative first-touch shapes, so variants pull them
+// regardless of goal — otherwise the test compares two phrasings of one shape
+// and tells the sender nothing about which shape works.
+
+Deno.test("a variant pulls the Frontal templates whatever the goal", () => {
+  for (const goal of ["introduction", "meeting", "follow-up", "custom"]) {
+    assert(
+      skillsForGoal({ goal, variantNum: 2 }).includes("frontal-messaging-templates"),
+      `variant of ${goal} got ${skillsForGoal({ goal, variantNum: 2 }).join(", ")}`,
+    );
+  }
+});
+
+Deno.test("the original is not forced onto the Frontal templates", () => {
+  // Only goals that route to them should get them at variantNum 0.
+  assert(!skillsForGoal({ goal: "meeting", variantNum: 0 }).includes("frontal-messaging-templates"));
+  assert(!skillsForGoal({ goal: "follow-up" }).includes("frontal-messaging-templates"));
+});
+
+Deno.test("first-touch goals carry the Frontal templates on the original too", () => {
+  for (const goal of ["introduction", "4ts", "elusive", "proximity"]) {
+    assert(
+      skillsForGoal({ goal }).includes("frontal-messaging-templates"),
+      `${goal} should offer the first-touch shapes`,
+    );
+  }
+});
+
+Deno.test("a variant leads with the shape skill so a tight budget keeps it", () => {
+  assertEquals(skillsForGoal({ goal: "meeting", variantNum: 1 })[0], "frontal-messaging-templates");
+});
+
+Deno.test("the Frontal templates reach the composed prompt text", () => {
+  const text = composeSkillContext({ goal: "introduction", variantNum: 1 });
+  assert(text.includes("SKILL: frontal-messaging-templates"), "skill body missing");
+  assert(/Ask Before Pitch/i.test(text), "the templates themselves are not in the prompt");
+});

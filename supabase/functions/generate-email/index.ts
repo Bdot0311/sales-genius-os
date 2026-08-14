@@ -572,12 +572,14 @@ const getSystemPrompt = (
   tone: string,
   use4Sentence: boolean,
   templateDescription: string,
-  templateValue: string = ''
+  templateValue: string = '',
+  variantNum: number = 0
 ): string => {
   const prompt = getGoalPrompt(goal, tone, use4Sentence, templateDescription, templateValue);
   const usesTemplate = Boolean(templateValue || templateDescription);
-  console.log('[generate-email] skills:', skillNamesUsed({ goal, usesTemplate }).join(', '));
-  return `${prompt}${composeSkillContext({ goal, usesTemplate })}`;
+  const opts = { goal, usesTemplate, variantNum };
+  console.log('[generate-email] skills:', skillNamesUsed(opts).join(', '));
+  return `${prompt}${composeSkillContext(opts)}`;
 };
 
 // ─── Subject line system prompt ───────────────────────────────────────────────
@@ -1019,7 +1021,7 @@ Return ONLY the social proof text. No quotes, no explanations.`;
 
     } else if (goal === 'custom' && subjectLine) {
       const effectiveGoal = templateGoal || 'introduction';
-      systemPrompt = getSystemPrompt(effectiveGoal, tone, use4SentenceFramework, templateDescription, templateValue);
+      systemPrompt = getSystemPrompt(effectiveGoal, tone, use4SentenceFramework, templateDescription, templateValue, variantNum);
 
       userPrompt = `Write the email body that matches this subject line: "${subjectLine}"
 
@@ -1033,7 +1035,7 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
 
     } else if (FRAMEWORK_GOALS.has(goal)) {
       // 3-prompt pipeline framework goals — body only, no greeting or sign-off
-      systemPrompt = getSystemPrompt(goal, tone, false, templateDescription, templateValue);
+      systemPrompt = getSystemPrompt(goal, tone, false, templateDescription, templateValue, variantNum);
 
       const is4psFollowup = goal === '4ps_followup' || goal === '4ps_elusive_followup';
       const wordLimitNote = goal === 'elusive' ? 60 : goal === '4ps_followup' || goal === '4ps_elusive_followup' ? 120 : 75;
@@ -1050,7 +1052,7 @@ Count your words. If over ${wordLimitNote}, ${goal === '4ps_followup' || goal ==
 
     } else if (goal === 'introduction') {
       // Outreach Studio primary cold email — strict validation pipeline
-      systemPrompt = getSystemPrompt(goal, tone, use4SentenceFramework, templateDescription, templateValue);
+      systemPrompt = getSystemPrompt(goal, tone, use4SentenceFramework, templateDescription, templateValue, variantNum);
 
       const companySignalParts = [
         // First, because it is the only part of this list that is time-bound —
@@ -1088,7 +1090,7 @@ verified_proof: ${socialProof || (businessDescription ? `product capabilities fr
 
     } else {
       // Standard generation
-      systemPrompt = getSystemPrompt(goal, tone, use4SentenceFramework, templateDescription, templateValue);
+      systemPrompt = getSystemPrompt(goal, tone, use4SentenceFramework, templateDescription, templateValue, variantNum);
 
       userPrompt = `Write the email body for this lead.
 
@@ -1125,7 +1127,7 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
           {
             role: "user",
             content: userPrompt + (variantNum > 0
-              ? `\n\n[Variant #${variantNum} — use a completely different angle, opener, and phrasing. Same structure, different execution.]`
+              ? `\n\n[Variant #${variantNum} — this is an A/B variant, so it has to differ in a way worth measuring. Build it on a DIFFERENT messaging template from the Frontal set in the reference material than the one the original would use, and vary the angle, opener and phrasing with it. Two emails in the same shape with different words tell the sender nothing about which shape works.]`
               : ''),
           },
         ],
