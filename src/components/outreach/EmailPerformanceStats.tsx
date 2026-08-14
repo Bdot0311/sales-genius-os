@@ -870,6 +870,35 @@ export const EmailPerformanceStats = () => {
 
           {drill?.emails && <EmailDetailTable emails={drill.emails} mailboxLabel={mailboxLabel} />}
 
+          {drill?.breakdown && (
+            <div className="overflow-x-auto">
+              <Table className="min-w-[520px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead className="text-right">Sent</TableHead>
+                    <TableHead className="text-right">Open</TableHead>
+                    <TableHead className="text-right">Reply</TableHead>
+                    <TableHead className="text-right">Click</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {drill.breakdown.map((r) => (
+                    <TableRow key={r.key}>
+                      <TableCell className="text-sm max-w-[240px] truncate" title={r.name}>
+                        {r.name}
+                      </TableCell>
+                      <TableCell className="text-right">{r.sent}</TableCell>
+                      <TableCell className="text-right">{r.openRate}%</TableCell>
+                      <TableCell className="text-right">{r.replyRate}%</TableCell>
+                      <TableCell className="text-right">{r.clickRate}%</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+
           {drill?.replyRows && (
             <div className="space-y-3">
               <div className="grid grid-cols-3 gap-3">
