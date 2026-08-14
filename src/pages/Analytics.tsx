@@ -13,7 +13,7 @@ import {
 } from "recharts";
 import {
   TrendingUp, Users, DollarSign, Target, Loader2, Download, FileText, Sparkles,
-  ArrowRight, FileDown, Info, Mail, MessageSquareReply, Eye, Clock, Trophy, Building2, Gauge,
+  ArrowRight, FileDown, Mail, MessageSquareReply, Eye, Clock, Trophy, Building2, Gauge,
 } from "lucide-react";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
