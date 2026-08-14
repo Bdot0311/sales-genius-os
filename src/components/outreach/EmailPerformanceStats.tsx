@@ -674,8 +674,95 @@ export const EmailPerformanceStats = () => {
       </Tabs>
 
       <p className="text-xs text-muted-foreground text-center">
-        Reply rate is your primary metric — opens are directional only.
+        Reply rate is your primary metric — opens are directional only. Click any metric, row or card for the underlying detail.
       </p>
+
+      <Dialog open={!!drill} onOpenChange={(o) => !o && setDrill(null)}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{drill?.title}</DialogTitle>
+            {drill?.description && <DialogDescription>{drill.description}</DialogDescription>}
+          </DialogHeader>
+
+          {drill?.emails && <EmailDetailTable emails={drill.emails} mailboxLabel={mailboxLabel} />}
+
+          {drill?.replyRows && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 gap-3">
+                <MiniStat label="Replies" value={drill.replyRows.length} />
+                <MiniStat label="Needs action" value={drill.replyRows.filter((r) => r.requires_human_action).length} />
+                <MiniStat
+                  label="Avg intent"
+                  value={
+                    drill.replyRows.length
+                      ? Math.round(drill.replyRows.reduce((a, b) => a + (b.intent_score ?? 0), 0) / drill.replyRows.length)
+                      : 0
+                  }
+                />
+              </div>
+              {drill.replyRows.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No replies match this metric yet.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table className="min-w-[520px]">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Intent</TableHead>
+                        <TableHead className="text-right">Score</TableHead>
+                        <TableHead>Needs action</TableHead>
+                        <TableHead>Received</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {drill.replyRows.slice(0, 200).map((r) => (
+                        <TableRow key={r.id}>
+                          <TableCell className="capitalize text-sm">{(r.intent_classification || "unclassified").replace(/_/g, " ")}</TableCell>
+                          <TableCell className="text-right">{r.intent_score ?? "—"}</TableCell>
+                          <TableCell>{r.requires_human_action ? <Badge variant="destructive">Yes</Badge> : <span className="text-muted-foreground text-xs">No</span>}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleString()}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {drill?.dealRows && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <MiniStat label="Deals" value={drill.dealRows.length} />
+                <MiniStat label="Total value" value={drill.dealRows.reduce((a, b) => a + (b.value ?? 0), 0)} />
+              </div>
+              {drill.dealRows.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No deals in this window.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table className="min-w-[420px]">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Stage</TableHead>
+                        <TableHead className="text-right">Value</TableHead>
+                        <TableHead>Created</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {drill.dealRows.slice(0, 200).map((d) => (
+                        <TableRow key={d.id}>
+                          <TableCell className="capitalize text-sm">{(d.stage || "unknown").replace(/_/g, " ")}</TableCell>
+                          <TableCell className="text-right">${(d.value ?? 0).toLocaleString()}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{new Date(d.created_at).toLocaleDateString()}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
