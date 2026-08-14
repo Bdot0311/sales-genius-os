@@ -1,10 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart3, Mail, MousePointerClick, MessageSquareReply, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { LiveIndicator } from "@/components/deliverability/LiveIndicator";
+import type { LiveStatus } from "@/hooks/use-deliverability-realtime";
+
 
 interface TemplatePerformance {
   template_id: string;
