@@ -84,6 +84,7 @@ const StatCard = ({ title, value, sub, icon: Icon, color, bg }: any) => (
 );
 
 const Analytics = () => {
+  const navigate = useNavigate();
   const { currentPlan, features, loading: planLoading, gateModalOpen, setGateModalOpen, gatedFeature, triggerGate } = usePlanFeatures();
 
   const [rangeDays, setRangeDays] = useState(30);
