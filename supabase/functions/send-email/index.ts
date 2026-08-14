@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.76.0';
 import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
 import { logSystemAlert } from "../_shared/alerts.ts";
 import { getSignatureHtml, appendSignatureToBody } from "../_shared/signature.ts";
+import { injectClickTracking } from "../_shared/click-tracking.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
