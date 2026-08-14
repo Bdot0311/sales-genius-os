@@ -306,6 +306,7 @@ export const EmailPerformanceStats = () => {
     emails?: SentEmail[];
     replyRows?: ReplyRow[];
     dealRows?: DealRow[];
+    breakdown?: GroupRow[];
   } | null>(null);
 
   const openEmails = useCallback(
