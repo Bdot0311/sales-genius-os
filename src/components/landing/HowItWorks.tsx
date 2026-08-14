@@ -136,7 +136,7 @@ export const HowItWorks = () => {
             From ICP to first email.
             <br />
             <span
-              className="animate-shiny"
+              className="italic animate-shiny"
               style={{
                 backgroundImage: "linear-gradient(to right, #a78bfa 0%, #8b5cf6 15%, #c4b5fd 35%, #e9d5ff 50%, #c4b5fd 65%, #8b5cf6 85%, #a78bfa 100%)",
                 backgroundSize: "200% auto",

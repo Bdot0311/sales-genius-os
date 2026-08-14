@@ -36,13 +36,14 @@ export const BlogStrip = () => {
     >
       <div className="mx-auto max-w-6xl relative z-10">
         <div className="mb-10 sm:mb-14">
-          <p className="font-serif italic font-thin text-base text-purple-500 mb-5">
+          <p className="font-serif italic font-thin text-base text-center text-purple-500 mb-5">
             Resources
           </p>
-          <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-4 items-end">
+            <div className="hidden sm:block" aria-hidden="true" />
             <h2
               id="resources-heading"
-              className="font-display"
+              className="font-display text-center"
               style={{
                 fontSize: "clamp(2.4rem, 5vw, 4rem)",
                 fontWeight: 800,
@@ -51,16 +52,31 @@ export const BlogStrip = () => {
                 color: "hsl(0 0% 95%)",
               }}
             >
-              Picking the right outbound stack?
+              Picking the right
+              <br />
+              <span
+                className="italic animate-shiny"
+                style={{
+                  backgroundImage: "linear-gradient(to right, #a78bfa 0%, #8b5cf6 15%, #c4b5fd 35%, #e9d5ff 50%, #c4b5fd 65%, #8b5cf6 85%, #a78bfa 100%)",
+                  backgroundSize: "200% auto",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
+                outbound stack?
+              </span>
             </h2>
-            <Link
-              to="/blog"
-              className="group inline-flex items-center gap-1.5 text-sm transition-colors shrink-0 min-h-[40px] px-2"
-              style={{ color: "hsl(261 75% 65%)" }}
-            >
-              All articles
-              <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-            </Link>
+            <div className="text-center sm:text-right">
+              <Link
+                to="/blog"
+                className="group inline-flex items-center gap-1.5 text-sm transition-colors shrink-0 min-h-[40px] px-2"
+                style={{ color: "hsl(261 75% 65%)" }}
+              >
+                All articles
+                <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            </div>
           </div>
         </div>
 
