@@ -309,7 +309,12 @@ function applyPersonalizationFixLocally(email: string, lead?: any) {
 const Outreach = () => {
   const { toast } = useToast();
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState("compose");
+  const [activeTab, setActiveTab] = useState(() => {
+    const tab = new URLSearchParams(location.search).get("tab");
+    return ["compose", "sequences", "blocks", "sent", "drafts", "performance"].includes(tab ?? "")
+      ? (tab as string)
+      : "compose";
+  });
   const [leads, setLeads] = useState<any[]>([]);
   const [selectedLead, setSelectedLead] = useState("");
   const [emailTone, setEmailTone] = useState("professional");
