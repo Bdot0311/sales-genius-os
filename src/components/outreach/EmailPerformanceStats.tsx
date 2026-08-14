@@ -219,7 +219,9 @@ export const EmailPerformanceStats = () => {
       replied,
       clicked,
       failed,
+      bounced,
       scheduled,
+
       uniqueContacts: new Set(sent.map((e) => e.to_email)).size,
       openRate: pct(opened, sent.length),
       replyRate: pct(replied, sent.length),
