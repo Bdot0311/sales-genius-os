@@ -201,6 +201,29 @@ export const EmailPerformanceStats = () => {
     };
   }, []);
 
+  // Monitor connected inboxes for delivery-failure notices so bounces show up
+  // here without waiting for a manual inbox sync.
+  useEffect(() => {
+    let running = false;
+    const scan = async () => {
+      if (running) return;
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+      running = true;
+      try {
+        const { data } = await supabase.functions.invoke("sync-bounces", { body: {} });
+        if ((data as { bounces?: number } | null)?.bounces) void reload.current();
+      } catch {
+        // Non-fatal: the tiles still reflect stored data.
+      } finally {
+        running = false;
+      }
+    };
+    void scan();
+    const id = window.setInterval(scan, 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+
+
   const sent = useMemo(() => emails.filter((e) => e.status === "sent" || !!e.sent_at), [emails]);
 
   const totals = useMemo(() => {
