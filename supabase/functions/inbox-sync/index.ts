@@ -301,6 +301,23 @@ serve(async (req) => {
       }
     }
 
+    // Persist reply attribution so reply-rate analytics reflect reality.
+    // Earliest reply per sent email wins; never overwrite an existing value.
+    const earliestReply: Record<string, string> = {};
+    for (const r of replies) {
+      const current = earliestReply[r.sentEmailId];
+      if (!current || r.receivedAt < current) earliestReply[r.sentEmailId] = r.receivedAt;
+    }
+    for (const [sentEmailId, receivedAt] of Object.entries(earliestReply)) {
+      const { error: replyErr } = await adminClient
+        .from("sent_emails")
+        .update({ replied_at: receivedAt })
+        .eq("id", sentEmailId)
+        .eq("user_id", user.id)
+        .is("replied_at", null);
+      if (replyErr) console.error(`Failed to mark reply on ${sentEmailId}:`, replyErr.message);
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
