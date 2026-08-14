@@ -61,6 +61,30 @@ type ReplyRow = {
 
 type DealRow = { id: string; stage: string | null; value: number | null; created_at: string };
 
+type GroupRow = {
+  key: string;
+  name: string;
+  sent: number;
+  opened: number;
+  replied: number;
+  clicked: number;
+  openRate: number;
+  replyRate: number;
+  clickRate: number;
+};
+
+function dedupeBy<T>(list: T[], keyOf: (item: T) => string): T[] {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  for (const item of list) {
+    const k = keyOf(item);
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(item);
+  }
+  return out;
+}
+
 const RANGES = [
   { label: "7d", days: 7 },
   { label: "30d", days: 30 },
