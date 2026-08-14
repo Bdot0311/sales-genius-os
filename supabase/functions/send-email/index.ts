@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.76.0';
 import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
 import { logSystemAlert } from "../_shared/alerts.ts";
 import { getSignatureHtml, appendSignatureToBody } from "../_shared/signature.ts";
+import { injectClickTracking } from "../_shared/click-tracking.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -474,8 +475,9 @@ ${unsubscribeFooterHtml}
       const trackingPixelUrl = `${supabaseUrl}/functions/v1/track-email-open?id=${trackingPixelId}`;
       const trackingPixel = `<img src="${trackingPixelUrl}" width="1" height="1" style="display:none" alt="" />`;
 
-      // Inject tracking pixel before closing body tag
-      const trackedHtmlBody = htmlBody.replace('</body>', `${trackingPixel}\n</body>`);
+      // Rewrite outbound links so clicks are recorded, then inject the open pixel
+      const clickTrackedHtml = injectClickTracking(htmlBody, trackingPixelId, supabaseUrl);
+      const trackedHtmlBody = clickTrackedHtml.replace('</body>', `${trackingPixel}\n</body>`);
 
       // Send via Gmail API - use MIME encoding for subject to handle special characters
       const emailContent = [

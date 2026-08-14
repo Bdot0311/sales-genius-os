@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
 import { corsHeaders, requireServiceRole } from "../_shared/internal-auth.ts";
+import { injectClickTracking } from "../_shared/click-tracking.ts";
 
 // RFC 2047 MIME encode subject for non-ASCII characters
 const mimeEncodeSubject = (subject: string) => {
@@ -269,13 +270,15 @@ serve(async (req) => {
         if (!trackingPixelId) {
           trackingPixelId = crypto.randomUUID();
         }
+        // Rewrite links for click tracking (skips already-tracked links)
+        trackedBody = injectClickTracking(trackedBody, trackingPixelId, supabaseUrl);
         // Inject tracking pixel if not already in body
         if (!body.includes('track-email-open')) {
           const trackingPixelUrl = `${supabaseUrl}/functions/v1/track-email-open?id=${trackingPixelId}`;
           const trackingPixel = `<img src="${trackingPixelUrl}" width="1" height="1" style="display:none" alt="" />`;
-          trackedBody = body.includes('</body>') 
-            ? body.replace('</body>', `${trackingPixel}\n</body>`)
-            : body + trackingPixel;
+          trackedBody = trackedBody.includes('</body>')
+            ? trackedBody.replace('</body>', `${trackingPixel}\n</body>`)
+            : trackedBody + trackingPixel;
         }
 
         const emailContent = [

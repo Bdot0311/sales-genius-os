@@ -120,7 +120,7 @@ serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, serviceKey);
 
-    let payload: { testEmail?: string; includeOwnReplies?: boolean } = {};
+    let payload: { testEmail?: string; includeOwnReplies?: boolean; analyzeReplies?: boolean } = {};
     try {
       payload = await req.json();
     } catch {
@@ -300,6 +300,45 @@ serve(async (req) => {
         console.error(`Error processing thread ${thread.gmail_thread_id}:`, threadErr.message);
       }
     }
+
+    // Persist reply attribution so reply-rate analytics reflect reality.
+    // Earliest reply per sent email wins; never overwrite an existing value.
+    const earliestReply: Record<string, string> = {};
+    for (const r of replies) {
+      const current = earliestReply[r.sentEmailId];
+      if (!current || r.receivedAt < current) earliestReply[r.sentEmailId] = r.receivedAt;
+    }
+    for (const [sentEmailId, receivedAt] of Object.entries(earliestReply)) {
+      const { error: replyErr } = await adminClient
+        .from("sent_emails")
+        .update({ replied_at: receivedAt })
+        .eq("id", sentEmailId)
+        .eq("user_id", user.id)
+        .is("replied_at", null);
+      if (replyErr) console.error(`Failed to mark reply on ${sentEmailId}:`, replyErr.message);
+    }
+
+    // Classify new replies so positive-reply analytics are real (opt-in so the
+    // agent, which classifies replies itself, doesn't double-analyze).
+    if (payload.analyzeReplies) {
+      for (const r of replies) {
+        try {
+          const res = await fetch(`${supabaseUrl}/functions/v1/analyze-reply`, {
+            method: "POST",
+            headers: { Authorization: authHeader, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              replyContent: r.bodyText,
+              sentEmailId: r.sentEmailId,
+              gmailMessageId: r.gmailMessageId,
+            }),
+          });
+          if (!res.ok) console.error(`analyze-reply ${res.status}: ${await res.text()}`);
+        } catch (e: any) {
+          console.error("analyze-reply failed:", e.message);
+        }
+      }
+    }
+
 
     return new Response(
       JSON.stringify({
