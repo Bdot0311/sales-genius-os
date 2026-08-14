@@ -730,12 +730,37 @@ export const EmailPerformanceStats = () => {
 
         <TabsContent value="replies" className="mt-4 space-y-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <MiniStat label="Replies analyzed" value={replies.length} />
-            <MiniStat label="Positive" value={totals.positive} />
-            <MiniStat label="Needs your action" value={replies.filter((r) => r.requires_human_action).length} />
+            <MiniStat
+              label="Replies analyzed"
+              value={replies.length}
+              onClick={() => setDrill({ title: "Replies analyzed", description: "Every analyzed reply in this window.", replyRows: replies })}
+            />
+            <MiniStat
+              label="Positive"
+              value={totals.positive}
+              onClick={() =>
+                setDrill({
+                  title: "Positive replies",
+                  description: "Interested or 70+ intent score.",
+                  replyRows: replies.filter((r) => (r.intent_score ?? 0) >= 70 || r.intent_classification === "interested"),
+                })
+              }
+            />
+            <MiniStat
+              label="Needs your action"
+              value={replies.filter((r) => r.requires_human_action).length}
+              onClick={() =>
+                setDrill({
+                  title: "Replies needing your action",
+                  description: "Flagged for human follow-up.",
+                  replyRows: replies.filter((r) => r.requires_human_action),
+                })
+              }
+            />
             <MiniStat
               label="Avg intent score"
               value={replies.length ? Math.round(replies.reduce((a, b) => a + (b.intent_score ?? 0), 0) / replies.length) : 0}
+              onClick={() => setDrill({ title: "Intent scores", description: "All analyzed replies, with their intent scores.", replyRows: replies })}
             />
           </div>
           <Card>
