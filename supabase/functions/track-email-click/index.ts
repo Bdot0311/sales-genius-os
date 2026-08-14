@@ -40,14 +40,15 @@ serve(async (req) => {
 
         // Log the click as lead activity so the pipeline reflects engagement.
         if (!row.clicked_at && row.lead_id && row.user_id) {
-          await supabase.from("activities").insert({
+          const { error: actErr } = await supabase.from("activities").insert({
             user_id: row.user_id,
             lead_id: row.lead_id,
-            type: "email_click",
+            type: "email",
+            subject: "Email link clicked",
             description: `Clicked a link in your email${safeTarget ? `: ${safeTarget}` : ""}`,
-          }).then(({ error }) => {
-            if (error) console.error("Failed to log click activity:", error.message);
+            completed: true,
           });
+          if (actErr) console.error("Failed to log click activity:", actErr.message);
         }
       } else {
         console.log("No sent_emails row for pixel:", pixelId);
