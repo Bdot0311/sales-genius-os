@@ -230,7 +230,6 @@ export const AISdrSection = () => {
               >
                 An AI SDR on every plan.
                 <br />
-                Full cycle,{" "}
                 <span
                   className="italic animate-shiny"
                   style={{
@@ -242,7 +241,7 @@ export const AISdrSection = () => {
                     backgroundClip: "text",
                   }}
                 >
-                  start to finish.
+                  Full cycle, start to finish.
                 </span>
               </h2>
 
