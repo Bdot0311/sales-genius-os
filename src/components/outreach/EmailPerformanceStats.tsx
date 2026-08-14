@@ -773,7 +773,28 @@ export const EmailPerformanceStats = () => {
                 <p className="text-sm text-muted-foreground">No replies analyzed yet.</p>
               ) : (
                 replyBreakdown.map((r) => (
-                  <div key={r.label}>
+                  <div
+                    key={r.label}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() =>
+                      setDrill({
+                        title: `Replies: ${r.label.replace(/_/g, " ")}`,
+                        description: `${r.count} replies · ${r.share}% of all analyzed replies.`,
+                        replyRows: replies.filter((x) => (x.intent_classification || "unclassified") === r.label),
+                      })
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setDrill({
+                          title: `Replies: ${r.label.replace(/_/g, " ")}`,
+                          replyRows: replies.filter((x) => (x.intent_classification || "unclassified") === r.label),
+                        });
+                      }
+                    }}
+                    className="cursor-pointer rounded-md -mx-2 px-2 py-1 transition-colors hover:bg-muted/50"
+                  >
                     <div className="flex items-center justify-between mb-1 text-xs">
                       <span className="capitalize text-muted-foreground">{r.label.replace(/_/g, " ")}</span>
                       <span className="font-medium">
