@@ -1,3 +1,5 @@
+import { composeSkillContext } from "./email-skills.ts";
+
 // Cold Email Engine playbook — shared by the AI SDR agent.
 // Produces the same 4-touch sequence rules used by generate-sequence.
 
@@ -17,15 +19,35 @@ BANNED PHRASES: "hope this finds you well", "just checking in", "just reaching o
 BANNED SPAM TRIGGERS: "free", "guarantee", "limited time", "act now", "100%", "$$$", ALL CAPS words.
 
 FOUR-TOUCH STRUCTURE (attention first, sell later):
-Touch 1 (day 0) — attention, NO pitch: a signal reference, one line of inferred operational pain, then one line that implies a better path exists without explaining the product or how it works (withhold the mechanism so a curiosity gap opens), and a soft interest CTA. If a line explains what the product does, it is a pitch, rewrite it as a hint.
+Touch 1 (day 0) — attention, NO pitch. What it must achieve: ground the email in something true about this specific account, make clear you understand how they operate today, open a curiosity gap about a better path without explaining the product or how it works, and ask one low-friction question. If a line explains what the product does, it is a pitch, rewrite it as a hint.
+  The ORDER and shape of those beats is not fixed here — choose it from the frameworks in the reference material at the end of this prompt, based on what this lead's evidence supports. Writing every touch 1 as "observation, then inferred pain, then implied better path, then soft question" is what makes an entire campaign read as one email sent repeatedly, and it is the failure this instruction exists to prevent. Vary the shape across leads.
 Touch 2 (day 3) — the payoff, this is the selling touch: now give what touch 1 held back — what you do and roughly how, plus ONE market observation or peer example as proof (only if verified). Do not repeat touch 1's pain. Different soft CTA.
 Touch 3 (day 7) — timing/clarification. Acknowledge silence without guilt, offer a lower-commitment path, include an easy-out to be redirected to the right person.
 Touch 4 (day 14) — polite breakup. 2-3 sentences, no guilt, no "final email" theatrics, door left open.
 
 SUBJECT RULES: 2-5 words, under 40 characters, lowercase, colleague tone. No "re:"/"fwd:" fakery, no numbers or percentages, no "quick question".
 
+FORMATTING: inside each body, break the sentences into 2 or 3 short paragraphs separated by a blank line (\\n\\n), with the greeting on its own line and the sign-off on its own line. One unbroken block of sentences reads as machine-written before the reader has read a word of it.
+
 OUTPUT: strict JSON only, no prose, no code fences:
-{"touches":[{"day":0,"purpose":"signal opener","subject":"...","body":"Hi <first>,\\n\\n<3-4 sentences ending in one CTA question>\\n\\n<sender first name>"},{"day":3,"purpose":"context","subject":"...","body":"..."},{"day":7,"purpose":"timing","subject":"...","body":"..."},{"day":14,"purpose":"breakup","subject":"...","body":"..."}]}`;
+{"touches":[{"day":0,"purpose":"signal opener","subject":"...","body":"Hi <first>,\\n\\n<opening beat>\\n\\n<remaining beats, ending in one CTA question>\\n\\n<sender first name>"},{"day":3,"purpose":"context","subject":"...","body":"..."},{"day":7,"purpose":"timing","subject":"...","body":"..."},{"day":14,"purpose":"breakup","subject":"...","body":"..."}]}`;
+
+/**
+ * The playbook rules plus the GTM frameworks that decide each touch's shape.
+ *
+ * The rules above are constraints — length, banned language, no pitching on
+ * touch 1, claim handling, output format. They deliberately stop short of
+ * fixing the body's shape, because a campaign whose every touch 1 has the same
+ * four beats reads as one email sent over and over. The frameworks supply the
+ * shape, chosen per lead.
+ *
+ * PLAYBOOK_SYSTEM_RULES stays exported on its own for callers that only need
+ * the constraints (reply and objection handling, where there is no cold-email
+ * framework to pick).
+ */
+export function playbookSystemRules(): string {
+  return `${PLAYBOOK_SYSTEM_RULES}${composeSkillContext({ goal: "sequence" })}`;
+}
 
 export type Touch = { day: number; purpose: string; subject: string; body: string };
 

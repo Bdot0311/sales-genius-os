@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
 import { captureServerEvent } from "../_shared/posthog.ts";
 import {
-  PLAYBOOK_SYSTEM_RULES,
+  playbookSystemRules,
   buildTouchPrompt,
   parseTouches,
   scheduleFollowUps,
@@ -744,7 +744,7 @@ ${cfgValuePropsText}
 
 ${icpContext}
 
-${PLAYBOOK_SYSTEM_RULES}`;
+${playbookSystemRules()}`;
               const outreachPrompt = buildTouchPrompt({
                 firstName,
                 jobTitle: lead.job_title,

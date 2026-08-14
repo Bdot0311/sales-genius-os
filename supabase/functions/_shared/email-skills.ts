@@ -47,6 +47,11 @@ const BY_GOAL: Record<string, EmailSkillName[]> = {
   meeting: ["outreach-messaging"],
   demo: ["outreach-messaging"],
   proposal: ["outreach-messaging"],
+
+  // The autonomous agent's multi-touch sequences. It needs both the position
+  // logic (what touch 3 does that touch 1 did not) and the shapes to draw each
+  // individual touch from.
+  sequence: ["cold-email-4-sequence", "email-writing-frameworks"],
 };
 
 /** Rough token estimate — enough to keep a prompt from silently ballooning. */
@@ -111,10 +116,25 @@ export function composeSkillContext(options: SkillContextOptions = {}): string {
 
   return [
     "",
-    "REFERENCE MATERIAL — the frameworks below are the source of truth for",
-    "structure and shape. Follow them over any general instinct about what a",
-    "cold email looks like. They do not override the rules stated above:",
-    "where they disagree, the rules above win.",
+    "FRAMEWORKS — these decide the SHAPE of this email.",
+    "",
+    "Read them, then pick the ONE framework best fitting this specific lead's",
+    "evidence, and write to it. Say nothing about which you picked; just write",
+    "that shape. Different leads must get different frameworks — a fresh trigger",
+    "and a thin segment-level record do not call for the same email. Picking the",
+    "same shape for every prospect is the failure mode these exist to prevent.",
+    "",
+    "Division of authority, so this is unambiguous:",
+    "- The frameworks below own SHAPE: which beats the body has, in what order,",
+    "  what each one does. They outrank any structure suggested above.",
+    "- The rules above own CONSTRAINTS: word count, banned phrases, no pitching on",
+    "  a first touch, never naming the product in the body, claim handling,",
+    "  signature and output format. A framework can never relax those.",
+    "",
+    "Any sample sentence in this material is an illustration of a shape, never",
+    "wording to reuse. Reproducing an example line verbatim is the single most",
+    "common way these emails come out identical to each other. Write the actual",
+    "sentence yourself, from this lead's own facts.",
     "",
     sections.join("\n\n"),
   ].join("\n");
