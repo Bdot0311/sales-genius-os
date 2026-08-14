@@ -442,13 +442,55 @@ export const EmailPerformanceStats = () => {
                 <CardDescription>From send to closed revenue.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                <FunnelRow label="Sent" value={totals.sent} base={totals.sent} />
-                <FunnelRow label="Opened" value={totals.opened} base={totals.sent} />
-                <FunnelRow label="Clicked" value={totals.clicked} base={totals.sent} />
-                <FunnelRow label="Replied" value={totals.replied} base={totals.sent} />
-                <FunnelRow label="Positive replies" value={totals.positive} base={totals.sent} />
-                <FunnelRow label="Deals created" value={totals.meetings} base={totals.sent} />
-                <FunnelRow label="Won" value={totals.won} base={totals.sent} />
+                <FunnelRow label="Sent" value={totals.sent} base={totals.sent} onClick={() => openEmails("Sent", "All sends in this window.", sent)} />
+                <FunnelRow
+                  label="Opened"
+                  value={totals.opened}
+                  base={totals.sent}
+                  onClick={() => openEmails("Opened", "Sends with at least one open.", sent.filter((e) => e.opened_at))}
+                />
+                <FunnelRow
+                  label="Clicked"
+                  value={totals.clicked}
+                  base={totals.sent}
+                  onClick={() => openEmails("Clicked", "Sends with a link click.", sent.filter((e) => e.clicked_at))}
+                />
+                <FunnelRow
+                  label="Replied"
+                  value={totals.replied}
+                  base={totals.sent}
+                  onClick={() => openEmails("Replied", "Sends that got a reply.", sent.filter((e) => e.replied_at))}
+                />
+                <FunnelRow
+                  label="Positive replies"
+                  value={totals.positive}
+                  base={totals.sent}
+                  onClick={() =>
+                    setDrill({
+                      title: "Positive replies",
+                      description: "Replies classified interested or scored 70+.",
+                      replyRows: replies.filter((r) => (r.intent_score ?? 0) >= 70 || r.intent_classification === "interested"),
+                    })
+                  }
+                />
+                <FunnelRow
+                  label="Deals created"
+                  value={totals.meetings}
+                  base={totals.sent}
+                  onClick={() => setDrill({ title: "Deals created", description: "Deals created in this window.", dealRows: deals })}
+                />
+                <FunnelRow
+                  label="Won"
+                  value={totals.won}
+                  base={totals.sent}
+                  onClick={() =>
+                    setDrill({
+                      title: "Won deals",
+                      description: "Closed-won deals in this window.",
+                      dealRows: deals.filter((d) => ["won", "closed_won"].includes((d.stage || "").toLowerCase())),
+                    })
+                  }
+                />
                 <p className="text-xs text-muted-foreground">
                   Closed value in range: <span className="font-medium text-foreground">${totals.wonValue.toLocaleString()}</span>
                 </p>
@@ -458,15 +500,42 @@ export const EmailPerformanceStats = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Delivery health</CardTitle>
-                <CardDescription>Send outcomes in the selected window.</CardDescription>
+                <CardDescription>Send outcomes in the selected window — click any tile for detail.</CardDescription>
               </CardHeader>
               <CardContent className="grid grid-cols-2 gap-3">
-                <MiniStat label="Delivered" value={totals.sent} />
-                <MiniStat label="Failed" value={totals.failed} tone="danger" />
-                <MiniStat label="Scheduled" value={totals.scheduled} />
-                <MiniStat label="Unique contacts" value={totals.uniqueContacts} />
-                <MiniStat label="Recipient domains" value={domains.length} />
-                <MiniStat label="Active mailboxes" value={accounts.length} />
+                <MiniStat label="Delivered" value={totals.sent} onClick={() => openEmails("Delivered emails", "Successfully sent emails.", sent)} />
+                <MiniStat
+                  label="Failed"
+                  value={totals.failed}
+                  tone="danger"
+                  onClick={() =>
+                    openEmails(
+                      "Failed sends",
+                      "These emails never left the mailbox. Common causes: mailbox disconnected or paused, Gmail rate limits, or an invalid recipient address.",
+                      emails.filter((e) => e.status === "failed"),
+                    )
+                  }
+                />
+                <MiniStat
+                  label="Scheduled"
+                  value={totals.scheduled}
+                  onClick={() => openEmails("Scheduled sends", "Queued to go out later.", emails.filter((e) => e.status === "scheduled"))}
+                />
+                <MiniStat
+                  label="Unique contacts"
+                  value={totals.uniqueContacts}
+                  onClick={() => openEmails("Unique contacts", "One email per distinct recipient.", dedupeBy(sent, (e) => e.to_email ?? ""))}
+                />
+                <MiniStat
+                  label="Recipient domains"
+                  value={domains.length}
+                  onClick={() => setDrill({ title: "Recipient domains", description: "Performance per recipient domain.", breakdown: domains })}
+                />
+                <MiniStat
+                  label="Active mailboxes"
+                  value={accounts.length}
+                  onClick={() => setDrill({ title: "Active mailboxes", description: "Performance per sending mailbox.", breakdown: accounts })}
+                />
               </CardContent>
             </Card>
           </div>
