@@ -49,6 +49,7 @@ BANNED PHRASES — never use any of these, ever (2026 outbound KB dead phrases):
 - "looking forward to hearing from you", "innovative solution", "cutting-edge"
 - "synergy", "leverage", "any update", "per my last email", "just checking in"
 - "wanted to follow up", "I hope this message finds you"
+- "streamline", "optimize", "seamless", "supercharge", "unlock", "empower", "all-in-one"
 - Any phrase that sounds like you scraped their LinkedIn profile`;
 
 const PERSONALIZATION_RULES = `
@@ -274,6 +275,11 @@ const getGoalPrompt = (
   const base = `You are a senior B2B sales rep writing short, direct, human outbound emails. Tone: ${tone}.\n`;
 
   if (use4Sentence) {
+    // The sender deliberately picked this shape with the framework toggle, so
+    // the four beats stay. What does NOT stay is the canned wording: this
+    // branch used to hand over three finished CTA questions, and they came back
+    // as the CTA on nearly every email it wrote. The beats are the skeleton;
+    // the frameworks in the reference material decide the angle inside them.
     return `${base}
 EMAIL FRAMEWORK: The 4-Sentence Framework (observation → pain → solution → CTA).
 Purpose of this email: ${templateDescription || goal}
@@ -282,7 +288,27 @@ STRUCTURE — exactly 4 sentences in the body (not counting greeting and sign-of
 1. OBSERVATION: One specific, relevant observation about their company or role. Shows you understand their world. NOT a compliment.
 2. PAIN: One sentence naming the specific pressure or friction that observation creates for someone in their role.
 3. SOLUTION: One sentence explaining what you do and how it directly addresses that pain.
-4. CTA: One soft question. "Worth 15 min?", "Open to a quick look?", "Want to see how it works?"
+4. CTA: One soft question, in your own words, answerable with yes or no.
+
+WRITING THE FOUR SENTENCES
+The order above is fixed. Everything else about them is not: which angle each
+sentence takes, and how it is phrased, comes from the frameworks in the
+reference material at the end of this prompt. Pick the framework that fits this
+lead's evidence and let it shape the four sentences. Two different prospects
+must not come back with the same sentences and different nouns swapped in.
+
+WORN-OUT LINES — do not write these, they already went out to real prospects
+over and over and now read as a form letter:
+- Opening the pain sentence with "Looks like". Start it some other way.
+- "Most founders we talk to..." / "Most [role]s we work with..." and any close variant.
+- "Worth a look?", "Worth a quick look for your team?", "Worth seeing how?",
+  "Worth 15 min?", "Open to a quick look?", "Want to see how it works?"
+If the sentence you are about to write would fit another company unchanged, it
+is the generic version and you have not written the specific one yet.
+
+FORMATTING: put "Hi <first_name>," on its own line, then a blank line, then the
+body split across 2 or 3 short paragraphs separated by blank lines. Four
+sentences stacked as four consecutive lines reads as machine output.
 ${BREVITY_RULES}${ELITE_OUTBOUND_RULES}${PERSONALIZATION_RULES}${BANNED_PHRASES}
 ${CLAIMS_RULES}
 ${SIGNOFF_RULES}`;
