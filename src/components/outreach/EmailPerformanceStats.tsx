@@ -698,7 +698,17 @@ export const EmailPerformanceStats = () => {
                   </TableHeader>
                   <TableBody>
                     {accounts.map((a) => (
-                      <TableRow key={a.key}>
+                      <TableRow
+                        key={a.key}
+                        className="cursor-pointer"
+                        onClick={() =>
+                          openEmails(
+                            `Mailbox: ${a.name}`,
+                            `Reputation ${mailboxes[a.key]?.reputation ?? "—"} · status ${mailboxes[a.key]?.status ?? "unknown"}.`,
+                            emails.filter((e) => e.sending_account_id === a.key),
+                          )
+                        }
+                      >
                         <TableCell className="text-sm">{a.name}</TableCell>
                         <TableCell className="text-right">{a.sent}</TableCell>
                         <TableCell className="text-right">{a.openRate}%</TableCell>
