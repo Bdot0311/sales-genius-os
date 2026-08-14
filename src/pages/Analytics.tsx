@@ -360,7 +360,7 @@ const Analytics = () => {
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
               <TabsTrigger value="leads">Leads</TabsTrigger>
-              <TabsTrigger value="outreach">Outreach</TabsTrigger>
+
               <TabsTrigger value="sources">Sources</TabsTrigger>
               <TabsTrigger value="activity">Activity</TabsTrigger>
               <TabsTrigger value="benchmarks">Benchmarks</TabsTrigger>
