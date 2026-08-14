@@ -1,10 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart3, Mail, MousePointerClick, MessageSquareReply, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { LiveIndicator } from "@/components/deliverability/LiveIndicator";
+import type { LiveStatus } from "@/hooks/use-deliverability-realtime";
+
 
 interface TemplatePerformance {
   template_id: string;
@@ -29,11 +32,10 @@ export const EmailPerformanceStats = () => {
     avgReplyRate: 0,
   });
 
-  useEffect(() => {
-    loadPerformance();
-  }, []);
+  const [liveStatus, setLiveStatus] = useState<LiveStatus>("connecting");
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
-  const loadPerformance = async () => {
+  const loadPerformance = useCallback(async () => {
     try {
       // Load template performance from view
       const { data: templateData, error: templateError } = await supabase
@@ -65,12 +67,55 @@ export const EmailPerformanceStats = () => {
           avgReplyRate: totalSent > 0 ? Math.round((totalReplied / totalSent) * 100) : 0,
         });
       }
+      setLastUpdate(new Date());
     } catch (error) {
       console.error('Error loading performance:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  const reload = useRef(loadPerformance);
+  reload.current = loadPerformance;
+
+  useEffect(() => {
+    void reload.current();
+  }, []);
+
+  // Realtime: any send / open / reply / click updates the numbers instantly.
+  useEffect(() => {
+    const channel = supabase.channel(`email-performance-${Math.random().toString(36).slice(2)}`);
+    for (const table of ["sent_emails", "email_drafts"]) {
+      channel.on("postgres_changes", { event: "*", schema: "public", table }, () => {
+        void reload.current();
+      });
+    }
+    channel.subscribe((s) => {
+      if (s === "SUBSCRIBED") setLiveStatus("live");
+      else if (s === "CHANNEL_ERROR" || s === "TIMED_OUT" || s === "CLOSED") setLiveStatus("offline");
+    });
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // Polling fallback + refetch on focus/visibility.
+  useEffect(() => {
+    const tick = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+      void reload.current();
+    };
+    const id = window.setInterval(tick, 30_000);
+    const onVisible = () => { if (document.visibilityState === "visible") tick(); };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", tick);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", tick);
+    };
+  }, []);
+
 
   const getPerformanceBadge = (rate: number, type: 'open' | 'reply') => {
     const thresholds = type === 'open' 
@@ -97,7 +142,12 @@ export const EmailPerformanceStats = () => {
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-end">
+        <LiveIndicator status={liveStatus} lastUpdate={lastUpdate} />
+      </div>
+
       {/* Overall Stats */}
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
