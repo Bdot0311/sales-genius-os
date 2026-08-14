@@ -595,15 +595,21 @@ export const EmailPerformanceStats = () => {
 
           <RateTable
             title="Top subject lines"
-            description="Ranked by volume — compare open and reply performance."
+            description="Ranked by volume — click a row for every email using that subject."
             firstCol="Subject"
             rows={subjects}
+            onRowClick={(r) =>
+              openEmails(`Subject: ${r.name}`, "Every send using this subject line.", sent.filter((e) => (e.subject || "").trim() === r.key))
+            }
           />
           <RateTable
             title="Recipient domains"
-            description="How different inbox providers treat your mail."
+            description="How different inbox providers treat your mail — click a row for the sends."
             firstCol="Domain"
             rows={domains.slice(0, 15)}
+            onRowClick={(r) =>
+              openEmails(`Domain: ${r.name}`, "Every send to this recipient domain.", sent.filter((e) => (e.to_email || "").split("@")[1] === r.key))
+            }
           />
         </TabsContent>
 
@@ -613,7 +619,19 @@ export const EmailPerformanceStats = () => {
           ) : (
             <div className="space-y-3">
               {templates.map((t) => (
-                <Card key={t.key}>
+                <Card
+                  key={t.key}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => openEmails(`Template: ${t.name}`, "Every send from this template.", sent.filter((e) => e.template_id === t.key))}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      openEmails(`Template: ${t.name}`, "Every send from this template.", sent.filter((x) => x.template_id === t.key));
+                    }
+                  }}
+                  className="cursor-pointer transition-colors hover:border-primary/50"
+                >
                   <CardContent className="pt-6 space-y-3">
                     <div className="flex items-center justify-between gap-2 flex-wrap">
                       <div>
@@ -637,17 +655,23 @@ export const EmailPerformanceStats = () => {
         <TabsContent value="sequences" className="mt-4 space-y-4">
           <RateTable
             title="Sequence performance"
-            description="Which sequences actually generate replies."
+            description="Which sequences actually generate replies — click a row for the sends."
             firstCol="Sequence"
             rows={sequences}
             empty="No sequence sends in this window"
+            onRowClick={(r) =>
+              openEmails(`Sequence: ${r.name}`, "Every send from this sequence.", sent.filter((e) => e.sequence_id === r.key))
+            }
           />
           <RateTable
             title="Step performance"
-            description="Where in the cadence replies come from."
+            description="Where in the cadence replies come from — click a row for the sends."
             firstCol="Step"
             rows={steps}
             empty="No multi-step sends in this window"
+            onRowClick={(r) =>
+              openEmails(`${r.name}`, "Every send at this cadence step.", sent.filter((e) => String(e.sequence_step ?? "") === r.key))
+            }
           />
         </TabsContent>
 
