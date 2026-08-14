@@ -142,7 +142,12 @@ export const EmailPerformanceStats = () => {
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-end">
+        <LiveIndicator status={liveStatus} lastUpdate={lastUpdate} />
+      </div>
+
       {/* Overall Stats */}
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
