@@ -328,7 +328,7 @@ const Inbox = () => {
   const handleSync = async () => {
     setSyncing(true);
     try {
-      const { error } = await supabase.functions.invoke("inbox-sync", { body: {} });
+      const { error } = await supabase.functions.invoke("inbox-sync", { body: { analyzeReplies: true } });
       if (error) throw error;
       await queryClient.invalidateQueries({ queryKey: ["inbox-sent-emails"] });
       await queryClient.invalidateQueries({ queryKey: ["inbox-reply-threads"] });
