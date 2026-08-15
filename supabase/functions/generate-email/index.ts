@@ -5,6 +5,9 @@ import { composeSkillContext, skillNamesUsed } from "../_shared/email-skills.ts"
 // One quality verdict for every caller — Outreach Studio, agent-chat and the
 // autonomous agent all reach the rubric through this rather than each other.
 import { isWeak, scoreEmail } from "../_shared/email-quality.ts";
+// The writing rules live in one module so the three copies that used to exist
+// cannot drift apart — see _shared/email-rules.ts.
+import { IMMUTABLE_EDIT_RULES, bannedPhrasesBlock } from "../_shared/email-rules.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {
   briefToPromptBlock,
@@ -40,20 +43,7 @@ const validateEmailInputs = (data: any) => {
 };
 
 // ─── Shared rules injected into every system prompt ───────────────────────────
-const BANNED_PHRASES = `
-BANNED PHRASES — never use any of these, ever (2026 outbound KB dead phrases):
-- "I noticed that", "I've been analyzing", "I came across", "I was impressed by"
-- "I wanted to reach out", "I hope this finds you well", "just reaching out"
-- "touching base", "circling back", "bumping this to the top", "just following up"
-- "I saw on LinkedIn", "I was doing some research", "I've been looking at your"
-- "hope this email finds you", "I'll keep this brief", "quick question"
-- "did you see my last email", "I came across your profile", "as a leader in"
-- "I'd love to connect", "let me know if you have any questions"
-- "looking forward to hearing from you", "innovative solution", "cutting-edge"
-- "synergy", "leverage", "any update", "per my last email", "just checking in"
-- "wanted to follow up", "I hope this message finds you"
-- "streamline", "optimize", "seamless", "supercharge", "unlock", "empower", "all-in-one"
-- Any phrase that sounds like you scraped their LinkedIn profile`;
+const BANNED_PHRASES = bannedPhrasesBlock();
 
 const PERSONALIZATION_RULES = `
 PERSONALIZATION RULES:
@@ -1108,6 +1098,12 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
 
     // Inject web-grounded research + no-hallucination rule into every non-precision-edit prompt.
     const isPrecisionEdit = goal === 'custom' && !!customInstruction;
+    // Applied here rather than trusted to the caller: the client used to build
+    // this block itself and post it back, which is how a third copy of the
+    // rules ended up living in the browser.
+    if (isPrecisionEdit) {
+      userPrompt = `${userPrompt}\n${IMMUTABLE_EDIT_RULES}`;
+    }
     if (!isPrecisionEdit) {
       userPrompt = `${userPrompt}${researchBlock}${NO_HALLUCINATION_RULE}`;
     }

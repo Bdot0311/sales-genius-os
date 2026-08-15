@@ -1217,17 +1217,10 @@ const Outreach = () => {
     if (!generatedEmail || fixingCheck) return;
     setFixingCheck(checkLabel);
 
-    // Hard constraints that MUST hold after every fix — same rules as the edge function
-    const IMMUTABLE_RULES = `
-IMMUTABLE RULES — these apply regardless of the fix task:
-- Total email body MUST stay under 75 words. Count carefully.
-- NEVER use: "I noticed", "I hope this finds you", "I wanted to reach out", "just reaching out", "touching base", "circling back", "I came across", "as a leader in", "innovative solution", "cutting-edge", "synergy", "leverage", "I'd love to connect", "looking forward to hearing from you", "quick question", "just following up", "wanted to follow up"
-- Greeting stays as "Hi [FirstName]," — do not change it
-- Sign-off stays as just the sender's first name on its own line — do not add "Best," or "Thanks,"
-- Do NOT introduce new percentage claims, statistics, or unverified benchmarks
-- Do NOT add new links or URLs
-- Do NOT add new placeholder tokens like [Name] or {company}
-- Return ONLY the email body — no subject line, no headers, no explanation`;
+    // The writing rules are no longer built here. generate-email applies them
+    // itself for a precision edit, from _shared/email-rules.ts — posting them
+    // from the browser made the client a third copy that drifted from the two
+    // server-side ones.
 
     // Surgical, targeted instructions per check — only touch what's broken
     const fixInstructions: Record<string, string> = {
@@ -1344,7 +1337,6 @@ ${generatedEmail}
 
 ${instruction}
 
-${IMMUTABLE_RULES}
 
 Return ONLY the corrected email body. No subject line. No explanation. No "Here is the rewritten email:" prefix. Just the email body text starting with the greeting.`,
           isFirstTouch,
