@@ -1,4 +1,5 @@
 import { composeSkillContext } from "./email-skills.ts";
+import { bannedPhrasesLine } from "./email-rules.ts";
 
 // Cold Email Engine playbook — shared by the AI SDR agent.
 // Produces the same 4-touch sequence rules used by generate-sequence.
@@ -15,7 +16,7 @@ export const PLAYBOOK_SYSTEM_RULES = `COLD EMAIL ENGINE RULES (non-negotiable, a
 - Sign-off: sender first name only. Never "Best," / "Thanks,".
 - No exclamation points. No links. No placeholders like [Company].
 
-BANNED PHRASES: "hope this finds you well", "just checking in", "just reaching out", "touching base", "circling back", "bumping this", "wanted to check in", "quick question" (in body), "I noticed", "I came across", "I was impressed", "love what you're doing", "big fan", "in today's fast-paced world", "leverage", "optimize", "streamline", "synergy", "seamless", "supercharge", "unlock", "empower", "cutting-edge", "industry-leading", "best-in-class", "revolutionary", "next-gen", "game-changing", "innovative solution".
+${bannedPhrasesLine()}
 BANNED SPAM TRIGGERS: "free", "guarantee", "limited time", "act now", "100%", "$$$", ALL CAPS words.
 
 FOUR-TOUCH STRUCTURE (attention first, sell later):

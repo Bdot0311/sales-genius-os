@@ -5,6 +5,9 @@ import { composeSkillContext, skillNamesUsed } from "../_shared/email-skills.ts"
 // One quality verdict for every caller — Outreach Studio, agent-chat and the
 // autonomous agent all reach the rubric through this rather than each other.
 import { isWeak, scoreEmail } from "../_shared/email-quality.ts";
+// The writing rules live in one module so the three copies that used to exist
+// cannot drift apart — see _shared/email-rules.ts.
+import { IMMUTABLE_EDIT_RULES, NO_PLACEHOLDER_RETRY, bannedPhrasesBlock, findPlaceholders, hasPlaceholder } from "../_shared/email-rules.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {
   briefToPromptBlock,
@@ -40,20 +43,7 @@ const validateEmailInputs = (data: any) => {
 };
 
 // ─── Shared rules injected into every system prompt ───────────────────────────
-const BANNED_PHRASES = `
-BANNED PHRASES — never use any of these, ever (2026 outbound KB dead phrases):
-- "I noticed that", "I've been analyzing", "I came across", "I was impressed by"
-- "I wanted to reach out", "I hope this finds you well", "just reaching out"
-- "touching base", "circling back", "bumping this to the top", "just following up"
-- "I saw on LinkedIn", "I was doing some research", "I've been looking at your"
-- "hope this email finds you", "I'll keep this brief", "quick question"
-- "did you see my last email", "I came across your profile", "as a leader in"
-- "I'd love to connect", "let me know if you have any questions"
-- "looking forward to hearing from you", "innovative solution", "cutting-edge"
-- "synergy", "leverage", "any update", "per my last email", "just checking in"
-- "wanted to follow up", "I hope this message finds you"
-- "streamline", "optimize", "seamless", "supercharge", "unlock", "empower", "all-in-one"
-- Any phrase that sounds like you scraped their LinkedIn profile`;
+const BANNED_PHRASES = bannedPhrasesBlock();
 
 const PERSONALIZATION_RULES = `
 PERSONALIZATION RULES:
@@ -1108,6 +1098,12 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
 
     // Inject web-grounded research + no-hallucination rule into every non-precision-edit prompt.
     const isPrecisionEdit = goal === 'custom' && !!customInstruction;
+    // Applied here rather than trusted to the caller: the client used to build
+    // this block itself and post it back, which is how a third copy of the
+    // rules ended up living in the browser.
+    if (isPrecisionEdit) {
+      userPrompt = `${userPrompt}\n${IMMUTABLE_EDIT_RULES}`;
+    }
     if (!isPrecisionEdit) {
       userPrompt = `${userPrompt}${researchBlock}${NO_HALLUCINATION_RULE}`;
     }
@@ -1184,6 +1180,31 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
 
     // Introduction emails include Subject line — preserve it; all others strip it
     const preserveSubject = goal === 'introduction' && !use4SentenceFramework;
+    // An unfilled placeholder is a broken draft, not a dirty one: scrubbing the
+    // token leaves the sentence collapsed around the hole it came out of.
+    // Regenerate once instead, telling the model exactly what it did.
+    if (hasPlaceholder(email)) {
+      console.warn(`[generate-email] placeholder in draft: ${findPlaceholders(email).join(', ')} — regenerating`);
+      const phRetry = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: `${userPrompt}\n${NO_PLACEHOLDER_RETRY}` },
+          ],
+          temperature: 0.7,
+        }),
+      });
+      if (phRetry.ok) {
+        const d = await phRetry.json();
+        const second = (d.choices?.[0]?.message?.content || '').trim();
+        // Only take the retry if it actually fixed the problem.
+        if (second && !hasPlaceholder(second)) email = second;
+      }
+    }
+
     email = cleanGeneratedEmail(email, preserveSubject);
 
     // On introduction emails the subject is preserved inside the body, so pull
@@ -1205,6 +1226,15 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
     );
     if (rubric) {
       console.log(`[generate-email] rubric: ${rubric.overall}/100 weakest=${rubric.weakest}${isWeak(rubric) ? ' WEAK' : ''}`);
+    }
+
+    // Surfacing the failure beats shipping "[Sender Name]" to a prospect.
+    if (hasPlaceholder(email)) {
+      console.error(`[generate-email] placeholder survived retry: ${findPlaceholders(email).join(', ')}`);
+      return new Response(JSON.stringify({
+        error: 'The draft came back with an unfilled placeholder. Try generating again.',
+        error_code: 'placeholder',
+      }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     return new Response(JSON.stringify({
