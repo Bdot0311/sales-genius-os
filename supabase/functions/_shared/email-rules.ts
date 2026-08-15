@@ -78,3 +78,39 @@ IMMUTABLE RULES — these apply regardless of the fix task:
 - Do NOT introduce any banned phrase while fixing something else
 ${bannedPhrasesLine()}
 - Return ONLY the email body — no subject line, no headers, no explanation`;
+
+/**
+ * An unfilled merge token anywhere in a draft.
+ *
+ * generate-email's scrubber matched an allowlist of four words — name, company,
+ * first name, full name — so "[client name]" and "[Sender Name]" both shipped
+ * to real prospects. Anything the model invents outside that vocabulary passed
+ * straight through.
+ *
+ * This matches the bracket shapes generally instead. In a plain-text cold email
+ * under 90 words a bracketed or braced fragment is a placeholder essentially
+ * every time. Angle brackets are deliberately excluded: some send paths carry
+ * HTML bodies, and eating a real tag would be a worse bug than the one being
+ * fixed.
+ */
+const PLACEHOLDER_PATTERN = /\[[^\]\n]{1,40}\]|\{\{[^}\n]{1,40}\}\}|\{[^}\n]{1,40}\}/;
+
+export function hasPlaceholder(text: string): boolean {
+  return PLACEHOLDER_PATTERN.test(text ?? "");
+}
+
+/** The offending tokens, for logs and for telling the model what to fix. */
+export function findPlaceholders(text: string): string[] {
+  return [...(text ?? "").matchAll(new RegExp(PLACEHOLDER_PATTERN, "g"))].map((m) => m[0]);
+}
+
+/**
+ * Why a draft carrying one is regenerated rather than scrubbed: deleting the
+ * token leaves the sentence broken around the hole it came out of — "recent
+ * work with  on ai outbound" — which reads worse than the placeholder did.
+ */
+export const NO_PLACEHOLDER_RETRY = `
+The previous draft contained an unfilled placeholder, which can never be sent.
+Write the email again using only facts you were actually given. If you do not
+know a detail, leave it out and write around it — never write a bracketed
+stand-in like [client name], [Sender Name] or {company} for a human to fill in.`;

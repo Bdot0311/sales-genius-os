@@ -11,8 +11,11 @@ import { assert, assertEquals } from "https://deno.land/std@0.224.0/assert/mod.t
 import {
   BANNED_PHRASES,
   IMMUTABLE_EDIT_RULES,
+  NO_PLACEHOLDER_RETRY,
   bannedPhrasesBlock,
   bannedPhrasesLine,
+  findPlaceholders,
+  hasPlaceholder,
 } from "../_shared/email-rules.ts";
 import { PLAYBOOK_SYSTEM_RULES } from "../_shared/cold-email-playbook.ts";
 
@@ -67,4 +70,45 @@ Deno.test("the edit rules keep the constraints that survived from the old client
   for (const rule of ["75 words", "Hi [FirstName],", "no subject line"]) {
     assert(IMMUTABLE_EDIT_RULES.includes(rule), `"${rule}" was lost`);
   }
+});
+
+// --- unfilled placeholders -------------------------------------------------
+// The previous scrubber matched an allowlist of four words, so "[client name]"
+// and "[Sender Name]" both reached real prospects. These are the exact strings
+// that shipped.
+
+Deno.test("catches the placeholders that actually shipped", () => {
+  assert(hasPlaceholder("given hellogrowth's recent work with [client name] on ai outbound"));
+  assert(hasPlaceholder("Want to see an example?\n\n[Sender Name]"));
+});
+
+Deno.test("catches brace and mustache forms too", () => {
+  for (const t of ["Hi {{first_name}},", "at {company} you", "Hi {FirstName},"]) {
+    assert(hasPlaceholder(t), `missed ${t}`);
+  }
+});
+
+Deno.test("a clean email is not flagged", () => {
+  for (const t of [
+    "Hi Josiah,\n\nSaw your work on AI outbound. Worth a look?\n\nBrandon",
+    "",
+    "No brackets here at all.",
+  ]) {
+    assertEquals(hasPlaceholder(t), false, `false positive on: ${t.slice(0, 40)}`);
+  }
+});
+
+Deno.test("an HTML body is left alone", () => {
+  // Some send paths carry HTML. Eating a real tag would be a worse bug than the
+  // one this fixes, so angle brackets are deliberately not matched.
+  assertEquals(hasPlaceholder("<div><p>Hi Josiah,</p></div>"), false);
+});
+
+Deno.test("the offending tokens are reported, for logs and for the retry", () => {
+  assertEquals(findPlaceholders("work with [client name] for {company}"), ["[client name]", "{company}"]);
+});
+
+Deno.test("the retry instruction says what to do instead of leaving a blank", () => {
+  assert(/never write a bracketed/i.test(NO_PLACEHOLDER_RETRY));
+  assert(/write around it/i.test(NO_PLACEHOLDER_RETRY));
 });

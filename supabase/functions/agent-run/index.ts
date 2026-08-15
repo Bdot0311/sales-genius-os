@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
 import { captureServerEvent } from "../_shared/posthog.ts";
 import { isWeak, rubricFeedback, scoreEmail } from "../_shared/email-quality.ts";
+import { findPlaceholders, hasPlaceholder } from "../_shared/email-rules.ts";
 import {
   playbookSystemRules,
   buildTouchPrompt,
@@ -797,6 +798,23 @@ ${playbookSystemRules()}`;
               //
               // A null score means no verdict was available (the rubric is
               // plan-gated to growth and above), and never blocks a send.
+              // An unfilled merge token must never reach a prospect. Unlike a weak
+              // score this is not a judgement call, so it skips outright rather
+              // than queueing a draft a human would only reject.
+              if (hasPlaceholder(subject) || hasPlaceholder(body)) {
+                const found = [...findPlaceholders(subject), ...findPlaceholders(body)];
+                await logAction({
+                  user_id: user.id,
+                  action_type: "skipped",
+                  status: "skipped",
+                  prospect_email: to,
+                  subject,
+                  description: `Skipped ${lead.contact_name ?? to} — the draft still had an unfilled placeholder: ${found.join(", ")}`,
+                  metadata: { phase: "outreach", reason: "placeholder", placeholders: found },
+                });
+                continue;
+              }
+
               let rubric = await scoreEmail(supabaseUrl, authHeader, anonKey, { subject, body });
               if (isWeak(rubric)) {
                 const retryRaw = await callGemini(
