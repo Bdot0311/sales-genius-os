@@ -2,6 +2,9 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 // Frameworks come from the GTM skills at request time rather than being retyped
 // here — see _shared/email-skills.ts.
 import { composeSkillContext, skillNamesUsed } from "../_shared/email-skills.ts";
+// One quality verdict for every caller — Outreach Studio, agent-chat and the
+// autonomous agent all reach the rubric through this rather than each other.
+import { isWeak, scoreEmail } from "../_shared/email-quality.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {
   briefToPromptBlock,
@@ -1183,8 +1186,31 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
     const preserveSubject = goal === 'introduction' && !use4SentenceFramework;
     email = cleanGeneratedEmail(email, preserveSubject);
 
+    // On introduction emails the subject is preserved inside the body, so pull
+    // it from there; every other goal carries it on the request. The rubric
+    // scores subject and body together and reads worse without it.
+    const embeddedSubject = email.match(/^Subject:\s*(.+)$/im)?.[1]?.trim() ?? '';
+    const subjectLineForRubric = subjectLine || embeddedSubject;
+
+    // Score the finished draft. Every path that writes an email comes through
+    // this function, so scoring here is what puts the agent and the Studio on
+    // the same verdict instead of the panel being the only thing that checks.
+    // Advisory on this response: the caller decides what to do about a weak
+    // score, and a null score (plan-gated, provider down) blocks nothing.
+    const rubric = await scoreEmail(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      authHeader ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { subject: subjectLineForRubric, body: email },
+    );
+    if (rubric) {
+      console.log(`[generate-email] rubric: ${rubric.overall}/100 weakest=${rubric.weakest}${isWeak(rubric) ? ' WEAK' : ''}`);
+    }
+
     return new Response(JSON.stringify({
       email,
+      rubric,
+      quality_weak: isWeak(rubric),
       research: researchBrief
         ? {
             what_they_do: researchBrief.what_they_do,
