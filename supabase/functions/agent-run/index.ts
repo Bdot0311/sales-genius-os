@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
 import { captureServerEvent } from "../_shared/posthog.ts";
+import { isWeak, rubricFeedback, scoreEmail } from "../_shared/email-quality.ts";
 import {
   playbookSystemRules,
   buildTouchPrompt,
@@ -144,6 +145,7 @@ serve(async (req) => {
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const reqBody: { mode?: string; agentId?: string; trigger?: string } = await req.json().catch(() => ({}));
 
@@ -758,8 +760,8 @@ ${playbookSystemRules()}`;
 
               const raw = await callGemini(outreachPrompt, outreachSystemPrompt);
               const touches = parseTouches(raw);
-              const subject = touches[0]?.subject ?? "";
-              const body = touches[0]?.body ?? "";
+              let subject = touches[0]?.subject ?? "";
+              let body = touches[0]?.body ?? "";
               if (!subject || !body) {
                 await logAction({
                   user_id: user.id,
@@ -787,7 +789,43 @@ ${playbookSystemRules()}`;
                 continue;
               }
 
-              if (approvalMode) {
+              // Quality gate. The rubric existed and scored well, but nothing on
+              // this path ever called it, so the agent sent unscored email to
+              // real prospects. A weak draft gets one rewrite informed by the
+              // rubric's own objections; if it is still weak it is held for a
+              // human rather than sent or silently dropped.
+              //
+              // A null score means no verdict was available (the rubric is
+              // plan-gated to growth and above), and never blocks a send.
+              let rubric = await scoreEmail(supabaseUrl, authHeader, anonKey, { subject, body });
+              if (isWeak(rubric)) {
+                const retryRaw = await callGemini(
+                  outreachPrompt + rubricFeedback(rubric!),
+                  outreachSystemPrompt,
+                );
+                const retryTouches = parseTouches(retryRaw);
+                const rt = retryTouches[0];
+                if (rt?.subject && rt?.body) {
+                  const retryRubric = await scoreEmail(supabaseUrl, authHeader, anonKey, {
+                    subject: rt.subject,
+                    body: rt.body,
+                  });
+                  // Keep whichever attempt actually scored better; a rewrite is
+                  // not automatically an improvement.
+                  if ((retryRubric?.overall ?? 0) > (rubric?.overall ?? 0)) {
+                    subject = rt.subject;
+                    body = rt.body;
+                    touches[0] = rt;
+                    rubric = retryRubric;
+                  }
+                }
+              }
+              const qualityHold = isWeak(rubric);
+              if (qualityHold) {
+                console.log(`[agent-run] quality hold for ${to}: ${rubric?.overall}/100 weakest=${rubric?.weakest}`);
+              }
+
+              if (approvalMode || qualityHold) {
                 const queued = await queueApproval({
                   kind: "outreach",
                   lead_id: lead.id,
@@ -797,7 +835,7 @@ ${playbookSystemRules()}`;
                   company_name: lead.company_name ?? null,
                   subject,
                   body,
-                  reasoning: `Touch 1 of 4 (Cold Email Engine playbook) for ${lead.job_title ?? "contact"} at ${lead.company_name ?? "their company"}. Touches 2-4 (day 3, 7, 14) are scheduled automatically once this is approved.`,
+                  reasoning: `${qualityHold ? `Held for review — the quality rubric scored this ${rubric?.overall}/100${rubric?.weakest ? `, weakest on ${rubric.weakest}` : ""}, below the bar for sending automatically. ` : ""}Touch 1 of 4 (Cold Email Engine playbook) for ${lead.job_title ?? "contact"} at ${lead.company_name ?? "their company"}. Touches 2-4 (day 3, 7, 14) are scheduled automatically once this is approved.`,
                   metadata: {
                     phase: "outreach",
                     job_title: lead.job_title ?? null,

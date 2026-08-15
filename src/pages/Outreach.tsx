@@ -941,7 +941,10 @@ const Outreach = () => {
     }
   };
 
-  const saveDraft = async () => {
+  // Overrides exist because callers save immediately after setState, and the
+  // closure still holds the pre-edit value at that point. An applied rubric fix
+  // used to change the textarea and persist nothing.
+  const saveDraft = async (overrides?: { subject?: string; body?: string }) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -950,8 +953,8 @@ const Outreach = () => {
       const draftData = {
         user_id: user.id,
         lead_id: selectedLead || null,
-        subject: subjectLine || null,
-        body: generatedEmail || null,
+        subject: (overrides?.subject ?? subjectLine) || null,
+        body: (overrides?.body ?? generatedEmail) || null,
         tone: emailTone,
         trigger_context: triggerContext || null,
         opener_word: openerWord || null,
@@ -1264,14 +1267,13 @@ IMMUTABLE RULES — these apply regardless of the fix task:
     }
     const lead = leads.find((l) => l.id === selectedLead);
 
+    // Routed through saveDraft so a quality fix and a rubric fix persist the
+    // same way. The old version returned early when no draft row existed yet,
+    // so a fix applied before the first save was silently kept in memory only;
+    // saveDraft inserts in that case instead of dropping the edit.
     const persistFixedDraft = async (fixedBody: string) => {
       setGeneratedEmail(fixedBody);
-      if (!currentDraftId) return;
-      const { error } = await supabase
-        .from('email_drafts')
-        .update({ body: fixedBody, updated_at: new Date().toISOString() })
-        .eq('id', currentDraftId);
-      if (error) throw error;
+      await saveDraft({ body: fixedBody });
     };
 
     if (checkLabel === 'Personalization') {
@@ -2798,7 +2800,7 @@ For logos, use HTML:
                     <div className="flex gap-2">
                       <Button
                         variant="outline"
-                        onClick={saveDraft}
+                        onClick={() => void saveDraft()}
                         disabled={isSavingDraft || (!selectedLead && !subjectLine && !generatedEmail)}
                         className="flex-1"
                       >
@@ -3000,8 +3002,8 @@ For logos, use HTML:
                       <EmailRubricPanel
                         subject={subjectLine}
                         body={generatedEmail}
-                        onApplyBody={setGeneratedEmail}
-                        onApplySubject={setSubjectLine}
+                        onApplyBody={(next) => { setGeneratedEmail(next); void saveDraft({ body: next }); }}
+                        onApplySubject={(next) => { setSubjectLine(next); void saveDraft({ subject: next }); }}
                       />
 
                       <div className="flex gap-2">
