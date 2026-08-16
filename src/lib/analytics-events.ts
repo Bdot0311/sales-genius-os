@@ -19,7 +19,9 @@ const clean = (props?: Props): Record<string, string | number | boolean> => {
 };
 
 export function captureEvent(event: string, props?: Props) {
-  const properties = clean(props);
+  // Attribution (utm_source / medium / first-touch) rides along on every event
+  // automatically, so traffic is never bucketed as "Direct" by mistake.
+  const properties = { ...getAttributionProps(), ...clean(props) };
   try {
     if (isPostHogEnabled) posthog.capture(event, properties);
   } catch { /* analytics must never break the app */ }
