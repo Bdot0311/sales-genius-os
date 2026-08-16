@@ -47,7 +47,7 @@ export const FinalCTA = () => {
               viewport={{ once: true, margin: "-10% 0px" }}
               transition={{ type: "spring", stiffness: 60, damping: 18, delay: 0.06 }}
             >
-              Your next 100 prospects
+              Your first campaign,
             </motion.span>
             <motion.span
               className="block italic animate-shiny"
@@ -64,7 +64,7 @@ export const FinalCTA = () => {
               viewport={{ once: true, margin: "-10% 0px" }}
               transition={{ type: "spring", stiffness: 60, damping: 18, delay: 0.18 }}
             >
-              in the next 10 minutes.
+              built with you.
             </motion.span>
           </h2>
 
@@ -76,7 +76,7 @@ export const FinalCTA = () => {
             viewport={{ once: true, margin: "-10% 0px" }}
             transition={{ duration: 0.55, ease, delay: 0.3 }}
           >
-            Verified contacts, ICP scoring, and a personalized first draft. All in one place. Free to start.
+            100 free leads, verified inboxes and a first draft for each. Then we set up your opening campaign together, on a call, at no cost.
           </motion.p>
 
           <motion.div

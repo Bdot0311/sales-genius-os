@@ -25,7 +25,7 @@ export const HeroSection = () => {
             </span>
             <span className="font-medium text-white/95">New</span>
             <span className="text-white/85">·</span>
-            <span>AI SDR now live · see who's ready to buy before you reach out</span>
+            <span>New · an AI SDR that sources, writes, sends and books meetings on its own</span>
           </span>
         </div>
 
@@ -36,7 +36,7 @@ export const HeroSection = () => {
           style={{ fontSize: "clamp(3rem, 8vw, 5.25rem)", lineHeight: 1.02, letterSpacing: "-0.01em", fontWeight: 800, textShadow: "0 4px 30px rgba(0,0,0,0.35)" }}
         >
           <span className="block text-white">
-            Find who to sell to.
+            Your next 100 prospects,
           </span>
           <span
             className="block font-display italic animate-shiny"
@@ -53,13 +53,13 @@ export const HeroSection = () => {
               backgroundClip: "text",
             }}
           >
-            Then close them.
+            already qualified.
           </span>
         </h1>
 
         {/* Subhead — LCP element: rendered fully opaque, no entrance animation */}
         <p className="mb-5 max-w-[22rem] text-base font-light leading-snug text-white/95 sm:max-w-2xl sm:text-xl sm:leading-relaxed" style={{ textShadow: "0 3px 20px rgba(0,0,0,0.3)" }}>
-          Know exactly who's ready to buy. OutReign scores every prospect by fit and intent, verifies their inbox, and drafts the opener, so your team focuses on closing.
+          Describe your customer in plain English. Get 100 ranked prospects with verified emails and a first draft for each, free. Then I set up your first campaign with you personally.
         </p>
 
 
@@ -104,11 +104,11 @@ export const HeroSection = () => {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.65 }}
         >
-          No credit card required
+          100 free leads
           <span className="w-px h-3 bg-white/20 inline-block" />
           Cancel anytime
           <span className="w-px h-3 bg-white/20 inline-block" />
-          First leads in 2 minutes
+          Set up with you personally
         </motion.p>
 
         {/* Social proof line */}
