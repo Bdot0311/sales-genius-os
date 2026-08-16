@@ -12,6 +12,8 @@
  * VITE_POSTHOG_KEY / VITE_POSTHOG_HOST pair is kept as a fallback so analytics
  * never goes dark if the connector is re-linked or temporarily unavailable.
  */
+import { getAttributionProps as attributionProps } from "@/lib/attribution";
+
 const connectorKey = import.meta.env.VITE_LOVABLE_CONNECTOR_POSTHOG_API_KEY as string | undefined;
 const connectorRegion = (import.meta.env.VITE_LOVABLE_CONNECTOR_POSTHOG_REGION as string | undefined) || "eu";
 const legacyKey = import.meta.env.VITE_POSTHOG_KEY as string | undefined;
@@ -99,6 +101,11 @@ export const initPostHog = async (): Promise<void> => {
           },
           disable_session_recording: false,
         });
+        // Attach traffic attribution to every event, including autocaptured ones.
+        try {
+          const attribution = attributionProps();
+          if (Object.keys(attribution).length) ph.register(attribution);
+        } catch { /* noop */ }
         ph.startExceptionAutocapture({
           capture_unhandled_errors: true,
           capture_unhandled_rejections: true,
@@ -131,6 +138,7 @@ export const posthog = {
   identify: call("identify"),
   reset: call("reset"),
   setPersonProperties: call("setPersonProperties"),
+  register: call("register"),
   group: call("group"),
   /**
    * Browser-only distinct id, used as a join key for server-side records
