@@ -119,7 +119,7 @@ export const HeroSection = () => {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.75 }}
         >
-          Built in public by a founder running real outbound daily
+          Built by operators who run real outbound every day
         </motion.p>
       </div>
 
