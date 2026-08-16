@@ -80,6 +80,10 @@ if (rootEl.dataset.prerendered === "true") {
 // Error monitoring is loaded after the first paint so it stays off the LCP
 // critical path. Errors thrown before this resolves are still caught by the
 // window listeners above.
+// Traffic attribution is read immediately (before any SPA navigation can strip
+// the landing URL's utm params) and stored for the rest of the session.
+void import("./lib/attribution").then(({ initAttribution }) => initAttribution());
+
 const bootDeferred = () => {
   void import("./lib/sentry").then(({ initSentry }) => initSentry());
   // Analytics SDKs (posthog-js, @heycatch/sdk) are ~470 KB of source combined.
