@@ -38,7 +38,7 @@ interface SEOHeadProps {
   articleContent?: string; // For reading time calculation
 }
 
-const DEFAULT_OG_IMAGE = 'https://outreign.io/outreign-social-card.jpg';
+const DEFAULT_OG_IMAGE = 'https://outreign.io/__l5e/assets-v1/54ff0c6f-955e-4073-9348-98d79eba4c4f/outreign-social-card.jpg';
 
 export const SEOHead = ({
   title = "Find Who To Sell To, Then Close Them.",

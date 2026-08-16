@@ -12,7 +12,7 @@ const Terms = () => {
         title="Terms of Service - User Agreement & Policies | OutReign"
         description="Review the OutReign Terms of Service. Understand your rights and responsibilities when using our AI-powered sales platform."
         keywords="OutReign terms of service, terms and conditions, user agreement, service agreement"
-        ogImage="https://outreign.io/outreign-social-card.jpg"
+        ogImage="https://outreign.io/__l5e/assets-v1/54ff0c6f-955e-4073-9348-98d79eba4c4f/outreign-social-card.jpg"
       />
       <BreadcrumbSchema items={[
         { name: "Home", url: "https://outreign.io" },

@@ -4,7 +4,7 @@ export const CANONICAL_DOMAIN = 'https://outreign.io';
 
 // Social card version. Bump this when the social preview image changes so
 // X/LinkedIn/Facebook see a brand-new og:image URL and re-scrape it.
-export const SOCIAL_CARD_VERSION = '6';
+export const SOCIAL_CARD_VERSION = '7';
 
 /**
  * Appends a stable version query param to social images for cache busting.
@@ -204,14 +204,14 @@ export function shouldIndexPage(path: string): boolean {
  * OG Image URL - returns page-specific or default
  */
 export function getOGImageUrl(pageName?: string): string {
-  const defaultOG = 'https://outreign.io/outreign-social-card.jpg';
-  
+  const defaultOG = 'https://outreign.io/__l5e/assets-v1/54ff0c6f-955e-4073-9348-98d79eba4c4f/outreign-social-card.jpg';
+
   // Add custom OG images here as they're created
   const ogImages: Record<string, string> = {
     home: defaultOG,
     pricing: defaultOG,
     // Add more as custom OG images are created
   };
-  
+
   return pageName && ogImages[pageName] ? ogImages[pageName] : defaultOG;
 }
