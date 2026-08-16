@@ -153,7 +153,7 @@ export const SEOHead = ({
       <meta property="og:updated_time" content={String(SOCIAL_CARD_VERSION)} />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
-      <meta property="og:image:alt" content="OutReign — One workflow. From first lead to first reply." />
+      <meta property="og:image:alt" content="OutReign.io — Find who to sell to. Then close them. AI scores, enriches and writes personalized outreach, shown beside a lead search scoring prospects by fit." />
       <meta property="og:site_name" content="OutReign" />
       <meta property="og:locale" content={locale} />
       {alternateLocales.map((loc) => (
@@ -182,7 +182,7 @@ export const SEOHead = ({
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={safeDescription} />
       <meta name="twitter:image" content={versionedOgImage} />
-      <meta name="twitter:image:alt" content="OutReign — One workflow. From first lead to first reply." />
+      <meta name="twitter:image:alt" content="OutReign.io — Find who to sell to. Then close them. AI scores, enriches and writes personalized outreach, shown beside a lead search scoring prospects by fit." />
       
       {/* Reading time for articles */}
       {readingTime && (
