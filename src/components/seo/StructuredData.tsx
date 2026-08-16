@@ -136,7 +136,7 @@ export const OrganizationSchema = ({
       "Sales Automation",
       "Personalized Outreach"
     ],
-    "slogan": "Find who to sell to. Then actually sell to them.",
+    "slogan": "Your next 100 prospects, already qualified.",
     "areaServed": "Worldwide"
   };
 

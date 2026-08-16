@@ -48,9 +48,9 @@ interface RouteMeta {
 const ROUTES: RouteMeta[] = [
   {
     path: "/",
-    title: "Find Who To Sell To, Then Close Them.",
+    title: "Your Next 100 B2B Prospects, Already Qualified",
     description:
-      "Describe your ideal customer in plain English. OutReign returns ranked B2B prospects with verified emails and AI-drafted outreach in under 2 minutes.",
+      "Describe your customer in plain English. Get 100 ranked B2B prospects with verified emails and a first draft for each, free, with campaign setup included.",
   },
   {
     path: "/pricing",

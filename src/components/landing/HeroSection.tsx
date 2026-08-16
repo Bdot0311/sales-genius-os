@@ -25,7 +25,7 @@ export const HeroSection = () => {
             </span>
             <span className="font-medium text-white/95">New</span>
             <span className="text-white/85">·</span>
-            <span>New · an AI SDR that sources, writes, sends and books meetings on its own</span>
+            <span>an AI SDR that sources, writes, sends and books meetings on its own</span>
           </span>
         </div>
 
