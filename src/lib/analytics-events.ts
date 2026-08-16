@@ -6,6 +6,7 @@
  */
 import { isPostHogEnabled, posthog } from "@/lib/posthog";
 import { analytics as heycatch } from "@/lib/heycatch";
+import { getAttributionProps } from "@/lib/attribution";
 
 type Props = Record<string, string | number | boolean | null | undefined>;
 
