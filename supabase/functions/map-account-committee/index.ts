@@ -11,6 +11,41 @@ function json(b: unknown, s = 200): Response {
   return new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }
 
+const FUNCTION_TERMS: Record<string, string[]> = {
+  exec: ["ceo", "chief executive", "founder", "co-founder", "president", "owner", "general manager"],
+  sales: ["sales", "revenue", "business development", "account executive", "sdr", "bdr", "growth"],
+  marketing: ["marketing", "demand generation", "brand", "communications", "growth"],
+  technical: ["engineering", "engineer", "technology", "technical", "software", "developer", "devops", "information technology", " it ", "cto", "cio"],
+  finance: ["finance", "financial", "accounting", "procurement", "purchasing", "cfo"], operations: ["operations", "operational", "coo"], hr: ["people", "human resources", "talent", "hr"],
+};
+const SENIORITY_TERMS: Record<string, string[]> = {
+  cxo: ["chief", "ceo", "cto", "cfo", "coo", "cmo", "cio", "cro", "founder", "president", "owner"],
+  c_level: ["chief", "ceo", "cto", "cfo", "coo", "cmo", "cio", "cro", "founder", "president", "owner"],
+  vp: ["vice president", "vp", "head of", "chief", "ceo", "cto", "cfo", "coo", "cmo", "cio", "cro"],
+  director: ["director", "head of", "vice president", "vp", "chief"], manager: ["manager", "lead", "director", "head of"],
+  ic: ["executive", "representative", "specialist", "associate", "engineer", "developer", "analyst", "consultant", "sdr", "bdr"],
+};
+function bestPersona(contact: any, personas: any[]): string | null {
+  const title = ` ${String(contact.job_title || "").toLowerCase()} `;
+  if (!title.trim()) return null;
+  let best: { label: string; score: number } | null = null;
+  for (const persona of personas) {
+    let score = 0;
+    const label = String(persona.label || "").toLowerCase();
+    const fn = String(persona.function || "").toLowerCase();
+    const band = String(persona.seniority_band || "").toLowerCase();
+    for (const term of FUNCTION_TERMS[fn] || []) if (title.includes(term)) score += 4;
+    for (const term of SENIORITY_TERMS[band] || []) if (title.includes(term)) score += 2;
+    for (const word of label.split(/\s+/).filter((w: string) => w.length > 3)) if (title.includes(word)) score += 1;
+    if (label.includes("economic buyer") && /\b(ceo|founder|owner|president|chief|vp|vice president)\b/.test(title)) score += 5;
+    if (label.includes("champion") && /\b(head|director|vp|vice president|manager)\b/.test(title)) score += 3;
+    if (label.includes("technical") && /\b(cto|cio|engineer|engineering|technical|technology|developer|devops|it)\b/.test(title)) score += 6;
+    if (label.includes("end user") && /\b(executive|representative|specialist|associate|sdr|bdr|engineer|developer|analyst)\b/.test(title)) score += 4;
+    if (score > (best?.score || 0)) best = { label: persona.label, score };
+  }
+  return best && best.score >= 3 ? best.label : null;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -28,6 +63,13 @@ serve(async (req) => {
       const { data: sub } = await supabase.from("subscriptions").select("plan").eq("user_id", user.id).maybeSingle();
       if (!PRO_PLUS.has((sub?.plan || "free").toLowerCase())) {
         return json({ error: "the buying committee map is available on pro and agency.", error_code: "upgrade_required" }, 403);
+      }
+
+      for (const contact of contacts) {
+        if (!assignments[contact.id]) {
+          const fallback = bestPersona(contact, personas);
+          if (fallback) assignments[contact.id] = fallback;
+        }
       }
     }
 
