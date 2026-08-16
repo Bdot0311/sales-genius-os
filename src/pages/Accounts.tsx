@@ -21,6 +21,8 @@ const Accounts = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [selected, setSelected] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
+  const [enrichmentVersion, setEnrichmentVersion] = useState(0);
+  const handleAccountEnriched = useCallback(() => setEnrichmentVersion((value) => value + 1), []);
 
   // Reused as the refresh hook after an account is imported from a tech signal,
   // so a newly added company appears in the list without a page reload. The
@@ -64,8 +66,8 @@ const Accounts = () => {
         <div className="space-y-6">
           {selected ? (
             <>
-              <AccountCommittee companyId={selected.id} companyName={displayName(selected)} companyDomain={selected.domain || undefined} />
-              <WhyNowPanel companyId={selected.id} />
+              <AccountCommittee companyId={selected.id} companyName={displayName(selected)} companyDomain={selected.domain || undefined} onEnriched={handleAccountEnriched} />
+              <WhyNowPanel key={`${selected.id}-${enrichmentVersion}`} companyId={selected.id} />
             </>
           ) : !loading && (
             <p className="text-sm text-muted-foreground">pick an account to see its committee.</p>

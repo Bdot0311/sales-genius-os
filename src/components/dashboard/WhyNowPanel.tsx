@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ExternalLink, RefreshCw } from "lucide-react";
-import { toast } from "sonner";
+import { Loader2, ExternalLink } from "lucide-react";
 
 interface Claim { claim: string; source_url: string; confidence: string }
 
@@ -22,59 +20,50 @@ export const WhyNowPanel = ({ companyId }: { companyId: string }) => {
   const [researchedAt, setResearchedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
-  const [remaining, setRemaining] = useState<number | null>(null);
   // Why a run came back empty. "no signals" covered three different situations
   // and none of them were actionable without knowing which one applied.
   const [reason, setReason] = useState<string | null>(null);
 
-  const loadCache = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { setLoading(false); return; }
-    const { data } = await supabase.from("why_now_research").select("claims, researched_at").eq("user_id", session.user.id).eq("company_id", companyId).maybeSingle();
-    setClaims(Array.isArray(data?.claims) ? (data.claims as unknown as Claim[]) : []);
-    setResearchedAt(data?.researched_at || null);
-    setLoading(false);
-  };
-  useEffect(() => { setLoading(true); loadCache(); }, [companyId]);
-
-  const research = async () => {
-    setRunning(true);
-    setReason(null);
-    try {
-      const { data, error } = await supabase.functions.invoke("research-account", { body: { companyId, force: true } });
-      if (error) throw error;
-      if (data?.error_code === "upgrade_required") { toast.error("why-now research is on growth and above."); return; }
-      if (data?.error_code === "cap_reached") { toast.error("daily research limit reached, it resets tomorrow."); return; }
-      if (data?.error) { toast.error(data.error); return; }
-      setClaims(Array.isArray(data?.claims) ? data.claims : []);
-      setResearchedAt(data?.researched_at || null);
-      if (typeof data?.remaining === "number") setRemaining(data.remaining);
-      if (!data?.claims?.length) {
-        setReason(typeof data?.reason === "string" ? data.reason : null);
-        toast(data?.reason || "no sourced signals to build a why-now from yet.");
-      }
-    } catch (e: any) {
-      toast.error(e?.message || "could not research this account");
-    } finally { setRunning(false); }
-  };
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      setLoading(true); setRunning(false); setReason(null); setClaims([]); setResearchedAt(null);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { if (mounted) setLoading(false); return; }
+      const { data: cached } = await supabase.from("why_now_research").select("claims, researched_at")
+        .eq("user_id", session.user.id).eq("company_id", companyId).maybeSingle();
+      if (!mounted) return;
+      const cachedClaims = Array.isArray(cached?.claims) ? cached.claims as unknown as Claim[] : [];
+      setClaims(cachedClaims); setResearchedAt(cached?.researched_at || null); setLoading(false); setRunning(true);
+      try {
+        const { data, error } = await supabase.functions.invoke("research-account", { body: { companyId } });
+        if (!mounted) return;
+        if (error) { setReason(cachedClaims.length ? null : "could not research this account right now."); return; }
+        if (data?.error_code === "upgrade_required") { setReason("automatic why-now research is available on growth and above."); return; }
+        if (data?.error_code === "cap_reached") { setReason("daily research limit reached; automatic research will retry tomorrow."); return; }
+        const nextClaims = Array.isArray(data?.claims) ? data.claims as Claim[] : [];
+        setClaims(nextClaims.length ? nextClaims : cachedClaims);
+        setResearchedAt(data?.researched_at || cached?.researched_at || null);
+        if (!nextClaims.length && !cachedClaims.length) {
+          setReason(typeof data?.reason === "string" ? data.reason : data?.error || "no sourced signals were found for this account yet.");
+        }
+      } finally { if (mounted) setRunning(false); }
+    })();
+    return () => { mounted = false; };
+  }, [companyId]);
 
   return (
     <Card>
       <CardHeader className="pb-3 flex flex-row items-center justify-between gap-3">
         <CardTitle className="text-base">why now</CardTitle>
-        <div className="flex items-center gap-2">
-          {remaining != null && <span className="text-[11px] text-muted-foreground">{remaining} left today</span>}
-          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={research} disabled={running}>
-            {running ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <RefreshCw className="w-3 h-3 mr-1" />}research
-          </Button>
-        </div>
+        {running && <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground"><Loader2 className="w-3 h-3 animate-spin" />researching automatically</span>}
       </CardHeader>
       <CardContent className="space-y-2">
         {loading ? (
           <div className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="w-3.5 h-3.5 animate-spin" />loading...</div>
         ) : claims.length === 0 ? (
           <p className="text-xs text-muted-foreground">
-            {reason ?? "no why-now yet. run research to pull sourced reasons from this account's detected signals."}
+            {reason ?? "researching sourced reasons from this account's detected signals."}
           </p>
         ) : (
           claims.map((c, i) => (
