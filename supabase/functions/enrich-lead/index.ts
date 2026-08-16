@@ -388,6 +388,24 @@ serve(async (req) => {
         console.error('Error calling detect-funding-signals after enrichment:', fundErr);
       }
 
+      // Company news events from PredictLeads (funding, expansion, launches,
+      // leadership changes). The only funding signal before this was SEC Form D,
+      // which is US-only, so anything outside it was invisible.
+      try {
+        const newsRes = await fetch(`${supabaseUrl}/functions/v1/detect-news-signals`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': authHeader,
+            'apikey': supabaseKey,
+          },
+          body: JSON.stringify({ leadId }),
+        });
+        if (!newsRes.ok) console.error('detect-news-signals returned', newsRes.status);
+      } catch (newsErr) {
+        console.error('Error calling detect-news-signals after enrichment:', newsErr);
+      }
+
       // Technographic signal from Bloomberry, same pattern. This one also writes
       // leads.technologies, so it must run before v2 scores: the stack it fills
       // in is what the `tech` fit dimension matches against on this same pass.
