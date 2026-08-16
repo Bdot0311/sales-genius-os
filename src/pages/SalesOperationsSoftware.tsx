@@ -38,7 +38,7 @@ const SalesOperationsSoftware = () => {
         title="Sales Operations Software for B2B Outbound Teams | OutReign"
         description="OutReign is sales operations software built for outbound B2B teams. Plain-English lead search, SMTP-verified emails, AI drafting, and reply management in one platform."
         keywords="sales operations software, sales operations, sales ops, sales management software, sales productivity software, sales operations platform, sales operations tools, B2B sales operations software, outbound sales operations"
-        ogImage="https://outreign.io/outreign-social-card.jpg"
+        ogImage="https://outreign.io/__l5e/assets-v1/54ff0c6f-955e-4073-9348-98d79eba4c4f/outreign-social-card.jpg"
       />
       <BreadcrumbSchema items={[
         { name: "Home", url: "https://outreign.io" },

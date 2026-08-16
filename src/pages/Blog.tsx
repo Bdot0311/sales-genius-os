@@ -18,7 +18,7 @@ const Blog = () => {
         title="OutReign Blog — Outbound Sales for Founders & B2B Teams"
         description="Practical guides on B2B lead generation, ICP scoring, cold email, and outbound sales for founders and small SDR teams."
         keywords="B2B lead generation tips, outbound sales for founders, cold email guides, ICP scoring, sales prospecting"
-        ogImage="https://outreign.io/outreign-social-card.jpg"
+        ogImage="https://outreign.io/__l5e/assets-v1/54ff0c6f-955e-4073-9348-98d79eba4c4f/outreign-social-card.jpg"
       />
       <BreadcrumbSchema items={[
         { name: "Home", url: "https://outreign.io" },

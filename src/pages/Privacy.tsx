@@ -12,7 +12,7 @@ const Privacy = () => {
         title="Privacy Policy & Data Protection | OutReign"
         description="Learn how OutReign collects, uses, and protects your personal data. We're committed to transparency and GDPR/CCPA compliance."
         keywords="OutReign privacy policy, data protection, GDPR compliance, CCPA compliance, personal data"
-        ogImage="https://outreign.io/outreign-social-card.jpg"
+        ogImage="https://outreign.io/__l5e/assets-v1/54ff0c6f-955e-4073-9348-98d79eba4c4f/outreign-social-card.jpg"
       />
       <BreadcrumbSchema items={[
         { name: "Home", url: "https://outreign.io" },

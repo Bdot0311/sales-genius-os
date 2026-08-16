@@ -15,7 +15,7 @@ const Security = () => {
         title="Security & Data Protection | OutReign"
         description="Learn about OutReign security practices. Enterprise-grade data protection with encryption, SOC 2 compliance, GDPR/CCPA compliance, and 24/7 monitoring."
         keywords="OutReign security, data encryption, SOC 2, GDPR compliance, enterprise security, data protection"
-        ogImage="https://outreign.io/outreign-social-card.jpg"
+        ogImage="https://outreign.io/__l5e/assets-v1/54ff0c6f-955e-4073-9348-98d79eba4c4f/outreign-social-card.jpg"
       />
       <BreadcrumbSchema items={[
         { name: "Home", url: "https://outreign.io" },
