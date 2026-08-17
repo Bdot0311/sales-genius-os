@@ -23,10 +23,10 @@ export const ProblemSection = () => {
       <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "hsl(261 75% 50% / 0.18)" }} />
 
       <div className="container relative z-10 mx-auto px-6">
-        <div className="max-w-4xl mx-auto text-center">
+        <div className="max-w-4xl mx-auto text-start">
 
           <motion.p
-            className="font-serif italic font-thin text-base text-center text-purple-500 mb-10"
+            className="font-serif italic font-thin text-base text-purple-500 mb-10"
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-10% 0px" }}
