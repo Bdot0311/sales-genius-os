@@ -76,7 +76,7 @@ export const FinalCTA = () => {
             viewport={{ once: true, margin: "-10% 0px" }}
             transition={{ duration: 0.55, ease, delay: 0.3 }}
           >
-            100 free leads, verified inboxes and a first draft for each. Then we set up your opening campaign together, on a call, at no cost.
+            Start with 100 free leads and verified inboxes. We build your opening campaign with you on a call, then your AI SDR sources, sends and books while you work on the replies.
           </motion.p>
 
           <motion.div
@@ -103,11 +103,24 @@ export const FinalCTA = () => {
               <ArrowRight className="w-4 h-4" />
             </motion.a>
 
+            <div className="mt-4">
+              <a
+                href="/pricing"
+                className="inline-flex min-h-[40px] items-center gap-1.5 text-sm font-medium transition-colors"
+                style={{ color: "hsl(261 75% 68%)" }}
+              >
+                See what each plan sends per month
+                <ArrowRight className="h-3.5 w-3.5" />
+              </a>
+            </div>
+
+
+
             <p
               className="mt-4 text-xs"
               style={{ color: "hsl(0 0% 100% / 0.55)" }}
             >
-              No credit card required · Cancel anytime · 30-day money-back
+              No card to start · 14-day trial on paid plans · 30 days to get your money back
             </p>
           </motion.div>
         </div>

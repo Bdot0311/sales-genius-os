@@ -61,7 +61,7 @@ export const HeroSection = () => {
 
         {/* Subhead — LCP element: rendered fully opaque, no entrance animation */}
         <p className="mb-7 max-w-[26rem] text-pretty text-xl font-medium leading-snug text-white sm:mb-8 sm:max-w-2xl sm:text-[1.75rem] sm:leading-relaxed" style={{ textShadow: "0 4px 32px rgba(0,0,0,0.55)" }}>
-          Describe your customer in plain English. Get 100 ranked prospects with verified emails and a first draft for each, free. Then we set up your first campaign with you, one to one.
+          Describe your customer in plain English. Get 100 ranked prospects with verified emails and a first draft for each, free. Then we build your first campaign with you, on a call, and your AI SDR keeps it running.
         </p>
 
 
@@ -109,7 +109,7 @@ export const HeroSection = () => {
         >
           100 free leads
           <span className="w-px h-3 bg-white/20 inline-block" />
-          Cancel anytime
+          14-day trial on paid plans
           <span className="w-px h-3 bg-white/20 inline-block" />
           Set up with you personally
         </motion.p>
