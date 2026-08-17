@@ -23,7 +23,7 @@ export const ProblemSection = () => {
       <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "hsl(261 75% 50% / 0.18)" }} />
 
       <div className="container relative z-10 mx-auto px-6">
-        <div className="max-w-4xl mx-auto text-center">
+        <div className="max-w-6xl mx-auto text-center">
 
           <motion.p
             className="font-serif italic font-thin text-base text-center text-purple-500 mb-10"
@@ -39,12 +39,12 @@ export const ProblemSection = () => {
             {lines.map((line, index) => (
               <motion.span
                 key={index}
-                className={`block font-display${line.italic ? " italic" : ""}${line.gradient ? " animate-shiny" : ""}`}
+                className={`block text-balance font-display lg:whitespace-nowrap${line.italic ? " italic" : ""}${line.gradient ? " animate-shiny" : ""}`}
                 style={{
-                  fontSize: "clamp(2rem, 5vw, 3.8rem)",
+                  fontSize: "clamp(2rem, 4.25vw, 3.4rem)",
                   fontWeight: 800,
                   lineHeight: 1.1,
-                  letterSpacing: "-0.02em",
+                  letterSpacing: 0,
                   ...(line.gradient
                     ? {
                         backgroundImage: "linear-gradient(to right, #a78bfa 0%, #8b5cf6 15%, #c4b5fd 35%, #e9d5ff 50%, #c4b5fd 65%, #8b5cf6 85%, #a78bfa 100%)",
