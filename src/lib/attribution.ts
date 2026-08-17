@@ -37,10 +37,17 @@ const REFERRER_MAP: Array<[RegExp, string, string]> = [
   [/(^|\.)slack\.com$/, "slack", "social"],
   [/(^|\.)github\.com$/, "github", "referral"],
   [/(^|\.)medium\.com$|(^|\.)substack\.com$|(^|\.)dev\.to$/, "blog", "referral"],
+  // AI assistants must come before the generic google/search rules so that
+  // gemini.google.com and copilot.microsoft.com aren't bucketed as organic.
+  [
+    /(^|\.)chatgpt\.com$|(^|\.)openai\.com$|(^|\.)perplexity\.ai$|(^|\.)claude\.ai$|(^|\.)anthropic\.com$|(^|\.)gemini\.google\.com$|(^|\.)aistudio\.google\.com$|(^|\.)copilot\.microsoft\.com$|(^|\.)grok\.com$|(^|\.)x\.ai$|(^|\.)deepseek\.com$|(^|\.)mistral\.ai$|(^|\.)you\.com$|(^|\.)phind\.com$|(^|\.)poe\.com$/,
+    "ai-assistant",
+    "referral",
+  ],
   [/(^|\.)google\./, "google", "organic"],
   [/(^|\.)bing\.com$|(^|\.)duckduckgo\.com$|(^|\.)ecosia\.org$/, "search", "organic"],
-  [/(^|\.)chatgpt\.com$|(^|\.)openai\.com$|(^|\.)perplexity\.ai$|(^|\.)claude\.ai$|(^|\.)gemini\.google\.com$/, "ai-assistant", "referral"],
   [/(^|\.)mail\.google\.com$|(^|\.)outlook\./, "email", "email"],
+
 ];
 
 const read = (storage: Storage, key: string): Attribution | null => {
