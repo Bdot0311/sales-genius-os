@@ -45,7 +45,24 @@ const Index = () => {
   // unlike gating on lazy-chunk readiness, which races with hydration. On
   // non-prerendered mounts (createRoot) this just defers the sections by a tick.
   const [showBelowFold, setShowBelowFold] = useState(false);
-  useEffect(() => setShowBelowFold(true), []);
+  const belowFoldSentinelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const sentinel = belowFoldSentinelRef.current;
+    if (!sentinel || !("IntersectionObserver" in window)) {
+      setShowBelowFold(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return;
+        setShowBelowFold(true);
+        observer.disconnect();
+      },
+      { rootMargin: "600px 0px" },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, []);
 
   // The cinematic background video is a ~16MB download. It is a decoration, not
   // content, so it only loads for visitors who can clearly afford it: a large
@@ -207,6 +224,7 @@ const Index = () => {
           <article>
             <HeroSection />
             <ProductShowcase />
+            <div ref={belowFoldSentinelRef} aria-hidden="true" />
             {showBelowFold && (
               <>
                 <DeferredSection><ProblemSection /></DeferredSection>

@@ -94,7 +94,6 @@ const bootDeferred = () => {
   // event captured before they resolve is queued by their facades and replayed.
   void import("./lib/posthog").then(({ initPostHog }) => initPostHog());
   void import("./lib/heycatch").then(({ initHeycatch }) => initHeycatch());
-  void import("./lib/google-analytics").then(({ initGoogleAnalytics }) => initGoogleAnalytics());
   // Expose public site tools to browser AI agents (WebMCP). No-op when unsupported.
   void import("./lib/webmcp").then(({ registerWebMcpTools }) => registerWebMcpTools());
 };

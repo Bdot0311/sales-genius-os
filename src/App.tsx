@@ -311,6 +311,9 @@ const MaintenanceGuard = ({ children }: { children: ReactNode }) => {
 let jwtSanityRan = false;
 const useJwtSanityCheck = () => {
   useEffect(() => {
+    // Public marketing pages never need an auth session. Avoid loading and
+    // initializing the full backend SDK during their critical render path.
+    if (isPublicLandingPath(window.location.pathname)) return;
     if (jwtSanityRan) return;
     jwtSanityRan = true;
     (async () => {
