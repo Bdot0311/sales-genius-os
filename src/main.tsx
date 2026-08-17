@@ -86,11 +86,12 @@ void import("./lib/attribution").then(({ initAttribution }) => initAttribution()
 
 const bootDeferred = () => {
   void import("./lib/sentry").then(({ initSentry }) => initSentry());
-  // Analytics SDKs (posthog-js, @heycatch/sdk) are ~470 KB of source combined.
-  // Loading them here keeps them off the LCP/TTI critical path; any event
-  // captured before they resolve is queued by their facades and replayed.
+  // Analytics SDKs (posthog-js, @heycatch/sdk, gtag.js) are ~500 KB of source
+  // combined. Loading them here keeps them off the LCP/TTI critical path; any
+  // event captured before they resolve is queued by their facades and replayed.
   void import("./lib/posthog").then(({ initPostHog }) => initPostHog());
   void import("./lib/heycatch").then(({ initHeycatch }) => initHeycatch());
+  void import("./lib/google-analytics").then(({ initGoogleAnalytics }) => initGoogleAnalytics());
   // Expose public site tools to browser AI agents (WebMCP). No-op when unsupported.
   void import("./lib/webmcp").then(({ registerWebMcpTools }) => registerWebMcpTools());
 };
