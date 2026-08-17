@@ -2,6 +2,8 @@ import { useNavigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { motion } from "motion/react";
 import { CAMPAIGN_SETUP_BOOKING_URL, openCampaignSetupBooking } from "@/lib/campaign-setup";
+import { Analytics } from "@/lib/analytics-events";
+
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -88,7 +90,8 @@ export const HeroSection = () => {
 
           <motion.a
             href="/demo"
-            onClick={(e) => { e.preventDefault(); navigate("/demo"); }}
+            onClick={(e) => { e.preventDefault(); Analytics.demoCtaClicked("hero_see_how_it_works"); navigate("/demo"); }}
+
             className="inline-flex h-11 items-center justify-center gap-1.5 px-5 text-sm text-white/85 transition-colors duration-200 hover:text-white sm:h-[52px]"
             whileHover={{ x: 3 }}
             aria-label="See how OutReign works"

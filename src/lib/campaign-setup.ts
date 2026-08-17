@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import { Analytics } from "@/lib/analytics-events";
+
 
 export const CAMPAIGN_SETUP_BOOKING_URL = "https://calendly.com/bdotindustries/30min";
 
@@ -43,7 +45,12 @@ export const buildCampaignSetupBookingUrl = (
 
 /** Logs the request (best effort) and opens the booking page with tracking. */
 export const openCampaignSetupBooking = async (source: string, plan?: string | null) => {
+  // Track the click itself, before the async work — a slow network or a blocked
+  // popup must never cost us the conversion event.
+  Analytics.freeLeadsCtaClicked(source, plan);
+
   const win = window.open("", "_blank", "noopener,noreferrer");
+
 
   let prefill: { name?: string | null; email?: string | null } | undefined;
   try {
