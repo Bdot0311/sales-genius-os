@@ -1,14 +1,14 @@
 import outReignLogo from "@/assets/outreign-logo.webp";
 import { Link } from "react-router-dom";
 import { helpCategories, helpArticles } from "@/components/help/helpArticles";
-import { blogPosts } from "@/data/blog-posts";
+import { blogPostsMeta } from "@/data/blog-index";
 
 // Guides and support links are generated from the same content data the pages
 // render. Help articles and categories previously had no link path from the
 // site's most-crawled page, so Google left them at "Discovered - currently not
 // indexed"; these give every one of them a real rendered internal link.
 const popularArticles = helpArticles.filter((a) => a.popular).slice(0, 5);
-const recentPosts = blogPosts.slice(0, 5);
+const recentPosts = blogPostsMeta.slice(0, 5);
 
 const footerLinks = {
   product: [

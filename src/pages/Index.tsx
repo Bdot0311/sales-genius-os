@@ -68,15 +68,20 @@ const Index = () => {
 
     if (!canAffordVideo()) return;
 
-    const idle = (window as unknown as { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number }).requestIdleCallback;
-    const handle = idle
-      ? idle(() => setMountVideo(true), { timeout: 2000 })
-      : window.setTimeout(() => setMountVideo(true), 1200);
-    return () => {
-      const cancel = (window as unknown as { cancelIdleCallback?: (h: number) => void }).cancelIdleCallback;
-      if (idle && cancel) cancel(handle as number);
-      else clearTimeout(handle as number);
+    // Wait for the first real interaction (scroll, pointer, key, touch) before
+    // fetching the video. Nothing about the first screen depends on it, and
+    // starting a multi-megabyte fetch while the page is still painting delays
+    // visual completeness (Speed Index) for every visitor.
+    const events = ["pointermove", "pointerdown", "keydown", "touchstart", "scroll", "wheel"] as const;
+    const start = () => {
+      cleanup();
+      setMountVideo(true);
     };
+    const cleanup = () => {
+      events.forEach((e) => window.removeEventListener(e, start));
+    };
+    events.forEach((e) => window.addEventListener(e, start, { once: true, passive: true }));
+    return cleanup;
   }, []);
 
   // If Google OAuth full-page redirect returned the user to `/` while an
