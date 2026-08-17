@@ -129,7 +129,11 @@ const call = (method: string) => (...args: unknown[]) => {
   }
   // Cap the queue so a never-loading SDK can't grow memory unbounded.
   if (queue.length < 100) queue.push([method, args]);
-  void initPostHog();
+  // Do not start the SDK from a capture call. RouteAnalytics and the auth
+  // listener both capture during React's first commit; starting PostHog here
+  // pulled session recording, surveys, web-vitals and exception scripts onto
+  // the critical path. main.tsx deliberately starts the SDK later and flushes
+  // this queue once the page is interactive.
 };
 
 /** Facade with the methods this app uses. Same synchronous shape as posthog-js. */

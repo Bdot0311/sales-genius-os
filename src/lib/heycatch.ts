@@ -57,7 +57,8 @@ const call = (method: string) => (...args: unknown[]) => {
     return;
   }
   if (queue.length < 100) queue.push([method, args]);
-  void initHeycatch();
+  // Keep first-render analytics calls queued. main.tsx owns SDK startup so
+  // identity/page events cannot make this third-party bundle block first paint.
 };
 
 /** Facade with the methods this app uses. */

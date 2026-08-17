@@ -1,6 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { ProductShowcase } from "@/components/landing/ProductShowcase";
@@ -90,11 +89,13 @@ const Index = () => {
     const stored = sessionStorage.getItem("post_auth_next");
     if (!stored || !stored.startsWith("/") || stored.startsWith("//")) return;
     let active = true;
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!active || !session) return;
-      sessionStorage.removeItem("post_auth_next");
-      navigate(stored, { replace: true });
-    });
+    void import("@/integrations/supabase/client").then(({ supabase }) =>
+      supabase.auth.getSession()
+    ).then(({ data: { session } }) => {
+        if (!active || !session) return;
+        sessionStorage.removeItem("post_auth_next");
+        navigate(stored, { replace: true });
+      });
     return () => { active = false; };
   }, [navigate]);
 

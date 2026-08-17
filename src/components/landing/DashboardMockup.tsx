@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { Search, Mail, BarChart3, TrendingUp, Target, MessageSquare, Brain } from "lucide-react";
 import logoSmall from "@/assets/outreign-logo-64.webp";
 
@@ -7,19 +6,6 @@ const StaticNumber = ({ value, suffix = "" }: { value: number; suffix?: string }
 );
 
 const DashboardMockup = () => {
-  const [activeStep, setActiveStep] = useState(0);
-  const [pipelineAnim, setPipelineAnim] = useState(false);
-
-  useEffect(() => {
-    const timers = [
-      setTimeout(() => setActiveStep(1), 800),
-      setTimeout(() => setActiveStep(2), 1600),
-      setTimeout(() => setActiveStep(3), 2400),
-      setTimeout(() => setPipelineAnim(true), 3000),
-    ];
-    return () => timers.forEach(clearTimeout);
-  }, []);
-
   const leads = [
     { name: "J. Park", title: "VP Sales", company: "Lattice", score: 94 },
     { name: "A. Müller", title: "CRO", company: "Personio", score: 91 },
@@ -71,11 +57,7 @@ const DashboardMockup = () => {
 
         <div className="relative grid grid-cols-1 gap-3 p-3 sm:grid-cols-2 sm:p-4">
           <div
-            className="rounded-lg border border-border/20 bg-background/60 p-3 transition-all duration-500 sm:col-span-2"
-            style={{
-              opacity: activeStep >= 1 ? 1 : 0,
-              transform: activeStep >= 1 ? "translateY(0)" : "translateY(8px)",
-            }}
+            className="rounded-lg border border-border/20 bg-background/60 p-3 sm:col-span-2"
           >
               <div className="flex flex-wrap items-center gap-2 mb-2">
               <Search className="w-3.5 h-3.5 text-primary" />
@@ -86,11 +68,7 @@ const DashboardMockup = () => {
               {leads.map((l, i) => (
                 <div
                   key={i}
-                  className="flex items-center justify-between px-2.5 py-1.5 rounded-md bg-muted/20 border border-border/10 transition-all duration-500"
-                  style={{
-                    opacity: activeStep >= 1 ? 1 : 0,
-                    transition: `opacity 0.3s ease ${i * 120}ms`,
-                  }}
+                  className="flex items-center justify-between px-2.5 py-1.5 rounded-md bg-muted/20 border border-border/10"
                 >
                   <div className="flex min-w-0 items-center gap-2">
                     <div className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center text-[9px] font-bold text-primary">
@@ -110,11 +88,7 @@ const DashboardMockup = () => {
           </div>
 
           <div
-            className="rounded-lg border border-border/20 bg-background/60 p-3 transition-all duration-500"
-            style={{
-              opacity: activeStep >= 2 ? 1 : 0,
-              transform: activeStep >= 2 ? "translateY(0)" : "translateY(8px)",
-            }}
+            className="rounded-lg border border-border/20 bg-background/60 p-3"
           >
               <div className="flex flex-wrap items-center gap-2 mb-2">
               <Mail className="w-3.5 h-3.5 text-primary" />
@@ -124,12 +98,7 @@ const DashboardMockup = () => {
               {sequenceSteps.map((s, i) => (
                 <div
                   key={i}
-                  className="flex items-center gap-2 transition-all duration-300"
-                  style={{
-                    transform: activeStep >= 2 ? "translateX(0)" : "translateX(-8px)",
-                    opacity: activeStep >= 2 ? 1 : 0,
-                    transitionDelay: `${i * 80}ms`,
-                  }}
+                  className="flex items-center gap-2"
                 >
                   <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${s.status === "sent" ? "bg-green-500" : s.status === "queued" ? "bg-primary animate-pulse" : "bg-muted-foreground/30"}`} />
                   <span className="text-[10px] text-muted-foreground">{s.label}</span>
@@ -139,11 +108,7 @@ const DashboardMockup = () => {
           </div>
 
           <div
-            className="rounded-lg border border-border/20 bg-background/60 p-3 transition-all duration-500"
-            style={{
-              opacity: activeStep >= 3 ? 1 : 0,
-              transform: activeStep >= 3 ? "translateY(0)" : "translateY(8px)",
-            }}
+            className="rounded-lg border border-border/20 bg-background/60 p-3"
           >
               <div className="flex flex-wrap items-center gap-2 mb-2">
               <BarChart3 className="w-3.5 h-3.5 text-primary" />
@@ -154,11 +119,8 @@ const DashboardMockup = () => {
                 <div key={i} className="flex items-center gap-2">
                   <div className="flex-1 h-1.5 rounded-full bg-muted/30 overflow-hidden">
                     <div
-                      className={`h-full rounded-full ${s.color} transition-all duration-1000 ease-out`}
-                      style={{
-                        width: pipelineAnim ? `${(s.count / 42) * 100}%` : "0%",
-                        transitionDelay: `${i * 150}ms`,
-                      }}
+                      className={`h-full rounded-full ${s.color}`}
+                      style={{ width: `${(s.count / 42) * 100}%` }}
                     />
                   </div>
                   <span className="text-[10px] text-muted-foreground w-16 text-right">{s.label}</span>
@@ -169,11 +131,7 @@ const DashboardMockup = () => {
           </div>
 
           <div
-            className="grid grid-cols-2 gap-2 transition-all duration-500 sm:col-span-2 sm:grid-cols-4"
-            style={{
-              opacity: activeStep >= 3 ? 1 : 0,
-              transform: activeStep >= 3 ? "translateY(0)" : "translateY(6px)",
-            }}
+            className="grid grid-cols-2 gap-2 sm:col-span-2 sm:grid-cols-4"
           >
             {[
               { icon: Target, label: "Match Rate", val: 92, suf: "%", glow: false },
