@@ -975,7 +975,7 @@ All colors MUST be HSL. Using 8px spacing scale.
 
 /* Playfair Display — editorial serif for hero headlines only */
 .font-display {
-  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  font-family: 'Playfair Display', 'Playfair Fallback', Georgia, 'Times New Roman', serif;
 }
 
 /* Hero orb — large ambient blobs */
