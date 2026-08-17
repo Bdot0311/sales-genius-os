@@ -51,6 +51,12 @@ describe("attribution: social + AI referrers", () => {
     });
   }
 
+  it("keeps Gmail clicks as email, not organic google", async () => {
+    const props = await visit("https://mail.google.com/");
+    expect(props.utm_source).toBe("email");
+    expect(props.utm_medium).toBe("email");
+  });
+
   it("keeps real Google search as organic", async () => {
     const props = await visit("https://www.google.com/search?q=outreign");
     expect(props.utm_source).toBe("google");
