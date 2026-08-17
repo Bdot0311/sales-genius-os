@@ -44,9 +44,10 @@ const REFERRER_MAP: Array<[RegExp, string, string]> = [
     "ai-assistant",
     "referral",
   ],
+  [/(^|\.)mail\.google\.com$|(^|\.)outlook\./, "email", "email"],
   [/(^|\.)google\./, "google", "organic"],
   [/(^|\.)bing\.com$|(^|\.)duckduckgo\.com$|(^|\.)ecosia\.org$/, "search", "organic"],
-  [/(^|\.)mail\.google\.com$|(^|\.)outlook\./, "email", "email"],
+
 
 ];
 
