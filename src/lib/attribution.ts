@@ -22,34 +22,35 @@ const FIRST_KEY = "_or_attr_first";
 const LAST_KEY = "_or_attr_last";
 
 /** referrer hostname -> [source, medium] */
-const REFERRER_MAP: Array<[RegExp, string, string]> = [
-  [/(^|\.)x\.com$|(^|\.)twitter\.com$|(^|\.)t\.co$/, "x", "social"],
-  [/(^|\.)linkedin\.com$|(^|\.)lnkd\.in$/, "linkedin", "social"],
-  [/(^|\.)reddit\.com$|(^|\.)redd\.it$/, "reddit", "social"],
-  [/(^|\.)producthunt\.com$/, "producthunt", "referral"],
-  [/(^|\.)news\.ycombinator\.com$/, "hackernews", "referral"],
-  [/(^|\.)facebook\.com$|(^|\.)fb\.me$/, "facebook", "social"],
-  [/(^|\.)instagram\.com$/, "instagram", "social"],
-  [/(^|\.)youtube\.com$|(^|\.)youtu\.be$/, "youtube", "social"],
-  [/(^|\.)tiktok\.com$/, "tiktok", "social"],
-  [/(^|\.)threads\.net$/, "threads", "social"],
-  [/(^|\.)discord\.com$|(^|\.)discord\.gg$/, "discord", "social"],
-  [/(^|\.)slack\.com$/, "slack", "social"],
-  [/(^|\.)github\.com$/, "github", "referral"],
-  [/(^|\.)medium\.com$|(^|\.)substack\.com$|(^|\.)dev\.to$/, "blog", "referral"],
-  // AI assistants must come before the generic google/search rules so that
-  // gemini.google.com and copilot.microsoft.com aren't bucketed as organic.
-  [
-    /(^|\.)chatgpt\.com$|(^|\.)openai\.com$|(^|\.)perplexity\.ai$|(^|\.)claude\.ai$|(^|\.)anthropic\.com$|(^|\.)gemini\.google\.com$|(^|\.)aistudio\.google\.com$|(^|\.)copilot\.microsoft\.com$|(^|\.)grok\.com$|(^|\.)x\.ai$|(^|\.)deepseek\.com$|(^|\.)mistral\.ai$|(^|\.)you\.com$|(^|\.)phind\.com$|(^|\.)poe\.com$/,
-    "ai-assistant",
-    "referral",
-  ],
-  [/(^|\.)mail\.google\.com$|(^|\.)outlook\./, "email", "email"],
-  [/(^|\.)google\./, "google", "organic"],
-  [/(^|\.)bing\.com$|(^|\.)duckduckgo\.com$|(^|\.)ecosia\.org$/, "search", "organic"],
-
-
-];
+let REFERRER_MAP: Array<[RegExp, string, string]> | null = null;
+const getReferrerMap = (): Array<[RegExp, string, string]> => {
+  if (REFERRER_MAP) return REFERRER_MAP;
+  REFERRER_MAP = [
+    [/(^|\.)x\.com$|(^|\.)twitter\.com$|(^|\.)t\.co$/, "x", "social"],
+    [/(^|\.)linkedin\.com$|(^|\.)lnkd\.in$/, "linkedin", "social"],
+    [/(^|\.)reddit\.com$|(^|\.)redd\.it$/, "reddit", "social"],
+    [/(^|\.)producthunt\.com$/, "producthunt", "referral"],
+    [/(^|\.)news\.ycombinator\.com$/, "hackernews", "referral"],
+    [/(^|\.)facebook\.com$|(^|\.)fb\.me$/, "facebook", "social"],
+    [/(^|\.)instagram\.com$/, "instagram", "social"],
+    [/(^|\.)youtube\.com$|(^|\.)youtu\.be$/, "youtube", "social"],
+    [/(^|\.)tiktok\.com$/, "tiktok", "social"],
+    [/(^|\.)threads\.net$/, "threads", "social"],
+    [/(^|\.)discord\.com$|(^|\.)discord\.gg$/, "discord", "social"],
+    [/(^|\.)slack\.com$/, "slack", "social"],
+    [/(^|\.)github\.com$/, "github", "referral"],
+    [/(^|\.)medium\.com$|(^|\.)substack\.com$|(^|\.)dev\.to$/, "blog", "referral"],
+    [
+      /(^|\.)chatgpt\.com$|(^|\.)openai\.com$|(^|\.)perplexity\.ai$|(^|\.)claude\.ai$|(^|\.)anthropic\.com$|(^|\.)gemini\.google\.com$|(^|\.)aistudio\.google\.com$|(^|\.)copilot\.microsoft\.com$|(^|\.)grok\.com$|(^|\.)x\.ai$|(^|\.)deepseek\.com$|(^|\.)mistral\.ai$|(^|\.)you\.com$|(^|\.)phind\.com$|(^|\.)poe\.com$/,
+      "ai-assistant",
+      "referral",
+    ],
+    [/(^|\.)mail\.google\.com$|(^|\.)outlook\./, "email", "email"],
+    [/(^|\.)google\./, "google", "organic"],
+    [/(^|\.)bing\.com$|(^|\.)duckduckgo\.com$|(^|\.)ecosia\.org$/, "search", "organic"],
+  ];
+  return REFERRER_MAP;
+};
 
 const read = (storage: Storage, key: string): Attribution | null => {
   try {
@@ -73,7 +74,7 @@ const fromReferrer = (referrer: string): { utm_source: string; utm_medium: strin
     if (typeof window !== "undefined" && host === window.location.hostname) {
       return { utm_source: "direct", utm_medium: "none" };
     }
-    for (const [pattern, source, medium] of REFERRER_MAP) {
+    for (const [pattern, source, medium] of getReferrerMap()) {
       if (pattern.test(host)) return { utm_source: source, utm_medium: medium };
     }
     return { utm_source: host.replace(/^www\./, ""), utm_medium: "referral" };
@@ -136,6 +137,17 @@ export function initAttribution(): Record<string, string> {
 /** Flattened first/last touch props for analytics payloads. */
 export function getAttributionProps(): Record<string, string> {
   const { first, last } = cached;
+  // If nothing is cached but we are in a browser, try to read from storage
+  // without triggering a full detect(). This keeps the facade fast.
+  if (!first && !last && typeof window !== "undefined") {
+    const f = read(localStorage, FIRST_KEY);
+    const l = read(sessionStorage, LAST_KEY);
+    if (f || l) {
+      cached = { first: f, last: l };
+      return getAttributionProps();
+    }
+  }
+
   const out: Record<string, string> = {};
   if (last) {
     out.utm_source = last.utm_source;
@@ -157,7 +169,14 @@ export function getAttributionProps(): Record<string, string> {
 
 /** First-touch attribution, for stamping on signup/checkout records. */
 export function getFirstTouch(): Attribution | null {
-  if (!cached.first && typeof window !== "undefined") initAttribution();
+  if (!cached.first && typeof window !== "undefined") {
+    const f = read(localStorage, FIRST_KEY);
+    if (f) {
+      cached.first = f;
+    } else {
+      initAttribution();
+    }
+  }
   return cached.first;
 }
 
