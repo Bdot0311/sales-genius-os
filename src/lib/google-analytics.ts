@@ -8,7 +8,18 @@
  * script downloads are queued in `dataLayer` and replayed automatically.
  */
 
-const measurementId = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_ANALYTICS_API_KEY as string | undefined;
+const rawMeasurementId = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_ANALYTICS_API_KEY as string | undefined;
+// Only real GA4 web-stream measurement IDs (G-XXXXXXXXXX) are usable. Anything
+// else (property ID, API secret, stray quotes) makes googletagmanager.com
+// answer 404, which shows up as a console error on every page load.
+const measurementId =
+  rawMeasurementId && /^G-[A-Z0-9]{6,}$/.test(rawMeasurementId.trim().replace(/^["']|["']$/g, ""))
+    ? rawMeasurementId.trim().replace(/^["']|["']$/g, "")
+    : undefined;
+
+// Set once the gtag script 404s / fails to load, so we don't re-request a dead
+// URL on every subsequent page load in the same browser.
+const GA_FAILED_KEY = "__ga_load_failed__";
 
 let initialized = false;
 let initialPageviewSent = false;
@@ -17,16 +28,22 @@ export const isGoogleAnalyticsEnabled = Boolean(measurementId);
 
 export function initGoogleAnalytics(): void {
   if (!isGoogleAnalyticsEnabled || typeof window === "undefined" || initialized) return;
+  try {
+    if (localStorage.getItem(GA_FAILED_KEY) === measurementId) return;
+  } catch {}
   initialized = true;
 
   window.dataLayer = window.dataLayer || [];
-  const gtag = (
+  function gtag(
     command: "event" | "config" | "js",
     targetId: string | Date,
     config?: Record<string, unknown>,
-  ) => {
-    window.dataLayer.push([command, targetId, config]);
-  };
+  ) {
+    // gtag.js expects an arguments-like object, not a plain array.
+    // eslint-disable-next-line prefer-rest-params
+    window.dataLayer.push(arguments);
+  }
+
   window.gtag = gtag;
 
   gtag("js", new Date());
@@ -38,8 +55,15 @@ export function initGoogleAnalytics(): void {
   const script = document.createElement("script");
   script.async = true;
   script.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`;
+  script.onerror = () => {
+    try {
+      localStorage.setItem(GA_FAILED_KEY, measurementId as string);
+    } catch {}
+    console.warn(`[ga] gtag.js failed to load for ${measurementId} — check the GA4 measurement ID.`);
+  };
   document.head.appendChild(script);
 }
+
 
 /**
  * Send an SPA page_view event. The very first pageview is handled by the
