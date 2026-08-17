@@ -21,7 +21,7 @@ const faqs = [
   {
     question: "How is this different from just buying a contact list?",
     answer:
-      "A contact list gives you 10,000 names. OutReign gives you 50 that are actually worth emailing, ranked by fit, with a draft already written for each one. Volume without qualification is just noise.",
+      "A contact list gives you 10,000 names. OutReign gives you 50 that are actually worth emailing, ranked by fit, with a draft already written for each one, so you spend your sending time on people who might actually reply.",
   },
   {
     question: "How does the free plan work?",
@@ -36,7 +36,7 @@ const faqs = [
   {
     question: "How does OutReign verify email addresses?",
     answer:
-      "Every business email goes through SMTP handshake verification plus multi-source enrichment before it reaches you. We don't deliver addresses we haven't confirmed. Bounced emails hurt your sender reputation, and we treat accuracy as non-negotiable.",
+      "Every business email goes through SMTP handshake verification plus multi-source enrichment before it reaches you. We don't deliver addresses we haven't confirmed. Bounced emails hurt your sender reputation, so we hold addresses back until they pass.",
   },
   {
     question: "Is OutReign only for email outreach?",
@@ -46,7 +46,7 @@ const faqs = [
   {
     question: "How does the AI email drafting work?",
     answer:
-      "OutReign pulls the prospect's role, company context, and growth signals (recent hires, funding, open roles) and uses that to write a first-touch email that references something real. You see the draft, edit it in seconds, and send. It's not a template with a name swapped in.",
+      "OutReign pulls the prospect's role, company context, and growth signals (recent hires, funding, open roles) and uses that to write a first-touch email that references something real. You see the draft, edit it in seconds, and send. Every line comes from that prospect's own context.",
   },
   {
     question: "Can I connect OutReign to my existing tools?",

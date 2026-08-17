@@ -183,7 +183,7 @@ const modules = [
     number: "01",
     title: "Lead Discovery",
     tagline: "ICP to ranked prospects in under 2 minutes.",
-    description: "Describe who you want in plain English. Get back verified contacts ranked by fit — no filters, no boolean, no list-building.",
+    description: "Describe who you want in plain English. Get back verified contacts ranked by fit, without filters or boolean queries.",
   },
   {
     number: "02",
@@ -194,14 +194,14 @@ const modules = [
   {
     number: "03",
     title: "Reply Management",
-    tagline: "Inbox zero for your email pipeline.",
+    tagline: "Every reply tracked in one place.",
     description: "Every response tracked. Follow-up sequences that keep momentum. No prospect slips through because you forgot to check.",
   },
   {
     number: "04",
     title: "Pipeline & Analytics",
     tagline: "See what's moving. Know what to push.",
-    description: "Understand where threads are progressing and where outreach stalls. One dashboard, not forty tabs.",
+    description: "Understand where threads are progressing and where outreach stalls, on one dashboard.",
   },
 ];
 

@@ -7,7 +7,7 @@ const steps = [
   {
     number: "01",
     title: "Describe your customer once.",
-    body: "Type who you want in plain English: title, industry, company size, location, growth signals. No boolean. No filter menus.",
+    body: "Type who you want in plain English: title, industry, company size, location, growth signals. No boolean queries or filter menus to configure.",
     visual: (
       <div
         className="mt-5 rounded-md px-4 py-3 font-mono text-sm leading-relaxed"
@@ -211,7 +211,7 @@ export const HowItWorks = () => {
               Try it free, 100 lead searches a month, no card required
             </motion.a>
             <p className="text-xs" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
-              No credit card. No demo call. Start in 60 seconds.
+              Start in 60 seconds, no credit card or demo call needed.
             </p>
           </motion.div>
         </div>

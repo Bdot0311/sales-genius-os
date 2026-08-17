@@ -9,7 +9,7 @@ const activityItems = [
     type: "lead",
     prospect: "Dana Whitfield",
     company: "Northline",
-    text: "Sourced 12 new leads matching your ICP — verified emails attached",
+    text: "Sourced 12 new leads matching your ICP, verified emails attached",
     color: "hsl(190 80% 55%)",
     dot: "hsl(190 80% 55%)",
   },
@@ -36,7 +36,7 @@ const activityItems = [
     type: "reply",
     prospect: "Priya Nair",
     company: "VaultHQ",
-    text: "Handled objection — replied with framing from your playbook",
+    text: "Handled objection, replied with framing from your playbook",
     color: "hsl(142 70% 50%)",
     dot: "hsl(142 70% 50%)",
   },
@@ -45,7 +45,7 @@ const activityItems = [
     type: "meeting",
     prospect: "Alex Müller",
     company: "OrbitPay",
-    text: "Meeting requested — sent Calendly link automatically",
+    text: "Meeting requested, sent Calendly link automatically",
     color: "hsl(261 75% 68%)",
     dot: "hsl(261 75% 68%)",
   },
@@ -135,7 +135,7 @@ const capabilities = [
   {
     icon: "🎯",
     title: "Finds the leads for you",
-    desc: "Sources new prospects that match your ICP every run — no manual searching.",
+    desc: "Sources new prospects that match your ICP on every run, with no manual searching.",
   },
   {
     icon: "✉️",
@@ -231,7 +231,7 @@ export const AISdrSection = () => {
                     backgroundClip: "text",
                   }}
                 >
-                  Full cycle, start to finish.
+                  Full cycle, from list to booked call.
                 </span>
               </h2>
 
@@ -240,7 +240,7 @@ export const AISdrSection = () => {
                 className={`text-base leading-relaxed mb-8 max-w-[480px] transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
                 style={{ color: "hsl(0 0% 100% / 0.65)", transitionDelay: "160ms" }}
               >
-                Connect your Gmail and OutReign runs the whole cycle: it sources leads that match your ICP, writes and sends the first touch, then classifies replies, handles objections, and books meetings — in your voice, on your schedule. Included on every plan, from Explore to Agency — your tier decides how many agents you build and how much volume they push.
+                Connect your Gmail and OutReign runs the whole cycle: it sources leads that match your ICP, writes and sends the first touch, then classifies replies, handles objections, and books meetings, in your voice and on your schedule. Every plan from Explore to Agency includes it; your tier sets how many agents you build and how much volume they push.
               </p>
 
               {/* Capability grid */}
@@ -350,7 +350,7 @@ export const AISdrSection = () => {
 
               {/* Caption below preview */}
               <p className="text-center text-xs mt-4" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
-                Simulated preview — connects to your real Gmail inbox
+                Simulated preview. Connects to your real Gmail inbox
               </p>
             </div>
 
