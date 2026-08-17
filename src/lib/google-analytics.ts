@@ -30,6 +30,9 @@ export function initGoogleAnalytics(): void {
   window.gtag = gtag;
 
   gtag("js", new Date());
+  // `send_page_view: true` emits the landing pageview automatically. Mark it
+  // here so the first manual SPA route change does not get swallowed.
+  initialPageviewSent = true;
   gtag("config", measurementId as string, { send_page_view: true });
 
   const script = document.createElement("script");
@@ -40,7 +43,7 @@ export function initGoogleAnalytics(): void {
 
 /**
  * Send an SPA page_view event. The very first pageview is handled by the
- * initial `gtag('config')` command, so this function skips the first call to
+ * initial `gtag('config')` command, so this function skips that first call to
  * avoid double-counting the landing page.
  */
 export function sendPageview(path: string): void {
