@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { X, ArrowRight } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
+import { Analytics } from "@/lib/analytics-events";
+
 
 const STORAGE_KEY = "outreign-exit-intent-shown";
 
@@ -113,6 +115,7 @@ export const ExitIntentModal = () => {
             <div className="flex flex-col gap-2.5">
               <button
                 onClick={() => {
+                  Analytics.demoCtaClicked("exit_intent_modal");
                   close();
                   navigate("/demo");
                 }}
