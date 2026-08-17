@@ -1,5 +1,14 @@
 import outReignLogo from "@/assets/outreign-logo.webp";
 import { Link } from "react-router-dom";
+import { helpCategories, helpArticles } from "@/components/help/helpArticles";
+import { blogPosts } from "@/data/blog-posts";
+
+// Guides and support links are generated from the same content data the pages
+// render. Help articles and categories previously had no link path from the
+// site's most-crawled page, so Google left them at "Discovered - currently not
+// indexed"; these give every one of them a real rendered internal link.
+const popularArticles = helpArticles.filter((a) => a.popular).slice(0, 5);
+const recentPosts = blogPosts.slice(0, 5);
 
 const footerLinks = {
   product: [
@@ -7,6 +16,8 @@ const footerLinks = {
     { label: "Pricing", href: "/pricing" },
     { label: "Integrations", href: "/pricing" },
     { label: "Sales Ops Software", href: "/sales-operations-software" },
+    { label: "Product Demo", href: "/demo" },
+    { label: "Connect to AI Agents", href: "/connect" },
   ],
   compare: [
     { label: "vs Apollo", href: "/vs-apollo" },
@@ -22,6 +33,17 @@ const footerLinks = {
     { label: "Partners", href: "/partners" },
     { label: "API Docs", href: "/api-docs" },
     { label: "API Status", href: "/api-status" },
+    ...helpCategories.map((category) => ({
+      label: category.title,
+      href: `/help/category/${category.id}`,
+    })),
+  ],
+  guides: [
+    ...recentPosts.map((post) => ({ label: post.title, href: `/blog/${post.slug}` })),
+    ...popularArticles.map((article) => ({
+      label: article.title,
+      href: `/help/article/${article.slug}`,
+    })),
   ],
   legal: [
     { label: "Privacy", href: "/privacy" },
@@ -29,6 +51,7 @@ const footerLinks = {
     { label: "Security", href: "/security" },
   ],
 };
+
 
 export const FooterSection = () => {
   return (
@@ -133,6 +156,28 @@ export const FooterSection = () => {
               </ul>
             </div>
           </div>
+
+          {/* Guides — latest articles, so every content page has one real internal link */}
+          <div className="mb-12 pt-8 border-t" style={{ borderColor: "hsl(261 75% 50% / 0.18)" }}>
+            <h3 className="font-semibold text-sm mb-4" style={{ color: "hsl(0 0% 92%)" }}>Guides &amp; popular articles</h3>
+            <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-1">
+              {footerLinks.guides.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    to={link.href}
+                    className="text-sm transition-colors duration-150 inline-flex items-center py-2 min-h-[40px] px-1"
+                    style={{ color: "hsl(0 0% 100% / 0.7)" }}
+                    onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")}
+                    onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.7)")}
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+
 
           {/* Google API Disclosure */}
           <div id="google-api-disclosure" className="mb-8 p-6 rounded-xl border" style={{ background: "hsl(240 30% 10%)", borderColor: "hsl(261 75% 50% / 0.25)" }}>
