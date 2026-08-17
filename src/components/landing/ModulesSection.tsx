@@ -271,7 +271,7 @@ export const ModulesSection = () => {
                   filter: "url(#c3-noise)",
                 }}
               >
-                to run outbound.
+                running outbound.
               </span>
             </h2>
           </div>
