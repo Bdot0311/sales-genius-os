@@ -103,6 +103,19 @@ export const FinalCTA = () => {
               <ArrowRight className="w-4 h-4" />
             </motion.a>
 
+            <div className="mt-4">
+              <a
+                href="/pricing"
+                className="inline-flex min-h-[40px] items-center gap-1.5 text-sm font-medium transition-colors"
+                style={{ color: "hsl(261 75% 68%)" }}
+              >
+                See what each plan sends per month
+                <ArrowRight className="h-3.5 w-3.5" />
+              </a>
+            </div>
+
+
+
             <p
               className="mt-4 text-xs"
               style={{ color: "hsl(0 0% 100% / 0.55)" }}
