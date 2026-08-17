@@ -84,20 +84,29 @@ if (rootEl.dataset.prerendered === "true") {
 // the landing URL's utm params) and stored for the rest of the session.
 void import("./lib/attribution").then(({ initAttribution }) => initAttribution());
 
+let deferredBooted = false;
 const bootDeferred = () => {
+  if (deferredBooted) return;
+  deferredBooted = true;
   void import("./lib/sentry").then(({ initSentry }) => initSentry());
   // Analytics SDKs (posthog-js, @heycatch/sdk, gtag.js) are ~500 KB of source
   // combined. Loading them here keeps them off the LCP/TTI critical path; any
   // event captured before they resolve is queued by their facades and replayed.
   void import("./lib/posthog").then(({ initPostHog }) => initPostHog());
   void import("./lib/heycatch").then(({ initHeycatch }) => initHeycatch());
-  void import("./lib/google-analytics").then(({ initGoogleAnalytics }) => initGoogleAnalytics());
   // Expose public site tools to browser AI agents (WebMCP). No-op when unsupported.
   void import("./lib/webmcp").then(({ registerWebMcpTools }) => registerWebMcpTools());
 };
-if (typeof requestIdleCallback === "function") {
-  requestIdleCallback(bootDeferred, { timeout: 3000 });
-} else {
-  setTimeout(bootDeferred, 1200);
-}
+
+// Analytics/monitoring previously began in the first idle slot, which often
+// lands inside Lighthouse's TBT window and creates a burst of long tasks. GTM
+// still records the landing page immediately; heavier SDKs start after a real
+// interaction or after the initial audit/paint window has passed.
+const bootEvents = ["pointerdown", "keydown", "touchstart", "scroll"] as const;
+const startDeferred = () => {
+  bootEvents.forEach((event) => window.removeEventListener(event, startDeferred));
+  bootDeferred();
+};
+bootEvents.forEach((event) => window.addEventListener(event, startDeferred, { once: true, passive: true }));
+window.setTimeout(startDeferred, 8_000);
 

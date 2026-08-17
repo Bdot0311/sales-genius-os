@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
 import { HeroSection } from "@/components/landing/HeroSection";
-import { ProductShowcase } from "@/components/landing/ProductShowcase";
 import { SEOHead, SoftwareApplicationSchema, FAQSchema } from "@/components/seo";
 
 const HOMEPAGE_FAQS = [
@@ -15,6 +14,9 @@ const HOMEPAGE_FAQS = [
   { question: "Is OutReign a fit for every business?", answer: "No. It is generally not the right fit for e-commerce, B2C, or companies that do not run outbound." },
 ];
 
+// Below-the-fold sections are lazy-loaded to keep Total Blocking Time low.
+// Above-the-fold components (Navbar, Hero) remain static to ensure immediate LCP.
+const ProductShowcase = lazy(() => import("@/components/landing/ProductShowcase").then(m => ({ default: m.ProductShowcase })));
 const HowItWorks = lazy(() => import("@/components/landing/HowItWorks").then(m => ({ default: m.HowItWorks })));
 const ProblemSection = lazy(() => import("@/components/landing/ProblemSection").then(m => ({ default: m.ProblemSection })));
 const ModulesSection = lazy(() => import("@/components/landing/ModulesSection").then(m => ({ default: m.ModulesSection })));
@@ -49,10 +51,7 @@ const Index = () => {
   useEffect(() => setShowBelowFold(true), []);
 
   // The cinematic background video is a ~16MB download. It is a decoration, not
-  // content, so it only loads for visitors who can clearly afford it: a large
-  // pointer-capable screen, motion allowed, no data-saver, and a fast network.
-  // Everyone else (all mobile, slow 3G, reduced-motion, data-saver) gets the
-  // purple gradient background instantly and never pays for the video.
+  // content, so it only loads for visitors who can clearly afford it.
   useEffect(() => {
     const canAffordVideo = () => {
       if (typeof window === "undefined") return false;
@@ -69,9 +68,7 @@ const Index = () => {
     if (!canAffordVideo()) return;
 
     // Wait for the first real interaction (scroll, pointer, key, touch) before
-    // fetching the video. Nothing about the first screen depends on it, and
-    // starting a multi-megabyte fetch while the page is still painting delays
-    // visual completeness (Speed Index) for every visitor.
+    // fetching the video.
     const events = ["pointermove", "pointerdown", "keydown", "touchstart", "scroll", "wheel"] as const;
     const start = () => {
       cleanup();
@@ -84,8 +81,7 @@ const Index = () => {
     return cleanup;
   }, []);
 
-  // If Google OAuth full-page redirect returned the user to `/` while an
-  // OAuth consent flow was pending, resume it once the session is available.
+  // Resume OAuth flows if returning to root
   useEffect(() => {
     const stored = sessionStorage.getItem("post_auth_next");
     if (!stored || !stored.startsWith("/") || stored.startsWith("//")) return;
@@ -104,20 +100,14 @@ const Index = () => {
     const video = videoRef.current;
     if (!video) return;
 
-    // Force muted + play for strict mobile autoplay policies
     video.muted = true;
     video.playsInline = true;
     video.autoplay = true;
 
     const hideVideo = () => {
-      // If autoplay is blocked (e.g. iOS Low Power Mode), hide the element
-      // so the native play-button placeholder never shows. The dark purple
-      // gradient overlay alone becomes the background.
       video.style.opacity = "0";
     };
     const showVideo = () => {
-      // Keep the video very dim so it stays atmospheric and doesn't
-      // fight the white text for attention.
       video.style.opacity = "0.5";
     };
 
@@ -147,7 +137,6 @@ const Index = () => {
       <SEOHead
         title="Your Next 100 B2B Prospects, Already Qualified"
         description="Describe your customer in plain English. Get 100 ranked B2B prospects with verified emails and a first draft for each, free, with campaign setup included."
-
         keywords="B2B lead generation, lead discovery, outbound email software, ICP scoring, SMTP verified emails, plain English lead search, B2B prospecting, AI email drafting, email enrichment, outbound sales automation, find B2B leads, lead scoring software, B2B email outreach"
         ogImage="https://outreign.io/__l5e/assets-v1/54ff0c6f-955e-4073-9348-98d79eba4c4f/outreign-social-card.jpg"
       />
@@ -179,24 +168,20 @@ const Index = () => {
             />
           </video>
         )}
-        {/* Purple-tinted darkening overlay — keeps the video visible but text readable */}
         <div
           className="absolute inset-0"
           style={{ background: 'linear-gradient(to bottom, hsl(261 75% 4% / 0.45), hsl(261 75% 3% / 0.72))' }}
         />
-        {/* Brand purple color shift — forces video hue toward OutReign violet */}
         <div
           className="absolute inset-0"
           style={{ background: 'hsl(263 80% 45%)', mixBlendMode: 'color', opacity: 0.35 }}
         />
-        {/* Vignette to keep text legible at edges */}
         <div
           className="absolute inset-0"
           style={{ background: 'radial-gradient(ellipse at center, transparent 25%, hsl(261 75% 2% / 0.78) 100%)' }}
         />
       </div>
 
-      {/* Desktop vertical guide lines */}
       <div className="hidden lg:block fixed inset-y-0 left-1/2 w-px -translate-x-[36rem] bg-white/[0.04] pointer-events-none z-0" aria-hidden="true" />
       <div className="hidden lg:block fixed inset-y-0 left-1/2 w-px translate-x-[36rem] bg-white/[0.04] pointer-events-none z-0" aria-hidden="true" />
 
@@ -205,9 +190,9 @@ const Index = () => {
         <main itemScope itemType="https://schema.org/WebPage">
           <article>
             <HeroSection />
-            <ProductShowcase />
             {showBelowFold && (
               <>
+                <DeferredSection><ProductShowcase /></DeferredSection>
                 <DeferredSection><ProblemSection /></DeferredSection>
                 <DeferredSection><HowItWorks /></DeferredSection>
                 <DeferredSection><ModulesSection /></DeferredSection>

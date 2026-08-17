@@ -1,7 +1,6 @@
 import { Component, Suspense, lazy, useState, useEffect, useRef, type ComponentType, type ErrorInfo, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { isPostHogEnabled, posthog } from "@/lib/posthog";
 import { capturePageview } from "@/lib/analytics-events";
 import { analytics as heycatch } from "@/lib/heycatch";
@@ -78,6 +77,7 @@ const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 const Connect = lazy(() => import("./pages/Connect"));
 
 const queryClient = new QueryClient();
+const getBackend = () => import("@/integrations/supabase/client").then((mod) => mod.supabase);
 
 // Simple loading fallback
 const PageLoader = () => (
@@ -212,6 +212,7 @@ const DeferredUIShell = ({ children }: { children: ReactNode }) => {
 const MaintenancePage = ({ message }: { message: string }) => {
   const handleAdminSignIn = async () => {
     // Sign out any current session so the admin gets a clean login
+    const supabase = await getBackend();
     await supabase.auth.signOut();
     window.location.href = "/auth";
   };
@@ -253,6 +254,7 @@ const fetchMaintenance = async (): Promise<MaintenanceState> => {
   if (maintInflight) return maintInflight;
   maintInflight = (async () => {
     try {
+      const supabase = await getBackend();
       const { data: { session } } = await supabase.auth.getSession();
       const user = session ? (await supabase.auth.getUser()).data.user : null;
 
@@ -309,10 +311,14 @@ const MaintenanceGuard = ({ children }: { children: ReactNode }) => {
 let jwtSanityRan = false;
 const useJwtSanityCheck = () => {
   useEffect(() => {
+    // Public marketing pages never need an auth session. Avoid loading and
+    // initializing the full backend SDK during their critical render path.
+    if (isPublicLandingPath(window.location.pathname)) return;
     if (jwtSanityRan) return;
     jwtSanityRan = true;
     (async () => {
       try {
+        const supabase = await getBackend();
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.access_token) return;
         let hasSub = false;
@@ -350,7 +356,10 @@ const useJwtSanityCheck = () => {
 
 const usePostHogIdentity = () => {
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    if (isPublicLandingPath(window.location.pathname)) return;
+    let unsubscribe: (() => void) | undefined;
+    void getBackend().then((supabase) => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT") {
         if (isPostHogEnabled) posthog.reset();
         heycatch.resetIdentity();
@@ -397,9 +406,11 @@ const usePostHogIdentity = () => {
           ...(session.user.created_at ? [{ signup_date: session.user.created_at }] : []),
         );
       }
+      });
+      unsubscribe = () => subscription.unsubscribe();
     });
 
-    return () => subscription.unsubscribe();
+    return () => unsubscribe?.();
   }, []);
 };
 
@@ -429,7 +440,7 @@ const App = () => {
   return (
   <QueryClientProvider client={queryClient}>
     <DeferredUIShell>
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <RouteAnalytics />
         <ChunkErrorBoundary>
 
