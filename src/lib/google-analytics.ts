@@ -34,15 +34,16 @@ export function initGoogleAnalytics(): void {
   initialized = true;
 
   window.dataLayer = window.dataLayer || [];
-  const gtag = (
+  function gtag(
     command: "event" | "config" | "js",
     targetId: string | Date,
     config?: Record<string, unknown>,
-  ) => {
+  ) {
     // gtag.js expects an arguments-like object, not a plain array.
     // eslint-disable-next-line prefer-rest-params
-    window.dataLayer.push(arguments.length ? arguments : [command, targetId, config]);
-  };
+    window.dataLayer.push(arguments);
+  }
+
   window.gtag = gtag;
 
   gtag("js", new Date());
