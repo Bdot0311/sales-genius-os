@@ -84,7 +84,7 @@ describe("composeSkillContext", () => {
 
     expect(text).toContain("--- SKILL: email-writing-frameworks ---");
     // Examples inside a skill are shapes to imitate, never copy sourced wording.
-    expect(text).toContain("never wording to reuse");
+    expect(text).toContain("is an illustration of a shape");
   });
 
   it("states that the house rules outrank the reference material", () => {
