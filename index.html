@@ -263,42 +263,5 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
 
-    <!-- Google tag (gtag.js) — deferred until idle/interaction to minimize main-thread work -->
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      (function(){
-        var loaded = false;
-        function loadGtag(){
-          if (loaded) return;
-          loaded = true;
-          gtag('js', new Date());
-          gtag('config', 'G-92ZVN964CE');
-          var s = document.createElement('script');
-          s.src = 'https://www.googletagmanager.com/gtag/js?id=G-92ZVN964CE';
-          s.async = true;
-          document.head.appendChild(s);
-        }
-        var trigger = function(){ loadGtag(); cleanup(); };
-        function cleanup(){
-          window.removeEventListener('scroll', trigger);
-          window.removeEventListener('mousemove', trigger);
-          window.removeEventListener('touchstart', trigger);
-          window.removeEventListener('keydown', trigger);
-        }
-        window.addEventListener('scroll', trigger, { passive: true, once: true });
-        window.addEventListener('mousemove', trigger, { once: true });
-        window.addEventListener('touchstart', trigger, { passive: true, once: true });
-        window.addEventListener('keydown', trigger, { once: true });
-        // Fallback: load after 5s of idle so analytics still fire on bounce
-        setTimeout(function(){
-          if ('requestIdleCallback' in window) {
-            requestIdleCallback(loadGtag, { timeout: 2000 });
-          } else {
-            loadGtag();
-          }
-        }, 5000);
-      })();
-    </script>
   </body>
 </html>
