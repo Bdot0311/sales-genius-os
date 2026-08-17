@@ -83,14 +83,16 @@ describe("composeSkillContext", () => {
     const text = composeSkillContext({ goal: "4ts" });
 
     expect(text).toContain("--- SKILL: email-writing-frameworks ---");
-    expect(text).toContain("REFERENCE MATERIAL");
+    // Examples inside a skill are shapes to imitate, never copy sourced wording.
+    expect(text).toContain("never wording to reuse");
   });
 
   it("states that the house rules outrank the reference material", () => {
     // The rules above it are product policy the quality checker enforces; a
     // skill must not be able to relax them.
-    expect(composeSkillContext({ goal: "4ts" })).toContain("the rules above win");
+    expect(composeSkillContext({ goal: "4ts" })).toContain("A framework can never relax those");
   });
+
 
   it("keeps the requested framework when the budget forces a cut", () => {
     // Tight budget: the framework the caller asked for must survive and the
