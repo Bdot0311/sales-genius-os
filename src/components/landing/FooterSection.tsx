@@ -157,6 +157,28 @@ export const FooterSection = () => {
             </div>
           </div>
 
+          {/* Guides — latest articles, so every content page has one real internal link */}
+          <div className="mb-12 pt-8 border-t" style={{ borderColor: "hsl(261 75% 50% / 0.18)" }}>
+            <h3 className="font-semibold text-sm mb-4" style={{ color: "hsl(0 0% 92%)" }}>Guides &amp; popular articles</h3>
+            <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-1">
+              {footerLinks.guides.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    to={link.href}
+                    className="text-sm transition-colors duration-150 inline-flex items-center py-2 min-h-[40px] px-1"
+                    style={{ color: "hsl(0 0% 100% / 0.7)" }}
+                    onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")}
+                    onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.7)")}
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+
+
           {/* Google API Disclosure */}
           <div id="google-api-disclosure" className="mb-8 p-6 rounded-xl border" style={{ background: "hsl(240 30% 10%)", borderColor: "hsl(261 75% 50% / 0.25)" }}>
             <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: "hsl(0 0% 92%)" }}>
