@@ -56,10 +56,9 @@ export const HeroSection = () => {
           Describe your customer in plain English. Get 100 ranked prospects with verified emails and a first draft for each, free. Then we build your first campaign with you, on a call, and your AI SDR keeps it running.
         </p>
 
-        {/* CTAs — entrance deferred with CSS to keep LCP focused on the text above */}
+        {/* CTAs paint immediately so visual completion is not artificially delayed. */}
         <div
-          className="mb-6 flex w-full max-w-[20rem] flex-col items-center gap-3 sm:mb-8 sm:max-w-none sm:flex-row sm:justify-center sm:gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both"
-          style={{ animationDelay: '600ms' }}
+          className="mb-6 flex w-full max-w-[20rem] flex-col items-center gap-3 sm:mb-8 sm:max-w-none sm:flex-row sm:justify-center sm:gap-4"
         >
           <a
             href={CAMPAIGN_SETUP_BOOKING_URL}
@@ -86,8 +85,7 @@ export const HeroSection = () => {
         </div>
 
         <p
-          className="mb-3 flex max-w-[21rem] flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-xs leading-tight text-white/90 sm:flex-nowrap animate-in fade-in duration-700 fill-mode-both"
-          style={{ animationDelay: '800ms' }}
+          className="mb-3 flex max-w-[21rem] flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-xs leading-tight text-white/90 sm:flex-nowrap"
         >
           100 free leads
           <span className="w-px h-3 bg-white/20 inline-block" />
@@ -98,8 +96,8 @@ export const HeroSection = () => {
 
         {/* Social proof line */}
         <p
-          className="text-xs text-center animate-in fade-in duration-700 fill-mode-both"
-          style={{ color: "hsl(0 0% 100% / 0.5)", animationDelay: '900ms' }}
+          className="text-xs text-center"
+          style={{ color: "hsl(0 0% 100% / 0.5)" }}
         >
           Built by operators who run real outbound every day
         </p>
