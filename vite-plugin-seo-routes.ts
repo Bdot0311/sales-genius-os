@@ -366,7 +366,16 @@ export function seoRoutesPlugin(): Plugin {
           });
         }
       }
+
+      const buildDate = new Date().toISOString().slice(0, 10);
+      this.emitFile({
+        type: "asset",
+        fileName: "sitemap.xml",
+        source: renderSitemap(buildDate),
+      });
+
       this.info(
+
         `seo-routes: emitted ${ALL_ROUTES.length} routes ` +
           `(${ROUTES.length} marketing, ${CONTENT_ROUTES.length} content)`,
       );
