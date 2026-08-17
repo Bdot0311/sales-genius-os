@@ -1,5 +1,14 @@
 import outReignLogo from "@/assets/outreign-logo.webp";
 import { Link } from "react-router-dom";
+import { helpCategories, helpArticles } from "@/components/help/helpArticles";
+import { blogPosts } from "@/data/blog-posts";
+
+// Guides and support links are generated from the same content data the pages
+// render. Help articles and categories previously had no link path from the
+// site's most-crawled page, so Google left them at "Discovered - currently not
+// indexed"; these give every one of them a real rendered internal link.
+const popularArticles = helpArticles.filter((a) => a.popular).slice(0, 5);
+const recentPosts = blogPosts.slice(0, 5);
 
 const footerLinks = {
   product: [
@@ -7,6 +16,8 @@ const footerLinks = {
     { label: "Pricing", href: "/pricing" },
     { label: "Integrations", href: "/pricing" },
     { label: "Sales Ops Software", href: "/sales-operations-software" },
+    { label: "Product Demo", href: "/demo" },
+    { label: "Connect to AI Agents", href: "/connect" },
   ],
   compare: [
     { label: "vs Apollo", href: "/vs-apollo" },
@@ -22,6 +33,17 @@ const footerLinks = {
     { label: "Partners", href: "/partners" },
     { label: "API Docs", href: "/api-docs" },
     { label: "API Status", href: "/api-status" },
+    ...helpCategories.map((category) => ({
+      label: category.title,
+      href: `/help/category/${category.id}`,
+    })),
+  ],
+  guides: [
+    ...recentPosts.map((post) => ({ label: post.title, href: `/blog/${post.slug}` })),
+    ...popularArticles.map((article) => ({
+      label: article.title,
+      href: `/help/article/${article.slug}`,
+    })),
   ],
   legal: [
     { label: "Privacy", href: "/privacy" },
@@ -29,6 +51,7 @@ const footerLinks = {
     { label: "Security", href: "/security" },
   ],
 };
+
 
 export const FooterSection = () => {
   return (
