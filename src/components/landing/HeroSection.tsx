@@ -58,7 +58,7 @@ export const HeroSection = () => {
         </h1>
 
         {/* Subhead — LCP element: rendered fully opaque, no entrance animation */}
-        <p className="mb-6 max-w-[24rem] text-lg font-normal leading-snug text-white sm:max-w-2xl sm:text-[1.45rem] sm:leading-relaxed" style={{ textShadow: "0 4px 28px rgba(0,0,0,0.45)" }}>
+        <p className="mb-7 max-w-[26rem] text-pretty text-xl font-medium leading-snug text-white sm:mb-8 sm:max-w-2xl sm:text-[1.75rem] sm:leading-relaxed" style={{ textShadow: "0 4px 32px rgba(0,0,0,0.55)" }}>
           Describe your customer in plain English. Get 100 ranked prospects with verified emails and a first draft for each, free. Then we set up your first campaign with you, one to one.
         </p>
 
