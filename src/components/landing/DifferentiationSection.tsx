@@ -136,11 +136,11 @@ export const DifferentiationSection = () => {
               whileHover={{ x: 3, color: "hsl(261 75% 80%)" }}
               transition={{ type: "spring", stiffness: 400, damping: 20 }}
             >
-              Start free, no card needed
+              Start free, then pick your plan
               <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
             </motion.a>
             <p className="text-xs" style={{ color: "hsl(0 0% 100% / 0.25)" }}>
-              Free plan available · Cancel anytime
+              Free plan · 14-day trial on paid plans · Cancel anytime
             </p>
           </motion.div>
         </div>

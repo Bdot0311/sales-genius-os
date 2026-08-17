@@ -55,7 +55,7 @@ export const BigStatSection = () => {
             viewport={{ once: true, margin: "-10% 0px" }}
             transition={{ duration: 0.55, ease, delay: 0.2 }}
           >
-            ICP to sent email. One tool, one workflow.
+            ICP to sent email in one workflow, so your day goes to replies instead of spreadsheets.
           </motion.p>
 
           {/* Supporting stat */}
@@ -70,7 +70,7 @@ export const BigStatSection = () => {
               1 tool
             </span>
             <span className="block text-xs mt-1" style={{ color: "hsl(0 0% 100% / 0.28)" }}>
-              instead of Apollo + Clay + Gmail + spreadsheet
+              replaces Apollo + Clay + Gmail + spreadsheet
             </span>
           </motion.div>
 
