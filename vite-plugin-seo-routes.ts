@@ -292,6 +292,53 @@ function renderRouteHtml(baseHtml: string, meta: RouteMeta): string {
   return html;
 }
 
+/**
+ * Sitemap, generated from the same route list the prerender uses.
+ *
+ * The previous sitemap.xml was hand-maintained: every entry carried a
+ * hand-typed lastmod that went stale (2026-06-01) and new content had to be
+ * added by hand, so blog posts and help articles could be listed with a date
+ * months older than the content. A stale lastmod gives Google no reason to
+ * recrawl a URL it has only "discovered", which is exactly the state those
+ * pages were stuck in. Generating it here keeps coverage and freshness tied to
+ * the content itself.
+ */
+function renderSitemap(buildDate: string): string {
+  const blogDates = new Map(blogPosts.map((p) => [`/blog/${p.slug}`, p.publishedAt]));
+
+  const priorityFor = (path: string): string => {
+    if (path === "/") return "1.0";
+    if (path === "/pricing" || path.startsWith("/vs-") || path === "/apollo-alternative") return "0.9";
+    if (path === "/blog" || path === "/help" || path === "/sales-operations-software") return "0.8";
+    if (path.startsWith("/blog/")) return "0.7";
+    if (path.startsWith("/help/")) return "0.6";
+    return "0.5";
+  };
+
+  const changefreqFor = (path: string): string => {
+    if (path === "/" || path === "/blog" || path === "/pricing") return "weekly";
+    return "monthly";
+  };
+
+  const urls = ALL_ROUTES.map((route) => {
+    const lastmod = blogDates.get(route.path) ?? buildDate;
+    const image =
+      route.path === "/"
+        ? `\n    <image:image>\n      <image:loc>https://outreign.io/outreign-social-card.jpg?v=7</image:loc>\n      <image:title>Find Who To Sell To, Then Close Them.</image:title>\n    </image:image>`
+        : "";
+    return `  <url>\n    <loc>${escapeHtml(canonicalFor(route.path))}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>${changefreqFor(route.path)}</changefreq>\n    <priority>${priorityFor(route.path)}</priority>${image}\n  </url>`;
+  }).join("\n");
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated at build time from the app's route and content data. Do not edit by hand. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+${urls}
+</urlset>
+`;
+}
+
+
 export function seoRoutesPlugin(): Plugin {
   return {
     name: "outreign-seo-routes",
