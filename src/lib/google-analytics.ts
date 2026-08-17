@@ -56,11 +56,13 @@ export function initGoogleAnalytics(): void {
   script.async = true;
   script.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`;
   script.onerror = () => {
+    // Remember the failure so we don't re-request a dead URL on every page load.
+    // Stay silent: a warn here shows up as a console error in site audits.
     try {
       localStorage.setItem(GA_FAILED_KEY, measurementId as string);
     } catch {}
-    console.warn(`[ga] gtag.js failed to load for ${measurementId} — check the GA4 measurement ID.`);
   };
+
   document.head.appendChild(script);
 }
 
