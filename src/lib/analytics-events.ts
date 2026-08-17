@@ -1,11 +1,12 @@
 /**
  * Single call site for product analytics.
  *
- * Every event fans out to PostHog, HeyCatch and gtag (when present), so a
- * funnel step never ends up recorded in one tool and missing from another.
+ * Every event fans out to PostHog, HeyCatch and Google Analytics (when present),
+ * so a funnel step never ends up recorded in one tool and missing from another.
  */
 import { isPostHogEnabled, posthog } from "@/lib/posthog";
 import { analytics as heycatch } from "@/lib/heycatch";
+import { sendPageview as gaPageview } from "@/lib/google-analytics";
 import { getAttributionProps } from "@/lib/attribution";
 
 type Props = Record<string, string | number | boolean | null | undefined>;
@@ -32,7 +33,7 @@ export function captureEvent(event: string, props?: Props) {
   } catch { /* noop */ }
 
   try {
-    if (typeof window !== "undefined" && typeof window.gtag === "function") {
+    if (typeof window !== "undefined" && typeof window.gtag === "function" && !event.startsWith("$")) {
       window.gtag("event", event, properties);
     }
   } catch { /* noop */ }
@@ -56,6 +57,7 @@ export function capturePageview(path: string, extra?: Props) {
     path,
     ...clean(extra),
   });
+  gaPageview(path);
 }
 
 export const Analytics = {
@@ -71,3 +73,4 @@ export const Analytics = {
 
   firstSequenceSent: () => captureOnce("first_sequence_sent"),
 };
+
