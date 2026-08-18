@@ -242,7 +242,15 @@ export const FooterSection = () => {
                   onMouseLeave: (e: React.MouseEvent<HTMLAnchorElement>) => { (e.currentTarget as HTMLElement).style.borderColor = "hsl(261 75% 50% / 0.18)"; },
                 };
                 if ("html" in b) {
-                  return <a key={b.href} {...sharedProps} dangerouslySetInnerHTML={{ __html: b.html }} />;
+                  // b.html is a complete <a> pill — render it standalone so we
+                  // never nest an anchor inside an anchor.
+                  return (
+                    <span
+                      key={b.href}
+                      className="inline-flex"
+                      dangerouslySetInnerHTML={{ __html: b.html }}
+                    />
+                  );
                 }
                 return (
                   <a key={b.href} {...sharedProps}>
