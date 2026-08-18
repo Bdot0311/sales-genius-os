@@ -22,6 +22,7 @@
 // case to callProvider() — nothing else in the codebase knows the vendor.
 
 import { dohQuery, validateDomain } from "./dns.ts";
+import { coldiqAuthHeaders, coldiqVerifyUrl } from "./coldiq.ts";
 
 export type VerificationStatus = "valid" | "catch_all" | "unknown" | "invalid" | "role";
 
@@ -89,10 +90,28 @@ interface CacheClient {
   };
 }
 
+/**
+ * Which paid verifier is active, or null for DNS-only.
+ *
+ * ColdIQ is a special case: it fronts the verification vendors behind the same
+ * marketplace key used for lead search, so setting COLDIQ_API_KEY is enough —
+ * there is no second key to configure. An explicit EMAIL_VERIFIER_API_KEY still
+ * wins, so a direct vendor account can be used for verification even while
+ * ColdIQ handles lead search (the cheaper split, since verification is the
+ * high-volume call).
+ */
 function providerName(): string | null {
-  const key = Deno.env.get("EMAIL_VERIFIER_API_KEY");
-  if (!key) return null;
-  return (Deno.env.get("EMAIL_VERIFIER_PROVIDER") || "reoon").toLowerCase();
+  const explicitKey = Deno.env.get("EMAIL_VERIFIER_API_KEY");
+  if (explicitKey) {
+    return (Deno.env.get("EMAIL_VERIFIER_PROVIDER") || "reoon").toLowerCase();
+  }
+  if (Deno.env.get("COLDIQ_API_KEY")) return "coldiq";
+  return null;
+}
+
+/** The key for whichever provider providerName() resolved to. */
+function providerKey(): string | null {
+  return Deno.env.get("EMAIL_VERIFIER_API_KEY") || Deno.env.get("COLDIQ_API_KEY") || null;
 }
 
 /** True when a paid mailbox check is available. Callers use this to tell
@@ -186,11 +205,37 @@ async function freeGate(supabase: CacheClient, email: string): Promise<Verificat
   return null;
 }
 
+/**
+ * Find the object actually holding the verdict.
+ *
+ * A direct vendor answers at the top level. A marketplace like ColdIQ proxies
+ * that vendor and usually wraps it — `{ data: {...} }`, `{ result: {...} }` —
+ * and which wrapper appears can depend on which vendor the waterfall picked.
+ * Without this, `String(obj.result)` on a wrapper object stringifies to
+ * "[object Object]", every verdict falls through to `unknown`, and paid checks
+ * silently buy nothing.
+ */
+function unwrapVerdict(body: unknown): Record<string, unknown> {
+  let node = (body ?? {}) as Record<string, unknown>;
+
+  for (let depth = 0; depth < 3; depth++) {
+    // A usable verdict is a string field, not another object.
+    const direct = node.status ?? node.result ?? node.state ?? node.email_status;
+    if (typeof direct === "string") return node;
+
+    const next = [node.data, node.result, node.verification, node.response]
+      .find((v) => v && typeof v === "object" && !Array.isArray(v));
+    if (!next) return node;
+    node = next as Record<string, unknown>;
+  }
+  return node;
+}
+
 /** Map a provider's own vocabulary onto ours. Written defensively — both
  *  vendors have renamed fields before, and an unrecognised verdict must
  *  degrade to `unknown` rather than be guessed at in either direction. */
 function interpret(provider: string, body: unknown): VerificationResult {
-  const obj = (body ?? {}) as Record<string, unknown>;
+  const obj = unwrapVerdict(body);
   const raw = String(obj.status ?? obj.result ?? obj.state ?? obj.email_status ?? "")
     .toLowerCase().replace(/[\s-]+/g, "_");
 
@@ -255,20 +300,37 @@ function interpret(provider: string, body: unknown): VerificationResult {
  *  so an outage degrades to "unproven" rather than to false rejections. */
 async function callProvider(email: string): Promise<VerificationResult> {
   const provider = providerName()!;
-  const key = Deno.env.get("EMAIL_VERIFIER_API_KEY")!;
+  const key = providerKey()!;
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), PROVIDER_TIMEOUT_MS);
 
   try {
-    const url = provider === "millionverifier"
-      ? `https://api.millionverifier.com/api/v3/?api=${encodeURIComponent(key)}&email=${encodeURIComponent(email)}&timeout=10`
-      // Reoon. `power` mode performs the SMTP handshake and resolves catch-all
-      // domains; `quick` mode would only redo the DNS work layer 1 already did.
-      : `https://emailverifier.reoon.com/api/v1/verify?email=${encodeURIComponent(email)}&key=${encodeURIComponent(key)}&mode=power`;
+    let res: Response;
 
-    const res = await fetch(url, { headers: { Accept: "application/json" }, signal: ctrl.signal });
+    if (provider === "coldiq") {
+      // Marketplace call: POST with the key in a header rather than the query
+      // string. The exact path is configurable because the contract was never
+      // read — see _shared/coldiq.ts.
+      res = await fetch(coldiqVerifyUrl(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json", ...coldiqAuthHeaders() },
+        body: JSON.stringify({ email }),
+        signal: ctrl.signal,
+      });
+    } else {
+      const url = provider === "millionverifier"
+        ? `https://api.millionverifier.com/api/v3/?api=${encodeURIComponent(key)}&email=${encodeURIComponent(email)}&timeout=10`
+        // Reoon. `power` mode performs the SMTP handshake and resolves catch-all
+        // domains; `quick` mode would only redo the DNS work layer 1 already did.
+        : `https://emailverifier.reoon.com/api/v1/verify?email=${encodeURIComponent(email)}&key=${encodeURIComponent(key)}&mode=power`;
+      res = await fetch(url, { headers: { Accept: "application/json" }, signal: ctrl.signal });
+    }
+
     if (!res.ok) {
-      console.error(`[email-verify] ${provider} returned ${res.status}`);
+      // The body names the actionable cause — wrong path, exhausted credits,
+      // rejected address — which the status code alone does not.
+      const detail = (await res.text().catch(() => "")).slice(0, 300);
+      console.error(`[email-verify] ${provider} returned ${res.status}:`, detail);
       return { status: "unknown", verified: null, reason: "Verification unavailable", source: provider };
     }
     return interpret(provider, await res.json());
