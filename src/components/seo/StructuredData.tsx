@@ -162,6 +162,12 @@ export const SoftwareApplicationSchema = () => {
     "url": BASE_URL,
     "downloadUrl": `${BASE_URL}/auth`,
     "screenshot": "https://outreign.io/outreign-og.png",
+    // Free tier exists, so the product page is public and free to access.
+    // Static values keep the prerendered and hydrated JSON byte-identical.
+    "isAccessibleForFree": true,
+    "datePublished": "2026-01-15",
+    "dateModified": "2026-08-18",
+
     "offers": {
       "@type": "AggregateOffer",
       "lowPrice": "0",
