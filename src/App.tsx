@@ -309,11 +309,13 @@ const MaintenanceGuard = ({ children }: { children: ReactNode }) => {
 // anon, breaking has_role/get_user_plan and every RLS-protected query. Detect
 // this and force a clean sign-out so the user can re-authenticate.
 let jwtSanityRan = false;
-const useJwtSanityCheck = () => {
+const useJwtSanityCheck = (pathname: string) => {
   useEffect(() => {
     // Public marketing pages never need an auth session. Avoid loading and
     // initializing the full backend SDK during their critical render path.
-    if (isPublicLandingPath(window.location.pathname)) return;
+    // Re-evaluated on every navigation, so a visitor who lands on the
+    // marketing site and then moves into the app still gets checked.
+    if (isPublicLandingPath(pathname)) return;
     if (jwtSanityRan) return;
     jwtSanityRan = true;
     (async () => {
@@ -351,12 +353,15 @@ const useJwtSanityCheck = () => {
         }
       } catch { /* noop */ }
     })();
-  }, []);
+  }, [pathname]);
 };
 
-const usePostHogIdentity = () => {
+let identitySubscribed = false;
+const usePostHogIdentity = (pathname: string) => {
   useEffect(() => {
-    if (isPublicLandingPath(window.location.pathname)) return;
+    if (isPublicLandingPath(pathname)) return;
+    if (identitySubscribed) return;
+    identitySubscribed = true;
     let unsubscribe: (() => void) | undefined;
     void getBackend().then((supabase) => {
       const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -411,7 +416,7 @@ const usePostHogIdentity = () => {
     });
 
     return () => unsubscribe?.();
-  }, []);
+  }, [pathname]);
 };
 
 /**
@@ -434,14 +439,21 @@ const RouteAnalytics = () => {
 
 
 
+/** Auth-dependent analytics/session side effects, re-evaluated on navigation. */
+const AuthSideEffects = () => {
+  const { pathname } = useLocation();
+  useJwtSanityCheck(pathname);
+  usePostHogIdentity(pathname);
+  return null;
+};
+
 const App = () => {
-  useJwtSanityCheck();
-  usePostHogIdentity();
   return (
   <QueryClientProvider client={queryClient}>
     <DeferredUIShell>
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <RouteAnalytics />
+        <AuthSideEffects />
         <ChunkErrorBoundary>
 
           <Suspense fallback={<PageLoader />}>
