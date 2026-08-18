@@ -537,6 +537,16 @@ const Leads = () => {
                     No leads match that exactly. Nothing broader is shown by default — results
                     that stopped matching your description are worse than none.
                   </p>
+                  {/* Which filters produced nothing. "Try different criteria" is
+                      not actionable without knowing what was actually sent. */}
+                  {Array.isArray(disclosure.applied) && disclosure.applied.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      searched:{" "}
+                      <span className="text-foreground">
+                        {(disclosure.applied as string[]).join(" · ")}
+                      </span>
+                    </p>
+                  )}
                   {(externalFilters.industry || externalFilters.keywords?.length) && (
                     <Button
                       variant="outline"
@@ -546,7 +556,7 @@ const Leads = () => {
                       }
                       disabled={externalLoading}
                     >
-                      Search again without the industry filter
+                      Broaden this search
                     </Button>
                   )}
                 </div>

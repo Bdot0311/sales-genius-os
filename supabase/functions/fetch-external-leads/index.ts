@@ -1353,15 +1353,21 @@ serve(async (req) => {
     // is added. Returning "no leads found" there is wrong — the ICP exists, the
     // secondary filters just don't resolve upstream.
     //
-    // So the ladder now always runs (except for strict/agent searches) and drops
-    // ONLY secondary narrowing filters, in order of least importance. Job title,
-    // seniority, location and company targeting are never dropped, so results
-    // still match the core of what was asked for, and everything dropped is
-    // reported back in `relaxed_filters` so the UI can say so.
-    // `seniority` is in the ladder because the provider takes a free-form string
-    // and silently returns nothing for values outside its own vocabulary:
-    // "Founder in the US" finds 1.4M people, and the same search with
-    // seniority="owner" — which our normaliser derives from "founder" — finds 0.
+    // Broadening is opt-in, and the ladder below only runs when the user asks
+    // for it.
+    //
+    // It used to run on every non-agent search, which contradicted the contract
+    // `relax` already documented ("off by default ... the UI sets this only
+    // when the user explicitly asks to broaden"). The effect in production: a
+    // search for founders at AI SaaS companies found nothing, dropped
+    // `industry`, then dropped `seniority`, and answered with whoever matched
+    // `title contains "founder"` and a headcount band. Those people came back
+    // for every differently-worded search, because by the last rung every
+    // search had become the same one.
+    //
+    // A search that matches nothing should say so. The filters are what the
+    // user asked for, and quietly answering a different question makes the
+    // result look like the ICP is wrong rather than the search being empty.
     const DROP_LADDER: string[][] = [
       ['keywords'],
       ['keywords', 'industry'],
@@ -1377,7 +1383,9 @@ serve(async (req) => {
     // then leaves exactly the over-broad search this was meant to stop.
     const keywordIsDefining = semanticTermsIn(String(requestBody.keywords ?? '')).length > 0;
 
-    if (!filters.strict && rawLeads.length === 0) {
+    // `relax` is the user pressing "broaden this". `strict` is an agent search,
+    // which states its ICP exactly and must never be widened.
+    if (filters.relax && !filters.strict && rawLeads.length === 0) {
       for (const plan of DROP_LADDER) {
         const applicable = plan.filter((k) => requestBody[k] !== undefined && requestBody[k] !== null)
           .filter((k) => !(k === 'keywords' && keywordIsDefining));
@@ -1429,9 +1437,28 @@ serve(async (req) => {
 
       await refundCredit('empty_result');
       await updateUsageEvent(supabase, usageEventId, 'empty', 0, 'empty_result');
+
+      // Name what was searched. "Try different search criteria" is not
+      // actionable when the user cannot see which criteria were sent — and now
+      // that nothing is dropped silently, the applied filters are the whole
+      // explanation for an empty result.
+      const applied = Object.entries(requestBody)
+        .filter(([k]) => !['limit', 'offset', 'cursor', 'exclude_profiles'].includes(k))
+        .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`);
+
       return new Response(
-        JSON.stringify({ success: true, leads: [], total: 0, from_cache: false,
-          message: 'No leads found for this search. Try different search criteria.' }),
+        JSON.stringify({
+          success: true, leads: [], total: 0, from_cache: false,
+          applied_filters: applied,
+          // The UI offers a broaden action, which re-runs with relax: true and
+          // reports back whatever it dropped in relaxed_filters.
+          can_broaden: !filters.relax && !filters.strict,
+          message: applied.length
+            ? `No leads match all of: ${applied.join(' · ')}. Nothing broader was searched — `
+              + 'results that stopped matching your description are worse than none. '
+              + 'Loosen a filter, or broaden this search to see what a wider version returns.'
+            : 'No leads found for this search. Try different search criteria.',
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
