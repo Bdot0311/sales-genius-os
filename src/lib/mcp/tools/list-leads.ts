@@ -17,7 +17,7 @@ export default defineTool({
   name: "list_leads",
   title: "List leads",
   description:
-    "List the signed-in user's saved leads in OutReign, most recently created first. Optionally filter by lead_status (e.g. new, contacted, qualified) and cap the result count.",
+    "List the signed-in user's saved leads in OutReign, most recently created first. Optionally filter by the visible pipeline stage and cap the result count.",
   inputSchema: {
     limit: z
       .number()
@@ -27,9 +27,9 @@ export default defineTool({
       .optional()
       .describe("Max number of leads to return (default 25, max 100)."),
     status: z
-      .string()
+      .enum(["new", "contacted", "no_response", "replied", "bounced", "meeting_booked", "qualified", "not_interested", "won", "lost"])
       .optional()
-      .describe("Optional lead_status filter, e.g. 'new', 'contacted', 'qualified'."),
+      .describe("Optional pipeline stage filter."),
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ limit, status }, ctx) => {
@@ -40,13 +40,13 @@ export default defineTool({
     let q = supabase
       .from("leads")
       .select(
-        "id, contact_name, contact_email, job_title, company_name, company_website, industry, lead_status, icp_score, created_at"
+        "id, contact_name, contact_email, job_title, company_name, company_website, industry, lead_status, pipeline_stage, icp_score, created_at"
       )
       .eq("user_id", ctx.getUserId())
       .order("created_at", { ascending: false })
       .limit(Math.min(limit ?? 25, 100));
 
-    if (status) q = q.eq("lead_status", status);
+    if (status) q = q.eq("pipeline_stage", status);
 
     const { data, error } = await q;
     if (error)
