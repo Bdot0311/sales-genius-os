@@ -54,7 +54,12 @@ type ToolEvent = {
 
 
 const LEAD_FIELDS =
-  "id, company_name, contact_name, contact_email, job_title, industry, company_website, linkedin_url, lead_status, icp_score, intent_score, intent_label, signal_score, signals, notes, last_contacted_at, created_at";
+  "id, company_name, contact_name, contact_email, job_title, industry, company_website, linkedin_url, lead_status, pipeline_stage, icp_score, intent_score, intent_label, signal_score, signals, notes, last_contacted_at, created_at";
+
+const PIPELINE_STAGES = [
+  "new", "contacted", "no_response", "replied", "bounced",
+  "meeting_booked", "qualified", "not_interested", "won", "lost",
+] as const;
 
 // Mirrors the client-side draft -> HTML conversion used by the chat draft cards
 // so a scheduled send renders identically to an immediate one.
@@ -418,12 +423,12 @@ const TOOLS = [
     type: "function",
     function: {
       name: "update_lead",
-      description: "Update a lead's status or notes.",
+      description: "Update a lead's visible pipeline label or notes. Outreach labels belong in pipeline_stage; lead_status is an internal record lifecycle and is not editable here.",
       parameters: {
         type: "object",
         properties: {
           lead_id: { type: "string" },
-          lead_status: { type: "string" },
+          pipeline_stage: { type: "string", enum: [...PIPELINE_STAGES] },
           notes: { type: "string" },
         },
         required: ["lead_id"],
@@ -1925,7 +1930,13 @@ serve(async (req) => {
 
         case "update_lead": {
           const update: Record<string, unknown> = {};
-          if (args.lead_status) update.lead_status = String(args.lead_status);
+          if (args.pipeline_stage) {
+            const stage = String(args.pipeline_stage);
+            if (!PIPELINE_STAGES.includes(stage as typeof PIPELINE_STAGES[number])) {
+              return { error: `Unsupported pipeline stage. Use one of: ${PIPELINE_STAGES.join(", ")}` };
+            }
+            update.pipeline_stage = stage;
+          }
           if (args.notes) update.notes = String(args.notes);
           if (!Object.keys(update).length) return { error: "Nothing to update" };
           const { error } = await admin

@@ -242,7 +242,7 @@ var create_lead_default = defineTool6({
     industry: z6.string().trim().optional(),
     linkedin_url: z6.string().trim().optional(),
     notes: z6.string().trim().optional(),
-    lead_status: z6.string().trim().optional().describe("e.g. new, contacted, qualified"),
+    pipeline_stage: z6.enum(["new", "contacted", "no_response", "replied", "bounced", "meeting_booked", "qualified", "not_interested", "won", "lost"]).optional(),
     source: z6.string().trim().optional().describe("Where the lead came from, e.g. 'mcp'")
   },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
@@ -252,7 +252,8 @@ var create_lead_default = defineTool6({
     const { data, error } = await supabase.from("leads").insert({
       user_id: ctx.getUserId(),
       source: input.source ?? "mcp",
-      lead_status: input.lead_status ?? "new",
+      lead_status: "active",
+      pipeline_stage: input.pipeline_stage ?? "new",
       company_name: input.company_name,
       contact_name: input.contact_name,
       contact_email: input.contact_email,
@@ -261,7 +262,7 @@ var create_lead_default = defineTool6({
       industry: input.industry,
       linkedin_url: input.linkedin_url,
       notes: input.notes
-    }).select("id, company_name, contact_name, contact_email, lead_status, created_at").single();
+    }).select("id, company_name, contact_name, contact_email, lead_status, pipeline_stage, created_at").single();
     if (error) return err(error.message);
     return ok(data, "lead");
   }
@@ -284,7 +285,7 @@ var update_lead_default = defineTool7({
     industry: z7.string().trim().optional(),
     linkedin_url: z7.string().trim().optional(),
     notes: z7.string().trim().optional(),
-    lead_status: z7.string().trim().optional()
+    pipeline_stage: z7.enum(["new", "contacted", "no_response", "replied", "bounced", "meeting_booked", "qualified", "not_interested", "won", "lost"]).optional()
   },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   handler: async ({ id, ...patch }, ctx) => {
@@ -292,7 +293,7 @@ var update_lead_default = defineTool7({
     const clean = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== void 0));
     if (Object.keys(clean).length === 0) return err("No fields to update.");
     const supabase = supabaseForUser6(ctx);
-    const { data, error } = await supabase.from("leads").update(clean).eq("id", id).eq("user_id", ctx.getUserId()).select("id, company_name, contact_name, contact_email, lead_status, updated_at").single();
+    const { data, error } = await supabase.from("leads").update(clean).eq("id", id).eq("user_id", ctx.getUserId()).select("id, company_name, contact_name, contact_email, lead_status, pipeline_stage, updated_at").single();
     if (error) return err(error.message);
     return ok(data, "lead");
   }
