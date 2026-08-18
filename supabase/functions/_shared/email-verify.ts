@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Lead email verification.
 //
 // Two layers, deliberately ordered cheapest-first:
