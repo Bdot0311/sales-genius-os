@@ -112,7 +112,7 @@ const TOOLS = [
         type: "object",
         properties: {
           query: { type: "string", description: "Free-text match on company, contact name or email" },
-          lead_status: { type: "string", description: "Filter by lead_status, e.g. new or active" },
+          pipeline_stage: { type: "string", enum: [...PIPELINE_STAGES], description: "Filter by the visible pipeline label" },
           min_icp_score: { type: "number" },
           needs_enrichment: {
             type: "boolean",
@@ -1046,7 +1046,7 @@ serve(async (req) => {
       switch (name) {
         case "list_leads": {
           let q = admin.from("leads").select(LEAD_FIELDS).eq("user_id", userId);
-          if (args.lead_status) q = q.eq("lead_status", args.lead_status);
+          if (args.pipeline_stage) q = q.eq("pipeline_stage", args.pipeline_stage);
           if (typeof args.min_icp_score === "number") q = q.gte("icp_score", args.min_icp_score);
           if (args.query) {
             const term = String(args.query).replace(/[%,]/g, "");
