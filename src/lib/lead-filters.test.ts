@@ -130,3 +130,20 @@ describe("repeat suppression", () => {
     expect(a.query).not.toBe(b.query);
   });
 });
+
+describe("broadening is opt-in", () => {
+  it("does not ask to broaden by default", () => {
+    // The ladder that drops industry and seniority runs only when the user
+    // presses "broaden". Running it automatically answered a different, wider
+    // question than the one asked, and every search eventually collapsed to
+    // the same broad one — which is why the same people kept coming back.
+    expect(buildExternalFilters({ jobTitles: ["Founder"] }, 25).relax).toBeUndefined();
+  });
+
+  it("keeps agent searches strict when the ICP says so", () => {
+    // An agent states its ICP exactly; widening it is never a favour.
+    const icp = { jobTitles: ["Founder"], industries: ["computer software"] };
+
+    expect(buildExternalFilters(icp, 25).relax).toBeUndefined();
+  });
+});
