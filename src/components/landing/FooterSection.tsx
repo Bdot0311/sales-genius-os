@@ -218,31 +218,38 @@ export const FooterSection = () => {
               className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full max-w-4xl [&_a]:flex [&_a]:h-14 [&_a]:items-center [&_a]:justify-center [&_a]:rounded-lg [&_a]:px-3 [&_a]:transition-colors [&_a]:duration-150 [&_img]:max-h-8 [&_img]:w-auto [&_img]:object-contain"
               style={{ ["--chip-bg" as any]: "hsl(240 30% 10%)", ["--chip-border" as any]: "hsl(261 75% 50% / 0.18)" }}
             >
-              {[
-                { href: "https://sellwithboost.com", src: "https://sellwithboost.com/badge/listing-dark.svg", alt: "Listed on Sell With Boost", w: 160, h: 40 },
-                { href: "https://landingboost.app/badges/top-1", src: "https://landingboost.app/badges/top1-dark.svg", alt: "Top 1% Landing Page — Verified by LandingBoost", w: 200, h: 40 },
-                { href: "https://nicklaunches.com/products/salesos/?utm_source=outreign.io&utm_medium=badge&utm_campaign=featured", src: "https://nicklaunches.com/badges/featured-dark.svg", alt: "OutReign on Nick Launches", w: 244, h: 56 },
-                { href: "https://plugyourbuild.com/listing/outreign-b8ad99", src: "https://plugyourbuild.com/api/badge/outreign-b8ad99?style=dark", alt: "Listed on Plug Your Build", w: 180, h: 40 },
-                { href: "https://rankinpublic.xyz/products/outreign.io", src: "https://rankinpublic.xyz/api/badges/badge-featured.png?site=outreign.io", alt: "Featured on RankInPublic", w: 125, h: 40 },
-                { href: "https://www.producthunt.com/products/outreign-io?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-outreign-io", src: "https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1174023&theme=dark&t=1781681273997", alt: "OutReign.io - Find who to sell to then close them. | Product Hunt", w: 250, h: 54 },
-                { href: "https://launchllama.co?utm_source=badge&utm_medium=referral", src: "https://speaktechenglish.com/wp-content/uploads/2026/04/Screenshot_2026-04-09_at_17.40.44-removebg-preview.png", alt: "Featured on Launch Llama", w: 200, h: 50 },
-                { href: "https://launchigniter.com/product/outreign-io?ref=badge-outreign-io", src: "https://launchigniter.com/api/badge/outreign-io?theme=dark", alt: "Featured on LaunchIgniter", w: 212, h: 55 },
-                { href: "https://smollaunchpad.com/projects/outreign", src: "https://r2.direasy-multi-tenant.focusapps.app/uploads/616d0b1a-3979-4b8c-94d1-b4f1fedd3ead/1783046766775/sjxeszczb3i/top1-dark.svg", alt: "Smol LaunchPad Top 1 Daily Winner", w: 195, h: 60 },
-                { href: "https://spacerrapps.com/apps/outreign?ref=badge", src: "https://spacerrapps.com/badge/outreign.svg?theme=light", alt: "OutReign is featured on Spacerr", w: 192, h: 54 },
-                { href: "https://boostdomainrating.com/item/outreign.io?utm_source=badge", src: "https://boostdomainrating.com/api/badge/outreign.io?color=dark", alt: "OutReign - Domain Rating", w: 212, h: 54 },
-              ].map((b) => (
-                <a
-                  key={b.href}
-                  href={b.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ background: "hsl(240 30% 10%)", border: "1px solid hsl(261 75% 50% / 0.18)" }}
-                  onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "hsl(261 75% 55% / 0.45)")}
-                  onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "hsl(261 75% 50% / 0.18)")}
-                >
-                  <img src={b.src} alt={b.alt} width={b.w} height={b.h} loading="lazy" />
-                </a>
-              ))}
+              {(
+                [
+                  { href: "https://sellwithboost.com", src: "https://sellwithboost.com/badge/listing-dark.svg", alt: "Listed on Sell With Boost", w: 160, h: 40 },
+                  { href: "https://landingboost.app/badges/top-1", src: "https://landingboost.app/badges/top1-dark.svg", alt: "Top 1% Landing Page — Verified by LandingBoost", w: 200, h: 40 },
+                  { href: "https://nicklaunches.com/products/salesos/?utm_source=outreign.io&utm_medium=badge&utm_campaign=featured", src: "https://nicklaunches.com/badges/featured-dark.svg", alt: "OutReign on Nick Launches", w: 244, h: 56 },
+                  { href: "https://plugyourbuild.com/listing/outreign-b8ad99", src: "https://plugyourbuild.com/api/badge/outreign-b8ad99?style=dark", alt: "Listed on Plug Your Build", w: 180, h: 40 },
+                  { href: "https://rankinpublic.xyz/products/outreign.io", src: "https://rankinpublic.xyz/api/badges/badge-featured.png?site=outreign.io", alt: "Featured on RankInPublic", w: 125, h: 40 },
+                  { href: "https://www.producthunt.com/products/outreign-io?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-outreign-io", src: "https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1174023&theme=dark&t=1781681273997", alt: "OutReign.io - Find who to sell to then close them. | Product Hunt", w: 250, h: 54 },
+                  { href: "https://launchllama.co?utm_source=badge&utm_medium=referral", src: "https://speaktechenglish.com/wp-content/uploads/2026/04/Screenshot_2026-04-09_at_17.40.44-removebg-preview.png", alt: "Featured on Launch Llama", w: 200, h: 50 },
+                  { href: "https://launchigniter.com/product/outreign-io?ref=badge-outreign-io", src: "https://launchigniter.com/api/badge/outreign-io?theme=dark", alt: "Featured on LaunchIgniter", w: 212, h: 55 },
+                  { href: "https://smollaunchpad.com/projects/outreign", src: "https://r2.direasy-multi-tenant.focusapps.app/uploads/616d0b1a-3979-4b8c-94d1-b4f1fedd3aed/1783046766775/sjxeszczb3i/top1-dark.svg", alt: "Smol LaunchPad Top 1 Daily Winner", w: 195, h: 60 },
+                  { href: "https://spacerrapps.com/apps/outreign?ref=badge", src: "https://spacerrapps.com/badge/outreign.svg?theme=light", alt: "OutReign is featured on Spacerr", w: 192, h: 54 },
+                  { href: "https://boostdomainrating.com/item/outreign.io?utm_source=badge", src: "https://boostdomainrating.com/api/badge/outreign.io?color=dark", alt: "OutReign - Domain Rating", w: 212, h: 54 },
+                ] as Array<{ href: string; src: string; alt: string; w: number; h: number } | { href: string; html: string; alt: string }>
+              ).concat({ href: "https://everlist.dev/tools/outreign", html: `<a href="https://everlist.dev/tools/outreign" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:10px;padding:8px 14px;background:#0B0B0F;color:#FFFFFF;border:1px solid #23232B;border-radius:9999px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:13px;line-height:1;text-decoration:none;"><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:#D4AF37;color:#0B0B0F;font-weight:700;font-size:12px;">E</span><span style="display:inline-flex;flex-direction:column;gap:2px;"><span style="font-size:9px;letter-spacing:1.4px;text-transform:uppercase;color:#9A9AA8;">Listed on</span><span style="font-weight:600;letter-spacing:-0.01em;"><span style="color:#FFFFFF">Ever</span><span style="color:#D4AF37">List</span></span></span></a>`, alt: "Listed on EverList" }).map((b) => {
+                const sharedProps = {
+                  href: b.href,
+                  target: "_blank" as const,
+                  rel: "noopener noreferrer" as const,
+                  style: { background: "hsl(240 30% 10%)", border: "1px solid hsl(261 75% 50% / 0.18)" } as React.CSSProperties,
+                  onMouseEnter: (e: React.MouseEvent<HTMLAnchorElement>) => { (e.currentTarget as HTMLElement).style.borderColor = "hsl(261 75% 55% / 0.45)"; },
+                  onMouseLeave: (e: React.MouseEvent<HTMLAnchorElement>) => { (e.currentTarget as HTMLElement).style.borderColor = "hsl(261 75% 50% / 0.18)"; },
+                };
+                if ("html" in b) {
+                  return <a key={b.href} {...sharedProps} dangerouslySetInnerHTML={{ __html: b.html }} />;
+                }
+                return (
+                  <a key={b.href} {...sharedProps}>
+                    <img src={b.src} alt={b.alt} width={b.w} height={b.h} loading="lazy" />
+                  </a>
+                );
+              })}
             </div>
             <p className="text-sm text-center" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
               © {new Date().getFullYear()} BDØT Industries LLC. All rights reserved.
