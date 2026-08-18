@@ -70,6 +70,17 @@ export interface ExternalLead {
   scores: LeadScores;
   score_explanation: string;
   buying_signals: string[];
+  /**
+   * Deliverability, decided server-side before the lead was returned.
+   *
+   * Addresses proven undeliverable are dropped by the edge function and never
+   * arrive here, so these values describe degrees of confidence in what did:
+   * `valid` is a confirmed mailbox, `catch_all` and `role` and `unknown` are
+   * send-at-your-own-risk, and `null` means the lead came with no email.
+   */
+  email_verification_status?: 'valid' | 'catch_all' | 'unknown' | 'invalid' | 'role' | null;
+  email_verified?: boolean | null;
+  email_verification_reason?: string | null;
 }
 
 export interface PaginationInfo {
@@ -350,6 +361,12 @@ export function useExternalLeads() {
           // in the column the ICP badge reads. Null when no ICP is set; the
           // scorer overwrites this on enrichment either way.
           icp_score: lead.scores.icp_score,
+          // Carried over from search so the send-time filters have something to
+          // gate on. Re-verifying here would bill a second time for an answer
+          // the search already paid for and cached.
+          email_verification_status: lead.email_verification_status ?? null,
+          email_verified: lead.email_verified ?? null,
+          email_verified_at: lead.email_verification_status ? new Date().toISOString() : null,
           enrichment_status: 'enriched',
           enriched_at: new Date().toISOString(),
         })
