@@ -17,7 +17,7 @@ export default defineTool({
     industry: z.string().trim().optional(),
     linkedin_url: z.string().trim().optional(),
     notes: z.string().trim().optional(),
-    lead_status: z.string().trim().optional(),
+    pipeline_stage: z.enum(["new", "contacted", "no_response", "replied", "bounced", "meeting_booked", "qualified", "not_interested", "won", "lost"]).optional(),
   },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   handler: async ({ id, ...patch }, ctx) => {
@@ -30,7 +30,7 @@ export default defineTool({
       .update(clean)
       .eq("id", id)
       .eq("user_id", ctx.getUserId())
-      .select("id, company_name, contact_name, contact_email, lead_status, updated_at")
+      .select("id, company_name, contact_name, contact_email, lead_status, pipeline_stage, updated_at")
       .single();
     if (error) return err(error.message);
     return ok(data, "lead");

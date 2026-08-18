@@ -19,7 +19,7 @@
       {
         "name": "list_leads",
         "title": "List leads",
-        "description": "List the signed-in user's saved leads in OutReign, most recently created first. Optionally filter by lead_status (e.g. new, contacted, qualified) and cap the result count.",
+        "description": "List the signed-in user's saved leads in OutReign, most recently created first. Optionally filter by the visible pipeline stage and cap the result count.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,
@@ -36,7 +36,19 @@
             },
             "status": {
               "type": "string",
-              "description": "Optional lead_status filter, e.g. 'new', 'contacted', 'qualified'."
+              "enum": [
+                "new",
+                "contacted",
+                "no_response",
+                "replied",
+                "bounced",
+                "meeting_booked",
+                "qualified",
+                "not_interested",
+                "won",
+                "lost"
+              ],
+              "description": "Optional pipeline stage filter."
             }
           },
           "additionalProperties": false,
@@ -265,9 +277,20 @@
             "notes": {
               "type": "string"
             },
-            "lead_status": {
+            "pipeline_stage": {
               "type": "string",
-              "description": "e.g. new, contacted, qualified"
+              "enum": [
+                "new",
+                "contacted",
+                "no_response",
+                "replied",
+                "bounced",
+                "meeting_booked",
+                "qualified",
+                "not_interested",
+                "won",
+                "lost"
+              ]
             },
             "source": {
               "type": "string",
@@ -324,8 +347,20 @@
             "notes": {
               "type": "string"
             },
-            "lead_status": {
-              "type": "string"
+            "pipeline_stage": {
+              "type": "string",
+              "enum": [
+                "new",
+                "contacted",
+                "no_response",
+                "replied",
+                "bounced",
+                "meeting_booked",
+                "qualified",
+                "not_interested",
+                "won",
+                "lost"
+              ]
             }
           },
           "required": [

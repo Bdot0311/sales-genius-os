@@ -5,6 +5,7 @@ export const LEAD_STAGES = [
   { value: "contacted", label: "Contacted", className: "text-primary" },
   { value: "no_response", label: "No Response", className: "text-orange-400" },
   { value: "replied", label: "Replied", className: "text-emerald-400" },
+  { value: "bounced", label: "Bounced", className: "text-destructive" },
   { value: "meeting_booked", label: "Meeting Booked", className: "text-green-400" },
   { value: "qualified", label: "Qualified", className: "text-teal-400" },
   { value: "not_interested", label: "Not Interested", className: "text-muted-foreground" },

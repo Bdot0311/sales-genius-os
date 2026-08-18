@@ -16,7 +16,7 @@ export default defineTool({
     industry: z.string().trim().optional(),
     linkedin_url: z.string().trim().optional(),
     notes: z.string().trim().optional(),
-    lead_status: z.string().trim().optional().describe("e.g. new, contacted, qualified"),
+    pipeline_stage: z.enum(["new", "contacted", "no_response", "replied", "bounced", "meeting_booked", "qualified", "not_interested", "won", "lost"]).optional(),
     source: z.string().trim().optional().describe("Where the lead came from, e.g. 'mcp'"),
   },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
@@ -28,7 +28,8 @@ export default defineTool({
       .insert({
         user_id: ctx.getUserId(),
         source: input.source ?? "mcp",
-        lead_status: input.lead_status ?? "new",
+        lead_status: "active",
+        pipeline_stage: input.pipeline_stage ?? "new",
         company_name: input.company_name,
         contact_name: input.contact_name,
         contact_email: input.contact_email,
@@ -38,7 +39,7 @@ export default defineTool({
         linkedin_url: input.linkedin_url,
         notes: input.notes,
       })
-      .select("id, company_name, contact_name, contact_email, lead_status, created_at")
+      .select("id, company_name, contact_name, contact_email, lead_status, pipeline_stage, created_at")
       .single();
     if (error) return err(error.message);
     return ok(data, "lead");
