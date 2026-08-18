@@ -116,6 +116,9 @@ export function useExternalLeads() {
   // Surfacing what the search actually ran with is the difference between
   // "these leads look random" and "industry was dropped, here is why".
   const [disclosure, setDisclosure] = useState<SearchDisclosure>({ applied: null, relaxed: [] });
+  // How many results the last search dropped as confirmed-undeliverable. A page
+  // that comes back short is otherwise indistinguishable from a weak search.
+  const [removedUndeliverable, setRemovedUndeliverable] = useState(0);
   const { toast } = useToast();
 
   const fetchLeads = async (filters: ExternalLeadFilters, isPageChange = false) => {
@@ -123,6 +126,7 @@ export function useExternalLeads() {
     if (!isPageChange) {
       setLeads([]);
       setDisclosure({ applied: null, relaxed: [] });
+      setRemovedUndeliverable(0);
       setPagination({
         currentPage: 1,
         totalPages: 1,
@@ -160,6 +164,7 @@ export function useExternalLeads() {
         applied: data.applied_filters ?? null,
         relaxed: Array.isArray(data.relaxed_filters) ? data.relaxed_filters : [],
       });
+      setRemovedUndeliverable(Number(data.removed_undeliverable) || 0);
       
       // Update pagination info
       const pageSize = filters.limit || 10;
@@ -433,6 +438,7 @@ export function useExternalLeads() {
     activatingLead,
     pagination,
     disclosure,
+    removedUndeliverable,
     fetchLeads,
     activateLead,
     clearLeads,

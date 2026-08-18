@@ -44,6 +44,7 @@ const Leads = () => {
     activatingLead: externalActivating,
     pagination,
     disclosure,
+    removedUndeliverable,
     fetchLeads: fetchExternalLeads,
     activateLead: activateExternalLead,
     clearLeads: clearExternalLeads,
@@ -436,6 +437,13 @@ const Leads = () => {
                       No exact matches, so these results ignore your{" "}
                       <span className="font-medium">{disclosure.relaxed.join(" and ")}</span>{" "}
                       {disclosure.relaxed.length > 1 ? "filters" : "filter"}. They are broader than what you asked for.
+                    </div>
+                  )}
+                  {removedUndeliverable > 0 && (
+                    <div className="rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm">
+                      Removed <span className="font-medium">{removedUndeliverable}</span>{" "}
+                      {removedUndeliverable === 1 ? "contact whose email" : "contacts whose emails"}{" "}
+                      failed verification. Sending to {removedUndeliverable === 1 ? "it" : "them"} would have bounced.
                     </div>
                   )}
                   <ExternalLeadsTable
