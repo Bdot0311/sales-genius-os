@@ -232,32 +232,24 @@ export const FooterSection = () => {
                   { href: "https://spacerrapps.com/apps/outreign?ref=badge", src: "https://spacerrapps.com/badge/outreign.svg?theme=light", alt: "OutReign is featured on Spacerr", w: 192, h: 54 },
                   { href: "https://boostdomainrating.com/item/outreign.io?utm_source=badge", src: "https://boostdomainrating.com/api/badge/outreign.io?color=dark", alt: "OutReign - Domain Rating", w: 212, h: 54 },
                 ] as Array<{ href: string; src: string; alt: string; w: number; h: number } | { href: string; html: string; alt: string }>
-              ).concat({ href: "https://everlist.dev/tools/outreign", html: `<a href="https://everlist.dev/tools/outreign" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:10px;padding:8px 14px;background:#0B0B0F;color:#FFFFFF;border:1px solid #23232B;border-radius:9999px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:13px;line-height:1;text-decoration:none;"><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:#D4AF37;color:#0B0B0F;font-weight:700;font-size:12px;">E</span><span style="display:inline-flex;flex-direction:column;gap:2px;"><span style="font-size:9px;letter-spacing:1.4px;text-transform:uppercase;color:#9A9AA8;">Listed on</span><span style="font-weight:600;letter-spacing:-0.01em;"><span style="color:#FFFFFF">Ever</span><span style="color:#D4AF37">List</span></span></span></a>`, alt: "Listed on EverList" }).map((b) =>
-                b.html ? (
-                  <a
-                    key={b.href}
-                    href={b.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ background: "hsl(240 30% 10%)", border: "1px solid hsl(261 75% 50% / 0.18)" }}
-                    onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "hsl(261 75% 55% / 0.45)")}
-                    onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "hsl(261 75% 50% / 0.18)")}
-                    dangerouslySetInnerHTML={{ __html: b.html }}
-                  />
-                ) : (
-                  <a
-                    key={b.href}
-                    href={b.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ background: "hsl(240 30% 10%)", border: "1px solid hsl(261 75% 50% / 0.18)" }}
-                    onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "hsl(261 75% 55% / 0.45)")}
-                    onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "hsl(261 75% 50% / 0.18)")}
-                  >
+              ).concat({ href: "https://everlist.dev/tools/outreign", html: `<a href="https://everlist.dev/tools/outreign" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:10px;padding:8px 14px;background:#0B0B0F;color:#FFFFFF;border:1px solid #23232B;border-radius:9999px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:13px;line-height:1;text-decoration:none;"><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:#D4AF37;color:#0B0B0F;font-weight:700;font-size:12px;">E</span><span style="display:inline-flex;flex-direction:column;gap:2px;"><span style="font-size:9px;letter-spacing:1.4px;text-transform:uppercase;color:#9A9AA8;">Listed on</span><span style="font-weight:600;letter-spacing:-0.01em;"><span style="color:#FFFFFF">Ever</span><span style="color:#D4AF37">List</span></span></span></a>`, alt: "Listed on EverList" }).map((b) => {
+                const sharedProps = {
+                  href: b.href,
+                  target: "_blank" as const,
+                  rel: "noopener noreferrer" as const,
+                  style: { background: "hsl(240 30% 10%)", border: "1px solid hsl(261 75% 50% / 0.18)" } as React.CSSProperties,
+                  onMouseEnter: (e: React.MouseEvent<HTMLAnchorElement>) => { (e.currentTarget as HTMLElement).style.borderColor = "hsl(261 75% 55% / 0.45)"; },
+                  onMouseLeave: (e: React.MouseEvent<HTMLAnchorElement>) => { (e.currentTarget as HTMLElement).style.borderColor = "hsl(261 75% 50% / 0.18)"; },
+                };
+                if ("html" in b) {
+                  return <a key={b.href} {...sharedProps} dangerouslySetInnerHTML={{ __html: b.html }} />;
+                }
+                return (
+                  <a key={b.href} {...sharedProps}>
                     <img src={b.src} alt={b.alt} width={b.w} height={b.h} loading="lazy" />
                   </a>
-                )
-              )}
+                );
+              })}
             </div>
             <p className="text-sm text-center" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
               © {new Date().getFullYear()} BDØT Industries LLC. All rights reserved.
