@@ -25,8 +25,11 @@ interface Lead {
   contact_email: string | null;
   job_title: string | null;
   industry: string | null;
-  email_verified?: boolean;
-  email_verification_status?: 'valid' | 'invalid' | 'catch_all' | 'unknown' | null;
+  // Written by the search pipeline (see _shared/email-verify.ts). Before that
+  // existed these were always undefined, which made the filter below a no-op —
+  // `undefined !== false` passed every lead through, verified or not.
+  email_verified?: boolean | null;
+  email_verification_status?: 'valid' | 'invalid' | 'catch_all' | 'unknown' | 'role' | null;
 }
 
 interface BulkSendDialogProps {
@@ -128,6 +131,17 @@ export const BulkSendDialog = ({
         <Badge variant="outline" className="gap-1 text-amber-700 border-amber-300">
           <AlertTriangle className="w-3 h-3" />
           Catch-all
+        </Badge>
+      );
+    }
+
+    // Deliverable, but shared. Worth flagging separately from "unknown": the
+    // risk is complaints against your sending domain, not a bounce.
+    if (lead.email_verification_status === "role") {
+      return (
+        <Badge variant="outline" className="gap-1 text-amber-700 border-amber-300">
+          <AlertTriangle className="w-3 h-3" />
+          Shared inbox
         </Badge>
       );
     }

@@ -18,6 +18,10 @@ import {
   type IcpInput,
   type LeadInput,
 } from "../_shared/lead-scoring.ts";
+// Bounce prevention. Leads are verified before they are ever shown, so an
+// address the user can see is one we have actually checked — see
+// _shared/email-verify.ts for the two-layer (free DNS, then paid SMTP) design.
+import { verifyEmails, hasPaidVerifier, type VerificationStatus } from "../_shared/email-verify.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -187,6 +191,11 @@ interface ScoredLead {
   scores: LeadScores;
   score_explanation: string;
   buying_signals: string[];
+  // Populated by applyVerification() before the response is sent. `null` means
+  // the lead arrived without an email at all, so there was nothing to check.
+  email_verification_status?: VerificationStatus | null;
+  email_verified?: boolean | null;
+  email_verification_reason?: string | null;
 }
 
 
@@ -537,6 +546,56 @@ async function fetchCachedResults(railwayBaseUrl: string): Promise<{ searches: a
     console.error('Error fetching cache stats:', error);
     return { searches: [], error: error instanceof Error ? error.message : 'Unknown error' };
   }
+}
+
+/**
+ * Verify every email in a result set before it reaches the user, and drop the
+ * ones proven undeliverable.
+ *
+ * The requirement is "only show leads with emails that land", so a confirmed
+ * dead mailbox is removed rather than badged — a badge still invites the user
+ * to send. Everything unproven (catch-all, role, inconclusive, no verifier
+ * configured) is kept and labelled, because refusing to show those would throw
+ * away most of a result set to prevent a minority of bounces.
+ *
+ * Leads with no email at all pass through untouched. They are still worth
+ * showing: the user can enrich or reach out on LinkedIn.
+ */
+async function applyVerification(
+  supabase: any,
+  leads: ScoredLead[],
+): Promise<{ leads: ScoredLead[]; removed: number }> {
+  const emails = leads.map((l) => l.business_email).filter((e): e is string => !!e);
+  if (emails.length === 0) return { leads, removed: 0 };
+
+  const started = Date.now();
+  const verdicts = await verifyEmails(supabase, emails);
+
+  let removed = 0;
+  const kept: ScoredLead[] = [];
+  for (const lead of leads) {
+    if (!lead.business_email) {
+      kept.push({ ...lead, email_verification_status: null, email_verified: null, email_verification_reason: null });
+      continue;
+    }
+    const v = verdicts.get(lead.business_email.trim().toLowerCase());
+    if (v?.status === "invalid") {
+      removed++;
+      continue;
+    }
+    kept.push({
+      ...lead,
+      email_verification_status: v?.status ?? "unknown",
+      email_verified: v?.verified ?? null,
+      email_verification_reason: v?.reason ?? null,
+    });
+  }
+
+  console.log(
+    `[verify] ${emails.length} addresses in ${Date.now() - started}ms |`,
+    `removed ${removed} undeliverable | paid verifier: ${hasPaidVerifier() ? "on" : "off (DNS only)"}`,
+  );
+  return { leads: kept, removed };
 }
 
 // Plan credit configuration lives in _shared/plan-limits.ts, which the frontend
@@ -1038,11 +1097,14 @@ serve(async (req) => {
         );
       }
 
-      const pageLeads = mappedLeads.slice(offset, offset + limit);
+      // Verify the page being returned, not the whole match set — an address
+      // the user never sees is not worth paying to check.
+      const { leads: pageLeads, removed: unverifiableCount } =
+        await applyVerification(supabase, mappedLeads.slice(offset, offset + limit));
       await updateUsageEvent(supabase, usageEventId, 'success', pageLeads.length, undefined, 'api', mappedLeads.length);
       return new Response(
         JSON.stringify({ success: true, leads: pageLeads, total: mappedLeads.length, from_cache: false,
-          empty_companies: emptyCompanies }),
+          empty_companies: emptyCompanies, removed_undeliverable: unverifiableCount }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -1470,7 +1532,9 @@ serve(async (req) => {
       .filter(lead => (icpExcluder ? icpExcluder(lead) : true))
       .sort((a, b) => b.scores.overall_score - a.scores.overall_score);
 
-    const leads = await dropSeenLeads(mapped);
+    const deduped = await dropSeenLeads(mapped);
+    // Last step before the response: confirmed-dead addresses never reach the UI.
+    const { leads, removed: removedUndeliverable } = await applyVerification(supabase, deduped);
 
 
     console.log('Processed leads count:', leads.length);
@@ -1502,6 +1566,9 @@ serve(async (req) => {
         next_cursor: data.next_cursor ?? null,
         applied_filters: requestBody,
         relaxed_filters: relaxedFilters,
+        // How many results were dropped as confirmed-undeliverable, so the UI
+        // can explain a short page instead of silently returning fewer leads.
+        removed_undeliverable: removedUndeliverable,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

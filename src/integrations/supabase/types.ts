@@ -2245,6 +2245,9 @@ export type Database = {
           created_at: string
           demo_seed: boolean
           department: string | null
+          email_verification_status: string | null
+          email_verified: boolean | null
+          email_verified_at: string | null
           employee_count: string | null
           engagement_state: string | null
           enriched_at: string | null
@@ -2298,6 +2301,9 @@ export type Database = {
           created_at?: string
           demo_seed?: boolean
           department?: string | null
+          email_verification_status?: string | null
+          email_verified?: boolean | null
+          email_verified_at?: string | null
           employee_count?: string | null
           engagement_state?: string | null
           enriched_at?: string | null
@@ -2351,6 +2357,9 @@ export type Database = {
           created_at?: string
           demo_seed?: boolean
           department?: string | null
+          email_verification_status?: string | null
+          email_verified?: boolean | null
+          email_verified_at?: string | null
           employee_count?: string | null
           engagement_state?: string | null
           enriched_at?: string | null

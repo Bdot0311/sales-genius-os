@@ -70,6 +70,17 @@ export interface ExternalLead {
   scores: LeadScores;
   score_explanation: string;
   buying_signals: string[];
+  /**
+   * Deliverability, decided server-side before the lead was returned.
+   *
+   * Addresses proven undeliverable are dropped by the edge function and never
+   * arrive here, so these values describe degrees of confidence in what did:
+   * `valid` is a confirmed mailbox, `catch_all` and `role` and `unknown` are
+   * send-at-your-own-risk, and `null` means the lead came with no email.
+   */
+  email_verification_status?: 'valid' | 'catch_all' | 'unknown' | 'invalid' | 'role' | null;
+  email_verified?: boolean | null;
+  email_verification_reason?: string | null;
 }
 
 export interface PaginationInfo {
@@ -105,6 +116,9 @@ export function useExternalLeads() {
   // Surfacing what the search actually ran with is the difference between
   // "these leads look random" and "industry was dropped, here is why".
   const [disclosure, setDisclosure] = useState<SearchDisclosure>({ applied: null, relaxed: [] });
+  // How many results the last search dropped as confirmed-undeliverable. A page
+  // that comes back short is otherwise indistinguishable from a weak search.
+  const [removedUndeliverable, setRemovedUndeliverable] = useState(0);
   const { toast } = useToast();
 
   const fetchLeads = async (filters: ExternalLeadFilters, isPageChange = false) => {
@@ -112,6 +126,7 @@ export function useExternalLeads() {
     if (!isPageChange) {
       setLeads([]);
       setDisclosure({ applied: null, relaxed: [] });
+      setRemovedUndeliverable(0);
       setPagination({
         currentPage: 1,
         totalPages: 1,
@@ -149,6 +164,7 @@ export function useExternalLeads() {
         applied: data.applied_filters ?? null,
         relaxed: Array.isArray(data.relaxed_filters) ? data.relaxed_filters : [],
       });
+      setRemovedUndeliverable(Number(data.removed_undeliverable) || 0);
       
       // Update pagination info
       const pageSize = filters.limit || 10;
@@ -350,6 +366,12 @@ export function useExternalLeads() {
           // in the column the ICP badge reads. Null when no ICP is set; the
           // scorer overwrites this on enrichment either way.
           icp_score: lead.scores.icp_score,
+          // Carried over from search so the send-time filters have something to
+          // gate on. Re-verifying here would bill a second time for an answer
+          // the search already paid for and cached.
+          email_verification_status: lead.email_verification_status ?? null,
+          email_verified: lead.email_verified ?? null,
+          email_verified_at: lead.email_verification_status ? new Date().toISOString() : null,
           enrichment_status: 'enriched',
           enriched_at: new Date().toISOString(),
         })
@@ -416,6 +438,7 @@ export function useExternalLeads() {
     activatingLead,
     pagination,
     disclosure,
+    removedUndeliverable,
     fetchLeads,
     activateLead,
     clearLeads,

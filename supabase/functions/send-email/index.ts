@@ -318,6 +318,30 @@ serve(async (req) => {
       );
     }
 
+    // Refuse addresses verification has already proven dead. The UI filters
+    // these out, but the UI is not the guarantee — the agent, the bulk sender
+    // and the REST API all reach this function directly, so the block belongs
+    // here. Only a confirmed `invalid` is refused: catch-all, role and unknown
+    // are unproven rather than bad, and blocking those would ground most of a
+    // list to prevent a minority of bounces.
+    if (leadId) {
+      const { data: leadRow } = await supabase
+        .from('leads')
+        .select('email_verification_status')
+        .eq('id', leadId)
+        .maybeSingle();
+
+      if (leadRow?.email_verification_status === 'invalid') {
+        return new Response(
+          JSON.stringify({
+            error: 'This address failed verification and would bounce. Sending was blocked to protect your sender reputation.',
+            code: 'email_unverifiable',
+          }),
+          { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     // Quick MX record check
     try {
       const domain = to.split('@')[1];

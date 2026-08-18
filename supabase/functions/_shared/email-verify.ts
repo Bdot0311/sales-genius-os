@@ -1,0 +1,371 @@
+// Lead email verification.
+//
+// Two layers, deliberately ordered cheapest-first:
+//
+//   1. Free gate (always runs): syntax, disposable domain, role address, MX.
+//      Catches typo'd and dead domains for nothing. Domain-level results are
+//      cached, so a 100-lead search over ~15 distinct companies costs ~15 DNS
+//      lookups, not 100.
+//   2. Paid mailbox check (only if a provider key is set): an SMTP handshake
+//      against the mailbox itself. This is the layer that actually stops
+//      bounces — DNS proves the *domain* accepts mail, never the *mailbox*.
+//      Edge functions cannot do this themselves: outbound port 25 is blocked
+//      on Supabase, Railway, AWS and effectively every cloud host, so the
+//      handshake has to be rented.
+//
+// Layer 1 runs first so layer 2 is never billed for an address layer 1 already
+// disqualified. Both layers cache per-address, so re-searching the same people
+// is free.
+//
+// Provider is swappable via EMAIL_VERIFIER_PROVIDER. Adding one means adding a
+// case to callProvider() — nothing else in the codebase knows the vendor.
+
+import { dohQuery, validateDomain } from "./dns.ts";
+
+export type VerificationStatus = "valid" | "catch_all" | "unknown" | "invalid" | "role";
+
+export interface VerificationResult {
+  status: VerificationStatus;
+  /** true only for `valid`, false only for `invalid`, null when unproven. */
+  verified: boolean | null;
+  /** Human-readable why, safe to surface in the UI. */
+  reason: string;
+  /** Which layer decided: "syntax" | "disposable" | "role" | "mx" | "cache" | provider name. */
+  source: string;
+}
+
+const CACHE_TTL_SECONDS = 30 * 24 * 60 * 60; // 30 days — mailboxes go stale slowly
+const MX_CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
+const PROVIDER_TIMEOUT_MS = 12_000;
+
+const EMAIL_RE = /^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$/;
+
+// Shared mailboxes. Deliverable, but they route to whoever is on rota, convert
+// badly, and carry the highest complaint rate of any address class — which is a
+// sender-reputation problem, not just a conversion one. Flagged, never dropped:
+// for some ICPs (small agencies, local services) info@ is the only address there is.
+const ROLE_PREFIXES = new Set([
+  "info", "sales", "support", "admin", "contact", "hello", "help", "team",
+  "office", "billing", "accounts", "accounting", "hr", "jobs", "careers",
+  "marketing", "press", "media", "legal", "privacy", "security", "abuse",
+  "postmaster", "webmaster", "noreply", "no-reply", "donotreply", "mail",
+  "enquiries", "inquiries", "general", "service", "customerservice",
+]);
+
+// Kept in sync with validate-email/index.ts, which gates signup. Same threat,
+// different door: there it stops fake accounts, here it stops leads that will
+// bounce. Duplicated rather than shared because validate-email is a public
+// unauthenticated endpoint and importing across that boundary widens its surface.
+const DISPOSABLE_DOMAINS = new Set([
+  "mailinator.com", "trashmail.com", "tempmail.com", "temp-mail.org", "temp-mail.io",
+  "guerrillamail.com", "guerrillamail.net", "guerrillamail.org", "guerrillamail.biz",
+  "10minutemail.com", "10minutemail.net", "20minutemail.com", "yopmail.com", "yopmail.fr",
+  "fakeinbox.com", "throwawaymail.com", "getnada.com", "nada.email", "getairmail.com",
+  "maildrop.cc", "mailnesia.com", "mintemail.com", "spambox.us", "sharklasers.com",
+  "grr.la", "dispostable.com", "mailcatch.com", "incognitomail.org", "mvrht.net",
+  "tempinbox.com", "mytemp.email", "emailondeck.com", "throwawaymail.io", "spam4.me",
+  "trashmail.net", "trashmail.de", "mailtothis.com", "mailforspam.com", "mohmal.com",
+  "burnermail.io", "tutanota-temp.com", "mailpoof.com", "tempr.email", "discardmail.com",
+  "fakemail.net", "mailbox.in.ua", "mailnull.com", "sneakemail.com", "spambog.com",
+  "emltmp.com", "throwam.com", "tmail.ws", "tmpmail.org", "temporary-mail.net",
+  "tempmailo.com", "minutemail.com", "minutemail.net", "wegwerfemail.de", "mailtemp.net",
+  "moakt.com", "mailto.plus", "fexpost.com", "fexbox.org", "emlhub.com",
+  "tempmail.email", "tempmail.us.com", "tempmailfree.com", "tempemail.net",
+  "0-mail.com", "0wnd.net", "0wnd.org", "20email.eu", "2prong.com", "30wave.com",
+  "33mail.com", "4warding.com", "6paq.com", "7tags.com", "9ox.net", "trbvm.com",
+]);
+
+/** Minimal shape we need from the Supabase client, so this module stays
+ *  usable from functions that hold an untyped service-role client. */
+interface CacheClient {
+  from(table: string): {
+    select(cols: string): {
+      eq(col: string, val: string): {
+        maybeSingle(): Promise<{ data: { cache_value: unknown; expires_at: string } | null }>;
+      };
+    };
+    upsert(row: Record<string, unknown>, opts: { onConflict: string }): Promise<unknown>;
+  };
+}
+
+function providerName(): string | null {
+  const key = Deno.env.get("EMAIL_VERIFIER_API_KEY");
+  if (!key) return null;
+  return (Deno.env.get("EMAIL_VERIFIER_PROVIDER") || "reoon").toLowerCase();
+}
+
+/** True when a paid mailbox check is available. Callers use this to tell
+ *  "inconclusive" apart from "no verifier was ever configured". */
+export function hasPaidVerifier(): boolean {
+  return providerName() !== null;
+}
+
+async function cacheGet(supabase: CacheClient, key: string): Promise<unknown | null> {
+  try {
+    const { data } = await supabase.from("api_cache")
+      .select("cache_value, expires_at").eq("cache_key", key).maybeSingle();
+    if (!data?.expires_at) return null;
+    return new Date(data.expires_at).getTime() > Date.now() ? data.cache_value : null;
+  } catch {
+    return null;
+  }
+}
+
+async function cacheSet(supabase: CacheClient, key: string, value: unknown, ttl: number): Promise<void> {
+  try {
+    await supabase.from("api_cache").upsert({
+      cache_key: key,
+      cache_value: value as Record<string, unknown>,
+      ttl_seconds: ttl,
+      expires_at: new Date(Date.now() + ttl * 1000).toISOString(),
+    }, { onConflict: "cache_key" });
+  } catch (e) {
+    // A failed cache write costs money on the next lookup but must never fail
+    // the verification itself.
+    console.error("[email-verify] cache write failed:", (e as Error).message);
+  }
+}
+
+/** MX lookup, cached per domain. Falls back to A records — a handful of small
+ *  domains still accept mail on an implicit MX. */
+async function domainAcceptsMail(supabase: CacheClient, domain: string): Promise<boolean> {
+  const key = `email_mx:${domain}`;
+  const cached = await cacheGet(supabase, key);
+  if (cached && typeof cached === "object" && "mx" in (cached as Record<string, unknown>)) {
+    return Boolean((cached as { mx: boolean }).mx);
+  }
+
+  const mx = await dohQuery(domain, "MX");
+  if (mx.status === -1) {
+    // DNS itself failed. Fail open — a resolver blip must not mark a real
+    // company undeliverable, and the paid layer will catch it anyway.
+    return true;
+  }
+
+  let accepts: boolean;
+  if (mx.answers.length > 0) {
+    accepts = true;
+  } else {
+    const a = await dohQuery(domain, "A");
+    accepts = a.status !== -1 && a.answers.length > 0;
+  }
+
+  await cacheSet(supabase, key, { mx: accepts }, MX_CACHE_TTL_SECONDS);
+  return accepts;
+}
+
+/** Layer 1. Local checks plus DNS — never costs a credit. Returns null when
+ *  the address survives, meaning it is worth paying to check properly. */
+async function freeGate(supabase: CacheClient, email: string): Promise<VerificationResult | null> {
+  if (email.length > 320 || !EMAIL_RE.test(email)) {
+    return { status: "invalid", verified: false, reason: "Not a valid email address", source: "syntax" };
+  }
+
+  const [local, domain] = email.split("@");
+
+  if (DISPOSABLE_DOMAINS.has(domain)) {
+    return { status: "invalid", verified: false, reason: "Disposable email domain", source: "disposable" };
+  }
+
+  // Reject internal/reserved names before they reach a resolver or a vendor.
+  if (!validateDomain(domain)) {
+    return { status: "invalid", verified: false, reason: "Domain is not publicly routable", source: "syntax" };
+  }
+
+  if (!(await domainAcceptsMail(supabase, domain))) {
+    return { status: "invalid", verified: false, reason: `${domain} has no mail server`, source: "mx" };
+  }
+
+  // Role check runs last: it is a warning, not a rejection, and only worth
+  // reporting once the address has cleared the hard failures above.
+  if (ROLE_PREFIXES.has(local.toLowerCase())) {
+    return { status: "role", verified: null, reason: "Shared mailbox — higher complaint risk", source: "role" };
+  }
+
+  return null;
+}
+
+/** Map a provider's own vocabulary onto ours. Written defensively — both
+ *  vendors have renamed fields before, and an unrecognised verdict must
+ *  degrade to `unknown` rather than be guessed at in either direction. */
+function interpret(provider: string, body: unknown): VerificationResult {
+  const obj = (body ?? {}) as Record<string, unknown>;
+  const raw = String(obj.status ?? obj.result ?? obj.state ?? obj.email_status ?? "")
+    .toLowerCase().replace(/[\s-]+/g, "_");
+
+  const isSafe = obj.is_safe_to_send === true || obj.safe_to_send === true;
+  const isCatchAll = obj.is_catch_all === true || obj.catch_all === true;
+  const isRole = obj.is_role_account === true || obj.role === true;
+
+  if (obj.is_disposable === true) {
+    return { status: "invalid", verified: false, reason: "Disposable email domain", source: provider };
+  }
+
+  switch (raw) {
+    case "valid":
+    case "deliverable":
+    case "ok":
+    case "safe":
+      // A catch-all domain can still report "valid" — the handshake succeeds
+      // for every address, real or not. Only trust the verdict when the vendor
+      // has not also flagged the domain as accept-all.
+      if (isCatchAll) {
+        return { status: "catch_all", verified: null, reason: "Domain accepts all mail — mailbox unconfirmed", source: provider };
+      }
+      if (isRole) {
+        return { status: "role", verified: null, reason: "Shared mailbox — higher complaint risk", source: provider };
+      }
+      return { status: "valid", verified: true, reason: "Mailbox confirmed", source: provider };
+
+    case "invalid":
+    case "undeliverable":
+    case "bad":
+    case "disposable":
+      return { status: "invalid", verified: false, reason: "Mailbox does not exist", source: provider };
+
+    case "catch_all":
+    case "accept_all":
+    case "unknown_catch_all":
+      return { status: "catch_all", verified: null, reason: "Domain accepts all mail — mailbox unconfirmed", source: provider };
+
+    case "role_account":
+    case "role":
+      return { status: "role", verified: null, reason: "Shared mailbox — higher complaint risk", source: provider };
+
+    case "risky":
+    case "unknown":
+    case "spamtrap":
+    case "spam_trap":
+    case "abuse":
+      // "risky" spans spam traps and known complainers. Not provably dead, but
+      // never safe to send blind, so it must not be reported as verified.
+      return { status: "unknown", verified: null, reason: "Risky address — send at your own discretion", source: provider };
+
+    default:
+      if (isSafe && !isCatchAll) {
+        return { status: "valid", verified: true, reason: "Mailbox confirmed", source: provider };
+      }
+      console.warn(`[email-verify] unrecognised ${provider} verdict:`, JSON.stringify(obj).slice(0, 200));
+      return { status: "unknown", verified: null, reason: "Verification inconclusive", source: provider };
+  }
+}
+
+/** Layer 2. Rents an SMTP handshake. Returns `unknown` on any provider failure
+ *  so an outage degrades to "unproven" rather than to false rejections. */
+async function callProvider(email: string): Promise<VerificationResult> {
+  const provider = providerName()!;
+  const key = Deno.env.get("EMAIL_VERIFIER_API_KEY")!;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), PROVIDER_TIMEOUT_MS);
+
+  try {
+    const url = provider === "millionverifier"
+      ? `https://api.millionverifier.com/api/v3/?api=${encodeURIComponent(key)}&email=${encodeURIComponent(email)}&timeout=10`
+      // Reoon. `power` mode performs the SMTP handshake and resolves catch-all
+      // domains; `quick` mode would only redo the DNS work layer 1 already did.
+      : `https://emailverifier.reoon.com/api/v1/verify?email=${encodeURIComponent(email)}&key=${encodeURIComponent(key)}&mode=power`;
+
+    const res = await fetch(url, { headers: { Accept: "application/json" }, signal: ctrl.signal });
+    if (!res.ok) {
+      console.error(`[email-verify] ${provider} returned ${res.status}`);
+      return { status: "unknown", verified: null, reason: "Verification unavailable", source: provider };
+    }
+    return interpret(provider, await res.json());
+  } catch (e) {
+    console.error(`[email-verify] ${provider} request failed:`, (e as Error).message);
+    return { status: "unknown", verified: null, reason: "Verification unavailable", source: provider };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Verify one address. Cached across searches and across users. */
+export async function verifyEmail(supabase: CacheClient, rawEmail: string): Promise<VerificationResult> {
+  const email = (rawEmail ?? "").trim().toLowerCase();
+  if (!email) {
+    return { status: "invalid", verified: false, reason: "No email address", source: "syntax" };
+  }
+
+  const cacheKey = `email_verify:${email}`;
+  const cached = await cacheGet(supabase, cacheKey);
+  if (cached && typeof cached === "object" && "status" in (cached as Record<string, unknown>)) {
+    return { ...(cached as VerificationResult), source: "cache" };
+  }
+
+  const free = await freeGate(supabase, email);
+  // A hard `invalid` is final and worth caching. `role` is not: the paid layer
+  // may yet prove the mailbox dead, and we would rather learn that.
+  if (free && free.status === "invalid") {
+    await cacheSet(supabase, cacheKey, free, CACHE_TTL_SECONDS);
+    return free;
+  }
+
+  if (!hasPaidVerifier()) {
+    // DNS-only. Deliberately never returns `valid` — nothing here has proven a
+    // mailbox exists, and claiming otherwise is how bounces get shipped.
+    return free ?? {
+      status: "unknown",
+      verified: null,
+      reason: "Domain accepts mail — mailbox not verified",
+      source: "mx",
+    };
+  }
+
+  const paid = await callProvider(email);
+
+  // A provider confirming the mailbox does not cancel the fact that it is a
+  // shared one. Vendors disagree about which prefixes count as role accounts,
+  // so where ours says role and theirs only says "deliverable", keep ours —
+  // they answered a different question (does it exist) than the one that
+  // matters here (is it safe to cold-email).
+  const resolved: VerificationResult = (free?.status === "role" && paid.status === "valid")
+    ? { ...free, source: `${free.source}+${paid.source}` }
+    : paid;
+
+  // Provider outages return `unknown`; caching that would poison the address
+  // for 30 days over a transient failure.
+  if (resolved.status !== "unknown") {
+    await cacheSet(supabase, cacheKey, resolved, CACHE_TTL_SECONDS);
+  }
+  return resolved;
+}
+
+/**
+ * Verify a batch, bounded by both concurrency and a wall-clock deadline.
+ *
+ * A power-mode SMTP check takes seconds, so 100 addresses run serially would
+ * blow the function's execution budget. Anything still outstanding when the
+ * deadline passes resolves to `unknown` — the caller shows those as unproven
+ * rather than letting the whole search time out.
+ */
+export async function verifyEmails(
+  supabase: CacheClient,
+  emails: string[],
+  opts: { concurrency?: number; deadlineMs?: number } = {},
+): Promise<Map<string, VerificationResult>> {
+  const concurrency = opts.concurrency ?? 8;
+  const deadline = Date.now() + (opts.deadlineMs ?? 25_000);
+  const results = new Map<string, VerificationResult>();
+
+  const queue = [...new Set(emails.map((e) => (e ?? "").trim().toLowerCase()).filter(Boolean))];
+  let cursor = 0;
+
+  const worker = async () => {
+    while (cursor < queue.length) {
+      const email = queue[cursor++];
+      if (Date.now() > deadline) {
+        results.set(email, {
+          status: "unknown",
+          verified: null,
+          reason: "Verification still pending",
+          source: "deadline",
+        });
+        continue;
+      }
+      results.set(email, await verifyEmail(supabase, email));
+    }
+  };
+
+  await Promise.all(Array.from({ length: Math.min(concurrency, queue.length) }, worker));
+  return results;
+}
