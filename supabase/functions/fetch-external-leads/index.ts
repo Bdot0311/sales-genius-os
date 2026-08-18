@@ -873,6 +873,37 @@ serve(async (req) => {
     
     const limit = Math.min(filters.limit || 10, maxResults);
     const offset = (page - 1) * limit;
+    // LinkedIn URLs of people the user already has, sent UPSTREAM so the
+    // provider returns different people rather than the same ones again.
+    //
+    // exclude_seen below filters the response after it arrives, which shrinks
+    // the page without changing what the provider chose to put on it. The
+    // provider returns its first page for a given filter set every time, so
+    // filtering afterwards means a search that used to show ten already-saved
+    // leads now shows nothing — and one that shows anything shows the same
+    // people it showed last time. Crustdata takes exclusions natively
+    // (post_processing.exclude_profiles), so telling it up front is what makes
+    // a repeated search return leads nobody has seen.
+    //
+    // Capped: this travels in the request body on every search, and the leads
+    // most likely to come back at the top of a page are the ones saved most
+    // recently.
+    const seenProfileUrls = async (): Promise<string[]> => {
+      if (!filters.exclude_seen) return [];
+      const { data } = await supabase
+        .from('leads')
+        .select('linkedin_url')
+        .eq('user_id', user.id)
+        .not('linkedin_url', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(500);
+      const urls = (data ?? [])
+        .map((r: any) => String(r.linkedin_url ?? '').trim())
+        .filter((u: string) => u.includes('linkedin.com/in/'));
+      if (urls.length) console.log(`excluding ${urls.length} already-saved profiles upstream`);
+      return urls;
+    };
+    const excludeProfiles = await seenProfileUrls();
 
     // Normalize all values
     const normalizedIndustry = normalizeIndustry(filters.industry || icpIndustries[0] || '');
@@ -901,6 +932,8 @@ serve(async (req) => {
       // A cursor supersedes the offset: it is the provider's own position, and
       // sending both would ask for the same rows twice over.
       ...(filters.cursor ? { cursor: filters.cursor } : page > 1 ? { offset } : {}),
+      // Ask the provider not to return people the user already has.
+      ...(excludeProfiles.length ? { exclude_profiles: excludeProfiles } : {}),
     };
 
     // CRITICAL: Strip empty/null/undefined values so Railway doesn't build broken PDL queries
@@ -1015,6 +1048,7 @@ serve(async (req) => {
     }
 
     const icpExcluder = buildIcpExcluder(filters);
+
 
     // Drops leads the user already has saved, so repeated searches surface new people.
     const dropSeenLeads = async (input: ScoredLead[]): Promise<ScoredLead[]> => {
