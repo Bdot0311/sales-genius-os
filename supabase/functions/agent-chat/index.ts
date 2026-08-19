@@ -775,19 +775,25 @@ serve(async (req) => {
     };
 
     // --- persist the user's message -------------------------------------
-    await admin.from("agent_chat_messages").insert({
-      thread_id: threadId,
-      user_id: userId,
-      role: "user",
-      content: userMessage,
-    });
+    // Auto-continuation turns are the client resuming a batch that ran out of
+    // wall clock, not a real user message — keep them out of the transcript.
+    const autoContinue = payload.autoContinue === true;
+    if (!autoContinue) {
+      await admin.from("agent_chat_messages").insert({
+        thread_id: threadId,
+        user_id: userId,
+        role: "user",
+        content: userMessage,
+      });
 
-    if (!thread.title || thread.title === "New conversation") {
-      await admin
-        .from("agent_chat_threads")
-        .update({ title: userMessage.slice(0, 60) })
-        .eq("id", threadId);
+      if (!thread.title || thread.title === "New conversation") {
+        await admin
+          .from("agent_chat_threads")
+          .update({ title: userMessage.slice(0, 60) })
+          .eq("id", threadId);
+      }
     }
+
 
     // --- load history ----------------------------------------------------
     const { data: history } = await admin
