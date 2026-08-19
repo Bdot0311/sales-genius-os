@@ -628,22 +628,10 @@ serve(async (req) => {
       }
     };
 
-    // --- inline approve / reject from the chat ---------------------------
-    if (action === "resolve_approval") {
-      const approvalId = String(payload.approvalId ?? "");
-      const decision = payload.decision === "approve" ? "approve" : "reject";
-      if (!approvalId) return json({ error: "Missing approvalId" }, 400);
-
-      const { data: approval } = await admin
-        .from("agent_approvals")
-        .select("*")
-        .eq("id", approvalId)
-        .eq("user_id", userId)
-        .maybeSingle();
-      if (!approval) return json({ error: "Approval not found" }, 404);
-      if (approval.status !== "pending")
-        return json({ error: "That request was already handled." }, 409);
-
+    // Execute a single approval decision. Shared by the (legacy) inline
+    // resolve_approval action and the chat-driven approval tools so a plain
+    // "yes, send it" message does exactly what a button click used to.
+    const applyApproval = async (approval: any, decision: "approve" | "reject") => {
       let outcome = "";
       let failed = false;
 
@@ -703,14 +691,37 @@ serve(async (req) => {
         outcome = "Approved.";
       }
 
+      const status = failed ? "pending" : decision === "approve" ? "approved" : "rejected";
+
       await admin
         .from("agent_approvals")
         .update({
-          status: failed ? "pending" : decision === "approve" ? "approved" : "rejected",
+          status,
           reviewed_at: failed ? null : new Date().toISOString(),
         })
-        .eq("id", approvalId)
+        .eq("id", approval.id)
         .eq("user_id", userId);
+
+      return { outcome, failed, status };
+    };
+
+    // --- inline approve / reject from the chat ---------------------------
+    if (action === "resolve_approval") {
+      const approvalId = String(payload.approvalId ?? "");
+      const decision = payload.decision === "approve" ? "approve" : "reject";
+      if (!approvalId) return json({ error: "Missing approvalId" }, 400);
+
+      const { data: approval } = await admin
+        .from("agent_approvals")
+        .select("*")
+        .eq("id", approvalId)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (!approval) return json({ error: "Approval not found" }, 404);
+      if (approval.status !== "pending")
+        return json({ error: "That request was already handled." }, 409);
+
+      const { outcome, status } = await applyApproval(approval, decision);
 
       const { data: saved } = await admin
         .from("agent_chat_messages")
@@ -731,9 +742,10 @@ serve(async (req) => {
 
       return json({
         message: saved,
-        approval: { id: approvalId, status: failed ? "pending" : decision === "approve" ? "approved" : "rejected" },
+        approval: { id: approvalId, status },
       });
     }
+
 
     const userMessage = String(payload.message ?? "").trim().slice(0, 4000);
     if (!userMessage) return json({ error: "Message is required" }, 400);
