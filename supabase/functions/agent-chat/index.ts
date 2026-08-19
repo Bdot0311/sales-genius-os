@@ -855,15 +855,13 @@ serve(async (req) => {
           run_mutation_keys: [],
         })
         .eq("id", threadId)
-        .eq("run_status", (thread as any).run_status)
-        .select("id")
-        .maybeSingle();
+        .eq("run_status", (thread as any).run_status);
       if ((thread as any).run_started_at) {
         claim = claim.eq("run_started_at", (thread as any).run_started_at) as typeof claim;
       } else {
         claim = claim.is("run_started_at", null) as typeof claim;
       }
-      const { data: claimedThread, error: claimError } = await claim;
+      const { data: claimedThread, error: claimError } = await claim.select("id").maybeSingle();
       if (claimError) throw claimError;
       if (!claimedThread) {
         return json({
