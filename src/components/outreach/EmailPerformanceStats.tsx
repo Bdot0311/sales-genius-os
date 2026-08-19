@@ -133,7 +133,7 @@ export const EmailPerformanceStats = () => {
           .limit(5000),
         supabase
           .from("reply_analysis")
-          .select("id, intent_classification, intent_score, requires_human_action, created_at")
+          .select("id, intent_classification, intent_score, requires_human_action, created_at, sent_email_id")
           .gte("created_at", since)
           .limit(2000),
         supabase.from("deals").select("id, stage, value, created_at").gte("created_at", since).limit(2000),
@@ -213,7 +213,7 @@ export const EmailPerformanceStats = () => {
       if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
       void reload.current();
     };
-    const id = window.setInterval(tick, 30_000);
+    const id = window.setInterval(tick, liveStatus === "live" ? 30_000 : 10_000);
     const onVisible = () => {
       if (document.visibilityState === "visible") tick();
     };
@@ -224,7 +224,7 @@ export const EmailPerformanceStats = () => {
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("focus", tick);
     };
-  }, []);
+  }, [liveStatus]);
 
   // Monitor connected inboxes for delivery-failure notices so bounces show up
   // here without waiting for a manual inbox sync.
