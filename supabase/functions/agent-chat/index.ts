@@ -2393,15 +2393,16 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
       finalText = failureNote
         ? failureNote
         : ranOutOfTime
-          ? "That batch was too big to finish in one turn — the work above is saved. Reply \"continue\" and I'll pick up where I left off."
+          ? "Big batch — the work above is saved. Picking up where I left off…"
           : toolEvents.length
             ? "I finished the actions above. Tell me what you'd like next."
             : "I couldn't complete that. Try rephrasing what you'd like me to do.";
     } else if (failureNote) {
       finalText += `\n\n${failureNote}`;
     } else if (ranOutOfTime) {
-      finalText += "\n\nI ran out of time on this turn — reply \"continue\" and I'll finish the rest.";
+      finalText += "\n\nStill more to do here — continuing…";
     }
+
 
 
     const { data: saved } = await admin
