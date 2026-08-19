@@ -740,7 +740,7 @@ serve(async (req) => {
 
     const { data: thread } = await admin
       .from("agent_chat_threads")
-      .select("id, user_id, title, autonomy, agent_config_id, run_status, run_request, run_started_at")
+      .select("id, user_id, title, autonomy, agent_config_id, run_status, run_request, run_started_at, updated_at")
       .eq("id", threadId)
       .eq("user_id", userId)
       .maybeSingle();
@@ -819,16 +819,59 @@ serve(async (req) => {
     const runStartedAt = autoContinue
       ? continuationStartedAt as string
       : new Date().toISOString();
-    await admin
-      .from("agent_chat_threads")
-      .update({
-        run_status: "running",
-        run_pass: runPass,
-        ...(autoContinue
-          ? {}
-          : { run_request: userMessage.slice(0, 500), run_started_at: runStartedAt, run_mutation_keys: [] }),
-      })
-      .eq("id", threadId);
+    if (autoContinue) {
+      await admin
+        .from("agent_chat_threads")
+        .update({ run_status: "running", run_pass: runPass })
+        .eq("id", threadId)
+        .eq("run_started_at", runStartedAt);
+    } else {
+      // Atomically claim this thread. The client guard is per-tab only; this
+      // compare-and-set prevents retries, double taps, and second tabs from
+      // running independent tool loops against the same drafts/leads.
+      const heartbeatMs = (thread as any).updated_at
+        ? new Date((thread as any).updated_at).getTime()
+        : 0;
+      const existingRunIsStale =
+        (thread as any).run_status === "running" &&
+        heartbeatMs > 0 &&
+        Date.now() - heartbeatMs > 20 * 60 * 1000;
+
+      if ((thread as any).run_status === "running" && !existingRunIsStale) {
+        return json({
+          error: "This conversation already has a run in progress.",
+          runStatus: "running",
+          runRequest: (thread as any).run_request,
+        });
+      }
+
+      let claim = admin
+        .from("agent_chat_threads")
+        .update({
+          run_status: "running",
+          run_pass: 0,
+          run_request: userMessage.slice(0, 500),
+          run_started_at: runStartedAt,
+          run_mutation_keys: [],
+        })
+        .eq("id", threadId)
+        .eq("run_status", (thread as any).run_status)
+        .select("id")
+        .maybeSingle();
+      if ((thread as any).run_started_at) {
+        claim = claim.eq("run_started_at", (thread as any).run_started_at) as typeof claim;
+      } else {
+        claim = claim.is("run_started_at", null) as typeof claim;
+      }
+      const { data: claimedThread, error: claimError } = await claim;
+      if (claimError) throw claimError;
+      if (!claimedThread) {
+        return json({
+          error: "This conversation already has a run in progress.",
+          runStatus: "running",
+        });
+      }
+    }
 
     if (!autoContinue) {
       await admin.from("agent_chat_messages").insert({

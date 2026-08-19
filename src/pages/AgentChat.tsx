@@ -102,6 +102,17 @@ const AgentChat = () => {
   const [resolving, setResolving] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const activeThreadRef = useRef(threadId);
+
+  useEffect(() => {
+    activeThreadRef.current = threadId;
+    // Thread-scoped async state must never bleed into the next conversation.
+    setSending(false);
+    setRunActive(false);
+    setActiveRequest(null);
+    setActivePass(0);
+    setStopping(false);
+  }, [threadId]);
 
 
   const loadThreads = useCallback(async () => {
@@ -242,6 +253,8 @@ const AgentChat = () => {
   const handleSend = async (text?: string) => {
     const content = (text ?? input).trim();
     if (!content || !threadId || sending || runActive) return;
+    const requestThreadId = threadId;
+    const isCurrentThread = () => activeThreadRef.current === requestThreadId;
     setInput("");
     setSending(true);
     setActiveRequest(content);
@@ -270,6 +283,7 @@ const AgentChat = () => {
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
+      if (!isCurrentThread()) return;
       setMessages((prev) => [...prev, (data as any).message as ChatMessage]);
       if ((data as any)?.truncated === true) {
         // Server is still working — hand off to the watcher.
@@ -286,6 +300,7 @@ const AgentChat = () => {
         .select("run_status, run_request, run_pass")
         .eq("id", threadId)
         .maybeSingle();
+      if (!isCurrentThread()) return;
       if ((thread as any)?.run_status === "running") {
         setRunActive(true);
         setActiveRequest((thread as any).run_request ?? content);
@@ -307,9 +322,11 @@ const AgentChat = () => {
         setInput(content);
       }
     } finally {
-      setSending(false);
-      setStopping(false);
-      inputRef.current?.focus();
+      if (isCurrentThread()) {
+        setSending(false);
+        setStopping(false);
+        inputRef.current?.focus();
+      }
     }
   };
 
@@ -328,13 +345,15 @@ const AgentChat = () => {
       }
       const { data } = await supabase
         .from("agent_chat_threads")
-        .select("run_status, run_request, run_pass, run_started_at")
+        .select("run_status, run_request, run_pass, run_started_at, updated_at")
         .eq("id", threadId)
         .maybeSingle();
       if (cancelled) return;
       const row = data as any;
-      const startedAt = row?.run_started_at ? new Date(row.run_started_at).getTime() : 0;
-      const stale = startedAt > 0 && Date.now() - startedAt > 20 * 60 * 1000;
+      // updated_at advances after every continuation pass, so it is the run's
+      // heartbeat. run_started_at is an immutable identity fence server-side.
+      const heartbeatAt = row?.updated_at ? new Date(row.updated_at).getTime() : 0;
+      const stale = heartbeatAt > 0 && Date.now() - heartbeatAt > 20 * 60 * 1000;
       const running = row?.run_status === "running" && !stale;
 
       if (running) {
