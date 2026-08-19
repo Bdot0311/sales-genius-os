@@ -783,6 +783,21 @@ serve(async (req) => {
         ? payload.completedMutationKeys.filter((value: unknown): value is string => typeof value === "string").slice(0, 100)
         : [],
     );
+    // A run is owned by the server, not the browser tab. We stamp it on the
+    // thread so closing the tab / swiping out of the PWA doesn't abandon the
+    // work, and the UI can rejoin the same run when the user comes back.
+    const runPass = autoContinue ? Math.max(1, Number(payload.pass ?? 1)) : 0;
+    await admin
+      .from("agent_chat_threads")
+      .update({
+        run_status: "running",
+        run_pass: runPass,
+        ...(autoContinue
+          ? {}
+          : { run_request: userMessage.slice(0, 500), run_started_at: new Date().toISOString() }),
+      })
+      .eq("id", threadId);
+
     if (!autoContinue) {
       await admin.from("agent_chat_messages").insert({
         thread_id: threadId,
@@ -798,6 +813,7 @@ serve(async (req) => {
           .eq("id", threadId);
       }
     }
+
 
 
     // --- load history ----------------------------------------------------
