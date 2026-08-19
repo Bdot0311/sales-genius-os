@@ -195,7 +195,7 @@ const AgentChat = () => {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, sending]);
+  }, [messages, sending, runActive]);
 
   const handleNewThread = async () => {
     const t = await createThread();
@@ -698,7 +698,7 @@ const AgentChat = () => {
                 ),
               )}
 
-              {sending && (
+              {(sending || runActive) && (
                 <div className="space-y-2">
                   <AgentWorkingIndicator
                     request={activeRequest}
@@ -740,9 +740,9 @@ const AgentChat = () => {
                 placeholder="e.g. Enrich the 12 leads I just saved, score them, and draft emails for anyone above 70"
                 rows={2}
                 className="min-w-0 flex-1 resize-none text-base sm:text-sm"
-                disabled={sending || loading}
+                disabled={sending || runActive || loading}
               />
-              {sending ? (
+              {sending || runActive ? (
                 <Button
                   size="icon"
                   variant="destructive"
