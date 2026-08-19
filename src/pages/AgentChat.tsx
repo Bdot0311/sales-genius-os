@@ -85,6 +85,10 @@ const AgentChat = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  // What the agent is currently working on, so the status card can describe it.
+  const [activeRequest, setActiveRequest] = useState<string | null>(null);
+  const [activePass, setActivePass] = useState(0);
+
   const [stopping, setStopping] = useState(false);
   const [loading, setLoading] = useState(true);
   const [autonomy, setAutonomy] = useState<"approval" | "autonomous">("approval");
@@ -227,10 +231,13 @@ const AgentChat = () => {
     if (!content || !threadId || sending) return;
     setInput("");
     setSending(true);
+    setActiveRequest(content);
+    setActivePass(0);
     const optimistic: ChatMessage = {
       id: `local-${Date.now()}`,
       role: "user",
       content,
+
       tool_events: null,
       created_at: new Date().toISOString(),
     };
@@ -261,6 +268,8 @@ const AgentChat = () => {
           : completedMutationKeys;
         truncated = (data as any)?.truncated === true;
         attempt += 1;
+        if (truncated) setActivePass(attempt);
+
       }
       if (truncated) {
         toast.info('Still more to run — reply "continue" to finish the rest.');
@@ -284,6 +293,9 @@ const AgentChat = () => {
       }
     } finally {
       setSending(false);
+      setActiveRequest(null);
+      setActivePass(0);
+
       setStopping(false);
       inputRef.current?.focus();
     }
@@ -618,7 +630,11 @@ const AgentChat = () => {
 
               {sending && (
                 <div className="space-y-2">
-                  <AgentWorkingIndicator />
+                  <AgentWorkingIndicator
+                    request={activeRequest}
+                    pass={activePass}
+                  />
+
                   <Button
                     size="sm"
                     variant="outline"
