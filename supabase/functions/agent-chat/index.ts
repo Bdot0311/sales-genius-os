@@ -775,19 +775,25 @@ serve(async (req) => {
     };
 
     // --- persist the user's message -------------------------------------
-    await admin.from("agent_chat_messages").insert({
-      thread_id: threadId,
-      user_id: userId,
-      role: "user",
-      content: userMessage,
-    });
+    // Auto-continuation turns are the client resuming a batch that ran out of
+    // wall clock, not a real user message — keep them out of the transcript.
+    const autoContinue = payload.autoContinue === true;
+    if (!autoContinue) {
+      await admin.from("agent_chat_messages").insert({
+        thread_id: threadId,
+        user_id: userId,
+        role: "user",
+        content: userMessage,
+      });
 
-    if (!thread.title || thread.title === "New conversation") {
-      await admin
-        .from("agent_chat_threads")
-        .update({ title: userMessage.slice(0, 60) })
-        .eq("id", threadId);
+      if (!thread.title || thread.title === "New conversation") {
+        await admin
+          .from("agent_chat_threads")
+          .update({ title: userMessage.slice(0, 60) })
+          .eq("id", threadId);
+      }
     }
+
 
     // --- load history ----------------------------------------------------
     const { data: history } = await admin
@@ -2244,6 +2250,14 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
     const messages: any[] = [
       { role: "system", content: systemPrompt },
       ...(history ?? []).map((m) => ({ role: m.role, content: m.content })),
+      ...(autoContinue
+        ? [{
+            role: "user",
+            content:
+              "Continue the previous request from where you stopped. Do not repeat work that is already done, and do not ask for confirmation of what was already agreed.",
+          }]
+        : []),
+
     ];
 
     let finalText = "";
@@ -2393,15 +2407,16 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
       finalText = failureNote
         ? failureNote
         : ranOutOfTime
-          ? "That batch was too big to finish in one turn — the work above is saved. Reply \"continue\" and I'll pick up where I left off."
+          ? "Big batch — the work above is saved. Picking up where I left off…"
           : toolEvents.length
             ? "I finished the actions above. Tell me what you'd like next."
             : "I couldn't complete that. Try rephrasing what you'd like me to do.";
     } else if (failureNote) {
       finalText += `\n\n${failureNote}`;
     } else if (ranOutOfTime) {
-      finalText += "\n\nI ran out of time on this turn — reply \"continue\" and I'll finish the rest.";
+      finalText += "\n\nStill more to do here — continuing…";
     }
+
 
 
     const { data: saved } = await admin
@@ -2458,7 +2473,10 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
       approvals_requested: toolEvents.filter((t) => !!t.approval_id).length,
     });
 
-    return json({ message: saved, toolEvents });
+    // `truncated` tells the client to auto-continue this turn instead of making
+    // the user type "continue" after every long batch.
+    return json({ message: saved, toolEvents, truncated: ranOutOfTime && !cancelled });
+
 
   } catch (error) {
     console.error("agent-chat error", error);

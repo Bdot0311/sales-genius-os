@@ -236,17 +236,31 @@ const AgentChat = () => {
     };
     setMessages((prev) => [...prev, optimistic]);
     try {
-      const { data, error } = await supabase.functions.invoke("agent-chat", {
-        body: {
-          threadId,
-          message: content,
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          ...(agentId ? { agentId } : {}),
-        },
-      });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      setMessages((prev) => [...prev, (data as any).message as ChatMessage]);
+      // Long batches hit the edge function's wall clock. When that happens the
+      // server flags the turn as truncated and we resume it automatically
+      // instead of asking the user to type "continue".
+      const MAX_AUTO_CONTINUES = 4;
+      let attempt = 0;
+      let truncated = true;
+      while (truncated && attempt <= MAX_AUTO_CONTINUES) {
+        const { data, error } = await supabase.functions.invoke("agent-chat", {
+          body: {
+            threadId,
+            message: content,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            ...(attempt > 0 ? { autoContinue: true } : {}),
+            ...(agentId ? { agentId } : {}),
+          },
+        });
+        if (error) throw error;
+        if ((data as any)?.error) throw new Error((data as any).error);
+        setMessages((prev) => [...prev, (data as any).message as ChatMessage]);
+        truncated = (data as any)?.truncated === true;
+        attempt += 1;
+      }
+      if (truncated) {
+        toast.info('Still more to run — reply "continue" to finish the rest.');
+      }
       loadThreads();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
@@ -270,6 +284,7 @@ const AgentChat = () => {
       inputRef.current?.focus();
     }
   };
+
 
   // Interrupt a run in flight. The flag is picked up between the agent's steps,
   // so anything already finished stays saved and nothing new is sent.
