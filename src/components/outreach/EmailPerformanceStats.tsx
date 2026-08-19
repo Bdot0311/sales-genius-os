@@ -156,8 +156,14 @@ export const EmailPerformanceStats = () => {
         return ownAddresses.has(to) || /(^|[.+_-])(warmup|seed)([.+_-]|@)/.test(to);
       };
 
-      setEmails(((e.data as SentEmail[]) ?? []).filter((row) => !isWarmupTraffic(row)));
-      setReplies((r.data as ReplyRow[]) ?? []);
+      const allEmails = (e.data as SentEmail[]) ?? [];
+      const realEmails = allEmails.filter((row) => !isWarmupTraffic(row));
+      const warmupEmailIds = new Set(allEmails.filter(isWarmupTraffic).map((row) => row.id));
+      setEmails(realEmails);
+      // Replies tied to a warmup/seed send are not outreach replies.
+      setReplies((((r.data as ReplyRow[]) ?? []) as (ReplyRow & { sent_email_id?: string | null })[]).filter(
+        (row) => !row.sent_email_id || !warmupEmailIds.has(row.sent_email_id),
+      ));
       setDeals((d.data as DealRow[]) ?? []);
       setTemplateNames(Object.fromEntries(((t.data as { id: string; name: string }[]) ?? []).map((x) => [x.id, x.name])));
       setSequenceNames(Object.fromEntries(((s.data as { id: string; name: string }[]) ?? []).map((x) => [x.id, x.name])));
