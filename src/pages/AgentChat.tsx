@@ -85,6 +85,10 @@ const AgentChat = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  // What the agent is currently working on, so the status card can describe it.
+  const [activeRequest, setActiveRequest] = useState<string | null>(null);
+  const [activePass, setActivePass] = useState(0);
+
   const [stopping, setStopping] = useState(false);
   const [loading, setLoading] = useState(true);
   const [autonomy, setAutonomy] = useState<"approval" | "autonomous">("approval");
