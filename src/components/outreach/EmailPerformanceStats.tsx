@@ -102,6 +102,11 @@ function rateBadge(rate: number, type: "open" | "reply" | "click") {
   return <Badge variant="outline">Needs Work</Badge>;
 }
 
+/** A reply counts as positive only for the real stored classification values. */
+function isPositiveReply(r: ReplyRow) {
+  return r.intent_classification === "high_intent" || (r.intent_score ?? 0) >= 70;
+}
+
 export const EmailPerformanceStats = () => {
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState(30);
@@ -248,7 +253,7 @@ export const EmailPerformanceStats = () => {
     const failed = emails.filter((e) => e.status === "failed").length + bounced;
     const scheduled = emails.filter((e) => e.status === "scheduled").length;
 
-    const positive = replies.filter((r) => (r.intent_score ?? 0) >= 70 || r.intent_classification === "interested").length;
+    const positive = replies.filter((r) => isPositiveReply(r)).length;
     const won = deals.filter((d) => (d.stage || "").toLowerCase() === "won" || (d.stage || "").toLowerCase() === "closed_won");
     return {
       sent: sent.length,
@@ -443,7 +448,7 @@ export const EmailPerformanceStats = () => {
             setDrill({
               title: "Positive replies",
               description: "Replies classified as interested or scored 70+ intent.",
-              replyRows: replies.filter((r) => (r.intent_score ?? 0) >= 70 || r.intent_classification === "interested"),
+              replyRows: replies.filter((r) => isPositiveReply(r)),
             })
           }
         />
@@ -535,7 +540,7 @@ export const EmailPerformanceStats = () => {
                     setDrill({
                       title: "Positive replies",
                       description: "Replies classified interested or scored 70+.",
-                      replyRows: replies.filter((r) => (r.intent_score ?? 0) >= 70 || r.intent_classification === "interested"),
+                      replyRows: replies.filter((r) => isPositiveReply(r)),
                     })
                   }
                 />
@@ -796,7 +801,7 @@ export const EmailPerformanceStats = () => {
                 setDrill({
                   title: "Positive replies",
                   description: "Interested or 70+ intent score.",
-                  replyRows: replies.filter((r) => (r.intent_score ?? 0) >= 70 || r.intent_classification === "interested"),
+                  replyRows: replies.filter((r) => isPositiveReply(r)),
                 })
               }
             />
