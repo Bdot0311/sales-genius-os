@@ -293,6 +293,9 @@ const AgentChat = () => {
       }
     } finally {
       setSending(false);
+      setActiveRequest(null);
+      setActivePass(0);
+
       setStopping(false);
       inputRef.current?.focus();
     }
