@@ -99,7 +99,6 @@ const AgentChat = () => {
   const [agents, setAgents] = useState<AgentOption[]>([]);
   const [agentId, setAgentId] = useState<string | null>(null);
   const [approvalStatus, setApprovalStatus] = useState<Record<string, string>>({});
-  const [resolving, setResolving] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const activeThreadRef = useRef(threadId);
@@ -433,39 +432,6 @@ const AgentChat = () => {
     };
   }, [messages]);
 
-  const handleApprovalDecision = async (
-    approvalId: string,
-    decision: "approve" | "reject",
-  ) => {
-    if (!threadId || resolving) return;
-    setResolving(approvalId);
-    try {
-      const { data, error } = await supabase.functions.invoke("agent-chat", {
-        body: {
-          threadId,
-          action: "resolve_approval",
-          approvalId,
-          decision,
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          ...(agentId ? { agentId } : {}),
-        },
-      });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      const status = (data as any)?.approval?.status ?? decision;
-      setApprovalStatus((prev) => ({ ...prev, [approvalId]: status }));
-      if ((data as any)?.message) {
-        setMessages((prev) => [...prev, (data as any).message as ChatMessage]);
-      }
-      loadThreads();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error";
-      toast.error(`Could not ${decision} that: ${message}`);
-    } finally {
-      setResolving(null);
-    }
-  };
-
   const statusIcon = (status: ToolEvent["status"]) =>
     status === "ok" ? (
       <CheckCircle2 className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />
@@ -670,29 +636,10 @@ const AgentChat = () => {
                               </p>
                             )}
                             {pending ? (
-                              <div className="flex gap-2 pt-1">
-                                <Button
-                                  size="sm"
-                                  className="gap-1.5"
-                                  disabled={resolving === e.approval_id}
-                                  onClick={() => handleApprovalDecision(e.approval_id!, "approve")}
-                                >
-                                  {resolving === e.approval_id ? (
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                  ) : (
-                                    <CheckCircle2 className="w-3.5 h-3.5" />
-                                  )}
-                                  Approve
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  disabled={resolving === e.approval_id}
-                                  onClick={() => handleApprovalDecision(e.approval_id!, "reject")}
-                                >
-                                  Reject
-                                </Button>
-                              </div>
+                              <p className="text-xs text-amber-300/90">
+                                Reply in the chat to confirm — say "send it" to go ahead or "cancel
+                                that" to drop it.
+                              </p>
                             ) : (
                               <Badge
                                 variant="outline"
@@ -706,6 +653,7 @@ const AgentChat = () => {
                                 {status === "approved" ? "Approved" : "Rejected"}
                               </Badge>
                             )}
+
                           </div>
                         );
                       })}

@@ -93,6 +93,8 @@ const MUTATING_TOOLS = new Set([
   "find_leads",
   "enroll_lead_in_sequence",
   "run_full_agent",
+  "resolve_approvals",
+
 ]);
 
 // Read-only, DB-only tools: safe to execute concurrently within one model step.
@@ -382,7 +384,7 @@ const TOOLS = [
     function: {
       name: "send_outreach",
       description:
-        "Send a brand new email to a lead when you have the subject and body in hand. To send a draft you already created, use send_drafts instead. In approval mode this pauses and shows the user an approve/reject card inline in the chat instead of sending.",
+        "Send a brand new email to a lead when you have the subject and body in hand. To send a draft you already created, use send_drafts instead. In approval mode this pauses and asks the user for confirmation in the chat instead of sending; when they reply confirming, call resolve_approvals to actually send it.",
       parameters: {
         type: "object",
         properties: {
@@ -451,6 +453,33 @@ const TOOLS = [
       parameters: { type: "object", properties: {} },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "list_pending_approvals",
+      description:
+        "List the actions that are paused waiting for the user's go-ahead (emails to send, sequence enrollments, agent runs). Use this when the user replies with a confirmation like \"yes\", \"send it\", \"go ahead\" or \"cancel that\" so you know exactly what they are approving.",
+      parameters: { type: "object", properties: {} },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "resolve_approvals",
+      description:
+        "Carry out (or cancel) actions that were paused for approval, after the user confirms in chat. Pass decision 'approve' to execute them or 'reject' to discard them. Give approval_ids for specific items or all: true for everything pending. Only call this when the user's newest message clearly confirms or declines.",
+      parameters: {
+        type: "object",
+        properties: {
+          decision: { type: "string", enum: ["approve", "reject"], description: "approve executes, reject discards" },
+          approval_ids: { type: "array", items: { type: "string" }, description: "Specific approval ids from list_pending_approvals" },
+          all: { type: "boolean", description: "Apply to every pending approval" },
+        },
+        required: ["decision"],
+      },
+    },
+  },
+
   {
     type: "function",
     function: {
@@ -628,22 +657,10 @@ serve(async (req) => {
       }
     };
 
-    // --- inline approve / reject from the chat ---------------------------
-    if (action === "resolve_approval") {
-      const approvalId = String(payload.approvalId ?? "");
-      const decision = payload.decision === "approve" ? "approve" : "reject";
-      if (!approvalId) return json({ error: "Missing approvalId" }, 400);
-
-      const { data: approval } = await admin
-        .from("agent_approvals")
-        .select("*")
-        .eq("id", approvalId)
-        .eq("user_id", userId)
-        .maybeSingle();
-      if (!approval) return json({ error: "Approval not found" }, 404);
-      if (approval.status !== "pending")
-        return json({ error: "That request was already handled." }, 409);
-
+    // Execute a single approval decision. Shared by the (legacy) inline
+    // resolve_approval action and the chat-driven approval tools so a plain
+    // "yes, send it" message does exactly what a button click used to.
+    const applyApproval = async (approval: any, decision: "approve" | "reject") => {
       let outcome = "";
       let failed = false;
 
@@ -703,14 +720,37 @@ serve(async (req) => {
         outcome = "Approved.";
       }
 
+      const status = failed ? "pending" : decision === "approve" ? "approved" : "rejected";
+
       await admin
         .from("agent_approvals")
         .update({
-          status: failed ? "pending" : decision === "approve" ? "approved" : "rejected",
+          status,
           reviewed_at: failed ? null : new Date().toISOString(),
         })
-        .eq("id", approvalId)
+        .eq("id", approval.id)
         .eq("user_id", userId);
+
+      return { outcome, failed, status };
+    };
+
+    // --- inline approve / reject from the chat ---------------------------
+    if (action === "resolve_approval") {
+      const approvalId = String(payload.approvalId ?? "");
+      const decision = payload.decision === "approve" ? "approve" : "reject";
+      if (!approvalId) return json({ error: "Missing approvalId" }, 400);
+
+      const { data: approval } = await admin
+        .from("agent_approvals")
+        .select("*")
+        .eq("id", approvalId)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (!approval) return json({ error: "Approval not found" }, 404);
+      if (approval.status !== "pending")
+        return json({ error: "That request was already handled." }, 409);
+
+      const { outcome, status } = await applyApproval(approval, decision);
 
       const { data: saved } = await admin
         .from("agent_chat_messages")
@@ -731,9 +771,10 @@ serve(async (req) => {
 
       return json({
         message: saved,
-        approval: { id: approvalId, status: failed ? "pending" : decision === "approve" ? "approved" : "rejected" },
+        approval: { id: approvalId, status },
       });
     }
+
 
     const userMessage = String(payload.message ?? "").trim().slice(0, 4000);
     if (!userMessage) return json({ error: "Message is required" }, 400);
@@ -1101,7 +1142,7 @@ serve(async (req) => {
             queued_for_approval: true,
             approval_id: approval.id,
             message:
-              "Nothing was sent. An approve/reject card is shown to the user right here in the chat — wait for their decision.",
+              "Nothing was sent. Tell the user in plain language what you are about to send and ask them to confirm in the chat. When they reply confirming, call resolve_approvals to send it.",
           },
         };
       }
@@ -1685,7 +1726,7 @@ serve(async (req) => {
             results,
             note: autonomous
               ? `Sent ${sentCount} of ${results.length} draft(s), rotated across ${usedFrom.length || 1} mailbox(es): ${usedFrom.join(", ") || pool[0].email}.`
-              : `Nothing was sent yet — ${queuedCount} approve/reject card(s) are shown to the user right here in the chat. Wait for their decision and never tell them to go to another page.`,
+              : `Nothing was sent yet — ${queuedCount} email(s) are paused waiting on the user. Ask them in the chat to confirm, then call resolve_approvals when they reply confirming. Never tell them to click a button or go to another page.`,
           };
         }
 
@@ -1993,7 +2034,7 @@ serve(async (req) => {
               queued_for_approval: true,
               approval_id: approval.id,
               message:
-                "Not enrolled yet. An approve/reject card is shown to the user right here in the chat.",
+                "Not enrolled yet. Ask the user to confirm in the chat, then call resolve_approvals when they reply confirming.",
             };
           }
           const { data, error } = await admin
@@ -2057,7 +2098,78 @@ serve(async (req) => {
           return error ? { error: error.message } : { success: true };
         }
 
+        case "list_pending_approvals": {
+          const { data: rows } = await admin
+            .from("agent_approvals")
+            .select("id, kind, prospect_name, prospect_email, company_name, subject, body, created_at")
+            .eq("user_id", userId)
+            .eq("status", "pending")
+            .order("created_at", { ascending: false })
+            .limit(25);
+          toolEvents.push({
+            name,
+            label: "Checked what is waiting on you",
+            status: "ok",
+            detail: `${(rows ?? []).length} action(s) waiting for your go-ahead`,
+          });
+          return { pending: rows ?? [] };
+        }
+
+        case "resolve_approvals": {
+          const decision = args.decision === "approve" ? "approve" : "reject";
+          const ids: string[] = Array.isArray(args.approval_ids)
+            ? args.approval_ids.map((v: unknown) => String(v)).filter(Boolean)
+            : [];
+          if (!ids.length && args.all !== true) {
+            return {
+              error:
+                "Pass approval_ids or all: true. Use list_pending_approvals first to see what is waiting.",
+            };
+          }
+          let q = admin
+            .from("agent_approvals")
+            .select("*")
+            .eq("user_id", userId)
+            .eq("status", "pending")
+            .order("created_at", { ascending: true })
+            .limit(25);
+          if (ids.length) q = q.in("id", ids);
+          const { data: rows } = await q;
+          const pendingRows = rows ?? [];
+          if (!pendingRows.length) {
+            toolEvents.push({
+              name,
+              label: decision === "approve" ? "Nothing left to send" : "Nothing left to cancel",
+              status: "ok",
+              detail: "No pending approvals matched",
+            });
+            return { resolved: 0, note: "Nothing was pending." };
+          }
+          const outcomes: any[] = [];
+          for (const row of pendingRows) {
+            const r = await applyApproval(row, decision);
+            outcomes.push({
+              approval_id: row.id,
+              to: row.prospect_email,
+              status: r.status,
+              outcome: r.outcome,
+            });
+          }
+          const failedCount = outcomes.filter((o) => o.status === "pending").length;
+          toolEvents.push({
+            name,
+            label: decision === "approve" ? "Sent what you approved" : "Cancelled what you declined",
+            status: failedCount ? "error" : "ok",
+            detail:
+              decision === "approve"
+                ? `${outcomes.length - failedCount} of ${outcomes.length} executed${failedCount ? `, ${failedCount} failed` : ""}`
+                : `${outcomes.length} discarded`,
+          });
+          return { decision, resolved: outcomes.length, failed: failedCount, outcomes };
+        }
+
         case "get_agent_status": {
+
           const since = new Date();
           since.setHours(0, 0, 0, 0);
           const [{ count: pending }, { data: todayActions }] = await Promise.all([
@@ -2295,7 +2407,7 @@ serve(async (req) => {
               queued_for_approval: true,
               approval_id: approval.id,
               message:
-                "Nothing ran yet. An approve/reject card is shown to the user right here in the chat.",
+                "Nothing ran yet. Ask the user to confirm in the chat, then call resolve_approvals when they reply confirming.",
             };
           }
           const r = await invokeFn("agent-run", { mode: "autonomous", agentId: (config as any)?.id });
@@ -2323,7 +2435,7 @@ HOW TO WORK
 - When the user says something like "I just searched some leads, take it from here", find the relevant leads with list_leads first, then chain the work: enrich -> score -> draft -> send/queue. Do not ask permission for read-only or drafting steps; just do them and report back.
 - Do several tool calls in a row when needed. Prefer batching lead ids over one-at-a-time calls. For drafting, ALWAYS pass every lead id in a single draft_outreach call via lead_ids — never fire many parallel draft_outreach calls, that trips the rate limiter.
 - draft_outreach goal must be one of: introduction, follow-up, meeting, demo, proposal. Use "introduction" for first touches.
-- Drafts are auto-saved and rendered in the chat as reviewable cards with Send now / Schedule / Discard buttons. After drafting, tell the user the drafts are below for review — do not send until they ask.
+- Drafts are auto-saved and rendered in the chat as read-only preview cards. There are no buttons anywhere in this chat — everything happens through messages. After drafting, tell the user the drafts are below for review and ask them to reply when they want them sent or scheduled.
 - SENDING: when the user approves the drafts ("send them", "all good, send"), YOU send them — call send_drafts. You never need the subject or body to send a saved draft, only draft ids: use the draft_ids from your draft_outreach results, or call list_drafts (optionally with lead_ids or a name) to look them up again. Pass from_email when the user names one inbox, or from_emails to rotate across several. When they do not name one, leave both off: sends automatically rotate across every healthy connected mailbox (least-used domain first), which is what you want for outbound volume. Use list_mailboxes if you need to know which addresses are connected, and never claim you can only send from one domain. Never tell the user to click "Send now" themselves or to open another page, and never claim you lack the lead ids or draft contents — look them up with list_drafts instead.
 - SCHEDULING: you CAN send later. When the user asks for a future send ("tomorrow at 9", "Monday morning", "next week"), call schedule_drafts with the draft_ids and send_at_local set to their local wall-clock time with no offset (e.g. "9am today" -> send_at_local: "YYYY-MM-DDT09:00" for today's local date). Never convert to UTC yourself and never pass a bare UTC timestamp for a local time — the tool does the conversion. Use stagger_minutes when queuing several so they don't all fire at once. Confirm the exact date/time you queued, and mention it sends automatically. Use list_scheduled_emails to show what is queued and cancel_scheduled_email to call one back. Never say you cannot schedule and never tell the user to use the Schedule button themselves.
 - DELETING: you CAN delete emails AND lead records. Use delete_drafts to remove saved drafts (by draft_ids, lead_ids, or all_pending), delete_inbox_threads to remove inbox conversations (by thread_ids or match_email), and delete_leads to permanently remove saved lead records (by lead_ids, match_company or match_name — it also clears any drafts attached to them). Deletion is permanent, so only do it when the user asks, confirm briefly what you are about to delete if the request is broad ("delete all my drafts", "delete all my leads"), then do it and report the count. Never say you lack a way to delete leads and never tell the user to delete things manually in the UI.
@@ -2336,7 +2448,7 @@ HOW TO WORK
 - Be concise and specific. Short paragraphs, tight bullet lists, real numbers and names. No emojis, no filler.
 
 AUTONOMY
-This conversation is in ${autonomous ? "FULL AUTONOMY mode: sending, enrolling and full agent runs execute immediately." : "APPROVAL mode: anything that sends an email, enrolls a lead, or runs the full agent pauses for the user's approval instead of executing. When that happens an approve/reject card appears inline in this chat — say briefly what you want to do and ask them to approve it below. Never tell them to go to another tab or page."}
+This conversation is in ${autonomous ? "FULL AUTONOMY mode: sending, enrolling and full agent runs execute immediately." : "APPROVAL mode: anything that sends an email, enrolls a lead, or runs the full agent pauses for the user's approval instead of executing. Approval happens purely through chat messages — there are no approve/reject buttons. When work pauses, state plainly what is queued (who, how many, which mailbox) and ask them to reply to confirm, then STOP and wait. When their next message confirms ('yes', 'send it', 'go ahead', 'do it'), call list_pending_approvals then resolve_approvals with decision 'approve' (all: true when they confirmed everything) and report what actually happened. When they decline ('no', 'cancel that', 'hold off'), call resolve_approvals with decision 'reject'. Never mention buttons or cards to click, and never tell them to go to another tab or page."}
 ${autonomous ? "" : "If the user asks you to just get on with it without approving each step, tell them they can switch this conversation to full autonomy with the mode selector at the top of the chat."}
 
 COLD EMAIL RULES (apply to every draft you write or review)
