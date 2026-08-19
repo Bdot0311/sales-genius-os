@@ -233,8 +233,11 @@ const AgentChat = () => {
     setSending(true);
     setActiveRequest(content);
     setActivePass(0);
-
+    const optimistic: ChatMessage = {
+      id: `local-${Date.now()}`,
+      role: "user",
       content,
+
       tool_events: null,
       created_at: new Date().toISOString(),
     };
