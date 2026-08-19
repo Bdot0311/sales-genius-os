@@ -413,7 +413,12 @@ export const EmailPerformanceStats = () => {
             </Button>
           ))}
         </div>
-        <LiveIndicator status={liveStatus} lastUpdate={lastUpdate} />
+        <div className="flex items-center gap-2">
+          <LiveIndicator status={liveStatus} lastUpdate={lastUpdate} />
+          <Button size="sm" variant="ghost" onClick={() => void reload.current()} aria-label="Refresh analytics">
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
