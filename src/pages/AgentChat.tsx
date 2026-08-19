@@ -226,9 +226,18 @@ const AgentChat = () => {
     await supabase.from("agent_chat_threads").update({ agent_config_id: next }).eq("id", threadId);
   };
 
+  const refreshMessages = useCallback(async (id: string) => {
+    const { data: msgs } = await supabase
+      .from("agent_chat_messages")
+      .select("id, role, content, tool_events, created_at")
+      .eq("thread_id", id)
+      .order("created_at", { ascending: true });
+    if (msgs) setMessages(msgs as unknown as ChatMessage[]);
+  }, []);
+
   const handleSend = async (text?: string) => {
     const content = (text ?? input).trim();
-    if (!content || !threadId || sending) return;
+    if (!content || !threadId || sending || runActive) return;
     setInput("");
     setSending(true);
     setActiveRequest(content);
@@ -243,41 +252,43 @@ const AgentChat = () => {
     };
     setMessages((prev) => [...prev, optimistic]);
     try {
-      // Long batches hit the edge function's wall clock. When that happens the
-      // server flags the turn as truncated and we resume it automatically
-      // instead of asking the user to type "continue".
-      const MAX_AUTO_CONTINUES = 4;
-      let attempt = 0;
-      let truncated = true;
-      let completedMutationKeys: string[] = [];
-      while (truncated && attempt <= MAX_AUTO_CONTINUES) {
-        const { data, error } = await supabase.functions.invoke("agent-chat", {
-          body: {
-            threadId,
-            message: content,
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            ...(attempt > 0 ? { autoContinue: true, completedMutationKeys } : {}),
-            ...(agentId ? { agentId } : {}),
-          },
-        });
-        if (error) throw error;
-        if ((data as any)?.error) throw new Error((data as any).error);
-        setMessages((prev) => [...prev, (data as any).message as ChatMessage]);
-        completedMutationKeys = Array.isArray((data as any)?.completedMutationKeys)
-          ? (data as any).completedMutationKeys.filter((value: unknown): value is string => typeof value === "string")
-          : completedMutationKeys;
-        truncated = (data as any)?.truncated === true;
-        attempt += 1;
-        if (truncated) setActivePass(attempt);
-
-      }
-      if (truncated) {
-        toast.info('Still more to run — reply "continue" to finish the rest.');
+      // The run belongs to the server: agent-chat marks the thread as running
+      // and self-chains long batches in the background. If this request dies
+      // because the tab was backgrounded or swiped away, the work keeps going
+      // and the run watcher below rejoins it when the user comes back.
+      const { data, error } = await supabase.functions.invoke("agent-chat", {
+        body: {
+          threadId,
+          message: content,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          ...(agentId ? { agentId } : {}),
+        },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      setMessages((prev) => [...prev, (data as any).message as ChatMessage]);
+      if ((data as any)?.truncated === true) {
+        // Server is still working — hand off to the watcher.
+        setRunActive(true);
+        setActivePass(1);
       }
       loadThreads();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
-      toast.error(`Agent error: ${message}`);
+      // The turn may still be running server-side (backgrounded tab, dropped
+      // connection). Only surface an error when the server says it's idle.
+      const { data: thread } = await supabase
+        .from("agent_chat_threads")
+        .select("run_status, run_request, run_pass")
+        .eq("id", threadId)
+        .maybeSingle();
+      if ((thread as any)?.run_status === "running") {
+        setRunActive(true);
+        setActiveRequest((thread as any).run_request ?? content);
+        setActivePass(Number((thread as any).run_pass ?? 0));
+      } else {
+        toast.error(`Agent error: ${message}`);
+      }
       // The turn may have completed real work (enrichments, drafts) before failing.
       // Re-read the thread so nothing the agent saved disappears from the chat.
       const { data: msgs } = await supabase
@@ -293,13 +304,68 @@ const AgentChat = () => {
       }
     } finally {
       setSending(false);
-      setActiveRequest(null);
-      setActivePass(0);
-
       setStopping(false);
       inputRef.current?.focus();
     }
   };
+
+  // Run watcher: polls the thread's server-side run state so an in-flight run
+  // is picked back up after a reload, a tab switch, or swiping out of the PWA.
+  useEffect(() => {
+    if (!threadId) return;
+    let cancelled = false;
+    let timer: number | undefined;
+
+    const poll = async () => {
+      if (cancelled) return;
+      if (typeof document !== "undefined" && document.hidden) {
+        timer = window.setTimeout(poll, 4000);
+        return;
+      }
+      const { data } = await supabase
+        .from("agent_chat_threads")
+        .select("run_status, run_request, run_pass, run_started_at")
+        .eq("id", threadId)
+        .maybeSingle();
+      if (cancelled) return;
+      const row = data as any;
+      const startedAt = row?.run_started_at ? new Date(row.run_started_at).getTime() : 0;
+      const stale = startedAt > 0 && Date.now() - startedAt > 20 * 60 * 1000;
+      const running = row?.run_status === "running" && !stale;
+
+      if (running) {
+        setRunActive(true);
+        setActiveRequest((prev) => row?.run_request ?? prev);
+        setActivePass(Number(row?.run_pass ?? 0));
+        if (!sending) await refreshMessages(threadId);
+      } else {
+        setRunActive((wasRunning) => {
+          if (wasRunning) {
+            refreshMessages(threadId);
+            loadThreads();
+          }
+          return false;
+        });
+        if (!sending) {
+          setActiveRequest(null);
+          setActivePass(0);
+        }
+      }
+      timer = window.setTimeout(poll, running ? 3000 : 6000);
+    };
+
+    poll();
+    const onVisible = () => {
+      if (!document.hidden) poll();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      cancelled = true;
+      if (timer) window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [threadId, sending, refreshMessages, loadThreads]);
+
 
 
   // Interrupt a run in flight. The flag is picked up between the agent's steps,
