@@ -268,6 +268,8 @@ const AgentChat = () => {
           : completedMutationKeys;
         truncated = (data as any)?.truncated === true;
         attempt += 1;
+        if (truncated) setActivePass(attempt);
+
       }
       if (truncated) {
         toast.info('Still more to run — reply "continue" to finish the rest.');
