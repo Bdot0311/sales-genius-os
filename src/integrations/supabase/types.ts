@@ -3887,6 +3887,30 @@ export type Database = {
           },
         ]
       }
+      signup_blocklist: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          note: string | null
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          note?: string | null
+          value: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          note?: string | null
+          value?: string
+        }
+        Relationships: []
+      }
       signup_diagnostics: {
         Row: {
           created_at: string
