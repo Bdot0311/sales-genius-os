@@ -95,7 +95,9 @@ Deno.serve(async (req) => {
     }
 
     const domain = normalized.split("@")[1];
-    result.checks.disposable = DISPOSABLE_DOMAINS.has(domain);
+    const local = normalized.split("@")[0];
+    const db = await loadBlocklist();
+    result.checks.disposable = DISPOSABLE_DOMAINS.has(domain) || db.domains.has(domain);
     if (result.checks.disposable) {
       result.reason = "Disposable or temporary email addresses are not allowed. Please use a permanent address.";
       return new Response(JSON.stringify(result), {
@@ -103,6 +105,15 @@ Deno.serve(async (req) => {
         status: 200,
       });
     }
+
+    if (db.patterns.some((re) => re.test(local))) {
+      result.reason = "That email address looks automated. Please use a real address.";
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
 
     result.checks.mx = await checkMx(domain);
     if (!result.checks.mx) {
