@@ -77,6 +77,11 @@ const draftBodyToHtml = (body: string) => {
 };
 
 const MUTATING_TOOLS = new Set([
+  "enrich_leads",
+  "score_leads",
+  "research_leads",
+  "draft_outreach",
+  "draft_sequence",
   "send_outreach",
   "send_drafts",
   "schedule_drafts",
@@ -84,6 +89,8 @@ const MUTATING_TOOLS = new Set([
   "delete_drafts",
   "delete_inbox_threads",
   "delete_leads",
+  "update_lead",
+  "find_leads",
   "enroll_lead_in_sequence",
   "run_full_agent",
 ]);
@@ -733,7 +740,7 @@ serve(async (req) => {
 
     const { data: thread } = await admin
       .from("agent_chat_threads")
-      .select("id, user_id, title, autonomy, agent_config_id")
+      .select("id, user_id, title, autonomy, agent_config_id, run_status, run_request, run_started_at")
       .eq("id", threadId)
       .eq("user_id", userId)
       .maybeSingle();
@@ -748,6 +755,29 @@ serve(async (req) => {
     }
 
     const autonomous = thread.autonomy === "autonomous";
+
+    const autoContinue = payload.autoContinue === true;
+    const continuationStartedAt = typeof payload.runStartedAt === "string" ? payload.runStartedAt : null;
+
+    // A continuation belongs to one exact run. If a newer user request has
+    // replaced it, stop before loading history, calling the model, or touching
+    // run state. This prevents a late background pass from replaying old work.
+    if (autoContinue) {
+      const activeStartedAt = (thread as any).run_started_at
+        ? new Date((thread as any).run_started_at).toISOString()
+        : null;
+      const expectedStartedAt = continuationStartedAt
+        ? new Date(continuationStartedAt).toISOString()
+        : null;
+      if (
+        (thread as any).run_status !== "running" ||
+        (thread as any).run_request !== userMessage.slice(0, 500) ||
+        !activeStartedAt ||
+        activeStartedAt !== expectedStartedAt
+      ) {
+        return json({ staleContinuation: true, runStatus: (thread as any).run_status ?? "idle" });
+      }
+    }
 
     // --- stop / cancel support -------------------------------------------
     // The UI's Stop button stamps cancel_requested_at on the thread. We clear
@@ -777,7 +807,6 @@ serve(async (req) => {
     // --- persist the user's message -------------------------------------
     // Auto-continuation turns are the client resuming a batch that ran out of
     // wall clock, not a real user message — keep them out of the transcript.
-    const autoContinue = payload.autoContinue === true;
     const completedMutationKeys = new Set<string>(
       Array.isArray(payload.completedMutationKeys)
         ? payload.completedMutationKeys.filter((value: unknown): value is string => typeof value === "string").slice(0, 100)
@@ -787,6 +816,9 @@ serve(async (req) => {
     // thread so closing the tab / swiping out of the PWA doesn't abandon the
     // work, and the UI can rejoin the same run when the user comes back.
     const runPass = autoContinue ? Math.max(1, Number(payload.pass ?? 1)) : 0;
+    const runStartedAt = autoContinue
+      ? continuationStartedAt as string
+      : new Date().toISOString();
     await admin
       .from("agent_chat_threads")
       .update({
@@ -794,7 +826,7 @@ serve(async (req) => {
         run_pass: runPass,
         ...(autoContinue
           ? {}
-          : { run_request: userMessage.slice(0, 500), run_started_at: new Date().toISOString() }),
+          : { run_request: userMessage.slice(0, 500), run_started_at: runStartedAt, run_mutation_keys: [] }),
       })
       .eq("id", threadId);
 
@@ -817,12 +849,16 @@ serve(async (req) => {
 
 
     // --- load history ----------------------------------------------------
-    const { data: history } = await admin
+    const { data: recentHistory } = await admin
       .from("agent_chat_messages")
       .select("role, content, tool_events")
       .eq("thread_id", threadId)
-      .order("created_at", { ascending: true })
+      // Fetch the newest messages, not the oldest messages in long threads.
+      // The prior ascending LIMIT 40 silently dropped the current request once
+      // a thread exceeded 40 messages, making the model repeat stale work.
+      .order("created_at", { ascending: false })
       .limit(40);
+    const history = (recentHistory ?? []).reverse();
 
     // --- context ---------------------------------------------------------
     const [{ data: config }, { data: profile }, { data: savedIcp }] = await Promise.all([
@@ -2272,14 +2308,14 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
 
     const messages: any[] = [
       { role: "system", content: systemPrompt },
-      ...(history ?? []).map((m) => ({ role: m.role, content: m.content })),
+      ...history.map((m) => ({ role: m.role, content: m.content })),
       ...(autoContinue
         ? [{
             role: "user",
             content: `Continue only the unfinished parts of the newest request. Do not repeat completed work and do not return to older requests. Completed mutation keys for this request: ${
               completedMutationKeys.size ? [...completedMutationKeys].join("; ") : "none"
             }. Recent completed actions: ${JSON.stringify(
-              (history ?? [])
+              history
                 .slice(-4)
                 .flatMap((message: any) => Array.isArray(message.tool_events) ? message.tool_events : [])
                 .filter((event: any) => event?.status === "ok" || event?.status === "queued")
@@ -2549,7 +2585,8 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
           run_pass: runPass + 1,
           run_mutation_keys: [...completedMutationKeys].slice(0, 100),
         })
-        .eq("id", threadId);
+        .eq("id", threadId)
+        .eq("run_started_at", runStartedAt);
 
       const continueRun = fetch(`${supabaseUrl}/functions/v1/agent-chat`, {
         method: "POST",
@@ -2564,6 +2601,7 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
           timezone: userTz,
           autoContinue: true,
           pass: runPass + 1,
+          runStartedAt,
           completedMutationKeys: [...completedMutationKeys],
           ...(requestedAgentId ? { agentId: requestedAgentId } : {}),
         }),
@@ -2577,7 +2615,8 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
           await admin
             .from("agent_chat_threads")
             .update({ run_status: "idle" })
-            .eq("id", threadId);
+            .eq("id", threadId)
+            .eq("run_started_at", runStartedAt);
         });
 
       const waitUntil = (globalThis as any).EdgeRuntime?.waitUntil;
@@ -2586,7 +2625,8 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
       await admin
         .from("agent_chat_threads")
         .update({ run_status: "idle", run_pass: 0 })
-        .eq("id", threadId);
+        .eq("id", threadId)
+        .eq("run_started_at", runStartedAt);
     }
 
     return json({
