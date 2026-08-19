@@ -783,6 +783,21 @@ serve(async (req) => {
         ? payload.completedMutationKeys.filter((value: unknown): value is string => typeof value === "string").slice(0, 100)
         : [],
     );
+    // A run is owned by the server, not the browser tab. We stamp it on the
+    // thread so closing the tab / swiping out of the PWA doesn't abandon the
+    // work, and the UI can rejoin the same run when the user comes back.
+    const runPass = autoContinue ? Math.max(1, Number(payload.pass ?? 1)) : 0;
+    await admin
+      .from("agent_chat_threads")
+      .update({
+        run_status: "running",
+        run_pass: runPass,
+        ...(autoContinue
+          ? {}
+          : { run_request: userMessage.slice(0, 500), run_started_at: new Date().toISOString() }),
+      })
+      .eq("id", threadId);
+
     if (!autoContinue) {
       await admin.from("agent_chat_messages").insert({
         thread_id: threadId,
@@ -798,6 +813,7 @@ serve(async (req) => {
           .eq("id", threadId);
       }
     }
+
 
 
     // --- load history ----------------------------------------------------
@@ -2519,12 +2535,68 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
     const deletionRequestComplete =
       requestedDeleteTools.length > 0 && requestedDeleteTools.every((name) => completedToolNames.has(name));
 
+    const willContinue =
+      ranOutOfTime && !cancelled && !deletionRequestComplete && runPass < 6;
+
+    if (willContinue) {
+      // Keep the batch moving on the server. The continuation is fired as a
+      // background task, so it survives the client closing the tab or the PWA
+      // being swiped away mid-run.
+      await admin
+        .from("agent_chat_threads")
+        .update({
+          run_status: "running",
+          run_pass: runPass + 1,
+          run_mutation_keys: [...completedMutationKeys].slice(0, 100),
+        })
+        .eq("id", threadId);
+
+      const continueRun = fetch(`${supabaseUrl}/functions/v1/agent-chat`, {
+        method: "POST",
+        headers: {
+          Authorization: authHeader,
+          apikey: serviceKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          threadId,
+          message: userMessage,
+          timezone: userTz,
+          autoContinue: true,
+          pass: runPass + 1,
+          completedMutationKeys: [...completedMutationKeys],
+          ...(requestedAgentId ? { agentId: requestedAgentId } : {}),
+        }),
+      })
+        .then(async (r) => {
+          if (!r.ok) throw new Error(`continuation failed: ${r.status}`);
+          await r.text();
+        })
+        .catch(async (e) => {
+          console.error("agent-chat continuation error", e);
+          await admin
+            .from("agent_chat_threads")
+            .update({ run_status: "idle" })
+            .eq("id", threadId);
+        });
+
+      const waitUntil = (globalThis as any).EdgeRuntime?.waitUntil;
+      if (typeof waitUntil === "function") waitUntil(continueRun);
+    } else {
+      await admin
+        .from("agent_chat_threads")
+        .update({ run_status: "idle", run_pass: 0 })
+        .eq("id", threadId);
+    }
+
     return json({
       message: saved,
       toolEvents,
-      truncated: ranOutOfTime && !cancelled && !deletionRequestComplete,
+      truncated: willContinue,
+      runStatus: willContinue ? "running" : "idle",
       completedMutationKeys: [...completedMutationKeys],
     });
+
 
 
   } catch (error) {

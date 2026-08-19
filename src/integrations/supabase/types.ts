@@ -358,6 +358,11 @@ export type Database = {
           cancel_requested_at: string | null
           created_at: string
           id: string
+          run_mutation_keys: string[]
+          run_pass: number
+          run_request: string | null
+          run_started_at: string | null
+          run_status: string
           title: string
           updated_at: string
           user_id: string
@@ -368,6 +373,11 @@ export type Database = {
           cancel_requested_at?: string | null
           created_at?: string
           id?: string
+          run_mutation_keys?: string[]
+          run_pass?: number
+          run_request?: string | null
+          run_started_at?: string | null
+          run_status?: string
           title?: string
           updated_at?: string
           user_id: string
@@ -378,6 +388,11 @@ export type Database = {
           cancel_requested_at?: string | null
           created_at?: string
           id?: string
+          run_mutation_keys?: string[]
+          run_pass?: number
+          run_request?: string | null
+          run_started_at?: string | null
+          run_status?: string
           title?: string
           updated_at?: string
           user_id?: string
