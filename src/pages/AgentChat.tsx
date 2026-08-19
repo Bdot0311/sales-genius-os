@@ -231,9 +231,9 @@ const AgentChat = () => {
     if (!content || !threadId || sending) return;
     setInput("");
     setSending(true);
-    const optimistic: ChatMessage = {
-      id: `local-${Date.now()}`,
-      role: "user",
+    setActiveRequest(content);
+    setActivePass(0);
+
       content,
       tool_events: null,
       created_at: new Date().toISOString(),
