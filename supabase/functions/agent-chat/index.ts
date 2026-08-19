@@ -778,6 +778,11 @@ serve(async (req) => {
     // Auto-continuation turns are the client resuming a batch that ran out of
     // wall clock, not a real user message — keep them out of the transcript.
     const autoContinue = payload.autoContinue === true;
+    const completedMutationKeys = new Set<string>(
+      Array.isArray(payload.completedMutationKeys)
+        ? payload.completedMutationKeys.filter((value: unknown): value is string => typeof value === "string").slice(0, 100)
+        : [],
+    );
     if (!autoContinue) {
       await admin.from("agent_chat_messages").insert({
         thread_id: threadId,
@@ -798,7 +803,7 @@ serve(async (req) => {
     // --- load history ----------------------------------------------------
     const { data: history } = await admin
       .from("agent_chat_messages")
-      .select("role, content")
+      .select("role, content, tool_events")
       .eq("thread_id", threadId)
       .order("created_at", { ascending: true })
       .limit(40);
@@ -2229,6 +2234,8 @@ HOW TO WORK
 - SENDING: when the user approves the drafts ("send them", "all good, send"), YOU send them — call send_drafts. You never need the subject or body to send a saved draft, only draft ids: use the draft_ids from your draft_outreach results, or call list_drafts (optionally with lead_ids or a name) to look them up again. Pass from_email when the user names one inbox, or from_emails to rotate across several. When they do not name one, leave both off: sends automatically rotate across every healthy connected mailbox (least-used domain first), which is what you want for outbound volume. Use list_mailboxes if you need to know which addresses are connected, and never claim you can only send from one domain. Never tell the user to click "Send now" themselves or to open another page, and never claim you lack the lead ids or draft contents — look them up with list_drafts instead.
 - SCHEDULING: you CAN send later. When the user asks for a future send ("tomorrow at 9", "Monday morning", "next week"), call schedule_drafts with the draft_ids and send_at_local set to their local wall-clock time with no offset (e.g. "9am today" -> send_at_local: "YYYY-MM-DDT09:00" for today's local date). Never convert to UTC yourself and never pass a bare UTC timestamp for a local time — the tool does the conversion. Use stagger_minutes when queuing several so they don't all fire at once. Confirm the exact date/time you queued, and mention it sends automatically. Use list_scheduled_emails to show what is queued and cancel_scheduled_email to call one back. Never say you cannot schedule and never tell the user to use the Schedule button themselves.
 - DELETING: you CAN delete emails AND lead records. Use delete_drafts to remove saved drafts (by draft_ids, lead_ids, or all_pending), delete_inbox_threads to remove inbox conversations (by thread_ids or match_email), and delete_leads to permanently remove saved lead records (by lead_ids, match_company or match_name — it also clears any drafts attached to them). Deletion is permanent, so only do it when the user asks, confirm briefly what you are about to delete if the request is broad ("delete all my drafts", "delete all my leads"), then do it and report the count. Never say you lack a way to delete leads and never tell the user to delete things manually in the UI.
+- Treat the newest real user message as the current job. Never resume or repeat an older run merely because it appears in conversation history. Only continue an older job when the newest user message explicitly says to continue it.
+- A successful mutation is final. Do not call the same delete, send, schedule, enroll, or run tool again in the same request. If a tool reports zero matches after an earlier successful deletion, do not claim the earlier deletion failed.
 - Use send_outreach only for a brand new email you just wrote in the conversation and have not saved as a draft.
 - To identify or verify target COMPANIES (accounts), use search_companies — it returns company name, domain, location and size and saves nothing. Use it when the user asks about companies rather than people, or to resolve a company name/domain before prospecting; then pass that company into find_leads to source contacts there.
 - To source NEW people, use find_leads. If the user describes who they want (any role, industry, company type, or a one-off ask that is not the ICP), pass that description as \`query\` and the search runs broad on it, using the saved ICP only to score/qualify the results. If they just say "find more leads" or "source from my ICP" with no specific target, omit \`query\` to source people matching the saved ICP. It excludes anyone already in the account and advances the result page, so calling it again returns different people. Do not refuse or narrow an off-ICP request; run it as a query and let the ICP score it. Only say you cannot search if there is neither a query nor a saved ICP.
@@ -2253,8 +2260,16 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
       ...(autoContinue
         ? [{
             role: "user",
-            content:
-              "Continue the previous request from where you stopped. Do not repeat work that is already done, and do not ask for confirmation of what was already agreed.",
+            content: `Continue only the unfinished parts of the newest request. Do not repeat completed work and do not return to older requests. Completed mutation keys for this request: ${
+              completedMutationKeys.size ? [...completedMutationKeys].join("; ") : "none"
+            }. Recent completed actions: ${JSON.stringify(
+              (history ?? [])
+                .slice(-4)
+                .flatMap((message: any) => Array.isArray(message.tool_events) ? message.tool_events : [])
+                .filter((event: any) => event?.status === "ok" || event?.status === "queued")
+                .map((event: any) => `${event.name}: ${event.detail}`)
+                .slice(-12),
+            )}. If the newest request is already complete, summarize the verified result and stop without calling tools.`,
           }]
         : []),
 
@@ -2287,7 +2302,6 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
             messages,
             tools: TOOLS,
           }),
-          signal: AbortSignal.timeout(Math.max(5_000, timeLeft() - 5_000)),
         });
       } catch (e) {
         console.error("AI gateway request failed", e);
@@ -2330,6 +2344,19 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
           args = {};
         }
         const toolName = call.function?.name ?? "";
+        const mutationKey = MUTATING_TOOLS.has(toolName)
+          ? `${toolName}:${JSON.stringify(args, Object.keys(args).sort())}`
+          : null;
+        if (mutationKey && completedMutationKeys.has(mutationKey)) {
+          return {
+            role: "tool",
+            tool_call_id: call.id,
+            content: JSON.stringify({
+              already_completed: true,
+              note: "This exact action already succeeded during this request. Do not run it again; continue only unfinished work.",
+            }),
+          };
+        }
         if (!autonomous && MUTATING_TOOLS.has(toolName)) {
           console.log("approval-mode mutating tool", toolName);
         }
@@ -2339,6 +2366,12 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
         let stepDetail: string | null = null;
         try {
           result = await runTool(toolName, args);
+          if (
+            mutationKey &&
+            !(result && typeof result === "object" && "error" in result)
+          ) {
+            completedMutationKeys.add(mutationKey);
+          }
         } catch (e) {
           stepStatus = "error";
           stepDetail = e instanceof Error ? e.message : "unknown error";
@@ -2475,7 +2508,23 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
 
     // `truncated` tells the client to auto-continue this turn instead of making
     // the user type "continue" after every long batch.
-    return json({ message: saved, toolEvents, truncated: ranOutOfTime && !cancelled });
+    const normalizedRequest = userMessage.toLowerCase();
+    const requestedDeleteTools = [
+      /\b(delete|remove|clear|discard)\b[\s\S]*\b(saved\s+)?leads?\b/.test(normalizedRequest) ? "delete_leads" : null,
+      /\b(delete|remove|clear|discard)\b[\s\S]*\bdrafts?\b/.test(normalizedRequest) ? "delete_drafts" : null,
+    ].filter((name): name is string => Boolean(name));
+    const completedToolNames = new Set(
+      [...completedMutationKeys].map((key) => key.slice(0, key.indexOf(":"))),
+    );
+    const deletionRequestComplete =
+      requestedDeleteTools.length > 0 && requestedDeleteTools.every((name) => completedToolNames.has(name));
+
+    return json({
+      message: saved,
+      toolEvents,
+      truncated: ranOutOfTime && !cancelled && !deletionRequestComplete,
+      completedMutationKeys: [...completedMutationKeys],
+    });
 
 
   } catch (error) {
