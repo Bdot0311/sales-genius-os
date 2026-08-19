@@ -384,7 +384,7 @@ const TOOLS = [
     function: {
       name: "send_outreach",
       description:
-        "Send a brand new email to a lead when you have the subject and body in hand. To send a draft you already created, use send_drafts instead. In approval mode this pauses and shows the user an approve/reject card inline in the chat instead of sending.",
+        "Send a brand new email to a lead when you have the subject and body in hand. To send a draft you already created, use send_drafts instead. In approval mode this pauses and asks the user for confirmation in the chat instead of sending; when they reply confirming, call resolve_approvals to actually send it.",
       parameters: {
         type: "object",
         properties: {
@@ -1142,7 +1142,7 @@ serve(async (req) => {
             queued_for_approval: true,
             approval_id: approval.id,
             message:
-              "Nothing was sent. An approve/reject card is shown to the user right here in the chat — wait for their decision.",
+              "Nothing was sent. Tell the user in plain language what you are about to send and ask them to confirm in the chat. When they reply confirming, call resolve_approvals to send it.",
           },
         };
       }
@@ -1726,7 +1726,7 @@ serve(async (req) => {
             results,
             note: autonomous
               ? `Sent ${sentCount} of ${results.length} draft(s), rotated across ${usedFrom.length || 1} mailbox(es): ${usedFrom.join(", ") || pool[0].email}.`
-              : `Nothing was sent yet — ${queuedCount} approve/reject card(s) are shown to the user right here in the chat. Wait for their decision and never tell them to go to another page.`,
+              : `Nothing was sent yet — ${queuedCount} email(s) are paused waiting on the user. Ask them in the chat to confirm, then call resolve_approvals when they reply confirming. Never tell them to click a button or go to another page.`,
           };
         }
 
@@ -2034,7 +2034,7 @@ serve(async (req) => {
               queued_for_approval: true,
               approval_id: approval.id,
               message:
-                "Not enrolled yet. An approve/reject card is shown to the user right here in the chat.",
+                "Not enrolled yet. Ask the user to confirm in the chat, then call resolve_approvals when they reply confirming.",
             };
           }
           const { data, error } = await admin
@@ -2407,7 +2407,7 @@ serve(async (req) => {
               queued_for_approval: true,
               approval_id: approval.id,
               message:
-                "Nothing ran yet. An approve/reject card is shown to the user right here in the chat.",
+                "Nothing ran yet. Ask the user to confirm in the chat, then call resolve_approvals when they reply confirming.",
             };
           }
           const r = await invokeFn("agent-run", { mode: "autonomous", agentId: (config as any)?.id });
@@ -2435,7 +2435,7 @@ HOW TO WORK
 - When the user says something like "I just searched some leads, take it from here", find the relevant leads with list_leads first, then chain the work: enrich -> score -> draft -> send/queue. Do not ask permission for read-only or drafting steps; just do them and report back.
 - Do several tool calls in a row when needed. Prefer batching lead ids over one-at-a-time calls. For drafting, ALWAYS pass every lead id in a single draft_outreach call via lead_ids — never fire many parallel draft_outreach calls, that trips the rate limiter.
 - draft_outreach goal must be one of: introduction, follow-up, meeting, demo, proposal. Use "introduction" for first touches.
-- Drafts are auto-saved and rendered in the chat as reviewable cards with Send now / Schedule / Discard buttons. After drafting, tell the user the drafts are below for review — do not send until they ask.
+- Drafts are auto-saved and rendered in the chat as read-only preview cards. There are no buttons anywhere in this chat — everything happens through messages. After drafting, tell the user the drafts are below for review and ask them to reply when they want them sent or scheduled.
 - SENDING: when the user approves the drafts ("send them", "all good, send"), YOU send them — call send_drafts. You never need the subject or body to send a saved draft, only draft ids: use the draft_ids from your draft_outreach results, or call list_drafts (optionally with lead_ids or a name) to look them up again. Pass from_email when the user names one inbox, or from_emails to rotate across several. When they do not name one, leave both off: sends automatically rotate across every healthy connected mailbox (least-used domain first), which is what you want for outbound volume. Use list_mailboxes if you need to know which addresses are connected, and never claim you can only send from one domain. Never tell the user to click "Send now" themselves or to open another page, and never claim you lack the lead ids or draft contents — look them up with list_drafts instead.
 - SCHEDULING: you CAN send later. When the user asks for a future send ("tomorrow at 9", "Monday morning", "next week"), call schedule_drafts with the draft_ids and send_at_local set to their local wall-clock time with no offset (e.g. "9am today" -> send_at_local: "YYYY-MM-DDT09:00" for today's local date). Never convert to UTC yourself and never pass a bare UTC timestamp for a local time — the tool does the conversion. Use stagger_minutes when queuing several so they don't all fire at once. Confirm the exact date/time you queued, and mention it sends automatically. Use list_scheduled_emails to show what is queued and cancel_scheduled_email to call one back. Never say you cannot schedule and never tell the user to use the Schedule button themselves.
 - DELETING: you CAN delete emails AND lead records. Use delete_drafts to remove saved drafts (by draft_ids, lead_ids, or all_pending), delete_inbox_threads to remove inbox conversations (by thread_ids or match_email), and delete_leads to permanently remove saved lead records (by lead_ids, match_company or match_name — it also clears any drafts attached to them). Deletion is permanent, so only do it when the user asks, confirm briefly what you are about to delete if the request is broad ("delete all my drafts", "delete all my leads"), then do it and report the count. Never say you lack a way to delete leads and never tell the user to delete things manually in the UI.
@@ -2448,7 +2448,7 @@ HOW TO WORK
 - Be concise and specific. Short paragraphs, tight bullet lists, real numbers and names. No emojis, no filler.
 
 AUTONOMY
-This conversation is in ${autonomous ? "FULL AUTONOMY mode: sending, enrolling and full agent runs execute immediately." : "APPROVAL mode: anything that sends an email, enrolls a lead, or runs the full agent pauses for the user's approval instead of executing. When that happens an approve/reject card appears inline in this chat — say briefly what you want to do and ask them to approve it below. Never tell them to go to another tab or page."}
+This conversation is in ${autonomous ? "FULL AUTONOMY mode: sending, enrolling and full agent runs execute immediately." : "APPROVAL mode: anything that sends an email, enrolls a lead, or runs the full agent pauses for the user's approval instead of executing. Approval happens purely through chat messages — there are no approve/reject buttons. When work pauses, state plainly what is queued (who, how many, which mailbox) and ask them to reply to confirm, then STOP and wait. When their next message confirms ('yes', 'send it', 'go ahead', 'do it'), call list_pending_approvals then resolve_approvals with decision 'approve' (all: true when they confirmed everything) and report what actually happened. When they decline ('no', 'cancel that', 'hold off'), call resolve_approvals with decision 'reject'. Never mention buttons or cards to click, and never tell them to go to another tab or page."}
 ${autonomous ? "" : "If the user asks you to just get on with it without approving each step, tell them they can switch this conversation to full autonomy with the mode selector at the top of the chat."}
 
 COLD EMAIL RULES (apply to every draft you write or review)
