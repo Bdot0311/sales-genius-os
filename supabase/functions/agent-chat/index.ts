@@ -2459,7 +2459,10 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
       approvals_requested: toolEvents.filter((t) => !!t.approval_id).length,
     });
 
-    return json({ message: saved, toolEvents });
+    // `truncated` tells the client to auto-continue this turn instead of making
+    // the user type "continue" after every long batch.
+    return json({ message: saved, toolEvents, truncated: ranOutOfTime && !cancelled });
+
 
   } catch (error) {
     console.error("agent-chat error", error);
