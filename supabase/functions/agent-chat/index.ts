@@ -2096,7 +2096,78 @@ serve(async (req) => {
           return error ? { error: error.message } : { success: true };
         }
 
+        case "list_pending_approvals": {
+          const { data: rows } = await admin
+            .from("agent_approvals")
+            .select("id, kind, prospect_name, prospect_email, company_name, subject, body, created_at")
+            .eq("user_id", userId)
+            .eq("status", "pending")
+            .order("created_at", { ascending: false })
+            .limit(25);
+          toolEvents.push({
+            name,
+            label: "Checked what is waiting on you",
+            status: "ok",
+            detail: `${(rows ?? []).length} action(s) waiting for your go-ahead`,
+          });
+          return { pending: rows ?? [] };
+        }
+
+        case "resolve_approvals": {
+          const decision = args.decision === "approve" ? "approve" : "reject";
+          const ids: string[] = Array.isArray(args.approval_ids)
+            ? args.approval_ids.map((v: unknown) => String(v)).filter(Boolean)
+            : [];
+          if (!ids.length && args.all !== true) {
+            return {
+              error:
+                "Pass approval_ids or all: true. Use list_pending_approvals first to see what is waiting.",
+            };
+          }
+          let q = admin
+            .from("agent_approvals")
+            .select("*")
+            .eq("user_id", userId)
+            .eq("status", "pending")
+            .order("created_at", { ascending: true })
+            .limit(25);
+          if (ids.length) q = q.in("id", ids);
+          const { data: rows } = await q;
+          const pendingRows = rows ?? [];
+          if (!pendingRows.length) {
+            toolEvents.push({
+              name,
+              label: decision === "approve" ? "Nothing left to send" : "Nothing left to cancel",
+              status: "ok",
+              detail: "No pending approvals matched",
+            });
+            return { resolved: 0, note: "Nothing was pending." };
+          }
+          const outcomes: any[] = [];
+          for (const row of pendingRows) {
+            const r = await applyApproval(row, decision);
+            outcomes.push({
+              approval_id: row.id,
+              to: row.prospect_email,
+              status: r.status,
+              outcome: r.outcome,
+            });
+          }
+          const failedCount = outcomes.filter((o) => o.status === "pending").length;
+          toolEvents.push({
+            name,
+            label: decision === "approve" ? "Sent what you approved" : "Cancelled what you declined",
+            status: failedCount ? "error" : "ok",
+            detail:
+              decision === "approve"
+                ? `${outcomes.length - failedCount} of ${outcomes.length} executed${failedCount ? `, ${failedCount} failed` : ""}`
+                : `${outcomes.length} discarded`,
+          });
+          return { decision, resolved: outcomes.length, failed: failedCount, outcomes };
+        }
+
         case "get_agent_status": {
+
           const since = new Date();
           since.setHours(0, 0, 0, 0);
           const [{ count: pending }, { data: todayActions }] = await Promise.all([
