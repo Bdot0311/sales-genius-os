@@ -242,19 +242,23 @@ const AgentChat = () => {
       const MAX_AUTO_CONTINUES = 4;
       let attempt = 0;
       let truncated = true;
+      let completedMutationKeys: string[] = [];
       while (truncated && attempt <= MAX_AUTO_CONTINUES) {
         const { data, error } = await supabase.functions.invoke("agent-chat", {
           body: {
             threadId,
             message: content,
             timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            ...(attempt > 0 ? { autoContinue: true } : {}),
+            ...(attempt > 0 ? { autoContinue: true, completedMutationKeys } : {}),
             ...(agentId ? { agentId } : {}),
           },
         });
         if (error) throw error;
         if ((data as any)?.error) throw new Error((data as any).error);
         setMessages((prev) => [...prev, (data as any).message as ChatMessage]);
+        completedMutationKeys = Array.isArray((data as any)?.completedMutationKeys)
+          ? (data as any).completedMutationKeys.filter((value: unknown): value is string => typeof value === "string")
+          : completedMutationKeys;
         truncated = (data as any)?.truncated === true;
         attempt += 1;
       }
