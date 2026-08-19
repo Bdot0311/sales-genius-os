@@ -88,6 +88,10 @@ const AgentChat = () => {
   // What the agent is currently working on, so the status card can describe it.
   const [activeRequest, setActiveRequest] = useState<string | null>(null);
   const [activePass, setActivePass] = useState(0);
+  // True while the server still has a run in flight for this thread, even if
+  // this tab wasn't the one that started it.
+  const [runActive, setRunActive] = useState(false);
+
 
   const [stopping, setStopping] = useState(false);
   const [loading, setLoading] = useState(true);
