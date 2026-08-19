@@ -137,7 +137,21 @@ export const EmailPerformanceStats = () => {
         supabase.from("sending_accounts").select("id, email, status, reputation_score"),
       ]);
 
-      setEmails((e.data as SentEmail[]) ?? []);
+      // Warmup / seed traffic never counts as outreach performance: any send
+      // whose recipient is one of the user's own mailboxes (warmup pool,
+      // connected sending accounts, seed inboxes) is excluded from every stat.
+      const ownAddresses = new Set(
+        ((m.data as { email: string | null }[]) ?? [])
+          .map((x) => (x.email ?? "").trim().toLowerCase())
+          .filter(Boolean),
+      );
+      const isWarmupTraffic = (row: SentEmail) => {
+        const to = (row.to_email ?? "").trim().toLowerCase();
+        if (!to) return false;
+        return ownAddresses.has(to) || /(^|[.+_-])(warmup|seed)([.+_-]|@)/.test(to);
+      };
+
+      setEmails(((e.data as SentEmail[]) ?? []).filter((row) => !isWarmupTraffic(row)));
       setReplies((r.data as ReplyRow[]) ?? []);
       setDeals((d.data as DealRow[]) ?? []);
       setTemplateNames(Object.fromEntries(((t.data as { id: string; name: string }[]) ?? []).map((x) => [x.id, x.name])));
