@@ -630,7 +630,11 @@ const AgentChat = () => {
 
               {sending && (
                 <div className="space-y-2">
-                  <AgentWorkingIndicator />
+                  <AgentWorkingIndicator
+                    request={activeRequest}
+                    pass={activePass}
+                  />
+
                   <Button
                     size="sm"
                     variant="outline"
