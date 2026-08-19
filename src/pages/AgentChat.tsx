@@ -670,29 +670,10 @@ const AgentChat = () => {
                               </p>
                             )}
                             {pending ? (
-                              <div className="flex gap-2 pt-1">
-                                <Button
-                                  size="sm"
-                                  className="gap-1.5"
-                                  disabled={resolving === e.approval_id}
-                                  onClick={() => handleApprovalDecision(e.approval_id!, "approve")}
-                                >
-                                  {resolving === e.approval_id ? (
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                  ) : (
-                                    <CheckCircle2 className="w-3.5 h-3.5" />
-                                  )}
-                                  Approve
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  disabled={resolving === e.approval_id}
-                                  onClick={() => handleApprovalDecision(e.approval_id!, "reject")}
-                                >
-                                  Reject
-                                </Button>
-                              </div>
+                              <p className="text-xs text-amber-300/90">
+                                Reply in the chat to confirm — say "send it" to go ahead or "cancel
+                                that" to drop it.
+                              </p>
                             ) : (
                               <Badge
                                 variant="outline"
@@ -706,6 +687,7 @@ const AgentChat = () => {
                                 {status === "approved" ? "Approved" : "Rejected"}
                               </Badge>
                             )}
+
                           </div>
                         );
                       })}
