@@ -2250,6 +2250,14 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
     const messages: any[] = [
       { role: "system", content: systemPrompt },
       ...(history ?? []).map((m) => ({ role: m.role, content: m.content })),
+      ...(autoContinue
+        ? [{
+            role: "user",
+            content:
+              "Continue the previous request from where you stopped. Do not repeat work that is already done, and do not ask for confirmation of what was already agreed.",
+          }]
+        : []),
+
     ];
 
     let finalText = "";
