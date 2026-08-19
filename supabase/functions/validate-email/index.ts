@@ -59,6 +59,36 @@ async function checkMx(domain: string): Promise<boolean> {
 }
 
 import { rateLimit, rateLimitResponse, clientIp } from "../_shared/rate-limit.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
+
+// Blocklist lives in public.signup_blocklist so it can be curated from the
+// admin side. Cached for 5 minutes; fails open if the DB is unreachable.
+let blCache: { at: number; domains: Set<string>; patterns: RegExp[] } | null = null;
+async function loadBlocklist(): Promise<{ domains: Set<string>; patterns: RegExp[] }> {
+  if (blCache && Date.now() - blCache.at < 300_000) return blCache;
+  const empty = { domains: new Set<string>(), patterns: [] as RegExp[] };
+  try {
+    const db = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { persistSession: false, autoRefreshToken: false } },
+    );
+    const { data, error } = await db.from("signup_blocklist").select("kind,value");
+    if (error || !data) return empty;
+    const domains = new Set<string>();
+    const patterns: RegExp[] = [];
+    for (const row of data as Array<{ kind: string; value: string }>) {
+      if (row.kind === "domain") domains.add(row.value.toLowerCase());
+      else if (row.kind === "local_pattern") {
+        try { patterns.push(new RegExp(row.value)); } catch { /* skip bad regex */ }
+      }
+    }
+    blCache = { at: Date.now(), domains, patterns };
+    return blCache;
+  } catch {
+    return empty;
+  }
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
