@@ -29,6 +29,7 @@ import {
   Mail,
   MessageSquareReply,
   MousePointerClick,
+  RefreshCw,
   Server,
   Target,
   Workflow,
