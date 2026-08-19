@@ -454,6 +454,33 @@ const TOOLS = [
   {
     type: "function",
     function: {
+      name: "list_pending_approvals",
+      description:
+        "List the actions that are paused waiting for the user's go-ahead (emails to send, sequence enrollments, agent runs). Use this when the user replies with a confirmation like \"yes\", \"send it\", \"go ahead\" or \"cancel that\" so you know exactly what they are approving.",
+      parameters: { type: "object", properties: {} },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "resolve_approvals",
+      description:
+        "Carry out (or cancel) actions that were paused for approval, after the user confirms in chat. Pass decision 'approve' to execute them or 'reject' to discard them. Give approval_ids for specific items or all: true for everything pending. Only call this when the user's newest message clearly confirms or declines.",
+      parameters: {
+        type: "object",
+        properties: {
+          decision: { type: "string", enum: ["approve", "reject"], description: "approve executes, reject discards" },
+          approval_ids: { type: "array", items: { type: "string" }, description: "Specific approval ids from list_pending_approvals" },
+          all: { type: "boolean", description: "Apply to every pending approval" },
+        },
+        required: ["decision"],
+      },
+    },
+  },
+
+  {
+    type: "function",
+    function: {
       name: "find_leads",
       description:
         "Source brand new leads from the lead network and save them. Pass `query` with who the user asked for (any role/industry/company type, in plain English) and the search runs broad on that, using the saved ICP only to score and qualify the results — not as a hard filter. Omit `query` to instead source more people matching the saved ICP. Every search excludes people already in the account and advances the result page, so repeated calls return different people. Use this when the user asks to find/source/prospect new leads.",
