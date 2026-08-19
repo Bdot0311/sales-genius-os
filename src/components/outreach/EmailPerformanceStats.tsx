@@ -29,6 +29,7 @@ import {
   Mail,
   MessageSquareReply,
   MousePointerClick,
+  RefreshCw,
   Server,
   Target,
   Workflow,
@@ -102,6 +103,11 @@ function rateBadge(rate: number, type: "open" | "reply" | "click") {
   return <Badge variant="outline">Needs Work</Badge>;
 }
 
+/** A reply counts as positive only for the real stored classification values. */
+function isPositiveReply(r: ReplyRow) {
+  return r.intent_classification === "high_intent" || (r.intent_score ?? 0) >= 70;
+}
+
 export const EmailPerformanceStats = () => {
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState(30);
@@ -128,7 +134,7 @@ export const EmailPerformanceStats = () => {
           .limit(5000),
         supabase
           .from("reply_analysis")
-          .select("id, intent_classification, intent_score, requires_human_action, created_at")
+          .select("id, intent_classification, intent_score, requires_human_action, created_at, sent_email_id")
           .gte("created_at", since)
           .limit(2000),
         supabase.from("deals").select("id, stage, value, created_at").gte("created_at", since).limit(2000),
@@ -151,8 +157,14 @@ export const EmailPerformanceStats = () => {
         return ownAddresses.has(to) || /(^|[.+_-])(warmup|seed)([.+_-]|@)/.test(to);
       };
 
-      setEmails(((e.data as SentEmail[]) ?? []).filter((row) => !isWarmupTraffic(row)));
-      setReplies((r.data as ReplyRow[]) ?? []);
+      const allEmails = (e.data as SentEmail[]) ?? [];
+      const realEmails = allEmails.filter((row) => !isWarmupTraffic(row));
+      const warmupEmailIds = new Set(allEmails.filter(isWarmupTraffic).map((row) => row.id));
+      setEmails(realEmails);
+      // Replies tied to a warmup/seed send are not outreach replies.
+      setReplies((((r.data as ReplyRow[]) ?? []) as (ReplyRow & { sent_email_id?: string | null })[]).filter(
+        (row) => !row.sent_email_id || !warmupEmailIds.has(row.sent_email_id),
+      ));
       setDeals((d.data as DealRow[]) ?? []);
       setTemplateNames(Object.fromEntries(((t.data as { id: string; name: string }[]) ?? []).map((x) => [x.id, x.name])));
       setSequenceNames(Object.fromEntries(((s.data as { id: string; name: string }[]) ?? []).map((x) => [x.id, x.name])));
@@ -202,7 +214,7 @@ export const EmailPerformanceStats = () => {
       if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
       void reload.current();
     };
-    const id = window.setInterval(tick, 30_000);
+    const id = window.setInterval(tick, liveStatus === "live" ? 30_000 : 10_000);
     const onVisible = () => {
       if (document.visibilityState === "visible") tick();
     };
@@ -213,7 +225,7 @@ export const EmailPerformanceStats = () => {
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("focus", tick);
     };
-  }, []);
+  }, [liveStatus]);
 
   // Monitor connected inboxes for delivery-failure notices so bounces show up
   // here without waiting for a manual inbox sync.
@@ -248,7 +260,7 @@ export const EmailPerformanceStats = () => {
     const failed = emails.filter((e) => e.status === "failed").length + bounced;
     const scheduled = emails.filter((e) => e.status === "scheduled").length;
 
-    const positive = replies.filter((r) => (r.intent_score ?? 0) >= 70 || r.intent_classification === "interested").length;
+    const positive = replies.filter((r) => isPositiveReply(r)).length;
     const won = deals.filter((d) => (d.stage || "").toLowerCase() === "won" || (d.stage || "").toLowerCase() === "closed_won");
     return {
       sent: sent.length,
@@ -402,7 +414,12 @@ export const EmailPerformanceStats = () => {
             </Button>
           ))}
         </div>
-        <LiveIndicator status={liveStatus} lastUpdate={lastUpdate} />
+        <div className="flex items-center gap-2">
+          <LiveIndicator status={liveStatus} lastUpdate={lastUpdate} />
+          <Button size="sm" variant="ghost" onClick={() => void reload.current()} aria-label="Refresh analytics">
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
@@ -443,7 +460,7 @@ export const EmailPerformanceStats = () => {
             setDrill({
               title: "Positive replies",
               description: "Replies classified as interested or scored 70+ intent.",
-              replyRows: replies.filter((r) => (r.intent_score ?? 0) >= 70 || r.intent_classification === "interested"),
+              replyRows: replies.filter((r) => isPositiveReply(r)),
             })
           }
         />
@@ -535,7 +552,7 @@ export const EmailPerformanceStats = () => {
                     setDrill({
                       title: "Positive replies",
                       description: "Replies classified interested or scored 70+.",
-                      replyRows: replies.filter((r) => (r.intent_score ?? 0) >= 70 || r.intent_classification === "interested"),
+                      replyRows: replies.filter((r) => isPositiveReply(r)),
                     })
                   }
                 />
@@ -796,7 +813,7 @@ export const EmailPerformanceStats = () => {
                 setDrill({
                   title: "Positive replies",
                   description: "Interested or 70+ intent score.",
-                  replyRows: replies.filter((r) => (r.intent_score ?? 0) >= 70 || r.intent_classification === "interested"),
+                  replyRows: replies.filter((r) => isPositiveReply(r)),
                 })
               }
             />
