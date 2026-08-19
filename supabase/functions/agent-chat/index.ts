@@ -93,6 +93,8 @@ const MUTATING_TOOLS = new Set([
   "find_leads",
   "enroll_lead_in_sequence",
   "run_full_agent",
+  "resolve_approvals",
+
 ]);
 
 // Read-only, DB-only tools: safe to execute concurrently within one model step.
