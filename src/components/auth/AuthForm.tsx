@@ -240,7 +240,16 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        // The database rejects disposable / automated addresses during signup.
+        // Supabase surfaces that as a generic "Database error saving new user".
+        if (/database error/i.test(error.message)) {
+          throw new Error(
+            "That email address can't be used to sign up. Please use a real, permanent work address.",
+          );
+        }
+        throw error;
+      }
 
       if (data.user) {
         // Track signup conversion in Google Analytics
