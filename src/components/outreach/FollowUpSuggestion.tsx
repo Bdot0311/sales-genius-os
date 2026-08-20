@@ -12,6 +12,10 @@ interface FollowUpSuggestionProps {
   leadEmail: string;
   companyName: string;
   originalSubject: string;
+  /** The email that was actually sent, so the follow-up can add rather than restate. */
+  originalBody?: string;
+  /** The sender's name. Without it the draft signed off as the LEAD. */
+  senderName?: string;
   jobTitle?: string;
   industry?: string;
   companyDescription?: string;
@@ -33,6 +37,8 @@ export const FollowUpSuggestion = ({
   leadEmail,
   companyName,
   originalSubject,
+  originalBody,
+  senderName,
   jobTitle,
   industry,
   companyDescription,
@@ -59,6 +65,8 @@ export const FollowUpSuggestion = ({
           leadName,
           companyName,
           originalSubject,
+          originalBody,
+          senderName,
           leadEmail,
           jobTitle,
           industry,

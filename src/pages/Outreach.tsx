@@ -362,6 +362,8 @@ const Outreach = () => {
     leadEmail: string;
     companyName: string;
     subject: string;
+    /** The email that was actually sent, so a follow-up can avoid restating it. */
+    body: string;
     jobTitle?: string;
     industry?: string;
     companyDescription?: string;
@@ -1662,6 +1664,7 @@ Return ONLY the corrected email body. No subject line. No explanation. No "Here 
         leadEmail: lead.contact_email,
         companyName: lead.company_name,
         subject: subjectLine,
+        body: fullEmailBody,
         jobTitle: lead.job_title,
         industry: lead.industry,
         companyDescription: lead.company_description,
@@ -1701,22 +1704,34 @@ Return ONLY the corrected email body. No subject line. No explanation. No "Here 
               originalSubject: sentLeadInfo.subject,
               jobTitle: sentLeadInfo.jobTitle,
               industry: sentLeadInfo.industry,
+              // Without these the follow-up signed off with the LEAD's first
+              // name, and had no way to avoid restating what touch 1 said.
+              senderName: getSenderName(),
+              originalBody: sentLeadInfo.body,
             },
           });
-          if (fuData) {
+          // The function answers { suggestion: {...} }. This read one level too
+          // high, so suggestedBody was always undefined and every auto-queued
+          // draft was filed with an empty body — invisible, because the insert
+          // succeeded and the toast still claimed success.
+          const followUp = fuData?.suggestion;
+          if (followUp?.suggestedBody) {
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
               await supabase.from('email_drafts').insert({
                 user_id: user.id,
                 lead_id: sentLeadInfo.leadId,
-                subject: `[FU] ${fuData.suggestedSubject || 're: ' + sentLeadInfo.subject}`,
-                body: fuData.suggestedBody || '',
+                subject: `[FU] ${followUp.suggestedSubject || 're: ' + sentLeadInfo.subject}`,
+                body: followUp.suggestedBody,
                 tone: emailTone,
                 updated_at: new Date().toISOString(),
               });
               toast({ title: "Follow-up auto-queued to drafts for Day 3" });
               loadCounts();
             }
+          } else if (fuData?.error) {
+            // Say so rather than silently filing nothing.
+            toast({ title: "Could not draft a follow-up", description: fuData.error });
           }
         } catch (_) {
           // Non-fatal — don't block the send success flow
@@ -2207,6 +2222,8 @@ For logos, use HTML:
             leadEmail={lastSentEmailInfo.leadEmail}
             companyName={lastSentEmailInfo.companyName}
             originalSubject={lastSentEmailInfo.subject}
+            originalBody={lastSentEmailInfo.body}
+            senderName={getSenderName()}
             jobTitle={lastSentEmailInfo.jobTitle}
             industry={lastSentEmailInfo.industry}
             companyDescription={lastSentEmailInfo.companyDescription}
