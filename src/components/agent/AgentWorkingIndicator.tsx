@@ -13,7 +13,13 @@ const GENERIC_PHASES = [
  * Task-shaped step lists. The first matching rule wins, so the checklist
  * describes the work the user actually asked for instead of a generic script.
  */
-const TASK_RULES: { test: RegExp; label: string; phases: string[] }[] = [
+const TASK_RULES: {
+  test: RegExp;
+  label: string;
+  phases: string[];
+  /** Footer line describing this specific kind of work. */
+  note: string;
+}[] = [
   {
     test: /\b(delete|remove|clear|wipe|discard|trash)\b/i,
     label: "Deleting what you asked for",
@@ -23,6 +29,7 @@ const TASK_RULES: { test: RegExp; label: string; phases: string[] }[] = [
       "Deleting them",
       "Confirming they're gone",
     ],
+    note: "Only the records you named get removed — nothing else is touched.",
   },
   {
     test: /\b(schedule|send later|9\s?am|tomorrow|queue)\b/i,
@@ -33,6 +40,7 @@ const TASK_RULES: { test: RegExp; label: string; phases: string[] }[] = [
       "Setting send times in your timezone",
       "Confirming the queue",
     ],
+    note: "Send times are set in your timezone, so nothing goes out at odd hours.",
   },
   {
     test: /\b(send|blast|fire off|email them|reply)\b/i,
@@ -43,6 +51,7 @@ const TASK_RULES: { test: RegExp; label: string; phases: string[] }[] = [
       "Checking the drafts before send",
       "Sending and logging each one",
     ],
+    note: "Each send is checked against the mailbox and logged as it goes out.",
   },
   {
     test: /\b(draft|write|compose|rewrite|personali[sz]e)\b/i,
@@ -53,6 +62,7 @@ const TASK_RULES: { test: RegExp; label: string; phases: string[] }[] = [
       "Writing in your voice",
       "Checking quality and details",
     ],
+    note: "Each draft is grounded in real lead context — no invented numbers.",
   },
   {
     test: /\b(find|search|source|prospect|leads?|companies|company)\b/i,
@@ -63,6 +73,7 @@ const TASK_RULES: { test: RegExp; label: string; phases: string[] }[] = [
       "Filtering against your ICP",
       "Saving the matches",
     ],
+    note: "Anyone already in your account is skipped, so results stay fresh.",
   },
   {
     test: /\b(enrich|verify|email address|phone|score|scoring)\b/i,
@@ -73,6 +84,7 @@ const TASK_RULES: { test: RegExp; label: string; phases: string[] }[] = [
       "Verifying emails",
       "Scoring against your ICP",
     ],
+    note: "Contact details are verified before they are saved to a lead.",
   },
   {
     test: /\b(update|change|set|label|stage|tag|move)\b/i,
@@ -83,6 +95,7 @@ const TASK_RULES: { test: RegExp; label: string; phases: string[] }[] = [
       "Applying the changes",
       "Confirming what changed",
     ],
+    note: "Changes are applied record by record, then confirmed back to you.",
   },
   {
     test: /\b(how many|report|stats|analytics|open rate|reply rate|performance|show|list)\b/i,
@@ -93,6 +106,7 @@ const TASK_RULES: { test: RegExp; label: string; phases: string[] }[] = [
       "Crunching the numbers",
       "Writing up the answer",
     ],
+    note: "Figures come straight from your account data, not estimates.",
   },
 ];
 
@@ -126,13 +140,16 @@ export const AgentWorkingIndicator = ({
     return () => clearInterval(tick);
   }, []);
 
-  const { heading, phases } = useMemo(() => {
+  const { heading, phases, note } = useMemo(() => {
     const rule = request
       ? TASK_RULES.find((r) => r.test.test(request))
       : undefined;
     return {
       heading: rule?.label ?? "Working on it",
       phases: [...(rule?.phases ?? GENERIC_PHASES), "Wrapping up"],
+      note:
+        rule?.note ??
+        "Reading the request, pulling the records it needs, then acting on them.",
     };
   }, [request]);
 
@@ -212,9 +229,7 @@ export const AgentWorkingIndicator = ({
             </div>
 
             <p className="text-[11px] leading-snug text-muted-foreground/70">
-              {pass > 0
-                ? "Large batch — continuing from where the last pass stopped."
-                : "Working through your leads, drafts, and sends step by step."}
+              {pass > 0 ? `${note} Continuing from where the last pass stopped.` : note}
             </p>
 
           </div>
