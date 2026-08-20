@@ -6,6 +6,7 @@ import { Users, UserCheck, Lock, TrendingUp, DollarSign, Clock, RefreshCw } from
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { LastCronRun } from "@/components/admin/LastCronRun";
+import { AiGatewayUsageCard } from "@/components/admin/AiGatewayUsageCard";
 
 interface DashboardStats {
   total_users: number;
@@ -244,6 +245,7 @@ export const AdminDashboard = () => {
             </Card>
           );
         })}
+        <AiGatewayUsageCard />
       </div>
     </div>
   );
