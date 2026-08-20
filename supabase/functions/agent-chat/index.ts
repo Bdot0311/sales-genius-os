@@ -2518,14 +2518,27 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
       if (!res.ok) {
         const detail = await res.text();
         console.error("AI gateway error", res.status, detail.slice(0, 500));
+        let upstreamMessage = "";
+        try {
+          const parsed = JSON.parse(detail);
+          upstreamMessage = parsed?.error?.message ?? parsed?.message ?? "";
+        } catch {
+          upstreamMessage = "";
+        }
+        const blockedNote = upstreamMessage
+          ? `AI access is blocked: ${upstreamMessage}`
+          : "AI access is blocked — the workspace AI credit limit was reached or Lovable AI is turned off. Raise the limit or add credits, then reply \"continue\".";
         failureNote =
           res.status === 429
             ? "I'm being rate limited right now. Any work above is saved — wait a few seconds and reply \"continue\"."
             : res.status === 402
               ? "AI credits are exhausted, so I can't continue this turn. Add credits in Settings and reply \"continue\"."
-              : "The AI service returned an error, so I stopped here. Any work above is saved — reply \"continue\" to retry.";
+              : res.status === 403
+                ? `${blockedNote} Any work above is saved.`
+                : `The AI service returned an error (${res.status}${upstreamMessage ? `: ${upstreamMessage}` : ""}), so I stopped here. Any work above is saved — reply "continue" to retry.`;
         break;
       }
+
 
       const data = await res.json();
       const choice = data.choices?.[0]?.message;
