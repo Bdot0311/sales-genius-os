@@ -42,6 +42,8 @@ import { useWhiteLabel } from "@/hooks/use-white-label";
 import { useSearchCredits } from "@/hooks/use-search-credits";
 import { useLiveCrmIndicators } from "@/hooks/use-live-crm-indicators";
 import { useDemoMode } from "@/hooks/use-demo-mode";
+import { ensureSession, startSessionKeeper } from "@/lib/session-keeper";
+
 
 
 interface DashboardLayoutProps {
@@ -103,26 +105,43 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     : null;
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        navigate("/auth");
-      } else {
-        setUser(session.user);
-      }
+    let cancelled = false;
+    startSessionKeeper();
+
+    // Never bounce to /auth on a merely-expired access token: give the refresh
+    // token a real chance first (backgrounded PWAs come back with stale tokens).
+    void ensureSession().then((session) => {
+      if (cancelled) return;
+      if (!session) navigate("/auth");
+      else setUser(session.user);
     });
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) {
-        navigate("/auth");
-      } else {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
         setUser(session.user);
+        return;
       }
+      // Only an explicit sign-out ends the session. Any other null-session
+      // event (failed background refresh, offline blip) is retried instead.
+      if (event === "SIGNED_OUT") {
+        navigate("/auth");
+        return;
+      }
+      void ensureSession().then((recovered) => {
+        if (cancelled) return;
+        if (recovered) setUser(recovered.user);
+        else navigate("/auth");
+      });
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, [navigate]);
+
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
