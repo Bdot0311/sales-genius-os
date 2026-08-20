@@ -1225,6 +1225,55 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
 
     email = cleanGeneratedEmail(email, preserveSubject);
 
+    // Invented figures and stand-in signatures are the two failures that keep
+    // reaching real prospects, and prompt text alone never stopped either. The
+    // draft is checked, regenerated once, and only then reported as failed —
+    // shipping a metric the sender cannot back is worse than no draft.
+    const proofForClaims = [socialProof, businessDescription, sanitizedNotes]
+      .filter(Boolean)
+      .join(' ');
+    let claims = findUnverifiedClaims(email, proofForClaims);
+    if (claims.length) {
+      console.warn(`[generate-email] fabricated claims: ${claims.join(', ')} — regenerating`);
+      const claimRetry = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: `${userPrompt}\n${noFabricationRetry(claims)}` },
+          ],
+          temperature: 0.4,
+        }),
+      });
+      if (claimRetry.ok) {
+        const d = await claimRetry.json();
+        const second = cleanGeneratedEmail((d.choices?.[0]?.message?.content || '').trim(), preserveSubject);
+        if (second && !findUnverifiedClaims(second, proofForClaims).length && !hasPlaceholder(second)) {
+          email = second;
+          claims = [];
+        } else {
+          claims = findUnverifiedClaims(second || email, proofForClaims);
+        }
+      }
+    }
+
+    // A stand-in identity is mechanical, so it is filled in rather than retried.
+    const standIns = findSenderStandIns(email);
+    if (standIns.length) {
+      console.warn(`[generate-email] sender stand-in in draft: ${standIns.join(', ')}`);
+      email = fillSenderStandIns(email, senderName, senderCompany);
+    }
+
+    if (claims.length) {
+      console.error(`[generate-email] fabricated claims survived retry: ${claims.join(', ')}`);
+      return new Response(JSON.stringify({
+        error: `The draft kept inventing figures it cannot back (${claims.join(', ')}), so it was not saved. Add a verified proof point in your business context, or generate again.`,
+        error_code: 'fabricated_metric',
+      }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     // On introduction emails the subject is preserved inside the body, so pull
     // it from there; every other goal carries it on the request. The rubric
     // scores subject and body together and reads worse without it.
