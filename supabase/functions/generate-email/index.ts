@@ -7,7 +7,18 @@ import { composeSkillContext, skillNamesUsed } from "../_shared/email-skills.ts"
 import { isWeak, scoreEmail } from "../_shared/email-quality.ts";
 // The writing rules live in one module so the three copies that used to exist
 // cannot drift apart — see _shared/email-rules.ts.
-import { IMMUTABLE_EDIT_RULES, NO_PLACEHOLDER_RETRY, bannedPhrasesBlock, findPlaceholders, hasPlaceholder } from "../_shared/email-rules.ts";
+import {
+  IMMUTABLE_EDIT_RULES,
+  NO_PLACEHOLDER_RETRY,
+  NO_FABRICATED_METRICS_RULE,
+  bannedPhrasesBlock,
+  fillSenderStandIns,
+  findPlaceholders,
+  findSenderStandIns,
+  findUnverifiedClaims,
+  hasPlaceholder,
+  noFabricationRetry,
+} from "../_shared/email-rules.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {
   briefToPromptBlock,
