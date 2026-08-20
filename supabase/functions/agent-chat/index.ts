@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { playbookSystemRules } from "../_shared/cold-email-playbook.ts";
+import { isWeak, rubricFeedback, scoreEmail } from "../_shared/email-quality.ts";
+import { findPlaceholders, hasPlaceholder } from "../_shared/email-rules.ts";
 import { buildIcpContext, icpSearchBody } from "../_shared/icp-context.ts";
 import { captureServerEvent } from "../_shared/posthog.ts";
 import { getSignatureHtml, appendSignatureToBody } from "../_shared/signature.ts";
@@ -536,7 +538,14 @@ serve(async (req) => {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+
+  // Recipients the model has already been asked to rewrite for, this request.
+  // One rewrite per recipient: without a bound, a model that cannot lift the
+  // score would be told to try again forever, burning tokens on every turn and
+  // never sending anything.
+  const rewriteAsked = new Set<string>();
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -1103,11 +1112,67 @@ serve(async (req) => {
       body: string;
       mailbox: Mailbox;
       toolName: string;
+      /**
+       * True when the model composed this subject and body itself, rather than
+       * sending a stored draft that generate-email already scored.
+       *
+       * Only model-authored copy pays for a rubric call. Re-scoring a bulk send
+       * of stored drafts would add one LLM round-trip per recipient to buy a
+       * verdict that was already bought at generation time.
+       */
+      modelAuthored: boolean;
     }): Promise<{ sent: boolean; summary: Record<string, unknown>; result?: any }> => {
-      const { leadId, to, subject, body, mailbox, toolName } = opts;
+      const { leadId, to, subject, body, mailbox, toolName, modelAuthored } = opts;
       if (!subject || !body) return { sent: false, summary: { error: "Subject and body are required" } };
 
-      if (!autonomous) {
+      // Quality gate. Drafts made by draft_outreach come from generate-email,
+      // which already scores them — but send_outreach lets the model compose a
+      // subject and body inline and hand them straight to send-email, so that
+      // copy reached real prospects having passed nothing.
+      //
+      // An unfilled merge token is not a judgement call, so it is refused in
+      // both modes. Naming the tokens lets the model fix and re-call rather
+      // than guess at what went wrong.
+      if (hasPlaceholder(subject) || hasPlaceholder(body)) {
+        const found = [...findPlaceholders(subject), ...findPlaceholders(body)];
+        return {
+          sent: false,
+          summary: {
+            error: `The draft still has unfilled placeholders: ${found.join(", ")}. Rewrite it with the real values and call this tool again.`,
+            placeholders: found,
+          },
+        };
+      }
+
+      // A weak score buys one rewrite, informed by the rubric's own objections.
+      // The second failure stops trying: it queues for a human instead of
+      // sending, which matches what agent-run does rather than looping.
+      //
+      // A null score means no verdict was available — the rubric is plan-gated
+      // to growth and above — and never blocks a send.
+      let forceApproval = false;
+      const rubric = modelAuthored
+        ? await scoreEmail(supabaseUrl, authHeader, anonKey, { subject, body })
+        : null;
+      if (isWeak(rubric)) {
+        const attemptKey = `${leadId ?? to}`;
+        if (!rewriteAsked.has(attemptKey)) {
+          rewriteAsked.add(attemptKey);
+          return {
+            sent: false,
+            summary: {
+              needs_rewrite: true,
+              score: rubric!.overall,
+              message: `This draft scored ${rubric!.overall}/100, below the bar for sending. Rewrite it addressing the points below, then call this tool again with the new subject and body.`,
+              feedback: rubricFeedback(rubric!),
+            },
+          };
+        }
+        // Already rewritten once and still weak. Do not send it autonomously.
+        forceApproval = true;
+      }
+
+      if (!autonomous || forceApproval) {
         const { data: approval, error } = await admin
           .from("agent_approvals")
           .insert({
@@ -1121,7 +1186,9 @@ serve(async (req) => {
             company_name: opts.companyName,
             subject,
             body,
-            reasoning: `Drafted in AI SDR chat — send from ${mailbox.email} once approved`,
+            reasoning: forceApproval
+              ? `Drafted in AI SDR chat. Held for approval: still scored below the quality bar after a rewrite. Review it before sending from ${mailbox.email}.`
+              : `Drafted in AI SDR chat — send from ${mailbox.email} once approved`,
             metadata: { source: "agent_chat", thread_id: threadId, from_email: mailbox.email },
           })
           .select("id")
@@ -1129,7 +1196,7 @@ serve(async (req) => {
         if (error) return { sent: false, summary: { error: error.message } };
         toolEvents.push({
           name: toolName,
-          label: "Waiting for your approval",
+          label: forceApproval ? "Held for review — low quality score" : "Waiting for your approval",
           status: "queued",
           detail: `Send "${subject}" to ${to} from ${mailbox.email}`,
           approval_id: approval.id,
@@ -1708,6 +1775,8 @@ serve(async (req) => {
               body: String(d.body ?? ""),
               mailbox,
               toolName: name,
+              // Stored drafts come from generate-email, which scored them.
+              modelAuthored: false,
             });
             results.push({ draft_id: d.id, lead: label, to, from: mailbox.email, ...outcome.summary });
             if (outcome.sent) {
@@ -1978,6 +2047,8 @@ serve(async (req) => {
             body,
             mailbox,
             toolName: name,
+            // The model wrote this subject and body in the chat turn.
+            modelAuthored: true,
           });
           return { from: mailbox.email, ...outcome.summary, ...(outcome.result ?? {}) };
         }
@@ -2436,6 +2507,7 @@ HOW TO WORK
 - Do several tool calls in a row when needed. Prefer batching lead ids over one-at-a-time calls. For drafting, ALWAYS pass every lead id in a single draft_outreach call via lead_ids — never fire many parallel draft_outreach calls, that trips the rate limiter.
 - draft_outreach goal must be one of: introduction, follow-up, meeting, demo, proposal. Use "introduction" for first touches.
 - Drafts are auto-saved and rendered in the chat as read-only preview cards. There are no buttons anywhere in this chat — everything happens through messages. After drafting, tell the user the drafts are below for review and ask them to reply when they want them sent or scheduled.
+- QUALITY: send_outreach scores anything you wrote yourself before it goes out. If it answers needs_rewrite, the email was NOT sent: rewrite it against the feedback it returned and call send_outreach again with the new subject and body. Do not re-send the same text, do not tell the user it went out, and do not work around the check by saving it as a draft and sending that instead. If it answers with unfilled placeholders, fill in the real values and call again.
 - SENDING: when the user approves the drafts ("send them", "all good, send"), YOU send them — call send_drafts. You never need the subject or body to send a saved draft, only draft ids: use the draft_ids from your draft_outreach results, or call list_drafts (optionally with lead_ids or a name) to look them up again. Pass from_email when the user names one inbox, or from_emails to rotate across several. When they do not name one, leave both off: sends automatically rotate across every healthy connected mailbox (least-used domain first), which is what you want for outbound volume. Use list_mailboxes if you need to know which addresses are connected, and never claim you can only send from one domain. Never tell the user to click "Send now" themselves or to open another page, and never claim you lack the lead ids or draft contents — look them up with list_drafts instead.
 - SCHEDULING: you CAN send later. When the user asks for a future send ("tomorrow at 9", "Monday morning", "next week"), call schedule_drafts with the draft_ids and send_at_local set to their local wall-clock time with no offset (e.g. "9am today" -> send_at_local: "YYYY-MM-DDT09:00" for today's local date). Never convert to UTC yourself and never pass a bare UTC timestamp for a local time — the tool does the conversion. Use stagger_minutes when queuing several so they don't all fire at once. Confirm the exact date/time you queued, and mention it sends automatically. Use list_scheduled_emails to show what is queued and cancel_scheduled_email to call one back. Never say you cannot schedule and never tell the user to use the Schedule button themselves.
 - DELETING: you CAN delete emails AND lead records. Use delete_drafts to remove saved drafts (by draft_ids, lead_ids, or all_pending), delete_inbox_threads to remove inbox conversations (by thread_ids or match_email), and delete_leads to permanently remove saved lead records (by lead_ids, match_company or match_name — it also clears any drafts attached to them). Deletion is permanent, so only do it when the user asks, confirm briefly what you are about to delete if the request is broad ("delete all my drafts", "delete all my leads"), then do it and report the count. Never say you lack a way to delete leads and never tell the user to delete things manually in the UI.

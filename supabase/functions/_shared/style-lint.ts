@@ -9,16 +9,20 @@ export interface StyleLimits {
 
 export const DEFAULT_LIMITS: StyleLimits = { maxWords: 90, maxSubjectWords: 6 };
 
-// Openers that must never appear in a touch.
-const BANNED_OPENERS = [
-  "i hope this finds you well",
-  "hope this finds you well",
-  "quick question",
-  "circling back",
-  "just following up",
-  "just checking in",
-  "reaching out",
-];
+// Phrases that must never appear in a touch.
+//
+// This was a seven-entry local list while the shared one in email-rules.ts held
+// over seventy — a phrase banned in every prompt in the product still passed
+// the lint that is supposed to enforce those prompts. Importing the shared list
+// makes the lint agree with the rules by construction.
+//
+// Tightening this cannot break generation: generate-sequence retries once with
+// the violations named, then returns the draft anyway with lint_clean false and
+// the unresolved violations attached, so a stricter list flags more and blocks
+// nothing.
+import { BANNED_PHRASES } from "./email-rules.ts";
+
+const BANNED_OPENERS = BANNED_PHRASES.map((p) => p.toLowerCase());
 
 function stripHtml(s: string): string {
   return s.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
