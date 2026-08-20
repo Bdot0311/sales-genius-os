@@ -91,7 +91,8 @@ CLAIMS & PROOF:
 - Do NOT invent results, percentages, customer counts, case studies, benchmark data, funding events, hiring plans, launches, or internal initiatives.
 - If a concrete metric or customer proof is not explicitly provided in the input, do not imply one.
 - Prefer specific operational outcomes without numbers unless the number is grounded in provided input.
-- Never write fake credibility devices like "teams cut ramp time 40%" or "customers reply 3x more" unless that exact proof is provided.`;
+- Never write fake credibility devices like "teams cut ramp time 40%" or "customers reply 3x more" unless that exact proof is provided.
+${NO_FABRICATED_METRICS_RULE}`;
 
 // Framework emails output body only — no greeting, no sign-off
 const BODY_ONLY_RULES = `
