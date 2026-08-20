@@ -40,6 +40,19 @@ export const BANNED_PHRASES: string[] = [
   "next-gen", "game-changing", "all-in-one",
   "synergy", "leverage", "optimize", "streamline", "seamless", "supercharge",
   "unlock", "empower",
+  // Benefit nouns with no mechanism behind them. The list above catches email
+  // that announces itself as cold outreach; this catches email that reads as
+  // mass mail while breaking none of those rules — a draft can satisfy every
+  // constraint on length, CTA shape and sign-off and still say nothing, because
+  // those constrain form and this is a failure of substance.
+  "drive efficiency", "drives efficiency", "driving efficiency",
+  "clear ROI", "strong ROI", "proven ROI",
+  "predictable pipeline", "consistent pipeline",
+  "teams like yours", "companies like yours", "helping teams like",
+  "without manual work", "without manual sales work", "without adding headcount",
+  "worth comparing", "worth exploring", "drive results", "drive growth",
+  "boost revenue", "maximize", "scale faster", "operational efficiency",
+  "value prop", "solutions that", "tailored solution", "bespoke solution",
 ];
 
 const quoted = (list: string[]) => list.map((p) => `"${p}"`).join(", ");
