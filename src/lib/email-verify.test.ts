@@ -218,6 +218,64 @@ describe("ColdIQ as the verification provider", () => {
   });
 });
 
+describe("first-call shape logging", () => {
+  // Module-level "log once" state means each of these needs a fresh module
+  // instance, hence resetModules + dynamic import rather than the top import.
+  const freshVerify = async () => {
+    vi.resetModules();
+    const mod = await import("../../supabase/functions/_shared/email-verify.ts");
+    return mod.verifyEmail;
+  };
+
+  it("logs the response shape so an unread contract can be pinned from one live call", async () => {
+    setEnv({ COLDIQ_API_KEY: "cq-key" });
+    stubFetch({ ...LIVE_MX, provider: { data: { status: "valid", credits_used: 1 } } });
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    const verify = await freshVerify();
+    await verify(noCache, "ceo@example.com");
+
+    const line = log.mock.calls.map((c) => c.join(" ")).find((l) => l.includes("response shape"));
+    expect(line).toBeDefined();
+    expect(line).toContain("status");
+    expect(line).toContain("credits_used");
+    log.mockRestore();
+  });
+
+  it("never puts a prospect's address or any value in that log line", async () => {
+    setEnv({ COLDIQ_API_KEY: "cq-key" });
+    stubFetch({ ...LIVE_MX, provider: { email: "ceo@example.com", status: "valid", score: 98 } });
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    const verify = await freshVerify();
+    await verify(noCache, "ceo@example.com");
+
+    const line = log.mock.calls.map((c) => c.join(" ")).find((l) => l.includes("response shape"));
+    expect(line).toBeDefined();
+    // Key names are what pin a schema. Values are the prospect's data and a
+    // vendor's verdict about them, and belong nowhere near a log.
+    expect(line).toContain("email");
+    expect(line).not.toContain("ceo@example.com");
+    expect(line).not.toContain("98");
+    log.mockRestore();
+  });
+
+  it("logs once, not once per address in the batch", async () => {
+    setEnv({ COLDIQ_API_KEY: "cq-key" });
+    stubFetch({ ...LIVE_MX, provider: { status: "valid" } });
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    const verify = await freshVerify();
+    await verify(noCache, "a@example.com");
+    await verify(noCache, "b@example.com");
+    await verify(noCache, "c@example.com");
+
+    const lines = log.mock.calls.map((c) => c.join(" ")).filter((l) => l.includes("response shape"));
+    expect(lines).toHaveLength(1);
+    log.mockRestore();
+  });
+});
+
 describe("batch verification", () => {
   beforeEach(() => setEnv({ EMAIL_VERIFIER_API_KEY: "test-key" }));
 

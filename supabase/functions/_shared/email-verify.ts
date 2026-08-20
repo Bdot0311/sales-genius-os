@@ -215,6 +215,43 @@ async function freeGate(supabase: CacheClient, email: string): Promise<Verificat
  * "[object Object]", every verdict falls through to `unknown`, and paid checks
  * silently buy nothing.
  */
+/**
+ * Log the shape of the first successful provider response — keys only, at
+ * every level of nesting, never values.
+ *
+ * A marketplace contract that could not be read up front is pinned from one
+ * live call instead, the same way the Bloomberry and PredictLeads schemas
+ * were. Once per function instance rather than per address: a 100-lead search
+ * would otherwise emit 100 identical lines.
+ *
+ * Values are excluded deliberately. The payload carries the prospect's email
+ * and whatever else the vendor attached to it, and none of that belongs in a
+ * log line — the key names alone are what pin the schema.
+ */
+let shapeLogged = false;
+function logVerdictShape(provider: string, body: unknown, resolved: Record<string, unknown>): void {
+  if (shapeLogged) return;
+  shapeLogged = true;
+
+  const keysOf = (v: unknown): unknown => {
+    if (Array.isArray(v)) return v.length ? [keysOf(v[0])] : [];
+    if (v && typeof v === "object") {
+      const out: Record<string, unknown> = {};
+      for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
+        out[k] = val && typeof val === "object" ? keysOf(val) : typeof val;
+      }
+      return out;
+    }
+    return typeof v;
+  };
+
+  console.log(
+    `[email-verify] ${provider} response shape (keys only):`,
+    JSON.stringify(keysOf(body)).slice(0, 800),
+    "| verdict read from:", JSON.stringify(Object.keys(resolved)).slice(0, 300),
+  );
+}
+
 function unwrapVerdict(body: unknown): Record<string, unknown> {
   let node = (body ?? {}) as Record<string, unknown>;
 
@@ -236,6 +273,7 @@ function unwrapVerdict(body: unknown): Record<string, unknown> {
  *  degrade to `unknown` rather than be guessed at in either direction. */
 function interpret(provider: string, body: unknown): VerificationResult {
   const obj = unwrapVerdict(body);
+  logVerdictShape(provider, body, obj);
   const raw = String(obj.status ?? obj.result ?? obj.state ?? obj.email_status ?? "")
     .toLowerCase().replace(/[\s-]+/g, "_");
 
@@ -291,7 +329,13 @@ function interpret(provider: string, body: unknown): VerificationResult {
       if (isSafe && !isCatchAll) {
         return { status: "valid", verified: true, reason: "Mailbox confirmed", source: provider };
       }
-      console.warn(`[email-verify] unrecognised ${provider} verdict:`, JSON.stringify(obj).slice(0, 200));
+      // The unknown vocabulary word is the whole diagnostic here, so the
+      // verdict value is logged — but not the rest of the object, which
+      // carries the prospect's address alongside it.
+      console.warn(
+        `[email-verify] unrecognised ${provider} verdict:`, JSON.stringify(raw),
+        "| fields present:", JSON.stringify(Object.keys(obj)).slice(0, 300),
+      );
       return { status: "unknown", verified: null, reason: "Verification inconclusive", source: provider };
   }
 }
