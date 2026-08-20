@@ -183,6 +183,7 @@ HARD CONSTRAINTS
 - No bolding, no bullets, no headers, no markdown. Plain text only.
 - Break the body into 2 or 3 short paragraphs separated by a blank line, and put "Hi <first_name>," on its own line with a blank line after it. A body delivered as one unbroken block reads as machine-written no matter how good the sentences are, and it is what a reader sees before they read a word of it.
 - Never claim integrations, customers, metrics, or social proof that aren't in the verified_proof field.
+${NO_FABRICATED_METRICS_RULE}
 - One idea per email. If you find yourself writing "also," "plus," or "additionally," delete everything after it.
 - No sentences over 20 words. If a sentence runs long, break it.
 - Sentence variety: at least one sentence under 6 words per email.
