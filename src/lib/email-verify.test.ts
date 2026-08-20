@@ -156,6 +156,68 @@ describe("provider verdict mapping", () => {
   });
 });
 
+describe("ColdIQ as the verification provider", () => {
+  it("activates on COLDIQ_API_KEY alone — there is no second key to configure", async () => {
+    setEnv({ COLDIQ_API_KEY: "cq-key" });
+    const fetchSpy = stubFetch({ ...LIVE_MX, provider: { status: "valid" } });
+    const r = await verifyEmail(noCache, "ceo@example.com");
+    expect(r.status).toBe("valid");
+    expect(fetchSpy.mock.calls.some(([u]) => String(u).includes("coldiq"))).toBe(true);
+  });
+
+  it("lets an explicit verifier key win, so lead search and verification can use different vendors", async () => {
+    setEnv({ COLDIQ_API_KEY: "cq-key", EMAIL_VERIFIER_API_KEY: "reoon-key" });
+    const fetchSpy = stubFetch({ ...LIVE_MX, provider: { status: "valid" } });
+    await verifyEmail(noCache, "ceo@example.com");
+    const urls = fetchSpy.mock.calls.map(([u]) => String(u));
+    expect(urls.some((u) => u.includes("reoon"))).toBe(true);
+    expect(urls.some((u) => u.includes("coldiq"))).toBe(false);
+  });
+
+  it("sends the key as a header, never in the query string", async () => {
+    setEnv({ COLDIQ_API_KEY: "cq-secret" });
+    const fetchSpy = stubFetch({ ...LIVE_MX, provider: { status: "valid" } });
+    await verifyEmail(noCache, "ceo@example.com");
+    const call = fetchSpy.mock.calls.find(([u]) => String(u).includes("coldiq"));
+    expect(String(call?.[0])).not.toContain("cq-secret");
+    const init = call?.[1] as RequestInit | undefined;
+    expect(JSON.stringify(init?.headers ?? {})).toContain("cq-secret");
+  });
+
+  it("reads a verdict the marketplace wrapped in `data`", async () => {
+    // A proxied vendor answer is usually nested. Without unwrapping,
+    // String({...}) is "[object Object]", every verdict degrades to unknown,
+    // and the paid checks buy nothing at all.
+    setEnv({ COLDIQ_API_KEY: "cq-key" });
+    stubFetch({ ...LIVE_MX, provider: { data: { status: "valid" } } });
+    const r = await verifyEmail(noCache, "ceo@example.com");
+    expect(r).toMatchObject({ status: "valid", verified: true });
+  });
+
+  it("reads a verdict nested two wrappers deep", async () => {
+    setEnv({ COLDIQ_API_KEY: "cq-key" });
+    stubFetch({ ...LIVE_MX, provider: { data: { result: { status: "invalid" } } } });
+    const r = await verifyEmail(noCache, "ghost@example.com");
+    expect(r).toMatchObject({ status: "invalid", verified: false });
+  });
+
+  it("still honours a catch-all flag carried alongside a wrapped verdict", async () => {
+    setEnv({ COLDIQ_API_KEY: "cq-key" });
+    stubFetch({ ...LIVE_MX, provider: { data: { status: "valid", is_catch_all: true } } });
+    const r = await verifyEmail(noCache, "ceo@example.com");
+    expect(r.status).toBe("catch_all");
+    expect(r.verified).toBeNull();
+  });
+
+  it("degrades to unknown when the marketplace shape is unreadable", async () => {
+    setEnv({ COLDIQ_API_KEY: "cq-key" });
+    stubFetch({ ...LIVE_MX, provider: { something: { entirely: "different" } } });
+    const r = await verifyEmail(noCache, "ceo@example.com");
+    expect(r.status).toBe("unknown");
+    expect(r.verified).toBeNull();
+  });
+});
+
 describe("batch verification", () => {
   beforeEach(() => setEnv({ EMAIL_VERIFIER_API_KEY: "test-key" }));
 
