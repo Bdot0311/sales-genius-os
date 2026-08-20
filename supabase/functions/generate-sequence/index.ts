@@ -5,7 +5,7 @@
 // generation time. Drafts only; no send path. See prompt-v2.ts for the prompt.
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
-import { SEQUENCE_SYSTEM_PROMPT, buildSequenceUserPayload } from "./prompt-v2.ts";
+import { sequenceSystemPrompt, buildSequenceUserPayload } from "./prompt-v2.ts";
 import { lintTouch } from "../_shared/style-lint.ts";
 
 const corsHeaders = {
@@ -143,7 +143,7 @@ serve(async (req) => {
         payoffBank, forbiddenClaims: forbidden, resolvedTokens, retryNote,
       });
       let raw = "";
-      try { raw = await callGateway(SEQUENCE_SYSTEM_PROMPT, payload, apiKey); }
+      try { raw = await callGateway(sequenceSystemPrompt(), payload, apiKey); }
       catch { return json({ error: "could not generate the sequence right now.", error_code: "ai_failed" }); }
       touches = parseTouches(raw);
       if (!growthPlus) touches = touches.slice(0, 1); // Free: single-touch

@@ -2,8 +2,16 @@
 // Changes here get their own commit so regressions are traceable. The generator
 // composes the user payload from the campaign brief, the selected hook, and the
 // payoff bank entries; the model may only use payoffs that are passed in.
+//
+// The banned list and the GTM frameworks are imported rather than written here.
+// This prompt used to name five banned phrases inline while the shared list held
+// over seventy, and it carried no frameworks at all — so the sequence builder
+// wrote to weaker rules than every other path in the product, and had nothing to
+// draw a touch's SHAPE from beyond the four-line architecture below.
+import { composeSkillContext } from "../_shared/email-skills.ts";
+import { bannedPhrasesLine } from "../_shared/email-rules.ts";
 
-export const SEQUENCE_SYSTEM_PROMPT = `You write a four-touch cold email sequence for B2B email-only outbound. Output STRICT JSON only, no prose, no code fences.
+const SEQUENCE_RULES = `You write a four-touch cold email sequence for B2B email-only outbound. Output STRICT JSON only, no prose, no code fences.
 
 Hard rules on truth:
 - You may only use a payoff (an insight, a statistic, a benchmark, a resource, an offer) that appears in the PAYOFF BANK provided in the input. Never invent a number, a customer name, a benchmark, or a case study.
@@ -20,7 +28,6 @@ Generate each touch with the earlier touches in view so no opener, payoff, or as
 
 Style contract (a lint pass will reject and you will be asked to fix):
 - No em-dashes. No triadic lists. No "not X but Y". No bolded lead-ins.
-- Never use: "i hope this finds you well", "quick question", "circling back", "just following up", "reaching out".
 - No exclamation points. At most one question per email.
 - Subject line under six words, sentence case, reads like an internal note not a headline.
 - Under ninety words per touch. Plain, lowercase-first sentences. No hype.
@@ -38,6 +45,23 @@ OUTPUT SCHEMA (return exactly this):
   ]
 }
 Do not output anything outside that JSON object.`;
+
+/**
+ * The sequence prompt as the generator sends it: rules, then the shared banned
+ * list, then the frameworks that decide each touch's shape.
+ *
+ * Composed at call time rather than baked into a constant so that editing a
+ * skill or adding a banned phrase reaches this path without anyone remembering
+ * that this path exists — which is exactly how it fell behind.
+ */
+export function sequenceSystemPrompt(): string {
+  return [
+    SEQUENCE_RULES,
+    "",
+    bannedPhrasesLine(),
+    composeSkillContext({ goal: "sequence" }),
+  ].join("\n");
+}
 
 interface PayoffEntry { id: string; type: string; content: string; source_url?: string | null; asserts_stat?: boolean }
 
