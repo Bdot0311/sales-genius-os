@@ -42,6 +42,8 @@ import { useWhiteLabel } from "@/hooks/use-white-label";
 import { useSearchCredits } from "@/hooks/use-search-credits";
 import { useLiveCrmIndicators } from "@/hooks/use-live-crm-indicators";
 import { useDemoMode } from "@/hooks/use-demo-mode";
+import { ensureSession, startSessionKeeper } from "@/lib/session-keeper";
+
 
 
 interface DashboardLayoutProps {
