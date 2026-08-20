@@ -192,7 +192,7 @@ const TOOLS = [
     function: {
       name: "draft_outreach",
       description:
-        "Draft first-touch cold emails following the OutReign cold email playbook. Pass lead_ids to draft for several leads in ONE call (preferred — never call this tool repeatedly in parallel). Does not send anything.",
+        "Draft first-touch cold emails following the OutReign cold email playbook. Pass lead_ids to draft for several leads in ONE call (preferred — never call this tool repeatedly in parallel). Does not send anything. THIS IS ALSO HOW YOU REDRAFT: to revise an email the user is unhappy with, call this again for the same lead with `feedback` describing what to change. It replaces that lead's draft. Never rewrite email copy yourself in the chat — copy you write by hand is not checked against the playbook, the banned-phrase list, or the proof rules, and it will read like generic marketing.",
       parameters: {
         type: "object",
         properties: {
@@ -206,6 +206,11 @@ const TOOLS = [
             type: "string",
             enum: ["introduction", "follow-up", "meeting", "demo", "proposal"],
             description: "Email goal. Use 'introduction' for first touches.",
+          },
+          feedback: {
+            type: "string",
+            description:
+              "What to change, when redrafting. Pass the user's own words (e.g. 'too salesy, cut the product pitch'). Forces a structurally different email rather than a reword of the same one.",
           },
         },
         required: [],
@@ -1379,12 +1384,28 @@ serve(async (req) => {
             (config?.value_props ?? []).join("; "),
           ].filter(Boolean).join(" — ").slice(0, 600);
 
+          // A redraft is the user rejecting the email they were shown, so it has
+          // to come back structurally different rather than reworded. feedback
+          // reaches generate-email as customInstruction, and variantNum pushes
+          // the skill router to a different framework — regenerating with the
+          // same inputs mostly reproduces the same email, which reads to the
+          // user as the request having been ignored.
+          const feedback = String(args.feedback ?? "").trim().slice(0, 2000);
+
           const basePayload = {
             goal,
             tone: config?.tone ?? "professional",
             senderName: profile?.full_name ?? "",
             senderCompany: profile?.company_name ?? config?.company_context ?? "",
             businessDescription,
+            ...(feedback
+              ? {
+                  customInstruction:
+                    `The user rejected the previous draft for this lead. What they want changed: ${feedback}. ` +
+                    `Write a different email — different opening beat and different structure, not a reword of the last one.`,
+                  variantNum: 1,
+                }
+              : {}),
           };
 
           const genOne = async (id: string) => {
@@ -2505,6 +2526,8 @@ CURRENT TIME: ${formatLocal(new Date())} — the user's local time. In UTC that 
 HOW TO WORK
 - When the user says something like "I just searched some leads, take it from here", find the relevant leads with list_leads first, then chain the work: enrich -> score -> draft -> send/queue. Do not ask permission for read-only or drafting steps; just do them and report back.
 - Do several tool calls in a row when needed. Prefer batching lead ids over one-at-a-time calls. For drafting, ALWAYS pass every lead id in a single draft_outreach call via lead_ids — never fire many parallel draft_outreach calls, that trips the rate limiter.
+- NEVER write, rewrite or "improve" email copy yourself in the chat. Every email the user sees must come from draft_outreach, which runs the playbook, the banned-phrase list, the proof rules and the quality rubric. When the user dislikes a draft ("redraft this", "too salesy", "make it shorter"), call draft_outreach again for that lead with feedback set to what they said — it replaces the draft. Copy you compose by hand is checked by nothing and reads like generic marketing, which is the single most common complaint about this product.
+- NEVER invent proof. No case studies, no "one company saw a significant increase", no anonymized customer stories, no metrics — not even vague ones — unless the exact proof was given to you in the lead data or by the user. An invented result is worse than no result.
 - draft_outreach goal must be one of: introduction, follow-up, meeting, demo, proposal. Use "introduction" for first touches.
 - Drafts are auto-saved and rendered in the chat as read-only preview cards. There are no buttons anywhere in this chat — everything happens through messages. After drafting, tell the user the drafts are below for review and ask them to reply when they want them sent or scheduled.
 - QUALITY: send_outreach scores anything you wrote yourself before it goes out. If it answers needs_rewrite, the email was NOT sent: rewrite it against the feedback it returned and call send_outreach again with the new subject and body. Do not re-send the same text, do not tell the user it went out, and do not work around the check by saving it as a draft and sending that instead. If it answers with unfilled placeholders, fill in the real values and call again.

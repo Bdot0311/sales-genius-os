@@ -146,12 +146,35 @@ const CLAIM_PATTERNS: RegExp[] = [
   /\b(?:doubl|tripl|quadrupl)(?:e|ed|ing)\b/gi,
 ];
 
+/**
+ * Fabricated proof that carries no number.
+ *
+ * Every pattern above requires a digit, so a model that has been told not to
+ * invent metrics can satisfy the letter of that rule by dropping the figures:
+ * "one computer software firm that saw a significant increase in meetings
+ * booked" asserts a customer, a result and a direction while matching none of
+ * the numeric patterns. It reached a real prospect.
+ *
+ * These are deliberately narrow — an anonymized customer paired with an
+ * outcome verb, a magnitude word with no magnitude, or a peer claim about
+ * companies "like yours". Ordinary sentences do not use these shapes; invented
+ * case studies almost always do.
+ */
+const VAGUE_PROOF_PATTERNS: RegExp[] = [
+  // "one computer software firm that saw…", "a client who achieved…"
+  /\b(?:one|a|an|another)\s+(?:\w+[\s-]+){0,3}(?:firm|company|client|customer|team|agency|startup|business|brand)\b[^.?!]{0,60}?\b(?:saw|achieved|reported|generated|booked|increased|reduced|cut|doubled|grew)\b/gi,
+  // magnitude word with no magnitude
+  /\b(?:significant|substantial|meaningful|noticeable|dramatic|marked|considerable|sizeable)\s+(?:increase|lift|improvement|boost|jump|gain|growth|reduction|drop|decrease)\b/gi,
+  // "teams like yours see…"
+  /\b(?:companies|teams|clients|founders|firms)\s+like\s+(?:yours|you)\b[^.?!]{0,60}?\b(?:saw|see|get|got|report|achieve|book)\b/gi,
+];
+
 /** Numeric or quantified claims in `text` that the verified proof does not support. */
 export function findUnverifiedClaims(text: string, verifiedProof = ""): string[] {
   const body = text ?? "";
   const proof = (verifiedProof ?? "").toLowerCase();
   const hits: string[] = [];
-  for (const pattern of CLAIM_PATTERNS) {
+  for (const pattern of [...CLAIM_PATTERNS, ...VAGUE_PROOF_PATTERNS]) {
     for (const m of body.matchAll(new RegExp(pattern))) {
       const claim = m[0].trim();
       const digits = claim.replace(/[^\d.]/g, "");

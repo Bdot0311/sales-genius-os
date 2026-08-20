@@ -37,6 +37,10 @@ project_id = "ghgfjnepvxvxrncmskys"
     verify_jwt = false
   [functions.verify-tracking-domain]
     verify_jwt = false
+  [functions.blacklist-sweep]
+    # Guarded by requireServiceRole in the handler, not by JWT: the caller is
+    # pg_cron with the vault service key, which is not a user token.
+    verify_jwt = false
   [functions.check-blacklists]
     verify_jwt = false
   [functions.generate-blog-post]
