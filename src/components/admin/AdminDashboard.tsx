@@ -245,6 +245,7 @@ export const AdminDashboard = () => {
             </Card>
           );
         })}
+        <AiGatewayUsageCard />
       </div>
     </div>
   );
