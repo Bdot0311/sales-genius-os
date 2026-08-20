@@ -7,7 +7,18 @@ import { composeSkillContext, skillNamesUsed } from "../_shared/email-skills.ts"
 import { isWeak, scoreEmail } from "../_shared/email-quality.ts";
 // The writing rules live in one module so the three copies that used to exist
 // cannot drift apart — see _shared/email-rules.ts.
-import { IMMUTABLE_EDIT_RULES, NO_PLACEHOLDER_RETRY, bannedPhrasesBlock, findPlaceholders, hasPlaceholder } from "../_shared/email-rules.ts";
+import {
+  IMMUTABLE_EDIT_RULES,
+  NO_PLACEHOLDER_RETRY,
+  NO_FABRICATED_METRICS_RULE,
+  bannedPhrasesBlock,
+  fillSenderStandIns,
+  findPlaceholders,
+  findSenderStandIns,
+  findUnverifiedClaims,
+  hasPlaceholder,
+  noFabricationRetry,
+} from "../_shared/email-rules.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {
   briefToPromptBlock,
@@ -80,7 +91,8 @@ CLAIMS & PROOF:
 - Do NOT invent results, percentages, customer counts, case studies, benchmark data, funding events, hiring plans, launches, or internal initiatives.
 - If a concrete metric or customer proof is not explicitly provided in the input, do not imply one.
 - Prefer specific operational outcomes without numbers unless the number is grounded in provided input.
-- Never write fake credibility devices like "teams cut ramp time 40%" or "customers reply 3x more" unless that exact proof is provided.`;
+- Never write fake credibility devices like "teams cut ramp time 40%" or "customers reply 3x more" unless that exact proof is provided.
+${NO_FABRICATED_METRICS_RULE}`;
 
 // Framework emails output body only — no greeting, no sign-off
 const BODY_ONLY_RULES = `
@@ -171,6 +183,7 @@ HARD CONSTRAINTS
 - No bolding, no bullets, no headers, no markdown. Plain text only.
 - Break the body into 2 or 3 short paragraphs separated by a blank line, and put "Hi <first_name>," on its own line with a blank line after it. A body delivered as one unbroken block reads as machine-written no matter how good the sentences are, and it is what a reader sees before they read a word of it.
 - Never claim integrations, customers, metrics, or social proof that aren't in the verified_proof field.
+${NO_FABRICATED_METRICS_RULE}
 - One idea per email. If you find yourself writing "also," "plus," or "additionally," delete everything after it.
 - No sentences over 20 words. If a sentence runs long, break it.
 - Sentence variety: at least one sentence under 6 words per email.
@@ -223,6 +236,11 @@ Subject: <subject>
 Founder, <sender_company>
 
 PS: <opt-out line>
+
+The angle brackets above are slots, not text. Substitute the real sender_name and
+sender_company values from the input. Never output the words "sender_name",
+"Sender Name", "Your Name" or "Your Company" — a draft signed with a stand-in
+cannot be sent.
 
 Do not explain the email. Do not add commentary. Do not preface the output with "Here's the email:" or similar.`;
 
@@ -1206,6 +1224,55 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
     }
 
     email = cleanGeneratedEmail(email, preserveSubject);
+
+    // Invented figures and stand-in signatures are the two failures that keep
+    // reaching real prospects, and prompt text alone never stopped either. The
+    // draft is checked, regenerated once, and only then reported as failed —
+    // shipping a metric the sender cannot back is worse than no draft.
+    const proofForClaims = [socialProof, businessDescription, sanitizedNotes]
+      .filter(Boolean)
+      .join(' ');
+    let claims = findUnverifiedClaims(email, proofForClaims);
+    if (claims.length) {
+      console.warn(`[generate-email] fabricated claims: ${claims.join(', ')} — regenerating`);
+      const claimRetry = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: `${userPrompt}\n${noFabricationRetry(claims)}` },
+          ],
+          temperature: 0.4,
+        }),
+      });
+      if (claimRetry.ok) {
+        const d = await claimRetry.json();
+        const second = cleanGeneratedEmail((d.choices?.[0]?.message?.content || '').trim(), preserveSubject);
+        if (second && !findUnverifiedClaims(second, proofForClaims).length && !hasPlaceholder(second)) {
+          email = second;
+          claims = [];
+        } else {
+          claims = findUnverifiedClaims(second || email, proofForClaims);
+        }
+      }
+    }
+
+    // A stand-in identity is mechanical, so it is filled in rather than retried.
+    const standIns = findSenderStandIns(email);
+    if (standIns.length) {
+      console.warn(`[generate-email] sender stand-in in draft: ${standIns.join(', ')}`);
+      email = fillSenderStandIns(email, senderName, senderCompany);
+    }
+
+    if (claims.length) {
+      console.error(`[generate-email] fabricated claims survived retry: ${claims.join(', ')}`);
+      return new Response(JSON.stringify({
+        error: `The draft kept inventing figures it cannot back (${claims.join(', ')}), so it was not saved. Add a verified proof point in your business context, or generate again.`,
+        error_code: 'fabricated_metric',
+      }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
 
     // On introduction emails the subject is preserved inside the body, so pull
     // it from there; every other goal carries it on the request. The rubric

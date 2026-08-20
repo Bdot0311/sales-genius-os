@@ -114,3 +114,91 @@ The previous draft contained an unfilled placeholder, which can never be sent.
 Write the email again using only facts you were actually given. If you do not
 know a detail, leave it out and write around it — never write a bracketed
 stand-in like [client name], [Sender Name] or {company} for a human to fill in.`;
+
+/**
+ * Fabricated numbers are the complaint that keeps coming back: the model writes
+ * "cutting lead research time by 80% for similar software teams" when nobody
+ * gave it an 80% anything. Prompt text alone never stopped it, so the draft is
+ * checked after generation and regenerated when it invents a figure.
+ *
+ * A number is allowed only when the same number appears in the verified proof
+ * the sender supplied. Everything else — percentages, multipliers, dollar
+ * amounts, "500+ teams", "3 out of 4" — is treated as invented.
+ */
+const CLAIM_PATTERNS: RegExp[] = [
+  /\b\d{1,3}(?:\.\d+)?\s?%/g,          // 80%, 12.5 %
+  /\b\d{1,4}(?:\.\d+)?\s?x\b/gi,       // 3x, 2.5x
+  /\$\s?\d[\d,.]*\s?(?:k|m|b|bn|million|billion)?/gi,
+  /\b\d[\d,]*\+?\s?(?:teams|companies|customers|clients|founders|reps|users|brands|agencies)\b/gi,
+  /\b(?:doubl|tripl|quadrupl)(?:e|ed|ing)\b/gi,
+];
+
+/** Numeric or quantified claims in `text` that the verified proof does not support. */
+export function findUnverifiedClaims(text: string, verifiedProof = ""): string[] {
+  const body = text ?? "";
+  const proof = (verifiedProof ?? "").toLowerCase();
+  const hits: string[] = [];
+  for (const pattern of CLAIM_PATTERNS) {
+    for (const m of body.matchAll(new RegExp(pattern))) {
+      const claim = m[0].trim();
+      const digits = claim.replace(/[^\d.]/g, "");
+      // Supported when the proof the sender actually gave contains the figure.
+      const supported = digits ? proof.includes(digits) : proof.includes(claim.toLowerCase());
+      if (!supported && !hits.includes(claim)) hits.push(claim);
+    }
+  }
+  return hits;
+}
+
+/**
+ * Stand-in sender identities that carry no brackets, so `hasPlaceholder` misses
+ * them: a draft signed "Sender Name" went out to a real prospect.
+ */
+const SENDER_STANDIN_PATTERN =
+  /^(?:sender(?:[ _]name)?|your[ _]name|your[ _]company|company[ _]name|sender[ _]company|full[ _]name|founder,\s*(?:your|sender)[ _]?company)$/i;
+
+/** Bare stand-in identity lines ("Sender Name", "Your Company") in a draft. */
+export function findSenderStandIns(text: string): string[] {
+  return (text ?? "")
+    .split(/\r?\n/)
+    .map((l) => l.trim().replace(/[.,]$/, ""))
+    .filter((l) => l && SENDER_STANDIN_PATTERN.test(l));
+}
+
+/** Replace stand-in identity lines with the real sender details. */
+export function fillSenderStandIns(text: string, senderName: string, senderCompany = ""): string {
+  return (text ?? "")
+    .split(/\r?\n/)
+    .map((line) => {
+      const t = line.trim().replace(/[.,]$/, "");
+      if (!SENDER_STANDIN_PATTERN.test(t)) return line;
+      if (/company/i.test(t)) return senderCompany ? `Founder, ${senderCompany}` : "";
+      return senderName || "";
+    })
+    .filter((line, i, arr) => !(line === "" && arr[i - 1] === ""))
+    .join("\n")
+    .trim();
+}
+
+/** Corrective instruction for a draft that invented a figure. */
+export function noFabricationRetry(claims: string[]): string {
+  return `
+The previous draft invented these claims: ${claims.map((c) => `"${c}"`).join(", ")}.
+Nobody gave you those figures. Write the email again with ZERO numbers, percentages,
+multipliers, dollar amounts, customer counts or "doubled/tripled" language unless the
+exact figure appears in verified_proof. If you have no verified number, make the point
+in plain operational language with no quantity at all. Do not swap in a different
+number, and do not hedge with "up to" or "as much as" — remove the quantity entirely.`;
+}
+
+/** The no-invented-numbers rule, for injection into any generation prompt. */
+export const NO_FABRICATED_METRICS_RULE = `
+NUMBERS — ZERO TOLERANCE:
+- Never write a percentage, multiplier (3x), dollar amount, customer/team count, or
+  "doubled/tripled" claim unless that exact figure was supplied in verified_proof.
+- No hedged versions either ("up to 80%", "as much as half", "most teams see").
+- With no verified figure, describe the outcome with no quantity attached. A claim you
+  cannot back is worse than no claim: it ends the conversation the email is trying to start.
+- Never invent customers, logos, case studies, benchmarks, funding rounds or hires.
+- Never sign off with a stand-in identity ("Sender Name", "Your Name", "Your Company").
+  Use the sender_name and sender_company values exactly as given.`;
