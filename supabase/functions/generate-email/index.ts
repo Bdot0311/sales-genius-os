@@ -237,6 +237,11 @@ Founder, <sender_company>
 
 PS: <opt-out line>
 
+The angle brackets above are slots, not text. Substitute the real sender_name and
+sender_company values from the input. Never output the words "sender_name",
+"Sender Name", "Your Name" or "Your Company" — a draft signed with a stand-in
+cannot be sent.
+
 Do not explain the email. Do not add commentary. Do not preface the output with "Here's the email:" or similar.`;
 
 const cleanGeneratedEmail = (rawEmail: string, preserveSubject = false) => {
