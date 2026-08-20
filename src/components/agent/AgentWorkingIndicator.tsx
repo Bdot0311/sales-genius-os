@@ -213,9 +213,10 @@ export const AgentWorkingIndicator = ({
 
             <p className="text-[11px] leading-snug text-muted-foreground/70">
               {pass > 0
-                ? "Big batch — picking up where the last pass stopped."
-                : "Running real steps on your account, not a canned animation."}
+                ? "Large batch — continuing from where the last pass stopped."
+                : "Working through your leads, drafts, and sends step by step."}
             </p>
+
           </div>
         </div>
       </div>
