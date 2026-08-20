@@ -2539,6 +2539,12 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
         break;
       }
 
+      // Track AI gateway usage for the workspace and alert admins at thresholds.
+      // Fire-and-forget so the agent loop isn't blocked.
+      admin
+        .rpc("increment_ai_gateway_usage", { p_credits: 1 })
+        .then(() => admin.rpc("check_ai_gateway_usage_alert"))
+        .catch((e) => console.error("AI gateway usage tracking failed", e));
 
       const data = await res.json();
       const choice = data.choices?.[0]?.message;
