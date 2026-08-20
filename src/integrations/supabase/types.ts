@@ -562,6 +562,42 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_gateway_usage_tracking: {
+        Row: {
+          calls_count: number
+          created_at: string
+          credits_used: number
+          id: string
+          limit_sent_at: string | null
+          period_end: string
+          period_start: string
+          updated_at: string
+          warning_sent_at: string | null
+        }
+        Insert: {
+          calls_count?: number
+          created_at?: string
+          credits_used?: number
+          id?: string
+          limit_sent_at?: string | null
+          period_end?: string
+          period_start?: string
+          updated_at?: string
+          warning_sent_at?: string | null
+        }
+        Update: {
+          calls_count?: number
+          created_at?: string
+          credits_used?: number
+          id?: string
+          limit_sent_at?: string | null
+          period_end?: string
+          period_start?: string
+          updated_at?: string
+          warning_sent_at?: string | null
+        }
+        Relationships: []
+      }
       alert_rules: {
         Row: {
           comparison_operator: string
@@ -5244,6 +5280,7 @@ export type Database = {
         }
         Returns: string
       }
+      check_ai_gateway_usage_alert: { Args: never; Returns: undefined }
       check_expiring_api_keys: { Args: never; Returns: undefined }
       claim_stripe_webhook_event: {
         Args: {
@@ -5405,6 +5442,10 @@ export type Database = {
       increment_account_send: {
         Args: { p_account_id: string }
         Returns: boolean
+      }
+      increment_ai_gateway_usage: {
+        Args: { p_credits?: number }
+        Returns: undefined
       }
       increment_daily_emails_sent: {
         Args: { _user_id: string }
