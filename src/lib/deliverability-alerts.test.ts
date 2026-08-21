@@ -20,7 +20,7 @@ describe("critical alerts reach the user, not just the dashboard", () => {
   it("emails the affected user, not the support inbox", () => {
     // send-system-alert exists but goes to admins — wrong audience for
     // "your domain is blacklisted".
-    expect(SCAN).toContain('.from("profiles")');
+    expect(SCAN).toMatch(/from\(\s*"profiles"\s*\)/);
     expect(SCAN).toContain("recipientEmail: profile.email");
   });
 });
@@ -29,12 +29,12 @@ describe("not becoming noise", () => {
   it("emails only critical severity", () => {
     // A product that emails about every warning teaches people to filter the
     // one message that mattered.
-    expect(SCAN).toContain('.eq("severity", "critical")');
+    expect(SCAN).toMatch(/eq\(\s*"severity",\s*"critical"\s*\)/);
   });
 
   it("emails each alert once", () => {
     expect(MIGRATION).toContain("notified_at");
-    expect(SCAN).toContain('.is("notified_at", null)');
+    expect(SCAN).toMatch(/is\(\s*"notified_at",\s*null\s*\)/);
     expect(SCAN).toContain("notified_at: new Date().toISOString()");
   });
 
