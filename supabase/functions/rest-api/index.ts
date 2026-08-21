@@ -437,10 +437,28 @@ serve(async (req) => {
     // ── EMAIL ──
     else if (resource === 'email') {
       if (action === 'generate' || (!id && method === 'POST')) {
+        // generate-email refuses to write an email it cannot sign. API callers
+        // rarely pass a sender, so fill it from the account rather than
+        // returning an error for something the server already knows: the
+        // profile name first, then the address the mail would send from.
+        let senderName = typeof body?.senderName === 'string' ? body.senderName : '';
+        let senderEmail = typeof body?.senderEmail === 'string' ? body.senderEmail : '';
+        if (!senderName && !senderEmail) {
+          const { data: prof } = await supabase
+            .from('profiles').select('full_name').eq('id', userId).maybeSingle();
+          senderName = prof?.full_name ?? '';
+          if (!senderName) {
+            const { data: acct } = await supabase
+              .from('sending_accounts').select('email')
+              .eq('user_id', userId).order('created_at', { ascending: true }).limit(1).maybeSingle();
+            senderEmail = acct?.email ?? '';
+          }
+        }
+
         const genRes = await fetch(`${supabaseUrl}/functions/v1/generate-email`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${serviceKey}` },
-          body: JSON.stringify({ ...body, userId }),
+          body: JSON.stringify({ ...body, senderName, senderEmail, userId }),
         });
         result = await genRes.json();
         statusCode = genRes.status;

@@ -13,6 +13,7 @@ import {
   NO_FABRICATED_METRICS_RULE,
   bannedPhrasesBlock,
   fillSenderStandIns,
+  nameFromEmail,
   findPlaceholders,
   findSenderStandIns,
   findUnverifiedClaims,
@@ -649,7 +650,27 @@ serve(async (req) => {
     const customInstruction   = typeof requestData.customInstruction   === 'string' ? requestData.customInstruction.slice(0, 8000)         : '';
     const senderName          = typeof requestData.senderName          === 'string' ? requestData.senderName.trim().slice(0, 100)           : '';
     const senderCompany       = typeof requestData.senderCompany       === 'string' ? requestData.senderCompany.trim().slice(0, 100)        : '';
+    // The address the mail will be sent FROM. Used only to recover a name when
+    // the profile has none — see the resolution below.
+    const senderEmail         = typeof requestData.senderEmail         === 'string' ? requestData.senderEmail.trim().slice(0, 200)          : '';
     const strictMode          = requestData.strict_mode === true; // default false — strict mode is opt-in only
+
+    // A cold email has to be signed by a person, and every downstream rule
+    // assumes a real first name exists. When the profile carries none, fall
+    // back to the sending address — brandon@outreign.io is Brandon.
+    //
+    // This used to be papered over by telling the model `sender_name: Sender`,
+    // which is precisely what produced the "[Sender Name]" placeholders that
+    // the guard then rejected: a generation failure whose real cause was a
+    // missing profile field, reported as an unexplained generator fault.
+    const resolvedSenderName = senderName || nameFromEmail(senderEmail);
+
+    if (!resolvedSenderName) {
+      return new Response(JSON.stringify({
+        error: 'No sender name is set, so the email cannot be signed. Add your name in Settings, or connect a mailbox whose address contains it.',
+        error_code: 'no_sender_name',
+      }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
 
     const validationErrors = validateEmailInputs({ lead, tone, goal });
     if (validationErrors.length > 0) {
@@ -1094,7 +1115,7 @@ buying_intent: ${
         : '. Nothing urgent has fired: earn the reply on relevance, not on a manufactured trigger.'}`
 }
 icp_fit: ${leadIntent?.icp_score == null ? 'unknown' : `${leadIntent.icp_score}/100`}
-sender_name: ${senderName || 'Sender'}
+sender_name: ${resolvedSenderName}
 sender_company: ${senderCompany || (businessDescription ? businessDescription.split(/[\s\n]/)[0] : 'OutReign')}
 verified_proof: ${socialProof || (businessDescription ? `product capabilities from sender: ${businessDescription}` : 'none — do not cite any customers, metrics, or percentages in the solution line; describe the product benefit in plain terms only')}
 `;
@@ -1263,7 +1284,7 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
     const standIns = findSenderStandIns(email);
     if (standIns.length) {
       console.warn(`[generate-email] sender stand-in in draft: ${standIns.join(', ')}`);
-      email = fillSenderStandIns(email, senderName, senderCompany);
+      email = fillSenderStandIns(email, resolvedSenderName, senderCompany);
     }
 
     if (claims.length) {

@@ -187,6 +187,44 @@ export function findUnverifiedClaims(text: string, verifiedProof = ""): string[]
 }
 
 /**
+ * Derive a human first name from a mailbox address.
+ *
+ * A cold email has to be signed by a person. When the profile carries no name,
+ * the address the mail will be sent FROM is the best remaining evidence of who
+ * is sending it — brandon@outreign.io is Brandon. Outreach Studio has always
+ * done this; the agent did not, which is why its drafts arrived unsigned or
+ * carrying a placeholder.
+ *
+ * Returns "" for addresses that carry no human name (info@, sales@, noreply@)
+ * rather than signing an email "Info" — a wrong name is worse than the caller
+ * being told it has none.
+ */
+export function nameFromEmail(email: string): string {
+  const local = String(email ?? "").split("@")[0] ?? "";
+  if (!local) return "";
+
+  // Role and system mailboxes name a function, not a person.
+  const ROLE_LOCALS = new Set([
+    "info", "sales", "support", "admin", "contact", "hello", "help", "team",
+    "office", "billing", "accounts", "hr", "jobs", "careers", "marketing",
+    "press", "media", "legal", "noreply", "no-reply", "donotreply", "mail",
+    "enquiries", "inquiries", "general", "service", "outreach",
+  ]);
+  if (ROLE_LOCALS.has(local.toLowerCase())) return "";
+
+  // Trailing digits are almost always disambiguators (brandon2, john.smith99),
+  // never part of the name.
+  const cleaned = local.replace(/\d+$/g, "").replace(/[._-]+/g, " ").trim();
+  if (!cleaned) return "";
+
+  return cleaned
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+/**
  * Stand-in sender identities that carry no brackets, so `hasPlaceholder` misses
  * them: a draft signed "Sender Name" went out to a real prospect.
  */

@@ -1505,10 +1505,19 @@ serve(async (req) => {
           // user as the request having been ignored.
           const feedback = String(args.feedback ?? "").trim().slice(0, 2000);
 
+          // Outreach Studio has always fallen back to the connected mailbox
+          // address when the profile carries no name; the agent did not, and
+          // passed "". generate-email then told the model the sender was named
+          // "Sender", which is where the "[Sender Name]" placeholders came
+          // from — reported to the user as an unexplained generator fault.
+          const mailboxes = await loadMailboxes();
+          const senderEmail = String(mailboxes[0]?.email ?? "");
+
           const basePayload = {
             goal,
             tone: config?.tone ?? "professional",
             senderName: profile?.full_name ?? "",
+            senderEmail,
             senderCompany: profile?.company_name ?? config?.company_context ?? "",
             businessDescription,
             ...(feedback
