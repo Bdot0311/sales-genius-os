@@ -19,7 +19,8 @@ serve(async (req) => {
   const safeTarget = /^https?:\/\//i.test(target) ? target : null;
 
   try {
-    if (pixelId) {
+    if (pixelId && !isScanner) {
+
       const supabase = createClient(
         Deno.env.get("SUPABASE_URL")!,
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
