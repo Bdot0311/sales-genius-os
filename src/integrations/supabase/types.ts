@@ -1626,6 +1626,53 @@ export type Database = {
           },
         ]
       }
+      email_open_events: {
+        Row: {
+          counted: boolean
+          created_at: string
+          id: string
+          occurred_at: string
+          seconds_since_send: number | null
+          sent_email_id: string | null
+          skip_reason: string | null
+          tracking_pixel_id: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          counted?: boolean
+          created_at?: string
+          id?: string
+          occurred_at?: string
+          seconds_since_send?: number | null
+          sent_email_id?: string | null
+          skip_reason?: string | null
+          tracking_pixel_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          counted?: boolean
+          created_at?: string
+          id?: string
+          occurred_at?: string
+          seconds_since_send?: number | null
+          sent_email_id?: string | null
+          skip_reason?: string | null
+          tracking_pixel_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_open_events_sent_email_id_fkey"
+            columns: ["sent_email_id"]
+            isOneToOne: false
+            referencedRelation: "sent_emails"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_send_log: {
         Row: {
           created_at: string
@@ -3545,7 +3592,9 @@ export type Database = {
           gmail_message_id: string | null
           gmail_thread_id: string | null
           id: string
+          last_opened_at: string | null
           lead_id: string | null
+          open_count: number
           opened_at: string | null
           replied_at: string | null
           scheduled_at: string | null
@@ -3572,7 +3621,9 @@ export type Database = {
           gmail_message_id?: string | null
           gmail_thread_id?: string | null
           id?: string
+          last_opened_at?: string | null
           lead_id?: string | null
+          open_count?: number
           opened_at?: string | null
           replied_at?: string | null
           scheduled_at?: string | null
@@ -3599,7 +3650,9 @@ export type Database = {
           gmail_message_id?: string | null
           gmail_thread_id?: string | null
           id?: string
+          last_opened_at?: string | null
           lead_id?: string | null
+          open_count?: number
           opened_at?: string | null
           replied_at?: string | null
           scheduled_at?: string | null
