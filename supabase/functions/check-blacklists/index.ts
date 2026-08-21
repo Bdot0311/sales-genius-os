@@ -7,16 +7,11 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
-import { corsHeaders, validateDomain, dohQuery } from "../_shared/dns.ts";
-
-// Domain-based blacklists. Each returns a 127.0.0.x / 127.0.1.x A record when listed.
-const DBLS: { name: string; zone: string }[] = [
-  { name: "Spamhaus DBL", zone: "dbl.spamhaus.org" },
-  { name: "SURBL multi", zone: "multi.surbl.org" },
-  { name: "URIBL", zone: "multi.uribl.com" },
-];
-
-type ListStatus = "listed" | "clean" | "unknown";
+import { corsHeaders, validateDomain } from "../_shared/dns.ts";
+// The lookup logic is shared with blacklist-sweep, the nightly job, so the
+// button in the dashboard and the cron cannot answer differently about the
+// same domain.
+import { checkDomainAgainstDnsbls, persistableRows } from "../_shared/dnsbl.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -30,41 +25,7 @@ serve(async (req) => {
     }
     const target = String(domain).toLowerCase().replace(/^www\./, "");
 
-    const results = await Promise.all(
-      DBLS.map(async ({ name, zone }) => {
-        const res = await dohQuery(`${target}.${zone}`, "A");
-        let status: ListStatus;
-        let detail: string;
-
-        if (res.status === 3) {
-          // NXDOMAIN — the definitive "not listed" answer.
-          status = "clean";
-          detail = "Not listed";
-        } else if (res.status === 0 && res.answers.length > 0) {
-          // Several DNSBLs refuse queries from shared/public resolvers (we query
-          // via Cloudflare) and answer with a sentinel that is NOT a real listing:
-          //  - 127.255.255.x        → Spamhaus "public resolver / error"
-          //  - 127.0.0.1            → URIBL/SURBL "query refused via public resolver"
-          // Treat those as "unknown", never as "listed".
-          const isBlockedSentinel = (a: string) => a.startsWith("127.255.255.") || a === "127.0.0.1";
-          const allBlocked = res.answers.every(isBlockedSentinel);
-          if (allBlocked) {
-            status = "unknown";
-            detail = "Query refused by the DNSBL (public-resolver limit), not a listing";
-          } else {
-            // A genuine listing uses codes >= 127.0.0.2. Report only the non-sentinel codes.
-            const realCodes = res.answers.filter((a) => !isBlockedSentinel(a));
-            status = "listed";
-            detail = `Listed: ${realCodes.join(", ")}`;
-          }
-        } else {
-          status = "unknown";
-          detail = "No definitive answer";
-        }
-
-        return { rbl_name: name, status, listed: status === "listed", detail };
-      }),
-    );
+    const results = await checkDomainAgainstDnsbls(target);
 
     // Best-effort: log determinate results to history if the caller is authed.
     // Validate the JWT via anon client, then insert with the service role so RLS
@@ -85,16 +46,7 @@ serve(async (req) => {
       }
       if (userId && serviceKey) {
         const admin = createClient(supabaseUrl, serviceKey);
-        const rows = results
-          .filter((r) => r.status !== "unknown")
-          .map((r) => ({
-            user_id: userId!,
-            target,
-            target_type: "domain",
-            rbl_name: r.rbl_name,
-            listed: r.listed,
-            detail: r.detail,
-          }));
+        const rows = persistableRows(results, userId, target);
         if (rows.length > 0) {
           const { error: insErr } = await admin.from("blacklist_checks").insert(rows);
           if (insErr) console.error("[check-blacklists] insert error:", insErr);

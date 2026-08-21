@@ -127,13 +127,101 @@ serve(async (req) => {
       }
     }
 
-    console.log(`[deliverability-alerts-scan] raised=${raised}`);
-    return json({ ok: true, raised });
+    // ---- Notify the user about anything critical ----
+    //
+    // Everything above writes rows the dashboard reads over realtime. That is
+    // the wrong channel for the person this matters most to: the one running
+    // campaigns on autopilot rather than watching a dashboard. A domain listed
+    // on Saturday went unreported until they next happened to look.
+    //
+    // Only `critical` is emailed. Warnings stay in-app — a product that emails
+    // about everything teaches people to filter the one message that mattered.
+    const notified = await notifyCritical(supabase);
+
+    console.log(`[deliverability-alerts-scan] raised=${raised} notified=${notified}`);
+    return json({ ok: true, raised, notified });
   } catch (err) {
     console.error("[deliverability-alerts-scan] error:", err);
     return json({ error: "alerts scan failed" }, 500);
   }
 });
+
+/**
+ * Email every user who has an unnotified critical alert, then stamp the rows.
+ *
+ * Grouped per user rather than per alert: three listed domains is one problem
+ * to act on, and three separate emails about it reads as noise from a broken
+ * system. notified_at is what stops the nightly re-run re-sending the same
+ * warning every day until the user fixes it.
+ *
+ * Never throws. A mail failure must not lose the alerts themselves, which are
+ * already saved and visible in the dashboard — so a row is stamped only once
+ * its email has actually gone out.
+ */
+async function notifyCritical(supabase: any): Promise<number> {
+  try {
+    const { data: pending } = await supabase
+      .from("deliverability_alerts")
+      .select("id, user_id, domain, alert_type, message")
+      .eq("status", "active")
+      .eq("severity", "critical")
+      .is("notified_at", null)
+      .limit(200);
+
+    if (!pending?.length) return 0;
+
+    const byUser = new Map<string, any[]>();
+    for (const a of pending) byUser.set(a.user_id, [...(byUser.get(a.user_id) ?? []), a]);
+
+    let sent = 0;
+    for (const [userId, alerts] of byUser) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("email, full_name")
+        .eq("id", userId)
+        .maybeSingle();
+
+      // No address to reach them at. Leave notified_at null: if they add one
+      // later the next run picks the alert up rather than silently skipping it
+      // forever.
+      if (!profile?.email) continue;
+
+      const { error: sendErr } = await supabase.functions.invoke("send-transactional-email", {
+        body: {
+          templateName: "deliverability-alert",
+          recipientEmail: profile.email,
+          // Alert ids rather than a timestamp: a retry after a partial failure
+          // must be recognised as the same message, and the set of ids is what
+          // actually identifies this notification.
+          idempotencyKey: `deliverability-${alerts.map((a: any) => a.id).sort().join("-")}`.slice(0, 200),
+          templateData: {
+            name: (profile.full_name || "").split(" ")[0] || undefined,
+            issues: alerts.map((a: any) => ({
+              type: a.alert_type,
+              domain: a.domain,
+              message: a.message,
+            })),
+          },
+        },
+      });
+
+      if (sendErr) {
+        console.error(`[deliverability-alerts-scan] notify failed for ${userId}:`, sendErr.message ?? sendErr);
+        continue; // unstamped, so the next run tries again
+      }
+
+      await supabase
+        .from("deliverability_alerts")
+        .update({ notified_at: new Date().toISOString() })
+        .in("id", alerts.map((a: any) => a.id));
+      sent++;
+    }
+    return sent;
+  } catch (err) {
+    console.error("[deliverability-alerts-scan] notify pass failed (non-fatal):", err);
+    return 0;
+  }
+}
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {

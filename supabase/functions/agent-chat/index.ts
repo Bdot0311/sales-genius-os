@@ -78,6 +78,119 @@ const draftBodyToHtml = (body: string) => {
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.6;color:#333;max-width:600px;margin:0 auto;padding:20px}p{margin:0 0 16px}</style></head><body>${paragraphs}</body></html>`;
 };
 
+/**
+ * Whether a tool call actually changed something, and so should be remembered
+ * as done.
+ *
+ * "No error key" is not the same as "it happened". send_outreach answers
+ * needs_rewrite when the draft scored too low and was NOT sent, and answers
+ * queued_for_approval when a human still has to press the button. Neither
+ * carries an error, so treating them as completed would record a send that
+ * never occurred — and then refuse the model's corrected retry as a duplicate,
+ * leaving the prospect with nothing and the agent believing it had sent.
+ */
+function didMutate(result: unknown): boolean {
+  if (!result || typeof result !== "object") return true;
+  const r = result as Record<string, unknown>;
+  if ("error" in r) return false;
+
+  const summary = (r.summary && typeof r.summary === "object" ? r.summary : r) as Record<string, unknown>;
+  if (summary.needs_rewrite === true) return false;
+  if (summary.queued_for_approval === true) return false;
+  if (r.sent === false) return false;
+
+  return true;
+}
+
+/**
+ * Identity of a mutating action, for the "already did this" guard.
+ *
+ * The default is the whole argument object, which answers "were these the exact
+ * same instructions". For sending, the question that matters is different: did
+ * this person already get an email this request. Keying a send on its arguments
+ * means rewording the body produces a new key, so a model that redrafts and
+ * re-sends delivers twice to the same prospect — and the rewrite path added by
+ * the quality gate makes exactly that sequence likely.
+ *
+ * Recipient identity is therefore the key for sends. Everything else keeps
+ * argument identity, which is correct for tools whose repeat cost is wasted
+ * work rather than a second email to a real person.
+ */
+function mutationKeyFor(toolName: string, args: Record<string, unknown>): string | null {
+  if (!MUTATING_TOOLS.has(toolName)) return null;
+
+  if (toolName === "send_outreach") {
+    const who = String(args.lead_id ?? args.to ?? "").trim().toLowerCase();
+    if (who) return `send_outreach:recipient:${who}`;
+  }
+
+  return `${toolName}:${JSON.stringify(args, Object.keys(args).sort())}`;
+}
+
+const TOOL_RESULT_LIMIT = 12000;
+
+/**
+ * Serialise a tool result for the model without ever handing it broken JSON.
+ *
+ * This used to be JSON.stringify(result).slice(0, 12000). Any result over the
+ * limit reached the model as a string that starts like JSON and stops
+ * mid-token — and a model given a truncated record does not report a truncated
+ * record, it infers what the rest probably said. draft_outreach returns up to
+ * twenty drafts each carrying the full generated email, so passing the limit is
+ * routine rather than exceptional.
+ *
+ * Oversized results are shrunk structurally instead: the longest array is
+ * trimmed, element by element, until the whole thing fits, and the result says
+ * how many were dropped so the model can ask for the rest rather than invent
+ * it. What survives is always valid JSON.
+ */
+function serialiseToolResult(result: unknown): string {
+  let out = JSON.stringify(result) ?? "null";
+  if (out.length <= TOOL_RESULT_LIMIT) return out;
+
+  if (result && typeof result === "object") {
+    // Work on a shallow clone so the caller's object is untouched.
+    const clone: Record<string, unknown> = Array.isArray(result)
+      ? ({ items: [...result] } as Record<string, unknown>)
+      : { ...(result as Record<string, unknown>) };
+
+    // The biggest array is what blew the budget; trim that one.
+    let longestKey: string | null = null;
+    let longestLen = 0;
+    for (const [k, v] of Object.entries(clone)) {
+      if (Array.isArray(v) && v.length > longestLen) {
+        longestKey = k;
+        longestLen = v.length;
+      }
+    }
+
+    if (longestKey) {
+      const items = [...(clone[longestKey] as unknown[])];
+      let dropped = 0;
+      while (items.length > 1) {
+        items.pop();
+        dropped++;
+        clone[longestKey] = items;
+        clone.truncated = true;
+        clone.truncated_note =
+          `${dropped} more ${longestKey} were omitted because the result was too large. ` +
+          `Ask for them by id if you need them — do not assume what they contained.`;
+        out = JSON.stringify(clone);
+        if (out.length <= TOOL_RESULT_LIMIT) return out;
+      }
+    }
+  }
+
+  // Nothing structural to trim (one enormous string, say). Say so in valid JSON
+  // rather than emitting a severed object.
+  return JSON.stringify({
+    truncated: true,
+    truncated_note:
+      "This result was too large to return and could not be trimmed structurally. " +
+      "Re-run the tool for fewer items rather than assuming what it contained.",
+  });
+}
+
 const MUTATING_TOOLS = new Set([
   "enrich_leads",
   "score_leads",
@@ -192,7 +305,7 @@ const TOOLS = [
     function: {
       name: "draft_outreach",
       description:
-        "Draft first-touch cold emails following the OutReign cold email playbook. Pass lead_ids to draft for several leads in ONE call (preferred — never call this tool repeatedly in parallel). Does not send anything.",
+        "Draft first-touch cold emails following the OutReign cold email playbook. Pass lead_ids to draft for several leads in ONE call (preferred — never call this tool repeatedly in parallel). Does not send anything. THIS IS ALSO HOW YOU REDRAFT: to revise an email the user is unhappy with, call this again for the same lead with `feedback` describing what to change. It replaces that lead's draft. Never rewrite email copy yourself in the chat — copy you write by hand is not checked against the playbook, the banned-phrase list, or the proof rules, and it will read like generic marketing.",
       parameters: {
         type: "object",
         properties: {
@@ -206,6 +319,11 @@ const TOOLS = [
             type: "string",
             enum: ["introduction", "follow-up", "meeting", "demo", "proposal"],
             description: "Email goal. Use 'introduction' for first touches.",
+          },
+          feedback: {
+            type: "string",
+            description:
+              "What to change, when redrafting. Pass the user's own words (e.g. 'too salesy, cut the product pitch'). Forces a structurally different email rather than a reword of the same one.",
           },
         },
         required: [],
@@ -1379,12 +1497,28 @@ serve(async (req) => {
             (config?.value_props ?? []).join("; "),
           ].filter(Boolean).join(" — ").slice(0, 600);
 
+          // A redraft is the user rejecting the email they were shown, so it has
+          // to come back structurally different rather than reworded. feedback
+          // reaches generate-email as customInstruction, and variantNum pushes
+          // the skill router to a different framework — regenerating with the
+          // same inputs mostly reproduces the same email, which reads to the
+          // user as the request having been ignored.
+          const feedback = String(args.feedback ?? "").trim().slice(0, 2000);
+
           const basePayload = {
             goal,
             tone: config?.tone ?? "professional",
             senderName: profile?.full_name ?? "",
             senderCompany: profile?.company_name ?? config?.company_context ?? "",
             businessDescription,
+            ...(feedback
+              ? {
+                  customInstruction:
+                    `The user rejected the previous draft for this lead. What they want changed: ${feedback}. ` +
+                    `Write a different email — different opening beat and different structure, not a reword of the last one.`,
+                  variantNum: 1,
+                }
+              : {}),
           };
 
           const genOne = async (id: string) => {
@@ -1412,6 +1546,23 @@ serve(async (req) => {
 
             let draftId: string | null = null;
             if (raw) {
+              // Replace this lead's pending draft rather than adding another.
+              //
+              // Two overlapping draft_outreach calls — ["a","b"] then ["b","c"] —
+              // used to leave lead b holding two drafts, and send_drafts with no
+              // arguments sends every pending draft, so b received two emails.
+              // The per-request mutation guard does not catch it: its key is the
+              // whole argument object, so any change to the id list is a
+              // different key.
+              //
+              // A redraft is the user asking for a better version of the same
+              // email, never a second email to the same person.
+              await admin
+                .from("email_drafts")
+                .delete()
+                .eq("user_id", userId)
+                .eq("lead_id", lead.id);
+
               const { data: savedDraft } = await admin
                 .from("email_drafts")
                 .insert({
@@ -1733,11 +1884,19 @@ serve(async (req) => {
           if (draftErr) return { error: draftErr.message };
 
           let drafts = draftRows ?? [];
-          // lead_ids means "the latest draft per lead", not every draft ever written.
-          if (!draftIds.length && leadIds.length) {
+          // One email per person, always.
+          //
+          // This dedupe used to be skipped when the model passed no arguments —
+          // which is the documented "send every pending draft" path, and the
+          // one most likely to be holding duplicates. Explicit draft_ids are
+          // still honoured exactly: naming two drafts means the operator meant
+          // two, and rows already ordered newest-first so the survivor is the
+          // most recent.
+          if (!draftIds.length) {
             const seen = new Set<string>();
             drafts = drafts.filter((d: any) => {
-              if (!d.lead_id || seen.has(d.lead_id)) return false;
+              if (!d.lead_id) return true;
+              if (seen.has(d.lead_id)) return false;
               seen.add(d.lead_id);
               return true;
             });
@@ -1839,10 +1998,14 @@ serve(async (req) => {
           if (draftErr) return { error: draftErr.message };
 
           let drafts = draftRows ?? [];
-          if (!draftIds.length && leadIds.length) {
+          // One scheduled email per person — same rule as send_drafts. A
+          // duplicate scheduled instead of sent is the same duplicate arriving
+          // later, and the no-argument call is the one likeliest to hold them.
+          if (!draftIds.length) {
             const seen = new Set<string>();
             drafts = drafts.filter((d: any) => {
-              if (!d.lead_id || seen.has(d.lead_id)) return false;
+              if (!d.lead_id) return true;
+              if (seen.has(d.lead_id)) return false;
               seen.add(d.lead_id);
               return true;
             });
@@ -2505,6 +2668,8 @@ CURRENT TIME: ${formatLocal(new Date())} — the user's local time. In UTC that 
 HOW TO WORK
 - When the user says something like "I just searched some leads, take it from here", find the relevant leads with list_leads first, then chain the work: enrich -> score -> draft -> send/queue. Do not ask permission for read-only or drafting steps; just do them and report back.
 - Do several tool calls in a row when needed. Prefer batching lead ids over one-at-a-time calls. For drafting, ALWAYS pass every lead id in a single draft_outreach call via lead_ids — never fire many parallel draft_outreach calls, that trips the rate limiter.
+- NEVER write, rewrite or "improve" email copy yourself in the chat. Every email the user sees must come from draft_outreach, which runs the playbook, the banned-phrase list, the proof rules and the quality rubric. When the user dislikes a draft ("redraft this", "too salesy", "make it shorter"), call draft_outreach again for that lead with feedback set to what they said — it replaces the draft. Copy you compose by hand is checked by nothing and reads like generic marketing, which is the single most common complaint about this product.
+- NEVER invent proof. No case studies, no "one company saw a significant increase", no anonymized customer stories, no metrics — not even vague ones — unless the exact proof was given to you in the lead data or by the user. An invented result is worse than no result.
 - draft_outreach goal must be one of: introduction, follow-up, meeting, demo, proposal. Use "introduction" for first touches.
 - Drafts are auto-saved and rendered in the chat as read-only preview cards. There are no buttons anywhere in this chat — everything happens through messages. After drafting, tell the user the drafts are below for review and ask them to reply when they want them sent or scheduled.
 - QUALITY: send_outreach scores anything you wrote yourself before it goes out. If it answers needs_rewrite, the email was NOT sent: rewrite it against the feedback it returned and call send_outreach again with the new subject and body. Do not re-send the same text, do not tell the user it went out, and do not work around the check by saving it as a draft and sending that instead. If it answers with unfilled placeholders, fill in the real values and call again.
@@ -2643,9 +2808,7 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
           args = {};
         }
         const toolName = call.function?.name ?? "";
-        const mutationKey = MUTATING_TOOLS.has(toolName)
-          ? `${toolName}:${JSON.stringify(args, Object.keys(args).sort())}`
-          : null;
+        const mutationKey = mutationKeyFor(toolName, args);
         if (mutationKey && completedMutationKeys.has(mutationKey)) {
           return {
             role: "tool",
@@ -2665,10 +2828,7 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
         let stepDetail: string | null = null;
         try {
           result = await runTool(toolName, args);
-          if (
-            mutationKey &&
-            !(result && typeof result === "object" && "error" in result)
-          ) {
+          if (mutationKey && didMutate(result)) {
             completedMutationKeys.add(mutationKey);
           }
         } catch (e) {
@@ -2692,7 +2852,7 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
         return {
           role: "tool",
           tool_call_id: call.id,
-          content: JSON.stringify(result).slice(0, 12000),
+          content: serialiseToolResult(result),
         };
       };
 
