@@ -276,3 +276,121 @@ NUMBERS — ZERO TOLERANCE:
 - Never invent customers, logos, case studies, benchmarks, funding rounds or hires.
 - Never sign off with a stand-in identity ("Sender Name", "Your Name", "Your Company").
   Use the sender_name and sender_company values exactly as given.`;
+
+// ─── Grounding ───────────────────────────────────────────────────────────────
+//
+// A cold email earns a reply by proving it was written for one person. The
+// research step already finds real facts — a live job posting, a named product,
+// a stated market — and hands them to the generator. The failure this catches is
+// the model receiving strong research and writing around it:
+//
+//   research: 5 findings, 98/100, high confidence
+//   draft:    "Your team's focus on verified outcomes suggests you value ROI"
+//
+// That sentence would be true of any company. Nothing in it could only be true
+// of this one, so it reads as a mail merge and gets no reply — which is exactly
+// what a 50% open rate with no replies looks like.
+
+/** Words too generic to prove an email was written for a specific prospect.
+ *  Every one of these appears in B2B copy regardless of who it is aimed at. */
+const GENERIC_TERMS = new Set([
+  "sales", "team", "teams", "company", "companies", "business", "businesses",
+  "customer", "customers", "client", "clients", "product", "products",
+  "platform", "software", "solution", "solutions", "service", "services",
+  "market", "markets", "growth", "revenue", "pipeline", "outreach", "outbound",
+  "marketing", "process", "processes", "data", "tool", "tools", "technology",
+  "founder", "founders", "leader", "leaders", "manager", "managers",
+  "people", "users", "work", "working", "help", "helps", "helping",
+  "focus", "value", "values", "results", "outcomes", "quality", "scale",
+  "scaling", "based", "using", "their", "there", "which", "where", "while",
+  "with", "from", "that", "this", "they", "them", "your", "yours", "have",
+  "into", "more", "most", "than", "then", "when", "what", "who", "why",
+  "recently", "currently", "across", "through", "about", "after", "before",
+  // Generic verbs. A fact stated with one of these as its only distinctive
+  // word ("they help teams improve pipeline") is not a fact about anyone.
+  "improve", "improving", "increase", "increasing", "reduce", "reducing",
+  "build", "builds", "building", "built", "make", "makes", "making",
+  "provide", "provides", "offer", "offers", "enable", "enables", "deliver",
+  "delivers", "support", "supports", "manage", "manages", "drive", "drives",
+  "automate", "automates", "automating", "streamline", "optimize", "optimise",
+  "personalized", "personalised", "faster", "better", "easier", "efficient",
+]);
+
+/**
+ * Distinctive terms drawn from what the research actually found.
+ *
+ * `exclude` should carry the company and contact name: those appear in every
+ * draft by construction, so counting them as grounding would pass an email that
+ * did nothing but say the company's name back.
+ */
+export function groundingTerms(facts: string[], exclude: string[] = []): string[] {
+  const skip = new Set(
+    exclude.flatMap((e) => String(e ?? "").toLowerCase().split(/\W+/)).filter(Boolean),
+  );
+
+  const terms = new Set<string>();
+  for (const fact of facts) {
+    for (const raw of String(fact ?? "").split(/[^A-Za-z0-9.+#-]+/)) {
+      const token = raw.replace(/^[.\-]+|[.\-]+$/g, "");
+      const lower = token.toLowerCase();
+      // Short tokens carry no evidence; generic and excluded ones prove nothing.
+      if (token.length < 4) continue;
+      if (GENERIC_TERMS.has(lower) || skip.has(lower)) continue;
+      terms.add(lower);
+    }
+  }
+  return [...terms];
+}
+
+/** Whether the draft references anything the research actually found. */
+export function isGroundedIn(text: string, terms: string[]): boolean {
+  if (terms.length === 0) return true; // nothing was found, so nothing to use
+  const body = String(text ?? "").toLowerCase();
+  return terms.some((t) => new RegExp(`\\b${t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(body));
+}
+
+/**
+ * The mirror: telling a prospect what they do, as an analogy for what you do.
+ *
+ *   "scaling your sales outreach like Raisi scales investor outreach"
+ *   "similar to how Raisi automates personalized investor outreach"
+ *
+ * This passes a grounding check — it does use a fact from the research — while
+ * carrying no insight. The reader learns nothing they did not already know
+ * about their own company, and the sentence exists to flatter the sender's
+ * product. Grounding is a floor; this is a distinct failure above it.
+ */
+const MIRROR_PATTERNS: RegExp[] = [
+  /\b(?:just |much )?like\s+(?:how\s+)?\w[\w'-]*\s+\w+s\b/gi,
+  /\bsimilar(?:ly)?\s+to\s+how\b/gi,
+  /\bthe\s+way\s+(?:that\s+)?\w[\w'-]*\s+\w+s\s+\w+/gi,
+  /\bin\s+the\s+same\s+way\s+(?:that\s+)?\w/gi,
+]
+
+/** Mirror-analogy phrasings present in `text`. */
+export function findMirrorAnalogies(text: string): string[] {
+  const body = String(text ?? "");
+  const hits: string[] = [];
+  for (const pattern of MIRROR_PATTERNS) {
+    for (const m of body.matchAll(new RegExp(pattern))) {
+      const hit = m[0].trim();
+      if (!hits.includes(hit)) hits.push(hit);
+    }
+  }
+  return hits;
+}
+
+/** Retry instruction naming the facts the draft ignored. */
+export function groundingRetry(facts: string[]): string {
+  const named = facts.slice(0, 4).map((f) => `- ${f}`).join("\n");
+  return `
+REWRITE REQUIRED — the draft was not specific to this prospect.
+
+Nothing in it could only be true of this company. Research found these facts:
+${named}
+
+Open on ONE of them, stated plainly as something you saw. Do not describe what
+the company "focuses on" or "values" — that is a guess dressed as research.
+Do not restate what they do back to them as an analogy. Reference the actual
+detail, then connect it to one consequence they would recognise.`;
+}

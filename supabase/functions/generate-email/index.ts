@@ -13,6 +13,10 @@ import {
   NO_FABRICATED_METRICS_RULE,
   bannedPhrasesBlock,
   fillSenderStandIns,
+  findMirrorAnalogies,
+  groundingRetry,
+  groundingTerms,
+  isGroundedIn,
   nameFromEmail,
   findPlaceholders,
   findSenderStandIns,
@@ -1277,6 +1281,65 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
         } else {
           claims = findUnverifiedClaims(second || email, proofForClaims);
         }
+      }
+    }
+
+    // ─── Reply-worthiness: did the draft use the research it was given? ──────
+    //
+    // The research step routinely returns strong findings and the model writes
+    // around them: "your team's focus on verified outcomes suggests you value
+    // ROI" is true of any company on earth. That email gets opened and ignored,
+    // which is what a good open rate with no replies looks like.
+    //
+    // Only enforced when there were facts worth using. Thin research is already
+    // handled upstream by telling the model not to imply it studied the site,
+    // and punishing it twice would push copy toward vaguer, not sharper.
+    const researchFacts: string[] = [
+      ...(researchBrief?.observations ?? []).map((o: any) => String(o?.fact ?? '')).filter(Boolean),
+      ...(researchBrief?.hooks ?? []).map((h: any) => String(h ?? '')).filter(Boolean),
+    ];
+    const canPersonalize = researchBrief?.quality?.safe_to_personalize !== false;
+    const groundTerms = canPersonalize
+      ? groundingTerms(researchFacts, [lead?.company_name ?? '', lead?.contact_name ?? ''])
+      : [];
+
+    const ungrounded = groundTerms.length > 0 && !isGroundedIn(email, groundTerms);
+    const mirrors = findMirrorAnalogies(email);
+
+    if (ungrounded || mirrors.length) {
+      console.warn(
+        `[generate-email] rewrite for specificity — ungrounded=${ungrounded} mirrors=${mirrors.length}`,
+      );
+      const note = ungrounded
+        ? groundingRetry(researchFacts)
+        : `REWRITE REQUIRED — remove the mirror analogy (${mirrors.join('; ')}). Telling the prospect what they already do, as a comparison to your product, tells them nothing. Open on a fact and its consequence instead.`;
+
+      const specificityRetry = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: `${userPrompt}\n${note}` },
+          ],
+          temperature: 0.5,
+        }),
+      });
+
+      if (specificityRetry.ok) {
+        const d = await specificityRetry.json();
+        const second = cleanGeneratedEmail((d.choices?.[0]?.message?.content || '').trim(), preserveSubject);
+        // Only take the rewrite if it is actually better on every axis we
+        // already guard — a sharper email that reintroduces a placeholder or an
+        // invented metric is not an improvement.
+        const secondOk = second &&
+          !hasPlaceholder(second) &&
+          !findUnverifiedClaims(second, proofForClaims).length &&
+          !findMirrorAnalogies(second).length &&
+          (groundTerms.length === 0 || isGroundedIn(second, groundTerms));
+        if (secondOk) email = second;
+        else console.warn('[generate-email] specificity rewrite rejected, keeping original');
       }
     }
 
