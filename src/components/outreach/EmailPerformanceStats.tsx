@@ -249,6 +249,30 @@ export const EmailPerformanceStats = () => {
     return () => window.clearInterval(id);
   }, []);
 
+  // Pull replies straight from the connected inbox so reply metrics reflect the
+  // mailbox, not just what happened to be synced earlier.
+  useEffect(() => {
+    let running = false;
+    const pull = async () => {
+      if (running) return;
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+      running = true;
+      try {
+        await supabase.functions.invoke("inbox-sync", { body: {} });
+        void reload.current();
+      } catch {
+        // Non-fatal: stored data still renders.
+      } finally {
+        running = false;
+      }
+    };
+    void pull();
+    const id = window.setInterval(pull, 120_000);
+    return () => window.clearInterval(id);
+  }, []);
+
+
+
 
   const sent = useMemo(() => emails.filter((e) => e.status === "sent" || !!e.sent_at), [emails]);
 
