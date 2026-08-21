@@ -12,16 +12,21 @@
 // service has answered, so anything salesos returns — from any provider it
 // adds, ColdIQ included — passes through the same gate.
 //
-// IMPORTANT — the endpoint path and auth style below are DEFAULTS, not
-// verified facts. coldiq.com is unreachable from this build environment, so
-// the exact contract was never read. Everything that could differ is
-// overridable by secret, so correcting a wrong guess is a config change rather
-// than a deploy:
+// Confirmed against the ColdIQ OpenAPI spec (ColdIQ API 0.1.0): the server is
+// https://api.coldiq.com, auth is HTTP bearer, and the verb lives at
+// POST /v1/email/verify. The overrides below remain because a marketplace
+// versions its own paths and this costs nothing to keep:
 //
 //   COLDIQ_API_KEY      required — the marketplace key. Absent = ColdIQ off.
 //   COLDIQ_BASE_URL     default https://api.coldiq.com
 //   COLDIQ_VERIFY_PATH  default /v1/email/verify
 //   COLDIQ_AUTH_STYLE   "bearer" (default) | "x-api-key" | "both"
+//   COLDIQ_MAX_CREDITS  optional per-record spend cap, in credits
+//
+// Billing, per the spec: verification runs on BounceBan at ~0.2 credits per
+// conclusively-verified address, failing over to Icypeas at 0.1. An `unknown`
+// verdict is free. So the free DNS gate in email-verify.ts is not just a
+// latency win — every address it disqualifies is one ColdIQ never bills for.
 
 const DEFAULT_BASE_URL = "https://api.coldiq.com";
 const DEFAULT_VERIFY_PATH = "/v1/email/verify";
@@ -52,6 +57,20 @@ export function coldiqAuthHeaders(): Record<string, string> {
   if (style === "x-api-key") return { "X-API-Key": key };
   if (style === "both") return { Authorization: `Bearer ${key}`, "X-API-Key": key };
   return { Authorization: `Bearer ${key}` };
+}
+
+/**
+ * Optional per-record spend cap, as the API's own `max_credits` field.
+ *
+ * The marketplace routes across vendors of different prices, so one expensive
+ * provider answering can cost several times what the usual one does. This caps
+ * that per address: a provider that would answer but costs more is skipped,
+ * and the record comes back a miss rather than an unbounded charge. Unset by
+ * default — capping too low silently converts verifications into misses.
+ */
+export function coldiqSpendCap(): { max_credits?: number } {
+  const raw = Number(Deno.env.get("COLDIQ_MAX_CREDITS"));
+  return Number.isFinite(raw) && raw > 0 ? { max_credits: raw } : {};
 }
 
 export function coldiqVerifyUrl(): string {

@@ -308,3 +308,86 @@ describe("batch verification", () => {
     expect([...out.values()].every((v) => v.status === "unknown")).toBe(true);
   });
 });
+
+describe("ColdIQ contract, confirmed against the OpenAPI spec", () => {
+  it("nests the address under `input`, which is what the API accepts", async () => {
+    // A flat {email} is rejected. This was wrong until the spec was read.
+    setEnv({ COLDIQ_API_KEY: "cq-key" });
+    const fetchSpy = stubFetch({ ...LIVE_MX, provider: { data: { status: "deliverable" } } });
+    await verifyEmail(noCache, "ceo@example.com");
+    const call = fetchSpy.mock.calls.find(([u]) => String(u).includes("coldiq"));
+    const body = JSON.parse(String((call?.[1] as RequestInit)?.body ?? "{}"));
+    expect(body).toHaveProperty("input.email", "ceo@example.com");
+    expect(body).not.toHaveProperty("email");
+  });
+
+  it("reads the spec's own vocabulary", async () => {
+    // The endpoint documents: deliverable, risky, catch-all, invalid.
+    setEnv({ COLDIQ_API_KEY: "cq-key" });
+    for (const [verdict, expected] of [
+      ["deliverable", "valid"],
+      ["risky", "unknown"],
+      ["catch-all", "catch_all"],
+      ["invalid", "invalid"],
+    ] as const) {
+      stubFetch({ ...LIVE_MX, provider: { data: { status: verdict } } });
+      const r = await verifyEmail(noCache, "ceo@example.com");
+      expect(r.status, verdict).toBe(expected);
+    }
+  });
+
+  it("batches instead of sending one request per address", async () => {
+    // 100 leads was 100 round trips; the verb takes 50 inputs per call.
+    setEnv({ COLDIQ_API_KEY: "cq-key" });
+    const fetchSpy = stubFetch({
+      ...LIVE_MX,
+      provider: { results: Array.from({ length: 50 }, () => ({ status: "deliverable" })) },
+    });
+    const addrs = Array.from({ length: 60 }, (_, i) => `p${i}@example.com`);
+    await verifyEmails(noCache, addrs);
+    const vendorCalls = fetchSpy.mock.calls.filter(([u]) => String(u).includes("coldiq"));
+    expect(vendorCalls.length).toBeLessThanOrEqual(2);
+    const first = JSON.parse(String((vendorCalls[0]?.[1] as RequestInit)?.body ?? "{}"));
+    expect(Array.isArray(first.inputs)).toBe(true);
+    expect(first.inputs.length).toBeLessThanOrEqual(50);
+  });
+
+  it("never sends an address the free gate already rejected", async () => {
+    // The spec bills per conclusively-verified address, so not sending is not paying.
+    setEnv({ COLDIQ_API_KEY: "cq-key" });
+    const fetchSpy = stubFetch({ ...LIVE_MX, provider: { results: [{ status: "deliverable" }] } });
+    await verifyEmails(noCache, ["ceo@example.com", "someone@mailinator.com", "nope"]);
+    const vendorCalls = fetchSpy.mock.calls.filter(([u]) => String(u).includes("coldiq"));
+    const sent = JSON.parse(String((vendorCalls[0]?.[1] as RequestInit)?.body ?? "{}"));
+    const addresses = (sent.inputs ?? []).map((i: { email: string }) => i.email);
+    expect(addresses).toContain("ceo@example.com");
+    expect(addresses).not.toContain("someone@mailinator.com");
+    expect(addresses).not.toContain("nope");
+  });
+
+  it("leaves an address unresolved when the batch response has no row for it", async () => {
+    // A gappy array must not be read as a clean verdict.
+    setEnv({ COLDIQ_API_KEY: "cq-key" });
+    stubFetch({ ...LIVE_MX, provider: { results: [{ status: "deliverable" }] } });
+    const out = await verifyEmails(noCache, ["a@example.com", "b@example.com"]);
+    expect(out.get("a@example.com")?.status).toBe("valid");
+    expect(out.get("b@example.com")?.verified).toBeNull();
+  });
+
+  it("omits the spend cap unless one is configured", async () => {
+    // Capping too low silently converts verifications into misses.
+    setEnv({ COLDIQ_API_KEY: "cq-key" });
+    const fetchSpy = stubFetch({ ...LIVE_MX, provider: { data: { status: "deliverable" } } });
+    await verifyEmail(noCache, "ceo@example.com");
+    const call = fetchSpy.mock.calls.find(([u]) => String(u).includes("coldiq"));
+    expect(JSON.parse(String((call?.[1] as RequestInit)?.body ?? "{}"))).not.toHaveProperty("max_credits");
+  });
+
+  it("passes the spend cap through when set", async () => {
+    setEnv({ COLDIQ_API_KEY: "cq-key", COLDIQ_MAX_CREDITS: "1.5" });
+    const fetchSpy = stubFetch({ ...LIVE_MX, provider: { data: { status: "deliverable" } } });
+    await verifyEmail(noCache, "ceo@example.com");
+    const call = fetchSpy.mock.calls.find(([u]) => String(u).includes("coldiq"));
+    expect(JSON.parse(String((call?.[1] as RequestInit)?.body ?? "{}"))).toHaveProperty("max_credits", 1.5);
+  });
+});
