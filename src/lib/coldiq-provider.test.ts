@@ -15,7 +15,7 @@ function setEnv(env: Record<string, string>) {
   (globalThis as unknown as { Deno: unknown }).Deno = { env: { get: (k: string) => env[k] } };
 }
 const okResponse = (body: unknown) =>
-  vi.fn(async () => new Response(JSON.stringify(body), { status: 200 }));
+  vi.fn(async (_url?: string | URL, _init?: RequestInit) => new Response(JSON.stringify(body), { status: 200 }));
 
 beforeEach(() => setEnv({}));
 afterEach(() => vi.unstubAllGlobals());
