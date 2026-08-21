@@ -6,10 +6,15 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
  * recipient to the original destination. Unauthenticated by design (the
  * recipient's mail client calls it), matched only by tracking_pixel_id.
  */
+// Security appliances and link-checkers pre-fetch URLs — never a human click.
+const SCANNER_UA = /(barracuda|proofpoint|mimecast|symantec|forcepoint|trendmicro|messagelabs|bitdefender|virustotal|slackbot|discordbot|facebookexternalhit|twitterbot|linkedinbot|bingpreview|python-requests|curl\/|wget|okhttp|axios|node-fetch|headlesschrome|monitoring|uptime)/i;
+
 serve(async (req) => {
   const url = new URL(req.url);
   const pixelId = url.searchParams.get("id");
   const target = url.searchParams.get("u") || "";
+  const isScanner = SCANNER_UA.test(req.headers.get("user-agent") || "");
+
 
   const safeTarget = /^https?:\/\//i.test(target) ? target : null;
 
