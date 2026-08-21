@@ -1503,6 +1503,7 @@ export type Database = {
           domain: string | null
           id: string
           message: string
+          notified_at: string | null
           resolved_at: string | null
           sending_account_id: string | null
           severity: string
@@ -1515,6 +1516,7 @@ export type Database = {
           domain?: string | null
           id?: string
           message: string
+          notified_at?: string | null
           resolved_at?: string | null
           sending_account_id?: string | null
           severity?: string
@@ -1527,6 +1529,7 @@ export type Database = {
           domain?: string | null
           id?: string
           message?: string
+          notified_at?: string | null
           resolved_at?: string | null
           sending_account_id?: string | null
           severity?: string
