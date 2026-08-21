@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
 import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
 import { rateLimit, rateLimitResponse } from "../_shared/rate-limit.ts";
 import {
+import { toSignalFacts, type SignalEventRow } from "../_shared/signal-facts.ts";
   briefToPromptBlock,
   isResearchFresh,
   resolveLeadDomain,
@@ -351,6 +352,30 @@ serve(async (req) => {
     }
     if (lead.score_reason) leadContextLines.push(`- Why it scored that way: ${lead.score_reason}`);
 
+    // ─── Detected events: the half of the research a website cannot supply ────
+    //
+    // The detectors already found what actually earns a reply — a Form D filed
+    // last month, a Head of Growth posted three weeks ago, Segment added to the
+    // stack — with a date and a citable source. Until now that drove the intent
+    // score and stopped there, while the copy was researched from marketing
+    // pages that say the same thing to every visitor and carry no timing.
+    const { data: signalRows } = await supabase
+      .from("signal_events")
+      .select("signal_type, occurred_at, source, metadata")
+      .eq("lead_id", leadId)
+      .eq("user_id", user.id)
+      .order("occurred_at", { ascending: false })
+      .limit(25);
+
+    const signalFacts = toSignalFacts((signalRows ?? []) as SignalEventRow[]);
+    if (signalFacts.length) {
+      leadContextLines.push(
+        "- VERIFIED EVENTS at this account (dated, sourced — these are the strongest opener material available, stronger than anything on their website):",
+        ...signalFacts.map((f) => `    • ${f.fact}  [${f.source}]`),
+        "  Build at least one hook on one of these. They are what makes the email timely rather than merely accurate.",
+      );
+    }
+
     let result: ModelResult;
     try {
       result = await generateBrief(siteText, leadContextLines.join("\n"), LOVABLE_API_KEY);
@@ -381,9 +406,25 @@ serve(async (req) => {
     }
 
     const sources = pages.map((p) => p.url);
+
+    // Signal facts are merged in rather than asked for. They are verified
+    // events with dates and citable sources, so routing them through a
+    // generator could only lose or soften them — and the model has already
+    // shown it will write around evidence it was given. They lead the
+    // observation list because recency is what a cold open trades on.
+    const modelObservations = (result.brief.observations ?? []).filter((o) => o?.fact);
+    const mergedObservations = [
+      ...signalFacts.map((f) => ({ fact: f.fact, source: f.source })),
+      ...modelObservations,
+    ];
+
     const baseBrief: LeadResearchBrief = {
       ...result.brief,
-      confidence: thinSite && result.brief.confidence === "high" ? "medium" : result.brief.confidence,
+      observations: mergedObservations,
+      confidence: thinSite && result.brief.confidence === "high"
+        // A dated, sourced event is evidence a thin website cannot undo.
+        ? (signalFacts.length ? "high" : "medium")
+        : result.brief.confidence,
     };
     // Deterministic completeness score so every surface gates the same way.
     const quality = scoreResearchQuality(baseBrief, sources);
@@ -394,7 +435,7 @@ serve(async (req) => {
       .from("leads")
       .update({
         research_brief: brief,
-        research_sources: sources,
+        research_sources: [...sources, ...signalFacts.map((f) => f.source)],
         research_confidence: brief.confidence,
         researched_at: researchedAt,
       })
