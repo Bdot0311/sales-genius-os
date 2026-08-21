@@ -26,7 +26,7 @@ const noCache = {
 
 /** DoH answers keyed by "<name>|<type>", plus canned provider responses. */
 function stubFetch(opts: { mx?: string[]; a?: string[]; provider?: unknown; providerStatus?: number }) {
-  const spy = vi.fn(async (input: string | URL) => {
+  const spy = vi.fn(async (input: string | URL, _init?: RequestInit) => {
     const url = String(input);
     if (url.includes("cloudflare-dns.com")) {
       const type = new URL(url).searchParams.get("type");

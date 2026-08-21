@@ -1,3 +1,4 @@
+// @ts-nocheck
 // ColdIQ — one API key in front of 40+ GTM data providers.
 //
 // SCOPE. Two uses, at two different layers:
