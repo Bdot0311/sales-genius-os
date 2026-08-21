@@ -22,7 +22,7 @@
 // case to callProvider() — nothing else in the codebase knows the vendor.
 
 import { dohQuery, validateDomain } from "./dns.ts";
-import { coldiqAuthHeaders, coldiqVerifyUrl } from "./coldiq.ts";
+import { coldiqAuthHeaders, coldiqSpendCap, coldiqVerifyUrl } from "./coldiq.ts";
 
 export type VerificationStatus = "valid" | "catch_all" | "unknown" | "invalid" | "role";
 
@@ -352,13 +352,12 @@ async function callProvider(email: string): Promise<VerificationResult> {
     let res: Response;
 
     if (provider === "coldiq") {
-      // Marketplace call: POST with the key in a header rather than the query
-      // string. The exact path is configurable because the contract was never
-      // read — see _shared/coldiq.ts.
+      // Shape confirmed against the ColdIQ OpenAPI spec: the address goes in a
+      // nested `input` object, not at the top level. A flat {email} is rejected.
       res = await fetch(coldiqVerifyUrl(), {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json", ...coldiqAuthHeaders() },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ input: { email }, ...coldiqSpendCap() }),
         signal: ctrl.signal,
       });
     } else {
@@ -437,6 +436,74 @@ export async function verifyEmail(supabase: CacheClient, rawEmail: string): Prom
   return resolved;
 }
 
+/** ColdIQ's synchronous verb takes up to 50 addresses per call, run in
+ *  parallel server-side. The cap is theirs, not ours. */
+const COLDIQ_BATCH_SIZE = 50;
+
+/**
+ * Verify many addresses through ColdIQ in as few requests as possible.
+ *
+ * The per-address path would send one request each — a hundred round trips for
+ * a hundred-lead search, every one of them a chance to hit the deadline. The
+ * marketplace accepts `inputs[]` and fans out on its own side, so the same work
+ * is two requests.
+ *
+ * Only addresses that survived the cache and the free gate get here: an address
+ * the DNS layer already disqualified is never sent, and the spec bills per
+ * conclusively-verified address, so not sending it is not paying for it.
+ *
+ * Returns only what the provider answered for. Anything missing from the
+ * response is left for the caller to treat as unresolved rather than being
+ * invented as clean.
+ */
+async function verifyBatchViaColdIq(emails: string[]): Promise<Map<string, VerificationResult>> {
+  const out = new Map<string, VerificationResult>();
+
+  for (let i = 0; i < emails.length; i += COLDIQ_BATCH_SIZE) {
+    const chunk = emails.slice(i, i + COLDIQ_BATCH_SIZE);
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), PROVIDER_TIMEOUT_MS * 3);
+
+    try {
+      const res = await fetch(coldiqVerifyUrl(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json", ...coldiqAuthHeaders() },
+        body: JSON.stringify({
+          inputs: chunk.map((email) => ({ email })),
+          ...coldiqSpendCap(),
+        }),
+        signal: ctrl.signal,
+      });
+
+      if (!res.ok) {
+        const detail = (await res.text().catch(() => "")).slice(0, 300);
+        console.error(`[email-verify] coldiq bulk returned ${res.status}:`, detail);
+        continue; // leave this chunk unresolved rather than condemning it
+      }
+
+      const payload = await res.json();
+      logVerdictShape("coldiq-bulk", payload, unwrapVerdict(payload));
+
+      // Bulk answers arrive under `results`, positionally aligned with inputs.
+      const rows = Array.isArray(payload?.results) ? payload.results : [];
+      chunk.forEach((email, idx) => {
+        const row = rows[idx];
+        // A short or gappy array means the provider did not answer for this
+        // address. Skipping it leaves it unresolved; filling it in would be
+        // inventing a verdict.
+        if (row === undefined || row === null) return;
+        out.set(email, interpret("coldiq", row));
+      });
+    } catch (e) {
+      console.error("[email-verify] coldiq bulk request failed:", (e as Error).message);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  return out;
+}
+
 /**
  * Verify a batch, bounded by both concurrency and a wall-clock deadline.
  *
@@ -455,6 +522,78 @@ export async function verifyEmails(
   const results = new Map<string, VerificationResult>();
 
   const queue = [...new Set(emails.map((e) => (e ?? "").trim().toLowerCase()).filter(Boolean))];
+
+  // ColdIQ verifies up to 50 addresses per request, so resolve everything that
+  // needs no request at all first, then send what is left in one or two calls
+  // rather than one call per address.
+  if (providerName() === "coldiq" && queue.length > 1) {
+    const needsProvider: string[] = [];
+    const freeVerdicts = new Map<string, VerificationResult>();
+
+    for (const email of queue) {
+      if (Date.now() > deadline) break;
+
+      const cacheKey = `email_verify:${email}`;
+      const cached = await cacheGet(supabase, cacheKey);
+      if (cached && typeof cached === "object" && "status" in (cached as Record<string, unknown>)) {
+        results.set(email, { ...(cached as VerificationResult), source: "cache" });
+        continue;
+      }
+
+      const free = await freeGate(supabase, email);
+      if (free?.status === "invalid") {
+        await cacheSet(supabase, cacheKey, free, CACHE_TTL_SECONDS);
+        results.set(email, free);
+        continue; // never sent, never billed
+      }
+      if (free) freeVerdicts.set(email, free);
+      needsProvider.push(email);
+    }
+
+    const verdicts = await verifyBatchViaColdIq(needsProvider);
+
+    for (const email of needsProvider) {
+      const paid = verdicts.get(email);
+      const free = freeVerdicts.get(email);
+
+      if (!paid) {
+        // The provider did not answer for this address. Fall back to whatever
+        // the free gate concluded rather than reporting it as checked.
+        results.set(email, free ?? {
+          status: "unknown",
+          verified: null,
+          reason: "Verification did not complete",
+          source: "coldiq",
+        });
+        continue;
+      }
+
+      // Same rule as the single path: a vendor confirming info@ exists answers
+      // a different question than whether it is safe to cold-email.
+      const resolved = (free?.status === "role" && paid.status === "valid")
+        ? { ...free, source: `${free.source}+${paid.source}` }
+        : paid;
+
+      if (resolved.status !== "unknown") {
+        await cacheSet(supabase, `email_verify:${email}`, resolved, CACHE_TTL_SECONDS);
+      }
+      results.set(email, resolved);
+    }
+
+    // Anything the deadline cut short above never got a verdict.
+    for (const email of queue) {
+      if (!results.has(email)) {
+        results.set(email, {
+          status: "unknown",
+          verified: null,
+          reason: "Verification still pending",
+          source: "deadline",
+        });
+      }
+    }
+    return results;
+  }
+
   let cursor = 0;
 
   const worker = async () => {
