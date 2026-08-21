@@ -22,6 +22,9 @@ import {
 // address the user can see is one we have actually checked — see
 // _shared/email-verify.ts for the two-layer (free DNS, then paid SMTP) design.
 import { verifyEmails, hasPaidVerifier, type VerificationStatus } from "../_shared/email-verify.ts";
+// Last-resort lead sourcing. Only runs when the primary provider returned
+// nothing — see _shared/coldiq.ts for why there is no "always" mode.
+import { coldiqLeadsMode, coldiqSearchPeople, coldiqConfigured } from "../_shared/coldiq.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -1031,6 +1034,12 @@ serve(async (req) => {
     // the UI can say the results are wider than what was asked for.
     let relaxedFilters: string[] = [];
 
+    // Set when the marketplace fallback, not the primary provider, produced the
+    // results. Without it the usage event credits ColdIQ's leads to the primary
+    // and the spend telemetry cannot tell the two apart — which is exactly the
+    // number needed to judge whether the fallback is worth its credits.
+    let sourcedFromColdIq = false;
+
     console.log('=== REQUEST TO RAILWAY ===');
     console.log('URL:', railwayUrl);
     console.log('Request body:', JSON.stringify(requestBody, null, 2));
@@ -1481,6 +1490,55 @@ serve(async (req) => {
     }
 
 
+    // ─── Last resort: the marketplace, before giving the user an empty page ───
+    //
+    // The credit is already spent by this point and every retry above has come
+    // back empty, so the choice is between one marketplace call and showing
+    // nothing for a search the user paid for. Costs credits, so it is the only
+    // circumstance in which it runs.
+    //
+    // The verb anchors on job titles, seniorities, locations and keywords; it
+    // has no free-text query, so a search that parsed into none of those has
+    // nothing to send and is skipped rather than fired blind.
+    if (rawLeads.length === 0 && coldiqConfigured() && coldiqLeadsMode() === "fallback") {
+      const cq = {
+        job_titles: strList(filters.job_titles).length ? strList(filters.job_titles)
+          : (requestBody.job_title ? [String(requestBody.job_title)] : []),
+        seniorities: strList(filters.seniority_levels).length ? strList(filters.seniority_levels)
+          : (requestBody.seniority ? [String(requestBody.seniority)] : []),
+        locations: strList(filters.countries).length ? strList(filters.countries)
+          : (requestBody.location ? [String(requestBody.location)] : []),
+        keywords: strList(filters.keywords),
+        company_domains: [
+          ...(Array.isArray(filters.companies)
+            ? filters.companies.map((c: any) => String(c?.domain ?? '').trim()).filter(Boolean)
+            : []),
+          ...(requestBody.company_domain ? [String(requestBody.company_domain)] : []),
+        ],
+        limit: Math.min(limit, 100),
+      };
+
+      const hasAnchor = cq.job_titles.length || cq.seniorities.length ||
+        cq.keywords.length || cq.company_domains.length;
+
+      if (!hasAnchor) {
+        console.log('[coldiq] skipped — nothing to anchor a people search on');
+      } else {
+        console.log('[coldiq] primary returned 0, trying marketplace fallback');
+        const { records, error: cqErr } = await coldiqSearchPeople(cq);
+        if (cqErr) {
+          console.error('[coldiq] fallback failed:', cqErr);
+        } else if (records.length > 0) {
+          sourcedFromColdIq = true;
+          // Through the same mapper as every other provider: it resolves field
+          // names across conventions, so a normalized marketplace record needs
+          // no parallel mapping path to maintain.
+          rawLeads = records;
+          console.log(`[coldiq] fallback returned ${records.length} record(s)`);
+        }
+      }
+    }
+
     // If all retries exhausted, log schema for diagnosis and refund.
     if (rawLeads.length === 0) {
       console.log('All retries returned 0 leads — fetching Railway schema for diagnosis...');
@@ -1548,7 +1606,8 @@ serve(async (req) => {
     // one provider from three.
     await updateUsageEvent(
       supabase, usageEventId, 'success', leads.length, undefined,
-      data.provider || data.source || 'api', data.total || leads.length,
+      sourcedFromColdIq ? 'coldiq' : (data.provider || data.source || 'api'),
+      data.total || leads.length,
       undefined, data.provider_attempts ?? null,
     );
     return new Response(
