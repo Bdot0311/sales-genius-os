@@ -514,3 +514,75 @@ export function signOffStartIndex(lines: string[]): number {
   if (!isSignatureLine(lines[start])) return -1;
   return start;
 }
+
+// ─── Lead field sanity ───────────────────────────────────────────────────────
+
+/**
+ * Whether a LinkedIn URL identifies a PERSON rather than an organisation.
+ *
+ * Providers disagree about what a bare `linkedin` field means, and several use
+ * it for the company page. The mapper took the first non-empty value it found,
+ * so a company URL was routinely stored as the contact's profile — which is why
+ * opening it "doesn't find the person". Personal profiles live under /in/ (or
+ * /pub/ on older records); companies under /company/ or /school/.
+ */
+export function isPersonLinkedIn(url: string): boolean {
+  const u = String(url ?? "").toLowerCase();
+  if (!u.includes("linkedin.com")) return false;
+  if (/linkedin\.com\/(company|school|showcase)\//.test(u)) return false;
+  return /linkedin\.com\/(in|pub)\//.test(u);
+}
+
+/** Whether a LinkedIn URL identifies an organisation. */
+export function isCompanyLinkedIn(url: string): boolean {
+  return /linkedin\.com\/(company|school|showcase)\//i.test(String(url ?? ""));
+}
+
+/**
+ * Reduce whatever the provider called a "website" to a bare hostname.
+ *
+ * Values arrive as bare domains, full URLs with paths, and occasionally with
+ * tracking query strings. Storing them verbatim is why a lead's website
+ * sometimes points at a subpage, or at something that is not a site at all.
+ * Returns "" when the value cannot be read as a hostname rather than passing
+ * junk through.
+ */
+export function normalizeDomain(value: string): string {
+  let v = String(value ?? "").trim().toLowerCase();
+  if (!v) return "";
+  v = v.replace(/^https?:\/\//, "").replace(/^www\./, "");
+  v = v.split(/[/?#]/)[0];              // drop path, query, fragment
+  v = v.replace(/:\d+$/, "");           // drop port
+  if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(v)) return "";
+  if (!/\.[a-z]{2,}$/.test(v)) return "";
+  return v;
+}
+
+// Mailbox providers: a lead's email being @gmail.com says nothing about whether
+// the company domain is right, so those never count as a mismatch.
+const PUBLIC_MAIL_DOMAINS = new Set([
+  "gmail.com", "googlemail.com", "yahoo.com", "hotmail.com", "outlook.com",
+  "live.com", "msn.com", "icloud.com", "me.com", "aol.com", "proton.me",
+  "protonmail.com", "gmx.com", "mail.com", "yandex.com", "zoho.com",
+]);
+
+/**
+ * True when the email and the company domain disagree in a way worth showing.
+ *
+ * Not a hard error — acquisitions, rebrands and holding companies all produce
+ * legitimate mismatches, and plenty of people use a personal address. It is a
+ * signal that one of the two fields was stitched on from a different record,
+ * which is the shape of the "website doesn't match" complaint.
+ */
+export function emailDomainMismatch(email: string, companyDomain: string): boolean {
+  const e = String(email ?? "").toLowerCase().split("@")[1] ?? "";
+  const c = normalizeDomain(companyDomain);
+  if (!e || !c) return false;
+  if (PUBLIC_MAIL_DOMAINS.has(e)) return false;
+  // Subdomains and country variants of the same brand are not a mismatch:
+  // mail.acme.com vs acme.com, acme.co.uk vs acme.com.
+  const root = (d: string) => d.split(".").slice(-3).join(".");
+  const brand = (d: string) => d.split(".")[0];
+  if (e === c || root(e).includes(root(c)) || root(c).includes(root(e))) return false;
+  return brand(e) !== brand(c);
+}
