@@ -125,8 +125,11 @@ const ROUTES: RouteMeta[] = [
       "Honest comparison of OutReign and ZoomInfo. ZoomInfo is enterprise B2B data with intent signals. OutReign is self-serve outbound for founders and small teams.",
   },
   // The rest of the public routes carried in sitemap.xml. Titles and
-  // descriptions mirror each page's SEOHead; /connect and /install have no
-  // SEOHead at all, so these are the only per-route metadata they get.
+  // descriptions mirror each page's SEOHead; /install has no SEOHead at all, so
+  // its entry here is the only per-route metadata it gets. /connect now has one
+  // and the two are kept identical — the build bakes these in for crawlers and
+  // React re-applies SEOHead on the client, so a disagreement would show one
+  // title to Google and another to a visitor.
   {
     path: "/connect",
     title: "Connect OutReign to Claude and other MCP clients",
