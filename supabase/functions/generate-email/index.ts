@@ -23,6 +23,9 @@ import {
   findUnverifiedClaims,
   hasPlaceholder,
   noFabricationRetry,
+  NO_PLATFORM_BRAND_RULE,
+  findPlatformBrandLeaks,
+  stripPlatformBrand,
 } from "../_shared/email-rules.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {
