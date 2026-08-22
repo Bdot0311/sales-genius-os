@@ -61,7 +61,7 @@ describe("generate-email refuses to write what it cannot sign", () => {
 
   it("fills stand-ins with the resolved name, not the empty original", () => {
     // fillSenderStandIns(text, "") returns "" — it deletes the sign-off.
-    expect(GEN).toContain("fillSenderStandIns(email, resolvedSenderName, senderCompany)");
+    expect(GEN).toContain("fillSenderStandIns(email, resolvedSenderName, resolvedSenderCompany)");
   });
 });
 
