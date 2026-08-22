@@ -22,6 +22,7 @@ import {
 // address the user can see is one we have actually checked — see
 // _shared/email-verify.ts for the two-layer (free DNS, then paid SMTP) design.
 import { verifyEmails, hasPaidVerifier, type VerificationStatus } from "../_shared/email-verify.ts";
+import { emailDomainMismatch, isCompanyLinkedIn, isPersonLinkedIn, normalizeDomain } from "../_shared/email-rules.ts";
 // Last-resort lead sourcing. Only runs when the primary provider returned
 // nothing — see _shared/coldiq.ts for why there is no "always" mode.
 import { coldiqLeadsMode, coldiqSearchPeople, coldiqConfigured } from "../_shared/coldiq.ts";
@@ -191,6 +192,8 @@ interface ScoredLead {
   company_size: string;
   country: string;
   linkedin_url: string | null;
+  company_linkedin?: string | null;
+  email_domain_mismatch?: boolean;
   scores: LeadScores;
   score_explanation: string;
   buying_signals: string[];
@@ -462,7 +465,14 @@ function mapRailwayLead(lead: any, icp: IcpInput | null = null): ScoredLead {
 
   const jobTitle = lead.job_title || lead.title || lead.position || lead.job_title_levels || lead.role || '';
   const companyName = lead.company_name || lead.company || lead.organization || lead.employer || lead.company_display_name || '';
-  const companyDomain = lead.company_domain || lead.domain || lead.company_website || lead.website || '';
+  // Reduce to a bare hostname. Values arrive as domains, full URLs with paths,
+  // and occasionally as junk; storing them verbatim is why a lead's website
+  // sometimes points at a subpage or at nothing usable. The first candidate
+  // that reads as a hostname wins, rather than the first that is merely
+  // non-empty.
+  const companyDomain = [lead.company_domain, lead.domain, lead.company_website, lead.website]
+    .map((v: unknown) => normalizeDomain(String(v ?? '')))
+    .find(Boolean) ?? '';
   const businessEmail = lead.business_email || lead.email || lead.work_email || lead.contact_email || null;
   const contactName = lead.contact_name || lead.full_name || lead.name || fullNameFromParts || '';
   const industry = lead.industry || lead.company_industry || lead.sector || lead.vertical || '';
@@ -470,8 +480,22 @@ function mapRailwayLead(lead: any, icp: IcpInput | null = null): ScoredLead {
     lead.company_employee_count || lead.size || lead.employee_range || '';
   const country = lead.country || lead.location_country || lead.country_code ||
     lead.location || lead.geo_country || '';
-  const linkedinUrl = lead.linkedin_url || lead.linkedin || lead.linkedin_profile ||
-    lead.profile_url || lead.linkedinUrl || null;
+  // LinkedIn: separate the person from the organisation.
+  //
+  // Providers disagree about what a bare `linkedin` field means and several use
+  // it for the company page. Taking the first non-empty value stored company
+  // URLs as the contact's profile, which is why opening one "doesn't find the
+  // person". Personal profiles are /in/; companies are /company/.
+  const linkedinCandidates = [
+    lead.linkedin_url, lead.linkedin, lead.linkedin_profile,
+    lead.profile_url, lead.linkedinUrl,
+  ].map((v: unknown) => String(v ?? '').trim()).filter(Boolean);
+
+  const linkedinUrl = linkedinCandidates.find((u) => isPersonLinkedIn(u)) ?? null;
+  const companyLinkedin = [
+    ...linkedinCandidates,
+    String(lead.company_linkedin ?? '').trim(),
+  ].filter(Boolean).find((u) => isCompanyLinkedIn(u)) ?? null;
 
   const normalised = {
     job_title: jobTitle,
@@ -483,6 +507,11 @@ function mapRailwayLead(lead: any, icp: IcpInput | null = null): ScoredLead {
     company_size: String(companySize),
     country,
     linkedin_url: linkedinUrl,
+    company_linkedin: companyLinkedin,
+    // Surfaced, never used to drop the lead: acquisitions, rebrands and
+    // personal addresses all produce legitimate mismatches. It flags that one
+    // of the two fields was likely stitched on from a different record.
+    email_domain_mismatch: emailDomainMismatch(businessEmail ?? '', companyDomain),
   };
 
   const scores = calculateScores(normalised, icp);
