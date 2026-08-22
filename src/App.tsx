@@ -464,9 +464,10 @@ const App = () => {
   return (
   <QueryClientProvider client={queryClient}>
     <DeferredUIShell>
-      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <RouteAnalytics />
-        <AuthSideEffects />
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <ScrollToTop />
+          <RouteAnalytics />
+          <AuthSideEffects />
         <ChunkErrorBoundary>
 
           <Suspense fallback={<PageLoader />}>
