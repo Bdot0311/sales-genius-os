@@ -291,7 +291,8 @@ serve(async (req) => {
             company_name: person.company_name ?? "Unknown company",
             contact_name: person.contact_name ?? String(person.contact_email),
             source: "People search",
-            lead_status: "new",
+            lead_status: "active",
+            pipeline_stage: "new",
           })
           .select("id").single();
         if (error) throw error;
