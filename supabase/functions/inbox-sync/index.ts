@@ -256,21 +256,35 @@ serve(async (req) => {
         const messages: any[] = gmailThread.messages || [];
         const sentAt = new Date(thread.sent_at).getTime();
 
+        const recipientEmail = (thread.to_email || "").toLowerCase().trim();
+        const recipientDomain = recipientEmail.split("@")[1] || "";
+
         for (const message of messages) {
           const headers: any[] = message.payload?.headers || [];
-          const fromHeader = headers.find((h: any) => h.name.toLowerCase() === "from")?.value || "";
-          const subjectHeader =
-            headers.find((h: any) => h.name.toLowerCase() === "subject")?.value || thread.subject || "";
+          const headerValue = (name: string) =>
+            headers.find((h: any) => h.name?.toLowerCase() === name)?.value || "";
+          const fromHeader = headerValue("from");
+          const subjectHeader = headerValue("subject") || thread.subject || "";
 
           const fromEmail = fromHeader.match(/<(.+?)>/)
             ? fromHeader.match(/<(.+?)>/)![1]
             : fromHeader.trim();
 
           // Bounce/DSN notifications are not replies — sync-bounces handles them.
-          if (/mailer-daemon|postmaster/i.test(fromEmail.toLowerCase()) ||
+          if (/mailer-daemon|postmaster|no-?reply|do-?not-?reply/i.test(fromEmail.toLowerCase()) ||
               /delivery status notification|undelivered mail|undeliverable|delivery incomplete/i.test(subjectHeader)) {
             continue;
           }
+
+          // Auto-responders (out of office, vacation, ticket bots) are not a
+          // human responding to the email.
+          const isAutoReply =
+            !!headerValue("auto-submitted").replace(/^no$/i, "") ||
+            !!headerValue("x-autoreply") ||
+            !!headerValue("x-autorespond") ||
+            /^(vacation|out of office|autoreply|auto_reply)/i.test(headerValue("precedence")) ||
+            /(out of (the )?office|automatic reply|auto[- ]?reply|autoresponder|away from my (desk|email)|on (vacation|leave|holiday))/i.test(subjectHeader);
+          if (isAutoReply) continue;
 
           // Skip messages sent by any of the user's own connected mailboxes
           const ownEmails = Object.values(mailboxes)
@@ -281,6 +295,14 @@ serve(async (req) => {
             continue;
           }
 
+          // A reply only counts when it comes from the person we emailed (or a
+          // colleague on the same domain, e.g. forwarded internally).
+          const fromDomain = normalizedFromEmail.split("@")[1] || "";
+          const isFromRecipient =
+            normalizedFromEmail === recipientEmail ||
+            (!!recipientDomain && fromDomain === recipientDomain) ||
+            normalizedFromEmail === allowedOwnReplyEmail;
+          if (!isFromRecipient) continue;
 
           const internalDate = parseInt(message.internalDate || "0", 10);
           if (internalDate <= sentAt) continue;
@@ -303,6 +325,7 @@ serve(async (req) => {
 
           existingMessageIds.add(gmailMessageId);
         }
+
       } catch (threadErr: any) {
         console.error(`Error processing thread ${thread.gmail_thread_id}:`, threadErr.message);
       }
