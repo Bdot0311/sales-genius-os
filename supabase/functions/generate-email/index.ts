@@ -679,6 +679,18 @@ serve(async (req) => {
       }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
+    // The company in the signature is ALWAYS the sender's own. It is never
+    // defaulted to the platform's brand — a user reported drafts signed
+    // "Founder, OutReign" because of exactly that fallback. When the caller
+    // sends none, we look up this user's own profile, and if that is empty too
+    // the draft is signed with the sender's name alone.
+    let resolvedSenderCompany = senderCompany;
+    if (!resolvedSenderCompany) {
+      const { data: prof } = await supabaseClient
+        .from('profiles').select('company_name').eq('id', user.id).maybeSingle();
+      resolvedSenderCompany = (prof?.company_name ?? '').trim().slice(0, 100);
+    }
+
     const validationErrors = validateEmailInputs({ lead, tone, goal });
     if (validationErrors.length > 0) {
       return new Response(JSON.stringify({ error: validationErrors.join(', ') }), {
@@ -1168,7 +1180,7 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: systemPrompt },
+          { role: "system", content: systemPrompt + NO_PLATFORM_BRAND_RULE },
           {
             role: "user",
             content: userPrompt + (variantNum > 0
@@ -1350,7 +1362,15 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
     const standIns = findSenderStandIns(email);
     if (standIns.length) {
       console.warn(`[generate-email] sender stand-in in draft: ${standIns.join(', ')}`);
-      email = fillSenderStandIns(email, resolvedSenderName, senderCompany);
+      email = fillSenderStandIns(email, resolvedSenderName, resolvedSenderCompany);
+    }
+
+    // Last line of defence: the platform's own brand can never ship inside a
+    // user's draft. Mechanical to fix, so it is scrubbed rather than retried.
+    const brandLeaks = findPlatformBrandLeaks(email, resolvedSenderCompany);
+    if (brandLeaks.length) {
+      console.warn(`[generate-email] platform brand leak scrubbed: ${brandLeaks.join(', ')}`);
+      email = stripPlatformBrand(email, resolvedSenderCompany);
     }
 
     if (claims.length) {
