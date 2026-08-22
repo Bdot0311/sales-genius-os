@@ -60,14 +60,7 @@ const endpointGroups: { title: string; endpoints: Endpoint[] }[] = [
     ],
   },
   {
-    title: "Workflows",
-    endpoints: [
-      { name: "List Workflows", method: "GET", path: "/workflows", description: "Retrieve all workflows", responseStatus: 200, responseExample: { data: [{ id: "uuid", name: "New Lead Notifier", trigger: "new_lead", active: true }], count: 1 } },
-      { name: "Toggle Workflow", method: "PATCH", path: "/workflows/:id", description: "Enable or disable a workflow", bodyExample: { active: false }, responseStatus: 200, responseExample: { data: { id: "uuid", active: false } } },
-      { name: "Execute Workflow", method: "POST", path: "/workflows/:id/execute", description: "Trigger a workflow execution with optional test data", bodyExample: { data: { lead_id: "uuid" } }, responseStatus: 200, responseExample: { success: true, executed_actions: 3 } },
-    ],
-  },
-  {
+
     title: "Outreach",
     endpoints: [
       { name: "Generate Email", method: "POST", path: "/email/generate", description: "Generate an AI email draft for a lead", bodyExample: { leadId: "uuid", tone: "professional", trigger_context: "New funding round" }, responseStatus: 200, responseExample: { subject: "Congrats on the funding!", body: "Hi Jane, I saw that Acme just raised..." } },
