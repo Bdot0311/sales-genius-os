@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { playbookSystemRules } from "../_shared/cold-email-playbook.ts";
 import { isWeak, rubricFeedback, scoreEmail } from "../_shared/email-quality.ts";
+import { signOffStartIndex } from "../_shared/email-rules.ts";
 import { findPlaceholders, hasPlaceholder } from "../_shared/email-rules.ts";
 import { buildIcpContext, icpSearchBody } from "../_shared/icp-context.ts";
 import { captureServerEvent } from "../_shared/posthog.ts";
@@ -70,11 +71,32 @@ const draftBodyToHtml = (body: string) => {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
-  const paragraphs = escaped
-    .split("\n")
-    .map((line) => (line.trim() ? `<p>${line.trim()}</p>` : ""))
-    .filter(Boolean)
-    .join("\n");
+  // Every non-empty line used to become its own <p> with a 16px gap, so the
+  // signature rendered as a stack of floating fragments rather than a block.
+  const lines = escaped.split("\n");
+  const signOffAt = signOffStartIndex(lines);
+
+  const out: string[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    if (signOffAt >= 0 && i === signOffAt) {
+      // Collect the signature into one paragraph, joined by <br>, so name and
+      // title sit on consecutive lines the way a person writes them.
+      const block: string[] = [];
+      let j = i;
+      while (j < lines.length && !/^p\.?\s?s\.?[\s:.-]/i.test(lines[j].trim())) {
+        if (lines[j].trim()) block.push(lines[j].trim());
+        j++;
+      }
+      out.push(`<p style="margin:0">${block.join("<br>")}</p>`);
+      i = j - 1;
+      continue;
+    }
+    out.push(`<p>${line}</p>`);
+  }
+  const paragraphs = out.join("\n");
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.6;color:#333;max-width:600px;margin:0 auto;padding:20px}p{margin:0 0 16px}</style></head><body>${paragraphs}</body></html>`;
 };
 

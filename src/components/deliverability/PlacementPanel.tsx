@@ -22,7 +22,7 @@ const gmailBadge = (p: Gmail) => {
 export const PlacementPanel = ({ accounts }: { accounts: SendingAccount[] }) => {
   const active = accounts.filter((a) => a.status === "active");
   const [accountId, setAccountId] = useState(active[0]?.id ?? "");
-  const [status, setStatus] = useState<"idle" | "running" | "done" | "unconfigured">("idle");
+  const [status, setStatus] = useState<"idle" | "running" | "done" | "not_found" | "unconfigured">("idle");
   const [gmail, setGmail] = useState<Gmail>("pending");
   const [testId, setTestId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -51,10 +51,15 @@ export const PlacementPanel = ({ accounts }: { accounts: SendingAccount[] }) => 
       setGmail("pending");
       setStatus("running");
       toast.success("Test email sent to the seed inbox. Checking placement…");
-      // Give it a moment to arrive, then auto-check once (silently — the manual
-      // "Check again" button surfaces errors; the background check shouldn't).
+      // Poll until the message shows up, or until we have waited long enough to
+      // say so honestly.
+      //
+      // This used to be a single check at ten seconds. Gmail has almost never
+      // delivered AND indexed a message that fast, so the check came back
+      // "pending", nothing rescheduled it, and the panel sat on "checking"
+      // forever — the test had actually sent, and only the reading was stuck.
       if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(() => collect(res.testId, true), 10000);
+      scheduleNextCheck(res.testId, 0);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Placement test failed";
       if (!mounted.current) return;
@@ -68,15 +73,45 @@ export const PlacementPanel = ({ accounts }: { accounts: SendingAccount[] }) => 
     }
   };
 
-  const collect = async (id: string, silent = false) => {
+  // Backing off rather than hammering: delivery usually lands inside a minute,
+  // but indexing can lag, and a fixed fast interval would spend a dozen reads
+  // on the seed inbox to learn nothing. Totals roughly three minutes, after
+  // which "we could not find it" is the honest answer.
+  const CHECK_DELAYS_MS = [15_000, 20_000, 30_000, 45_000, 60_000];
+
+  const scheduleNextCheck = (id: string, attempt: number) => {
+    if (attempt >= CHECK_DELAYS_MS.length) {
+      // Out of attempts and still nothing. Say so instead of spinning: the
+      // send worked, the read did not, and the user can retry deliberately.
+      if (mounted.current) setStatus("not_found");
+      return;
+    }
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => collect(id, true, attempt), CHECK_DELAYS_MS[attempt]);
+  };
+
+  const collect = async (id: string, silent = false, attempt: number | null = null) => {
     if (mounted.current) setBusy(true);
     try {
       const res = await collectPlacementTest(id);
       if (!mounted.current) return;
       setGmail(res.gmail);
-      if (res.gmail !== "pending" && res.gmail !== "missing") setStatus("done");
+
+      if (res.gmail !== "pending" && res.gmail !== "missing") {
+        setStatus("done");
+        if (timer.current) clearTimeout(timer.current);
+        return;
+      }
+
+      // Still nothing. Keep polling only if this was an automatic check —
+      // a manual "Check again" is one look, not the start of a new loop.
+      if (attempt !== null) scheduleNextCheck(id, attempt + 1);
+      else if (mounted.current) setStatus("not_found");
     } catch (e) {
       if (mounted.current && !silent) toast.error(e instanceof Error ? e.message : "Could not read placement");
+      // A failed read is not a verdict — keep the schedule alive so a transient
+      // error does not end the test.
+      if (attempt !== null) scheduleNextCheck(id, attempt + 1);
     } finally {
       if (mounted.current) setBusy(false);
     }
@@ -118,6 +153,14 @@ export const PlacementPanel = ({ accounts }: { accounts: SendingAccount[] }) => 
                 </Button>
               )}
             </div>
+
+            {status === "not_found" && (
+              <p className="text-sm text-amber-500">
+                The test email sent, but it has not appeared in the seed inbox yet. That usually means
+                delivery is slow rather than blocked — give it a minute and press Check again. If it
+                never arrives, the message was most likely rejected before delivery.
+              </p>
+            )}
 
             {status !== "idle" && (
               <div className="flex flex-wrap items-center gap-2">

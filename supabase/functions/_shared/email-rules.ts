@@ -452,3 +452,65 @@ SENDER IDENTITY — ZERO TOLERANCE:
 - Never name the software you are running inside, and never invent a company for the
   sender. If sender_company is empty, sign with sender_name alone and output no
   "Founder, ..." line at all.`;
+
+// ─── Sign-off block detection ────────────────────────────────────────────────
+
+/**
+ * Where the sign-off starts, so it can be rendered tight instead of as a stack
+ * of paragraphs.
+ *
+ * The HTML formatter looked for "Best," / "Regards," / "Thanks," — the exact
+ * sign-offs the writing rules forbid. The rule here is sender-first-name-only,
+ * so the detector never matched, and "Brandon" / "Founder, BDØT Industries LLC"
+ * each became their own paragraph with a full 16px gap. In Gmail that reads as
+ * three floating fragments rather than a signature.
+ *
+ * Returns the index of the first sign-off line, or -1 when the body has no
+ * recognisable one. A PS is deliberately NOT part of the block: it belongs
+ * after the signature, separated, which is how people actually write one.
+ */
+export function signOffStartIndex(lines: string[]): number {
+  const isPs = (l: string) => /^p\.?\s?s\.?[\s:.-]/i.test(l.trim());
+
+  // A signature line is short, carries no sentence punctuation, and is not a
+  // question — "Worth a look?" is the CTA, not the sign-off.
+  const isSignatureLine = (l: string) => {
+    const t = l.trim();
+    if (!t || t.length > 60) return false;
+    // A greeting is short and punctuation-light too, and sits at the top. It
+    // must never anchor a sign-off block.
+    if (/^(hi|hello|hey|dear)\b/i.test(t)) return false;
+    if (/[.!?]$/.test(t) && !/^[A-Z][a-z]+,?$/.test(t)) return false;
+    return t.split(/\s+/).length <= 6;
+  };
+
+  // Walk back from the end over PS lines and blanks to find the real tail.
+  let end = lines.length - 1;
+  while (end >= 0 && (!lines[end].trim() || isPs(lines[end]))) end--;
+  if (end < 0) return -1;
+
+  // If the last real line is a sentence or a question, the email simply has no
+  // sign-off — "Worth a quick look at how you do this today?" is the ask.
+  if (!isSignatureLine(lines[end])) return -1;
+
+  // Then walk back over the contiguous run of signature-shaped lines.
+  let start = end;
+  while (start - 1 >= 0) {
+    const prev = lines[start - 1];
+    if (!prev.trim()) {
+      // One blank line inside a signature is normal; two ends it.
+      let k = start - 1;
+      while (k >= 0 && !lines[k].trim()) k--;
+      if (k < 0 || !isSignatureLine(lines[k])) break;
+      start = k;
+      continue;
+    }
+    if (!isSignatureLine(prev)) break;
+    start--;
+  }
+
+  // A single trailing line that is also the whole tail is a sign-off only if it
+  // looks like a name — otherwise it is the last sentence of the body.
+  if (!isSignatureLine(lines[start])) return -1;
+  return start;
+}
