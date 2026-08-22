@@ -410,29 +410,14 @@ serve(async (req) => {
       }
     }
 
-    // ── WORKFLOWS ──
+    // ── WORKFLOWS (removed) ──
+    // The automation/workflow feature was retired in favour of the AI SDR. The
+    // table and its lead/deal triggers are gone; keep an explicit 410 so old
+    // API callers get a clear answer instead of a permission error.
     else if (resource === 'workflows') {
-      if (method === 'GET' && !id) {
-        result = await handleList(supabase, 'workflows', userId, url.searchParams);
-      } else if (method === 'GET' && id) {
-        result = await handleGet(supabase, 'workflows', userId, id);
-      } else if (method === 'PATCH' && id) {
-        const updates: any = {};
-        if (body.active !== undefined) updates.active = Boolean(body.active);
-        if (body.name) updates.name = sanitize(body.name, 200);
-        result = await handleUpdate(supabase, 'workflows', userId, id, updates);
-      } else if (action === 'execute' && id && method === 'POST') {
-        const execRes = await fetch(`${supabaseUrl}/functions/v1/execute-workflow`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${serviceKey}` },
-          body: JSON.stringify({ workflowId: id, testData: body?.data || {} }),
-        });
-        result = await execRes.json();
-        statusCode = execRes.status;
-      } else {
-        return respond({ error: 'Method not allowed' }, 405);
-      }
+      return respond({ error: 'The workflows API has been retired. Use the AI SDR agent instead.' }, 410);
     }
+
 
     // ── EMAIL ──
     else if (resource === 'email') {
