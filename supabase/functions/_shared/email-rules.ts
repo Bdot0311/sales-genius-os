@@ -394,3 +394,61 @@ the company "focuses on" or "values" — that is a guess dressed as research.
 Do not restate what they do back to them as an analogy. Reference the actual
 detail, then connect it to one consequence they would recognise.`;
 }
+
+/**
+ * ── Platform brand containment ────────────────────────────────────────────────
+ *
+ * Every account writes emails for its OWN business. The platform's own brand
+ * must never appear in a user's generated draft: a user reported drafts signed
+ * "Founder, OutReign" because the generator fell back to the platform name when
+ * their profile carried no company. That is a data-bleed class bug, so it is
+ * blocked in three places — no platform-name fallback, no platform name inside
+ * the prompt text, and this final scrub on the finished draft.
+ */
+export const PLATFORM_BRAND_NAMES = ["outreign", "salesos", "outreach studio"];
+
+/** Platform-brand mentions found in a draft (empty when the sender IS us). */
+export function findPlatformBrandLeaks(text: string, senderCompany = ""): string[] {
+  const sender = senderCompany.toLowerCase();
+  const hits: string[] = [];
+  const body = (text ?? "").toLowerCase();
+  for (const brand of PLATFORM_BRAND_NAMES) {
+    // The sender may genuinely work here — then the mention is theirs, not a leak.
+    if (sender.includes(brand)) continue;
+    if (new RegExp(`\\b${brand.replace(/ /g, "\\s+")}\\b`, "i").test(body)) hits.push(brand);
+  }
+  return hits;
+}
+
+/**
+ * Remove platform-brand mentions from a draft. Signature lines that name the
+ * platform are dropped (or rewritten to the sender's real company); inline
+ * mentions are replaced with the sender's company, or "we" when none is known.
+ */
+export function stripPlatformBrand(text: string, senderCompany = ""): string {
+  if (!findPlatformBrandLeaks(text, senderCompany).length) return text ?? "";
+  const pattern = new RegExp(
+    `\\b(?:${PLATFORM_BRAND_NAMES.map((b) => b.replace(/ /g, "\\s+")).join("|")})\\b`,
+    "gi",
+  );
+  return (text ?? "")
+    .split(/\r?\n/)
+    .map((line) => {
+      if (!pattern.test(line)) return line;
+      if (/^\s*founder,/i.test(line.trim())) {
+        return senderCompany ? `Founder, ${senderCompany}` : "";
+      }
+      return line.replace(pattern, senderCompany || "we");
+    })
+    .filter((line, i, arr) => !(line.trim() === "" && (arr[i - 1] ?? "").trim() === ""))
+    .join("\n")
+    .trim();
+}
+
+/** Prompt rule forbidding the platform's own brand in user drafts. */
+export const NO_PLATFORM_BRAND_RULE = `
+SENDER IDENTITY — ZERO TOLERANCE:
+- The only company you may name in the signature is sender_company, exactly as supplied.
+- Never name the software you are running inside, and never invent a company for the
+  sender. If sender_company is empty, sign with sender_name alone and output no
+  "Founder, ..." line at all.`;
