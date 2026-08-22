@@ -456,7 +456,7 @@ serve(async (req) => {
     else {
       return respond({
         error: 'Unknown resource',
-        available: ['leads', 'deals', 'activities', 'contacts', 'workflows', 'email'],
+        available: ['leads', 'deals', 'activities', 'contacts', 'email'],
       }, 404);
     }
 
