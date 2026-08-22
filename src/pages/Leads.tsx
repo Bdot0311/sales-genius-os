@@ -206,11 +206,13 @@ const Leads = () => {
         {canAccessLeadGen && (
           <>
             <Tabs value={inputTab} onValueChange={setInputTab} className="w-full">
-              <TabsList className="mb-4">
+              <TabsList className="mb-4 flex flex-wrap h-auto">
                 <TabsTrigger value="describe">Describe your ICP</TabsTrigger>
                 <TabsTrigger value="website">Analyze your website</TabsTrigger>
                 <TabsTrigger value="companies">Target companies</TabsTrigger>
+                <TabsTrigger value="person">Find a person</TabsTrigger>
               </TabsList>
+
 
               <TabsContent value="describe">
             <AILeadCommand
