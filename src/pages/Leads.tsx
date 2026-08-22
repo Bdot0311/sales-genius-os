@@ -10,6 +10,7 @@ import { ExternalLeadsTable } from "@/components/dashboard/ExternalLeadsTable";
 import { AILeadCommand } from "@/components/dashboard/AILeadCommand";
 import { DomainICPBuilder } from "@/components/dashboard/DomainICPBuilder";
 import { TargetCompanies } from "@/components/dashboard/TargetCompanies";
+import { FindPerson } from "@/components/dashboard/FindPerson";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { buildExternalFilters, ParsedIcpFilters } from "@/lib/lead-filters";
 import { Sparkles, Loader2, Users, RefreshCw, Lock, CreditCard, ChevronLeft, ChevronRight } from "lucide-react";
@@ -206,11 +207,13 @@ const Leads = () => {
         {canAccessLeadGen && (
           <>
             <Tabs value={inputTab} onValueChange={setInputTab} className="w-full">
-              <TabsList className="mb-4">
+              <TabsList className="mb-4 flex flex-wrap h-auto">
                 <TabsTrigger value="describe">Describe your ICP</TabsTrigger>
                 <TabsTrigger value="website">Analyze your website</TabsTrigger>
                 <TabsTrigger value="companies">Target companies</TabsTrigger>
+                <TabsTrigger value="person">Find a person</TabsTrigger>
               </TabsList>
+
 
               <TabsContent value="describe">
             <AILeadCommand
@@ -380,6 +383,11 @@ const Leads = () => {
                   isSearching={externalLoading}
                 />
               </TabsContent>
+
+              <TabsContent value="person">
+                <FindPerson />
+              </TabsContent>
+
             </Tabs>
 
             {/* AI-Discovered Leads Section */}
