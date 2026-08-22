@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, Zap, TrendingUp, Target, Sparkles, MapPin } from "lucide-react";
+import { Loader2, Zap, TrendingUp, Target, Sparkles, MapPin, AlertTriangle } from "lucide-react";
 import { ExternalLead } from "@/hooks/use-external-leads";
 
 interface ExternalLeadsTableProps {
@@ -9,6 +9,51 @@ interface ExternalLeadsTableProps {
   activatingLead: string | null;
   onActivateLead: (lead: ExternalLead) => void;
 }
+
+/**
+ * What this record is missing, named rather than scored.
+ *
+ * The provider waterfall returns whatever each vendor happens to hold, so a
+ * thin record and a complete one looked identical in this list. "Data 34" says
+ * nothing you can act on; "No email · No LinkedIn" tells you why this lead is
+ * cheaper to skip than to chase.
+ *
+ * Deliberately a badge and not a filter: a lead with no email but a real
+ * LinkedIn profile is still worth having, and it was already paid for.
+ */
+const DataGaps = ({ lead }: { lead: ExternalLead }) => {
+  const gaps: string[] = [];
+  if (!lead.business_email) gaps.push("No email");
+  if (!lead.linkedin_url) gaps.push("No LinkedIn");
+  if (!lead.company_domain) gaps.push("No website");
+
+  // A mismatch is not a gap — both fields are present but disagree, which means
+  // one of them was likely stitched on from a different record.
+  const mismatch = lead.email_domain_mismatch === true;
+  if (gaps.length === 0 && !mismatch) return null;
+
+  const pill = "gap-1 border-amber-500/40 text-amber-500 text-[10px] px-1.5 py-0";
+  return (
+    <div className="flex flex-wrap items-center gap-1 mt-1">
+      {gaps.length > 0 && (
+        <Badge variant="outline" className={pill}>
+          <AlertTriangle className="w-2.5 h-2.5" />
+          {gaps.join(" · ")}
+        </Badge>
+      )}
+      {mismatch && (
+        <Badge
+          variant="outline"
+          className={pill}
+          title="The email address and the company website are on different domains. One of them may have come from a different record."
+        >
+          <AlertTriangle className="w-2.5 h-2.5" />
+          Email/site mismatch
+        </Badge>
+      )}
+    </div>
+  );
+};
 
 export function ExternalLeadsTable({ leads, activatingLead, onActivateLead }: ExternalLeadsTableProps) {
   const getScoreColor = (score: number) => {
@@ -85,7 +130,10 @@ export function ExternalLeadsTable({ leads, activatingLead, onActivateLead }: Ex
                 <TableCell>
                   <div>
                     <p className="font-medium">{lead.contact_name}</p>
-                    <p className="text-xs text-muted-foreground">{lead.business_email}</p>
+                    {lead.business_email
+                      ? <p className="text-xs text-muted-foreground">{lead.business_email}</p>
+                      : <p className="text-xs text-amber-500">No email found</p>}
+                    <DataGaps lead={lead} />
                   </div>
                 </TableCell>
                 <TableCell>

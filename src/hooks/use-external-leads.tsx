@@ -81,6 +81,10 @@ export interface ExternalLead {
   email_verification_status?: 'valid' | 'catch_all' | 'unknown' | 'invalid' | 'role' | null;
   email_verified?: boolean | null;
   email_verification_reason?: string | null;
+  /** The organisation's LinkedIn, kept separate from the contact's profile. */
+  company_linkedin?: string | null;
+  /** Email and company website are on different domains — see the mapper. */
+  email_domain_mismatch?: boolean;
 }
 
 export interface PaginationInfo {
