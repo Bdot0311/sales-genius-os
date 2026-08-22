@@ -12,7 +12,7 @@ export async function trackBusinessEvent(
 ): Promise<void> {
   try {
     if (personProperties) await analytics.setIdentity(userId, personProperties);
-    await analytics.trackEvent(name, properties, { userId });
+    await analytics.trackEvent(name, properties as Record<string, string | number | boolean | null>, { userId });
   } catch (e) {
     console.log(`[HEYCATCH] track failed for ${name}: ${String(e)}`);
   }

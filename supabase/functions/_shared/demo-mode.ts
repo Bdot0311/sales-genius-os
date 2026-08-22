@@ -6,7 +6,7 @@
  * flow still looks complete on a sales call.
  */
 export async function isDemoMode(
-  client: { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }> },
+  client: { rpc: (fn: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: unknown }> },
   userId: string,
 ): Promise<boolean> {
   try {

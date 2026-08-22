@@ -20,7 +20,7 @@ afterEach(() => vi.unstubAllGlobals());
  */
 describe("finding an email the primary provider missed", () => {
   it("sends what we already know, nested under input", async () => {
-    const spy = vi.fn(async () => new Response(JSON.stringify({ data: { email: "j@acme.com" } }), { status: 200 }));
+    const spy = vi.fn(async (_input: RequestInfo | URL, _init: RequestInit) => new Response(JSON.stringify({ data: { email: "j@acme.com" } }), { status: 200 }));
     vi.stubGlobal("fetch", spy);
     const r = await coldiqFindEmail({ first_name: "Jane", last_name: "Doe", domain: "acme.com" });
     expect(r.email).toBe("j@acme.com");
@@ -60,7 +60,7 @@ describe("finding an email the primary provider missed", () => {
   });
 
   it("keeps the extra-credit employer lookup off unless asked for", async () => {
-    const spy = vi.fn(async () => new Response(JSON.stringify({ data: {} }), { status: 200 }));
+    const spy = vi.fn(async (_input: RequestInfo | URL, _init: RequestInit) => new Response(JSON.stringify({ data: {} }), { status: 200 }));
     vi.stubGlobal("fetch", spy);
     await coldiqFindEmail({ linkedin_url: "https://linkedin.com/in/jane" });
     expect(JSON.parse(String((spy.mock.calls[0][1] as RequestInit).body)))

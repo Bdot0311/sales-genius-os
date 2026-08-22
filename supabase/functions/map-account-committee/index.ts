@@ -64,13 +64,6 @@ serve(async (req) => {
       if (!PRO_PLUS.has((sub?.plan || "free").toLowerCase())) {
         return json({ error: "the buying committee map is available on pro and agency.", error_code: "upgrade_required" }, 403);
       }
-
-      for (const contact of contacts) {
-        if (!assignments[contact.id]) {
-          const fallback = bestPersona(contact, personas);
-          if (fallback) assignments[contact.id] = fallback;
-        }
-      }
     }
 
     const body = await req.json().catch(() => ({} as Record<string, unknown>));
@@ -120,6 +113,16 @@ serve(async (req) => {
             }
           }
         } catch (_) { /* classification best-effort; contacts fall to unassigned */ }
+      }
+    }
+
+    // Fallback: assign the best-matching persona to any contact the AI left
+    // unlabelled (or when no API key was configured). Runs after contacts and
+    // personas are loaded, so it can actually read them.
+    for (const contact of contacts || []) {
+      if (!assignments[contact.id]) {
+        const fallback = bestPersona(contact, personas || []);
+        if (fallback) assignments[contact.id] = fallback;
       }
     }
 

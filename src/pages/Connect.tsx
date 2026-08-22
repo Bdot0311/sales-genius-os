@@ -58,7 +58,7 @@ export default function Connect() {
       />
       <div className="min-h-screen bg-background">
         <Navbar />
-        <main className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
+        <main className="max-w-4xl mx-auto px-4 sm:px-6 pt-24 sm:pt-28 pb-16">
           {signedIn && (
             <Link
               to="/dashboard"
