@@ -42,7 +42,7 @@ serve(async (req) => {
 
       const { data: row } = await supabase
         .from("sent_emails")
-        .select("id, user_id, to_email, sent_at, opened_at, open_count")
+        .select("id, user_id, to_email, sent_at, opened_at, open_count, last_opened_at")
         .eq("tracking_pixel_id", pixelId)
         .maybeSingle();
 
@@ -56,11 +56,36 @@ serve(async (req) => {
           ? Math.max(0, Math.round((now.getTime() - sentAt.getTime()) / 1000))
           : null;
 
+        // Warmup / seed traffic to the user's own connected mailboxes is not a
+        // real prospect opening the email.
+        let ownMailbox = false;
+        const toEmail = (row.to_email || "").toLowerCase();
+        if (toEmail) {
+          const { data: integrations } = await supabase
+            .from("integrations")
+            .select("config")
+            .eq("user_id", row.user_id)
+            .eq("integration_id", "google");
+          ownMailbox = (integrations || []).some(
+            (i: any) => (i?.config?.googleEmail || "").toLowerCase() === toEmail
+          );
+        }
+
+        // Repeat hits inside a short window are the same render, not a new open.
+        const lastOpened = row.last_opened_at ? new Date(row.last_opened_at) : null;
+        const secondsSinceLast = lastOpened
+          ? (now.getTime() - lastOpened.getTime()) / 1000
+          : null;
+
         let skipReason: string | null = null;
         if (SCANNER_UA.test(userAgent)) {
           skipReason = "scanner_user_agent";
         } else if (secondsSinceSend !== null && secondsSinceSend < PREFETCH_GRACE_SECONDS) {
           skipReason = "provider_prefetch";
+        } else if (ownMailbox) {
+          skipReason = "own_mailbox_warmup";
+        } else if (secondsSinceLast !== null && secondsSinceLast < DEDUPE_WINDOW_SECONDS) {
+          skipReason = "duplicate_render";
         }
 
         const counted = skipReason === null;
@@ -75,6 +100,7 @@ serve(async (req) => {
           counted,
           skip_reason: skipReason,
         });
+
 
         if (counted) {
           const patch: Record<string, unknown> = {
