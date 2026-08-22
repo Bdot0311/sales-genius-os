@@ -4,6 +4,7 @@ import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
 import { logSystemAlert } from "../_shared/alerts.ts";
 import { getSignatureHtml, appendSignatureToBody } from "../_shared/signature.ts";
 import { injectClickTracking } from "../_shared/click-tracking.ts";
+import { signOffStartIndex } from "../_shared/email-rules.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -418,14 +419,21 @@ serve(async (req) => {
       const textLinesToHtml = (text: string) => {
         const lines = text.split('\n');
         const result: string[] = [];
+        const signOffAt = signOffStartIndex(lines);
         for (let i = 0; i < lines.length; i++) {
           const line = lines[i].trim();
           if (!line) {
             result.push('');
             continue;
           }
-          // Detect sign-off line (Best, Thanks, Regards, etc.) followed by sender name
-          const isSignOff = /^(best(?: regards)?|regards|thanks|thank you|sincerely|cheers)[\s,!.:-]*$/i.test(line);
+          // Detect the sign-off block. This used to match only "Best,",
+          // "Regards," and friends — the exact sign-offs the writing rules
+          // forbid, since the rule is sender-first-name-only. So it never fired
+          // on a real draft, and "Brandon" / "Founder, BDØT Industries LLC"
+          // each rendered as their own paragraph with a full gap, which reads
+          // in Gmail as floating fragments rather than a signature.
+          const isSignOff = i === signOffAt ||
+            /^(best(?: regards)?|regards|thanks|thank you|sincerely|cheers)[\s,!.:-]*$/i.test(line);
           if (isSignOff) {
             // Collect sign-off + following non-empty lines (name, title) into one block
             const block = [line];
