@@ -1,5 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Navbar } from "@/components/Navbar";
+import { FooterSection } from "@/components/landing/FooterSection";
+import { SEOHead } from "@/components/seo";
 import { Copy, Check, ArrowLeft, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -24,6 +28,21 @@ function StepList({ items }: { items: React.ReactNode[] }) {
 export default function Connect() {
   const [copied, setCopied] = useState(false);
 
+  // This page is reachable two ways: from the dashboard sidebar, and from the
+  // public footer. It was written for the first audience only — a bare shell
+  // with a "Back to dashboard" link — so a visitor arriving from the footer
+  // landed somewhere with no navigation and an exit into an authed area they
+  // cannot reach. The chrome is now always present; the dashboard link appears
+  // only for someone who actually has one.
+  const [signedIn, setSignedIn] = useState(false);
+  useEffect(() => {
+    let active = true;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (active) setSignedIn(!!session);
+    });
+    return () => { active = false; };
+  }, []);
+
   const copyUrl = async () => {
     await navigator.clipboard.writeText(MCP_URL);
     setCopied(true);
@@ -31,15 +50,24 @@ export default function Connect() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
-        <Link
-          to="/dashboard"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to dashboard
-        </Link>
+    <>
+      <SEOHead
+        title="Connect OutReign to Claude and other MCP clients"
+        description="Add the OutReign MCP server to Claude, Cursor or any MCP client to search prospects and draft outreach from your assistant."
+        canonicalUrl="https://outreign.io/connect"
+      />
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
+          {signedIn && (
+            <Link
+              to="/dashboard"
+              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to dashboard
+            </Link>
+          )}
 
         <div className="flex items-center gap-3 mb-3">
           <div className="w-10 h-10 rounded-lg bg-primary/15 flex items-center justify-center">
@@ -176,7 +204,9 @@ export default function Connect() {
             configuration. Everything runs as you: your row-level security rules apply.
           </div>
         </Card>
-      </main>
-    </div>
+        </main>
+        <FooterSection />
+      </div>
+    </>
   );
 }
