@@ -437,6 +437,19 @@ const RouteAnalytics = () => {
   return null;
 };
 
+/**
+ * Scrolls to the top of the page on every route change. Without this, clicking
+ * a footer link navigates to the new page but keeps the scroll position — so
+ * the new page opens scrolled to the bottom (where the footer was).
+ */
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+};
+
 
 
 /** Auth-dependent analytics/session side effects, re-evaluated on navigation. */
@@ -451,9 +464,10 @@ const App = () => {
   return (
   <QueryClientProvider client={queryClient}>
     <DeferredUIShell>
-      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <RouteAnalytics />
-        <AuthSideEffects />
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <ScrollToTop />
+          <RouteAnalytics />
+          <AuthSideEffects />
         <ChunkErrorBoundary>
 
           <Suspense fallback={<PageLoader />}>
