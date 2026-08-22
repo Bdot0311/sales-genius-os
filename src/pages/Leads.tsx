@@ -10,6 +10,7 @@ import { ExternalLeadsTable } from "@/components/dashboard/ExternalLeadsTable";
 import { AILeadCommand } from "@/components/dashboard/AILeadCommand";
 import { DomainICPBuilder } from "@/components/dashboard/DomainICPBuilder";
 import { TargetCompanies } from "@/components/dashboard/TargetCompanies";
+import { FindPerson } from "@/components/dashboard/FindPerson";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { buildExternalFilters, ParsedIcpFilters } from "@/lib/lead-filters";
 import { Sparkles, Loader2, Users, RefreshCw, Lock, CreditCard, ChevronLeft, ChevronRight } from "lucide-react";
