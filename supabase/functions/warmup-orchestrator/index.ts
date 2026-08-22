@@ -32,7 +32,7 @@ interface PoolAccount {
   account_id: string;
   user_id: string;
   email: string;
-  integration_id: string | null;
+  integration_id: string;
   daily_target: number;
 }
 
@@ -58,10 +58,10 @@ function pick<T>(arr: T[], i: number): T {
   return arr[Math.abs(i) % arr.length];
 }
 
-async function refreshedToken(supabase: ReturnType<typeof createClient>, integrationId: string): Promise<string | null> {
+async function refreshedToken(supabase: any, integrationId: string): Promise<string | null> {
   const { data: integ } = await supabase.from("integrations").select("id, config").eq("id", integrationId).maybeSingle();
   if (!integ) return null;
-  const config = (integ.config ?? {}) as Record<string, unknown>;
+  const config = ((integ as any)?.config ?? {}) as Record<string, unknown>;
   let accessToken = (config.accessToken as string) || (config.provider_token as string) || null;
   const expiresAt = config.expiresAt as number | undefined;
   const refreshToken = config.refreshToken as string | undefined;

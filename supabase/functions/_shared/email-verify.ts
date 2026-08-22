@@ -83,10 +83,10 @@ interface CacheClient {
   from(table: string): {
     select(cols: string): {
       eq(col: string, val: string): {
-        maybeSingle(): Promise<{ data: { cache_value: unknown; expires_at: string } | null }>;
+        maybeSingle(): PromiseLike<{ data: { cache_value: unknown; expires_at: string } | null }>;
       };
     };
-    upsert(row: Record<string, unknown>, opts: { onConflict: string }): Promise<unknown>;
+    upsert(row: Record<string, unknown>, opts: { onConflict: string }): PromiseLike<unknown>;
   };
 }
 

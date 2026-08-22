@@ -172,7 +172,7 @@ serve(async (req) => {
       limit: 10,
     });
 
-    const entitledSubscription = subscriptions.data.find((subscription) =>
+    const entitledSubscription = subscriptions.data.find((subscription: { status: string }) =>
       subscription.status === 'active' || subscription.status === 'trialing'
     );
     const hasActiveSub = Boolean(entitledSubscription);

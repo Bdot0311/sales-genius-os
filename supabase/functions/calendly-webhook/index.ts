@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
   if (trackedRequestId) {
     const { data } = await admin
       .from("campaign_setup_requests").select("id, metadata, plan").eq("id", trackedRequestId).maybeSingle();
-    if (data) target = data as typeof target;
+    if (data) target = data as { id: string; metadata: Record<string, unknown>; plan: string | null };
   }
   if (!target && email) {
     const { data } = await admin
@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (data) target = data as typeof target;
+    if (data) target = data as { id: string; metadata: Record<string, unknown>; plan: string | null };
   }
   if (!target && userId) {
     const { data } = await admin
@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (data) target = data as typeof target;
+    if (data) target = data as { id: string; metadata: Record<string, unknown>; plan: string | null };
   }
 
   const calendlyMeta = {
