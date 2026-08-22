@@ -382,6 +382,11 @@ const Leads = () => {
                   isSearching={externalLoading}
                 />
               </TabsContent>
+
+              <TabsContent value="person">
+                <FindPerson />
+              </TabsContent>
+
             </Tabs>
 
             {/* AI-Discovered Leads Section */}
