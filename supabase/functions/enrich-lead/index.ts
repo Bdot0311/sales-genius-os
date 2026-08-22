@@ -1,6 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
+import { coldiqConfigured, coldiqFindEmail } from "../_shared/coldiq.ts";
+import { isPersonLinkedIn, normalizeDomain } from "../_shared/email-rules.ts";
+import { verifyEmail } from "../_shared/email-verify.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -296,6 +299,47 @@ serve(async (req) => {
     const enrichedFields = Object.keys(enrichmentData).filter(
       (k) => k !== 'enrichment_status' && k !== 'enriched_at'
     );
+
+    // ─── Last resort: find the email the primary provider could not ─────────
+    //
+    // In an email-only product a lead with a name, a company and no address is
+    // one the user cannot act on at all — despite having paid for it. The
+    // primary enrichment asks one provider; this asks the marketplace
+    // waterfall across 40+ for the same person.
+    //
+    // Per the ColdIQ spec a miss is free — charging happens only on a found,
+    // valid email — so this can run on every gap rather than being rationed.
+    // The only leads that cost anything are the ones that stop being useless.
+    if (!lead.contact_email && !enrichmentData.contact_email && coldiqConfigured()) {
+      const parts = String(lead.contact_name ?? '').trim().split(/\s+/).filter(Boolean);
+      const { email: foundEmail, error: findErr } = await coldiqFindEmail({
+        first_name: parts[0] ?? '',
+        last_name: parts.length > 1 ? parts[parts.length - 1] : '',
+        domain: normalizeDomain(String(lead.company_website ?? '')),
+        company_name: String(lead.company_name ?? ''),
+        linkedin_url: isPersonLinkedIn(String(lead.linkedin_url ?? '')) ? String(lead.linkedin_url) : '',
+      });
+
+      if (findErr) {
+        console.log('[enrich-lead] email finder returned nothing:', findErr);
+      } else if (foundEmail) {
+        // A FOUND address is a guess until something proves it. Storing one
+        // unverified is how the original bounce happened, and it would be
+        // worse here: the user has no reason to doubt an address the product
+        // volunteered. Only a non-invalid verdict is kept.
+        const verdict = await verifyEmail(supabase, foundEmail);
+        if (verdict.status === 'invalid') {
+          console.log(`[enrich-lead] discarded found email — ${verdict.reason}`);
+        } else {
+          enrichmentData.contact_email = foundEmail;
+          enrichmentData.email_verification_status = verdict.status;
+          enrichmentData.email_verified = verdict.verified;
+          enrichmentData.email_verified_at = new Date().toISOString();
+          enrichedFields.push('contact_email');
+          console.log(`[enrich-lead] found a missing email (${verdict.status})`);
+        }
+      }
+    }
 
     let noMatchReason = '';
     if (enrichedFields.length === 0) {

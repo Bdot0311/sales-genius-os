@@ -234,3 +234,93 @@ export async function coldiqSearchPeople(
     clearTimeout(timer);
   }
 }
+
+const DEFAULT_FIND_EMAIL_PATH = "/v1/email/find";
+
+export interface ColdIqEmailFind {
+  first_name?: string;
+  last_name?: string;
+  domain?: string;
+  company_name?: string;
+  linkedin_url?: string;
+}
+
+/**
+ * Find a person's work email from what we already know about them.
+ *
+ * The existing enrichment asks one provider. When that provider has nothing,
+ * the lead keeps a name, a company and no email — which in an email-only
+ * product is a lead the user cannot use at all, despite having paid for it.
+ * This runs the marketplace waterfall across 40+ vendors for the same person.
+ *
+ * Per the spec, a miss is FREE: charging happens only on a found, valid email.
+ * That is what makes it safe to run on every gap rather than rationing it —
+ * the only leads that cost anything are the ones that stop being useless.
+ *
+ * Never throws. A failure here leaves the lead exactly as it was.
+ */
+export async function coldiqFindEmail(
+  input: ColdIqEmailFind,
+): Promise<{ email: string | null; error?: string }> {
+  if (!coldiqApiKey()) return { email: null, error: "COLDIQ_API_KEY not set" };
+
+  const payload: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(input)) {
+    const s = String(v ?? "").trim();
+    if (s) payload[k] = s;
+  }
+  // Nothing to search on. The verb needs either a name plus a company handle,
+  // or a LinkedIn URL; firing without one spends latency to learn nothing.
+  const hasName = payload.first_name && payload.last_name;
+  const hasCompany = payload.domain || payload.company_name;
+  if (!(hasName && hasCompany) && !payload.linkedin_url) {
+    return { email: null, error: "not enough to search on" };
+  }
+
+  const path = Deno.env.get("COLDIQ_FIND_EMAIL_PATH") || DEFAULT_FIND_EMAIL_PATH;
+  const url = `${coldiqBaseUrl()}${path.startsWith("/") ? path : `/${path}`}`;
+
+  // Opt-in: on a miss with a LinkedIn URL, the marketplace can resolve the
+  // person's CURRENT employer and retry, which recovers people whose stored
+  // company is stale or was acquired. It costs roughly one extra credit, so it
+  // is off unless asked for.
+  const resolveEmployer = (Deno.env.get("COLDIQ_RESOLVE_EMPLOYER") || "").toLowerCase() === "true";
+
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), SEARCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json", ...coldiqAuthHeaders() },
+      body: JSON.stringify({
+        input: payload,
+        ...(resolveEmployer ? { resolve_current_employer: true } : {}),
+        ...coldiqSpendCap(),
+      }),
+      signal: ctrl.signal,
+    });
+
+    if (!res.ok) {
+      const detail = (await res.text().catch(() => "")).slice(0, 300);
+      console.error(`[coldiq] email find ${res.status}:`, detail);
+      return { email: null, error: `ColdIQ returned ${res.status}` };
+    }
+
+    const body = await res.json();
+    logShape("email find", body);
+
+    // The normalized record is untyped in the spec, so read the shapes these
+    // verbs use and fall back to the usual names rather than assuming one.
+    const node = (body?.data ?? body?.result ?? body) as Record<string, unknown> | null;
+    const found = [node?.email, node?.work_email, node?.business_email]
+      .map((v) => String(v ?? "").trim())
+      .find((v) => v.includes("@"));
+
+    return { email: found ?? null };
+  } catch (e) {
+    console.error("[coldiq] email find failed:", (e as Error).message);
+    return { email: null, error: (e as Error).message };
+  } finally {
+    clearTimeout(timer);
+  }
+}
