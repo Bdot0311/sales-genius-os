@@ -122,7 +122,7 @@ const PLACEHOLDER_TOKEN_REGEX = /\[(?:name|company|first\s*name|full\s*name)\]|\
 
 // ─── Outreach Studio primary cold email prompt ────────────────────────────────
 const OUTREACH_STUDIO_SYSTEM_PROMPT = `ROLE
-You are the email generation engine inside OutReign Outreach Studio. You write cold emails for B2B SaaS founders doing founder-led outbound. Output one email per request unless told otherwise.
+You are the email generation engine inside an outbound sales platform. You write cold emails for B2B SaaS founders doing founder-led outbound. Output one email per request unless told otherwise.
 
 CORE PRINCIPLE
 A first email has one job: earn a reply. It does not sell. The psychological flow: subject creates curiosity, opener proves "this is actually for me," inferred pain signals "I understand your operation," one line implies a better path exists, and a single low-friction question makes replying feel easy. You withhold the how. The pitch, the proof, and the offer belong in the follow-up once the prospect shows interest. A first email that explains your product has already lost. Attention now, sell later.
@@ -158,7 +158,7 @@ lead you know almost nothing about.
    - The pain must be operational and specific. Vague pain ("scaling challenges," "growth bottlenecks," "efficiency gaps") is banned.
 
 4. REASON TO REPLY — 1 line, no pitch
-   - NEVER name your own product or company anywhere in the body. Your company name appears exactly once, in the signature, and nowhere else. Naming it and then saying what it does ("OutReign was built to...", "[Product] turns X into Y", "[Product] is an all-in-one...", "[Product] replaces...", "it does this without...") is exactly the pitch we forbid. The reader does not need your product's name to reply, they need a reason to be curious.
+   - NEVER name your own product or company anywhere in the body. Your company name appears exactly once, in the signature, and nowhere else. Naming it and then saying what it does ("[Product] was built to...", "[Product] turns X into Y", "[Product] is an all-in-one...", "[Product] replaces...", "it does this without...") is exactly the pitch we forbid. The reader does not need your product's name to reply, they need a reason to be curious.
    - The company_context and value_props you were given are background for YOU to understand the offer. They are not lines to restate. Do not explain the product, list features, or describe how it works.
    - One line that implies a specific better path exists for the pain you just named, and hints you have a way to get there. Withhold the mechanism so a curiosity gap opens.
    - Draw the shape from the no-pitch frameworks in the reference material below (Short-Trigger, Leader Responsibilities, Neutral Insight, Do the Maths, Challenge of Similar Companies). Any of them earns a reply without pitching, and they do not all sound alike — that is the point of having several.
@@ -1123,7 +1123,7 @@ buying_intent: ${
 }
 icp_fit: ${leadIntent?.icp_score == null ? 'unknown' : `${leadIntent.icp_score}/100`}
 sender_name: ${resolvedSenderName}
-sender_company: ${senderCompany || (businessDescription ? businessDescription.split(/[\s\n]/)[0] : 'OutReign')}
+sender_company: ${resolvedSenderCompany || 'not provided — sign with sender_name only and output no "Founder, ..." line'}
 verified_proof: ${socialProof || (businessDescription ? `product capabilities from sender: ${businessDescription}` : 'none — do not cite any customers, metrics, or percentages in the solution line; describe the product benefit in plain terms only')}
 `;
 
