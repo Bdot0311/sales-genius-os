@@ -15,6 +15,9 @@ const PIXEL = Uint8Array.from(atob("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAAB
  * opened_at / open_count on sent_emails.
  */
 const PREFETCH_GRACE_SECONDS = 90;
+// Repeat pixel fetches within this window are the same render, not a new open.
+const DEDUPE_WINDOW_SECONDS = 30;
+
 
 // Security/appliance scanners and link-checkers — never real human opens.
 const SCANNER_UA = /(barracuda|proofpoint|mimecast|symantec|forcepoint|trendmicro|messagelabs|bitdefender|virustotal|slackbot|whatsapp|discordbot|facebookexternalhit|twitterbot|linkedinbot|bingpreview|python-requests|curl\/|wget|okhttp|axios|node-fetch|headlesschrome|monitoring|uptime)/i;
