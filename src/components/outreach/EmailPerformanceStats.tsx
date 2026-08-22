@@ -459,14 +459,15 @@ export const EmailPerformanceStats = () => {
           label="Open Rate"
           value={`${totals.openRate}%`}
           hint={`${totals.opened} opens`}
-          onClick={() => openEmails("Opened emails", "Sends where the tracking pixel registered at least one open.", sent.filter((e) => e.opened_at))}
+          onClick={() => openEmails("Opened emails", "Confirmed recipient opens only — provider pre-fetches, scanners, duplicate renders and warmup traffic are excluded.", sent.filter((e) => e.opened_at))}
         />
         <Kpi
           icon={<MessageSquareReply className="w-4 h-4" />}
           label="Reply Rate"
           value={`${totals.replyRate}%`}
           hint={`${totals.replied} replies`}
-          onClick={() => openEmails("Replied emails", "Sends that received a reply.", sent.filter((e) => e.replied_at))}
+          onClick={() => openEmails("Replied emails", "Real human replies from the person you emailed — auto-responders, bounces and your own sends don't count.", sent.filter((e) => e.replied_at))}
+
         />
         <Kpi
           icon={<MousePointerClick className="w-4 h-4" />}
