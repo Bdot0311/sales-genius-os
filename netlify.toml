@@ -394,3 +394,9 @@
   [headers.values]
     Content-Type = "text/markdown; charset=utf-8"
     Access-Control-Allow-Origin = "*"
+
+[[headers]]
+  for = "/.well-known/ory-verify.txt"
+  [headers.values]
+    Content-Type = "text/plain; charset=utf-8"
+    Access-Control-Allow-Origin = "*"
