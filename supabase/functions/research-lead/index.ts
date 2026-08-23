@@ -4,6 +4,7 @@ import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
 import { rateLimit, rateLimitResponse } from "../_shared/rate-limit.ts";
 import {
 import { toSignalFacts, type SignalEventRow } from "../_shared/signal-facts.ts";
+import { coldiqConfigured, coldiqFetchPages } from "../_shared/coldiq.ts";
   briefToPromptBlock,
   isResearchFresh,
   resolveLeadDomain,
@@ -305,6 +306,29 @@ serve(async (req) => {
       chunks.push(`--- PAGE: ${page.url} ---\n${text.slice(0, 4_000)}`);
     }
     bodyText = bodyText.replace(/\s+/g, " ").trim();
+
+    // ─── Rescue a page our own scraper could not read ────────────────────────
+    //
+    // We fetch the HTML and strip <script> tags. That works for a
+    // server-rendered site and returns almost nothing for a single-page app:
+    // the served HTML is an empty root div plus bundles. Most modern startup
+    // marketing sites are SPAs, which is why grounding sat near one lead in
+    // five — the research was not weak, it never had any text to work from.
+    //
+    // This runs BEFORE siteText is assembled, because the emptiest SPAs would
+    // otherwise hit the empty_content return below and never be rescued at all.
+    // Only fires when the direct read came back thin, so a site we could
+    // already read never costs a credit.
+    if (bodyText.length < 400 && coldiqConfigured()) {
+      const { text: rescued, error: fetchErr } = await coldiqFetchPages(pages.map((p) => p.url));
+      if (fetchErr) {
+        console.log('[research-lead] web fetch rescue unavailable:', fetchErr);
+      } else if (rescued.length > bodyText.length) {
+        console.log(`[research-lead] rescued ${rescued.length} chars from a page we could not read`);
+        bodyText = rescued.replace(/\s+/g, " ").trim();
+        chunks.push(`--- EXTRACTED TEXT ---\n${bodyText.slice(0, 8_000)}`);
+      }
+    }
 
     let siteText = `${metaParts.join("\n\n")}\n\n${chunks.join("\n\n")}`.trim();
     if (siteText.length > MAX_TEXT_CHARS) siteText = siteText.slice(0, MAX_TEXT_CHARS);

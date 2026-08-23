@@ -23,6 +23,25 @@ describe("fabricated proof that carries no number", () => {
     expect(findUnverifiedClaims("a meaningful reduction in ramp time")).not.toHaveLength(0);
   });
 
+  it("catches an invented result attributed to a PERSON", () => {
+    // This shipped. The noun list held only company words, so the model
+    // attributed the invented outcome to a founder instead of a business.
+    expect(findUnverifiedClaims("One Co-Founder saw their reply rate increase after switching to us"))
+      .not.toHaveLength(0);
+    expect(findUnverifiedClaims("a CEO who doubled their pipeline")).not.toHaveLength(0);
+  });
+
+  it("catches a magnitude stated as a comparative", () => {
+    // "a significant increase" was caught; "significantly more" was not, and
+    // that phrasing shipped.
+    expect(findUnverifiedClaims("see significantly more relevant replies")).not.toHaveLength(0);
+    expect(findUnverifiedClaims("substantially fewer bounces")).not.toHaveLength(0);
+  });
+
+  it("catches an unattributed switching claim", () => {
+    expect(findUnverifiedClaims("teams report better results after switching to us")).not.toHaveLength(0);
+  });
+
   it("catches peer claims about companies like yours", () => {
     expect(findUnverifiedClaims("companies like yours book more meetings")).not.toHaveLength(0);
   });
