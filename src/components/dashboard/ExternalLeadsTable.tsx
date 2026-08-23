@@ -107,8 +107,10 @@ export function ExternalLeadsTable({ leads, activatingLead, onActivateLead }: Ex
   }
 
   return (
+    <ScanResultsGate resultCount={leads.length} scanContext={{ result_count: leads.length }}>
     <div className="border rounded-lg overflow-hidden">
       <Table>
+
         <TableHeader>
           <TableRow className="bg-muted/50">
             <TableHead>Name</TableHead>
