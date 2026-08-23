@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2, Zap, TrendingUp, Target, Sparkles, MapPin, AlertTriangle } from "lucide-react";
 import { ExternalLead } from "@/hooks/use-external-leads";
+import { ScanResultsGate } from "@/components/dashboard/ScanResultsGate";
+
 
 interface ExternalLeadsTableProps {
   leads: ExternalLead[];
@@ -107,8 +109,10 @@ export function ExternalLeadsTable({ leads, activatingLead, onActivateLead }: Ex
   }
 
   return (
+    <ScanResultsGate resultCount={leads.length} scanContext={{ result_count: leads.length }}>
     <div className="border rounded-lg overflow-hidden">
       <Table>
+
         <TableHeader>
           <TableRow className="bg-muted/50">
             <TableHead>Name</TableHead>
@@ -208,5 +212,7 @@ export function ExternalLeadsTable({ leads, activatingLead, onActivateLead }: Ex
         </TableBody>
       </Table>
     </div>
+    </ScanResultsGate>
   );
 }
+
