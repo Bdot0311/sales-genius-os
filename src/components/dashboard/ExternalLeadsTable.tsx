@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2, Zap, TrendingUp, Target, Sparkles, MapPin, AlertTriangle } from "lucide-react";
 import { ExternalLead } from "@/hooks/use-external-leads";
+import { ScanResultsGate } from "@/components/dashboard/ScanResultsGate";
+
 
 interface ExternalLeadsTableProps {
   leads: ExternalLead[];
