@@ -3253,6 +3253,30 @@ export type Database = {
         }
         Relationships: []
       }
+      scan_gate_leads: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          posthog_distinct_id: string | null
+          scan_context: Json | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          posthog_distinct_id?: string | null
+          scan_context?: Json | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          posthog_distinct_id?: string | null
+          scan_context?: Json | null
+        }
+        Relationships: []
+      }
       scheduled_imports: {
         Row: {
           created_at: string
