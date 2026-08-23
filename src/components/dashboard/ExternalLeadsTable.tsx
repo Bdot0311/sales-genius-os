@@ -210,5 +210,7 @@ export function ExternalLeadsTable({ leads, activatingLead, onActivateLead }: Ex
         </TableBody>
       </Table>
     </div>
+    </ScanResultsGate>
   );
 }
+
