@@ -324,3 +324,65 @@ export async function coldiqFindEmail(
     clearTimeout(timer);
   }
 }
+
+const DEFAULT_WEB_FETCH_PATH = "/v1/web/fetch";
+
+/**
+ * Extract readable text from pages our own scraper could not read.
+ *
+ * research-lead fetches the HTML and strips <script> tags. That works for a
+ * server-rendered site and returns almost nothing for a single-page app: the
+ * served HTML is an empty root div plus bundles, so stripping the scripts
+ * leaves no prose to research. Modern startup marketing sites — which is most
+ * of an AI-startup ICP — are overwhelmingly SPAs, which is why the grounding
+ * rate sat around one lead in five.
+ *
+ * Only called when the direct scrape came back thin, so a site we could already
+ * read never costs a credit.
+ *
+ * Never throws: research degrades to whatever the direct scrape found.
+ */
+export async function coldiqFetchPages(urls: string[]): Promise<{ text: string; error?: string }> {
+  if (!coldiqApiKey()) return { text: "", error: "COLDIQ_API_KEY not set" };
+  const list = urls.map((u) => String(u ?? "").trim()).filter(Boolean).slice(0, 5);
+  if (list.length === 0) return { text: "", error: "no urls" };
+
+  const path = Deno.env.get("COLDIQ_WEB_FETCH_PATH") || DEFAULT_WEB_FETCH_PATH;
+  const url = `${coldiqBaseUrl()}${path.startsWith("/") ? path : `/${path}`}`;
+
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), SEARCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json", ...coldiqAuthHeaders() },
+      body: JSON.stringify({ input: { urls: list, include_text: true }, ...coldiqSpendCap() }),
+      signal: ctrl.signal,
+    });
+    if (!res.ok) {
+      const detail = (await res.text().catch(() => "")).slice(0, 300);
+      console.error(`[coldiq] web fetch ${res.status}:`, detail);
+      return { text: "", error: `ColdIQ returned ${res.status}` };
+    }
+
+    const body = await res.json();
+    logShape("web fetch", body);
+
+    // Text may arrive per-URL in an array or flattened on one record; read both
+    // rather than assuming, since the spec leaves the payload untyped.
+    const records = extractRecords(body);
+    const pieces: string[] = [];
+    for (const r of records.length ? records : [(body?.data ?? body) as Record<string, unknown>]) {
+      for (const key of ["text", "content", "extracted_text", "body", "markdown"]) {
+        const v = r?.[key];
+        if (typeof v === "string" && v.trim().length > 40) { pieces.push(v.trim()); break; }
+      }
+    }
+    return { text: pieces.join("\n\n") };
+  } catch (e) {
+    console.error("[coldiq] web fetch failed:", (e as Error).message);
+    return { text: "", error: (e as Error).message };
+  } finally {
+    clearTimeout(timer);
+  }
+}

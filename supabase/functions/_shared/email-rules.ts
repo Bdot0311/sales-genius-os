@@ -162,9 +162,21 @@ const CLAIM_PATTERNS: RegExp[] = [
  */
 const VAGUE_PROOF_PATTERNS: RegExp[] = [
   // "one computer software firm that saw…", "a client who achieved…"
-  /\b(?:one|a|an|another)\s+(?:\w+[\s-]+){0,3}(?:firm|company|client|customer|team|agency|startup|business|brand)\b[^.?!]{0,60}?\b(?:saw|achieved|reported|generated|booked|increased|reduced|cut|doubled|grew)\b/gi,
-  // magnitude word with no magnitude
+  //
+  // The noun list covers PEOPLE as well as organisations. "One Co-Founder saw
+  // their reply rate increase after switching to us" reached a real prospect
+  // because the original list held only company words — the model had simply
+  // attributed the invented result to a person instead of a business.
+  /\b(?:one|a|an|another)\s+(?:\w+[\s-]+){0,3}(?:firm|company|client|customer|team|agency|startup|business|brand|founder|co-?founder|ceo|cto|cmo|coo|exec|executive|leader|manager|director|owner|operator|marketer|rep)\b[^.?!]{0,60}?\b(?:saw|achieved|reported|generated|booked|increased|reduced|cut|doubled|grew|switched)\b/gi,
+  // Magnitude word with no magnitude, as a noun phrase: "a significant increase".
   /\b(?:significant|substantial|meaningful|noticeable|dramatic|marked|considerable|sizeable)\s+(?:increase|lift|improvement|boost|jump|gain|growth|reduction|drop|decrease)\b/gi,
+  // The same claim as a comparative: "significantly more relevant replies",
+  // "substantially fewer bounces". No noun follows the magnitude word, so the
+  // pattern above missed it — and this phrasing shipped.
+  /\b(?:significantly|substantially|meaningfully|noticeably|dramatically|considerably|markedly)\s+(?:more|less|fewer|faster|slower|higher|lower|better|worse)\b/gi,
+  // "after switching to us", "since moving to us" — asserts a customer outcome
+  // without naming anyone at all.
+  /\b(?:after|since)\s+(?:switching|moving|migrating)\s+to\s+(?:us|our|\w+)\b/gi,
   // "teams like yours see…"
   /\b(?:companies|teams|clients|founders|firms)\s+like\s+(?:yours|you)\b[^.?!]{0,60}?\b(?:saw|see|get|got|report|achieve|book)\b/gi,
 ];
