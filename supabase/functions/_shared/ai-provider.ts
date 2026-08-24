@@ -226,7 +226,7 @@ export async function aiFetch(
   if (body.stream === true || !res.ok) {
     if (!res.ok) {
       console.error(
-        `[ai-provider] ${ctx.fn ?? "unknown"} ${route.provider}/${route.model} -> ${res.status}`,
+        `[ai-provider] ${fnName} ${route.provider}/${route.model} -> ${res.status}`,
       );
     }
     return res;
@@ -238,7 +238,7 @@ export async function aiFetch(
   try {
     const parsed = JSON.parse(text) as { usage?: { prompt_tokens?: number; completion_tokens?: number } };
     await meter({
-      fn: ctx.fn ?? "unknown",
+      fn: fnName,
       provider: route.provider,
       model: route.model,
       userId: ctx.userId,

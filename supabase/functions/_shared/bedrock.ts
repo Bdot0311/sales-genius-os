@@ -338,10 +338,14 @@ export async function bedrockChat(
 export async function bedrockChatAsStream(
   modelId: string,
   body: Record<string, unknown>,
+  prefetched?: Record<string, unknown>,
 ): Promise<Response> {
-  const res = await bedrockChat(modelId, body);
-  if (!res.ok) return res;
-  const completion = await res.json() as Record<string, unknown>;
+  let completion = prefetched;
+  if (!completion) {
+    const res = await bedrockChat(modelId, body);
+    if (!res.ok) return res;
+    completion = await res.json() as Record<string, unknown>;
+  }
   const choice = (completion.choices as Record<string, unknown>[])[0];
   const message = choice.message as Record<string, unknown>;
 
