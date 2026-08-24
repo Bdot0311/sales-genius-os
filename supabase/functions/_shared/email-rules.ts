@@ -598,3 +598,160 @@ export function emailDomainMismatch(email: string, companyDomain: string): boole
   if (e === c || root(e).includes(root(c)) || root(c).includes(root(e))) return false;
   return brand(e) !== brand(c);
 }
+
+// ─── Banned-phrase enforcement ───────────────────────────────────────────────
+
+/**
+ * Which banned phrases a finished draft still contains.
+ *
+ * BANNED_PHRASES was only ever injected into the prompt as instruction text.
+ * Instructions are advisory: across a real batch of twenty follow-ups, six
+ * carried "predictable pipeline", four "without adding headcount", and nothing
+ * downstream looked. The list is the house style, so it has to be checked
+ * against the output rather than hoped for in the input.
+ *
+ * Matching is substring-on-lowercase, the same test the prompt block describes,
+ * so a phrase cannot be smuggled past by capitalisation.
+ */
+export function findBannedPhrases(text: string): string[] {
+  const haystack = String(text ?? "").toLowerCase();
+  return BANNED_PHRASES.filter((p) => haystack.includes(p.toLowerCase()));
+}
+
+/**
+ * Retry instruction naming the phrases to remove.
+ *
+ * Names them explicitly rather than re-sending the whole banned list: a model
+ * told "avoid these 70 phrases" reliably reproduces the one it just used, and a
+ * model told "you wrote X, replace it" reliably does not.
+ */
+export function bannedPhraseRetry(hits: string[]): string {
+  return `\nThe draft you just wrote uses filler this sender never ships: ${hits
+    .map((h) => `"${h}"`)
+    .join(", ")}. Rewrite it without those phrases and without synonyms of them. Say the concrete thing they were standing in for — what actually happens, in the sender's own plain words — or cut the sentence entirely.`;
+}
+
+// ─── Sign-off identity ───────────────────────────────────────────────────────
+
+/**
+ * The sign-off that is not the sender, or null when the signature is correct.
+ *
+ * `fillSenderStandIns` only ever caught stand-ins that announce themselves —
+ * "[Your Name]", "Sender Name". It cannot see a signature that looks like a
+ * real person, and models supply one whenever the sender name reaches them
+ * thin. In one batch of twenty, drafts went out signed with the *recipient's*
+ * first name, with two invented names, with the company's legal entity, and
+ * with nothing at all. Every one of those reads as a mail-merge fault to the
+ * person receiving it.
+ *
+ * Returns "(missing)" when the draft has no sign-off block, the offending line
+ * when it has the wrong one, and null when it is right. Returns null when the
+ * caller has no sender name to check against — that failure is already handled
+ * upstream, and guessing here would be worse than leaving it.
+ */
+export function signOffMismatch(body: string, senderName: string): string | null {
+  const name = String(senderName ?? "").trim();
+  if (!name) return null;
+
+  const lines = String(body ?? "").split("\n");
+  const idx = signOffStartIndex(lines);
+  if (idx < 0) return "(missing)";
+
+  const signed = lines[idx].trim().replace(/[,.]+$/, "");
+  const lower = signed.toLowerCase();
+  const first = name.split(/\s+/)[0].toLowerCase();
+  if (lower === name.toLowerCase() || lower === first) return null;
+  return signed;
+}
+
+/**
+ * Force the signature to name the sender.
+ *
+ * Deterministic rather than another model round-trip: the correct value is
+ * already known, so asking a model to reproduce it is a way of being wrong
+ * again. Any trailing company line ("Founder, Acme") is left in place — only
+ * the name line is rewritten.
+ */
+export function enforceSignOff(body: string, senderName: string): string {
+  const name = String(senderName ?? "").trim();
+  const mismatch = signOffMismatch(body, name);
+  if (!mismatch) return body;
+
+  const first = name.split(/\s+/)[0];
+  const lines = String(body ?? "").split("\n");
+  if (mismatch === "(missing)") return `${String(body ?? "").trimEnd()}\n\n${first}`;
+
+  const idx = signOffStartIndex(lines);
+  lines[idx] = first;
+  return lines.join("\n");
+}
+
+// ─── Circular peer references ────────────────────────────────────────────────
+
+const PEER_NOUNS =
+  "companies|teams|founders|firms|brands|businesses|leaders|agencies|startups|orgs|organisations|organizations";
+
+/**
+ * Peer references that name the recipient's own company.
+ *
+ * "We help companies like Purple Horizons build a predictable outbound engine"
+ * went to Purple Horizons. Phrased that way it asserts they are already a
+ * customer, to the one reader who knows for certain they are not — so it lands
+ * as either a mail-merge bug or a lie, and it is often both. "companies like
+ * yours" is the correct form and is untouched by this.
+ */
+/**
+ * The peer-reference patterns for one company, or [] when the name is too thin
+ * to match on. Detection and repair share this so they cannot drift apart.
+ *
+ * The company name is rebuilt as a punctuation-tolerant pattern so the record's
+ * "Talka AI" still matches the draft's "Talka.ai". Capturing the phrase and
+ * comparing it afterwards does not work: the capture has to stop somewhere, and
+ * wherever it stops splits names that contain that delimiter.
+ */
+function selfReferentialPeerPatterns(companyName: string): RegExp[] {
+  const company = String(companyName ?? "").trim();
+  if (company.length < 3) return [];
+  const chunks = company.toLowerCase().match(/[a-z0-9]+/g) ?? [];
+  if (!chunks.length || chunks.join("").length < 3) return [];
+  const namePattern = chunks.join("[^a-z0-9]*");
+
+  const leadIns = [`(?:${PEER_NOUNS})\\s+like`, `similar\\s+to`, `such\\s+as`];
+  return leadIns.map(
+    (leadIn) => new RegExp(`(${leadIn})\\s+(?:the\\s+)?${namePattern}(?![a-z0-9])`, "gi"),
+  );
+}
+
+export function findSelfReferentialPeers(text: string, companyName: string): string[] {
+  const hits: string[] = [];
+  for (const pattern of selfReferentialPeerPatterns(companyName)) {
+    for (const m of String(text ?? "").matchAll(pattern)) {
+      const hit = m[0].trim();
+      if (!hits.includes(hit)) hits.push(hit);
+    }
+  }
+  return hits;
+}
+
+/**
+ * Rewrite the recipient out of their own peer reference.
+ *
+ * Deterministic rather than a model round-trip, and a repair rather than a
+ * refusal: "companies like yours" is what the sentence meant, the rest of the
+ * draft is unaffected, and failing an otherwise sound email over one pronoun
+ * would cost the user a draft for no gain.
+ */
+export function repairSelfReferentialPeers(text: string, companyName: string): string {
+  let out = String(text ?? "");
+  for (const pattern of selfReferentialPeerPatterns(companyName)) {
+    out = out.replace(pattern, "$1 yours");
+  }
+  return out;
+}
+
+/** Retry instruction for a draft that used the recipient as its own peer proof. */
+export function selfReferentialPeerRetry(hits: string[], companyName: string): string {
+  return `\nThe draft presents ${companyName} as an example of who this sender already works with: ${hits
+    .map((h) => `"${h}"`)
+    .join(", ")}. ${companyName} is the person you are writing TO. Either name a genuinely different company from verified_proof, or write "companies like yours" — never use the recipient as their own reference.`;
+}
