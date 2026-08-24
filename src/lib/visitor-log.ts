@@ -70,7 +70,7 @@ export async function logVisit(): Promise<void> {
   const row = {
     visitor_id: visitor.id,
     session_id: session.id,
-    posthog_distinct_id: posthog.get_distinct_id?.() ?? null,
+    posthog_distinct_id: posthog.get_distinct_id() ?? null,
     utm_source: attribution.utm_source ?? null,
     utm_medium: attribution.utm_medium ?? null,
     utm_campaign: attribution.utm_campaign ?? null,
