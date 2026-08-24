@@ -16,12 +16,20 @@
 // the OpenAI chat-completions shape on all three routes, including streaming.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import {
+  bedrockChat,
+  bedrockChatAsStream,
+  bedrockConfigured,
+  bedrockDefaultModel,
+  bedrockPrice,
+  bedrockProModel,
+} from "./bedrock.ts";
 
 const GOOGLE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
 const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
-export type AiProvider = "google" | "openai" | "lovable";
+export type AiProvider = "google" | "openai" | "bedrock" | "lovable";
 
 /** USD per 1M tokens. Unknown models fall back to a mid-range Flash estimate. */
 const PRICING: Record<string, { in: number; out: number }> = {
