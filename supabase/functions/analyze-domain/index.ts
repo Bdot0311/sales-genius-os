@@ -277,10 +277,11 @@ serve(async (req) => {
       );
     }
 
-    // 5. Generate ICP with one retry on unparseable output.
+    // 5. Generate ICP: primary model, then one retry, then a cheaper fallback
+    //    model. Only a genuine credit cap on both models ends in an error.
     let result: { filters: Record<string, unknown>; summary: string };
     try {
-      result = await generateICP(siteText, LOVABLE_API_KEY);
+      result = await generateICP(siteText, LOVABLE_API_KEY, user.id);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "";
       if (msg === "rate_limit") {
@@ -289,21 +290,41 @@ serve(async (req) => {
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
-      if (msg === "ai_credits") {
-        return new Response(
-          JSON.stringify({
-            error: "Domain analysis is temporarily unavailable because the AI credit limit was reached. Describe your ICP manually for now.",
-            error_code: "ai_credits",
-          }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
-      // Parse failure or transient error — retry once.
+      // Parse failure, transient error, or an exhausted cap on the primary
+      // model — try again, then drop to the cheaper fallback model.
       console.warn("[analyze-domain] first generation failed, retrying:", msg);
       try {
-        result = await generateICP(siteText, LOVABLE_API_KEY);
+        result = await generateICP(
+          siteText,
+          LOVABLE_API_KEY,
+          user.id,
+          msg === "ai_credits" ? FALLBACK_MODEL : PRIMARY_MODEL,
+        );
       } catch (e2) {
-        console.error("[analyze-domain] generation failed after retry:", e2 instanceof Error ? e2.message : e2);
+        const msg2 = e2 instanceof Error ? e2.message : "";
+        if (msg2 !== "ai_credits" && msg !== "ai_credits") {
+          // Last chance on the fallback model before giving up.
+          try {
+            result = await generateICP(siteText, LOVABLE_API_KEY, user.id, FALLBACK_MODEL);
+            console.log("[analyze-domain] recovered on fallback model");
+            return new Response(
+              JSON.stringify({ filters: result.filters, summary: result.summary, low_confidence: lowConfidence }),
+              { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+            );
+          } catch (_e3) {
+            // fall through to the generic failure below
+          }
+        }
+        console.error("[analyze-domain] generation failed after retry:", msg2 || e2);
+        if (msg2 === "ai_credits" || msg === "ai_credits") {
+          return new Response(
+            JSON.stringify({
+              error: `${AI_CREDITS_USER_MESSAGE} You can also describe your ICP manually below.`,
+              error_code: "ai_credits",
+            }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
         return new Response(
           JSON.stringify({ error: "We couldn't build an ICP from that site. Try again or describe your ICP manually.", error_code: "generation_failed" }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
