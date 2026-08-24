@@ -16,12 +16,20 @@
 // the OpenAI chat-completions shape on all three routes, including streaming.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import {
+  bedrockChat,
+  bedrockChatAsStream,
+  bedrockConfigured,
+  bedrockDefaultModel,
+  bedrockPrice,
+  bedrockProModel,
+} from "./bedrock.ts";
 
 const GOOGLE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
 const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
-export type AiProvider = "google" | "openai" | "lovable";
+export type AiProvider = "google" | "openai" | "bedrock" | "lovable";
 
 /** USD per 1M tokens. Unknown models fall back to a mid-range Flash estimate. */
 const PRICING: Record<string, { in: number; out: number }> = {
@@ -73,7 +81,19 @@ export function routeFor(model: string): { provider: AiProvider; url: string; mo
   if (vendor === "openai" && openaiKey()) {
     return { provider: "openai", url: OPENAI_URL, model: bare, key: openaiKey() };
   }
-  // No direct key for this vendor — fall back to the platform gateway.
+  // Amazon Bedrock, billed on our own AWS account. Bedrock serves none of the
+  // gateway model ids, so requested ids collapse onto two tiers: "pro"-class
+  // requests get the stronger model, everything else the cheap workhorse.
+  if (bedrockConfigured()) {
+    const wantsPro = /pro|gpt-5(?![-.])|gpt-5\.\d|sonnet|opus/i.test(bare) && !/mini|nano|lite|flash-lite/i.test(bare);
+    return {
+      provider: "bedrock",
+      url: "",
+      model: wantsPro ? bedrockProModel() : bedrockDefaultModel(),
+      key: "bedrock",
+    };
+  }
+  // No direct provider for this vendor — fall back to the platform gateway.
   return {
     provider: "lovable",
     url: GATEWAY_URL,
@@ -84,11 +104,11 @@ export function routeFor(model: string): { provider: AiProvider; url: string; mo
 
 /** True when at least one direct provider account is configured. */
 export function hasDirectProvider(): boolean {
-  return Boolean(googleKey() || openaiKey());
+  return Boolean(googleKey() || openaiKey() || bedrockConfigured());
 }
 
 function priceOf(model: string, promptTokens: number, completionTokens: number): number {
-  const p = PRICING[model] ?? DEFAULT_PRICE;
+  const p = bedrockPrice(model) ?? PRICING[model] ?? DEFAULT_PRICE;
   return (promptTokens / 1_000_000) * p.in + (completionTokens / 1_000_000) * p.out;
 }
 
@@ -159,6 +179,32 @@ export async function aiFetch(
     });
   }
   body.model = route.model;
+  const fnName = ctx.fn ?? _endpoint ?? "unknown";
+
+  if (route.provider === "bedrock") {
+    const wantsStream = body.stream === true;
+    // Bedrock is called non-streaming either way so usage is always metered;
+    // streaming callers get the completion re-emitted as SSE.
+    const res = await bedrockChat(route.model, body);
+    if (!res.ok) return res;
+    const completion = await res.json() as {
+      usage?: { prompt_tokens?: number; completion_tokens?: number };
+    };
+    await meter({
+      fn: fnName,
+      provider: "bedrock",
+      model: route.model,
+      userId: ctx.userId,
+      usage: completion.usage,
+    });
+    if (!wantsStream) {
+      return new Response(JSON.stringify(completion), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    return bedrockChatAsStream(route.model, body, completion as Record<string, unknown>);
+  }
 
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (route.provider === "lovable") {
@@ -180,7 +226,7 @@ export async function aiFetch(
   if (body.stream === true || !res.ok) {
     if (!res.ok) {
       console.error(
-        `[ai-provider] ${ctx.fn ?? "unknown"} ${route.provider}/${route.model} -> ${res.status}`,
+        `[ai-provider] ${fnName} ${route.provider}/${route.model} -> ${res.status}`,
       );
     }
     return res;
@@ -192,7 +238,7 @@ export async function aiFetch(
   try {
     const parsed = JSON.parse(text) as { usage?: { prompt_tokens?: number; completion_tokens?: number } };
     await meter({
-      fn: ctx.fn ?? "unknown",
+      fn: fnName,
       provider: route.provider,
       model: route.model,
       userId: ctx.userId,
