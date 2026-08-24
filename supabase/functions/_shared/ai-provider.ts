@@ -179,6 +179,32 @@ export async function aiFetch(
     });
   }
   body.model = route.model;
+  const fnName = ctx.fn ?? _endpoint ?? "unknown";
+
+  if (route.provider === "bedrock") {
+    const wantsStream = body.stream === true;
+    // Bedrock is called non-streaming either way so usage is always metered;
+    // streaming callers get the completion re-emitted as SSE.
+    const res = await bedrockChat(route.model, body);
+    if (!res.ok) return res;
+    const completion = await res.json() as {
+      usage?: { prompt_tokens?: number; completion_tokens?: number };
+    };
+    await meter({
+      fn: fnName,
+      provider: "bedrock",
+      model: route.model,
+      userId: ctx.userId,
+      usage: completion.usage,
+    });
+    if (!wantsStream) {
+      return new Response(JSON.stringify(completion), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    return bedrockChatAsStream(route.model, body, completion as Record<string, unknown>);
+  }
 
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (route.provider === "lovable") {
