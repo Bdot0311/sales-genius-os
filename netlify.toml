@@ -5,6 +5,117 @@
 [build.environment]
   NODE_VERSION = "20"
 
+# --- Auto-tagging short links -------------------------------------------------
+#
+# 316 of 416 visits arrived with no UTM and no referrer, which makes them
+# indistinguishable from someone typing the URL. Mobile apps strip the referrer
+# header, so the tag has to be IN the link — and nothing running on this site
+# can add one after the fact, because by then the untagged visit already
+# happened.
+#
+# These make tagging automatic without composing a UTM by hand. Post
+# outreign.io/l/li instead of outreign.io and the source is recorded server-side
+# before the page loads.
+#
+# The catch-all at the end is the important one: any slug works. Going on a
+# podcast tomorrow? Post /l/acmepodcast and it arrives tagged
+# utm_source=acmepodcast with nothing to set up first.
+#
+# Deep links are supported: /l/li/pricing lands on /pricing, still tagged.
+#
+# 302 rather than 301 — a permanent redirect gets cached by browsers and CDNs,
+# which would freeze a campaign value we may want to change later.
+#
+# Order matters: named channels first, catch-all last, all before the SPA
+# fallback at the bottom of this file.
+
+[[redirects]]
+  from = "/l/li"
+  to = "/?utm_source=linkedin&utm_medium=social&utm_campaign=organic"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/l/li/*"
+  to = "/:splat?utm_source=linkedin&utm_medium=social&utm_campaign=organic"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/l/x"
+  to = "/?utm_source=x&utm_medium=social&utm_campaign=organic"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/l/x/*"
+  to = "/:splat?utm_source=x&utm_medium=social&utm_campaign=organic"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/l/rd"
+  to = "/?utm_source=reddit&utm_medium=social&utm_campaign=organic"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/l/rd/*"
+  to = "/:splat?utm_source=reddit&utm_medium=social&utm_campaign=organic"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/l/nl"
+  to = "/?utm_source=newsletter&utm_medium=email&utm_campaign=newsletter"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/l/nl/*"
+  to = "/:splat?utm_source=newsletter&utm_medium=email&utm_campaign=newsletter"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/l/em"
+  to = "/?utm_source=email&utm_medium=email&utm_campaign=outbound"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/l/em/*"
+  to = "/:splat?utm_source=email&utm_medium=email&utm_campaign=outbound"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/l/dm"
+  to = "/?utm_source=dm&utm_medium=direct_message&utm_campaign=outbound"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/l/dm/*"
+  to = "/:splat?utm_source=dm&utm_medium=direct_message&utm_campaign=outbound"
+  status = 302
+  force = true
+
+# Catch-all: any slug becomes its own source, so a new channel needs no setup.
+# Deep-link form first — Netlify matches in file order and the bare form would
+# otherwise swallow it.
+[[redirects]]
+  from = "/l/:source/*"
+  to = "/:splat?utm_source=:source&utm_medium=referral&utm_campaign=shortlink"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/l/:source"
+  to = "/?utm_source=:source&utm_medium=referral&utm_campaign=shortlink"
+  status = 302
+  force = true
+
 # --- MCP reverse proxy: expose the Supabase Edge Function under the OutReign brand ---
 # Requires a Netlify site (e.g. mcp.outreign.io) that serves this repo.
 # Redirect order matters: these MUST come before the SPA fallback below.
