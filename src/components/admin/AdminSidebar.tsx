@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Settings, Activity, BarChart3, Lock, ArrowLeft, Bell, Webhook, UserPlus, Mail, Radio, TrendingUp, KeyRound, CreditCard, HeartPulse } from "lucide-react";
+import { LayoutDashboard, Users, Settings, Activity, BarChart3, Lock, ArrowLeft, Bell, Webhook, UserPlus, Mail, Radio, TrendingUp, KeyRound, CreditCard, HeartPulse, Link2 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ const menuItems = [
   { title: "Campaign Setup", url: "/admin/campaign-setup", icon: KeyRound },
   { title: "Activity Logs", url: "/admin/activity", icon: Activity },
   { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
+  { title: "Traffic Sources", url: "/admin/traffic", icon: Link2 },
   { title: "Alerts", url: "/admin/alerts", icon: Bell },
   { title: "Billing & Churn", url: "/admin/billing", icon: CreditCard },
   { title: "Webhooks", url: "/admin/webhooks", icon: Webhook },

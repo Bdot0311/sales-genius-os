@@ -4078,6 +4078,81 @@ export type Database = {
         }
         Relationships: []
       }
+      site_visits: {
+        Row: {
+          created_at: string
+          first_touch_campaign: string | null
+          first_touch_medium: string | null
+          first_touch_source: string | null
+          id: string
+          is_first_visit: boolean
+          landing_path: string | null
+          landing_url: string | null
+          language: string | null
+          posthog_distinct_id: string | null
+          referrer: string | null
+          screen_width: number | null
+          session_id: string
+          timezone: string | null
+          traffic_channel: string | null
+          user_agent: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+          visitor_id: string
+        }
+        Insert: {
+          created_at?: string
+          first_touch_campaign?: string | null
+          first_touch_medium?: string | null
+          first_touch_source?: string | null
+          id?: string
+          is_first_visit?: boolean
+          landing_path?: string | null
+          landing_url?: string | null
+          language?: string | null
+          posthog_distinct_id?: string | null
+          referrer?: string | null
+          screen_width?: number | null
+          session_id: string
+          timezone?: string | null
+          traffic_channel?: string | null
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          visitor_id: string
+        }
+        Update: {
+          created_at?: string
+          first_touch_campaign?: string | null
+          first_touch_medium?: string | null
+          first_touch_source?: string | null
+          id?: string
+          is_first_visit?: boolean
+          landing_path?: string | null
+          landing_url?: string | null
+          language?: string | null
+          posthog_distinct_id?: string | null
+          referrer?: string | null
+          screen_width?: number | null
+          session_id?: string
+          timezone?: string | null
+          traffic_channel?: string | null
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          visitor_id?: string
+        }
+        Relationships: []
+      }
       stripe_webhook_events: {
         Row: {
           attempts: number
@@ -5246,6 +5321,17 @@ export type Database = {
         Returns: undefined
       }
       admin_system_healthcheck: { Args: never; Returns: Json }
+      admin_traffic_sources: {
+        Args: { p_days?: number }
+        Returns: {
+          first_visits: number
+          last_seen: string
+          utm_campaign: string
+          utm_medium: string
+          utm_source: string
+          visits: number
+        }[]
+      }
       admin_unlock_user: { Args: { _user_id: string }; Returns: undefined }
       admin_update_subscription: {
         Args: {

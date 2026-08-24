@@ -83,6 +83,8 @@ if (rootEl.dataset.prerendered === "true") {
 // Traffic attribution is read immediately (before any SPA navigation can strip
 // the landing URL's utm params) and stored for the rest of the session.
 void import("./lib/attribution").then(({ initAttribution }) => initAttribution());
+// Tag every outbound/social link and log the outbound click with its section.
+void import("./lib/link-tagging").then(({ initLinkTagging }) => initLinkTagging());
 
 let deferredBooted = false;
 const bootDeferred = () => {
@@ -96,6 +98,9 @@ const bootDeferred = () => {
   void import("./lib/heycatch").then(({ initHeycatch }) => initHeycatch());
   // Expose public site tools to browser AI agents (WebMCP). No-op when unsupported.
   void import("./lib/webmcp").then(({ registerWebMcpTools }) => registerWebMcpTools());
+  // Log this arrival (source, referrer, landing page) once per session so
+  // referrer-less mobile traffic still has a first-hand record.
+  void import("./lib/visitor-log").then(({ logVisit }) => void logVisit());
 };
 
 // Analytics/monitoring previously began in the first idle slot, which often
