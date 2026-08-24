@@ -117,15 +117,23 @@ function parseModelJson(content: string): Record<string, unknown> {
   return JSON.parse(jsonStr);
 }
 
+const PRIMARY_MODEL = "google/gemini-2.5-flash";
+// Fallback is a cheaper model on a different provider: when the primary model
+// is unavailable (capacity or per-model cap) this still produces a usable ICP
+// instead of dead-ending the user's first real action in the product.
+const FALLBACK_MODEL = "google/gemini-2.5-flash-lite";
+
 async function generateICP(
   siteText: string,
   apiKey: string,
+  userId: string,
+  model: string = PRIMARY_MODEL,
 ): Promise<{ filters: Record<string, unknown>; summary: string }> {
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
+      model,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: `Website content:\n\n${siteText}` },
@@ -135,12 +143,18 @@ async function generateICP(
 
   if (!response.ok) {
     if (response.status === 429) throw new Error("rate_limit");
-    if (response.status === 402) throw new Error("ai_credits");
-    const errorText = await response.text();
+    const errorText = await response.text().catch(() => "");
     console.error("[analyze-domain] AI gateway error:", response.status, errorText);
-    // 403 credit_limit_reached is a workspace AI credit cap, not a transient
-    // failure — retrying burns another call and returns the same error.
-    if (response.status === 403 && /credit_limit_reached/i.test(errorText)) {
+    // An exhausted credit cap is not transient — retrying burns another call and
+    // returns the same error, so alert the operator and surface it once.
+    if (isAiCreditError(response.status, errorText)) {
+      await reportAiCreditsExhausted({
+        fn: "analyze-domain",
+        userId,
+        model,
+        status: response.status,
+        detail: errorText,
+      });
       throw new Error("ai_credits");
     }
     throw new Error("ai_failed");
