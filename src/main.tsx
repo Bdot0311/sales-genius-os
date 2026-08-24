@@ -83,6 +83,8 @@ if (rootEl.dataset.prerendered === "true") {
 // Traffic attribution is read immediately (before any SPA navigation can strip
 // the landing URL's utm params) and stored for the rest of the session.
 void import("./lib/attribution").then(({ initAttribution }) => initAttribution());
+// Tag every outbound/social link and log the outbound click with its section.
+void import("./lib/link-tagging").then(({ initLinkTagging }) => initLinkTagging());
 
 let deferredBooted = false;
 const bootDeferred = () => {
