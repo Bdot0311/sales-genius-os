@@ -23,6 +23,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
 import { composeSkillContext, skillNamesUsed } from "../_shared/email-skills.ts";
 import { bannedPhrasesBlock, findPlaceholders, hasPlaceholder } from "../_shared/email-rules.ts";
 import { isWeak, rubricFeedback, scoreEmail } from "../_shared/email-quality.ts";
+import { aiFetch } from "../_shared/ai-provider.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -173,7 +174,7 @@ Respond in this EXACT JSON format:
     console.log(`[followup] skills: ${skillNamesUsed({ goal: GOAL }).join(", ")}`);
 
     const callModel = async (userPrompt: string): Promise<string | null> => {
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const response = await aiFetch("generate-followup-suggestion", {
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({

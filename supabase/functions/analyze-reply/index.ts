@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { aiFetch } from "../_shared/ai-provider.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -106,7 +107,7 @@ Priority rules:
 - 2 (schedule follow-up): soft_no or wrong_person — add to follow-up queue
 - 3 (no action): hard_no or ooo — remove or wait`;
 
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const aiResponse = await aiFetch("analyze-reply", {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${lovableApiKey}`,

@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
 import { rateLimit, rateLimitResponse } from "../_shared/rate-limit.ts";
 import { AI_CREDITS_USER_MESSAGE, isAiCreditError, reportAiCreditsExhausted } from "../_shared/ai-credits.ts";
+import { aiFetch } from "../_shared/ai-provider.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -129,7 +130,7 @@ async function generateICP(
   userId: string,
   model: string = PRIMARY_MODEL,
 ): Promise<{ filters: Record<string, unknown>; summary: string }> {
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const response = await aiFetch("analyze-domain", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -139,7 +140,7 @@ async function generateICP(
         { role: "user", content: `Website content:\n\n${siteText}` },
       ],
     }),
-  });
+  }, { userId });
 
   if (!response.ok) {
     if (response.status === 429) throw new Error("rate_limit");

@@ -37,6 +37,7 @@ import {
   type LeadResearchBrief,
   type ResearchQuality,
 } from "../_shared/lead-research.ts";
+import { aiFetch } from "../_shared/ai-provider.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -767,7 +768,7 @@ STRICT RULES:
 - Do NOT make up metrics, percentages, or customer counts.
 - The facts must be specific enough that they could NOT plausibly apply to a different company.`;
 
-        const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        const resp = await aiFetch("generate-email", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${LOVABLE_API_KEY}`,
@@ -1172,7 +1173,7 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
     const temperature = isPrecisionEdit ? 0.3 : (isFrameworkGoal ? (variantNum > 0 ? 0.7 : 0.5) : (variantNum > 0 ? 1.0 : 0.85));
 
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await aiFetch("generate-email", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
@@ -1221,7 +1222,7 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
 
     // Safety net: if the model still emits a HALT-style refusal, retry once without strict framing
     if (email.startsWith('INSUFFICIENT_RESEARCH')) {
-      const retry = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const retry = await aiFetch("generate-email", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${LOVABLE_API_KEY}`,
@@ -1249,7 +1250,7 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
     // Regenerate once instead, telling the model exactly what it did.
     if (hasPlaceholder(email)) {
       console.warn(`[generate-email] placeholder in draft: ${findPlaceholders(email).join(', ')} — regenerating`);
-      const phRetry = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const phRetry = await aiFetch("generate-email", {
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1281,7 +1282,7 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
     let claims = findUnverifiedClaims(email, proofForClaims);
     if (claims.length) {
       console.warn(`[generate-email] fabricated claims: ${claims.join(', ')} — regenerating`);
-      const claimRetry = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const claimRetry = await aiFetch("generate-email", {
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1335,7 +1336,7 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
         ? groundingRetry(researchFacts)
         : `REWRITE REQUIRED — remove the mirror analogy (${mirrors.join('; ')}). Telling the prospect what they already do, as a comparison to your product, tells them nothing. Open on a fact and its consequence instead.`;
 
-      const specificityRetry = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const specificityRetry = await aiFetch("generate-email", {
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({

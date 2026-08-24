@@ -10,6 +10,7 @@ import {
   parseTouches,
   scheduleFollowUps,
 } from "../_shared/cold-email-playbook.ts";
+import { aiFetch } from "../_shared/ai-provider.ts";
 
 
 
@@ -20,7 +21,7 @@ const corsHeaders = {
 
 async function callGemini(prompt: string, systemPrompt: string): Promise<string> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const response = await aiFetch("agent-run", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${LOVABLE_API_KEY}`,
@@ -87,6 +88,9 @@ interface AgentConfig {
   max_daily_new_emails: number;
   icp_profile_id: string | null;
   icp_snapshot: Record<string, any> | null;
+  /** Search pagination cursor, reset when the ICP behind it changes. */
+  search_page?: number | null;
+  search_page_icp_id?: string | null;
 }
 
 /** Maps an ICP employee-count range onto the provider's size buckets. */
@@ -448,7 +452,7 @@ const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
     async function queueApproval(row: Record<string, unknown>) {
       const { error } = await adminClient.from("agent_approvals").insert({
-        user_id: user.id,
+        user_id: user!.id,
         status: "pending",
         ...row,
       });

@@ -12,6 +12,7 @@ import {
   scoreResearchQuality,
   type LeadResearchBrief,
 } from "../_shared/lead-research.ts";
+import { aiFetch } from "../_shared/ai-provider.ts";
 
 
 const corsHeaders = {
@@ -112,7 +113,7 @@ async function generateBrief(
   leadContext: string,
   apiKey: string,
 ): Promise<ModelResult> {
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const response = await aiFetch("research-lead", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({

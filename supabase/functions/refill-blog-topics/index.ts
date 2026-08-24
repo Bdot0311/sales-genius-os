@@ -2,6 +2,7 @@
 // Triggered weekly by pg_cron. Uses Lovable AI to generate fresh SEO/AEO topics
 // scoped to OutReign (outbound sales, AI SDR, cold email, ICP, comparisons).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { aiFetch } from "../_shared/ai-provider.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -72,7 +73,7 @@ Deno.serve(async (req: Request) => {
     const existingList = (existing || []).map((r) => r.target_keyword).join("; ");
 
     // 3. Ask Lovable AI for new topics
-    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiRes = await aiFetch("refill-blog-topics", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

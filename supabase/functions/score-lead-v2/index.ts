@@ -8,6 +8,7 @@ import {
   SignalEventInput,
 } from "../_shared/lead-scoring.ts";
 import { REASON_SYSTEM_PROMPT, reasonUserPayload } from "./prompt.ts";
+import { aiFetch } from "../_shared/ai-provider.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -36,7 +37,7 @@ function sanitizeReason(s: string): string {
 
 async function polishReason(payload: string, apiKey: string): Promise<string | null> {
   try {
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const res = await aiFetch("score-lead-v2", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({

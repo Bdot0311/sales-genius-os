@@ -7,6 +7,7 @@ import { findPlaceholders, hasPlaceholder } from "../_shared/email-rules.ts";
 import { buildIcpContext, icpSearchBody } from "../_shared/icp-context.ts";
 import { captureServerEvent } from "../_shared/posthog.ts";
 import { getSignatureHtml, appendSignatureToBody } from "../_shared/signature.ts";
+import { aiFetch } from "../_shared/ai-provider.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -2766,7 +2767,7 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
 
       let res: Response;
       try {
-        res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        res = await aiFetch("agent-chat", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${LOVABLE_API_KEY}`,
@@ -2812,10 +2813,14 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
 
       // Track AI gateway usage for the workspace and alert admins at thresholds.
       // Fire-and-forget so the agent loop isn't blocked.
-      admin
-        .rpc("increment_ai_gateway_usage", { p_credits: 1 })
-        .then(() => admin.rpc("check_ai_gateway_usage_alert"))
-        .catch((e) => console.error("AI gateway usage tracking failed", e));
+      void (async () => {
+        try {
+          await admin.rpc("increment_ai_gateway_usage", { p_credits: 1 });
+          await admin.rpc("check_ai_gateway_usage_alert");
+        } catch (e) {
+          console.error("AI gateway usage tracking failed", e);
+        }
+      })();
 
       const data = await res.json();
       const choice = data.choices?.[0]?.message;

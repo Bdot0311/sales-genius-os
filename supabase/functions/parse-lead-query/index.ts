@@ -6,6 +6,7 @@ import {
   type ParsedIcp,
 } from "../_shared/icp-parse.ts";
 import { AI_CREDITS_USER_MESSAGE, isAiCreditError, reportAiCreditsExhausted } from "../_shared/ai-credits.ts";
+import { aiFetch } from "../_shared/ai-provider.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,7 +14,6 @@ const corsHeaders = {
 };
 
 const MODEL = "google/gemini-2.5-flash";
-const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const REQUEST_TIMEOUT_MS = 20_000;
 const MAX_QUERY_LENGTH = 2_000;
 
@@ -57,7 +57,7 @@ async function callGateway(apiKey: string, query: string): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
-    return await fetch(GATEWAY_URL, {
+    return await aiFetch("parse-lead-query", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
