@@ -98,10 +98,14 @@ const bootDeferred = () => {
   void import("./lib/heycatch").then(({ initHeycatch }) => initHeycatch());
   // Expose public site tools to browser AI agents (WebMCP). No-op when unsupported.
   void import("./lib/webmcp").then(({ registerWebMcpTools }) => registerWebMcpTools());
-  // Log this arrival (source, referrer, landing page) once per session so
-  // referrer-less mobile traffic still has a first-hand record.
-  void import("./lib/visitor-log").then(({ logVisit }) => void logVisit());
 };
+
+// The visit log runs on its own short timer rather than inside bootDeferred:
+// most visitors never scroll or click, and those passive arrivals are exactly
+// the ones currently showing up as unattributable "direct" traffic.
+window.setTimeout(() => {
+  void import("./lib/visitor-log").then(({ logVisit }) => void logVisit());
+}, 2_500);
 
 // Analytics/monitoring previously began in the first idle slot, which often
 // lands inside Lighthouse's TBT window and creates a burst of long tasks. GTM
