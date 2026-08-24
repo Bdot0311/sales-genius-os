@@ -598,6 +598,45 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_usage_events: {
+        Row: {
+          completion_tokens: number
+          cost_usd: number
+          created_at: string
+          credits_charged: number
+          fn: string
+          id: string
+          model: string
+          prompt_tokens: number
+          provider: string
+          user_id: string | null
+        }
+        Insert: {
+          completion_tokens?: number
+          cost_usd?: number
+          created_at?: string
+          credits_charged?: number
+          fn: string
+          id?: string
+          model: string
+          prompt_tokens?: number
+          provider: string
+          user_id?: string | null
+        }
+        Update: {
+          completion_tokens?: number
+          cost_usd?: number
+          created_at?: string
+          credits_charged?: number
+          fn?: string
+          id?: string
+          model?: string
+          prompt_tokens?: number
+          provider?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       alert_rules: {
         Row: {
           comparison_operator: string
@@ -5620,6 +5659,18 @@ export type Database = {
         }[]
       }
       recompute_activation: { Args: { _user_id: string }; Returns: undefined }
+      record_ai_usage: {
+        Args: {
+          p_completion_tokens?: number
+          p_cost_usd?: number
+          p_fn: string
+          p_model: string
+          p_prompt_tokens?: number
+          p_provider: string
+          p_user_id?: string
+        }
+        Returns: number
+      }
       record_user_login: {
         Args: {
           p_ip_address?: string
