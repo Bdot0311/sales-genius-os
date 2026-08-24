@@ -5,6 +5,7 @@ import {
   normalizeIcp,
   type ParsedIcp,
 } from "../_shared/icp-parse.ts";
+import { AI_CREDITS_USER_MESSAGE, isAiCreditError, reportAiCreditsExhausted } from "../_shared/ai-credits.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -144,11 +145,20 @@ serve(async (req) => {
         429,
       );
     }
-    if (response.status === 402) {
-      return respond(
-        { error: "AI credits depleted. Please add funds.", error_code: "ai_credits_exhausted" },
-        402,
-      );
+    if (response.status === 402 || response.status === 403) {
+      const detail = await response.text().catch(() => "");
+      if (isAiCreditError(response.status, detail)) {
+        await reportAiCreditsExhausted({
+          fn: "parse-lead-query",
+          status: response.status,
+          detail,
+        });
+        // 200 so the caller shows the message instead of a raw non-2xx error.
+        return respond({ error: AI_CREDITS_USER_MESSAGE, error_code: "ai_credits_exhausted" }, 200);
+      }
+      console.error("AI gateway error:", response.status, detail.slice(0, 500));
+      lastFailure = failure(502, "parser_failed", "The query parser rejected this request.");
+      break;
     }
     if (!response.ok) {
       const detail = await response.text().catch(() => "");

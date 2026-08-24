@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
 import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
 import { rateLimit, rateLimitResponse } from "../_shared/rate-limit.ts";
+import { AI_CREDITS_USER_MESSAGE, isAiCreditError, reportAiCreditsExhausted } from "../_shared/ai-credits.ts";
 import { toSignalFacts, type SignalEventRow } from "../_shared/signal-facts.ts";
 import { coldiqConfigured, coldiqFetchPages } from "../_shared/coldiq.ts";
 import {
@@ -129,9 +130,17 @@ async function generateBrief(
 
   if (!response.ok) {
     if (response.status === 429) throw new Error("rate_limit");
-    if (response.status === 402) throw new Error("ai_credits");
-    const errorText = await response.text();
+    const errorText = await response.text().catch(() => "");
     console.error("[research-lead] AI gateway error:", response.status, errorText);
+    if (isAiCreditError(response.status, errorText)) {
+      await reportAiCreditsExhausted({
+        fn: "research-lead",
+        model: "google/gemini-2.5-flash",
+        status: response.status,
+        detail: errorText,
+      });
+      throw new Error("ai_credits");
+    }
     throw new Error("ai_failed");
   }
 
@@ -413,7 +422,7 @@ serve(async (req) => {
       }
       if (msg === "ai_credits") {
         return new Response(
-          JSON.stringify({ error: "Research is temporarily unavailable.", error_code: "ai_credits" }),
+          JSON.stringify({ error: AI_CREDITS_USER_MESSAGE, error_code: "ai_credits" }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
