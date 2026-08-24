@@ -79,7 +79,7 @@ const DISPOSABLE_DOMAINS = new Set([
 
 /** Minimal shape we need from the Supabase client, so this module stays
  *  usable from functions that hold an untyped service-role client. */
-interface CacheClient {
+export interface CacheClient {
   from(table: string): {
     select(cols: string): {
       eq(col: string, val: string): {

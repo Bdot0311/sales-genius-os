@@ -19,17 +19,29 @@ function secretAccessKey(): string {
 function sessionToken(): string {
   return Deno.env.get("AWS_SESSION_TOKEN") || "";
 }
+/**
+ * Bedrock API key (bearer token). AWS's newer "Bedrock API keys" are sent as a
+ * plain `Authorization: Bearer ...` header — no SigV4 signing, no IAM keys.
+ */
+function bearerToken(): string {
+  return (
+    Deno.env.get("AWS_BEARER_TOKEN_BEDROCK") ||
+    Deno.env.get("BEDROCK_API_KEY") ||
+    ""
+  );
+}
 
 export function bedrockConfigured(): boolean {
-  return Boolean(accessKeyId() && secretAccessKey());
+  return Boolean(bearerToken() || (accessKeyId() && secretAccessKey()));
 }
+
 
 /** Fast/cheap workhorse model, and a stronger one for "pro"-class requests. */
 export function bedrockDefaultModel(): string {
-  return Deno.env.get("BEDROCK_MODEL_ID") || "us.anthropic.claude-3-5-haiku-20241022-v1:0";
+  return Deno.env.get("BEDROCK_MODEL_ID") || "us.anthropic.claude-haiku-4-5-20251001-v1:0";
 }
 export function bedrockProModel(): string {
-  return Deno.env.get("BEDROCK_MODEL_ID_PRO") || "us.anthropic.claude-sonnet-4-20250514-v1:0";
+  return Deno.env.get("BEDROCK_MODEL_ID_PRO") || "us.anthropic.claude-sonnet-4-5-20250929-v1:0";
 }
 
 /** USD per 1M tokens for the Bedrock ids we route to. */
@@ -317,7 +329,14 @@ export async function bedrockChat(
     `https://bedrock-runtime.${bedrockRegion()}.amazonaws.com/model/${encodeURIComponent(modelId)}/converse`,
   );
   const payload = JSON.stringify(toConverseBody(body));
-  const headers = await signRequest(url, payload);
+  // API key (bearer) takes precedence: it needs no signing at all.
+  const headers = bearerToken()
+    ? {
+      "content-type": "application/json",
+      Authorization: `Bearer ${bearerToken()}`,
+    }
+    : await signRequest(url, payload);
+
 
   const res = await fetch(url.toString(), { method: "POST", headers, body: payload });
   if (!res.ok) {
