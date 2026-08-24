@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
 import { coldiqConfigured, coldiqFindEmail } from "../_shared/coldiq.ts";
 import { isPersonLinkedIn, normalizeDomain } from "../_shared/email-rules.ts";
-import { verifyEmail } from "../_shared/email-verify.ts";
+import { verifyEmail, type CacheClient } from "../_shared/email-verify.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -327,7 +327,7 @@ serve(async (req) => {
         // unverified is how the original bounce happened, and it would be
         // worse here: the user has no reason to doubt an address the product
         // volunteered. Only a non-invalid verdict is kept.
-        const verdict = await verifyEmail(supabase, foundEmail);
+        const verdict = await verifyEmail(supabase as unknown as CacheClient, foundEmail);
         if (verdict.status === 'invalid') {
           console.log(`[enrich-lead] discarded found email — ${verdict.reason}`);
         } else {
