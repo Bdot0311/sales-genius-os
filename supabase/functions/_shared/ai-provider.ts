@@ -81,7 +81,19 @@ export function routeFor(model: string): { provider: AiProvider; url: string; mo
   if (vendor === "openai" && openaiKey()) {
     return { provider: "openai", url: OPENAI_URL, model: bare, key: openaiKey() };
   }
-  // No direct key for this vendor — fall back to the platform gateway.
+  // Amazon Bedrock, billed on our own AWS account. Bedrock serves none of the
+  // gateway model ids, so requested ids collapse onto two tiers: "pro"-class
+  // requests get the stronger model, everything else the cheap workhorse.
+  if (bedrockConfigured()) {
+    const wantsPro = /pro|gpt-5(?![-.])|gpt-5\.\d|sonnet|opus/i.test(bare) && !/mini|nano|lite|flash-lite/i.test(bare);
+    return {
+      provider: "bedrock",
+      url: "",
+      model: wantsPro ? bedrockProModel() : bedrockDefaultModel(),
+      key: "bedrock",
+    };
+  }
+  // No direct provider for this vendor — fall back to the platform gateway.
   return {
     provider: "lovable",
     url: GATEWAY_URL,
@@ -92,11 +104,11 @@ export function routeFor(model: string): { provider: AiProvider; url: string; mo
 
 /** True when at least one direct provider account is configured. */
 export function hasDirectProvider(): boolean {
-  return Boolean(googleKey() || openaiKey());
+  return Boolean(googleKey() || openaiKey() || bedrockConfigured());
 }
 
 function priceOf(model: string, promptTokens: number, completionTokens: number): number {
-  const p = PRICING[model] ?? DEFAULT_PRICE;
+  const p = bedrockPrice(model) ?? PRICING[model] ?? DEFAULT_PRICE;
   return (promptTokens / 1_000_000) * p.in + (completionTokens / 1_000_000) * p.out;
 }
 
