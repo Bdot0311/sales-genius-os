@@ -327,7 +327,7 @@ serve(async (req) => {
         // unverified is how the original bounce happened, and it would be
         // worse here: the user has no reason to doubt an address the product
         // volunteered. Only a non-invalid verdict is kept.
-        const verdict = await verifyEmail(supabase, foundEmail);
+        const verdict = await verifyEmail(supabase as unknown as CacheClient, foundEmail);
         if (verdict.status === 'invalid') {
           console.log(`[enrich-lead] discarded found email — ${verdict.reason}`);
         } else {
