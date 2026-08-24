@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
+import { aiFetch } from "../_shared/ai-provider.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -94,7 +95,7 @@ serve(async (req) => {
         const sys = `You map contacts to a buying-committee persona. Use ONLY these persona labels, or "none" if a contact fits none: ${labels.map((l) => `"${l}"`).join(", ")}. Return only JSON: {"assignments":[{"contact_id":"...","persona":"<one label or none>"}]}`;
         const usr = `Personas:\n${personas.map((p: any) => `- ${p.label} (seniority: ${p.seniority_band || "any"}, function: ${p.function || "any"})`).join("\n")}\n\nContacts:\n${contacts.map((c: any) => `- [${c.id}] ${c.job_title || ""} / ${c.department || ""} / ${c.seniority || ""}`).join("\n")}`;
         try {
-          const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          const res = await aiFetch("map-account-committee", {
             method: "POST",
             headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
             body: JSON.stringify({ model: "google/gemini-2.5-flash", temperature: 0, messages: [{ role: "system", content: sys }, { role: "user", content: usr }] }),

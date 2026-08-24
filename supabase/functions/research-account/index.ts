@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
+import { aiFetch } from "../_shared/ai-provider.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -135,7 +136,7 @@ serve(async (req) => {
       const sys = `You turn detected buying signals into short "why now" reasons to reach out. Use only the signal given, invent nothing. One plain lowercase-first sentence each, no em-dashes, no hype. Return only JSON: {"claims":["...", ...]} in the same order as the input.`;
       const usr = `Company: ${company.name} (${company.industry || ""})\nSignals:\n${sourced.map((r, i) => `${i + 1}. ${r.text}`).join("\n")}`;
       try {
-        const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        const res = await aiFetch("research-account", {
           method: "POST",
           headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
           body: JSON.stringify({ model: "google/gemini-2.5-flash", temperature: 0, messages: [{ role: "system", content: sys }, { role: "user", content: usr }] }),

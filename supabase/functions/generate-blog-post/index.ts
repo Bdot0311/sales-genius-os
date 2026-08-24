@@ -1,6 +1,7 @@
 // Generates a single SEO-optimized blog post from the next queued topic
 // and inserts it into blog_posts. Triggered by pg_cron biweekly.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { aiFetch } from "../_shared/ai-provider.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -83,7 +84,7 @@ Return a JSON object with these exact fields:
 - "reading_time": string like "5 min read"
 - "content": full markdown body following the system prompt rules`;
 
-    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiRes = await aiFetch("generate-blog-post", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

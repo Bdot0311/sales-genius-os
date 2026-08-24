@@ -10,6 +10,7 @@ import {
   parseTouches,
   scheduleFollowUps,
 } from "../_shared/cold-email-playbook.ts";
+import { aiFetch } from "../_shared/ai-provider.ts";
 
 
 
@@ -20,7 +21,7 @@ const corsHeaders = {
 
 async function callGemini(prompt: string, systemPrompt: string): Promise<string> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const response = await aiFetch("agent-run", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${LOVABLE_API_KEY}`,
