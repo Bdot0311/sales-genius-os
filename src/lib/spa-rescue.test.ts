@@ -35,10 +35,10 @@ describe("rescuing text from a page we could not read", () => {
   });
 
   it("asks for text rather than a summary", async () => {
-    const spy = vi.fn(async () => new Response(JSON.stringify({ data: [] }), { status: 200 }));
+    const spy = vi.fn(async (_url?: unknown, _init?: unknown) => new Response(JSON.stringify({ data: [] }), { status: 200 }));
     vi.stubGlobal("fetch", spy);
     await coldiqFetchPages(["https://acme.com"]);
-    expect(JSON.parse(String((spy.mock.calls[0][1] as RequestInit).body)).input.include_text).toBe(true);
+    expect(JSON.parse(String((spy.mock.calls[0]?.[1] as RequestInit).body)).input.include_text).toBe(true);
   });
 
   it("does nothing without urls or a key", async () => {
