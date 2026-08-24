@@ -88,6 +88,9 @@ interface AgentConfig {
   max_daily_new_emails: number;
   icp_profile_id: string | null;
   icp_snapshot: Record<string, any> | null;
+  /** Search pagination cursor, reset when the ICP behind it changes. */
+  search_page?: number | null;
+  search_page_icp_id?: string | null;
 }
 
 /** Maps an ICP employee-count range onto the provider's size buckets. */
