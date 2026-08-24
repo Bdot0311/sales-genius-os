@@ -38,10 +38,10 @@ export function bedrockConfigured(): boolean {
 
 /** Fast/cheap workhorse model, and a stronger one for "pro"-class requests. */
 export function bedrockDefaultModel(): string {
-  return Deno.env.get("BEDROCK_MODEL_ID") || "us.anthropic.claude-3-5-haiku-20241022-v1:0";
+  return Deno.env.get("BEDROCK_MODEL_ID") || "us.anthropic.claude-haiku-4-5-20251001-v1:0";
 }
 export function bedrockProModel(): string {
-  return Deno.env.get("BEDROCK_MODEL_ID_PRO") || "us.anthropic.claude-sonnet-4-20250514-v1:0";
+  return Deno.env.get("BEDROCK_MODEL_ID_PRO") || "us.anthropic.claude-sonnet-4-5-20250929-v1:0";
 }
 
 /** USD per 1M tokens for the Bedrock ids we route to. */
