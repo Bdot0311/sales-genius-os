@@ -4,6 +4,7 @@ import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
 import { coldiqConfigured, coldiqFindEmail } from "../_shared/coldiq.ts";
 import { isPersonLinkedIn, normalizeDomain } from "../_shared/email-rules.ts";
 import { verifyEmail } from "../_shared/email-verify.ts";
+import type { VerificationStatus } from "../_shared/email-verify.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -27,6 +28,36 @@ function isJobTitle(name: string): boolean {
   if (!trimmed.includes(' ') && JOB_TITLE_PATTERNS.has(trimmed.toLowerCase())) return true;
   if (/^(co-?founder|vice president|head of|chief .+ officer)$/i.test(trimmed)) return true;
   return false;
+}
+
+// Railway reports ColdIQ's documented states (deliverable | risky |
+// undeliverable | unknown | catch_all). The leads table stores this product's
+// vocabulary, which the send filters and the list view are built on. Translating
+// at the boundary keeps one spelling in the database instead of two names for
+// the same verdict drifting apart.
+const UPSTREAM_STATUS: Record<string, VerificationStatus> = {
+  deliverable: 'valid',
+  undeliverable: 'invalid',
+  catch_all: 'catch_all',
+  // "risky" spans spam traps and known complainers: not provably dead, never
+  // safe to send blind. Folded onto unknown, which is exactly what the shared
+  // verifier does with the same word — see interpret() in email-verify.ts.
+  risky: 'unknown',
+  unknown: 'unknown',
+};
+
+/** Translate a Railway `email_verification` block into columns, or null when
+ *  there is no verdict worth storing. `email_verified` follows this product's
+ *  rule — true only for a confirmed mailbox, false only for a confirmed dead
+ *  one — which is a narrower question than ColdIQ's "may I send to it". */
+function adoptUpstreamVerdict(v: any): Record<string, any> | null {
+  const status = UPSTREAM_STATUS[String(v?.status ?? '').toLowerCase()];
+  if (!status) return null;
+  return {
+    email_verification_status: status,
+    email_verified: status === 'valid' ? true : status === 'invalid' ? false : null,
+    email_verified_at: new Date().toISOString(),
+  };
 }
 
 function normalizeLinkedInUrl(url: string | null, kind: 'profile' | 'company' = 'profile'): string | null {
@@ -239,6 +270,13 @@ serve(async (req) => {
       enriched_at: new Date().toISOString(),
     };
 
+    // Railway runs every revealed address through ColdIQ on its side, whichever
+    // provider sourced the lead, and returns the verdict alongside it. Adopting
+    // it here means the same address is never paid for twice — the check further
+    // down only runs for an address Railway did not already rule on.
+    const upstreamVerdict = railwayData?.email_verification
+      ?? railwayData?.lead?.email_verification ?? null;
+
     if (railwayData && !railwayData.error) {
       // Railway returns { lead: {...} } or legacy { person, company } / flat shapes.
       const root = railwayData.lead ?? railwayData;
@@ -337,6 +375,52 @@ serve(async (req) => {
           enrichmentData.email_verified_at = new Date().toISOString();
           enrichedFields.push('contact_email');
           console.log(`[enrich-lead] found a missing email (${verdict.status})`);
+        }
+      }
+    }
+
+    // ─── Deliverability, on every address rather than only the found ones ────
+    //
+    // The block above verified an email the marketplace *found*. Every other
+    // address reaching this point went unchecked: the one the primary provider
+    // returned, and the one the lead already carried from a search. Those are
+    // the majority, and they are no safer — Bytemine and Crustdata return
+    // whatever their index holds, Wiza grades its own reveals, and none of them
+    // agree on what "valid" means. Sending against that mix is how a domain's
+    // reputation gets spent.
+    //
+    // So one check covers all of them, cheapest path first: Railway's ColdIQ
+    // verdict if it already ruled on this address, otherwise the shared
+    // verifier, whose free layer (syntax, disposable, role, MX) disqualifies
+    // most bad addresses before anything is billed and whose results are cached
+    // per address for 30 days.
+    //
+    // Advisory, never destructive: a bad verdict is recorded against the address,
+    // it does not delete it. A user who already has that contact needs to be told
+    // it will bounce, not quietly left with an empty field.
+    const emailToCheck = String(
+      enrichmentData.contact_email ?? lead.contact_email ?? ''
+    ).trim();
+    const alreadyRuledOn = !!enrichmentData.email_verification_status
+      || (!!lead.email_verification_status && !enrichmentData.contact_email);
+
+    if (emailToCheck && !alreadyRuledOn) {
+      const adopted = adoptUpstreamVerdict(upstreamVerdict);
+      if (adopted) {
+        // Railway's ColdIQ verdict, already paid for on the reveal.
+        Object.assign(enrichmentData, adopted);
+        console.log(`[enrich-lead] adopted upstream verdict (${adopted.email_verification_status})`);
+      } else {
+        try {
+          const verdict = await verifyEmail(supabase, emailToCheck);
+          enrichmentData.email_verification_status = verdict.status;
+          enrichmentData.email_verified = verdict.verified;
+          enrichmentData.email_verified_at = new Date().toISOString();
+          console.log(`[enrich-lead] verified ${verdict.source} → ${verdict.status} (${verdict.reason})`);
+        } catch (verifyErr) {
+          // The enrichment has already been charged for. A verifier outage must
+          // leave the lead unproven, not fail the request that produced it.
+          console.error('[enrich-lead] verification skipped:', (verifyErr as Error).message);
         }
       }
     }
