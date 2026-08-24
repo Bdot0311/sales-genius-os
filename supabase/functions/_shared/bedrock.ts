@@ -329,7 +329,14 @@ export async function bedrockChat(
     `https://bedrock-runtime.${bedrockRegion()}.amazonaws.com/model/${encodeURIComponent(modelId)}/converse`,
   );
   const payload = JSON.stringify(toConverseBody(body));
-  const headers = await signRequest(url, payload);
+  // API key (bearer) takes precedence: it needs no signing at all.
+  const headers = bearerToken()
+    ? {
+      "content-type": "application/json",
+      Authorization: `Bearer ${bearerToken()}`,
+    }
+    : await signRequest(url, payload);
+
 
   const res = await fetch(url.toString(), { method: "POST", headers, body: payload });
   if (!res.ok) {
