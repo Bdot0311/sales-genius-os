@@ -5,6 +5,7 @@ import { composeSkillContext, skillNamesUsed } from "../_shared/email-skills.ts"
 // One quality verdict for every caller — Outreach Studio, agent-chat and the
 // autonomous agent all reach the rubric through this rather than each other.
 import { isWeak, scoreEmail } from "../_shared/email-quality.ts";
+import { AI_CREDITS_USER_MESSAGE, isAiCreditError, reportAiCreditsExhausted } from "../_shared/ai-credits.ts";
 // The writing rules live in one module so the three copies that used to exist
 // cannot drift apart — see _shared/email-rules.ts.
 import {
@@ -1201,8 +1202,13 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
           status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      if (response.status === 402 || errorText.includes('credit_limit_reached') || errorText.includes('insufficient')) {
-        return new Response(JSON.stringify({ error: 'AI credits for this workspace are exhausted. Top up credits to keep generating emails.' }), {
+      if (isAiCreditError(response.status, errorText)) {
+        await reportAiCreditsExhausted({
+          fn: 'generate-email',
+          status: response.status,
+          detail: errorText,
+        });
+        return new Response(JSON.stringify({ error: AI_CREDITS_USER_MESSAGE }), {
           status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
