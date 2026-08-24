@@ -24,6 +24,12 @@ import {
   findUnverifiedClaims,
   hasPlaceholder,
   noFabricationRetry,
+  bannedPhraseRetry,
+  enforceSignOff,
+  findBannedPhrases,
+  findSelfReferentialPeers,
+  repairSelfReferentialPeers,
+  signOffMismatch,
   NO_PLATFORM_BRAND_RULE,
   findPlatformBrandLeaks,
   stripPlatformBrand,
@@ -357,9 +363,17 @@ EMAIL TYPE: Follow-up. The first email earned attention by withholding the pitch
 Purpose: ${templateDescription || 'Follow up on previous outreach'}
 
 STRUCTURE — 2-3 sentences:
-1. Reference the prior email naturally in one sentence: "Sent you a note last week about X." Do not be apologetic.
-2. Now give what email 1 withheld: the outcome you drive and roughly how, plus one real proof point (a named result or an anonymized peer reference) but only if verified_proof supports it. Sell the outcome, not a feature list.
-3. Shrink the ask from email 1: an even smaller interest CTA. "Bad idea?", "Want the example?", "Worth two minutes of reading?"
+1. Signal in your own words that you wrote before, in half a sentence, and move straight on. Do not be apologetic.
+2. Now give what email 1 withheld: the outcome you drive and roughly how. Add a proof point ONLY if verified_proof names one — if it does not, say what the product does in plain operational terms and cite nothing.
+3. Shrink the ask from email 1 to a smaller interest question, phrased for this specific reader.
+
+WORDING — the failure mode of this email type:
+Every example phrasing above is a description of a beat, not a line to copy. A
+batch of these went out where all twenty opened with the same seven words and
+fourteen closed with one of three stock questions, because earlier versions of
+this prompt supplied those sentences and the model reached for them. Write both
+the opener and the closing question fresh for this reader. If a sentence would
+read identically in an email to any other prospect on the list, it is wrong.
 
 TONE: Casual, confident, not apologetic. You're following up because it's relevant, not because you're desperate.
 NEVER use: "just following up", "circling back", "bumping this to the top", "wanted to check in"
@@ -1380,6 +1394,79 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
       email = stripPlatformBrand(email, resolvedSenderCompany);
     }
 
+    // The signature has to name the sender. fillSenderStandIns only catches
+    // stand-ins that announce themselves ("[Your Name]"), so a signature that
+    // looks like a real person walks straight through it — one real batch went
+    // to approval signed with the recipient's own first name, with two invented
+    // names, with the company's legal entity, and with nothing at all. The
+    // correct value is already known here, so this is corrected rather than
+    // regenerated: asking a model to reproduce a string we hold is a way of
+    // being wrong a second time.
+    const wrongSignOff = signOffMismatch(email, resolvedSenderName);
+    if (wrongSignOff) {
+      console.warn(`[generate-email] sign-off corrected: ${wrongSignOff} -> ${resolvedSenderName}`);
+      email = enforceSignOff(email, resolvedSenderName);
+    }
+
+    // "We help companies like <the company you are writing to>" asserts the
+    // reader is already a customer, to the one person who knows they are not.
+    // Repaired rather than refused — "companies like yours" is what the
+    // sentence meant, and the rest of the draft is sound.
+    const circularPeers = findSelfReferentialPeers(email, String(lead?.company_name ?? ''));
+    if (circularPeers.length) {
+      console.warn(`[generate-email] recipient used as own peer proof: ${circularPeers.join(', ')}`);
+      email = repairSelfReferentialPeers(email, String(lead?.company_name ?? ''));
+    }
+
+    // Banned phrases were only ever advisory — injected into the prompt and
+    // never checked against what came back. In one batch of twenty, six drafts
+    // carried "predictable pipeline" and four "without adding headcount", which
+    // is what made every email read like the same email. One retry naming the
+    // exact phrases, then keep whichever version carries fewer: this list is
+    // house style rather than a correctness rule, so refusing to produce a
+    // draft over it would cost the user more than it saves.
+    let bannedHits = findBannedPhrases(email);
+    if (bannedHits.length) {
+      console.warn(`[generate-email] banned phrases: ${bannedHits.join(', ')} — regenerating`);
+      try {
+        const bannedRetry = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: `${userPrompt}\n${bannedPhraseRetry(bannedHits)}` },
+            ],
+            temperature: 0.5,
+          }),
+        });
+        if (bannedRetry.ok) {
+          const d = await bannedRetry.json();
+          let second = cleanGeneratedEmail((d.choices?.[0]?.message?.content || '').trim(), preserveSubject);
+          if (second) {
+            second = repairSelfReferentialPeers(second, String(lead?.company_name ?? ''));
+            second = enforceSignOff(second, resolvedSenderName);
+            // Same bar as the specificity rewrite: a cleaner-sounding email that
+            // reintroduces a placeholder or an invented figure is not better.
+            const secondHits = findBannedPhrases(second);
+            const secondOk =
+              !hasPlaceholder(second) &&
+              !findUnverifiedClaims(second, proofForClaims).length &&
+              secondHits.length < bannedHits.length;
+            if (secondOk) {
+              email = second;
+              bannedHits = secondHits;
+            } else {
+              console.warn('[generate-email] banned-phrase retry rejected, keeping original');
+            }
+          }
+        }
+      } catch (e) {
+        console.warn(`[generate-email] banned-phrase retry failed: ${e}`);
+      }
+    }
+
     if (claims.length) {
       console.error(`[generate-email] fabricated claims survived retry: ${claims.join(', ')}`);
       return new Response(JSON.stringify({
@@ -1421,7 +1508,11 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
     return new Response(JSON.stringify({
       email,
       rubric,
-      quality_weak: isWeak(rubric),
+      // Filler the retry could not shift is reported as weakness rather than
+      // hidden: the caller decides whether to show it, but it never ships
+      // silently the way it did before anything checked the output.
+      quality_weak: isWeak(rubric) || bannedHits.length > 0,
+      banned_phrases: bannedHits,
       research: researchBrief
         ? {
             what_they_do: researchBrief.what_they_do,

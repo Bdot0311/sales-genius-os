@@ -1573,7 +1573,14 @@ serve(async (req) => {
               body = raw.slice(subjMatch[0].length).trim();
             }
             if (!subject) {
-              subject = `Quick question${lead.company_name ? ` — ${lead.company_name}` : ""}`;
+              // Providers write "Unknown" / "N/A" into company_name rather than
+              // leaving it null, and the fallback took it literally: real
+              // prospects were queued under the subject "Quick question —
+              // Unknown". A bare "Quick question" is the honest version.
+              const company = String(lead.company_name ?? "").trim();
+              const usable =
+                company && !/^(unknown|n\/?a|none|null|-|--)$/i.test(company) ? company : "";
+              subject = `Quick question${usable ? ` — ${usable}` : ""}`;
             }
 
             let draftId: string | null = null;
