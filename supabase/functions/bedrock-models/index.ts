@@ -1,24 +1,60 @@
-// Temporary diagnostic: lists Bedrock models available to our account.
+// Temporary diagnostic: exercises the shared AI layer (plain, tool-calling, streaming).
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { aiFetch, routeFor } from "../_shared/ai-provider.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  const region = Deno.env.get("AWS_REGION") || "us-east-1";
-  const token = Deno.env.get("AWS_BEARER_TOKEN_BEDROCK") || "";
-  const res = await fetch(`https://bedrock.${region}.amazonaws.com/foundation-models`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  const text = await res.text();
-  let out = text;
+  const out: Record<string, unknown> = { route: routeFor("google/gemini-2.5-flash") };
+
+  // 1. plain completion
   try {
-    const j = JSON.parse(text) as { modelSummaries?: Array<Record<string, unknown>> };
-    out = JSON.stringify(
-      (j.modelSummaries ?? [])
-        .filter((m) => String(m.modelId).includes("anthropic") || String(m.modelId).includes("nova"))
-        .map((m) => ({ id: m.modelId, status: m.modelLifecycle, inf: m.inferenceTypesSupported })),
-    );
-  } catch { /* raw */ }
-  return new Response(JSON.stringify({ status: res.status, body: out.slice(0, 6000) }), {
+    const r = await aiFetch("probe", {
+      method: "POST",
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [{ role: "user", content: "Reply with the single word: ok" }],
+      }),
+    }, { fn: "bedrock-probe" });
+    const j = await r.json();
+    out.plain = { status: r.status, text: j?.choices?.[0]?.message?.content, usage: j?.usage };
+  } catch (e) { out.plain = { error: String(e) }; }
+
+  // 2. tool calling
+  try {
+    const r = await aiFetch("probe", {
+      method: "POST",
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [{ role: "user", content: "Look up the weather in Paris using the tool." }],
+        tools: [{
+          type: "function",
+          function: {
+            name: "get_weather",
+            description: "Get weather for a city",
+            parameters: { type: "object", properties: { city: { type: "string" } }, required: ["city"] },
+          },
+        }],
+      }),
+    }, { fn: "bedrock-probe" });
+    const j = await r.json();
+    out.tools = { status: r.status, tool_calls: j?.choices?.[0]?.message?.tool_calls };
+  } catch (e) { out.tools = { error: String(e) }; }
+
+  // 3. streaming
+  try {
+    const r = await aiFetch("probe", {
+      method: "POST",
+      body: JSON.stringify({
+        model: "google/gemini-2.5-pro",
+        stream: true,
+        messages: [{ role: "user", content: "Count to three." }],
+      }),
+    }, { fn: "bedrock-probe" });
+    const text = await r.text();
+    out.stream = { status: r.status, chunks: text.split("\n\n").length, head: text.slice(0, 200) };
+  } catch (e) { out.stream = { error: String(e) }; }
+
+  return new Response(JSON.stringify(out, null, 2), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 });
