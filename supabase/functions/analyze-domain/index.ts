@@ -140,7 +140,7 @@ async function generateICP(
         { role: "user", content: `Website content:\n\n${siteText}` },
       ],
     }),
-  });
+  }, { userId });
 
   if (!response.ok) {
     if (response.status === 429) throw new Error("rate_limit");
