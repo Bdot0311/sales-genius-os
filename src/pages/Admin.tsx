@@ -23,6 +23,7 @@ import AdminActivation from "./admin/Activation";
 import AdminCampaignSetup from "./admin/CampaignSetup";
 import AdminBilling from "./admin/Billing";
 import AdminSystemHealth from "./admin/SystemHealth";
+import AdminTraffic from "./admin/Traffic";
 
 const Admin = () => {
   const navigate = useNavigate();
