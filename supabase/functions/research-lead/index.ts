@@ -2,9 +2,9 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
 import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
 import { rateLimit, rateLimitResponse } from "../_shared/rate-limit.ts";
-import {
 import { toSignalFacts, type SignalEventRow } from "../_shared/signal-facts.ts";
 import { coldiqConfigured, coldiqFetchPages } from "../_shared/coldiq.ts";
+import {
   briefToPromptBlock,
   isResearchFresh,
   resolveLeadDomain,
