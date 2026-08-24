@@ -25,10 +25,18 @@ const isOwnHost = (host: string) =>
 const sectionOf = (el: HTMLElement): string => {
   const labelled = el.closest<HTMLElement>("[data-utm-section]");
   if (labelled?.dataset.utmSection) return labelled.dataset.utmSection;
+
   const section = el.closest<HTMLElement>("section, footer, header, nav, dialog");
   if (!section) return "page";
-  if (section.id) return section.id;
-  if (section.getAttribute("aria-label")) return slug(section.getAttribute("aria-label") as string);
+  if (section.id) return slug(section.id);
+  const aria = section.getAttribute("aria-label");
+  if (aria) return slug(aria);
+  // Unnamed sections: fall back to the heading a human would read, then to the
+  // nearest identified ancestor, so utm_content is never just "section".
+  const heading = section.querySelector<HTMLElement>("h1, h2, h3");
+  if (heading?.textContent?.trim()) return slug(heading.textContent);
+  const identified = section.closest<HTMLElement>("[id]");
+  if (identified?.id) return slug(identified.id);
   return section.tagName.toLowerCase();
 };
 
