@@ -98,6 +98,9 @@ const bootDeferred = () => {
   void import("./lib/heycatch").then(({ initHeycatch }) => initHeycatch());
   // Expose public site tools to browser AI agents (WebMCP). No-op when unsupported.
   void import("./lib/webmcp").then(({ registerWebMcpTools }) => registerWebMcpTools());
+  // Log this arrival (source, referrer, landing page) once per session so
+  // referrer-less mobile traffic still has a first-hand record.
+  void import("./lib/visitor-log").then(({ logVisit }) => void logVisit());
 };
 
 // Analytics/monitoring previously began in the first idle slot, which often
