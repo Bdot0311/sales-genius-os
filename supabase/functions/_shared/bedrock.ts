@@ -19,10 +19,22 @@ function secretAccessKey(): string {
 function sessionToken(): string {
   return Deno.env.get("AWS_SESSION_TOKEN") || "";
 }
+/**
+ * Bedrock API key (bearer token). AWS's newer "Bedrock API keys" are sent as a
+ * plain `Authorization: Bearer ...` header — no SigV4 signing, no IAM keys.
+ */
+function bearerToken(): string {
+  return (
+    Deno.env.get("AWS_BEARER_TOKEN_BEDROCK") ||
+    Deno.env.get("BEDROCK_API_KEY") ||
+    ""
+  );
+}
 
 export function bedrockConfigured(): boolean {
-  return Boolean(accessKeyId() && secretAccessKey());
+  return Boolean(bearerToken() || (accessKeyId() && secretAccessKey()));
 }
+
 
 /** Fast/cheap workhorse model, and a stronger one for "pro"-class requests. */
 export function bedrockDefaultModel(): string {
