@@ -22,6 +22,7 @@ const menuItems = [
   { title: "Campaign Setup", url: "/admin/campaign-setup", icon: KeyRound },
   { title: "Activity Logs", url: "/admin/activity", icon: Activity },
   { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
+  { title: "Traffic Sources", url: "/admin/traffic", icon: Link2 },
   { title: "Alerts", url: "/admin/alerts", icon: Bell },
   { title: "Billing & Churn", url: "/admin/billing", icon: CreditCard },
   { title: "Webhooks", url: "/admin/webhooks", icon: Webhook },
