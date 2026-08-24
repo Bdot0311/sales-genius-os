@@ -452,7 +452,7 @@ const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
     async function queueApproval(row: Record<string, unknown>) {
       const { error } = await adminClient.from("agent_approvals").insert({
-        user_id: user.id,
+        user_id: user!.id,
         status: "pending",
         ...row,
       });
