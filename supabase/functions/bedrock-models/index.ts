@@ -4,7 +4,24 @@ import { aiFetch, routeFor } from "../_shared/ai-provider.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  const out: Record<string, unknown> = { route: routeFor("google/gemini-2.5-flash") };
+  const out: Record<string, unknown> = {
+    routeFlash: routeFor("google/gemini-2.5-flash"),
+    routePro: routeFor("google/gemini-2.5-pro"),
+    routeGpt5: routeFor("openai/gpt-5"),
+  };
+
+  // pro-tier completion
+  try {
+    const r = await aiFetch("probe", {
+      method: "POST",
+      body: JSON.stringify({
+        model: "google/gemini-2.5-pro",
+        messages: [{ role: "user", content: "Reply with the single word: pro" }],
+      }),
+    }, { fn: "bedrock-probe" });
+    const j = await r.json();
+    out.pro = { status: r.status, model: j?.model, text: j?.choices?.[0]?.message?.content };
+  } catch (e) { out.pro = { error: String(e) }; }
 
   // 1. plain completion
   try {
