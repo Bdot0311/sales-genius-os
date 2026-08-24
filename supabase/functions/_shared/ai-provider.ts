@@ -85,7 +85,10 @@ export function routeFor(model: string): { provider: AiProvider; url: string; mo
   // gateway model ids, so requested ids collapse onto two tiers: "pro"-class
   // requests get the stronger model, everything else the cheap workhorse.
   if (bedrockConfigured()) {
-    const wantsPro = /pro|gpt-5(?![-.])|gpt-5\.\d|sonnet|opus/i.test(bare) && !/mini|nano|lite|flash-lite/i.test(bare);
+    const wantsPro = /pro|gpt-5(?![-.])|gpt-5\.\d|sonnet|opus/i.test(bare) &&
+      // Word-boundary exclusions: "gemini-..." contains "mini" as a substring and
+      // must not be treated as a small model.
+      !/(?:^|[-_.\s])(mini|nano|lite)/i.test(bare);
     return {
       provider: "bedrock",
       url: "",
