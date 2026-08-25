@@ -10,8 +10,8 @@ const rows = [
     truth: "Ranked prospects scored by ICP fit",
   },
   {
-    legacy: "Boolean search that takes 45 minutes to configure",
-    truth: "Plain English. Leads in under 2 minutes.",
+    legacy: "Boolean queries and filter menus before you see a name",
+    truth: "Plain English. Leads in a few minutes.",
   },
   {
     legacy: "A data tool that stops at the export",

@@ -21,7 +21,7 @@ const faqs = [
   {
     question: "How is this different from just buying a contact list?",
     answer:
-      "A contact list gives you 10,000 names. OutReign gives you 50 that are actually worth emailing, ranked by fit, with a draft already written for each one, so you spend your sending time on people who might actually reply.",
+      "A contact list gives you 10,000 names. OutReign gives you 50 worth emailing, ranked by fit, with a draft already written for each one, so you spend your sending time on people who might reply.",
   },
   {
     question: "How does the free plan work?",
@@ -41,7 +41,7 @@ const faqs = [
   {
     question: "Is OutReign only for email outreach?",
     answer:
-      "Yes. OutReign is built around email outreach. We score your leads, enrich their verified business email, and help you write a first-touch message worth reading. No cold calling, no phone numbers, no SMS.",
+      "Yes. OutReign is built around email outreach. We score your leads, enrich their verified business email, and help you write a first-touch message worth reading. Email only, with no dialer or SMS.",
   },
   {
     question: "How does the AI email drafting work?",

@@ -22,7 +22,7 @@ export const BigStatSection = () => {
             viewport={{ once: true, margin: "-10% 0px" }}
             transition={{ duration: 0.6, ease }}
           >
-            The benchmark
+            How long it takes
           </motion.p>
 
           {/* Focal stat — spring entrance */}
@@ -44,7 +44,7 @@ export const BigStatSection = () => {
             viewport={{ once: true, margin: "-10% 0px" }}
             transition={{ type: "spring", stiffness: 60, damping: 18, delay: 0.08 }}
           >
-            {"< 2 min"}
+            A few<span className="block">minutes</span>
           </motion.p>
 
           <motion.p
@@ -55,7 +55,7 @@ export const BigStatSection = () => {
             viewport={{ once: true, margin: "-10% 0px" }}
             transition={{ duration: 0.55, ease, delay: 0.2 }}
           >
-            ICP to sent email in one workflow, so your day goes to replies instead of spreadsheets.
+            ICP to sent email in one workflow, so your day goes to replies.
           </motion.p>
 
           {/* Supporting stat */}

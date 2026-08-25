@@ -7,7 +7,7 @@ const steps = [
   {
     number: "01",
     title: "Describe your customer once.",
-    body: "Type who you want in plain English: title, industry, company size, location, growth signals. No boolean queries or filter menus to configure.",
+    body: "Type who you want in plain English: title, industry, company size, location, growth signals. The way you would say it out loud.",
     visual: (
       <div
         className="mt-5 rounded-md px-4 py-3 font-mono text-sm leading-relaxed"
@@ -24,7 +24,7 @@ const steps = [
   },
   {
     number: "02",
-    title: "Review who's actually worth emailing.",
+    title: "Review who's worth emailing.",
     body: "Prospects come back ranked by ICP fit, with verified business emails and match scores attached. Company context, open roles, and hiring signals before you write a word.",
     visual: (
       <div
@@ -65,7 +65,7 @@ const steps = [
   {
     number: "03",
     title: "Send something worth reading.",
-    body: "OutReign builds a first-touch email from the prospect's real context: their company news, open roles, and recent growth signals. Edit in 30 seconds.",
+    body: "OutReign builds a first-touch email from the prospect's real context: their company news, open roles, and recent growth signals. Edit it or send it as it stands.",
     visual: (
       <div
         className="mt-5 rounded-xl overflow-hidden"
@@ -146,7 +146,7 @@ export const HowItWorks = () => {
                 filter: "url(#c3-noise)",
               }}
             >
-              Under 20 minutes.
+              A few minutes.
             </span>
           </motion.h2>
 
@@ -211,7 +211,7 @@ export const HowItWorks = () => {
               Try it free, 100 lead searches a month, no card required
             </motion.a>
             <p className="text-xs" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
-              Start in 60 seconds, no credit card or demo call needed.
+              Free to start. No credit card.
             </p>
           </motion.div>
         </div>
