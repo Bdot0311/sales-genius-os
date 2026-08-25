@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -69,11 +70,39 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
   const [prospectCompanySize, setProspectCompanySize] = useState("");
   const [dailyLeadTarget, setDailyLeadTarget] = useState("10");
   const [maxDailyNewEmails, setMaxDailyNewEmails] = useState("20");
+  /**
+   * The account-wide send cap, which is a DIFFERENT limit to the one on this
+   * screen and is the one that actually stops mail going out.
+   *
+   * "Max new emails per day" here governs how many first-touch emails the
+   * agent composes. subscriptions.daily_email_limit is what send-email
+   * enforces, it defaults to 10, and it is edited on the Outreach page. A user
+   * set this field to 100, hit the 10/day account cap, and had 25 approved
+   * emails refuse to send with no way to tell from this screen why.
+   */
+  const [accountDailyCap, setAccountDailyCap] = useState<number | null>(null);
   const [icpSnapshot, setIcpSnapshot] = useState<ICPSnapshot | null>(null);
   const [icpProfileId, setIcpProfileId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   // Populate form from config
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      if (!auth.user) return;
+      const { data } = await supabase
+        .from("subscriptions")
+        .select("daily_email_limit")
+        .eq("user_id", auth.user.id)
+        .maybeSingle();
+      if (!cancelled) setAccountDailyCap((data?.daily_email_limit as number | null) ?? 10);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   useEffect(() => {
     if (!config) return;
     setAgentName(config.agent_name ?? "");
@@ -430,6 +459,29 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
                 value={maxDailyNewEmails}
                 onChange={(e) => setMaxDailyNewEmails(e.target.value)}
               />
+              {accountDailyCap !== null && (
+                <p className="text-xs text-muted-foreground">
+                  {Number(maxDailyNewEmails) > accountDailyCap ? (
+                    <>
+                      Your account only sends{" "}
+                      <strong>{accountDailyCap} emails a day</strong>, so this setting cannot
+                      take effect above that. Raise the account limit on the{" "}
+                      <Link to="/dashboard/outreach" className="underline">
+                        Outreach page
+                      </Link>{" "}
+                      first.
+                    </>
+                  ) : (
+                    <>
+                      Your account sends at most {accountDailyCap} a day — change that on the{" "}
+                      <Link to="/dashboard/outreach" className="underline">
+                        Outreach page
+                      </Link>
+                      .
+                    </>
+                  )}
+                </p>
+              )}
             </div>
           )}
         </CardContent>
