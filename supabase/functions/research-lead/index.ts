@@ -8,6 +8,7 @@ import { coldiqConfigured, coldiqFetchPages } from "../_shared/coldiq.ts";
 import {
   briefToPromptBlock,
   isResearchFresh,
+  normalizeOccurred,
   resolveLeadDomain,
   scoreResearchQuality,
   type LeadResearchBrief,
@@ -93,12 +94,14 @@ ABSOLUTE RULES:
 - Never invent funding rounds, launches, hires, customer names, revenue, headcount, percentages, or metrics.
 - If the site text is too thin to support concrete observations, return an empty observations array and confidence "low". An empty brief is correct; a plausible-sounding invented brief is a failure.
 - Observations must be specific enough that they could not plausibly apply to a different company.
+- DATE EVERY OBSERVATION YOU CAN. "occurred" is the date the PAGE states for that fact — a press-release date, "November 2025", a changelog entry, a copyright year on a dated announcement. Use "YYYY-MM-DD", "YYYY-MM" or "YYYY".
+- If the page gives no date for a fact, "occurred" MUST be "". Never estimate one, never use today's date, never infer a date from context. A website is a standing document: an acquisition announced last November still sits on the About page today, and a rep who reads it as news writes an email the prospect knows is wrong.
 
 Return ONLY a valid JSON object (no prose, no code fences) with exactly these fields:
 {
   "what_they_do": string,        // one plain-language sentence
   "who_they_sell_to": string,    // their customer, one short phrase or sentence; "" if unclear
-  "observations": [ { "fact": string, "source": string } ],  // 3-5 max, each under 25 words, source = the page URL it came from
+  "observations": [ { "fact": string, "source": string, "occurred": string } ],  // 3-5 max, fact under 25 words, source = the page URL it came from
   "hooks": [ string ],           // 2-3 max personalization angles, each tied to one observation
   "avoid": [ string ],           // claims a rep should NOT make because the site does not support them
   "confidence": "high" | "medium" | "low"
@@ -165,6 +168,10 @@ async function generateBrief(
         .map((o) => ({
           fact: str(o.fact, 240),
           source: str(o.source, 300),
+          // Normalized here rather than trusted: a date the model invented in
+          // an unreadable shape becomes "" (undated, handled conservatively)
+          // instead of a wrong date, which is not recoverable downstream.
+          occurred: normalizeOccurred(o.occurred),
         }))
         .slice(0, 5)
     : [];
@@ -448,7 +455,15 @@ serve(async (req) => {
     // observation list because recency is what a cold open trades on.
     const modelObservations = (result.brief.observations ?? []).filter((o) => o?.fact);
     const mergedObservations = [
-      ...signalFacts.map((f) => ({ fact: f.fact, source: f.source })),
+      // occurred_at rides along. Dropping it made a verified, dated event
+      // indistinguishable from an undated line scraped off an About page —
+      // and the writer is told not to date anything undated, so losing it
+      // would suppress exactly the recency these events exist to provide.
+      ...signalFacts.map((f) => ({
+        fact: f.fact,
+        source: f.source,
+        occurred: normalizeOccurred(f.occurred_at ?? ""),
+      })),
       ...modelObservations,
     ];
 

@@ -6,6 +6,17 @@
 export interface ResearchObservation {
   fact: string;
   source: string;
+  /**
+   * The date the SITE states for this fact, when it states one at all.
+   *
+   * "YYYY", "YYYY-MM" or "YYYY-MM-DD"; "" when the page carries no date. A
+   * website is a standing document — an acquisition announced last November is
+   * still on the About page this August, indistinguishable from something that
+   * happened yesterday unless the date comes along with the fact. Without this
+   * field a draft opened "Saw the WeAre acquisition in November" nine months
+   * after the fact, to a reader who knew exactly how old it was.
+   */
+  occurred?: string;
 }
 
 export interface LeadResearchBrief {
@@ -174,7 +185,10 @@ export function briefToPromptBlock(
   if (brief.what_they_do) lines.push(`- What they do: ${brief.what_they_do}`);
   if (brief.who_they_sell_to) lines.push(`- Who they sell to: ${brief.who_they_sell_to}`);
   for (const o of brief.observations || []) {
-    if (o?.fact) lines.push(`- Observed on their site: ${o.fact}`);
+    // The dating rides with the fact. Handing the model "they acquired WeAre"
+    // with no indication of when is how a nine-month-old announcement became
+    // "Saw the WeAre acquisition in November" in a cold open.
+    if (o?.fact) lines.push(`- Observed on their site (${datingNote(o.occurred ?? "")}): ${o.fact}`);
   }
   for (const h of brief.hooks || []) {
     if (h) lines.push(`- Possible angle: ${h}`);
@@ -183,6 +197,11 @@ export function briefToPromptBlock(
     lines.push(`- Do NOT claim (unsupported by their site): ${brief.avoid.join("; ")}`);
   }
   if (sources?.length) lines.push(`- Sources read: ${sources.slice(0, 8).join(", ")}`);
+  if (!freshObservationDates(brief).length) {
+    lines.push(
+      "- TIMING: nothing here is dated inside the last few months. Do NOT open with a time claim — no month names, no \"recently\", no \"just\", no \"I saw last week\". Reference the fact without dating it.",
+    );
+  }
   if (lines.length === 0) return "";
   const quality = brief.quality ?? scoreResearchQuality(brief, sources);
   let block = `${lines.join("\n")}\n- Research confidence: ${brief.confidence || "low"}`;
@@ -195,4 +214,126 @@ export function briefToPromptBlock(
       "\n- CAUTION: research is thin. Reference ONLY the observations listed above verbatim in meaning; make no other company-specific claims.";
   }
   return block;
+}
+
+
+// ─── Observation dating ──────────────────────────────────────────────────────
+
+/**
+ * How old a dated observation may be before it stops being news.
+ *
+ * Deliberately the same window signal_events already uses. Two paths supply
+ * "why now" material and only one of them had a freshness rule — the one that
+ * could not name a month. The path that CAN assert recency was the path with no
+ * check on it.
+ */
+export const OBSERVATION_FRESHNESS_DAYS = 120;
+
+const MONTHS = [
+  "january", "february", "march", "april", "may", "june",
+  "july", "august", "september", "october", "november", "december",
+];
+
+/**
+ * A site-stated date reduced to "YYYY", "YYYY-MM" or "YYYY-MM-DD", or "".
+ *
+ * Models return dates in whatever shape the page used, so this accepts ISO,
+ * "November 2025" and "Nov 2025" and rejects everything else rather than
+ * guessing. A date it cannot read becomes "" — undated, which is handled
+ * conservatively — never a wrong date, which is not.
+ */
+export function normalizeOccurred(raw: unknown, now: Date = new Date()): string {
+  const text = String(raw ?? "").trim().toLowerCase();
+  if (!text) return "";
+
+  const currentYear = now.getUTCFullYear();
+  const inRange = (y: number) => y >= 1990 && y <= currentYear + 1;
+  const pad = (n: number) => String(n).padStart(2, "0");
+
+  const iso = text.match(/^(\d{4})(?:-(\d{1,2}))?(?:-(\d{1,2}))?$/);
+  if (iso) {
+    const y = Number(iso[1]);
+    if (!inRange(y)) return "";
+    if (!iso[2]) return String(y);
+    const m = Number(iso[2]);
+    if (m < 1 || m > 12) return String(y);
+    if (!iso[3]) return `${y}-${pad(m)}`;
+    const d = Number(iso[3]);
+    if (d < 1 || d > 31) return `${y}-${pad(m)}`;
+    return `${y}-${pad(m)}-${pad(d)}`;
+  }
+
+  // "November 2025", "Nov 2025", "November 14, 2025".
+  const named = text.match(/([a-z]{3,9})\.?\s+(?:(\d{1,2})(?:st|nd|rd|th)?,?\s+)?(\d{4})/);
+  if (named) {
+    const idx = MONTHS.findIndex((m) => m.startsWith(named[1].slice(0, 3)));
+    const y = Number(named[3]);
+    if (idx >= 0 && inRange(y)) {
+      if (!named[2]) return `${y}-${pad(idx + 1)}`;
+      const d = Number(named[2]);
+      if (d >= 1 && d <= 31) return `${y}-${pad(idx + 1)}-${pad(d)}`;
+      return `${y}-${pad(idx + 1)}`;
+    }
+  }
+
+  // A bare year on its own.
+  const bare = text.match(/^(\d{4})$/);
+  if (bare && inRange(Number(bare[1]))) return bare[1];
+
+  return "";
+}
+
+/**
+ * Days since a normalized date, or null when there is no usable one.
+ *
+ * A year-only or month-only date is measured from its LAST day, which is the
+ * reading most favourable to the fact being recent. If it is stale even under
+ * that reading, it is genuinely stale.
+ */
+export function observationAgeDays(occurred: string, now: Date = new Date()): number | null {
+  const v = normalizeOccurred(occurred, now);
+  if (!v) return null;
+  const [y, m, d] = v.split("-").map(Number);
+  const end = d
+    ? Date.UTC(y, m - 1, d)
+    : m
+    ? Date.UTC(y, m, 0) // last day of that month
+    : Date.UTC(y, 11, 31);
+  const age = Math.floor((now.getTime() - end) / 86_400_000);
+  return age < 0 ? 0 : age;
+}
+
+/** True when a dated observation is old enough that calling it news would mislead. */
+export function isStaleObservation(
+  occurred: string,
+  now: Date = new Date(),
+  windowDays: number = OBSERVATION_FRESHNESS_DAYS,
+): boolean {
+  const age = observationAgeDays(occurred, now);
+  return age !== null && age > windowDays;
+}
+
+/** The normalized dates of observations still inside the freshness window. */
+export function freshObservationDates(
+  brief: LeadResearchBrief | null | undefined,
+  now: Date = new Date(),
+): string[] {
+  return (brief?.observations ?? [])
+    .map((o) => normalizeOccurred(o?.occurred, now))
+    .filter((v) => v && !isStaleObservation(v, now));
+}
+
+/**
+ * How a dated fact should be described to the writer.
+ *
+ * Undated is treated as unsafe rather than as fresh: the site not saying when
+ * something happened is not evidence it happened lately.
+ */
+export function datingNote(occurred: string, now: Date = new Date()): string {
+  const v = normalizeOccurred(occurred, now);
+  if (!v) return "no date on the page — do NOT imply this is recent or say when it happened";
+  const age = observationAgeDays(v, now) ?? 0;
+  if (age <= OBSERVATION_FRESHNESS_DAYS) return `dated ${v} — recent enough to reference as news`;
+  const months = Math.round(age / 30);
+  return `dated ${v}, about ${months} months ago — do NOT present as news or imply you just saw it`;
 }
