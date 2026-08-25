@@ -30,6 +30,9 @@ const OUT = "supabase/functions/_shared/skills.generated.ts";
 // a copywriting prompt — generate-email already sources company facts from the
 // database, where they are per-user rather than baked into a bundle.
 const EMAIL_SKILLS = [
+  // Applies to every draft rather than being routed by goal — see STYLE_FLOOR
+  // in _shared/email-skills.ts.
+  "anti-ai-slop-writing",
   "b2b-cold-email-copywriting",
   "cold-email-4-sequence",
   "cold-email-strategist",

@@ -63,11 +63,16 @@ Deno.test("the agent playbook carries the frameworks, not just the rules", () =>
   assert(withSkills.startsWith(PLAYBOOK_SYSTEM_RULES), "constraints must still lead the prompt");
 });
 
-Deno.test("the truncation budget drops the core skill before the routed one", () => {
-  // Ordering matters: when the budget bites, the framework the caller asked for
-  // has to survive and the general principles are what get cut.
+Deno.test("ordering ranks the goal's own material above the general principles", () => {
+  // Every skill ships on every path, so ordering is emphasis rather than a
+  // filter — but if a budget ever does bite, what the caller asked for has to
+  // outlive what it did not.
   const names = skillsForGoal({ goal: "sequence" });
-  assertEquals(names[names.length - 1], "b2b-cold-email-copywriting");
+  assertEquals(names[0], "cold-email-4-sequence");
+  assert(
+    names.indexOf("b2b-cold-email-copywriting") > names.indexOf("cold-email-4-sequence"),
+    `core outranks the routed skill: ${names.join(", ")}`,
+  );
 });
 
 Deno.test("a tiny budget yields no skills rather than a truncated fragment", () => {
@@ -89,10 +94,21 @@ Deno.test("a variant pulls the Frontal templates whatever the goal", () => {
   }
 });
 
-Deno.test("the original is not forced onto the Frontal templates", () => {
-  // Only goals that route to them should get them at variantNum 0.
-  assert(!skillsForGoal({ goal: "meeting", variantNum: 0 }).includes("frontal-messaging-templates"));
-  assert(!skillsForGoal({ goal: "follow-up" }).includes("frontal-messaging-templates"));
+Deno.test("the original does not LEAD with the Frontal templates", () => {
+  // They are present for every goal — nothing opts out of the house rules — but
+  // leading with them is what makes a variant structurally different, so the
+  // original must not start there.
+  for (const goal of ["meeting", "follow-up"]) {
+    const names = skillsForGoal({ goal, variantNum: 0 });
+    assert(
+      names.includes("frontal-messaging-templates"),
+      `${goal} should still carry the templates`,
+    );
+    assert(
+      names[0] !== "frontal-messaging-templates",
+      `${goal} must not lead with them at variantNum 0`,
+    );
+  }
 });
 
 Deno.test("first-touch goals carry the Frontal templates on the original too", () => {
