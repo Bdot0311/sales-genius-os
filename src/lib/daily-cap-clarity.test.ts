@@ -22,11 +22,17 @@ describe("the agent's email cap names the limit that actually applies", () => {
 
   it("warns when the agent setting exceeds what the account can send", () => {
     expect(CONFIG).toContain("Number(maxDailyNewEmails) > accountDailyCap");
-    expect(CONFIG).toContain("cannot\n                      take effect above that");
+    expect(CONFIG).toContain("cannot take effect above that");
   });
 
   it("links to the page that actually owns the limit", () => {
     expect(CONFIG).toContain('to="/dashboard/outreach"');
+  });
+
+  it("names the dialog the control is actually inside", () => {
+    // A link to the page alone does not reveal a control that only exists once
+    // a modal is open — which is why it could not be found.
+    expect(CONFIG).toContain("click Bulk Send");
   });
 
   it("links to a route that exists", () => {

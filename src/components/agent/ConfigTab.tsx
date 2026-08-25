@@ -463,21 +463,21 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
                 <p className="text-xs text-muted-foreground">
                   {Number(maxDailyNewEmails) > accountDailyCap ? (
                     <>
-                      Your account only sends{" "}
-                      <strong>{accountDailyCap} emails a day</strong>, so this setting cannot
-                      take effect above that. Raise the account limit on the{" "}
+                      Your plan sends <strong>{accountDailyCap} emails a day</strong>, so this
+                      setting cannot take effect above that. To change it, open{" "}
                       <Link to="/dashboard/outreach" className="underline">
-                        Outreach page
+                        Outreach Studio
                       </Link>{" "}
-                      first.
+                      and click Bulk Send — the daily limit is set inside that dialog.
                     </>
                   ) : (
                     <>
-                      Your account sends at most {accountDailyCap} a day — change that on the{" "}
+                      Your plan sends up to {accountDailyCap} a day. To lower it — while warming
+                      a domain, say — open{" "}
                       <Link to="/dashboard/outreach" className="underline">
-                        Outreach page
-                      </Link>
-                      .
+                        Outreach Studio
+                      </Link>{" "}
+                      and click Bulk Send.
                     </>
                   )}
                 </p>
