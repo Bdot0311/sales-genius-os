@@ -4,6 +4,7 @@ import { playbookSystemRules } from "../_shared/cold-email-playbook.ts";
 import { isWeak, rubricFeedback, scoreEmail } from "../_shared/email-quality.ts";
 import { signOffStartIndex } from "../_shared/email-rules.ts";
 import { findPlaceholders, hasPlaceholder } from "../_shared/email-rules.ts";
+import { asFnResult } from "../_shared/fn-result.ts";
 import { buildIcpContext, icpSearchBody } from "../_shared/icp-context.ts";
 import { captureServerEvent } from "../_shared/posthog.ts";
 import { getSignatureHtml, appendSignatureToBody } from "../_shared/signature.ts";
@@ -795,12 +796,7 @@ serve(async (req) => {
           // Never let one hung sub-function eat the whole turn.
           signal: AbortSignal.timeout(Math.max(5_000, Math.min(45_000, timeLeft() - 5_000))),
         });
-        const text = await res.text();
-        try {
-          return JSON.parse(text);
-        } catch {
-          return { error: text.slice(0, 300) };
-        }
+        return asFnResult(name, res.status, res.ok, await res.text());
       } catch (e) {
         console.error(`callFn ${name} failed`, e);
         return { error: e instanceof Error ? e.message : `${name} did not respond` };
@@ -1123,12 +1119,7 @@ serve(async (req) => {
         },
         body: JSON.stringify(body ?? {}),
       });
-      const text = await res.text();
-      try {
-        return JSON.parse(text);
-      } catch {
-        return { error: text.slice(0, 300) };
-      }
+      return asFnResult(name, res.status, res.ok, await res.text());
     };
 
     const loadLead = async (leadId: string) => {
@@ -2428,17 +2419,47 @@ serve(async (req) => {
               outcome: r.outcome,
             });
           }
+          // A failed send leaves the approval pending so it can be retried, so
+          // "still pending after we tried" is the failure signal.
           const failedCount = outcomes.filter((o) => o.status === "pending").length;
+          const succeeded = outcomes.length - failedCount;
           toolEvents.push({
             name,
-            label: decision === "approve" ? "Sent what you approved" : "Cancelled what you declined",
+            label: decision === "reject"
+              ? "Cancelled what you declined"
+              : failedCount === outcomes.length
+              ? "Nothing sent — every send failed"
+              : failedCount
+              ? `Sent ${succeeded}, ${failedCount} failed`
+              : "Sent what you approved",
             status: failedCount ? "error" : "ok",
             detail:
               decision === "approve"
-                ? `${outcomes.length - failedCount} of ${outcomes.length} executed${failedCount ? `, ${failedCount} failed` : ""}`
+                ? `${succeeded} of ${outcomes.length} sent${failedCount ? `, ${failedCount} failed` : ""}`
                 : `${outcomes.length} discarded`,
           });
-          return { decision, resolved: outcomes.length, failed: failedCount, outcomes };
+          // `resolved` used to be outcomes.length — every approval ATTEMPTED,
+          // reported under a name that reads like every approval SENT. With the
+          // event labelled "Sent what you approved" regardless, a run where
+          // every send failed was indistinguishable from one where none did,
+          // and the model said "sent" each time the user asked again.
+          const failures = outcomes
+            .filter((o) => o.status === "pending")
+            .map((o) => `${o.to}: ${o.outcome}`);
+          return {
+            decision,
+            attempted: outcomes.length,
+            sent: decision === "approve" ? succeeded : 0,
+            failed: failedCount,
+            outcomes,
+            ...(failedCount
+              ? {
+                  error: `${failedCount} of ${outcomes.length} could not be sent and are still pending: ${failures.join("; ").slice(0, 400)}`,
+                  note:
+                    "Tell the user exactly which ones failed and why, in plain language. Do NOT say they were sent. They are still pending, so they can be retried once the cause is fixed.",
+                }
+              : {}),
+          };
         }
 
         case "get_agent_status": {
