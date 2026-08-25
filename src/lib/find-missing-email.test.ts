@@ -73,7 +73,11 @@ describe("a found address is a guess until verified", () => {
     // Storing one unverified is how the original bounce happened — and it is
     // worse here, because the user has no reason to doubt an address the
     // product volunteered.
-    expect(ENRICH).toContain("await verifyEmail(supabase, foundEmail)");
+    // Matched on behaviour rather than on the exact argument spelling: this
+    // pinned "verifyEmail(supabase, foundEmail)" and broke when a `as unknown
+    // as CacheClient` cast was added around the first argument, reporting a
+    // regression in a call that had not changed.
+    expect(ENRICH).toMatch(/await verifyEmail\(\s*supabase[^,]*,\s*foundEmail\s*\)/);
     expect(ENRICH).toContain("verdict.status === 'invalid'");
   });
 
