@@ -71,3 +71,34 @@ describe("the one-time correction is narrow", () => {
     expect(MIGRATION).toContain("ELSE daily_email_limit");
   });
 });
+
+describe("the account-wide limit lives where sending caps live", () => {
+  const PANEL = readFileSync("src/components/deliverability/AccountSendLimit.tsx", "utf8");
+  const PAGE = readFileSync("src/pages/Deliverability.tsx", "utf8");
+  const BULK = readFileSync("src/components/outreach/BulkSendDialog.tsx", "utf8");
+
+  it("is rendered on the Deliverability page", () => {
+    expect(PAGE).toContain("<AccountSendLimit />");
+    expect(PAGE).toContain("Daily send limit");
+  });
+
+  it("edits the account column, not a per-mailbox one", () => {
+    expect(PANEL).toContain('.from("subscriptions")');
+    expect(PANEL).toContain("daily_email_limit: next");
+  });
+
+  it("refuses a value above what the plan allows", () => {
+    expect(PANEL).toContain("next > planCap");
+  });
+
+  it("says what it actually governs", () => {
+    // It applies to Outreach Studio singles, the agent, sequences and
+    // scheduled sends — not only to bulk.
+    expect(PANEL).toContain("Applies to everything that sends");
+  });
+
+  it("stops the bulk dialog implying the limit is bulk-only", () => {
+    expect(BULK).toContain("Account daily limit:");
+    expect(BULK).toContain("Applies to every send on the account, not just this batch");
+  });
+});

@@ -25,19 +25,17 @@ describe("the agent's email cap names the limit that actually applies", () => {
     expect(CONFIG).toContain("cannot take effect above that");
   });
 
-  it("links to the page that actually owns the limit", () => {
-    expect(CONFIG).toContain('to="/dashboard/outreach"');
-  });
-
-  it("names the dialog the control is actually inside", () => {
-    // A link to the page alone does not reveal a control that only exists once
-    // a modal is open — which is why it could not be found.
-    expect(CONFIG).toContain("click Bulk Send");
+  it("points at the account-level home, not a bulk-send modal", () => {
+    // The limit applies to every send, so editing it from inside Bulk Send
+    // implied a scope it does not have — and could not be found by anyone
+    // looking through pages.
+    expect(CONFIG).toContain("Deliverability → Daily send limit");
+    expect(CONFIG).toContain('to="/dashboard/deliverability"');
   });
 
   it("links to a route that exists", () => {
-    // /outreach is not a route; the page is mounted under /dashboard.
-    expect(APP).toContain('path="/dashboard/outreach"');
+    // /outreach is not a route; these pages are mounted under /dashboard.
+    expect(APP).toContain('path="/dashboard/deliverability"');
     expect(CONFIG).not.toContain('to="/outreach"');
   });
 });
