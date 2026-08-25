@@ -120,8 +120,23 @@ function didMutate(result: unknown): boolean {
 
   const summary = (r.summary && typeof r.summary === "object" ? r.summary : r) as Record<string, unknown>;
   if (summary.needs_rewrite === true) return false;
-  if (summary.queued_for_approval === true) return false;
-  if (r.sent === false) return false;
+
+  // Both shapes, because both exist. deliver() returns a per-email summary
+  // where queued_for_approval is `true` and sent is `false`; send_drafts and
+  // schedule_drafts return a BATCH where the same keys are counts. The checks
+  // were `=== true` and `=== false`, so a batch reporting {sent: 0,
+  // queued_for_approval: 2} matched neither, and two emails that were merely
+  // parked for a human to confirm were recorded as a completed send — which is
+  // exactly what this function exists to prevent.
+  const asCount = (v: unknown): number | null =>
+    typeof v === "number" ? v : typeof v === "boolean" ? (v ? 1 : 0) : null;
+  const queued = asCount(summary.queued_for_approval) ?? asCount(r.queued_for_approval);
+  const sent = asCount(summary.sent) ?? asCount(r.sent);
+  // When a result reports a send count at all, that count is the answer: a
+  // partial batch (one sent, one queued) IS a mutation, and treating it as
+  // nothing would let the one that went out be sent a second time on retry.
+  if (sent !== null) return sent > 0;
+  if (queued !== null && queued > 0) return false;
 
   return true;
 }
@@ -2971,6 +2986,42 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
       finalText += `\n\n${failureNote}`;
     } else if (ranOutOfTime) {
       finalText += "\n\nStill more to do here — continuing…";
+    }
+
+    // The model is not the only witness to its own actions.
+    //
+    // In approval mode every send parks an agent_approvals row and the tool
+    // says so in plain terms — send_drafts returns "Nothing was sent yet — N
+    // email(s) are paused waiting on the user." A user asked repeatedly why
+    // emails were not arriving and was told "sent" each time, while the
+    // approvals table filled up with rows nothing had ever reviewed.
+    //
+    // So a claim of sending is checked against what the tools actually did
+    // this turn. Nothing here rewrites the model's words; it appends the
+    // correction, because silently editing what an agent said is its own kind
+    // of lie.
+    const CLAIMS_SEND =
+      /\b(?:i(?:'ve| have)?\s+(?:just\s+)?sent|sent it|sent them|sent the (?:email|second|first|follow[- ]?up)|email (?:has been|was) sent|emails? (?:have|has) been sent)\b/i;
+    const sendingEvents = toolEvents.filter((e) =>
+      ["send_drafts", "send_outreach", "resolve_approvals", "schedule_drafts"].includes(e.name ?? ""),
+    );
+    const anythingActuallySent = sendingEvents.some((e) => e.status === "ok" && e.label !== "Waiting for your approval");
+    const anythingQueued = toolEvents.some((e) => e.status === "queued");
+    if (CLAIMS_SEND.test(finalText) && !anythingActuallySent) {
+      const { count: stillPending } = await admin
+        .from("agent_approvals")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .eq("status", "pending");
+      finalText +=
+        `\n\nCorrection: nothing was actually sent in this step.` +
+        (anythingQueued
+          ? " The email is waiting on your confirmation."
+          : " No send ran.") +
+        (stillPending
+          ? ` You have ${stillPending} email(s) sitting in the approval queue. Say "approve all" and I will send them.`
+          : "");
+      console.warn(`[agent-chat] corrected an unbacked send claim (${stillPending ?? 0} pending)`);
     }
 
 
