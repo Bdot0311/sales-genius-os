@@ -186,8 +186,23 @@ export async function aiFetch(
 
   if (route.provider === "bedrock") {
     const wantsStream = body.stream === true;
-    // Bedrock is called non-streaming either way so usage is always metered;
-    // streaming callers get the completion re-emitted as SSE.
+    if (wantsStream) {
+      // Real token-by-token streaming: usage arrives in the stream's metadata
+      // event and is metered from there, so nothing has to be buffered.
+      const streamed = await bedrockChatStream(route.model, body, (usage) => {
+        void meter({
+          fn: fnName,
+          provider: "bedrock",
+          model: route.model,
+          userId: ctx.userId,
+          usage,
+        });
+      });
+      if (streamed.ok) return streamed;
+      // Streaming unavailable (e.g. model without ConverseStream support): fall
+      // back to a buffered completion re-emitted as SSE so the feature still works.
+      console.error(`[ai-provider] ${fnName} bedrock stream unavailable -> buffered fallback`);
+    }
     const res = await bedrockChat(route.model, body);
     if (!res.ok) return res;
     const completion = await res.json() as {
@@ -207,6 +222,7 @@ export async function aiFetch(
       });
     }
     return bedrockChatAsStream(route.model, body, completion as Record<string, unknown>);
+
   }
 
   const headers: Record<string, string> = { "Content-Type": "application/json" };
