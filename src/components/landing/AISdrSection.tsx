@@ -144,12 +144,12 @@ const capabilities = [
   },
   {
     icon: "📬",
-    title: "Never miss a hot reply",
+    title: "Watches the inbox around the clock",
     desc: "Reads every reply from active prospects across Gmail threads, around the clock.",
   },
   {
     icon: "🧠",
-    title: "Know who's ready before you do",
+    title: "Flags who is ready to talk",
     desc: "Interest, objection, meeting request, unsubscribe. Always knows what's what.",
   },
   {
@@ -159,7 +159,7 @@ const capabilities = [
   },
   {
     icon: "⚙️",
-    title: "You control what it does",
+    title: "Runs inside the limits you set",
     desc: "Set daily lead and send caps, reply limits, and which actions run autonomously.",
   },
 ];

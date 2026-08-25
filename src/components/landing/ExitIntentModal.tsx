@@ -106,7 +106,7 @@ export const ExitIntentModal = () => {
               className="mb-3 font-display text-2xl font-bold text-white sm:text-[1.65rem]"
               style={{ letterSpacing: "-0.01em", lineHeight: 1.15 }}
             >
-              See OutReign find real leads in 60 seconds.
+              See OutReign find real leads.
             </h2>
             <p className="mb-7 text-sm leading-relaxed text-white/80">
               Watch how plain-English search returns ranked, SMTP-verified prospects with a first-touch email already drafted.

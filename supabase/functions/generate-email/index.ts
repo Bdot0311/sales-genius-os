@@ -25,6 +25,8 @@ import {
   hasPlaceholder,
   noFabricationRetry,
   bannedPhraseRetry,
+  findUnsupportedRecency,
+  unsupportedRecencyRetry,
   enforceSignOff,
   findBannedPhrases,
   findSelfReferentialPeers,
@@ -36,6 +38,7 @@ import {
 } from "../_shared/email-rules.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {
+  freshObservationDates,
   briefToPromptBlock,
   isResearchFresh,
   scoreResearchQuality,
@@ -1418,6 +1421,69 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
       email = repairSelfReferentialPeers(email, String(lead?.company_name ?? ''));
     }
 
+    // A time claim the research cannot back. The two paths that supply "why
+    // now" material were guarded asymmetrically: signal_events is filtered to a
+    // freshness window and phrases dates vaguely on purpose, while website
+    // observations carried no date at all — so the path that COULD name a month
+    // was the path with nothing checking it. A draft opened "Saw the WeAre
+    // acquisition in November" nine months after the fact.
+    //
+    // A named month the research cannot support is unambiguous and blocks like
+    // a fabricated figure does. A vague "recently" is softer, so it retries and
+    // then reports as weak rather than costing the user the draft.
+    const freshDates = freshObservationDates(researchBrief);
+    let recency = findUnsupportedRecency(email, freshDates);
+    if (recency.length) {
+      console.warn(`[generate-email] unsupported recency: ${recency.join(', ')} — regenerating`);
+      try {
+        const recencyRetry = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: `${userPrompt}\n${unsupportedRecencyRetry(recency)}` },
+            ],
+            temperature: 0.4,
+          }),
+        });
+        if (recencyRetry.ok) {
+          const d = await recencyRetry.json();
+          let second = cleanGeneratedEmail((d.choices?.[0]?.message?.content || '').trim(), preserveSubject);
+          if (second) {
+            second = repairSelfReferentialPeers(second, String(lead?.company_name ?? ''));
+            second = enforceSignOff(second, resolvedSenderName);
+            const secondHits = findUnsupportedRecency(second, freshDates);
+            const secondOk =
+              !hasPlaceholder(second) &&
+              !findUnverifiedClaims(second, proofForClaims).length &&
+              secondHits.length < recency.length;
+            if (secondOk) {
+              email = second;
+              recency = secondHits;
+            } else {
+              console.warn('[generate-email] recency retry rejected, keeping original');
+            }
+          }
+        }
+      } catch (e) {
+        console.warn(`[generate-email] recency retry failed: ${e}`);
+      }
+    }
+
+    // A named month is a checkable factual claim, and getting a prospect's own
+    // news date wrong reads worse than never mentioning it.
+    const MONTHS_RE = /^(January|February|March|April|May|June|July|August|September|October|November|December)$/;
+    const datedLies = recency.filter((h) => MONTHS_RE.test(h));
+    if (datedLies.length) {
+      console.error(`[generate-email] unsupported month survived retry: ${datedLies.join(', ')}`);
+      return new Response(JSON.stringify({
+        error: `The draft dated something the research cannot date (${datedLies.join(', ')}), so it was not saved. Re-run research on this lead, or generate again.`,
+        error_code: 'unsupported_recency',
+      }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     // Banned phrases were only ever advisory — injected into the prompt and
     // never checked against what came back. In one batch of twenty, six drafts
     // carried "predictable pipeline" and four "without adding headcount", which
@@ -1511,8 +1577,9 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
       // Filler the retry could not shift is reported as weakness rather than
       // hidden: the caller decides whether to show it, but it never ships
       // silently the way it did before anything checked the output.
-      quality_weak: isWeak(rubric) || bannedHits.length > 0,
+      quality_weak: isWeak(rubric) || bannedHits.length > 0 || recency.length > 0,
       banned_phrases: bannedHits,
+      unsupported_recency: recency,
       research: researchBrief
         ? {
             what_they_do: researchBrief.what_they_do,

@@ -17,7 +17,7 @@ const LeadDiscoveryPreview = () => (
     </div>
     {/* Stat row */}
     <div className="flex gap-2">
-      {[["847", "matches"], ["94%", "verified"], ["< 2 min", "to results"]].map(([val, lbl]) => (
+      {[["847", "matches"], ["94%", "verified"], ["mins", "to results"]].map(([val, lbl]) => (
         <div
           key={lbl}
           className="flex-1 rounded-lg p-3 text-center"
@@ -182,13 +182,13 @@ const modules = [
   {
     number: "01",
     title: "Lead Discovery",
-    tagline: "ICP to ranked prospects in under 2 minutes.",
-    description: "Describe who you want in plain English. Get back verified contacts ranked by fit, without filters or boolean queries.",
+    tagline: "ICP to ranked prospects in a few minutes.",
+    description: "Describe who you want in plain English. Verified contacts come back ranked by fit.",
   },
   {
     number: "02",
     title: "Outreach Studio",
-    tagline: "Context-aware email drafts you actually want to send.",
+    tagline: "Context-aware email drafts worth sending.",
     description: "Each email is built from real company context: news, growth signals, open roles. Quality-checked before you hit send.",
   },
   {
@@ -251,7 +251,7 @@ export const ModulesSection = () => {
             className={`mb-16 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
           >
             <p className="font-serif italic font-thin text-base text-center text-purple-500 mb-5">
-              The Platform
+              Four screens
             </p>
             <h2
               id="modules-heading"

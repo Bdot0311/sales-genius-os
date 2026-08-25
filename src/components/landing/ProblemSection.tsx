@@ -32,7 +32,7 @@ export const ProblemSection = () => {
             viewport={{ once: true, margin: "-10% 0px" }}
             transition={{ duration: 0.6, ease }}
           >
-            The Problem
+            Where the time goes
           </motion.p>
 
           <h2 id="problem-heading" className="space-y-1 mb-12">
@@ -78,8 +78,8 @@ export const ProblemSection = () => {
             viewport={{ once: true, margin: "-10% 0px" }}
             transition={{ duration: 0.55, ease, delay: 0.38 }}
           >
-            The typical SDR spends 2+ hours building a list before sending a single email.
-            OutReign collapses that to under 20 minutes, with every contact verified
+            Building the list takes longer than writing the emails.
+            OutReign collapses that to a few minutes, with every contact verified
             before it reaches your queue.
           </motion.p>
 

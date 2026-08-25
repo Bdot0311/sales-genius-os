@@ -125,12 +125,15 @@ describe("the brief actually carries them", () => {
   it("merges them in rather than asking the model to repeat them", () => {
     // The model has already demonstrated it will write around evidence it is
     // handed; routing verified events through it could only lose them.
-    expect(RESEARCH).toContain("...signalFacts.map((f) => ({ fact: f.fact, source: f.source }))");
+    expect(RESEARCH).toMatch(/\.\.\.signalFacts\.map\(\(f\) => \(\{\s*fact: f\.fact,/);
+    // And the event's own date survives the merge — without it a verified,
+    // dated event is indistinguishable from an undated line off an About page.
+    expect(RESEARCH).toContain("occurred: normalizeOccurred(f.occurred_at");
   });
 
   it("puts them ahead of website observations", () => {
     const merged = RESEARCH.indexOf("const mergedObservations");
-    const signalsFirst = RESEARCH.indexOf("...signalFacts.map((f) => ({ fact", merged);
+    const signalsFirst = RESEARCH.indexOf("...signalFacts.map(", merged);
     const modelSecond = RESEARCH.indexOf("...modelObservations", merged);
     expect(signalsFirst).toBeLessThan(modelSecond);
   });
