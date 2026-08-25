@@ -22,6 +22,22 @@ import { EMAIL_SKILLS, type EmailSkillName } from "./skills.generated.ts";
 const CORE: EmailSkillName = "b2b-cold-email-copywriting";
 
 /**
+ * The style floor, applied to every draft whatever the goal.
+ *
+ * anti-ai-slop-writing is not a framework and must not be routed like one. The
+ * frameworks are alternatives — the model is told to read them and pick exactly
+ * one. Injected alongside them, this would be read as a ninth shape to choose
+ * between and discarded on the ~87% of generations that pick something else,
+ * which is the opposite of what a floor is for.
+ *
+ * So it is rendered in its own block, under its own instruction, and charged
+ * against the budget before anything else: if a prompt is too big for
+ * everything, the pass that stops copy reading like a machine is the last thing
+ * that should be dropped.
+ */
+export const STYLE_FLOOR: EmailSkillName = "anti-ai-slop-writing";
+
+/**
  * Goal to the skills that describe it, beyond the core.
  *
  * Keys are the goal values generate-email already switches on, so adding a
@@ -87,23 +103,31 @@ export interface SkillContextOptions {
 export function skillsForGoal(options: SkillContextOptions = {}): EmailSkillName[] {
   const { goal, usesTemplate, variantNum } = options;
   const picked: EmailSkillName[] = [];
+  const add = (name: EmailSkillName) => {
+    if (EMAIL_SKILLS[name] && !picked.includes(name)) picked.push(name);
+  };
 
   // A variant leads with the Frontal templates: it is being generated to be
   // compared against the original, and two emails in the same shape with
   // different words do not tell the sender which shape works.
-  if ((variantNum ?? 0) > 0) picked.push("frontal-messaging-templates");
+  if ((variantNum ?? 0) > 0) add("frontal-messaging-templates");
 
-  for (const name of BY_GOAL[String(goal ?? "").toLowerCase()] ?? []) {
-    if (!picked.includes(name)) picked.push(name);
-  }
-  if (usesTemplate && !picked.includes("cold-email-templates-34")) {
-    picked.push("cold-email-templates-34");
-  }
-  // No recognised goal: hand over the orchestrator so the model can pick a
-  // shape deliberately instead of defaulting to whatever it reaches for.
-  if (!picked.length) picked.push("cold-email-strategist");
+  // Goal-specific material first — not because the others are withheld, but
+  // because order is emphasis, and because if a budget ever does bite, the
+  // material closest to what is being written should be the last thing cut.
+  for (const name of BY_GOAL[String(goal ?? "").toLowerCase()] ?? []) add(name);
+  if (usesTemplate) add("cold-email-templates-34");
+  add(CORE);
 
-  picked.push(CORE);
+  // Then everything else. These used to be filtered out by goal, which meant a
+  // "meeting" email never saw the frameworks and a "4ts" email never saw the
+  // strategist — each function effectively deciding which of the house rules
+  // applied to it. The whole bundle is ~12k tokens and every path can carry it,
+  // so no path gets a partial copy of how this company writes.
+  for (const name of Object.keys(EMAIL_SKILLS) as EmailSkillName[]) {
+    if (name !== STYLE_FLOOR) add(name);
+  }
+
   return picked;
 }
 
@@ -115,11 +139,37 @@ export function skillsForGoal(options: SkillContextOptions = {}): EmailSkillName
  * to the skill that shaped it.
  */
 export function composeSkillContext(options: SkillContextOptions = {}): string {
-  const { maxTokens = 12000 } = options;
+  // Sized to carry every skill plus the floor and this preamble. The budget
+  // still exists — a runaway bundle should be visible rather than silent —
+  // but it is no longer what decides which rules a given path gets.
+  const { maxTokens = 20000 } = options;
   const names = skillsForGoal(options);
 
   const sections: string[] = [];
   let used = 0;
+
+  // Charged ahead of the general principles, but never ahead of the framework
+  // the caller actually asked for: a floor that displaces the shape produces a
+  // clean email of the wrong kind. So it is included only when it and the most
+  // specific routed skill both fit, which at any realistic budget is always.
+  const floor = EMAIL_SKILLS[STYLE_FLOOR];
+  const floorText = floor
+    ? [
+        "",
+        "STYLE FLOOR — applies to this email and every other one. Not a framework,",
+        "not one of the options above, nothing to choose between. Run both passes",
+        "over the finished draft before returning it.",
+        "",
+        `--- SKILL: ${STYLE_FLOOR} ---`,
+        floor,
+      ].join("\n")
+    : "";
+  const firstRouted = names.length ? EMAIL_SKILLS[names[0]] ?? "" : "";
+  const floorFits =
+    !!floorText &&
+    approxTokens(floorText) + approxTokens(firstRouted) <= maxTokens;
+  const floorBlock = floorFits ? floorText : "";
+  if (floorBlock) used += approxTokens(floorBlock);
   for (const name of names) {
     const body = EMAIL_SKILLS[name];
     if (!body) continue;
@@ -129,7 +179,7 @@ export function composeSkillContext(options: SkillContextOptions = {}): string {
     sections.push(section);
     used += cost;
   }
-  if (!sections.length) return "";
+  if (!sections.length) return floorBlock;
 
   return [
     "",
@@ -154,10 +204,13 @@ export function composeSkillContext(options: SkillContextOptions = {}): string {
     "sentence yourself, from this lead's own facts.",
     "",
     sections.join("\n\n"),
+    floorBlock,
   ].join("\n");
 }
 
 /** Names only — for logging which skills shaped a generation. */
 export function skillNamesUsed(options: SkillContextOptions = {}): string[] {
-  return skillsForGoal(options);
+  // The floor is not routed, but it does shape every draft, so a log that
+  // omitted it would misreport what wrote the email.
+  return [STYLE_FLOOR, ...skillsForGoal(options)];
 }
