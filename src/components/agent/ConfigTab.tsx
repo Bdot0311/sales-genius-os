@@ -463,19 +463,19 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
                 <p className="text-xs text-muted-foreground">
                   {Number(maxDailyNewEmails) > accountDailyCap ? (
                     <>
-                      Your account only sends{" "}
-                      <strong>{accountDailyCap} emails a day</strong>, so this setting cannot
-                      take effect above that. Raise the account limit on the{" "}
-                      <Link to="/dashboard/outreach" className="underline">
-                        Outreach page
-                      </Link>{" "}
-                      first.
+                      Your plan sends <strong>{accountDailyCap} emails a day</strong>, so this
+                      setting cannot take effect above that. Change the account limit under{" "}
+                      <Link to="/dashboard/deliverability" className="underline">
+                        Deliverability → Daily send limit
+                      </Link>
+                      .
                     </>
                   ) : (
                     <>
-                      Your account sends at most {accountDailyCap} a day — change that on the{" "}
-                      <Link to="/dashboard/outreach" className="underline">
-                        Outreach page
+                      Your plan sends up to {accountDailyCap} a day. To lower it — while warming
+                      a domain, say — see{" "}
+                      <Link to="/dashboard/deliverability" className="underline">
+                        Deliverability → Daily send limit
                       </Link>
                       .
                     </>
