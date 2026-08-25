@@ -36,7 +36,7 @@ serve(async (req) => {
       });
     }
 
-    const { replyContent, leadId, sentEmailId, conversationHistory, gmailMessageId } = await req.json();
+    const { replyContent, leadId, sentEmailId, conversationHistory, gmailMessageId, isAutoReply } = await req.json();
 
     if (!replyContent) {
       return new Response(JSON.stringify({ error: 'Reply content is required' }), {
@@ -151,6 +151,23 @@ Priority rules:
         },
         requires_human_action: false,
         summary: 'Unable to analyze reply',
+      };
+    }
+
+    // inbox-sync already identified this from the mail headers
+    // (Auto-Submitted, X-Autoreply, Precedence) — evidence a model reading the
+    // body cannot improve on. Overriding here keeps a chirpy "I am away until
+    // Monday, contact Dana!" from being scored as interest.
+    if (isAutoReply) {
+      analysis = {
+        ...analysis,
+        intent_score: Math.min(Number(analysis?.intent_score ?? 10), 10),
+        intent_classification: 'LOW_INTENT',
+        triage_category: 'ooo',
+        priority: 3,
+        detected_signals: { ...(analysis?.detected_signals ?? {}), has_auto_reply: true },
+        requires_human_action: false,
+        summary: analysis?.summary || 'Out-of-office auto-reply',
       };
     }
 
