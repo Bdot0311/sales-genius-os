@@ -66,7 +66,10 @@ async function refreshedToken(supabase: any, integrationId: string): Promise<str
   const expiresAt = config.expiresAt as number | undefined;
   const refreshToken = config.refreshToken as string | undefined;
 
-  if (expiresAt && Date.now() >= expiresAt && refreshToken) {
+  // Refresh proactively: a missing/stale expiry used to skip the refresh
+  // entirely and send with a dead token, which Gmail rejects with a 401.
+  const needsRefresh = !accessToken || !expiresAt || Date.now() >= expiresAt - 120_000;
+  if (needsRefresh && refreshToken) {
     const clientId = Deno.env.get("GOOGLE_CLIENT_ID");
     const clientSecret = Deno.env.get("GOOGLE_CLIENT_SECRET");
     if (!clientId || !clientSecret) return accessToken;
@@ -81,8 +84,19 @@ async function refreshedToken(supabase: any, integrationId: string): Promise<str
       await supabase.from("integrations").update({
         config: { ...config, accessToken: tok.access_token, expiresAt: Date.now() + tok.expires_in * 1000 },
       }).eq("id", integrationId);
+    } else {
+      // Revoked refresh token: skip the account instead of sending with a dead
+      // token, and flag it so the user is told to reconnect Gmail.
+      const detail = await res.text();
+      console.error("[warmup-orchestrator] token refresh failed:", integrationId, res.status, detail.slice(0, 200));
+      await supabase
+        .from("integrations")
+        .update({ config: { ...config, needsReconnect: true, lastRefreshError: detail.slice(0, 200) } })
+        .eq("id", integrationId);
+      return null;
     }
   }
+
   return accessToken;
 }
 

@@ -70,7 +70,7 @@ describe("resolve_approvals reports sends, not attempts", () => {
   });
 
   it("returns a real sent count", () => {
-    expect(SRC).toMatch(/sent:\s*decision === "approve" \? succeeded : 0/);
+    expect(SRC).toMatch(/sent:\s*decision === "approve" \? sentCount : 0/);
     expect(SRC).toContain("attempted: outcomes.length");
   });
 

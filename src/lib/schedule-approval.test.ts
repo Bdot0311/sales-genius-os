@@ -75,9 +75,12 @@ describe("approving a scheduled request schedules it", () => {
     expect(applyApproval).toContain('action_type: "outreach_scheduled"');
   });
 
-  it("returns the same shape as the send path", () => {
-    expect(SRC.match(/return \{ outcome, failed, status \};/g)?.length).toBe(2);
+  it("marks the outcome as scheduled so the caller cannot report it as sent", () => {
+    expect(applyApproval).toContain("return { outcome, failed, status, scheduled: !failed };");
+    expect(SRC).toContain("const scheduledCount = outcomes.filter((o) => o.scheduled).length;");
+    expect(SRC).toMatch(/sent:\s*decision === "approve" \? sentCount : 0/);
   });
+
 
   it("leaves the approval pending when the insert fails, so it can be retried", () => {
     expect(applyApproval).toContain('const status = failed ? "pending" : "approved";');
