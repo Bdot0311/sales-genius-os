@@ -40,8 +40,14 @@ export function AccountSendLimit() {
       if (cancelled || !data) return;
       // The plan's own allowance, so lowering it is visibly a choice rather
       // than the only number on offer.
+      // `elite` is a legacy PLAN value, not the Agency plan. Everywhere else
+      // normalises it to pro (use-subscription, use-leads-usage, admin/Users),
+      // and MONTHLY_EMAIL_LIMITS gives it pro's monthly figure — so it takes
+      // pro's daily figure too. Agency's 1500 belongs to plan 'agency'. Elite
+      // is the name of the AGENT tier that the Agency plan carries, which is a
+      // different thing wearing the same word.
       const caps: Record<string, number> = {
-        free: 100, starter: 100, growth: 250, pro: 500, elite: 1500, agency: 1500,
+        free: 100, starter: 100, growth: 250, pro: 500, elite: 500, agency: 1500,
       };
       setPlanCap(caps[String(data.plan ?? "free").toLowerCase()] ?? 100);
       setLimit(data.daily_email_limit ?? 10);
