@@ -76,7 +76,7 @@ export const FinalCTA = () => {
             viewport={{ once: true, margin: "-10% 0px" }}
             transition={{ duration: 0.55, ease, delay: 0.3 }}
           >
-            Start with 100 verified prospects and an AI SDR on the free plan. Book a call and we build your opening campaign with you, then it sends from your own Gmail while you work the replies.
+            Start with 100 free lead searches, 25 results each, and an AI SDR on the free plan. Book a call and we build your opening campaign with you, then it sends from your own Gmail while you work the replies.
           </motion.p>
 
           <motion.div
