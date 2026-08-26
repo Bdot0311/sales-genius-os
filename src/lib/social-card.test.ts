@@ -42,3 +42,55 @@ describe("one social card URL, not twelve", () => {
     expect(withSocialVersion(DEFAULT_OG_IMAGE)).toContain(`v=${SOCIAL_CARD_VERSION}`);
   });
 });
+
+/**
+ * Search and social want different things from a title. Search wants the words
+ * people type; social wants the line that stops a scroll. One string used to
+ * drive <title>, og:title and twitter:title together, so fixing the share
+ * preview meant gambling the ranking.
+ */
+describe("search title and social title are separate", () => {
+  const HEAD = readFileSync("src/components/seo/SEOHead.tsx", "utf8");
+  const INDEX = readFileSync("src/pages/Index.tsx", "utf8");
+
+  it("social tags read a title of their own", () => {
+    expect(HEAD).toContain("socialTitle");
+    expect(HEAD).toContain('content={fullSocialTitle}');
+  });
+
+  it("falls back to the page title when a page does not care", () => {
+    expect(HEAD).toContain("socialTitle ? formatPageTitle(socialTitle) : fullTitle");
+  });
+
+  it("the homepage search title carries the keywords", () => {
+    expect(INDEX).toContain('title="B2B Cold Email Outbound With an AI SDR"');
+  });
+
+  it("the homepage social title carries the positioning", () => {
+    expect(INDEX).toContain('socialTitle="The output of a sales team. Headcount of one."');
+  });
+
+  it("no page still advertises the old hero", () => {
+    expect(INDEX).not.toContain("Your Next 100 B2B Prospects");
+    expect(HEAD).not.toContain("Your Next 100 B2B Prospects");
+  });
+});
+
+/**
+ * Every fabricated figure the marketing pages show sits inside a panel that
+ * says so. The builder regenerates these components, and a mockup that loses
+ * its label becomes a claim.
+ */
+describe("simulated product previews stay labelled", () => {
+  const labelled = [
+    "src/components/landing/DashboardMockup.tsx",
+    "src/components/landing/AISdrSection.tsx",
+    "src/components/landing/ModulesSection.tsx",
+  ];
+
+  for (const file of labelled) {
+    it(`${file.split("/").pop()} still says its numbers are simulated`, () => {
+      expect(readFileSync(file, "utf8").toLowerCase()).toContain("simulated preview");
+    });
+  }
+});

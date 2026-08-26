@@ -135,7 +135,8 @@ const Index = () => {
   return (
     <>
       <SEOHead
-        title="Your Next 100 B2B Prospects, Already Qualified"
+        title="B2B Cold Email Outbound With an AI SDR"
+        socialTitle="The output of a sales team. Headcount of one."
         description="Describe your customer in plain English. Get ranked prospects with verified emails, a first draft for each, and an AI SDR that works the replies from your Gmail."
         keywords="B2B lead generation, lead discovery, outbound email software, ICP scoring, SMTP verified emails, plain English lead search, B2B prospecting, AI email drafting, email enrichment, outbound sales automation, find B2B leads, lead scoring software, B2B email outreach"
       />

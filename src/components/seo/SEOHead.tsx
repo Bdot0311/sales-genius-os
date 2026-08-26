@@ -24,6 +24,18 @@ interface SEOHeadProps {
   description?: string;
   canonicalUrl?: string;
   ogImage?: string;
+  /**
+   * Title for og:title and twitter:title, when social should say something
+   * different from the search result.
+   *
+   * One string used to drive <title>, og:title and twitter:title together, so
+   * the page's positioning line and its search keywords could not both be
+   * served: fixing the share preview meant gambling the ranking. They are
+   * different jobs — search wants the words people type, social wants the line
+   * that makes someone stop scrolling — and now they can differ. Defaults to
+   * `title`, so every page that does not care is unaffected.
+   */
+  socialTitle?: string;
   ogType?: 'website' | 'article' | 'product';
   noIndex?: boolean;
   keywords?: string;
@@ -42,10 +54,11 @@ interface SEOHeadProps {
 
 
 export const SEOHead = ({
-  title = "Your Next 100 B2B Prospects, Already Qualified",
+  title = "B2B Cold Email Outbound With an AI SDR",
   description = "Describe your customer in plain English. Get ranked prospects with verified emails, a first draft for each, and an AI SDR that works the replies from your Gmail.",
   canonicalUrl,
   ogImage = DEFAULT_OG_IMAGE,
+  socialTitle,
   ogType = "website",
   noIndex = false,
   keywords = "sales automation, AI sales, lead generation, CRM, sales intelligence, email automation, sales coaching, SaaS sales, B2B sales, sales pipeline, AI lead scoring, sales productivity, outreach automation",
@@ -70,6 +83,7 @@ export const SEOHead = ({
 
   // Generate full title with site name
   const fullTitle = formatPageTitle(title);
+  const fullSocialTitle = socialTitle ? formatPageTitle(socialTitle) : fullTitle;
   
   // Truncate description to 160 chars
   const safeDescription = truncateText(description, 160);
@@ -146,7 +160,7 @@ export const SEOHead = ({
       {/* Open Graph / Facebook */}
       <meta property="og:type" content={ogType} />
       <meta property="og:url" content={fullCanonicalUrl} />
-      <meta property="og:title" content={fullTitle} />
+      <meta property="og:title" content={fullSocialTitle} />
       <meta property="og:description" content={safeDescription} />
       <meta property="og:image" content={versionedOgImage} />
       <meta property="og:image:secure_url" content={versionedOgImage} />
@@ -180,7 +194,7 @@ export const SEOHead = ({
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:site" content="@buildwitbrandon" />
       <meta name="twitter:creator" content="@buildwitbrandon" />
-      <meta name="twitter:title" content={fullTitle} />
+      <meta name="twitter:title" content={fullSocialTitle} />
       <meta name="twitter:description" content={safeDescription} />
       <meta name="twitter:image" content={versionedOgImage} />
       <meta name="twitter:image:alt" content="OutReign.io — Find who to sell to. Then close them. AI scores, enriches and writes personalized outreach, shown beside a lead search scoring prospects by fit." />
