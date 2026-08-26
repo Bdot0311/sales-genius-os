@@ -38,11 +38,13 @@ interface SEOHeadProps {
   articleContent?: string; // For reading time calculation
 }
 
-const DEFAULT_OG_IMAGE = 'https://outreign.io/__l5e/assets-v1/54ff0c6f-955e-4073-9348-98d79eba4c4f/outreign-social-card.jpg';
+// Served from public/ rather than the builder's asset CDN, so the card lives
+// in the repo next to the page it represents and changes with a deploy.
+const DEFAULT_OG_IMAGE = 'https://outreign.io/outreign-social-card.png';
 
 export const SEOHead = ({
   title = "Your Next 100 B2B Prospects, Already Qualified",
-  description = "Describe your customer in plain English. Get 100 ranked B2B prospects with verified emails and a first draft for each, free, with campaign setup included.",
+  description = "Describe your customer in plain English. Get ranked prospects with verified emails, a first draft for each, and an AI SDR that works the replies from your Gmail.",
   canonicalUrl,
   ogImage = DEFAULT_OG_IMAGE,
   ogType = "website",
@@ -149,7 +151,7 @@ export const SEOHead = ({
       <meta property="og:description" content={safeDescription} />
       <meta property="og:image" content={versionedOgImage} />
       <meta property="og:image:secure_url" content={versionedOgImage} />
-      <meta property="og:image:type" content="image/jpeg" />
+      <meta property="og:image:type" content="image/png" />
       <meta property="og:updated_time" content={String(SOCIAL_CARD_VERSION)} />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
