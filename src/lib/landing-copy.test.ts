@@ -170,3 +170,32 @@ describe("the free plan is described as what it is", () => {
     expect(PRICING).toContain('name: "Monthly lead searches"');
   });
 });
+
+/**
+ * The blog makes the same promises the homepage does, to the same reader, and
+ * search engines and LLMs read it alongside llms-txt. It carried "under 2
+ * minutes" in six calls to action after the homepage had stopped claiming a
+ * duration, so the two surfaces disagreed about the product.
+ */
+describe("blog claims match the rest of the site", () => {
+  const BLOG = readFileSync("src/data/blog-content.ts", "utf8");
+
+  it("does not promise a duration the homepage no longer claims", () => {
+    expect(BLOG).not.toContain("under 2 minutes");
+  });
+
+  it("does not assert invented durations about a competitor's product", () => {
+    // "2+ hours per campaign" and "30–45 minutes" to write a boolean query
+    // were precise claims about Apollo that nobody measured.
+    expect(BLOG).not.toContain("2+ hours");
+    expect(BLOG).not.toContain("30–45 minutes");
+  });
+
+  it("leaves ordinary writing advice alone", () => {
+    // Sanding every number out of craft prose is the over-correction the
+    // anti-slop standard warns about. These are reader-time estimates in
+    // advice, not product promises.
+    expect(BLOG).toContain("say yes in 2 minutes");
+    expect(BLOG).toContain("20 minutes of staring at a blank page");
+  });
+});
