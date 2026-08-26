@@ -182,26 +182,26 @@ const modules = [
   {
     number: "01",
     title: "Lead Discovery",
-    tagline: "ICP to ranked prospects in a few minutes.",
+    tagline: "Describe the customer. Get ranked, verified prospects back.",
     description: "Describe who you want in plain English. Verified contacts come back ranked by fit.",
   },
   {
     number: "02",
     title: "Outreach Studio",
-    tagline: "Context-aware email drafts worth sending.",
-    description: "Each email is built from real company context: news, growth signals, open roles. Quality-checked before you hit send.",
+    tagline: "Emails built from the company's own context.",
+    description: "News, growth signals, open roles. The Email Quality Checker scores every draft before it can send.",
   },
   {
     number: "03",
     title: "Reply Management",
-    tagline: "Every reply tracked in one place.",
-    description: "Every response tracked. Follow-up sequences that keep momentum. No prospect slips through because you forgot to check.",
+    tagline: "Every reply in one inbox, sorted by what it is.",
+    description: "Interest, objection, meeting request. Follow-up sequences keep the thread moving, and nothing sits overnight.",
   },
   {
     number: "04",
     title: "Pipeline & Analytics",
-    tagline: "See what's moving. Know what to push.",
-    description: "Understand where threads are progressing and where outreach stalls, on one dashboard.",
+    tagline: "What is moving, what stalled, what earns answers.",
+    description: "Where threads are progressing, where outreach stalls, and which copy gets replied to. One dashboard.",
   },
 ];
 

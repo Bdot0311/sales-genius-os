@@ -34,6 +34,11 @@ const faqs = [
       "Yes. Every paid plan starts with a 14-day free trial. You add a card at signup, use the full plan for two weeks, and you are not charged until day 15. Cancel before then and you pay nothing. Paid plans also carry a 30-day money-back guarantee after your first charge.",
   },
   {
+    question: "Where does the lead data come from?",
+    answer:
+      "Verified contacts from public records and licensed data partnerships. Every business email is verified before it reaches you, because a bounce costs you more than a missing lead.",
+  },
+  {
     question: "How does OutReign verify email addresses?",
     answer:
       "Every business email goes through SMTP handshake verification plus multi-source enrichment before it reaches you. We don't deliver addresses we haven't confirmed. Bounced emails hurt your sender reputation, so we hold addresses back until they pass.",
@@ -41,7 +46,7 @@ const faqs = [
   {
     question: "Is OutReign only for email outreach?",
     answer:
-      "Yes. OutReign is built around email outreach. We score your leads, enrich their verified business email, and help you write a first-touch message worth reading. Email only, with no dialer or SMS.",
+      "Yes. Email outbound only. No dialer, no SMS. We do one channel properly rather than five badly.",
   },
   {
     question: "How does the AI email drafting work?",

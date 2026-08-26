@@ -134,33 +134,33 @@ const AgentFeedPreview = ({ visible }: { visible: boolean }) => {
 const capabilities = [
   {
     icon: "🎯",
-    title: "Finds the leads for you",
-    desc: "Sources new prospects that match your ICP on every run, with no manual searching.",
+    title: "Finds the leads",
+    desc: "Sources prospects matching your ICP on every run.",
   },
   {
     icon: "✉️",
     title: "Sends the first touch",
-    desc: "Writes and sends the opening email from your own Gmail, in your voice.",
+    desc: "Writes and sends the opener from your Gmail, in your voice.",
   },
   {
     icon: "📬",
-    title: "Watches the inbox around the clock",
-    desc: "Reads every reply from active prospects across Gmail threads, around the clock.",
+    title: "Reads every reply",
+    desc: "Watches your threads around the clock.",
   },
   {
     icon: "🧠",
-    title: "Flags who is ready to talk",
-    desc: "Interest, objection, meeting request, unsubscribe. Always knows what's what.",
+    title: "Knows what it is looking at",
+    desc: "Interest, objection, meeting request, unsubscribe.",
   },
   {
     icon: "📅",
-    title: "Books meetings automatically",
-    desc: "Sends your Calendly link the moment a prospect asks for a call.",
+    title: "Books the call",
+    desc: "Sends your Calendly link the moment someone asks.",
   },
   {
     icon: "⚙️",
-    title: "Runs inside the limits you set",
-    desc: "Set daily lead and send caps, reply limits, and which actions run autonomously.",
+    title: "Stops where you say",
+    desc: "Daily caps, reply limits, and which actions run on their own.",
   },
 ];
 
@@ -231,7 +231,7 @@ export const AISdrSection = () => {
                     backgroundClip: "text",
                   }}
                 >
-                  Full cycle, from list to booked call.
+                  Your tier decides how much rope it gets.
                 </span>
               </h2>
 
@@ -240,7 +240,7 @@ export const AISdrSection = () => {
                 className={`text-base leading-relaxed mb-8 max-w-[480px] transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
                 style={{ color: "hsl(0 0% 100% / 0.65)", transitionDelay: "160ms" }}
               >
-                Connect your Gmail and OutReign runs the whole cycle: it sources leads that match your ICP, writes and sends the first touch, then classifies replies, handles objections, and books meetings, in your voice and on your schedule. Every plan from Explore to Agency includes it; your tier sets how many agents you build and how much volume they push.
+                Every plan ships an agent, the free one included. What changes is how much it does without asking you first.
               </p>
 
               {/* Capability grid */}
@@ -354,6 +354,93 @@ export const AISdrSection = () => {
               </p>
             </div>
 
+          </div>
+
+          {/* The autonomy ladder.
+              The claim above ("every plan ships an agent") is only interesting
+              if you can see what changes between tiers. This lived on the
+              pricing page, which meant the strongest proof on the site sat
+              behind a click. Figures match Pricing.tsx and llms-txt. */}
+          <div className="mt-16 sm:mt-20">
+            <p className="font-serif italic font-thin text-base text-center text-purple-500 mb-3">
+              Same agent, longer leash
+            </p>
+            <p
+              className="text-center text-sm mb-8 max-w-xl mx-auto"
+              style={{ color: "hsl(0 0% 100% / 0.6)", lineHeight: 1.6 }}
+            >
+              The free plan gets an agent that drafts and waits for you. The top
+              plan gets one that runs the desk.
+            </p>
+
+            <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+              <table className="w-full min-w-[42rem] text-sm border-collapse">
+                <caption className="sr-only">
+                  What the AI SDR does on each plan
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col" className="sr-only">Capability</th>
+                    {["Explore", "Starter", "Growth", "Pro", "Agency"].map((plan) => (
+                      <th
+                        key={plan}
+                        scope="col"
+                        className="py-3 px-3 text-center font-semibold"
+                        style={{
+                          color: plan === "Agency" ? "hsl(261 75% 75%)" : "hsl(0 0% 100% / 0.85)",
+                          borderBottom: "1px solid hsl(261 75% 50% / 0.18)",
+                        }}
+                      >
+                        {plan}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { label: "Agent builds", cells: ["1", "1", "3", "5", "Unlimited"] },
+                    {
+                      label: "What it does",
+                      cells: [
+                        "Drafts for your approval",
+                        "Sends first-touch",
+                        "Handles objections",
+                        "Books meetings",
+                        "Runs on its own",
+                      ],
+                    },
+                    { label: "Replies a day", cells: ["3", "15", "50", "150", "500"] },
+                    { label: "Leads a day", cells: ["25", "100", "300", "750", "Unlimited"] },
+                  ].map((row) => (
+                    <tr key={row.label}>
+                      <th
+                        scope="row"
+                        className="py-3 pr-4 text-left font-medium whitespace-nowrap"
+                        style={{
+                          color: "hsl(0 0% 100% / 0.55)",
+                          borderBottom: "1px solid hsl(0 0% 100% / 0.06)",
+                        }}
+                      >
+                        {row.label}
+                      </th>
+                      {row.cells.map((cell, i) => (
+                        <td
+                          key={`${row.label}-${i}`}
+                          className="py-3 px-3 text-center"
+                          style={{
+                            color: i === 4 ? "hsl(0 0% 98%)" : "hsl(0 0% 100% / 0.75)",
+                            borderBottom: "1px solid hsl(0 0% 100% / 0.06)",
+                            background: i === 4 ? "hsl(261 75% 50% / 0.06)" : undefined,
+                          }}
+                        >
+                          {cell}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
