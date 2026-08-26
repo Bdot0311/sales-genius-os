@@ -8,6 +8,7 @@ import {
   shouldIndexPage,
   withSocialVersion,
   SOCIAL_CARD_VERSION,
+  DEFAULT_OG_IMAGE,
   CANONICAL_DOMAIN 
 } from '@/lib/seo-utils';
 
@@ -38,9 +39,7 @@ interface SEOHeadProps {
   articleContent?: string; // For reading time calculation
 }
 
-// Served from public/ rather than the builder's asset CDN, so the card lives
-// in the repo next to the page it represents and changes with a deploy.
-const DEFAULT_OG_IMAGE = 'https://outreign.io/outreign-social-card.png';
+
 
 export const SEOHead = ({
   title = "Your Next 100 B2B Prospects, Already Qualified",

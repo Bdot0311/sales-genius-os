@@ -136,9 +136,8 @@ const Index = () => {
     <>
       <SEOHead
         title="Your Next 100 B2B Prospects, Already Qualified"
-        description="Describe your customer in plain English. Get 100 ranked B2B prospects with verified emails and a first draft for each, free, with campaign setup included."
+        description="Describe your customer in plain English. Get ranked prospects with verified emails, a first draft for each, and an AI SDR that works the replies from your Gmail."
         keywords="B2B lead generation, lead discovery, outbound email software, ICP scoring, SMTP verified emails, plain English lead search, B2B prospecting, AI email drafting, email enrichment, outbound sales automation, find B2B leads, lead scoring software, B2B email outreach"
-        ogImage="https://outreign.io/__l5e/assets-v1/54ff0c6f-955e-4073-9348-98d79eba4c4f/outreign-social-card.jpg"
       />
       <SoftwareApplicationSchema />
       <FAQSchema faqs={HOMEPAGE_FAQS} />
