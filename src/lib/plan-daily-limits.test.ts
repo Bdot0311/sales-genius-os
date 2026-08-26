@@ -48,13 +48,31 @@ describe("send-email still enforces whatever the row holds", () => {
   });
 });
 
+const CORRECTION_SQL = readFileSync(
+  "supabase/migrations/20260825210000_correct_legacy_elite_daily_limit.sql",
+  "utf8",
+);
+
 describe("the one-time correction is narrow", () => {
   it("only touches rows still holding the schema default", () => {
     expect(MIGRATION).toContain("WHERE daily_email_limit = 10");
   });
 
+  it("casts the enum, because lower() has no overload for it", () => {
+    // ERROR 42883: function lower(subscription_plan) does not exist. The first
+    // version of this migration could never run.
+    // Judge the statements, not the comment that explains the bug — which
+    // necessarily quotes the broken call.
+    const statements = (sql: string) =>
+      sql.split("\n").filter((l) => !l.trim().startsWith("--")).join("\n");
+    for (const sql of [MIGRATION, CORRECTION_SQL]) {
+      expect(statements(sql)).not.toContain("lower(plan)");
+      expect(statements(sql)).toContain("plan::text");
+    }
+  });
+
   it("only touches paid plans", () => {
-    expect(MIGRATION).toContain("lower(plan) IN ('starter', 'growth', 'pro', 'elite', 'agency')");
+    expect(MIGRATION).toContain("plan::text IN ('starter', 'growth', 'pro', 'elite', 'agency')");
     expect(MIGRATION).not.toMatch(/WHEN 'free'/);
   });
 
@@ -66,7 +84,7 @@ describe("the one-time correction is narrow", () => {
       "utf8",
     );
     expect(CORRECTION).toContain("SET daily_email_limit = 500");
-    expect(CORRECTION).toContain("lower(plan) = 'elite'");
+    expect(CORRECTION).toContain("plan::text = 'elite'");
     expect(CORRECTION).toContain("AND daily_email_limit = 1500");
     expect(readFileSync("src/components/deliverability/AccountSendLimit.tsx", "utf8"))
       .toContain("elite: 500");

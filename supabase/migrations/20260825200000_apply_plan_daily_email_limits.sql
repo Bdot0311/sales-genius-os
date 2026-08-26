@@ -20,8 +20,13 @@
 -- Going forward check-subscription writes this on every sync, so the migration
 -- is a one-time correction rather than the mechanism.
 
+-- plan is the subscription_plan ENUM, not text, so lower(plan) does not exist
+-- and the first version of this file could never run:
+--   ERROR 42883: function lower(subscription_plan) does not exist
+-- Enum labels are already lowercase, so a cast is all that is needed.
+
 UPDATE public.subscriptions
-SET daily_email_limit = CASE lower(plan)
+SET daily_email_limit = CASE plan::text
   WHEN 'starter' THEN 100
   WHEN 'growth'  THEN 250
   WHEN 'pro'     THEN 500
@@ -30,4 +35,4 @@ SET daily_email_limit = CASE lower(plan)
   ELSE daily_email_limit
 END
 WHERE daily_email_limit = 10
-  AND lower(plan) IN ('starter', 'growth', 'pro', 'elite', 'agency');
+  AND plan::text IN ('starter', 'growth', 'pro', 'elite', 'agency');

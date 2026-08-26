@@ -16,5 +16,5 @@
 
 UPDATE public.subscriptions
 SET daily_email_limit = 500
-WHERE lower(plan) = 'elite'
+WHERE plan::text = 'elite'
   AND daily_email_limit = 1500;
