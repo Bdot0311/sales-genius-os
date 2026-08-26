@@ -868,7 +868,9 @@ serve(async (req) => {
             .update({ status, reviewed_at: failed ? null : new Date().toISOString() })
             .eq("id", approval.id)
             .eq("user_id", userId);
-          return { outcome, failed, status };
+          // Flagged so the caller reports this as scheduled, never as sent.
+          return { outcome, failed, status, scheduled: !failed };
+
         }
 
         const r = await callFn("send-email", {
