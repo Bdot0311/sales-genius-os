@@ -3140,7 +3140,15 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
     const sendingEvents = toolEvents.filter((e) =>
       ["send_drafts", "send_outreach", "resolve_approvals", "schedule_drafts"].includes(e.name ?? ""),
     );
-    const anythingActuallySent = sendingEvents.some((e) => e.status === "ok" && e.label !== "Waiting for your approval");
+    // A "Scheduled …" event is a queue, not a delivery — it must not back a
+    // claim that an email was sent.
+    const anythingActuallySent = sendingEvents.some(
+      (e) =>
+        e.status === "ok" &&
+        e.label !== "Waiting for your approval" &&
+        !String(e.label ?? "").startsWith("Scheduled"),
+    );
+
     const anythingQueued = toolEvents.some((e) => e.status === "queued");
     if (CLAIMS_SEND.test(finalText) && !anythingActuallySent) {
       const { count: stillPending } = await admin
