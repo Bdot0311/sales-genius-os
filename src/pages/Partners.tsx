@@ -321,7 +321,7 @@ export default function Partners() {
               className="inline-flex items-center gap-2 rounded-full px-8 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
               style={{ background: "linear-gradient(135deg, hsl(261 75% 60%), hsl(261 75% 50%))" }}
             >
-              Get 100 free leads
+              Get 100 free lead searches
               <ArrowRight className="h-4 w-4" />
             </button>
           </div>

@@ -133,3 +133,40 @@ describe("company voice outside the founder note", () => {
     expect(founder).toContain("I was paying $500/month");
   });
 });
+
+/**
+ * The free plan is 100 SEARCHES at up to 25 results each, not 100 prospects.
+ *
+ * fetch-external-leads charges `remainingCredits - 1` per search and only when
+ * `chargesPerSearch = userPlan === 'free'`, against
+ * PLAN_SEARCH_LIMITS.free.monthlySearchCredits = 100 with maxResultsPerSearch
+ * 25. Calling it "100 verified prospects" understated the offer by up to 25x.
+ */
+describe("the free plan is described as what it is", () => {
+  const PRICING = readFileSync("src/components/Pricing.tsx", "utf8");
+  const LIMITS = readFileSync("supabase/functions/_shared/plan-limits.ts", "utf8");
+
+  it("still matches the source of truth it is quoting", () => {
+    expect(LIMITS).toContain("free: { monthlySearchCredits: 100");
+    expect(LIMITS).toContain("maxResultsPerSearch: 25 }");
+  });
+
+  it("does not sell searches as a prospect count", () => {
+    for (const { file, text } of ALL) {
+      expect(prose(text), file).not.toContain("100 verified prospects");
+      expect(prose(text), file).not.toContain("100 free leads");
+    }
+  });
+
+  it("says searches where it means searches", () => {
+    expect(prose(readFileSync(join(DIR, "HeroSection.tsx"), "utf8"))).toContain("100 free lead searches");
+    expect(prose(readFileSync(join(DIR, "FinalCTA.tsx"), "utf8"))).toContain("100 free lead searches");
+  });
+
+  it("does not label a row of search credits as verified prospects", () => {
+    // The row read "Monthly verified prospects" with free: "100 searches" and
+    // paid values that are search credits, so it misdescribed every column.
+    expect(PRICING).not.toContain('name: "Monthly verified prospects"');
+    expect(PRICING).toContain('name: "Monthly lead searches"');
+  });
+});
