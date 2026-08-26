@@ -6,8 +6,8 @@ const ease = [0.16, 1, 0.3, 1] as const;
 const steps = [
   {
     number: "01",
-    title: "Describe your customer once.",
-    body: "Type who you want in plain English: title, industry, company size, location, growth signals. The way you would say it out loud.",
+    title: "Say who you want.",
+    body: "Type it the way you would say it out loud. Title, industry, size, location, the signals that matter. No boolean, no filter menus.",
     visual: (
       <div
         className="mt-5 rounded-md px-4 py-3 font-mono text-sm leading-relaxed"
@@ -24,8 +24,8 @@ const steps = [
   },
   {
     number: "02",
-    title: "Review who's worth emailing.",
-    body: "Prospects come back ranked by ICP fit, with verified business emails and match scores attached. Company context, open roles, and hiring signals before you write a word.",
+    title: "See who's worth the email.",
+    body: "Prospects come back ranked by fit, with verified business emails attached and what the company just did. You decide who is in.",
     visual: (
       <div
         className="mt-5 rounded-xl overflow-hidden"
@@ -64,8 +64,8 @@ const steps = [
   },
   {
     number: "03",
-    title: "Send something worth reading.",
-    body: "OutReign builds a first-touch email from the prospect's real context: their company news, open roles, and recent growth signals. Edit it or send it as it stands.",
+    title: "Send something they will answer.",
+    body: "Each email is written from that company's own context and quality-checked before it leaves. It sends from your Gmail, in your name.",
     visual: (
       <div
         className="mt-5 rounded-xl overflow-hidden"

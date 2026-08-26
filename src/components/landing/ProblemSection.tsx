@@ -6,9 +6,9 @@ const lines: Array<{
   gradient?: boolean;
   italic?: boolean;
 }> = [
-  { text: "Export 500 contacts from Apollo.", color: "hsl(0 0% 90%)" },
-  { text: "Score them. Draft emails one by one.", color: "hsl(0 0% 65%)" },
-  { text: "Send 50. Get 3 replies. Start over.", gradient: true, italic: true },
+  { text: "Export 500 contacts. Score them by hand.", color: "hsl(0 0% 90%)" },
+  { text: "Write 500 emails. Send 50.", color: "hsl(0 0% 65%)" },
+  { text: "Get 3 replies. Start again Monday.", gradient: true, italic: true },
 ];
 
 const ease = [0.16, 1, 0.3, 1] as const;
@@ -78,9 +78,9 @@ export const ProblemSection = () => {
             viewport={{ once: true, margin: "-10% 0px" }}
             transition={{ duration: 0.55, ease, delay: 0.38 }}
           >
-            Building the list takes longer than writing the emails.
-            OutReign collapses that to a few minutes, with every contact verified
-            before it reaches your queue.
+            Building the list takes longer than writing the emails. That is the
+            half a machine should be doing, with every contact verified before it
+            reaches your queue.
           </motion.p>
 
           <motion.div

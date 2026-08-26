@@ -58,6 +58,20 @@ describe("the one-time correction is narrow", () => {
     expect(MIGRATION).not.toMatch(/WHEN 'free'/);
   });
 
+  it("does not hand a legacy elite row Agency's allowance", () => {
+    // Elite is the AGENT tier the Agency plan carries, not a plan. Every other
+    // path normalises plan 'elite' to pro, so it takes pro's 500 a day.
+    const CORRECTION = readFileSync(
+      "supabase/migrations/20260825210000_correct_legacy_elite_daily_limit.sql",
+      "utf8",
+    );
+    expect(CORRECTION).toContain("SET daily_email_limit = 500");
+    expect(CORRECTION).toContain("lower(plan) = 'elite'");
+    expect(CORRECTION).toContain("AND daily_email_limit = 1500");
+    expect(readFileSync("src/components/deliverability/AccountSendLimit.tsx", "utf8"))
+      .toContain("elite: 500");
+  });
+
   it("raises each plan to its published figure", () => {
     expect(MIGRATION).toContain("WHEN 'starter' THEN 100");
     expect(MIGRATION).toContain("WHEN 'growth'  THEN 250");

@@ -98,3 +98,38 @@ describe("the AI SDR grid speaks in one voice", () => {
     }
   });
 });
+
+/**
+ * Voice: the company speaks as "we" everywhere except the founder note, which
+ * speaks as "I". A first-person promise in marketing copy ("I will build your
+ * campaign") reads as one person's availability rather than something the
+ * product does, and it is the first thing to slip when copy is regenerated.
+ *
+ * Not policed: FAQ questions and the exit-modal dismiss button, where the
+ * VISITOR is speaking, and simulated inbox previews, where a prospect is.
+ */
+describe("company voice outside the founder note", () => {
+  const FIRST_PERSON = /(?<![A-Za-z])(I|I'll|I'm|I've|my|me|myself)(?![A-Za-z'])/;
+
+  const declarative = ["HeroSection.tsx", "FinalCTA.tsx", "ProblemSection.tsx", "AISdrSection.tsx"];
+
+  for (const file of declarative) {
+    it(`${file} speaks as the company`, () => {
+      const text = prose(readFileSync(join(DIR, file), "utf8"))
+        // Drop JSX/attribute noise so only sentence-like content is judged.
+        .split("\n")
+        .filter((l) => !/(import |=>|https?:|aria-|key=|const |function )/.test(l))
+        .join("\n");
+      const hit = text.split("\n").find((l) => FIRST_PERSON.test(l) && /[a-z]{4,}\s+[a-z]{3,}/.test(l));
+      expect(hit ?? "", `first person in ${file}: ${hit?.trim().slice(0, 90)}`).toBe("");
+    });
+  }
+
+  it("leaves the founder note in the first person, where it belongs", () => {
+    // The credibility of that section is that a person is talking. Anyone
+    // "fixing" it to company voice is breaking it.
+    const founder = readFileSync(join(DIR, "FounderNoteSection.tsx"), "utf8");
+    expect(FIRST_PERSON.test(founder)).toBe(true);
+    expect(founder).toContain("I was paying $500/month");
+  });
+});

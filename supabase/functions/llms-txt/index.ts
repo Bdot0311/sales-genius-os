@@ -47,7 +47,7 @@ Pricing scales by verified prospects contacted per month, not per seat. Seats ar
 - **Starter**: $39/month - 1,000 verified prospects per month, 100 per day, 50,000 emails per month, prospect search, verified emails, ICP Builder (3 profiles), AI email generator.
 - **Growth**: $89/month - 2,500 verified prospects per month, 250 per day, 250,000 emails per month, unified reply inbox, deliverability dashboard, ICP lookalike discovery. Growth AI SDR agent: 10 replies per day, 30-minute minimum delay.
 - **Pro**: $179/month - 5,000 verified prospects per month, 500 per day, 1,000,000 emails per month, sequence branching and A/B testing, unlimited ICP profiles, CRM integrations, API access. Pro AI SDR agent: 50 replies per day, 10-minute minimum delay.
-- **Agency**: $249/month - 15,000 verified prospects per month, 1,500 per day, unlimited emails, white-label client portal, branded PDF reports, dedicated support. Elite AI SDR agent: 200 replies per day, 5-minute minimum delay.
+- **Agency**: $249/month - 15,000 verified prospects per month, 1,500 per day, unlimited emails, white-label client portal, branded PDF reports, dedicated support. Elite AI SDR agent: 500 replies per day, 5-minute minimum delay.
 
 All four paid plans start with a 14-day free trial and a 30-day money-back guarantee. Explore is free forever and needs no trial. One-time credit packs are available: 200 prospects for $37.50, 400 for $67.50, 600 for $90.
 

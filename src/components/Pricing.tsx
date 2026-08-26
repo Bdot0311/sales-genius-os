@@ -397,7 +397,7 @@ export const Pricing = () => {
               { label: "Starter", sub: "15/day" },
               { label: "Growth", sub: "3 agents" },
               { label: "Pro", sub: "5 agents" },
-              { label: "Elite", sub: "Unlimited" },
+              { label: "Agency", sub: "Unlimited" },
             ].map((t) => (
               <div
                 key={t.label}
