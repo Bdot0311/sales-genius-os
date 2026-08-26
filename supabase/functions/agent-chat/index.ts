@@ -2549,25 +2549,35 @@ serve(async (req) => {
               to: row.prospect_email,
               status: r.status,
               outcome: r.outcome,
+              scheduled: Boolean((r as any).scheduled),
             });
           }
           // A failed send leaves the approval pending so it can be retried, so
           // "still pending after we tried" is the failure signal.
           const failedCount = outcomes.filter((o) => o.status === "pending").length;
           const succeeded = outcomes.length - failedCount;
+          // An approval carrying a send time is queued, not delivered. Counting
+          // it as "sent" made the agent tell users their email had gone out.
+          const scheduledCount = outcomes.filter((o) => o.scheduled).length;
+          const sentCount = succeeded - scheduledCount;
+          const approveLabel = failedCount === outcomes.length
+            ? "Nothing sent — every send failed"
+            : failedCount
+            ? `${scheduledCount && !sentCount ? `Scheduled ${scheduledCount}` : `Sent ${sentCount}`}, ${failedCount} failed`
+            : scheduledCount && !sentCount
+            ? scheduledCount === 1
+              ? "Scheduled for later — not sent yet"
+              : `Scheduled ${scheduledCount} for later — not sent yet`
+            : scheduledCount
+            ? `Sent ${sentCount}, scheduled ${scheduledCount}`
+            : "Sent what you approved";
           toolEvents.push({
             name,
-            label: decision === "reject"
-              ? "Cancelled what you declined"
-              : failedCount === outcomes.length
-              ? "Nothing sent — every send failed"
-              : failedCount
-              ? `Sent ${succeeded}, ${failedCount} failed`
-              : "Sent what you approved",
+            label: decision === "reject" ? "Cancelled what you declined" : approveLabel,
             status: failedCount ? "error" : "ok",
             detail:
               decision === "approve"
-                ? `${succeeded} of ${outcomes.length} sent${failedCount ? `, ${failedCount} failed` : ""}`
+                ? `${sentCount} of ${outcomes.length} sent${scheduledCount ? `, ${scheduledCount} scheduled for later` : ""}${failedCount ? `, ${failedCount} failed` : ""}`
                 : `${outcomes.length} discarded`,
           });
           // `resolved` used to be outcomes.length — every approval ATTEMPTED,
@@ -2581,9 +2591,16 @@ serve(async (req) => {
           return {
             decision,
             attempted: outcomes.length,
-            sent: decision === "approve" ? succeeded : 0,
+            sent: decision === "approve" ? sentCount : 0,
+            scheduled: decision === "approve" ? scheduledCount : 0,
             failed: failedCount,
             outcomes,
+            ...(scheduledCount
+              ? {
+                  scheduling_note:
+                    `${scheduledCount} approved message(s) are SCHEDULED for later, not sent. Say they are scheduled and give the time — do not say they were sent.`,
+                }
+              : {}),
             ...(failedCount
               ? {
                   error: `${failedCount} of ${outcomes.length} could not be sent and are still pending: ${failures.join("; ").slice(0, 400)}`,
@@ -2592,6 +2609,7 @@ serve(async (req) => {
                 }
               : {}),
           };
+
         }
 
         case "get_agent_status": {
