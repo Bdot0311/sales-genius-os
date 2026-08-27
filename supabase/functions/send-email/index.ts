@@ -47,7 +47,8 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { to, subject, body: rawBody, integrationId, integrationRowId, leadId, templateId, threadId, appendSignature } = await req.json();
+    const payload = await req.json();
+    const { to, subject, body: rawBody, integrationId, integrationRowId, leadId, templateId, threadId, appendSignature } = payload;
     
     console.log('Send email request received:', { to, subject, integrationId, leadId, templateId });
 
@@ -304,6 +305,45 @@ serve(async (req) => {
       }
     }
 
+
+    // Refuse a duplicate of something this sender already sent.
+    //
+    // The agent re-mailed prospects it had already contacted: approved sends
+    // left their draft in email_drafts, and send_drafts with no arguments
+    // sends every pending draft. The draft leak is fixed at its source, but
+    // this is the choke point every path goes through — the studio, the
+    // agent, sequences, the scheduler — so the guard belongs here too. A
+    // caller that genuinely means to send the same subject again can pass
+    // allowDuplicate.
+    //
+    // Matched on recipient plus subject rather than body, because a
+    // regenerated draft to the same person with the same subject is the case
+    // that burns a sender's reputation.
+    if (!payload.allowDuplicate) {
+      const dupWindow = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+      const { data: dup } = await supabase
+        .from('sent_emails')
+        .select('id, sent_at')
+        .eq('user_id', user.id)
+        .eq('to_email', to.toLowerCase().trim())
+        .eq('subject', subject)
+        .in('status', ['sent', 'delivered', 'opened', 'clicked', 'replied'])
+        .gte('sent_at', dupWindow)
+        .limit(1)
+        .maybeSingle();
+
+      if (dup) {
+        console.warn(`[send-email] duplicate blocked: ${to} already got "${subject}"`);
+        return new Response(
+          JSON.stringify({
+            error: `This exact email was already sent to ${to}. Sending it again would hurt your deliverability, so it was blocked.`,
+            code: 'duplicate_send',
+            previously_sent_at: dup.sent_at,
+          }),
+          { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
 
     // Check opt-out status
     const { data: optout } = await supabase

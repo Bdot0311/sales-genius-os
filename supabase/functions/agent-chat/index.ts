@@ -891,6 +891,19 @@ serve(async (req) => {
               .eq("id", approval.lead_id)
               .eq("user_id", userId);
           }
+          // The draft is done. It used to survive being sent, because only
+          // deliver() deleted drafts and only when it sent immediately — a
+          // queued send returns sent:false, so nothing cleaned up after the
+          // approval path. Every approved email stayed in email_drafts, and
+          // send_drafts with no arguments sends every pending draft, so the
+          // same prospect was mailed again on the next run.
+          if (approval.lead_id) {
+            await admin
+              .from("email_drafts")
+              .delete()
+              .eq("user_id", userId)
+              .eq("lead_id", approval.lead_id);
+          }
           await admin.from("agent_actions").insert({
             user_id: userId,
             action_type: "outreach_sent",
