@@ -51,6 +51,23 @@ serve(async (req) => {
     let processed = 0;
     let failed = 0;
 
+    /**
+     * Emails that were neither sent nor failed, and why.
+     *
+     * Four branches below skip an email and `continue` without writing
+     * anything: user daily cap, user monthly cap, mailbox paused/disabled, and
+     * mailbox daily cap. Each leaves the row at status "scheduled" — correct,
+     * because they are genuinely retryable — but the only trace was a
+     * console.log, and the response counted them in neither processed nor
+     * failed. From the product they simply never happened: two emails queued
+     * for 9am, one arrives, and nothing anywhere says why the other did not.
+     */
+    const deferrals: Array<{ id: string; to: string; reason: string }> = [];
+    const defer = (email: any, reason: string) => {
+      console.log(`Deferring ${email.id} to ${email.to_email}: ${reason}`);
+      deferrals.push({ id: email.id, to: email.to_email, reason });
+    };
+
     // Pre-fetch daily + monthly limits for all unique users
     const userIds = [...new Set(scheduledEmails.map((e: any) => e.user_id))];
     const MONTHLY_EMAIL_LIMITS: Record<string, number> = {
@@ -112,11 +129,11 @@ serve(async (req) => {
         // Check daily + monthly limits
         const ul = userLimits[email.user_id];
         if (ul && ul.dailySent >= ul.dailyLimit) {
-          console.log(`Daily limit reached for user ${email.user_id} (${ul.dailySent}/${ul.dailyLimit}), skipping email ${email.id}`);
+          defer(email, `Your daily send limit is reached (${ul.dailySent}/${ul.dailyLimit}). It retries after the counter resets, or raise the limit in Outreach settings.`);
           continue;
         }
         if (ul && ul.monthlyLimit !== -1 && ul.monthlySent >= ul.monthlyLimit) {
-          console.log(`Monthly limit reached for user ${email.user_id} (${ul.monthlySent}/${ul.monthlyLimit}), skipping email ${email.id}`);
+          defer(email, `Your monthly send cap is reached (${ul.monthlySent}/${ul.monthlyLimit}). It retries next month, or upgrade the plan.`);
           continue;
         }
         // Resolve the mailbox this email was queued against. Prefer the
@@ -181,13 +198,13 @@ serve(async (req) => {
           if (sa) {
             sendingAccountId = sa.id;
             if (sa.status === 'paused' || sa.status === 'disabled') {
-              console.log(`Mailbox ${sa.id} ${sa.status}, skipping ${email.id}`);
+              defer(email, `The mailbox it was queued against is ${sa.status}. Resume it on the Deliverability page and this retries automatically.`);
               continue; // leave scheduled; will retry after resume
             }
             const today = new Date().toISOString().slice(0, 10);
             const sentToday = sa.sent_today_date === today ? (sa.sent_today || 0) : 0;
             if (sentToday >= (sa.daily_limit || 0)) {
-              console.log(`Mailbox ${sa.id} at daily cap, deferring ${email.id}`);
+              defer(email, `That mailbox is at its daily cap (${sentToday}/${sa.daily_limit || 0}). It retries tomorrow, or raise the cap on the Deliverability page.`);
               continue;
             }
           }
@@ -384,7 +401,16 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, processed, failed }),
+      JSON.stringify({
+        success: true,
+        processed,
+        failed,
+        // Reported rather than swallowed: a run that sent one of two emails is
+        // not a clean run, and the reason has to be retrievable somewhere
+        // other than a log line nobody reads.
+        deferred: deferrals.length,
+        deferrals,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: any) {

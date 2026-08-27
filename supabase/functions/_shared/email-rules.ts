@@ -755,3 +755,75 @@ export function selfReferentialPeerRetry(hits: string[], companyName: string): s
     .map((h) => `"${h}"`)
     .join(", ")}. ${companyName} is the person you are writing TO. Either name a genuinely different company from verified_proof, or write "companies like yours" — never use the recipient as their own reference.`;
 }
+
+// ─── Unsupported time claims ─────────────────────────────────────────────────
+
+const MONTH_NAMES = [
+  "january", "february", "march", "april", "may", "june",
+  "july", "august", "september", "october", "november", "december",
+];
+
+const RECENCY_PHRASES = [
+  "recently", "just announced", "just launched", "just raised", "just closed",
+  "just saw", "last week", "this week", "last month", "this month",
+  "a few weeks ago", "the other day", "in the last few weeks", "lately",
+  "just now", "days ago", "hot off",
+];
+
+/**
+ * Time claims the research cannot back.
+ *
+ * A draft opened "Saw the WeAre acquisition in November" nine months after the
+ * fact. Nothing caught it, because the two paths that supply "why now" material
+ * were guarded asymmetrically: signal_events is filtered to a freshness window
+ * and its date phrasing is deliberately vague, while website observations
+ * carried no date at all — so the path that COULD name a month was the path
+ * with no check on it.
+ *
+ * `freshDates` is the normalized dates ("YYYY", "YYYY-MM", "YYYY-MM-DD") of the
+ * facts that are actually recent. A month name is unsupported unless some fresh
+ * fact falls in that month; a vague recency phrase is unsupported only when
+ * nothing recent exists at all, which keeps a legitimate "recently" attached to
+ * a genuine fresh signal from being flagged.
+ */
+export function findUnsupportedRecency(text: string, freshDates: string[] = []): string[] {
+  const body = String(text ?? "");
+  const lower = body.toLowerCase();
+  const hits: string[] = [];
+
+  const freshMonths = new Set(
+    freshDates
+      .map((d) => {
+        const m = String(d ?? "").match(/^\d{4}-(\d{2})/);
+        return m ? MONTH_NAMES[Number(m[1]) - 1] : "";
+      })
+      .filter(Boolean),
+  );
+
+  for (let i = 0; i < MONTH_NAMES.length; i++) {
+    const month = MONTH_NAMES[i];
+    // "May" is also an ordinary verb, so it only counts after a time preposition.
+    const pattern = month === "may"
+      ? new RegExp(`\\b(?:in|since|back in|during)\\s+may\\b`, "i")
+      : new RegExp(`\\b${month}\\b`, "i");
+    if (!pattern.test(body)) continue;
+    if (freshMonths.has(month)) continue;
+    const label = month.charAt(0).toUpperCase() + month.slice(1);
+    if (!hits.includes(label)) hits.push(label);
+  }
+
+  if (!freshDates.length) {
+    for (const phrase of RECENCY_PHRASES) {
+      if (lower.includes(phrase) && !hits.includes(phrase)) hits.push(phrase);
+    }
+  }
+
+  return hits;
+}
+
+/** Retry instruction for a draft that dated something the research cannot date. */
+export function unsupportedRecencyRetry(hits: string[]): string {
+  return `\nThe draft claims timing the research does not support: ${hits
+    .map((h) => `"${h}"`)
+    .join(", ")}. Nothing in the brief is dated recently enough to say when this happened. Reference the fact without dating it — no month, no "recently", no "just", no "last week". A prospect knows exactly how old their own news is, and getting it wrong reads worse than not mentioning it.`;
+}

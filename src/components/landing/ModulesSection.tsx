@@ -17,7 +17,7 @@ const LeadDiscoveryPreview = () => (
     </div>
     {/* Stat row */}
     <div className="flex gap-2">
-      {[["847", "matches"], ["94%", "verified"], ["< 2 min", "to results"]].map(([val, lbl]) => (
+      {[["847", "matches"], ["94%", "verified"], ["mins", "to results"]].map(([val, lbl]) => (
         <div
           key={lbl}
           className="flex-1 rounded-lg p-3 text-center"
@@ -182,26 +182,26 @@ const modules = [
   {
     number: "01",
     title: "Lead Discovery",
-    tagline: "ICP to ranked prospects in under 2 minutes.",
-    description: "Describe who you want in plain English. Get back verified contacts ranked by fit, without filters or boolean queries.",
+    tagline: "Describe the customer. Get ranked, verified prospects back.",
+    description: "Describe who you want in plain English. Verified contacts come back ranked by fit.",
   },
   {
     number: "02",
     title: "Outreach Studio",
-    tagline: "Context-aware email drafts you actually want to send.",
-    description: "Each email is built from real company context: news, growth signals, open roles. Quality-checked before you hit send.",
+    tagline: "Emails built from the company's own context.",
+    description: "News, growth signals, open roles. The Email Quality Checker scores every draft before it can send.",
   },
   {
     number: "03",
     title: "Reply Management",
-    tagline: "Every reply tracked in one place.",
-    description: "Every response tracked. Follow-up sequences that keep momentum. No prospect slips through because you forgot to check.",
+    tagline: "Every reply in one inbox, sorted by what it is.",
+    description: "Interest, objection, meeting request. Follow-up sequences keep the thread moving, and nothing sits overnight.",
   },
   {
     number: "04",
     title: "Pipeline & Analytics",
-    tagline: "See what's moving. Know what to push.",
-    description: "Understand where threads are progressing and where outreach stalls, on one dashboard.",
+    tagline: "What is moving, what stalled, what earns answers.",
+    description: "Where threads are progressing, where outreach stalls, and which copy gets replied to. One dashboard.",
   },
 ];
 
@@ -251,7 +251,7 @@ export const ModulesSection = () => {
             className={`mb-16 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
           >
             <p className="font-serif italic font-thin text-base text-center text-purple-500 mb-5">
-              The Platform
+              Four screens
             </p>
             <h2
               id="modules-heading"

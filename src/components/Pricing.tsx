@@ -163,7 +163,7 @@ const comparisonCategories = [
   {
     name: "Verified Prospects & Email Sends",
     features: [
-      { name: "Monthly verified prospects", free: "100 searches", starter: "1,000", growth: "2,500", pro: "5,000", agency: "15,000" },
+      { name: "Monthly lead searches", free: "100", starter: "1,000", growth: "2,500", pro: "5,000", agency: "15,000" },
       { name: "Daily prospect limit", free: "100", starter: "100", growth: "250", pro: "500", agency: "1,500" },
       { name: "Monthly email sends", free: "100", starter: "50,000", growth: "250,000", pro: "1,000,000", agency: "Unlimited" },
       { name: "Prospect search", free: "100/mo", starter: true, growth: true, pro: true, agency: true },
@@ -397,7 +397,7 @@ export const Pricing = () => {
               { label: "Starter", sub: "15/day" },
               { label: "Growth", sub: "3 agents" },
               { label: "Pro", sub: "5 agents" },
-              { label: "Elite", sub: "Unlimited" },
+              { label: "Agency", sub: "Unlimited" },
             ].map((t) => (
               <div
                 key={t.label}

@@ -180,6 +180,13 @@ serve(async (req) => {
     let subscriptionEnd: string | null = null;
     let stripeSubscriptionId: string | null = null;
     let baseCredits = 0;
+    // The per-plan daily send cap. PLAN_PRODUCTS has carried this for every plan
+    // since it was written — 100/250/500/1500, matching the published pricing
+    // table — and nothing ever read it. subscriptions.daily_email_limit
+    // therefore kept its schema default of 10 for every account on every plan,
+    // so a paying customer was capped at the free-tier rate until they found
+    // the control buried in the Bulk Send dialog.
+    let dailyEmailLimit = 100; // Explore/free, per the pricing table
     let addonCredits = 0;
     let addonPriceId: string | null = null;
 
@@ -204,7 +211,8 @@ serve(async (req) => {
           const planInfo = PLAN_PRODUCTS[productId as keyof typeof PLAN_PRODUCTS];
           plan = planInfo.plan as 'starter' | 'growth' | 'pro' | 'agency';
           baseCredits = planInfo.credits;
-          logStep('Detected base plan', { plan, baseCredits });
+          dailyEmailLimit = planInfo.dailyLimit;
+          logStep('Detected base plan', { plan, baseCredits, dailyEmailLimit });
         }
         
         // Check if it's an addon
@@ -254,6 +262,7 @@ serve(async (req) => {
             search_credits_remaining: remainingCredits,
             addon_price_id: addonPriceId,
             credits_reset_at: subscriptionEnd,
+            daily_email_limit: dailyEmailLimit,
           }, { onConflict: 'user_id' });
 
         if (updateError) {

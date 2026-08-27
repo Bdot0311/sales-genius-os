@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { LiveIndicator } from "@/components/deliverability/LiveIndicator";
+import { isAssistedOpen } from "../../../supabase/functions/_shared/open-tracking";
 import type { LiveStatus } from "@/hooks/use-deliverability-realtime";
 import {
   Area,
@@ -50,6 +51,18 @@ type SentEmail = {
   sequence_step: number | null;
   sending_account_id: string | null;
   lead_id: string | null;
+};
+
+/**
+ * One pixel hit. Most of them are not people — mailbox providers fetch remote
+ * images on delivery — so the tracker records every hit with the reason it was
+ * or wasn't counted. Reading them here is what lets the tab show how big the
+ * gap is instead of asking anyone to take the open rate on faith.
+ */
+type OpenEventRow = {
+  sent_email_id: string | null;
+  counted: boolean;
+  skip_reason: string | null;
 };
 
 type ReplyRow = {
@@ -113,6 +126,7 @@ export const EmailPerformanceStats = () => {
   const [days, setDays] = useState(30);
   const [emails, setEmails] = useState<SentEmail[]>([]);
   const [replies, setReplies] = useState<ReplyRow[]>([]);
+  const [openEvents, setOpenEvents] = useState<OpenEventRow[]>([]);
   const [deals, setDeals] = useState<DealRow[]>([]);
   const [templateNames, setTemplateNames] = useState<Record<string, string>>({});
   const [sequenceNames, setSequenceNames] = useState<Record<string, string>>({});
@@ -123,7 +137,7 @@ export const EmailPerformanceStats = () => {
   const load = useCallback(async () => {
     const since = new Date(Date.now() - days * 86_400_000).toISOString();
     try {
-      const [e, r, d, t, s, m] = await Promise.all([
+      const [e, r, d, t, s, m, o] = await Promise.all([
         supabase
           .from("sent_emails")
           .select(
@@ -141,6 +155,11 @@ export const EmailPerformanceStats = () => {
         supabase.from("email_templates").select("id, name"),
         supabase.from("email_sequences").select("id, name"),
         supabase.from("sending_accounts").select("id, email, status, reputation_score"),
+        supabase
+          .from("email_open_events")
+          .select("sent_email_id, counted, skip_reason")
+          .gte("occurred_at", since)
+          .limit(20000),
       ]);
 
       // Warmup / seed traffic never counts as outreach performance: any send
@@ -166,6 +185,11 @@ export const EmailPerformanceStats = () => {
         (row) => !row.sent_email_id || !warmupEmailIds.has(row.sent_email_id),
       ));
       setDeals((d.data as DealRow[]) ?? []);
+      setOpenEvents(
+        (((o.data as OpenEventRow[]) ?? [])).filter(
+          (row) => !row.sent_email_id || !warmupEmailIds.has(row.sent_email_id),
+        ),
+      );
       setTemplateNames(Object.fromEntries(((t.data as { id: string; name: string }[]) ?? []).map((x) => [x.id, x.name])));
       setSequenceNames(Object.fromEntries(((s.data as { id: string; name: string }[]) ?? []).map((x) => [x.id, x.name])));
       setMailboxes(
@@ -194,7 +218,7 @@ export const EmailPerformanceStats = () => {
   // Realtime: any send / open / reply / click / deal updates the numbers instantly.
   useEffect(() => {
     const channel = supabase.channel(`email-analytics-${Math.random().toString(36).slice(2)}`);
-    for (const table of ["sent_emails", "email_drafts", "reply_analysis", "deals", "sending_accounts"]) {
+    for (const table of ["sent_emails", "email_drafts", "reply_analysis", "deals", "sending_accounts", "email_open_events"]) {
       channel.on("postgres_changes", { event: "*", schema: "public", table }, () => {
         void reload.current();
       });
@@ -275,6 +299,27 @@ export const EmailPerformanceStats = () => {
 
 
   const sent = useMemo(() => emails.filter((e) => e.status === "sent" || !!e.sent_at), [emails]);
+
+  /**
+   * Emails a mailbox provider fetched but no person is known to have opened.
+   *
+   * Gmail proxies images on delivery and Apple Mail Privacy Protection loads
+   * them for every message whether or not it is read, so these hits prove the
+   * mail was delivered and rendered — not that anyone looked at it. Counting
+   * them was what made the open rate say "opened" two minutes after a send.
+   * They are shown, separately, rather than silently dropped.
+   */
+  const machineFetched = useMemo(() => {
+    const realIds = new Set(sent.map((e) => e.id));
+    const humanOpened = new Set(sent.filter((e) => e.opened_at).map((e) => e.id));
+    const ids = new Set<string>();
+    for (const ev of openEvents) {
+      if (!ev.sent_email_id || ev.counted) continue;
+      if (!realIds.has(ev.sent_email_id) || humanOpened.has(ev.sent_email_id)) continue;
+      if (isAssistedOpen(ev.skip_reason)) ids.add(ev.sent_email_id);
+    }
+    return ids.size;
+  }, [sent, openEvents]);
 
   const totals = useMemo(() => {
     const opened = sent.filter((e) => e.opened_at).length;
@@ -458,8 +503,18 @@ export const EmailPerformanceStats = () => {
           icon={<Eye className="w-4 h-4" />}
           label="Open Rate"
           value={`${totals.openRate}%`}
-          hint={`${totals.opened} opens`}
-          onClick={() => openEmails("Opened emails", "Confirmed recipient opens only — provider pre-fetches, scanners, duplicate renders and warmup traffic are excluded.", sent.filter((e) => e.opened_at))}
+          hint={machineFetched > 0 ? `${totals.opened} opens · ${machineFetched} machine-fetched` : `${totals.opened} opens`}
+          onClick={() =>
+            openEmails(
+              "Opened emails",
+              `Confirmed recipient opens only. Scanners, duplicate renders and warmup traffic are excluded, and so are the fetches mailbox providers make on delivery — Gmail proxies every image, Apple Mail Privacy Protection loads them whether or not the message is read.${
+                machineFetched > 0
+                  ? ` ${machineFetched} more ${machineFetched === 1 ? "email was" : "emails were"} fetched by a provider and are not counted here: delivered and rendered, but no evidence a person read them.`
+                  : ""
+              }`,
+              sent.filter((e) => e.opened_at),
+            )
+          }
         />
         <Kpi
           icon={<MessageSquareReply className="w-4 h-4" />}

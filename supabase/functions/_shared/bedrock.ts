@@ -356,10 +356,214 @@ export async function bedrockChat(
 }
 
 /**
- * Streaming call sites get one synthetic SSE stream built from the completed
- * Converse response. Bedrock's own stream is AWS event-stream framed, not SSE,
- * so translating it would be a second parser for no user-visible gain here.
+ * Real token-by-token streaming through Bedrock's ConverseStream API.
+ *
+ * Bedrock frames its stream as AWS event-stream binary messages, not SSE, so we
+ * parse the framing here and re-emit OpenAI `chat.completion.chunk` SSE events —
+ * that keeps every call site (which speaks the OpenAI streaming shape) unchanged
+ * while the user sees the answer appear as it is generated.
  */
+export async function bedrockChatStream(
+  modelId: string,
+  body: Record<string, unknown>,
+  onUsage?: (usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number }) => void,
+): Promise<Response> {
+  const url = new URL(
+    `https://bedrock-runtime.${bedrockRegion()}.amazonaws.com/model/${
+      encodeURIComponent(modelId)
+    }/converse-stream`,
+  );
+  const payload = JSON.stringify(toConverseBody(body));
+  const headers = bearerToken()
+    ? { "content-type": "application/json", Authorization: `Bearer ${bearerToken()}` }
+    : await signRequest(url, payload);
+
+  const res = await fetch(url.toString(), { method: "POST", headers, body: payload });
+  if (!res.ok || !res.body) {
+    const detail = await res.text().catch(() => "");
+    console.error(`[bedrock] stream ${modelId} -> ${res.status} ${detail.slice(0, 400)}`);
+    return new Response(
+      JSON.stringify({ error: { message: detail || `Bedrock returned ${res.status}`, type: "bedrock_error" } }),
+      { status: res.ok ? 502 : res.status, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
+  const id = `bedrock-${crypto.randomUUID()}`;
+  const created = Math.floor(Date.now() / 1000);
+  const enc = new TextEncoder();
+  const sse = (delta: Record<string, unknown>, finish: string | null) =>
+    enc.encode(
+      `data: ${
+        JSON.stringify({
+          id,
+          object: "chat.completion.chunk",
+          created,
+          model: modelId,
+          choices: [{ index: 0, delta, finish_reason: finish }],
+        })
+      }\n\n`,
+    );
+
+  const upstream = res.body;
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const reader = upstream.getReader();
+      let buf = new Uint8Array(0);
+      // Bedrock content-block index -> emitted tool_call index.
+      const toolIndex = new Map<number, number>();
+      let nextToolIndex = 0;
+      let finish: string | null = null;
+      controller.enqueue(sse({ role: "assistant" }, null));
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (value && value.length) {
+            const merged = new Uint8Array(buf.length + value.length);
+            merged.set(buf);
+            merged.set(value, buf.length);
+            buf = merged;
+          }
+          // Drain every complete event-stream frame currently buffered.
+          while (buf.length >= 12) {
+            const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+            const total = view.getUint32(0);
+            if (!total || total > 16 * 1024 * 1024) {
+              // Unrecognisable framing — stop rather than loop forever.
+              buf = new Uint8Array(0);
+              break;
+            }
+            if (buf.length < total) break;
+            const headersLen = view.getUint32(4);
+            const frame = buf.subarray(0, total);
+            buf = buf.subarray(total);
+
+            // Headers: [1B name len][name][1B value type][value]; type 7 = string.
+            let off = 12;
+            const headerEnd = 12 + headersLen;
+            let eventType = "";
+            while (off < headerEnd) {
+              const nameLen = frame[off];
+              off += 1;
+              const name = new TextDecoder().decode(frame.subarray(off, off + nameLen));
+              off += nameLen;
+              const type = frame[off];
+              off += 1;
+              let val = "";
+              if (type === 7) {
+                const vLen = (frame[off] << 8) | frame[off + 1];
+                off += 2;
+                val = new TextDecoder().decode(frame.subarray(off, off + vLen));
+                off += vLen;
+              } else if (type === 6) {
+                const vLen = (frame[off] << 8) | frame[off + 1];
+                off += 2 + vLen;
+              } else if (type === 0 || type === 1) {
+                // boolean: no value bytes
+              } else if (type === 2) off += 1;
+              else if (type === 3) off += 2;
+              else if (type === 4) off += 4;
+              else if (type === 5 || type === 8) off += 8;
+              else if (type === 9) off += 16;
+              if (name === ":event-type") eventType = val;
+            }
+
+            const payloadBytes = frame.subarray(headerEnd, total - 4);
+            let event: Record<string, unknown> = {};
+            try {
+              event = JSON.parse(new TextDecoder().decode(payloadBytes));
+            } catch {
+              continue;
+            }
+
+            if (eventType === "contentBlockStart") {
+              const start = (event.start as Record<string, unknown> | undefined)?.toolUse as
+                | Record<string, unknown>
+                | undefined;
+              if (start) {
+                const blockIdx = Number(event.contentBlockIndex ?? 0);
+                const idx = nextToolIndex++;
+                toolIndex.set(blockIdx, idx);
+                controller.enqueue(sse({
+                  tool_calls: [{
+                    index: idx,
+                    id: String(start.toolUseId ?? crypto.randomUUID()),
+                    type: "function",
+                    function: { name: String(start.name ?? "tool"), arguments: "" },
+                  }],
+                }, null));
+              }
+            } else if (eventType === "contentBlockDelta") {
+              const delta = (event.delta as Record<string, unknown> | undefined) ?? {};
+              if (typeof delta.text === "string" && delta.text) {
+                controller.enqueue(sse({ content: delta.text }, null));
+              }
+              const use = delta.toolUse as Record<string, unknown> | undefined;
+              if (use && typeof use.input === "string") {
+                const blockIdx = Number(event.contentBlockIndex ?? 0);
+                const idx = toolIndex.get(blockIdx) ?? 0;
+                controller.enqueue(sse({
+                  tool_calls: [{ index: idx, function: { arguments: use.input } }],
+                }, null));
+              }
+            } else if (eventType === "messageStop") {
+              const stop = String(event.stopReason ?? "end_turn");
+              finish = stop === "tool_use"
+                ? "tool_calls"
+                : stop === "max_tokens"
+                ? "length"
+                : "stop";
+            } else if (eventType === "metadata") {
+              const u = (event.usage as Record<string, unknown> | undefined) ?? {};
+              const usage = {
+                prompt_tokens: Number(u.inputTokens ?? 0) || 0,
+                completion_tokens: Number(u.outputTokens ?? 0) || 0,
+                total_tokens: Number(u.totalTokens ?? 0) || 0,
+              };
+              controller.enqueue(enc.encode(`data: ${JSON.stringify({ usage })}\n\n`));
+              try {
+                onUsage?.(usage);
+              } catch { /* metering must never break the stream */ }
+            } else if (
+              eventType === "internalServerException" ||
+              eventType === "modelStreamErrorException" ||
+              eventType === "throttlingException" ||
+              eventType === "validationException" ||
+              eventType === "serviceUnavailableException"
+            ) {
+              console.error(`[bedrock] stream ${eventType}: ${JSON.stringify(event).slice(0, 300)}`);
+              finish = finish ?? "stop";
+            }
+          }
+          if (done) break;
+        }
+        controller.enqueue(sse({}, finish ?? "stop"));
+        controller.enqueue(enc.encode("data: [DONE]\n\n"));
+      } catch (err) {
+        console.error("[bedrock] stream failed", err instanceof Error ? err.message : err);
+      } finally {
+        controller.close();
+        try {
+          reader.releaseLock();
+        } catch { /* already released */ }
+      }
+    },
+  });
+
+  return new Response(stream, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    },
+  });
+}
+
+/**
+ * Fallback for streaming call sites when the real stream is unavailable: one
+ * synthetic SSE stream built from a completed Converse response.
+ */
+
 export async function bedrockChatAsStream(
   modelId: string,
   body: Record<string, unknown>,

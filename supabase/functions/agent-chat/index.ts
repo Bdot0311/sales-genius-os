@@ -4,6 +4,7 @@ import { playbookSystemRules } from "../_shared/cold-email-playbook.ts";
 import { isWeak, rubricFeedback, scoreEmail } from "../_shared/email-quality.ts";
 import { signOffStartIndex } from "../_shared/email-rules.ts";
 import { findPlaceholders, hasPlaceholder } from "../_shared/email-rules.ts";
+import { asFnResult } from "../_shared/fn-result.ts";
 import { buildIcpContext, icpSearchBody } from "../_shared/icp-context.ts";
 import { captureServerEvent } from "../_shared/posthog.ts";
 import { getSignatureHtml, appendSignatureToBody } from "../_shared/signature.ts";
@@ -119,8 +120,23 @@ function didMutate(result: unknown): boolean {
 
   const summary = (r.summary && typeof r.summary === "object" ? r.summary : r) as Record<string, unknown>;
   if (summary.needs_rewrite === true) return false;
-  if (summary.queued_for_approval === true) return false;
-  if (r.sent === false) return false;
+
+  // Both shapes, because both exist. deliver() returns a per-email summary
+  // where queued_for_approval is `true` and sent is `false`; send_drafts and
+  // schedule_drafts return a BATCH where the same keys are counts. The checks
+  // were `=== true` and `=== false`, so a batch reporting {sent: 0,
+  // queued_for_approval: 2} matched neither, and two emails that were merely
+  // parked for a human to confirm were recorded as a completed send — which is
+  // exactly what this function exists to prevent.
+  const asCount = (v: unknown): number | null =>
+    typeof v === "number" ? v : typeof v === "boolean" ? (v ? 1 : 0) : null;
+  const queued = asCount(summary.queued_for_approval) ?? asCount(r.queued_for_approval);
+  const sent = asCount(summary.sent) ?? asCount(r.sent);
+  // When a result reports a send count at all, that count is the answer: a
+  // partial batch (one sent, one queued) IS a mutation, and treating it as
+  // nothing would let the one that went out be sent a second time on retry.
+  if (sent !== null) return sent > 0;
+  if (queued !== null && queued > 0) return false;
 
   return true;
 }
@@ -795,12 +811,7 @@ serve(async (req) => {
           // Never let one hung sub-function eat the whole turn.
           signal: AbortSignal.timeout(Math.max(5_000, Math.min(45_000, timeLeft() - 5_000))),
         });
-        const text = await res.text();
-        try {
-          return JSON.parse(text);
-        } catch {
-          return { error: text.slice(0, 300) };
-        }
+        return asFnResult(name, res.status, res.ok, await res.text());
       } catch (e) {
         console.error(`callFn ${name} failed`, e);
         return { error: e instanceof Error ? e.message : `${name} did not respond` };
@@ -817,6 +828,51 @@ serve(async (req) => {
       if (decision === "reject") {
         outcome = "Rejected — nothing was sent or changed.";
       } else if (approval.kind === "outreach") {
+        // An approval carrying a send time is a scheduling request, not a send.
+        // Without this, approving one of them delivered immediately and the
+        // time the user asked for was silently discarded.
+        const scheduledAtRaw = String((approval.metadata ?? {}).scheduled_at ?? "");
+        const scheduledAt = scheduledAtRaw ? new Date(scheduledAtRaw) : null;
+        if (scheduledAt && !Number.isNaN(scheduledAt.getTime()) && scheduledAt.getTime() > Date.now()) {
+          const sig = await getSignatureHtml(admin, userId, null);
+          const bodyText = appendSignatureToBody(String(approval.body ?? ""), sig);
+          const { error: insErr } = await admin.from("sent_emails").insert({
+            user_id: userId,
+            lead_id: approval.lead_id,
+            to_email: approval.prospect_email,
+            subject: approval.subject,
+            body_html: draftBodyToHtml(bodyText),
+            body_text: bodyText,
+            status: "scheduled",
+            scheduled_at: scheduledAt.toISOString(),
+            sending_account_id: (approval.metadata ?? {}).sending_account_id ?? null,
+          });
+          failed = Boolean(insErr);
+          if (!failed) {
+            await admin.from("agent_actions").insert({
+              user_id: userId,
+              action_type: "outreach_scheduled",
+              status: "completed",
+              prospect_email: approval.prospect_email,
+              subject: approval.subject,
+              description: `Scheduled approved outreach to ${approval.prospect_email} for ${scheduledAt.toISOString()} (AI SDR chat)`,
+              metadata: { source: "agent_chat", thread_id: threadId, scheduled_at: scheduledAt.toISOString() },
+            });
+          }
+          outcome = failed
+            ? `Scheduling failed: ${String(insErr?.message).slice(0, 200)}`
+            : `Approved — queued for ${formatLocal(scheduledAt)}. It sends automatically; nothing further is needed.`;
+          const status = failed ? "pending" : "approved";
+          await admin
+            .from("agent_approvals")
+            .update({ status, reviewed_at: failed ? null : new Date().toISOString() })
+            .eq("id", approval.id)
+            .eq("user_id", userId);
+          // Flagged so the caller reports this as scheduled, never as sent.
+          return { outcome, failed, status, scheduled: !failed };
+
+        }
+
         const r = await callFn("send-email", {
           to: approval.prospect_email,
           subject: approval.subject,
@@ -834,6 +890,19 @@ serve(async (req) => {
               .update({ lead_status: "active", last_contacted_at: new Date().toISOString() })
               .eq("id", approval.lead_id)
               .eq("user_id", userId);
+          }
+          // The draft is done. It used to survive being sent, because only
+          // deliver() deleted drafts and only when it sent immediately — a
+          // queued send returns sent:false, so nothing cleaned up after the
+          // approval path. Every approved email stayed in email_drafts, and
+          // send_drafts with no arguments sends every pending draft, so the
+          // same prospect was mailed again on the next run.
+          if (approval.lead_id) {
+            await admin
+              .from("email_drafts")
+              .delete()
+              .eq("user_id", userId)
+              .eq("lead_id", approval.lead_id);
           }
           await admin.from("agent_actions").insert({
             user_id: userId,
@@ -1123,12 +1192,7 @@ serve(async (req) => {
         },
         body: JSON.stringify(body ?? {}),
       });
-      const text = await res.text();
-      try {
-        return JSON.parse(text);
-      } catch {
-        return { error: text.slice(0, 300) };
-      }
+      return asFnResult(name, res.status, res.ok, await res.text());
     };
 
     const loadLead = async (leadId: string) => {
@@ -1681,7 +1745,7 @@ serve(async (req) => {
           return {
             goal,
             note:
-              "Drafts are saved and shown to the user in the chat with Send / Schedule controls. Remember each draft_id — if the user then says to send them, call send_drafts with those draft_ids (plus from_email if they named an inbox); if they want them to go out later, call schedule_drafts with those draft_ids and an ISO send_at. Do not send or schedule until they ask." +
+              "Drafts are saved and shown to the user in the chat with Send / Schedule controls. Remember each draft_id — if the user then says to send them, call send_drafts with those draft_ids (plus from_email if they named an inbox); if they want them to go out later, call schedule_drafts with those draft_ids and send_at_local as their local wall-clock time (see SCHEDULING). Do not send or schedule until they ask." +
               (skipped.length
                 ? ` ${skipped.length} lead(s) were not drafted because this turn ran out of time — tell the user to reply "continue" and you'll draft the rest.`
                 : ""),
@@ -2085,6 +2149,72 @@ serve(async (req) => {
             const sendAt = new Date(when.getTime() + index * stagger * 60_000);
             const mailbox = pool[index % pool.length];
 
+            // Scheduling is a send with a delay, so in approval mode it pauses
+            // like every other send.
+            //
+            // This used to write straight into sent_emails, which meant a mode
+            // that promises "anything that sends an email pauses for the user's
+            // approval" had one tool that did not. The model follows the mode
+            // instruction rather than the hole in it, so a request to schedule
+            // was routed through send_drafts instead — parking an approval and
+            // dropping the requested time on the floor. That is why the
+            // approvals table filled up while no row in the database has ever
+            // carried a scheduled_at.
+            //
+            // The time rides on the approval, and applyApproval schedules
+            // rather than sends when it finds one.
+            if (!autonomous) {
+              const { data: approval, error: apprErr } = await admin
+                .from("agent_approvals")
+                .insert({
+                  user_id: userId,
+                  kind: "outreach",
+                  status: "pending",
+                  lead_id: d.lead_id,
+                  integration_row_id: mailbox.integrationRowId,
+                  prospect_email: to,
+                  prospect_name: d.leads?.contact_name ?? null,
+                  company_name: d.leads?.company_name ?? null,
+                  subject,
+                  body,
+                  reasoning: `Drafted in AI SDR chat — schedule for ${formatLocal(sendAt)} from ${mailbox.email} once approved`,
+                  metadata: {
+                    source: "agent_chat",
+                    thread_id: threadId,
+                    from_email: mailbox.email,
+                    scheduled_at: sendAt.toISOString(),
+                    sending_account_id: mailbox.sendingAccountId ?? null,
+                  },
+                })
+                .select("id")
+                .single();
+              if (apprErr) {
+                results.push({ draft_id: d.id, lead: label, error: apprErr.message });
+                continue;
+              }
+              toolEvents.push({
+                name,
+                label: "Waiting for your approval",
+                status: "queued",
+                detail: `Schedule "${subject}" to ${to} for ${formatLocal(sendAt)}`,
+                approval_id: approval.id,
+                approval_kind: "outreach",
+                approval_summary: body.slice(0, 600),
+              });
+              results.push({
+                draft_id: d.id,
+                lead: label,
+                to,
+                from: mailbox.email,
+                queued_for_approval: true,
+                approval_id: approval.id,
+                would_send_at: sendAt.toISOString(),
+                would_send_at_local: formatLocal(sendAt),
+              });
+              index++;
+              continue;
+            }
+
             const { error: insErr } = await admin.from("sent_emails").insert({
               user_id: userId,
               lead_id: d.lead_id,
@@ -2127,24 +2257,30 @@ serve(async (req) => {
           }
 
           const okCount = results.filter((r) => r.scheduled_at).length;
+          const queuedCount = results.filter((r) => r.queued_for_approval).length;
           const usedFrom = [...new Set(results.map((r) => r.from).filter(Boolean))];
-          toolEvents.push({
-            name,
-            label: okCount ? "Scheduled email" : "Scheduling failed",
-            status: okCount ? "ok" : "error",
-            detail: okCount
-              ? `${okCount} email(s) queued from ${usedFrom.join(", ")}, first at ${formatLocal(when)}`
-              : "No drafts could be scheduled",
-          });
+          if (!queuedCount) {
+            toolEvents.push({
+              name,
+              label: okCount ? "Scheduled email" : "Scheduling failed",
+              status: okCount ? "ok" : "error",
+              detail: okCount
+                ? `${okCount} email(s) queued from ${usedFrom.join(", ")}, first at ${formatLocal(when)}`
+                : "No drafts could be scheduled",
+            });
+          }
 
           return {
             from: usedFrom.join(", ") || pool[0].email,
             rotated_across: usedFrom.length,
             scheduled: okCount,
+            queued_for_approval: queuedCount,
             results,
-            note: okCount
-              ? `Queued ${okCount} email(s) rotated across ${usedFrom.join(", ")}. The scheduler sends them automatically at the times above — the user does not need to do anything. They can be cancelled with cancel_scheduled_email.`
-              : "Nothing was scheduled.",
+            note: queuedCount
+              ? `Nothing is scheduled yet — ${queuedCount} email(s) are paused waiting on the user, to go out at the times above once approved. Tell them who and when, ask them to confirm in the chat, then call resolve_approvals.`
+              : okCount
+                ? `Queued ${okCount} email(s) rotated across ${usedFrom.join(", ")}. The scheduler sends them automatically at the times above — the user does not need to do anything. They can be cancelled with cancel_scheduled_email.`
+                : "Nothing was scheduled.",
           };
         }
 
@@ -2426,19 +2562,67 @@ serve(async (req) => {
               to: row.prospect_email,
               status: r.status,
               outcome: r.outcome,
+              scheduled: Boolean((r as any).scheduled),
             });
           }
+          // A failed send leaves the approval pending so it can be retried, so
+          // "still pending after we tried" is the failure signal.
           const failedCount = outcomes.filter((o) => o.status === "pending").length;
+          const succeeded = outcomes.length - failedCount;
+          // An approval carrying a send time is queued, not delivered. Counting
+          // it as "sent" made the agent tell users their email had gone out.
+          const scheduledCount = outcomes.filter((o) => o.scheduled).length;
+          const sentCount = succeeded - scheduledCount;
+          const approveLabel = failedCount === outcomes.length
+            ? "Nothing sent — every send failed"
+            : failedCount
+            ? `${scheduledCount && !sentCount ? `Scheduled ${scheduledCount}` : `Sent ${sentCount}`}, ${failedCount} failed`
+            : scheduledCount && !sentCount
+            ? scheduledCount === 1
+              ? "Scheduled for later — not sent yet"
+              : `Scheduled ${scheduledCount} for later — not sent yet`
+            : scheduledCount
+            ? `Sent ${sentCount}, scheduled ${scheduledCount}`
+            : "Sent what you approved";
           toolEvents.push({
             name,
-            label: decision === "approve" ? "Sent what you approved" : "Cancelled what you declined",
+            label: decision === "reject" ? "Cancelled what you declined" : approveLabel,
             status: failedCount ? "error" : "ok",
             detail:
               decision === "approve"
-                ? `${outcomes.length - failedCount} of ${outcomes.length} executed${failedCount ? `, ${failedCount} failed` : ""}`
+                ? `${sentCount} of ${outcomes.length} sent${scheduledCount ? `, ${scheduledCount} scheduled for later` : ""}${failedCount ? `, ${failedCount} failed` : ""}`
                 : `${outcomes.length} discarded`,
           });
-          return { decision, resolved: outcomes.length, failed: failedCount, outcomes };
+          // `resolved` used to be outcomes.length — every approval ATTEMPTED,
+          // reported under a name that reads like every approval SENT. With the
+          // event labelled "Sent what you approved" regardless, a run where
+          // every send failed was indistinguishable from one where none did,
+          // and the model said "sent" each time the user asked again.
+          const failures = outcomes
+            .filter((o) => o.status === "pending")
+            .map((o) => `${o.to}: ${o.outcome}`);
+          return {
+            decision,
+            attempted: outcomes.length,
+            sent: decision === "approve" ? sentCount : 0,
+            scheduled: decision === "approve" ? scheduledCount : 0,
+            failed: failedCount,
+            outcomes,
+            ...(scheduledCount
+              ? {
+                  scheduling_note:
+                    `${scheduledCount} approved message(s) are SCHEDULED for later, not sent. Say they are scheduled and give the time — do not say they were sent.`,
+                }
+              : {}),
+            ...(failedCount
+              ? {
+                  error: `${failedCount} of ${outcomes.length} could not be sent and are still pending: ${failures.join("; ").slice(0, 400)}`,
+                  note:
+                    "Tell the user exactly which ones failed and why, in plain language. Do NOT say they were sent. They are still pending, so they can be retried once the cause is fixed.",
+                }
+              : {}),
+          };
+
         }
 
         case "get_agent_status": {
@@ -2727,7 +2911,7 @@ HOW TO WORK
 - Be concise and specific. Short paragraphs, tight bullet lists, real numbers and names. No emojis, no filler.
 
 AUTONOMY
-This conversation is in ${autonomous ? "FULL AUTONOMY mode: sending, enrolling and full agent runs execute immediately." : "APPROVAL mode: anything that sends an email, enrolls a lead, or runs the full agent pauses for the user's approval instead of executing. Approval happens purely through chat messages — there are no approve/reject buttons. When work pauses, state plainly what is queued (who, how many, which mailbox) and ask them to reply to confirm, then STOP and wait. When their next message confirms ('yes', 'send it', 'go ahead', 'do it'), call list_pending_approvals then resolve_approvals with decision 'approve' (all: true when they confirmed everything) and report what actually happened. When they decline ('no', 'cancel that', 'hold off'), call resolve_approvals with decision 'reject'. Never mention buttons or cards to click, and never tell them to go to another tab or page."}
+This conversation is in ${autonomous ? "FULL AUTONOMY mode: sending, enrolling and full agent runs execute immediately." : "APPROVAL mode: anything that sends an email — now or on a schedule — enrols a lead, or runs the full agent pauses for the user's approval instead of executing. Scheduling still works: call schedule_drafts as normal, it parks the request with the time attached, and approving it queues the send for that time rather than sending straight away. Approval happens purely through chat messages — there are no approve/reject buttons. When work pauses, state plainly what is queued (who, how many, which mailbox) and ask them to reply to confirm, then STOP and wait. When their next message confirms ('yes', 'send it', 'go ahead', 'do it'), call list_pending_approvals then resolve_approvals with decision 'approve' (all: true when they confirmed everything) and report what actually happened. When they decline ('no', 'cancel that', 'hold off'), call resolve_approvals with decision 'reject'. Never mention buttons or cards to click, and never tell them to go to another tab or page."}
 ${autonomous ? "" : "If the user asks you to just get on with it without approving each step, tell them they can switch this conversation to full autonomy with the mode selector at the top of the chat."}
 
 COLD EMAIL RULES (apply to every draft you write or review)
@@ -2885,13 +3069,37 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
             detail: stepDetail ?? "unknown error",
           });
         }
-        stepMetrics.push({
+        const stepRow = {
           tool_name: toolName || "unknown",
           step_type: PARALLEL_SAFE_TOOLS.has(toolName) ? "tool_parallel" : "tool_serial",
           duration_ms: Date.now() - startedAt,
           status: stepStatus,
           detail: stepDetail ? stepDetail.slice(0, 300) : null,
-        });
+        };
+        stepMetrics.push(stepRow);
+
+        // Written as it happens, not batched at the end of the turn.
+        //
+        // These rows were only inserted once everything had finished, which
+        // made them useless as progress: the chat's status card had nothing
+        // real to read, so it guessed a step list from a regex on the user's
+        // message and advanced it on a four-second timer. A turn that spent
+        // ninety seconds researching leads showed "Wrapping up".
+        //
+        // Not awaited — a progress write must never slow down or fail the work
+        // it is describing.
+        void admin
+          .from("agent_step_metrics")
+          .insert({
+            ...stepRow,
+            user_id: userId,
+            thread_id: threadId,
+            turn_id: turnId,
+            agent_config_id: requestedAgentId ?? null,
+          })
+          .then(({ error }) => {
+            if (error) console.warn("live step metric insert failed:", error.message);
+          });
         return {
           role: "tool",
           tool_call_id: call.id,
@@ -2952,6 +3160,50 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
       finalText += "\n\nStill more to do here — continuing…";
     }
 
+    // The model is not the only witness to its own actions.
+    //
+    // In approval mode every send parks an agent_approvals row and the tool
+    // says so in plain terms — send_drafts returns "Nothing was sent yet — N
+    // email(s) are paused waiting on the user." A user asked repeatedly why
+    // emails were not arriving and was told "sent" each time, while the
+    // approvals table filled up with rows nothing had ever reviewed.
+    //
+    // So a claim of sending is checked against what the tools actually did
+    // this turn. Nothing here rewrites the model's words; it appends the
+    // correction, because silently editing what an agent said is its own kind
+    // of lie.
+    const CLAIMS_SEND =
+      /\b(?:i(?:'ve| have)?\s+(?:just\s+)?sent|sent it|sent them|sent the (?:email|second|first|follow[- ]?up)|email (?:has been|was) sent|emails? (?:have|has) been sent)\b/i;
+    const sendingEvents = toolEvents.filter((e) =>
+      ["send_drafts", "send_outreach", "resolve_approvals", "schedule_drafts"].includes(e.name ?? ""),
+    );
+    // A "Scheduled …" event is a queue, not a delivery — it must not back a
+    // claim that an email was sent.
+    const anythingActuallySent = sendingEvents.some(
+      (e) =>
+        e.status === "ok" &&
+        e.label !== "Waiting for your approval" &&
+        !String(e.label ?? "").startsWith("Scheduled"),
+    );
+
+    const anythingQueued = toolEvents.some((e) => e.status === "queued");
+    if (CLAIMS_SEND.test(finalText) && !anythingActuallySent) {
+      const { count: stillPending } = await admin
+        .from("agent_approvals")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .eq("status", "pending");
+      finalText +=
+        `\n\nCorrection: nothing was actually sent in this step.` +
+        (anythingQueued
+          ? " The email is waiting on your confirmation."
+          : " No send ran.") +
+        (stillPending
+          ? ` You have ${stillPending} email(s) sitting in the approval queue. Say "approve all" and I will send them.`
+          : "");
+      console.warn(`[agent-chat] corrected an unbacked send claim (${stillPending ?? 0} pending)`);
+    }
+
 
 
     const { data: saved } = await admin
@@ -2978,8 +3230,10 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
         : stepMetrics.some((m) => m.status === "error") || failureNote
           ? "error"
           : "success";
+      // Only the turn summary here: the individual steps were already written
+      // as they completed, and re-inserting them would double every row the
+      // Performance tab counts.
       const rows = [
-        ...stepMetrics,
         {
           tool_name: "__turn__",
           step_type: "turn",

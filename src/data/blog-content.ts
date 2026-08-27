@@ -503,7 +503,7 @@ A list is only useful if you can reach out. The next bottleneck is getting verif
 3. Review an AI-drafted first-touch email that uses their company context
 4. Edit, send, track
 
-Tools like OutReign do all four steps in one workflow. The alternative is Apollo (for data) + manual qualification + Gmail + a separate sequence tool — four tools, 2+ hours of setup per campaign.
+Tools like OutReign do all four steps in one workflow. The alternative is Apollo (for data) + manual qualification + Gmail + a separate sequence tool: four tools to set up before a single email goes out.
 
 ## The Bottom Line
 
@@ -583,13 +583,13 @@ OutReign uses ICP scoring to rank every prospect returned from a plain-English s
 Apollo is a powerful database. But it's built for SDR teams with a dedicated ops person who can configure boolean searches, build export workflows, set up sequences, and clean lists. As a founder doing your own outbound, you run into three problems:
 
 **1. Boolean search takes time to learn**
-Apollo's lead search relies on filters and boolean logic. Getting a precise query right takes 30–45 minutes, even for experienced users. That's time you don't have when you're also building product.
+Apollo's lead search relies on filters and boolean logic. Getting a precise query right takes real time, even for experienced users. That's time you don't have when you're also building product.
 
 **2. You get volume, not qualification**
 Apollo's default outputs are large contact lists. Qualifying them — deciding which 50 of the 2,000 exported contacts are actually worth emailing — is manual work that eats hours every week.
 
 **3. It stops at the data**
-Apollo exports contacts. It doesn't write emails. It doesn't verify deliverability at SMTP level. And its sequence tool is separate from the prospecting workflow. You end up with Apollo + a spreadsheet + Gmail, and it still takes 2+ hours per campaign to run.
+Apollo exports contacts. It doesn't write emails. It doesn't verify deliverability at SMTP level. And its sequence tool is separate from the prospecting workflow. You end up with Apollo + a spreadsheet + Gmail, and every campaign still runs on manual steps between them.
 
 ## What Founders Actually Need
 
@@ -625,7 +625,7 @@ Apollo wins if:
 
 If you're a founder, first sales hire, or small SDR team without ops support, Apollo's power comes at a cost in time and complexity that makes it a poor fit. A tool designed around your workflow — describe ICP, get ranked prospects, send verified personalized emails — is a better match.
 
-[OutReign is free to try](https://outreign.io) — no credit card, no setup. Describe your ICP and have your first email sent in under 2 minutes.`,
+[OutReign is free to try](https://outreign.io) — no credit card, no setup. Describe your ICP and have your first email sent in a few minutes.`,
   "apollo-vs-instantly-vs-salesloft": `Apollo, Instantly, Salesloft, and Outreach all promise to run your outbound. They each solve a different problem — and most teams pick the wrong one because the marketing pages all sound identical. Here's what each tool is actually for, where it breaks, and which one a founder or 1–5 person sales team should pick in 2026.
 
 ## TL;DR
@@ -704,7 +704,7 @@ That's the gap [OutReign](/sales-operations-software) was built for. Describe yo
 
 ## The Bottom Line
 
-Pick the tool built for your stage. Apollo, Instantly, Salesloft, and Outreach are all good at what they do — and all wrong for a founder running outbound between product calls. If you're under 10 reps and want one tool that finds prospects, verifies emails, and writes the first touch, [try OutReign free](https://outreign.io). No credit card, first email sent in under 2 minutes.`,
+Pick the tool built for your stage. Apollo, Instantly, Salesloft, and Outreach are all good at what they do — and all wrong for a founder running outbound between product calls. If you're under 10 reps and want one tool that finds prospects, verifies emails, and writes the first touch, [try OutReign free](https://outreign.io). No credit card, first email sent in a few minutes.`,
   "best-b2b-lead-generation-tools": `The best B2B lead generation tool in 2026 is the one that does the whole job — prospecting, verification, and outreach — in a single workflow. Most teams stitch Apollo for data, Instantly for sending, and a verifier in between. That stack works, but it's three logins, three bills, and three sources of truth. This guide compares **OutReign**, **Apollo**, and **Instantly** so you can decide whether a consolidated stack fits your team.
 
 ## Why Tool Sprawl Hurts Outbound
@@ -782,7 +782,7 @@ A quick decision tree:
 
 ## The Bottom Line
 
-Apollo and Instantly are excellent at what they do — and both expect you to bring the other half of the stack. OutReign is the consolidated alternative: plain-English prospecting, built-in verification, and AI outreach grounded in your business, all in one workflow. If you're tired of the CSV-export shuffle, [try OutReign free](https://outreign.io). First email sent in under 2 minutes, no credit card required.`,
+Apollo and Instantly are excellent at what they do — and both expect you to bring the other half of the stack. OutReign is the consolidated alternative: plain-English prospecting, built-in verification, and AI outreach grounded in your business, all in one workflow. If you're tired of the CSV-export shuffle, [try OutReign free](https://outreign.io). First email sent in a few minutes, no credit card required.`,
   "email-closing-lines": `The closing line of a B2B sales email is the single highest-leverage sentence in the whole message. Your subject line gets the open. Your opener earns the read. But your closing line is what converts a read into a reply — and most reps waste it on "Looking forward to hearing from you" or "Let me know your thoughts."
 
 This guide covers how to end an email in B2B outbound sales: what makes a closing line work, the sign-offs that consistently outperform, and copy-paste templates for the three scenarios you'll send most — cold opens, follow-ups, and meeting requests.
@@ -926,7 +926,7 @@ A 1–2 percentage point lift on a single line, applied across your whole sequen
 
 End every B2B sales email with one specific, low-friction question that gives the prospect permission to say no. Skip the open-ended "thoughts?" and the double-ask. Match the closing line to the touchpoint — interest check for cold, pattern-interrupt for follow-up, two-option close for meetings.
 
-If you'd rather have AI draft outbound emails that already follow this structure — grounded in your business and the prospect's real company context — [try OutReign free](https://outreign.io). First email sent in under 2 minutes, no credit card.`,
+If you'd rather have AI draft outbound emails that already follow this structure — grounded in your business and the prospect's real company context — [try OutReign free](https://outreign.io). First email sent in a few minutes, no credit card.`,
   "b2b-prospecting-guide": `B2B prospecting is the work of identifying the right companies and decision-makers to sell to, verifying you can actually reach them, and starting a conversation worth their time. For a founder or a 2-3 person sales team, the bottleneck is rarely a lack of contact data — it's the hours spent stitching that data together into something you can act on this afternoon.
 
 This guide is for lean teams. No 12-person SDR org, no RevOps function, no $50k/year tooling budget. Just a clear, repeatable workflow you can run on a Tuesday morning.
@@ -1042,7 +1042,7 @@ That's 4-5 hours of prospecting per week, producing 80-100 personalized cold ema
 
 B2B prospecting in 2026 isn't about doing more — it's about being more deliberate. Define a tight ICP, target by signal, verify before you send, personalize from real context, and follow up with discipline. The tooling exists to make this a 5-hour-per-week habit instead of a full-time job.
 
-If you want a workflow that handles ICP search, verified emails, fit scoring, and AI-drafted first-touch in one place, [try OutReign free](https://outreign.io). Describe your ideal customer in plain English, send your first email in under 2 minutes — no credit card.`,
+If you want a workflow that handles ICP search, verified emails, fit scoring, and AI-drafted first-touch in one place, [try OutReign free](https://outreign.io). Describe your ideal customer in plain English, send your first email in a few minutes — no credit card.`,
   "partnership-email-templates": `Partnership emails are not cold sales emails. The recipient is another operator who reads outbound for a living, and they can spot a lazy "let's hop on a call to explore synergies" pitch in 4 seconds. The templates below work because they do three things most partnership outreach skips: lead with a specific reason the other side wins, propose one concrete next step, and respect the reader's time.
 
 Use these as starting points. Swap names, numbers, and links to match your situation — but keep the structure.
@@ -1279,7 +1279,7 @@ Three habits that compound:
 
 Partnership emails work when they're specific, asymmetric in the recipient's favor, and end with one concrete ask. Templates are scaffolding — they save you 20 minutes of staring at a blank page, but the 10 minutes of research that fills the brackets is where the reply comes from.
 
-If you'd rather have AI draft partnership and outbound emails that already follow this structure — grounded in real company context, not generic placeholders — [try OutReign free](https://outreign.io). First email in under 2 minutes, no credit card.`,
+If you'd rather have AI draft partnership and outbound emails that already follow this structure — grounded in real company context, not generic placeholders — [try OutReign free](https://outreign.io). First email in a few minutes, no credit card.`,
   "icp-criteria-revenue-operations": `Marketing sourced the lead. Sales closed the deal. But the definition of who belongs in the pipeline — and who never should have entered it — sits with revenue operations. This is the framework RevOps teams use to move from a written ICP to a live scoring model.
 
 ## Why RevOps owns the ICP

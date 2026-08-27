@@ -22,7 +22,7 @@ export const HeroSection = () => {
             </span>
             <span className="font-medium text-white/95">New</span>
             <span className="text-white/85">·</span>
-            <span>an AI SDR that books meetings on its own</span>
+            <span>every plan ships an AI SDR, the free one included</span>
           </span>
         </div>
 
@@ -33,7 +33,7 @@ export const HeroSection = () => {
           style={{ fontSize: "clamp(3rem, 8vw, 5.25rem)", lineHeight: 1.02, letterSpacing: "-0.01em", fontWeight: 800, textShadow: "0 4px 30px rgba(0,0,0,0.35)" }}
         >
           <span className="block text-white">
-            Your next 100 prospects,
+            The output of a sales team.
           </span>
           <span
             className="block font-display italic animate-shiny"
@@ -47,13 +47,13 @@ export const HeroSection = () => {
               backgroundClip: "text",
             }}
           >
-            already qualified.
+            Headcount of one.
           </span>
         </h1>
 
         {/* Subhead — LCP element: rendered fully opaque, no entrance animation */}
         <p className="mb-7 max-w-[26rem] text-pretty text-xl font-medium leading-snug text-white sm:mb-8 sm:max-w-2xl sm:text-[1.75rem] sm:leading-relaxed" style={{ textShadow: "0 4px 32px rgba(0,0,0,0.55)" }}>
-          Describe your customer in plain English. Get 100 ranked prospects with verified emails and a first draft for each, free. Then we build your first campaign with you, on a call, and your AI SDR keeps it running.
+          Describe your customer in plain English. Get ranked prospects with verified emails, a first draft for each, and an AI SDR that works the replies from your Gmail.
         </p>
 
         {/* CTAs paint immediately so visual completion is not artificially delayed. */}
@@ -87,11 +87,11 @@ export const HeroSection = () => {
         <p
           className="mb-3 flex max-w-[21rem] flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-xs leading-tight text-white/90 sm:flex-nowrap"
         >
-          100 free leads
+          100 free lead searches
           <span className="w-px h-3 bg-white/20 inline-block" />
           14-day trial on paid plans
           <span className="w-px h-3 bg-white/20 inline-block" />
-          Set up with you personally
+          Built with you on a call
         </p>
 
         {/* Social proof line */}

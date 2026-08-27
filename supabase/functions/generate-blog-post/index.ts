@@ -112,12 +112,24 @@ Return a JSON object with these exact fields:
     const raw = aiJson.choices?.[0]?.message?.content;
     if (!raw) throw new Error("AI returned no content");
 
+    // Models often wrap JSON in a ```json fence even with response_format set,
+    // which used to throw "AI returned non-JSON" and lose the whole article.
+    const stripFences = (s: string) => {
+      const t = s.trim();
+      if (!t.startsWith("```")) return t;
+      return t
+        .replace(/^```[a-zA-Z]*\s*/, "")
+        .replace(/```\s*$/, "")
+        .trim();
+    };
+
     let parsed: { title: string; description: string; reading_time: string; content: string };
     try {
-      parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+      parsed = typeof raw === "string" ? JSON.parse(stripFences(raw)) : raw;
     } catch {
       throw new Error(`AI returned non-JSON: ${String(raw).slice(0, 200)}`);
     }
+
 
     if (!parsed.title || !parsed.description || !parsed.content) {
       throw new Error("AI response missing required fields");

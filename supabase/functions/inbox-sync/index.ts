@@ -203,7 +203,7 @@ serve(async (req) => {
 
     const { data: activeThreads, error: threadsError } = await adminClient
       .from("sent_emails")
-      .select("id, gmail_thread_id, sent_at, to_email, subject, sending_account_id")
+      .select("id, gmail_thread_id, sent_at, to_email, subject, sending_account_id, lead_id")
       .eq("user_id", user.id)
       .not("gmail_thread_id", "is", null)
       .eq("agent_thread_status", "active")
@@ -284,7 +284,17 @@ serve(async (req) => {
             !!headerValue("x-autorespond") ||
             /^(vacation|out of office|autoreply|auto_reply)/i.test(headerValue("precedence")) ||
             /(out of (the )?office|automatic reply|auto[- ]?reply|autoresponder|away from my (desk|email)|on (vacation|leave|holiday))/i.test(subjectHeader);
-          if (isAutoReply) continue;
+          // Not dropped any more — recorded, and kept out of the reply stats.
+          //
+          // An out-of-office is not a human reply, so counting it would inflate
+          // reply rate. But discarding it lost the whole event: it never
+          // reached the inbox, the agent could not mention it, and the user
+          // only learned about it by looking in Gmail. It is real information
+          // — the address is live and monitored, and the person is back on a
+          // date worth following up after.
+          //
+          // So it flows through like any other message and is excluded from
+          // replied_at below instead.
 
           // Skip messages sent by any of the user's own connected mailboxes
           const ownEmails = Object.values(mailboxes)
@@ -321,6 +331,8 @@ serve(async (req) => {
             receivedAt: new Date(internalDate).toISOString(),
             gmailThreadId: thread.gmail_thread_id,
             integrationId: mailbox.id,
+            isAutoReply,
+            leadId: thread.lead_id ?? null,
           });
 
           existingMessageIds.add(gmailMessageId);
@@ -333,10 +345,41 @@ serve(async (req) => {
 
     // Persist reply attribution so reply-rate analytics reflect reality.
     // Earliest reply per sent email wins; never overwrite an existing value.
+    // Auto-responders are deliberately excluded: an out-of-office is not the
+    // prospect replying, and stamping replied_at for one would report a reply
+    // rate the sender never earned.
     const earliestReply: Record<string, string> = {};
     for (const r of replies) {
+      if (r.isAutoReply) continue;
       const current = earliestReply[r.sentEmailId];
       if (!current || r.receivedAt < current) earliestReply[r.sentEmailId] = r.receivedAt;
+    }
+
+    // Record every message in the inbox's own table.
+    //
+    // reply_threads is what the unified inbox reads — it owns the read flag,
+    // the classification and the delete. Nothing in production ever wrote to
+    // it: the only insert in the whole repo is admin-demo-data's seeder, so
+    // the inbox's reply tabs could only ever show demo rows while real replies
+    // went to reply_analysis, which the inbox does not read. That is why a
+    // reply lands in Gmail and shows up nowhere here.
+    if (replies.length) {
+      const { error: threadErr } = await adminClient.from("reply_threads").insert(
+        replies.map((r) => ({
+          user_id: user.id,
+          lead_id: r.leadId,
+          sender_email: r.fromEmail,
+          subject: r.subject,
+          reply_body: r.bodyText,
+          // The AI classification lands separately via analyze-reply; this is
+          // the one verdict we can make without a model, and it is the one the
+          // user asked to be able to see.
+          classification: r.isAutoReply ? "ooo" : null,
+          read: false,
+          demo_seed: false,
+        })),
+      );
+      if (threadErr) console.error("reply_threads insert failed:", threadErr.message);
     }
     for (const [sentEmailId, receivedAt] of Object.entries(earliestReply)) {
       const { error: replyErr } = await adminClient
@@ -360,6 +403,8 @@ serve(async (req) => {
               replyContent: r.bodyText,
               sentEmailId: r.sentEmailId,
               gmailMessageId: r.gmailMessageId,
+              // Determined from the mail headers, which the model cannot see.
+              isAutoReply: r.isAutoReply,
             }),
           });
           if (!res.ok) console.error(`analyze-reply ${res.status}: ${await res.text()}`);

@@ -10,16 +10,16 @@ const rows = [
     truth: "Ranked prospects scored by ICP fit",
   },
   {
-    legacy: "Boolean search that takes 45 minutes to configure",
-    truth: "Plain English. Leads in under 2 minutes.",
+    legacy: "Boolean queries before you see a single name",
+    truth: "Plain English. Names back in a few minutes.",
   },
   {
     legacy: "A data tool that stops at the export",
-    truth: "From search to sent email in one workflow",
+    truth: "Search to sent email in one workflow",
   },
   {
-    legacy: "$500/mo for data you still have to manually qualify",
-    truth: "Scoring, enrichment, and outreach included",
+    legacy: "$500/mo for data you still qualify by hand",
+    truth: "Scoring, verification and outreach included, from $39",
   },
 ];
 
@@ -75,7 +75,7 @@ export const DifferentiationSection = () => {
                 filter: "url(#c3-noise)",
               }}
             >
-              We show you who to email next.
+              We tell you who to email next.
             </span>
           </motion.h2>
 

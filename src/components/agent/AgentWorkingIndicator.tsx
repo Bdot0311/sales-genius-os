@@ -1,111 +1,60 @@
 import { useEffect, useMemo, useState } from "react";
-import { Bot, Check, Loader2 } from "lucide-react";
+import { Bot, Check, Loader2, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const GENERIC_PHASES = [
-  "Reading your request",
-  "Pulling the records it needs",
-  "Working through the details",
-  "Double-checking the result",
-];
+import { labelForTool, type AgentRunStep } from "@/hooks/use-agent-run-steps";
 
 /**
- * Task-shaped step lists. The first matching rule wins, so the checklist
- * describes the work the user actually asked for instead of a generic script.
+ * A heading and a footer note per kind of request. The first matching rule
+ * wins.
+ *
+ * These used to carry a step list too, which the card animated on a timer as
+ * though it were progress. The steps now come from the tools that actually
+ * ran; what survives here is only the framing around them.
  */
 const TASK_RULES: {
   test: RegExp;
   label: string;
-  phases: string[];
   /** Footer line describing this specific kind of work. */
   note: string;
 }[] = [
   {
     test: /\b(delete|remove|clear|wipe|discard|trash)\b/i,
     label: "Deleting what you asked for",
-    phases: [
-      "Reading your delete request",
-      "Finding the matching records",
-      "Deleting them",
-      "Confirming they're gone",
-    ],
     note: "Only the records you named get removed — nothing else is touched.",
   },
   {
     test: /\b(schedule|send later|9\s?am|tomorrow|queue)\b/i,
     label: "Scheduling your emails",
-    phases: [
-      "Reading your schedule request",
-      "Picking the right drafts",
-      "Setting send times in your timezone",
-      "Confirming the queue",
-    ],
     note: "Send times are set in your timezone, so nothing goes out at odd hours.",
   },
   {
     test: /\b(send|blast|fire off|email them|reply)\b/i,
     label: "Sending your emails",
-    phases: [
-      "Reading your send request",
-      "Choosing the mailbox to send from",
-      "Checking the drafts before send",
-      "Sending and logging each one",
-    ],
     note: "Each send is checked against the mailbox and logged as it goes out.",
   },
   {
     test: /\b(draft|write|compose|rewrite|personali[sz]e)\b/i,
     label: "Writing your emails",
-    phases: [
-      "Reading your brief",
-      "Pulling lead and company context",
-      "Writing in your voice",
-      "Checking quality and details",
-    ],
     note: "Each draft is grounded in real lead context — no invented numbers.",
   },
   {
     test: /\b(find|search|source|prospect|leads?|companies|company)\b/i,
     label: "Finding leads",
-    phases: [
-      "Reading your search criteria",
-      "Searching the lead network",
-      "Filtering against your ICP",
-      "Saving the matches",
-    ],
     note: "Anyone already in your account is skipped, so results stay fresh.",
   },
   {
     test: /\b(enrich|verify|email address|phone|score|scoring)\b/i,
     label: "Enriching your leads",
-    phases: [
-      "Reading your enrichment request",
-      "Looking up each contact",
-      "Verifying emails",
-      "Scoring against your ICP",
-    ],
     note: "Contact details are verified before they are saved to a lead.",
   },
   {
     test: /\b(update|change|set|label|stage|tag|move)\b/i,
     label: "Updating your records",
-    phases: [
-      "Reading your update request",
-      "Finding the records to change",
-      "Applying the changes",
-      "Confirming what changed",
-    ],
     note: "Changes are applied record by record, then confirmed back to you.",
   },
   {
     test: /\b(how many|report|stats|analytics|open rate|reply rate|performance|show|list)\b/i,
     label: "Pulling your numbers",
-    phases: [
-      "Reading your question",
-      "Querying your account data",
-      "Crunching the numbers",
-      "Writing up the answer",
-    ],
     note: "Figures come straight from your account data, not estimates.",
   },
 ];
@@ -122,6 +71,14 @@ interface AgentWorkingIndicatorProps {
   request?: string | null;
   /** 0 for the first pass, >0 while auto-continuing a long batch. */
   pass?: number;
+  /**
+   * Tools that have actually finished this run, oldest first.
+   *
+   * When this has anything in it, it is what the card shows. The guessed
+   * checklist below is only the first few seconds, before the first tool has
+   * returned and there is genuinely nothing to report yet.
+   */
+  steps?: AgentRunStep[];
 }
 
 /**
@@ -132,6 +89,7 @@ interface AgentWorkingIndicatorProps {
 export const AgentWorkingIndicator = ({
   request,
   pass = 0,
+  steps = [],
 }: AgentWorkingIndicatorProps) => {
   const [seconds, setSeconds] = useState(0);
 
@@ -140,13 +98,15 @@ export const AgentWorkingIndicator = ({
     return () => clearInterval(tick);
   }, []);
 
-  const { heading, phases, note } = useMemo(() => {
+  // The rule still supplies a heading and a footer note, which describe the
+  // KIND of request. The step list it used to supply is gone: those steps are
+  // read from what actually ran.
+  const { heading, note } = useMemo(() => {
     const rule = request
       ? TASK_RULES.find((r) => r.test.test(request))
       : undefined;
     return {
       heading: rule?.label ?? "Working on it",
-      phases: [...(rule?.phases ?? GENERIC_PHASES), "Wrapping up"],
       note:
         rule?.note ??
         "Reading the request, pulling the records it needs, then acting on them.",
@@ -155,13 +115,10 @@ export const AgentWorkingIndicator = ({
 
   const summary = summarize(request);
 
-  // Slow, believable step progression.
-  const phase = Math.min(phases.length - 1, Math.floor(seconds / 4));
-  const progress = Math.min(95, 8 + seconds * 5);
+  // Advances on completed steps, easing forward with time so a long single
+  // step still looks alive. Never reaches 100 while the turn is running.
+  const progress = Math.min(95, 10 + steps.length * 18 + Math.min(seconds, 20));
 
-  // Show the current step plus the two before it so the card stays compact.
-  const visible = phases.slice(Math.max(0, phase - 2), phase + 1);
-  const firstVisibleIndex = Math.max(0, phase - 2);
 
   return (
     <div className="flex gap-3">
@@ -193,33 +150,46 @@ export const AgentWorkingIndicator = ({
               </p>
             )}
 
-            <ul className="space-y-1.5">
-              {visible.map((label, i) => {
-                const index = firstVisibleIndex + i;
-                const isCurrent = index === phase;
-                return (
-                  <li
-                    key={label}
-                    className={cn(
-                      "flex items-center gap-2 text-xs transition-opacity",
-                      isCurrent
-                        ? "text-foreground"
-                        : "text-muted-foreground/70",
-                    )}
-                  >
-                    {isCurrent ? (
-                      <Loader2 className="h-3.5 w-3.5 flex-shrink-0 animate-spin text-primary" />
-                    ) : (
-                      <Check className="h-3.5 w-3.5 flex-shrink-0 text-primary/60" />
-                    )}
-                    <span className="truncate">
-                      {label}
-                      {isCurrent ? "…" : ""}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
+            {steps.length > 0 ? (
+              /* Real work. Each row is a tool that has finished, with what it
+                 reported. The last three keep the card compact on mobile. */
+              <ul className="space-y-1.5">
+                {steps.slice(-3).map((step) => {
+                  const failed = step.status === "error";
+                  return (
+                    <li key={step.id} className="flex items-start gap-2 text-xs">
+                      {failed ? (
+                        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-destructive" />
+                      ) : (
+                        <Check className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-primary/60" />
+                      )}
+                      <span className="min-w-0">
+                        <span className={failed ? "text-destructive" : "text-foreground"}>
+                          {labelForTool(step.toolName)}
+                        </span>
+                        {step.detail && (
+                          <span className="block truncate text-muted-foreground/70">
+                            {step.detail}
+                          </span>
+                        )}
+                      </span>
+                    </li>
+                  );
+                })}
+                <li className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 flex-shrink-0 animate-spin text-primary" />
+                  <span className="truncate">Still working…</span>
+                </li>
+              </ul>
+            ) : (
+              /* Nothing has finished yet, so there is nothing real to show. */
+              <ul className="space-y-1.5">
+                <li className="flex items-center gap-2 text-xs text-foreground">
+                  <Loader2 className="h-3.5 w-3.5 flex-shrink-0 animate-spin text-primary" />
+                  <span className="truncate">Reading your request…</span>
+                </li>
+              </ul>
+            )}
 
             <div className="h-1 w-full overflow-hidden rounded-full bg-muted/40">
               <div
@@ -229,7 +199,11 @@ export const AgentWorkingIndicator = ({
             </div>
 
             <p className="text-[11px] leading-snug text-muted-foreground/70">
-              {pass > 0 ? `${note} Continuing from where the last pass stopped.` : note}
+              {steps.length > 0
+                ? `${steps.length} step${steps.length === 1 ? "" : "s"} done${pass > 0 ? " — continuing from where the last pass stopped" : ""}.`
+                : pass > 0
+                  ? `${note} Continuing from where the last pass stopped.`
+                  : note}
             </p>
 
           </div>

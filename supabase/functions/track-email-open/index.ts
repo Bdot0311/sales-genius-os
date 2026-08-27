@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
+import { classifyOpen } from "../_shared/open-tracking.ts";
 
 // 1x1 transparent GIF
 const PIXEL = Uint8Array.from(atob("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"), c => c.charCodeAt(0));
@@ -7,21 +8,11 @@ const PIXEL = Uint8Array.from(atob("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAAB
 /**
  * Records genuine recipient opens.
  *
- * Mail providers (Gmail's image proxy in particular) fetch every image the
- * moment a message is created/stored — including the sender's own copy in
- * Sent. That prefetch used to be recorded as an "open" seconds after send,
- * which made open rates fiction. Every pixel hit is now logged to
- * email_open_events, but only hits that pass the guards below move
- * opened_at / open_count on sent_emails.
+ * Every pixel hit is logged to email_open_events. Only hits that clear the
+ * guards in _shared/open-tracking.ts move opened_at / open_count on
+ * sent_emails, so a filtered hit stays visible and auditable rather than
+ * disappearing.
  */
-const PREFETCH_GRACE_SECONDS = 90;
-// Repeat pixel fetches within this window are the same render, not a new open.
-const DEDUPE_WINDOW_SECONDS = 30;
-
-
-// Security/appliance scanners and link-checkers — never real human opens.
-const SCANNER_UA = /(barracuda|proofpoint|mimecast|symantec|forcepoint|trendmicro|messagelabs|bitdefender|virustotal|slackbot|whatsapp|discordbot|facebookexternalhit|twitterbot|linkedinbot|bingpreview|python-requests|curl\/|wget|okhttp|axios|node-fetch|headlesschrome|monitoring|uptime)/i;
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -80,18 +71,12 @@ serve(async (req) => {
           ? (now.getTime() - lastOpened.getTime()) / 1000
           : null;
 
-        let skipReason: string | null = null;
-        if (SCANNER_UA.test(userAgent)) {
-          skipReason = "scanner_user_agent";
-        } else if (secondsSinceSend !== null && secondsSinceSend < PREFETCH_GRACE_SECONDS) {
-          skipReason = "provider_prefetch";
-        } else if (ownMailbox) {
-          skipReason = "own_mailbox_warmup";
-        } else if (secondsSinceLast !== null && secondsSinceLast < DEDUPE_WINDOW_SECONDS) {
-          skipReason = "duplicate_render";
-        }
-
-        const counted = skipReason === null;
+        const { counted, skipReason } = classifyOpen({
+          userAgent,
+          secondsSinceSend,
+          secondsSinceLastCounted: secondsSinceLast,
+          ownMailbox,
+        });
 
         await supabase.from("email_open_events").insert({
           sent_email_id: row.id,

@@ -473,10 +473,18 @@ export const BulkSendDialog = ({
             </Badge>
           </div>
 
-          {/* Edit daily limit */}
+          {/* Edit daily limit
+              This is subscriptions.daily_email_limit — the ACCOUNT-wide cap that
+              send-email applies to every send, not a bulk-send setting. It was
+              only ever editable here, which put an account-wide control behind a
+              bulk-only door and implied a scope it does not have. It now has a
+              proper home on the Deliverability page; this stays as a
+              convenience, labelled for what it actually governs. */}
           <div className="flex items-center gap-2">
             <Settings2 className="w-4 h-4 text-muted-foreground shrink-0" />
-            <Label className="text-xs text-muted-foreground shrink-0">Daily limit:</Label>
+            <Label className="text-xs text-muted-foreground shrink-0">
+              Account daily limit:
+            </Label>
             <Input
               type="number"
               min={1}
@@ -498,6 +506,10 @@ export const BulkSendDialog = ({
               {isSavingLimit ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save"}
             </Button>
           </div>
+          <p className="text-xs text-muted-foreground -mt-1">
+            Applies to every send on the account, not just this batch. Also on
+            Deliverability → Daily send limit.
+          </p>
 
           {/* Send velocity throttle */}
           <div className="space-y-1.5">

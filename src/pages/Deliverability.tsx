@@ -9,6 +9,7 @@ import { HealthOverview } from "@/components/deliverability/HealthOverview";
 import { AlertsPanel } from "@/components/deliverability/AlertsPanel";
 import { AccountHealthGrid } from "@/components/deliverability/AccountHealthGrid";
 import { WarmupPanel } from "@/components/deliverability/WarmupPanel";
+import { AccountSendLimit } from "@/components/deliverability/AccountSendLimit";
 import { DomainAuthPanel } from "@/components/deliverability/DomainAuthPanel";
 import { PlacementPanel } from "@/components/deliverability/PlacementPanel";
 import { SpamCheckerPanel } from "@/components/deliverability/SpamCheckerPanel";
@@ -120,6 +121,14 @@ const Deliverability = () => {
             <section>
               <SectionHeading title="Alerts" sub="Reputation drops, auth failures, and blacklist listings surface here." />
               <AlertsPanel alerts={alerts} />
+            </section>
+
+            <section>
+              <SectionHeading
+                title="Daily send limit"
+                sub="The account-wide ceiling, above the per-mailbox limits below."
+              />
+              <AccountSendLimit />
             </section>
 
             <section>

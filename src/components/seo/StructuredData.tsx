@@ -158,7 +158,7 @@ export const SoftwareApplicationSchema = () => {
     "applicationCategory": "BusinessApplication",
     "applicationSubCategory": "B2B Lead Generation Software",
     "operatingSystem": "Web Browser (Chrome, Firefox, Safari, Edge)",
-    "description": "OutReign turns your ICP into ranked prospects with SMTP-verified contact data and AI-drafted first-touch emails — in under 2 minutes. Describe your ideal customer in plain English: no boolean search, no list building, no manual scoring.",
+    "description": "OutReign turns your ICP into ranked prospects with SMTP-verified contact data and AI-drafted first-touch emails, in a few minutes. Describe your ideal customer in plain English and get back contacts ranked by fit, each with a draft already written.",
     "url": BASE_URL,
     "downloadUrl": `${BASE_URL}/auth`,
     "screenshot": "https://outreign.io/outreign-og.png",

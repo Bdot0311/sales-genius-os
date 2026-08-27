@@ -3,7 +3,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
 import { captureServerEvent } from "../_shared/posthog.ts";
 import { isWeak, rubricFeedback, scoreEmail } from "../_shared/email-quality.ts";
-import { findPlaceholders, hasPlaceholder } from "../_shared/email-rules.ts";
+import { findPlaceholders, hasPlaceholder, bannedPhrasesBlock } from "../_shared/email-rules.ts";
+// The autonomous agent writes email the same way every other path does, and
+// was the one path that loaded none of the house rules — see _shared/email-skills.ts.
+import { composeSkillContext } from "../_shared/email-skills.ts";
 import {
   playbookSystemRules,
   buildTouchPrompt,
@@ -1151,7 +1154,13 @@ Return JSON: { "classification": one of ["interested","objection","meeting_reque
         }
 
         if (classification === "interested" && config.can_reply_interested) {
+          // Someone replied positively — this is the most valuable email the
+          // agent writes, and it was written with a persona line and nothing
+          // else. The first-touch path gets the house rules through
+          // playbookSystemRules(); the reply paths got none of it.
           const replySystemPrompt = `You are ${config.agent_name}, a sales rep. Your persona: ${config.persona}. Tone: ${config.tone}.
+${bannedPhrasesBlock()}
+${composeSkillContext({ goal: "meeting" })}
 Company context: ${config.company_context ?? ""}
 Value propositions: ${valuePropsText}
 
@@ -1294,8 +1303,18 @@ Output ONLY the reply body. No subject line. No greeting like "Hi [name]". No si
             objectionGuidance = `Prepared guidance for objections: ${JSON.stringify(config.objection_responses)}`;
           }
 
-          const objectionSystemPrompt = `You are ${config.agent_name}. ${config.persona}. Tone: ${config.tone}.`;
+          // The whole brief, not just a persona line. This prompt used to be one
+          // sentence — a name, a persona and a tone — and then asked for a
+          // reply. No banned phrases, no anti-slop pass, and nothing at all
+          // about how to answer the specific kind of objection that was
+          // classified two steps earlier. The objection library below supplies
+          // what may be claimed about the product; the skills supply how to
+          // write the reply.
+          const objectionSystemPrompt = `You are ${config.agent_name}. ${config.persona}. Tone: ${config.tone}.
+${bannedPhrasesBlock()}
+${composeSkillContext({ goal: "objection" })}`;
           const objectionPrompt = `The prospect raised an objection to your sales email.
+Objection type, as classified: ${objectionType ?? "unclassified — read the reply and decide"}
 Prospect reply: ${reply.bodyText}
 ${objectionGuidance}
 Write a 2-3 sentence reply that acknowledges their concern, provides a brief value-focused response, and offers a low-commitment next step.
@@ -1393,7 +1412,8 @@ Output ONLY the reply body. No subject line or signature.`;
           if (config.calendly_url) {
             meetingReply = `Thanks for reaching out! You can book time directly on my calendar here: ${config.calendly_url}. Looking forward to connecting!`;
           } else {
-            const meetingSystemPrompt = `You are ${config.agent_name}. ${config.persona}. Tone: ${config.tone}.`;
+            const meetingSystemPrompt = `You are ${config.agent_name}. ${config.persona}. Tone: ${config.tone}.
+${bannedPhrasesBlock()}`;
             const meetingPrompt = `A prospect is requesting a meeting in response to your sales email.
 Prospect reply: ${reply.bodyText}
 Write a short, friendly reply asking for their availability (2-3 time options format or asking when works best).

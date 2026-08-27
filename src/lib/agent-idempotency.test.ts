@@ -49,7 +49,13 @@ describe("recording a send that never happened", () => {
   });
 
   it("does not mark an unapproved send as completed work", () => {
-    expect(SRC).toContain("summary.queued_for_approval === true) return false");
+    // Asserted on behaviour rather than a literal: this pinned
+    // `summary.queued_for_approval === true`, which only ever matched the
+    // per-email shape. send_drafts returns COUNTS, so a batch of {sent: 0,
+    // queued_for_approval: 2} slipped through and was recorded as sent.
+    // src/lib/send-claim-guard.test.ts exercises both shapes with real data.
+    expect(SRC).toContain("asCount(summary.queued_for_approval)");
+    expect(SRC).toContain("if (queued !== null && queued > 0) return false;");
   });
 
   it("still treats an explicit error as not-done", () => {
