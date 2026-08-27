@@ -34,6 +34,9 @@ const EMAIL_SKILLS = [
   // in _shared/email-skills.ts.
   "anti-ai-slop-writing",
   "b2b-cold-email-copywriting",
+  // Answering a reply, not writing one. agent-run handles objections
+  // unattended and had no craft guidance behind it at all.
+  "objection-replies",
   "cold-email-4-sequence",
   "cold-email-strategist",
   "cold-email-templates-34",
