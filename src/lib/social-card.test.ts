@@ -154,3 +154,35 @@ describe("what crawlers actually read", () => {
     expect(PLUGIN).toContain('content="${socialDescription}"');
   });
 });
+
+/**
+ * Three different X handles lived in the codebase at once: index.html's
+ * twitter:site said @buildwitbrandon, BRAND.twitterHandle said @outreign, and
+ * BRAND.founderX linked x.com/bdot0311 — which ProofBar renders as a live
+ * "Follow the journey" link on the landing page, pointing readers at the wrong
+ * profile. twitter:site naming a handle that does not exist can also make X
+ * drop the card entirely.
+ */
+describe("one X handle", () => {
+  const BRANDF = readFileSync("src/lib/brand.ts", "utf8");
+  const HTML = readFileSync("index.html", "utf8");
+  const HANDLE = "buildwitbrandon";
+
+  it("the meta tags name the real account", () => {
+    expect(HTML).toContain(`twitter:site" content="@${HANDLE}"`);
+    expect(HTML).toContain(`twitter:creator" content="@${HANDLE}"`);
+  });
+
+  it("the link the landing page renders goes to the same account", () => {
+    expect(BRANDF).toContain(`founderX: "https://x.com/${HANDLE}"`);
+  });
+
+  it("no stale handle survives in the X fields", () => {
+    // Matched on the assignments rather than the substring, because
+    // "@outreign" is also the tail of support@outreign.io, and LinkedIn is a
+    // separate account this says nothing about.
+    expect(BRANDF).not.toContain('twitterHandle: "@outreign"');
+    expect(BRANDF).not.toContain('founderX: "https://x.com/bdot0311"');
+    expect(BRANDF).toContain('twitterHandle: "@buildwitbrandon"');
+  });
+});
