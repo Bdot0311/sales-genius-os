@@ -72,7 +72,7 @@ serve(async (req) => {
                   <h3 style="color: #9b6dff; margin: 0 0 20px 0; font-size: 16px; font-weight: 700;">🚀 Quick Start Guide</h3>
                   <p style="color: #ffffff; margin: 0 0 8px 0; font-size: 14px;"><strong>1.</strong> Sign in with your email</p>
                   <p style="color: #ffffff; margin: 0 0 8px 0; font-size: 14px;"><strong>2.</strong> Search leads using AI-powered search</p>
-                  <p style="color: #ffffff; margin: 0 0 8px 0; font-size: 14px;"><strong>3.</strong> Enrich to unlock emails & phone numbers</p>
+                  <p style="color: #ffffff; margin: 0 0 8px 0; font-size: 14px;"><strong>3.</strong> Enrich to unlock verified work emails</p>
                   <p style="color: #ffffff; margin: 0; font-size: 14px;"><strong>4.</strong> Build pipeline & close more deals</p>
                 </td></tr>
               </table>
