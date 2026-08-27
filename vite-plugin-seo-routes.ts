@@ -41,6 +41,16 @@ interface RouteMeta {
   path: string;
   title: string;
   description: string;
+  /**
+   * og:/twitter: title and description, when social should differ from search.
+   *
+   * Search wants the words people type; a social preview wants the line that
+   * stops a scroll, and truncates around 125 characters. Writing one string
+   * into both meant the homepage could not do either job properly. Both fall
+   * back to the search values, so routes that do not care are unaffected.
+   */
+  socialTitle?: string;
+  socialDescription?: string;
 }
 
 // Titles/descriptions mirror the SEOHead props in each page component.
@@ -48,9 +58,12 @@ interface RouteMeta {
 const ROUTES: RouteMeta[] = [
   {
     path: "/",
-    title: "Your Next 100 B2B Prospects, Already Qualified",
+    title: "B2B Cold Email Outbound With an AI SDR | OutReign",
     description:
-      "Describe your customer in plain English. Get 100 ranked B2B prospects with verified emails and a first draft for each, free, with campaign setup included.",
+      "Describe your ideal customer in plain English, get ranked prospects with verified emails, and let an AI SDR work the replies from your own Gmail.",
+    socialTitle: "The output of a sales team. Headcount of one.",
+    socialDescription:
+      "Ranked prospects, verified emails, and an AI SDR that works the replies from your Gmail.",
   },
   {
     path: "/pricing",
@@ -266,6 +279,8 @@ function renderLinkIndex(currentPath: string): string {
 function renderRouteHtml(baseHtml: string, meta: RouteMeta): string {
   const title = escapeHtml(meta.title);
   const description = escapeHtml(meta.description);
+  const socialTitle = escapeHtml(meta.socialTitle ?? meta.title);
+  const socialDescription = escapeHtml(meta.socialDescription ?? meta.description);
   const canonical = escapeHtml(canonicalFor(meta.path));
 
   const replacements: Array<[RegExp, string]> = [
@@ -274,10 +289,10 @@ function renderRouteHtml(baseHtml: string, meta: RouteMeta): string {
     [/<meta name="description" content="[^"]*"\s*\/?>/, `<meta name="description" content="${description}">`],
     [/<link rel="canonical" href="[^"]*"\s*\/?>/, `<link rel="canonical" href="${canonical}" />`],
     [/<meta property="og:url" content="[^"]*"\s*\/?>/, `<meta property="og:url" content="${canonical}" />`],
-    [/<meta property="og:title" content="[^"]*"\s*\/?>/, `<meta property="og:title" content="${title}">`],
-    [/<meta name="twitter:title" content="[^"]*"\s*\/?>/, `<meta name="twitter:title" content="${title}">`],
-    [/<meta property="og:description" content="[^"]*"\s*\/?>/, `<meta property="og:description" content="${description}">`],
-    [/<meta name="twitter:description" content="[^"]*"\s*\/?>/, `<meta name="twitter:description" content="${description}">`],
+    [/<meta property="og:title" content="[^"]*"\s*\/?>/, `<meta property="og:title" content="${socialTitle}">`],
+    [/<meta name="twitter:title" content="[^"]*"\s*\/?>/, `<meta name="twitter:title" content="${socialTitle}">`],
+    [/<meta property="og:description" content="[^"]*"\s*\/?>/, `<meta property="og:description" content="${socialDescription}">`],
+    [/<meta name="twitter:description" content="[^"]*"\s*\/?>/, `<meta name="twitter:description" content="${socialDescription}">`],
   ];
 
   let html = baseHtml;

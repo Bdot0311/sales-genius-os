@@ -94,3 +94,63 @@ describe("simulated product previews stay labelled", () => {
     });
   }
 });
+
+/**
+ * Crawlers do not run JavaScript, so SEOHead is invisible to them. What
+ * LinkedIn and X actually read is index.html, rewritten per route by
+ * vite-plugin-seo-routes. That plugin carries its own copy of every title and
+ * description under a comment asking whoever edits a page to keep them in
+ * sync by hand — and nobody did.
+ *
+ * Three separate changes to SEOHead therefore reached no crawler at all: the
+ * Post Inspector kept showing the old card and the old title after a fresh
+ * scrape, because the served HTML never had the new ones.
+ */
+describe("what crawlers actually read", () => {
+  const HTML = readFileSync("index.html", "utf8");
+  const PLUGIN = readFileSync("vite-plugin-seo-routes.ts", "utf8");
+
+  it("index.html points at the new card, not the builder's CDN", () => {
+    expect(HTML).toContain("/outreign-social-card.png?v=8");
+    expect(HTML).not.toContain("outreign-social-card.jpg");
+  });
+
+  it("declares png, since that is what the file is", () => {
+    expect(HTML).toContain('content="image/png"');
+    expect(HTML).not.toContain('content="image/jpeg"');
+  });
+
+  it("describes the card that is actually there", () => {
+    // The alt text described the previous card's headline.
+    expect(HTML).not.toContain("Find who to sell to");
+  });
+
+  it("carries no duration claim the page dropped", () => {
+    expect(HTML).not.toContain("under 2 minutes");
+  });
+
+  it("gives search and social different titles", () => {
+    expect(HTML).toContain("<title>B2B Cold Email Outbound With an AI SDR | OutReign</title>");
+    expect(HTML).toContain('og:title" content="The output of a sales team. Headcount of one."');
+  });
+
+  it("keeps the social description short enough to survive truncation", () => {
+    // Previews cut around 125 characters.
+    const m = HTML.match(/<meta property="og:description" content="([^"]*)"/);
+    expect(m).not.toBeNull();
+    expect(m![1].length).toBeLessThanOrEqual(125);
+  });
+
+  it("the per-route plugin agrees with the HTML it rewrites", () => {
+    // The plugin overwrites these at build time, so a stale entry here silently
+    // undoes index.html.
+    expect(PLUGIN).toContain('title: "B2B Cold Email Outbound With an AI SDR | OutReign"');
+    expect(PLUGIN).toContain('socialTitle: "The output of a sales team. Headcount of one."');
+    expect(PLUGIN).not.toContain("Your Next 100 B2B Prospects");
+  });
+
+  it("the plugin writes social values into social tags", () => {
+    expect(PLUGIN).toContain('content="${socialTitle}"');
+    expect(PLUGIN).toContain('content="${socialDescription}"');
+  });
+});
