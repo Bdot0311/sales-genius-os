@@ -4,6 +4,14 @@ import { useToast } from '@/hooks/use-toast';
 import { posthog } from '@/lib/posthog';
 import { classifySearchError } from '@/lib/search-error';
 import {
+  enrichedFieldsPresent,
+  isDuplicateKeyError,
+  normalizeCompanyDomain,
+  normalizeLeadEmail,
+  saveToast,
+  splitContactName,
+} from '@/lib/lead-activation';
+import {
   cursorForPage,
   hasNextPage as computeHasNextPage,
   recordCursor,
@@ -258,56 +266,74 @@ export function useExternalLeads() {
       if (!session) throw new Error('Not authenticated');
 
       const userId = session.user.id;
+      // A blank domain has to reach the database as NULL. companies.domain is
+      // uniquely indexed, and "" is not exempt from that index the way NULL is,
+      // so the second website-less company a user saved failed with a duplicate
+      // key error naming a row they were never shown.
+      const domain = normalizeCompanyDomain(lead.company_domain);
+      const email = normalizeLeadEmail(lead.business_email);
 
-      // Step 1: Check if company exists, if not create it
-      let companyId: string | null = null;
-      const { data: existingCompany } = await supabase
-        .from('companies')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('domain', lead.company_domain)
-        .maybeSingle();
+      // Step 1: Resolve the account, by domain when there is one and by name
+      // when there isn't.
+      const findCompany = async (): Promise<string | null> => {
+        const base = supabase.from('companies').select('id').eq('user_id', userId);
+        const query = domain
+          ? base.eq('domain', domain)
+          : base.is('domain', null).eq('name', lead.company_name);
+        const { data } = await query.limit(1).maybeSingle();
+        return data?.id ?? null;
+      };
 
-      if (existingCompany) {
-        companyId = existingCompany.id;
-      } else {
+      let companyId: string | null = await findCompany();
+
+      if (!companyId) {
         const { data: newCompany, error: companyError } = await supabase
           .from('companies')
           .insert({
             user_id: userId,
             name: lead.company_name,
-            domain: lead.company_domain,
+            domain,
             industry: lead.industry,
             country: lead.country,
           })
           .select('id')
           .single();
 
-        if (companyError) throw companyError;
-        companyId = newCompany.id;
+        if (companyError) {
+          if (!isDuplicateKeyError(companyError)) throw companyError;
+          // The domain is spoken for by a row this workspace may not be able to
+          // read. Link to it if we can see it; otherwise save the lead without
+          // an account link rather than losing the lead over it.
+          companyId = await findCompany();
+        } else {
+          companyId = newCompany.id;
+        }
       }
 
       // Step 2: Check if contact exists, if not create it
-      let contactId: string | null = null;
-      const { data: existingContact } = await supabase
-        .from('contacts')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('email', lead.business_email)
-        .maybeSingle();
+      const { firstName, lastName } = splitContactName(lead.contact_name);
 
-      if (existingContact) {
-        contactId = existingContact.id;
+      const findContact = async (): Promise<string | null> => {
+        const base = supabase.from('contacts').select('id').eq('user_id', userId);
+        // Without an address there is nothing unique to match on but the person
+        // and the account, and with no account there is nothing safe at all.
+        if (!email && !companyId) return null;
+        const query = email
+          ? base.eq('email', email)
+          : base.eq('company_id', companyId!).eq('first_name', firstName).eq('last_name', lastName);
+        const { data } = await query.limit(1).maybeSingle();
+        return data?.id ?? null;
+      };
+
+      let contactId = await findContact();
+
+      if (contactId) {
         // Update contact to active status
         await supabase
           .from('contacts')
           .update({ lead_status: 'active' })
           .eq('id', contactId);
       } else {
-        const nameParts = lead.contact_name.split(' ');
-        const firstName = nameParts[0] || '';
-        const lastName = nameParts.slice(1).join(' ') || '';
-
         const { data: newContact, error: contactError } = await supabase
           .from('contacts')
           .insert({
@@ -315,7 +341,7 @@ export function useExternalLeads() {
             company_id: companyId,
             first_name: firstName,
             last_name: lastName,
-            email: lead.business_email,
+            email,
             job_title: lead.job_title,
             linkedin_url: lead.linkedin_url,
             country: lead.country,
@@ -325,28 +351,34 @@ export function useExternalLeads() {
           .select('id')
           .single();
 
-        if (contactError) throw contactError;
-        contactId = newContact.id;
+        if (contactError) {
+          if (!isDuplicateKeyError(contactError)) throw contactError;
+          contactId = await findContact();
+        } else {
+          contactId = newContact.id;
+        }
       }
 
       // Step 3: Save lead score
-      const { error: scoreError } = await supabase
-        .from('lead_scores')
-        .upsert({
-          user_id: userId,
-          contact_id: contactId,
-          icp_score: lead.scores.icp_score,
-          intent_score: lead.scores.intent_score,
-          enrichment_score: lead.scores.enrichment_score,
-          overall_score: lead.scores.overall_score,
-          explanation: lead.score_explanation,
-        }, {
-          onConflict: 'contact_id',
-        });
+      if (contactId) {
+        const { error: scoreError } = await supabase
+          .from('lead_scores')
+          .upsert({
+            user_id: userId,
+            contact_id: contactId,
+            icp_score: lead.scores.icp_score,
+            intent_score: lead.scores.intent_score,
+            enrichment_score: lead.scores.enrichment_score,
+            overall_score: lead.scores.overall_score,
+            explanation: lead.score_explanation,
+          }, {
+            onConflict: 'contact_id',
+          });
 
-      if (scoreError) throw scoreError;
+        if (scoreError) throw scoreError;
+      }
 
-      // Step 4: Save to leads table with enriched status
+      // Step 4: Save to leads table
       const { data: savedLead, error: leadError } = await supabase
         .from('leads')
         .insert({
@@ -357,12 +389,12 @@ export function useExternalLeads() {
           // name string that different flows spell differently.
           company_id: companyId,
           contact_name: lead.contact_name,
-          contact_email: lead.business_email,
+          contact_email: email,
           industry: lead.industry,
           company_size: lead.company_size,
           job_title: lead.job_title,
           linkedin_url: lead.linkedin_url,
-          company_website: lead.company_domain ? `https://${lead.company_domain}` : undefined,
+          company_website: domain ? `https://${domain}` : undefined,
           source: 'OutReign',
           lead_status: 'active',
           // The fit score, not the overall blend. overall_score mixes fit with
@@ -376,31 +408,70 @@ export function useExternalLeads() {
           email_verification_status: lead.email_verification_status ?? null,
           email_verified: lead.email_verified ?? null,
           email_verified_at: lead.email_verification_status ? new Date().toISOString() : null,
-          enrichment_status: 'enriched',
-          enriched_at: new Date().toISOString(),
+          // Only claim the lead is enriched when it carries the one field the
+          // product exists to use. A lead with no address is still pending.
+          enrichment_status: email ? 'enriched' : 'pending',
+          enriched_at: email ? new Date().toISOString() : null,
         })
         .select('id')
         .single();
 
       if (leadError) throw leadError;
 
-      // Step 5: Record enrichment history
+      // Step 5: The button says "Enrich & Save". Without this it only saved —
+      // a lead the search returned with no address stayed with no address, and
+      // nothing told the user that had happened.
+      let foundEmail: string | null = null;
+      let enrichmentFailed = false;
+
+      if (!email) {
+        const { data: enriched, error: enrichError } = await supabase.functions.invoke('enrich-lead', {
+          body: { leadId: savedLead.id },
+        });
+        if (enrichError || enriched?.error) {
+          enrichmentFailed = true;
+          console.error('Enrichment after save failed:', enrichError?.message ?? enriched?.error);
+        } else {
+          const { data: refreshed } = await supabase
+            .from('leads')
+            .select('contact_email')
+            .eq('id', savedLead.id)
+            .maybeSingle();
+          foundEmail = normalizeLeadEmail(refreshed?.contact_email);
+        }
+      }
+
+      // Step 6: Record enrichment history
       await supabase.from('enrichment_history').insert({
         user_id: userId,
         lead_id: savedLead.id,
-        fields_enriched: ['company_name', 'contact_name', 'contact_email', 'industry', 'company_size', 'job_title', 'linkedin_url', 'icp_score'],
-        source: 'Lusha',
-        status: 'success',
+        fields_enriched: enrichedFieldsPresent({
+          company_name: lead.company_name,
+          contact_name: lead.contact_name,
+          contact_email: email ?? foundEmail,
+          industry: lead.industry,
+          company_size: lead.company_size,
+          job_title: lead.job_title,
+          linkedin_url: lead.linkedin_url,
+          icp_score: lead.scores.icp_score,
+        }),
+        source: 'OutReign',
+        status: email || foundEmail ? 'success' : 'partial',
       });
 
-      toast({
-        title: 'Lead enriched & saved',
-        description: `${lead.contact_name} from ${lead.company_name} is now in your saved leads!`,
-      });
+      toast(saveToast({
+        hadEmail: !!email,
+        foundEmail,
+        enrichmentFailed,
+        contactName: lead.contact_name,
+        companyName: lead.company_name,
+      }));
 
       posthog.capture('lead_enriched', {
         overall_score: lead.scores.overall_score,
         has_linkedin_profile: Boolean(lead.linkedin_url),
+        has_email: Boolean(email || foundEmail),
+        enriched_on_save: !email,
         source: 'lead_intelligence',
       });
 
