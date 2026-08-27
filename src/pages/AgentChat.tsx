@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils";
 import { ChatDraftCard, type ChatDraft } from "@/components/agent/ChatDraftCard";
 import { roleLabel } from "@/components/agent/AgentRoles";
 import { AgentWorkingIndicator } from "@/components/agent/AgentWorkingIndicator";
+import { useAgentRunSteps } from "@/hooks/use-agent-run-steps";
 
 
 interface Thread {
@@ -92,6 +93,11 @@ const AgentChat = () => {
   // this tab wasn't the one that started it.
   const [runActive, setRunActive] = useState(false);
 
+
+  // What the agent has actually finished this run, read from the rows
+  // agent-chat writes as each tool returns. Active whenever a turn is in
+  // flight, whether this tab started it or rejoined it.
+  const runSteps = useAgentRunSteps(threadId, sending || runActive);
 
   const [stopping, setStopping] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -670,6 +676,7 @@ const AgentChat = () => {
                   <AgentWorkingIndicator
                     request={activeRequest}
                     pass={activePass}
+                    steps={runSteps}
                   />
 
                   <Button

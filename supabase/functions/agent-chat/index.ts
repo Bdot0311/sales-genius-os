@@ -3056,13 +3056,37 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
             detail: stepDetail ?? "unknown error",
           });
         }
-        stepMetrics.push({
+        const stepRow = {
           tool_name: toolName || "unknown",
           step_type: PARALLEL_SAFE_TOOLS.has(toolName) ? "tool_parallel" : "tool_serial",
           duration_ms: Date.now() - startedAt,
           status: stepStatus,
           detail: stepDetail ? stepDetail.slice(0, 300) : null,
-        });
+        };
+        stepMetrics.push(stepRow);
+
+        // Written as it happens, not batched at the end of the turn.
+        //
+        // These rows were only inserted once everything had finished, which
+        // made them useless as progress: the chat's status card had nothing
+        // real to read, so it guessed a step list from a regex on the user's
+        // message and advanced it on a four-second timer. A turn that spent
+        // ninety seconds researching leads showed "Wrapping up".
+        //
+        // Not awaited — a progress write must never slow down or fail the work
+        // it is describing.
+        void admin
+          .from("agent_step_metrics")
+          .insert({
+            ...stepRow,
+            user_id: userId,
+            thread_id: threadId,
+            turn_id: turnId,
+            agent_config_id: requestedAgentId ?? null,
+          })
+          .then(({ error }) => {
+            if (error) console.warn("live step metric insert failed:", error.message);
+          });
         return {
           role: "tool",
           tool_call_id: call.id,
@@ -3193,8 +3217,10 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
         : stepMetrics.some((m) => m.status === "error") || failureNote
           ? "error"
           : "success";
+      // Only the turn summary here: the individual steps were already written
+      // as they completed, and re-inserting them would double every row the
+      // Performance tab counts.
       const rows = [
-        ...stepMetrics,
         {
           tool_name: "__turn__",
           step_type: "turn",
