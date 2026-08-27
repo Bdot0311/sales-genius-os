@@ -28,6 +28,8 @@ interface Lead {
   contact_name: string;
   contact_email: string;
   contact_phone?: string;
+  /** 'mobile' | 'office', or null/absent when the provider did not say which. */
+  contact_phone_type?: string | null;
   industry?: string;
   company_size?: string;
   source?: string;
@@ -240,9 +242,11 @@ const SavedLeads = () => {
 
   const handleExport = (leadsToExport = filteredAndSortedLeads) => {
     const csv = [
-      "Company Name,Contact Name,Email,Phone,Industry,Company Size,Source,ICP Score,Created At",
-      ...leadsToExport.map(lead => 
-        `"${lead.company_name}","${lead.contact_name}","${lead.contact_email || ""}","${lead.contact_phone || ""}","${lead.industry || ""}","${lead.company_size || ""}","${lead.source || ""}","${lead.icp_score || ""}","${new Date(lead.created_at).toLocaleDateString()}"`
+      // Phone Type is the column that makes the phone column actionable: it is
+      // how you filter an export down to the numbers you can message.
+      "Company Name,Contact Name,Email,Phone,Phone Type,Industry,Company Size,Source,ICP Score,Created At",
+      ...leadsToExport.map(lead =>
+        `"${lead.company_name}","${lead.contact_name}","${lead.contact_email || ""}","${lead.contact_phone || ""}","${lead.contact_phone_type || ""}","${lead.industry || ""}","${lead.company_size || ""}","${lead.source || ""}","${lead.icp_score || ""}","${new Date(lead.created_at).toLocaleDateString()}"`
       )
     ].join("\n");
     
@@ -907,7 +911,20 @@ const SavedLeads = () => {
                           )}
                           <div className="flex gap-4 text-sm text-muted-foreground">
                             <span>{lead.contact_email}</span>
-                            {lead.contact_phone && <span>{lead.contact_phone}</span>}
+                            {lead.contact_phone && (
+                              <span className="flex items-center gap-1.5">
+                                {lead.contact_phone}
+                                {/* Mobile is the number worth having: better
+                                    reach rate, and the only kind WhatsApp can
+                                    be on. Silent when the line type is unknown. */}
+                                {lead.contact_phone_type === 'mobile' && (
+                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Mobile</Badge>
+                                )}
+                                {lead.contact_phone_type === 'office' && (
+                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">Office</Badge>
+                                )}
+                              </span>
+                            )}
                           </div>
                           <div className="flex gap-2 flex-wrap mt-1">
                             {lead.industry && (

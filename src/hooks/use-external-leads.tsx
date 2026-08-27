@@ -376,26 +376,94 @@ export function useExternalLeads() {
           email_verification_status: lead.email_verification_status ?? null,
           email_verified: lead.email_verified ?? null,
           email_verified_at: lead.email_verification_status ? new Date().toISOString() : null,
-          enrichment_status: 'enriched',
-          enriched_at: new Date().toISOString(),
+          // Deliberately NOT 'enriched'. This row is the search result, and a
+          // search result is not an enrichment: it carries no phone number at
+          // all, and for the masked providers no email either. Writing
+          // 'enriched' here was the bug behind "I enriched and saved and there
+          // is still no email" — it marked the lead done before anything had
+          // looked, and the badge then told the user there was nothing to do.
+          enrichment_status: 'pending',
         })
         .select('id')
         .single();
 
       if (leadError) throw leadError;
 
-      // Step 5: Record enrichment history
-      await supabase.from('enrichment_history').insert({
-        user_id: userId,
-        lead_id: savedLead.id,
-        fields_enriched: ['company_name', 'contact_name', 'contact_email', 'industry', 'company_size', 'job_title', 'linkedin_url', 'icp_score'],
-        source: 'Lusha',
-        status: 'success',
-      });
+      // Step 5: Actually enrich it.
+      //
+      // This is what the button has always claimed to do. Until now it only
+      // copied the search row across, so a lead that came out of search without
+      // an email stayed without one forever, and phone numbers — which search
+      // never returns under any provider — were simply never fetched.
+      //
+      // Failure here is not failure of the save: the lead is already in the
+      // database and the user can enrich it again from Saved Leads. So a
+      // provider miss downgrades the message rather than throwing.
+      let enrichFailed = false;
+      try {
+        const { data, error } = await supabase.functions.invoke('enrich-lead', {
+          body: { leadId: savedLead.id },
+        });
+        // The function reports a business-level miss in the body, not as a
+        // transport error, so both have to be checked.
+        if (error || data?.error) enrichFailed = true;
+      } catch {
+        enrichFailed = true;
+      }
+
+      // Step 6: Backfill the CRM contact with whatever the enrichment found.
+      // The contact row was created from the search result a moment ago, so if
+      // enrichment turned up an email or a phone the contact still has neither.
+      //
+      // Read with select('*') and pick fields off the result rather than naming
+      // the new columns in the query. A named column that the database does not
+      // have yet fails the whole request; this way a deployment that is ahead of
+      // its migrations loses the phone type and keeps everything else.
+      const { data: enrichedRow } = await supabase
+        .from('leads')
+        .select('*')
+        .eq('id', savedLead.id)
+        .maybeSingle();
+      const enrichedLead = (enrichedRow ?? {}) as Record<string, any>;
+
+      if (enrichedRow && contactId) {
+        const contactPatch: Record<string, any> = {};
+        if (enrichedLead.contact_email && !lead.business_email) {
+          contactPatch.email = enrichedLead.contact_email;
+        }
+        if (enrichedLead.contact_phone) {
+          contactPatch.phone = enrichedLead.contact_phone;
+          contactPatch.phone_type = enrichedLead.contact_phone_type ?? null;
+        }
+        if (Object.keys(contactPatch).length > 0) {
+          const { error: patchError } = await supabase
+            .from('contacts')
+            .update(contactPatch as never)
+            .eq('id', contactId);
+          // Not fatal: the lead row is the one the product reads from.
+          if (patchError) console.warn('contact backfill skipped:', patchError.message);
+        }
+      }
+
+      const foundEmail = enrichedLead.contact_email ?? null;
+      const foundPhone = enrichedLead.contact_phone ?? null;
+
+      // Say what was actually found. "Saved!" on a lead with no email and no
+      // number is the message that sent a customer to support.
+      const found = [
+        foundEmail ? 'email' : null,
+        foundPhone
+          ? (enrichedLead.contact_phone_type === 'mobile' ? 'mobile number' : 'phone number')
+          : null,
+      ].filter(Boolean);
 
       toast({
-        title: 'Lead enriched & saved',
-        description: `${lead.contact_name} from ${lead.company_name} is now in your saved leads!`,
+        title: found.length ? 'Lead enriched & saved' : 'Lead saved',
+        description: found.length
+          ? `${lead.contact_name} — found ${found.join(' and ')}.`
+          : enrichFailed
+            ? `${lead.contact_name} is saved, but enrichment could not run just now. Try again from Saved Leads.`
+            : `${lead.contact_name} is saved. No email or phone could be found for this contact — that is common for very small companies with no website.`,
       });
 
       posthog.capture('lead_enriched', {

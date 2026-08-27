@@ -22,6 +22,24 @@ const FREE_EMAIL_DOMAINS = new Set([
   'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com', 'aol.com',
 ]);
 
+/**
+ * Whether enrichment costs the user a credit.
+ *
+ * Currently it does not: the provider bill is absorbed rather than passed on,
+ * deliberately, while known gaps are being closed. Enrichment was silently not
+ * running at all on the search "Enrich & Save" path, so users have been saving
+ * leads with no email and no phone and had no way to tell whether we had looked
+ * and found nothing or never looked. Charging for the fixed version, having not
+ * delivered the broken one, is not a trade worth making.
+ *
+ * Flip by setting ENRICHMENT_CREDITS=charge. Kept as an env switch rather than a
+ * code change so it can be turned back on the day it should be, and the state is
+ * logged on every call so it is never a surprise on the invoice.
+ */
+function chargeForEnrichment(): boolean {
+  return (Deno.env.get('ENRICHMENT_CREDITS') || 'free').toLowerCase() === 'charge';
+}
+
 function isJobTitle(name: string): boolean {
   const trimmed = name.trim();
   if (!trimmed.includes(' ') && JOB_TITLE_PATTERNS.has(trimmed.toLowerCase())) return true;
@@ -72,7 +90,8 @@ serve(async (req) => {
     }
     if (userError || !user) throw new Error('Invalid user token');
 
-    console.log('Enriching lead for user:', user.id);
+    console.log('Enriching lead for user:', user.id,
+      `| credits: ${chargeForEnrichment() ? 'charged' : 'free (absorbed)'}`);
 
     const { data: adminRole } = await supabase
       .from('user_roles')
@@ -82,6 +101,11 @@ serve(async (req) => {
       .maybeSingle();
     const isAdmin = adminRole?.role === 'admin';
 
+    // The paywall and the quota are two different gates, and only the quota is
+    // being waived. Enrichment stays a paid-plan feature — waiving that too
+    // would hand every free signup an uncapped provider bill, which is not what
+    // "don't charge the user a credit" means. What changes is that a paying
+    // customer's credit balance is no longer spent on it.
     let creditWasDeducted = false;
     if (!isAdmin) {
       const { data: subscription } = await supabase
@@ -101,34 +125,36 @@ serve(async (req) => {
         );
       }
 
-      const remaining = subscription.search_credits_remaining || 0;
-      if (remaining <= 0) {
-        return new Response(
-          JSON.stringify({
-            error: 'No search credits remaining. Add more credits to enrich leads.',
-            error_code: 'credits_exhausted',
-          }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
+      if (chargeForEnrichment()) {
+        const remaining = subscription.search_credits_remaining || 0;
+        if (remaining <= 0) {
+          return new Response(
+            JSON.stringify({
+              error: 'No search credits remaining. Add more credits to enrich leads.',
+              error_code: 'credits_exhausted',
+            }),
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
 
-      // Deduct 1 credit up-front; refunded below on no-match / failure.
-      const { error: deductError } = await supabase
-        .from('subscriptions')
-        .update({ search_credits_remaining: remaining - 1 })
-        .eq('user_id', user.id);
-      if (deductError) {
-        console.error('Enrich credit deduction failed:', deductError);
-        throw new Error('Failed to reserve credit for enrichment');
+        // Deduct 1 credit up-front; refunded below on no-match / failure.
+        const { error: deductError } = await supabase
+          .from('subscriptions')
+          .update({ search_credits_remaining: remaining - 1 })
+          .eq('user_id', user.id);
+        if (deductError) {
+          console.error('Enrich credit deduction failed:', deductError);
+          throw new Error('Failed to reserve credit for enrichment');
+        }
+        creditWasDeducted = true;
+        await supabase.from('search_transactions').insert({
+          user_id: user.id,
+          type: 'usage',
+          amount: -1,
+          balance_after: remaining - 1,
+          description: 'Lead enrichment',
+        });
       }
-      creditWasDeducted = true;
-      await supabase.from('search_transactions').insert({
-        user_id: user.id,
-        type: 'usage',
-        amount: -1,
-        balance_after: remaining - 1,
-        description: 'Lead enrichment',
-      });
     }
 
     const refundCredit = async (reason: string) => {
@@ -260,8 +286,17 @@ serve(async (req) => {
         const norm = normalizeLinkedInUrl(p.linkedin_url ?? p.linkedInUrl, 'profile');
         if (norm) enrichmentData.linkedin_url = norm;
       }
+      // Railway reports the line type alongside the number (see pick_phone in
+      // the backend): "mobile", "office", or null when the provider handed back
+      // a number without saying which. Mobile is the one worth knowing — it is
+      // the better number to call, and the only kind WhatsApp can be on.
       if (p.phone || p.phone_number || p.mobile_phone) {
         enrichmentData.contact_phone = p.phone ?? p.phone_number ?? p.mobile_phone;
+        const lineType = p.phone_type
+          ?? (p.mobile_phone && !p.phone && !p.phone_number ? 'mobile' : null);
+        if (lineType === 'mobile' || lineType === 'office') {
+          enrichmentData.contact_phone_type = lineType;
+        }
       }
       // Country feeds the geography fit dimension in lead scoring. Written
       // separately below (best-effort) so a missing column can't break enrichment.
