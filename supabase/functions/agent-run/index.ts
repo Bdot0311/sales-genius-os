@@ -1459,7 +1459,9 @@ Output ONLY the reply body. No subject line or signature.`;
                 subject: `Re: ${reply.subject}`,
                 body: meetingReply,
                 integrationRowId: googleIntegrationId,
+                threadId: reply.gmailThreadId,
                   appendSignature: true,
+
               }),
             });
             const sendData = await sendRes.json().catch(() => ({}));
