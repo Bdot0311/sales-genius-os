@@ -1231,6 +1231,7 @@ Output ONLY the reply body. No subject line. No greeting like "Hi [name]". No si
                 subject: `Re: ${reply.subject}`,
                 body: generatedReply,
                 integrationRowId: googleIntegrationId,
+                threadId: reply.gmailThreadId,
                   appendSignature: true,
               }),
             });
@@ -1374,6 +1375,7 @@ Output ONLY the reply body. No subject line or signature.`;
                 subject: `Re: ${reply.subject}`,
                 body: generatedReply,
                 integrationRowId: googleIntegrationId,
+                threadId: reply.gmailThreadId,
                   appendSignature: true,
               }),
             });
