@@ -61,7 +61,7 @@ describe("send-email refuses to repeat itself", () => {
 
   it("guards every path, being the one function they all call", () => {
     // The studio, the agent, sequences and the scheduler all send through here.
-    const guardIdx = SEND.indexOf("if (!payload.allowDuplicate)");
+    const guardIdx = SEND.indexOf("if (!payload.allowDuplicate && !threadId)");
     const gmailIdx = SEND.indexOf("gmail.googleapis.com");
     expect(guardIdx).toBeGreaterThan(-1);
     expect(guardIdx).toBeLessThan(gmailIdx);
@@ -75,3 +75,32 @@ describe("send-email refuses to repeat itself", () => {
     expect(SEND).toContain("would hurt your deliverability");
   });
 });
+
+/**
+ * The guard then refused the second reply in a conversation: every message in
+ * a thread carries the same "Re: <subject>" to the same person, so answering a
+ * prospect twice within a fortnight read as a duplicate and never left the app.
+ */
+describe("a reply in an existing thread is not a duplicate", () => {
+  it("exempts a send that carries a thread id", () => {
+    expect(SEND).toContain("!payload.allowDuplicate && !threadId");
+  });
+
+  it("the inbox reply passes the thread it belongs to", () => {
+    const INBOX = readFileSync("src/pages/Inbox.tsx", "utf8");
+    const send = INBOX.slice(INBOX.indexOf("const sendReply"));
+    expect(send.slice(0, 700)).toContain("threadId: conv.gmailThreadId");
+  });
+
+  it("the agent's three reply paths pass it too", () => {
+    const RUN = readFileSync("supabase/functions/agent-run/index.ts", "utf8");
+    const threaded = RUN.split("threadId: reply.gmailThreadId").length - 1;
+    expect(threaded).toBe(3);
+  });
+
+  it("an approved reply is allowed through as a continuation", () => {
+    const APPROVALS = readFileSync("supabase/functions/agent-approvals/index.ts", "utf8");
+    expect(APPROVALS).toContain('allowDuplicate: approval.kind === "reply"');
+  });
+});
+
