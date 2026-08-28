@@ -1395,6 +1395,8 @@ export type Database = {
           last_name: string | null
           lead_status: string
           linkedin_url: string | null
+          phone: string | null
+          phone_type: string | null
           seniority: string | null
           source: string | null
           updated_at: string
@@ -1413,6 +1415,8 @@ export type Database = {
           last_name?: string | null
           lead_status?: string
           linkedin_url?: string | null
+          phone?: string | null
+          phone_type?: string | null
           seniority?: string | null
           source?: string | null
           updated_at?: string
@@ -1431,6 +1435,8 @@ export type Database = {
           last_name?: string | null
           lead_status?: string
           linkedin_url?: string | null
+          phone?: string | null
+          phone_type?: string | null
           seniority?: string | null
           source?: string | null
           updated_at?: string
@@ -2381,6 +2387,7 @@ export type Database = {
           contact_email: string | null
           contact_name: string
           contact_phone: string | null
+          contact_phone_type: string | null
           country: string | null
           created_at: string
           demo_seed: boolean
@@ -2437,6 +2444,7 @@ export type Database = {
           contact_email?: string | null
           contact_name: string
           contact_phone?: string | null
+          contact_phone_type?: string | null
           country?: string | null
           created_at?: string
           demo_seed?: boolean
@@ -2493,6 +2501,7 @@ export type Database = {
           contact_email?: string | null
           contact_name?: string
           contact_phone?: string | null
+          contact_phone_type?: string | null
           country?: string | null
           created_at?: string
           demo_seed?: boolean
