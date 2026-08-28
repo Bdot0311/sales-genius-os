@@ -410,6 +410,8 @@ export function useExternalLeads() {
           email_verified_at: lead.email_verification_status ? new Date().toISOString() : null,
           // Only claim the lead is enriched when it carries the one field the
           // product exists to use. A lead with no address is still pending.
+          // Enrichment runs immediately below and writes the final status
+          // either way; this is just the value the row starts life with.
           enrichment_status: email ? 'enriched' : 'pending',
           enriched_at: email ? new Date().toISOString() : null,
         })
@@ -421,23 +423,55 @@ export function useExternalLeads() {
       // Step 5: The button says "Enrich & Save". Without this it only saved —
       // a lead the search returned with no address stayed with no address, and
       // nothing told the user that had happened.
+      //
+      // This runs even when the lead already has an email, which gating on
+      // `!email` skipped. Search returns no phone number for any provider, by
+      // design — phones cost money and are revealed on demand — so a lead that
+      // arrived with an address was the one case guaranteed never to get a
+      // number. That was the other half of "no email and no number".
       let foundEmail: string | null = null;
+      let foundPhone: string | null = null;
+      let foundPhoneType: string | null = null;
       let enrichmentFailed = false;
 
-      if (!email) {
-        const { data: enriched, error: enrichError } = await supabase.functions.invoke('enrich-lead', {
-          body: { leadId: savedLead.id },
-        });
-        if (enrichError || enriched?.error) {
-          enrichmentFailed = true;
-          console.error('Enrichment after save failed:', enrichError?.message ?? enriched?.error);
-        } else {
-          const { data: refreshed } = await supabase
-            .from('leads')
-            .select('contact_email')
-            .eq('id', savedLead.id)
-            .maybeSingle();
-          foundEmail = normalizeLeadEmail(refreshed?.contact_email);
+      const { data: enriched, error: enrichError } = await supabase.functions.invoke('enrich-lead', {
+        body: { leadId: savedLead.id },
+      });
+      if (enrichError || enriched?.error) {
+        enrichmentFailed = true;
+        console.error('Enrichment after save failed:', enrichError?.message ?? enriched?.error);
+      } else {
+        // select('*') rather than naming the columns: a named column the
+        // database does not have yet fails the whole request, and a deployment
+        // running ahead of its migrations should lose the phone type, not the
+        // email with it.
+        const { data: refreshedRow } = await supabase
+          .from('leads')
+          .select('*')
+          .eq('id', savedLead.id)
+          .maybeSingle();
+        const refreshed = (refreshedRow ?? {}) as Record<string, any>;
+        foundEmail = normalizeLeadEmail(refreshed.contact_email);
+        foundPhone = refreshed.contact_phone ?? null;
+        foundPhoneType = refreshed.contact_phone_type ?? null;
+
+        // Backfill the CRM contact. It was created from the search result a
+        // moment ago, so anything enrichment turned up is missing from it.
+        if (contactId) {
+          const contactPatch: Record<string, any> = {};
+          if (foundEmail && !email) contactPatch.email = foundEmail;
+          if (foundPhone) {
+            contactPatch.phone = foundPhone;
+            contactPatch.phone_type = foundPhoneType;
+          }
+          if (Object.keys(contactPatch).length > 0) {
+            const { error: patchError } = await supabase
+              .from('contacts')
+              .update(contactPatch as never)
+              .eq('id', contactId);
+            // Not fatal: the lead row is the one the product reads from.
+            if (patchError) console.warn('contact backfill skipped:', patchError.message);
+          }
         }
       }
 
@@ -449,6 +483,7 @@ export function useExternalLeads() {
           company_name: lead.company_name,
           contact_name: lead.contact_name,
           contact_email: email ?? foundEmail,
+          contact_phone: foundPhone,
           industry: lead.industry,
           company_size: lead.company_size,
           job_title: lead.job_title,
@@ -462,6 +497,8 @@ export function useExternalLeads() {
       toast(saveToast({
         hadEmail: !!email,
         foundEmail,
+        foundPhone,
+        foundPhoneType,
         enrichmentFailed,
         contactName: lead.contact_name,
         companyName: lead.company_name,

@@ -46,6 +46,8 @@ interface Lead {
   contact_name: string;
   contact_email: string | null;
   contact_phone: string | null;
+  /** 'mobile' | 'office', or null when the provider did not say which. */
+  contact_phone_type?: string | null;
   industry: string | null;
   company_size: string | null;
   source: string | null;
@@ -318,6 +320,16 @@ export const LeadDetailSheet = ({
                   <div className="flex items-center gap-2">
                     <Phone className="w-4 h-4 text-muted-foreground" />
                     <a href={`tel:${lead.contact_phone}`} className="text-primary hover:underline">{lead.contact_phone}</a>
+                    {/* Mobile is worth calling out: it is the better number to
+                        reach someone on, and the only kind WhatsApp can be on.
+                        Nothing is shown when the provider did not say which it
+                        is — unknown is a real answer, better than a guess. */}
+                    {lead.contact_phone_type === 'mobile' && (
+                      <Badge variant="secondary" className="text-xs">Mobile</Badge>
+                    )}
+                    {lead.contact_phone_type === 'office' && (
+                      <Badge variant="outline" className="text-xs">Office</Badge>
+                    )}
                   </div>
                 )}
                 {(() => { const u = toValidLinkedInUrl(lead.linkedin_url, 'profile'); return u && (

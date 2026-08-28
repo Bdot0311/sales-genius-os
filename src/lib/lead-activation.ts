@@ -63,10 +63,25 @@ export interface SaveOutcome {
   hadEmail: boolean;
   /** Enrichment ran because it didn't, and returned one. */
   foundEmail: string | null;
+  /**
+   * A number enrichment turned up. Always from enrichment, never from search —
+   * no provider returns phone numbers in search results, because they cost
+   * money and are revealed on demand.
+   */
+  foundPhone?: string | null;
+  /** 'mobile' | 'office', or null when the provider did not say which. */
+  foundPhoneType?: string | null;
   /** Enrichment ran and failed, or could not run. */
   enrichmentFailed: boolean;
   contactName: string;
   companyName: string;
+}
+
+/** Name a number by what it is worth: a mobile is the one you can message. */
+function phoneLabel(type: string | null | undefined): string {
+  if (type === "mobile") return "a mobile number";
+  if (type === "office") return "an office number";
+  return "a phone number";
 }
 
 /** What to tell the user, matching what actually happened. */
@@ -76,13 +91,30 @@ export function saveToast(outcome: SaveOutcome): {
   variant?: "destructive";
 } {
   const who = `${outcome.contactName} at ${outcome.companyName}`;
+  const phone = outcome.foundPhone ? phoneLabel(outcome.foundPhoneType) : null;
+
   if (outcome.hadEmail) {
-    return { title: "Lead saved", description: `${who} is in your saved leads.` };
+    return {
+      title: outcome.foundPhone ? "Lead enriched & saved" : "Lead saved",
+      description: outcome.foundPhone
+        ? `${who} is in your saved leads, with ${phone}.`
+        : `${who} is in your saved leads.`,
+    };
   }
   if (outcome.foundEmail) {
     return {
       title: "Lead enriched & saved",
-      description: `Found ${outcome.foundEmail} for ${who}.`,
+      description: phone
+        ? `Found ${outcome.foundEmail} and ${phone} for ${who}.`
+        : `Found ${outcome.foundEmail} for ${who}.`,
+    };
+  }
+  if (outcome.foundPhone) {
+    // An address is what the product is for, so this is still a partial result
+    // — but a number is not nothing, and saying so beats "no email found".
+    return {
+      title: "Saved with a number, no email",
+      description: `Found ${phone} for ${who}, but no verified email address. Add one manually, or reach out on the number.`,
     };
   }
   return {

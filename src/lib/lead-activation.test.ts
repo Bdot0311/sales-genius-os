@@ -114,4 +114,64 @@ describe("what the user is told", () => {
     const t = saveToast({ ...base, hadEmail: false, foundEmail: null, enrichmentFailed: true });
     expect(t.description).toMatch(/enrichment could not run/i);
   });
+
+  /**
+   * Also reported: "even if I enrich and save the lead, there is no email and
+   * no number". Search returns no phone for any provider, so a number can only
+   * come from enrichment — which made a lead that already had an email, and so
+   * skipped enrichment, the one case guaranteed never to get one.
+   */
+  it("mentions a number found for a lead that already had an email", () => {
+    const t = saveToast({
+      ...base, hadEmail: true, foundEmail: null,
+      foundPhone: "+32 470 12 34 56", foundPhoneType: "mobile", enrichmentFailed: false,
+    });
+
+    expect(t.title).toBe("Lead enriched & saved");
+    expect(t.description).toMatch(/mobile number/i);
+  });
+
+  it("names the line type, because a mobile is the one you can message", () => {
+    const office = saveToast({
+      ...base, hadEmail: true, foundEmail: null,
+      foundPhone: "+32 2 999 00 00", foundPhoneType: "office", enrichmentFailed: false,
+    });
+    const unknown = saveToast({
+      ...base, hadEmail: true, foundEmail: null,
+      foundPhone: "+32 2 999 00 00", foundPhoneType: null, enrichmentFailed: false,
+    });
+
+    expect(office.description).toMatch(/office number/i);
+    // Not "mobile": an unlabelled number must never be described as one.
+    expect(unknown.description).toMatch(/a phone number/i);
+    expect(unknown.description).not.toMatch(/mobile/i);
+  });
+
+  it("reports both when enrichment found an address and a number", () => {
+    const t = saveToast({
+      ...base, hadEmail: false, foundEmail: "jelle@insightiq.be",
+      foundPhone: "+32 470 12 34 56", foundPhoneType: "mobile", enrichmentFailed: false,
+    });
+
+    expect(t.description).toContain("jelle@insightiq.be");
+    expect(t.description).toMatch(/mobile number/i);
+  });
+
+  it("a number without an address is still a partial result, and says so", () => {
+    const t = saveToast({
+      ...base, hadEmail: false, foundEmail: null,
+      foundPhone: "+32 470 12 34 56", foundPhoneType: "mobile", enrichmentFailed: false,
+    });
+
+    expect(t.title).toMatch(/no email/i);
+    expect(t.description).toMatch(/mobile number/i);
+  });
+
+  it("still reads exactly as before when no phone is involved", () => {
+    // The phone fields are optional; the existing callers omit them.
+    const t = saveToast({ ...base, hadEmail: true, foundEmail: null, enrichmentFailed: false });
+
+    expect(t.title).toBe("Lead saved");
+    expect(t.description).not.toMatch(/number/i);
+  });
 });
