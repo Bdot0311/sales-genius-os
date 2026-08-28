@@ -319,7 +319,12 @@ serve(async (req) => {
     // Matched on recipient plus subject rather than body, because a
     // regenerated draft to the same person with the same subject is the case
     // that burns a sender's reputation.
-    if (!payload.allowDuplicate) {
+    //
+    // A reply inside an existing conversation is exempt: every message in a
+    // thread shares the same "Re: ..." subject, so the guard would refuse the
+    // second and every later reply in a legitimate back-and-forth.
+    if (!payload.allowDuplicate && !threadId) {
+
       const dupWindow = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
       const { data: dup } = await supabase
         .from('sent_emails')

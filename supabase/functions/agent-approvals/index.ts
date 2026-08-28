@@ -105,7 +105,11 @@ serve(async (req) => {
           body: messageBody,
           integrationRowId,
           leadId: approval.lead_id ?? undefined,
+          // A reply continues an existing thread, where every message shares
+          // the same "Re: ..." subject, so the duplicate guard must not apply.
+          allowDuplicate: approval.kind === "reply",
         }),
+
       });
       const sendData = await sendRes.json().catch(() => ({} as any));
 
