@@ -1,42 +1,55 @@
 import { useEffect, useState } from "react";
-import { Bell, BellOff, Loader2 } from "lucide-react";
+import { Bell, BellOff, ExternalLink, Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  getCurrentSubscription,
-  isPushSupported,
-  subscribeToPush,
-  unsubscribeFromPush,
-} from "@/lib/push";
+  disableFcmPush,
+  enableFcmPush,
+  getExistingFcmToken,
+  isFcmConfigured,
+  isInPreviewFrame,
+} from "@/lib/fcm";
 
 export default function NotificationsTab() {
-  const [supported, setSupported] = useState(false);
+  const [configured, setConfigured] = useState(true);
+  const [inPreview, setInPreview] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>("default");
 
   useEffect(() => {
-    const ok = isPushSupported();
-    setSupported(ok);
-    if ("Notification" in window) setPermission(Notification.permission);
-    if (ok) getCurrentSubscription().then((s) => setSubscribed(!!s));
+    setConfigured(isFcmConfigured());
+    setInPreview(isInPreviewFrame());
+    if (typeof Notification !== "undefined") setPermission(Notification.permission);
+    void getExistingFcmToken().then((t) => setSubscribed(!!t));
   }, []);
 
   const toggle = async (next: boolean) => {
     setLoading(true);
     try {
       if (next) {
-        await subscribeToPush();
-        setSubscribed(true);
-        setPermission(Notification.permission);
-        toast.success("Push notifications enabled");
+        const result = await enableFcmPush();
+        if (result.status === "registered") {
+          setSubscribed(true);
+          setPermission("granted");
+          toast.success("Push notifications enabled on this device");
+        } else if (result.status === "open-in-new-tab") {
+          toast.error("Open the app in its own browser tab (or install it to your home screen) to enable notifications.");
+        } else if (result.status === "denied") {
+          setPermission(typeof Notification !== "undefined" ? Notification.permission : "denied");
+          toast.error("Notifications were blocked. Allow them for this site in your browser settings.");
+        } else if (result.status === "unsupported") {
+          toast.error("This browser does not support push notifications.");
+        } else {
+          toast.error("Push notifications are not configured yet.");
+        }
       } else {
-        await unsubscribeFromPush();
+        await disableFcmPush();
         setSubscribed(false);
-        toast.success("Push notifications disabled");
+        toast.success("Push notifications disabled on this device");
       }
     } catch (e) {
       toast.error((e as Error).message || "Failed to update notifications");
@@ -48,7 +61,7 @@ export default function NotificationsTab() {
   const sendTest = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("send-push-notification", {
+      const { data, error } = await supabase.functions.invoke("send-fcm-notification", {
         body: {
           title: "OutReign test notification",
           body: "If you can see this, push notifications are working.",
@@ -69,6 +82,8 @@ export default function NotificationsTab() {
     }
   };
 
+  const unavailable = !configured || inPreview;
+
   return (
     <Card>
       <CardHeader>
@@ -77,22 +92,23 @@ export default function NotificationsTab() {
           Push notifications
         </CardTitle>
         <CardDescription>
-          Receive real-time alerts on this device for new replies, hot leads, and workflow events.
+          Receive real-time alerts on this device for new replies, hot leads, and agent activity.
           Install the app to your home screen for the best experience on mobile.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {!supported ? (
+        {unavailable ? (
           <div className="rounded-lg border border-border bg-muted/30 p-4 text-sm text-muted-foreground flex items-start gap-2">
             <BellOff className="h-4 w-4 mt-0.5 flex-shrink-0" />
             <span>
-              Push notifications are not available in this preview. Open the published app
-              (or install it to your home screen on iOS 16.4+) to enable notifications.
+              {!configured
+                ? "Push notifications are not configured for this workspace yet."
+                : "Notifications can't be enabled inside this preview frame. Open the app in its own browser tab, or install it to your home screen (iOS 16.4+), then turn them on."}
             </span>
           </div>
         ) : (
           <>
-            <div className="flex items-center justify-between rounded-lg border border-border p-4">
+            <div className="flex items-center justify-between rounded-lg border border-border p-4 gap-4">
               <div className="space-y-0.5">
                 <p className="font-medium">Enable on this device</p>
                 <p className="text-sm text-muted-foreground">
@@ -118,6 +134,12 @@ export default function NotificationsTab() {
             )}
           </>
         )}
+
+        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+          <ExternalLink className="h-3 w-3" />
+          On iPhone and iPad, add OutReign to your home screen first — Safari only allows
+          notifications for installed apps.
+        </p>
       </CardContent>
     </Card>
   );
