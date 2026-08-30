@@ -1,0 +1,45 @@
+{
+  "x402Version": 1,
+  "specification": "https://x402.org",
+  "resource": {
+    "name": "OutReign API",
+    "url": "https://outreign.io",
+    "description": "Pay-per-call agent access to OutReign lead enrichment, ICP scoring and AI email generation.",
+    "contact": "support@bdotindustries.com"
+  },
+  "accepts": [
+    {
+      "scheme": "exact",
+      "network": "base",
+      "asset": "USDC",
+      "payTo": "https://outreign.io/checkout",
+      "facilitator": "https://x402.org/facilitator",
+      "maxTimeoutSeconds": 60,
+      "resources": [
+        {
+          "path": "/leads/{id}/enrich",
+          "method": "POST",
+          "maxAmountRequired": "0.25",
+          "description": "Enrich a single lead with contact and company data."
+        },
+        {
+          "path": "/leads/{id}/score",
+          "method": "POST",
+          "maxAmountRequired": "0.05",
+          "description": "Score a lead against the account's ICP profile."
+        },
+        {
+          "path": "/email/generate",
+          "method": "POST",
+          "maxAmountRequired": "0.10",
+          "description": "Generate a researched cold email for a lead."
+        }
+      ]
+    }
+  ],
+  "fallback": {
+    "type": "subscription",
+    "description": "Agents acting for a signed-in OutReign user can use the account's plan credits with an X-API-Key instead of per-call payment.",
+    "url": "https://outreign.io/pricing"
+  }
+}
