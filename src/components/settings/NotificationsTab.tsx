@@ -102,7 +102,7 @@ export default function NotificationsTab() {
             <BellOff className="h-4 w-4 mt-0.5 flex-shrink-0" />
             <span>
               {!configured
-                ? "Push notifications are not configured for this workspace yet."
+                ? "Push notifications aren't finished setting up yet. The workspace still needs its web push keys (Firebase web API key and Web Push VAPID key) added before devices can register. We'll turn this on shortly."
                 : "Notifications can't be enabled inside this preview frame. Open the app in its own browser tab, or install it to your home screen (iOS 16.4+), then turn them on."}
             </span>
           </div>
