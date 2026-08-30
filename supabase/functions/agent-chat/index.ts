@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { playbookSystemRules } from "../_shared/cold-email-playbook.ts";
 import { isWeak, rubricFeedback, scoreEmail } from "../_shared/email-quality.ts";
 import { signOffStartIndex } from "../_shared/email-rules.ts";
-import { findPlaceholders, hasPlaceholder } from "../_shared/email-rules.ts";
+import { findPlaceholders, hasPlaceholder, realValue } from "../_shared/email-rules.ts";
 import { asFnResult } from "../_shared/fn-result.ts";
 import { buildIcpContext, icpSearchBody } from "../_shared/icp-context.ts";
 import { captureServerEvent } from "../_shared/posthog.ts";
@@ -1641,9 +1641,7 @@ serve(async (req) => {
               // leaving it null, and the fallback took it literally: real
               // prospects were queued under the subject "Quick question —
               // Unknown". A bare "Quick question" is the honest version.
-              const company = String(lead.company_name ?? "").trim();
-              const usable =
-                company && !/^(unknown|n\/?a|none|null|-|--)$/i.test(company) ? company : "";
+              const usable = realValue(lead.company_name) ?? "";
               subject = `Quick question${usable ? ` — ${usable}` : ""}`;
             }
 

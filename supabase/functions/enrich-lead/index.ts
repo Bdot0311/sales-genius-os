@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
 import { coldiqConfigured, coldiqFindEmail } from "../_shared/coldiq.ts";
-import { isPersonLinkedIn, normalizeDomain } from "../_shared/email-rules.ts";
+import { isPersonLinkedIn, normalizeDomain, realValue } from "../_shared/email-rules.ts";
 import { verifyEmail, type CacheClient, type VerificationStatus } from "../_shared/email-verify.ts";
 
 const corsHeaders = {
@@ -248,9 +248,16 @@ serve(async (req) => {
       ? lead.contact_name.trim()
       : null;
 
-    if (fullName && lead.company_name) {
+    // Only a company the provider actually found. leads.company_name is NOT
+    // NULL, so a company-less lead carries "Unknown" — truthy, which took this
+    // branch and sent Wiza a reveal for a real person scoped to a company
+    // literally named Unknown. That could only miss, and it also stole the lead
+    // from the email branch below, which is the stronger identifier anyway.
+    const companyName = realValue(lead.company_name);
+
+    if (fullName && companyName) {
       enrichPayload.full_name = fullName;
-      enrichPayload.company = lead.company_name;
+      enrichPayload.company = companyName;
     } else if (lead.contact_email) {
       enrichPayload.email = lead.contact_email;
     } else if (looksLikeLinkedinProfile) {
@@ -388,7 +395,7 @@ serve(async (req) => {
         first_name: parts[0] ?? '',
         last_name: parts.length > 1 ? parts[parts.length - 1] : '',
         domain: normalizeDomain(String(lead.company_website ?? '')),
-        company_name: String(lead.company_name ?? ''),
+        company_name: companyName ?? '',
         linkedin_url: isPersonLinkedIn(String(lead.linkedin_url ?? '')) ? String(lead.linkedin_url) : '',
       });
 

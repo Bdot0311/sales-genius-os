@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
 import { captureServerEvent } from "../_shared/posthog.ts";
 import { isWeak, rubricFeedback, scoreEmail } from "../_shared/email-quality.ts";
-import { findPlaceholders, hasPlaceholder, bannedPhrasesBlock } from "../_shared/email-rules.ts";
+import { findPlaceholders, hasPlaceholder, bannedPhrasesBlock, realValue } from "../_shared/email-rules.ts";
 // The autonomous agent writes email the same way every other path does, and
 // was the one path that loaded none of the house rules — see _shared/email-skills.ts.
 import { composeSkillContext } from "../_shared/email-skills.ts";
@@ -585,7 +585,11 @@ const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
               .select("id")
               .eq("user_id", user.id)
               .ilike("contact_name", name)
-              .ilike("company_name", l.company_name || "Unknown")
+              // Match on the company only when there is one. Looking a lead
+              // up by the placeholder groups every company-less lead together,
+              // so the second one is treated as a duplicate of the first and
+              // silently dropped.
+              .ilike("company_name", realValue(l.company_name) ?? "%")
               .maybeSingle();
             existingLead = data ?? null;
           }
