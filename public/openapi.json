@@ -307,6 +307,13 @@
               }
             }
           }
+        },
+        "x-payment-info": {
+          "intent": "charge",
+          "method": "stripe",
+          "amount": 0.25,
+          "currency": "USD",
+          "description": "Lead enrichment call"
         }
       }
     },
@@ -347,6 +354,13 @@
               }
             }
           }
+        },
+        "x-payment-info": {
+          "intent": "charge",
+          "method": "stripe",
+          "amount": 0.05,
+          "currency": "USD",
+          "description": "ICP scoring call"
         }
       }
     },
@@ -857,6 +871,13 @@
               }
             }
           }
+        },
+        "x-payment-info": {
+          "intent": "charge",
+          "method": "stripe",
+          "amount": 0.1,
+          "currency": "USD",
+          "description": "AI email generation call"
         }
       }
     }
@@ -1073,5 +1094,13 @@
         }
       }
     }
+  },
+  "x-payment-info": {
+    "intent": "session",
+    "method": "stripe",
+    "currency": "USD",
+    "checkout": "https://outreign.io/checkout",
+    "discovery": "https://outreign.io/.well-known/x402.json",
+    "description": "Metered API usage is billed against an OutReign subscription; agent-native per-call payment is available via x402/MPP."
   }
 }

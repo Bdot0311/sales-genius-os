@@ -28,6 +28,28 @@
           "href": "https://outreign.io/llms.txt",
           "title": "OutReign LLM context file",
           "type": "text/plain"
+        },
+        {
+          "href": "https://outreign.io/.well-known/ai-catalog.json",
+          "title": "OutReign ARD capability manifest",
+          "type": "application/json"
+        }
+      ],
+      "payment": [
+        {
+          "href": "https://outreign.io/.well-known/x402.json",
+          "title": "OutReign x402 payment requirements",
+          "type": "application/json"
+        },
+        {
+          "href": "https://outreign.io/.well-known/ucp",
+          "title": "OutReign UCP commerce profile",
+          "type": "application/json"
+        },
+        {
+          "href": "https://outreign.io/.well-known/acp.json",
+          "title": "OutReign ACP discovery document",
+          "type": "application/json"
         }
       ]
     },

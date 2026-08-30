@@ -1,0 +1,45 @@
+{
+  "ucp_version": "0.1",
+  "protocol": {
+    "name": "ucp",
+    "version": "0.1",
+    "specification": "https://ucp.dev/specification/overview/"
+  },
+  "merchant": {
+    "name": "OutReign",
+    "url": "https://outreign.io",
+    "contact": "support@bdotindustries.com",
+    "legal": {
+      "terms": "https://outreign.io/terms",
+      "privacy": "https://outreign.io/privacy"
+    }
+  },
+  "services": [
+    {
+      "id": "subscriptions",
+      "type": "digital_subscription",
+      "name": "OutReign subscription plans",
+      "description": "Monthly SaaS subscriptions granting lead search credits, email sending volume and AI SDR agent capacity.",
+      "catalog": "https://outreign.io/openapi.json",
+      "checkout": "https://outreign.io/checkout",
+      "currency": "USD"
+    }
+  ],
+  "capabilities": {
+    "catalog": true,
+    "checkout": true,
+    "delegated_payment": false,
+    "refunds": "https://outreign.io/terms",
+    "digital_delivery": true,
+    "physical_delivery": false
+  },
+  "endpoints": {
+    "profile": "https://outreign.io/.well-known/ucp",
+    "checkout": "https://outreign.io/checkout",
+    "support": "mailto:support@bdotindustries.com"
+  },
+  "payment": {
+    "processors": ["stripe"],
+    "methods": ["card"]
+  }
+}

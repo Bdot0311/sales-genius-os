@@ -1,0 +1,41 @@
+{
+  "protocol": {
+    "name": "acp",
+    "version": "2025-09-29",
+    "specification": "https://agenticcommerce.dev"
+  },
+  "merchant": {
+    "name": "OutReign",
+    "url": "https://outreign.io",
+    "contact_email": "support@bdotindustries.com",
+    "terms_of_service": "https://outreign.io/terms",
+    "privacy_policy": "https://outreign.io/privacy"
+  },
+  "api_base_url": "https://ghgfjnepvxvxrncmskys.supabase.co/functions/v1/rest-api",
+  "transports": ["https"],
+  "capabilities": {
+    "services": [
+      {
+        "id": "subscriptions",
+        "type": "digital_subscription",
+        "name": "OutReign subscription plans",
+        "description": "Monthly plans for lead search credits, outbound email volume and AI SDR agent capacity.",
+        "currency": "USD",
+        "checkout_url": "https://outreign.io/checkout"
+      }
+    ],
+    "checkout_sessions": false,
+    "delegated_payments": false,
+    "product_feed": false,
+    "order_management": false
+  },
+  "payment": {
+    "processors": ["stripe"],
+    "methods": ["card"]
+  },
+  "discovery": {
+    "openapi": "https://outreign.io/openapi.json",
+    "api_catalog": "https://outreign.io/.well-known/api-catalog",
+    "ai_catalog": "https://outreign.io/.well-known/ai-catalog.json"
+  }
+}

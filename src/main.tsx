@@ -85,6 +85,10 @@ if (rootEl.dataset.prerendered === "true") {
 void import("./lib/attribution").then(({ initAttribution }) => initAttribution());
 // Tag every outbound/social link and log the outbound click with its section.
 void import("./lib/link-tagging").then(({ initLinkTagging }) => initLinkTagging());
+// Expose public site tools to browser AI agents (WebMCP). Registered on load —
+// not behind the interaction gate — so agent crawlers see the tools. No-op when
+// navigator.modelContext is unsupported.
+void import("./lib/webmcp").then(({ registerWebMcpTools }) => registerWebMcpTools());
 
 let deferredBooted = false;
 const bootDeferred = () => {
@@ -96,8 +100,7 @@ const bootDeferred = () => {
   // event captured before they resolve is queued by their facades and replayed.
   void import("./lib/posthog").then(({ initPostHog }) => initPostHog());
   void import("./lib/heycatch").then(({ initHeycatch }) => initHeycatch());
-  // Expose public site tools to browser AI agents (WebMCP). No-op when unsupported.
-  void import("./lib/webmcp").then(({ registerWebMcpTools }) => registerWebMcpTools());
+
 };
 
 // The visit log runs on its own short timer rather than inside bootDeferred:
