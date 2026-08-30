@@ -206,9 +206,41 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
       return;
     }
 
+    if (TURNSTILE_SITE_KEY && !captchaToken) {
+      toast({
+        title: "Please complete the verification",
+        description: "Tick the human-verification box below the password field, then try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
+      // Server-side CAPTCHA check. The verifier fails open if Cloudflare or the
+      // secret is unavailable, so an outage can't block real signups.
+      if (captchaToken) {
+        try {
+          const { data: cData, error: cErr } = await supabase.functions.invoke("verify-turnstile", {
+            body: { token: captchaToken },
+          });
+          if (!cErr && cData && cData.success === false) {
+            setCaptchaToken("");
+            setCaptchaResetKey((k) => k + 1);
+            toast({
+              title: "Verification failed",
+              description: "Please complete the human-verification box again.",
+              variant: "destructive",
+            });
+            setLoading(false);
+            return;
+          }
+        } catch (err) {
+          console.warn("Turnstile verifier unreachable; allowing signup to proceed:", err);
+        }
+      }
+
       // Capture signup source from URL params or referrer
       const urlParams = new URLSearchParams(window.location.search);
       const utmSource = urlParams.get('utm_source');
