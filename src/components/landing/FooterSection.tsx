@@ -223,7 +223,7 @@ export const FooterSection = () => {
                   { href: "https://sellwithboost.com", src: "https://sellwithboost.com/badge/listing-dark.svg", alt: "Listed on Sell With Boost", w: 160, h: 40 },
                   { href: "https://landingboost.app/badges/top-1", src: "https://landingboost.app/badges/top1-dark.svg", alt: "Top 1% Landing Page — Verified by LandingBoost", w: 200, h: 40 },
                   { href: "https://nicklaunches.com/products/salesos/?utm_source=outreign.io&utm_medium=badge&utm_campaign=featured", src: "https://nicklaunches.com/badges/featured-dark.svg", alt: "OutReign on Nick Launches", w: 244, h: 56 },
-                  { href: "https://plugyourbuild.com/listing/outreign-b8ad99", src: "https://plugyourbuild.com/api/badge/outreign-b8ad99?style=dark", alt: "Listed on Plug Your Build", w: 180, h: 40 },
+                  
                   { href: "https://rankinpublic.xyz/products/outreign.io", src: "https://rankinpublic.xyz/api/badges/badge-featured.png?site=outreign.io", alt: "Featured on RankInPublic", w: 125, h: 40 },
                   { href: "https://www.producthunt.com/products/outreign-io?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-outreign-io", src: "https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1174023&theme=dark&t=1781681273997", alt: "OutReign.io - Find who to sell to then close them. | Product Hunt", w: 250, h: 54 },
                   { href: "https://launchllama.co?utm_source=badge&utm_medium=referral", src: "https://speaktechenglish.com/wp-content/uploads/2026/04/Screenshot_2026-04-09_at_17.40.44-removebg-preview.png", alt: "Featured on Launch Llama", w: 200, h: 50 },
