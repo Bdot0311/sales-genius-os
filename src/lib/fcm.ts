@@ -2,15 +2,28 @@
 // Credentials come from the Firebase Cloud Messaging connector (public values).
 import { supabase } from "@/integrations/supabase/client";
 
-const appId = import.meta.env.VITE_LOVABLE_CONNECTOR_FIREBASE_MESSAGING_APP_ID as string | undefined;
+// Public-by-design web config for the "outreign" Firebase project (from the
+// Firebase console web-app snippet). Env vars from the Firebase Messaging
+// connector override the baked-in values when present; only the web API key
+// is required from the environment.
+const DEFAULT_APP_ID = "1:1077235865225:web:fdc349bf23a6edfbdf5858";
+
+const appId =
+  (import.meta.env.VITE_LOVABLE_CONNECTOR_FIREBASE_MESSAGING_APP_ID as string | undefined) ??
+  DEFAULT_APP_ID;
 const vapidKey = import.meta.env.VITE_LOVABLE_CONNECTOR_FIREBASE_MESSAGING_VAPID_KEY as string | undefined;
 
 export const firebaseConfig = {
   apiKey: import.meta.env.VITE_LOVABLE_CONNECTOR_FIREBASE_MESSAGING_WEB_API_KEY as string | undefined,
-  projectId: import.meta.env.VITE_LOVABLE_CONNECTOR_FIREBASE_MESSAGING_PROJECT_ID as string | undefined,
-  appId,
+  authDomain: "outreign.firebaseapp.com",
+  projectId:
+    (import.meta.env.VITE_LOVABLE_CONNECTOR_FIREBASE_MESSAGING_PROJECT_ID as string | undefined) ??
+    "outreign",
+  storageBucket: "outreign.firebasestorage.app",
   // messagingSenderId has no env var of its own: it is the 2nd segment of the app id.
-  messagingSenderId: appId?.split(":")[1] ?? "",
+  messagingSenderId: appId?.split(":")[1] ?? "1077235865225",
+  appId,
+  measurementId: "G-14JQD6Q2M3",
 };
 
 export type FcmStatus =
