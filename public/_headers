@@ -13,6 +13,12 @@
   Link: </api-docs>; rel="service-doc"; type="text/html"
   Link: </llms.txt>; rel="describedby"; type="text/plain"
   Link: </auth.md>; rel="author"; type="text/markdown"
+  Link: </.well-known/ai-catalog.json>; rel="ai-catalog"; type="application/json"
+  Link: </.well-known/ucp>; rel="payment-profile"; type="application/json"
+  Link: </.well-known/acp.json>; rel="payment-profile"; type="application/json"
+  Link: </.well-known/x402.json>; rel="payment"; type="application/json"
+  Link: </.well-known/openid-configuration>; rel="openid-configuration"; type="application/json"
+  Link: </.well-known/oauth-authorization-server>; rel="oauth-authorization-server"; type="application/json"
 
 # Agent discovery documents — correct media types and short caches
 /openapi.json
@@ -45,6 +51,26 @@
   Access-Control-Allow-Origin: *
 
 /.well-known/agent-skills/*
+  Cache-Control: public, max-age=3600
+  Access-Control-Allow-Origin: *
+
+/.well-known/ai-catalog.json
+  Content-Type: application/json; charset=utf-8
+  Cache-Control: public, max-age=3600
+  Access-Control-Allow-Origin: *
+
+/.well-known/ucp
+  Content-Type: application/json; charset=utf-8
+  Cache-Control: public, max-age=3600
+  Access-Control-Allow-Origin: *
+
+/.well-known/acp.json
+  Content-Type: application/json; charset=utf-8
+  Cache-Control: public, max-age=3600
+  Access-Control-Allow-Origin: *
+
+/.well-known/x402.json
+  Content-Type: application/json; charset=utf-8
   Cache-Control: public, max-age=3600
   Access-Control-Allow-Origin: *
 
