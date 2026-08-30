@@ -67,6 +67,25 @@ async function messagingModule() {
   return { app, ...messaging };
 }
 
+/**
+ * Initialize the Firebase web app + Firebase Analytics (the equivalent of the
+ * console's bottom-of-body snippet). Requires the web API key; no-ops without
+ * it. Safe to call alongside FCM — the app instance is shared via getApps().
+ */
+export async function initFirebaseWeb(): Promise<void> {
+  if (!firebaseConfig.apiKey || isInPreviewFrame()) return;
+  try {
+    const [{ initializeApp, getApps, getApp }, analytics] = await Promise.all([
+      import("firebase/app"),
+      import("firebase/analytics"),
+    ]);
+    const app = getApps().length ? getApp() : initializeApp(firebaseConfig as Record<string, string>);
+    if (await analytics.isSupported()) analytics.getAnalytics(app);
+  } catch {
+    /* analytics is best-effort */
+  }
+}
+
 async function registerSw(): Promise<ServiceWorkerRegistration> {
   const query = new URLSearchParams({
     apiKey: firebaseConfig.apiKey ?? "",
