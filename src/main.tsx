@@ -100,6 +100,8 @@ const bootDeferred = () => {
   // event captured before they resolve is queued by their facades and replayed.
   void import("./lib/posthog").then(({ initPostHog }) => initPostHog());
   void import("./lib/heycatch").then(({ initHeycatch }) => initHeycatch());
+  // Firebase web app + Analytics (public config, no-ops without the web API key).
+  void import("./lib/fcm").then(({ initFirebaseWeb }) => initFirebaseWeb());
 
 };
 
