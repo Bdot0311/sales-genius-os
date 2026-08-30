@@ -2,7 +2,8 @@ import { useEffect, useRef } from "react";
 
 // Cloudflare Turnstile site key. Public by design — it is rendered into the
 // page and is useless without the secret key held server-side.
-export const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY ?? "";
+export const TURNSTILE_SITE_KEY =
+  import.meta.env.VITE_TURNSTILE_SITE_KEY ?? "0x4AAAAAAEiJXmdu6tCLpTJB";
 
 const SCRIPT_SRC = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
 
