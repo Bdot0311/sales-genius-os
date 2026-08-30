@@ -118,6 +118,34 @@ export function findPlaceholders(text: string): string[] {
 }
 
 /**
+ * Stand-in values that mean "we don't know", which must never be read back as
+ * a fact about the prospect.
+ *
+ * They exist for a legitimate reason: leads.company_name is NOT NULL, so a lead
+ * whose provider returned no company still needs something in the column. What
+ * goes wrong is downstream, where the stand-in gets used as though it were
+ * data — as an email subject ("Quick question — Unknown"), as a dedupe key, or
+ * worst, as a provider search filter. Production sent Wiza a reveal for a real
+ * person scoped to `company: "Unknown"`, which could only ever miss.
+ *
+ * Anchored on purpose: "NA Consulting" and "None The Wiser Ltd" are real
+ * companies, and a substring test would erase them.
+ */
+const NOT_A_REAL_VALUE =
+  /^\s*(unknown|n\/?a|not\s*available|not\s*provided|none|null|nil|undefined|-{1,3}|\?+|tbd|placeholder|no\s*company|company)\s*$/i;
+
+/** The trimmed value if it says something, otherwise null. */
+export function realValue(value: unknown): string | null {
+  const text = String(value ?? "").trim();
+  return text && !NOT_A_REAL_VALUE.test(text) ? text : null;
+}
+
+/** True when the value is a stand-in rather than something a provider found. */
+export function isPlaceholderValue(value: unknown): boolean {
+  return realValue(value) === null;
+}
+
+/**
  * Why a draft carrying one is regenerated rather than scrubbed: deleting the
  * token leaves the sentence broken around the hole it came out of — "recent
  * work with  on ai outbound" — which reads worse than the placeholder did.
