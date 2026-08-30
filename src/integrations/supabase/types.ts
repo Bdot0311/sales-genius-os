@@ -127,7 +127,7 @@ export type Database = {
         }
         Insert: {
           agency_earnings_cents?: number
-          agency_id: string
+          agency_id?: string
           archived?: boolean
           assigned_member_id?: string | null
           client_name?: string | null
