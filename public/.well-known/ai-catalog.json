@@ -1,0 +1,79 @@
+{
+  "specVersion": "0.1",
+  "host": {
+    "name": "OutReign",
+    "domain": "outreign.io",
+    "description": "B2B lead intelligence and outbound sales platform: lead search, enrichment, ICP scoring, AI-written email sequences and an autonomous AI SDR agent.",
+    "url": "https://outreign.io",
+    "contact": "support@bdotindustries.com"
+  },
+  "entries": [
+    {
+      "id": "urn:air:outreign.io:mcp:outreign-mcp",
+      "displayName": "OutReign MCP server",
+      "description": "Authenticated MCP server (streamable HTTP) letting a signed-in OutReign user search and manage leads, review ICP profiles, inspect sequences and deals, read replies and sent emails, and configure the AI SDR agent.",
+      "type": "application/json",
+      "url": "https://ghgfjnepvxvxrncmskys.supabase.co/functions/v1/mcp",
+      "authentication": {
+        "type": "oauth2",
+        "protectedResourceMetadata": "https://outreign.io/.well-known/oauth-protected-resource"
+      },
+      "representativeQueries": [
+        "List my newest leads in OutReign",
+        "Search my OutReign leads for VPs of Sales at fintech companies",
+        "Show recent replies in my OutReign inbox",
+        "Create a lead for Acme Corp",
+        "What are my AI SDR agent stats this week?"
+      ]
+    },
+    {
+      "id": "urn:air:outreign.io:openapi:rest-api",
+      "displayName": "OutReign REST API",
+      "description": "OpenAPI 3.1 description of the OutReign REST API for leads, deals, activities, contacts, enrichment, ICP scoring and AI email generation. Authenticated with an X-API-Key header.",
+      "type": "application/openapi+json",
+      "url": "https://outreign.io/openapi.json",
+      "representativeQueries": [
+        "Create a lead through the OutReign API",
+        "Enrich a lead by id",
+        "Generate a cold email for a lead",
+        "List open deals in my pipeline"
+      ]
+    },
+    {
+      "id": "urn:air:outreign.io:skills:outreign-outbound",
+      "displayName": "OutReign outbound skill",
+      "description": "Agent skill describing how to run cold outbound with OutReign: ICP definition, lead sourcing, email writing rules and reply handling.",
+      "type": "text/markdown",
+      "url": "https://outreign.io/.well-known/agent-skills/outreign-outbound/SKILL.md",
+      "representativeQueries": [
+        "How should I write cold emails with OutReign?",
+        "What is the OutReign outbound workflow?",
+        "How do I handle objections in replies?"
+      ]
+    },
+    {
+      "id": "urn:air:outreign.io:docs:llms-txt",
+      "displayName": "OutReign LLM context",
+      "description": "Plain-text summary of OutReign's product, pricing tiers, features and support channels for language models.",
+      "type": "text/plain",
+      "url": "https://outreign.io/llms.txt",
+      "representativeQueries": [
+        "What does OutReign do?",
+        "How much does OutReign cost?",
+        "What is included in the OutReign free plan?"
+      ]
+    },
+    {
+      "id": "urn:air:outreign.io:auth:agent-auth",
+      "displayName": "OutReign agent authentication",
+      "description": "Auth.md registration instructions for agents: dynamic client registration, OAuth 2.1 authorization code with PKCE, and token usage against the MCP endpoint.",
+      "type": "text/markdown",
+      "url": "https://outreign.io/auth.md",
+      "representativeQueries": [
+        "How does an agent authenticate with OutReign?",
+        "Where do I register an OAuth client for OutReign?",
+        "How do I revoke an agent's access to OutReign?"
+      ]
+    }
+  ]
+}
