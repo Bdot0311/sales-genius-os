@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import outReignLogo from "@/assets/outreign-logo.webp";
+import { TurnstileWidget, TURNSTILE_SITE_KEY } from "./TurnstileWidget";
 
 import {
   Dialog,
@@ -37,6 +38,9 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
   // they stop scripted form fillers, not a bot posting straight to the API.
   // The server-side control for that is Supabase's own CAPTCHA setting.
   const [signupHoneypot, setSignupHoneypot] = useState("");
+  // Cloudflare Turnstile: the one check that is actually verified server-side.
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaResetKey, setCaptchaResetKey] = useState(0);
   const signupFormOpenedAt = useRef(Date.now());
   const [googleLoading, setGoogleLoading] = useState(false);
   const { toast } = useToast();
@@ -508,6 +512,12 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
                 />
                 <p className="text-xs text-muted-foreground">Minimum 8 characters required</p>
               </div>
+
+              <TurnstileWidget
+                onVerify={setCaptchaToken}
+                onExpire={() => setCaptchaToken("")}
+                resetKey={captchaResetKey}
+              />
 
               <Button
                 type="submit"
