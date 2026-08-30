@@ -195,6 +195,19 @@ All colors MUST be HSL. Using 8px spacing scale.
       white-space: nowrap;
     }
 
+    /* Settings has many destinations, so keep every option visible rather
+       than hiding them beyond a horizontal swipe on mobile. */
+    [role="tablist"].settings-tab-list {
+      display: grid !important;
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      overflow-x: visible;
+    }
+
+    [role="tablist"].settings-tab-list > * {
+      min-width: 0;
+      white-space: normal;
+    }
+
 
 
     /* Dialogs/sheets must never exceed the screen */
