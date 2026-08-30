@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { Bot, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,10 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { HONEYPOT_FIELD } from "../../supabase/functions/_shared/bot-signals";
+import type { CampaignSetupFormRequest } from "@/lib/campaign-setup";
 
 const schema = z.object({
   name: z.string().trim().min(2, "Enter your name").max(120),
-  email: z.string().trim().toLowerCase().email("Enter a valid email").max(200),
   company: z.string().trim().max(200).optional().or(z.literal("")),
   website: z.string().trim().max(300).optional().or(z.literal("")),
   audience: z.string().trim().min(3, "Tell us who your ideal customer is").max(1000),
@@ -23,15 +24,29 @@ type FormValues = z.infer<typeof schema>;
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Which CTA opened this, and the click row to attach the answers to. */
+  request?: CampaignSetupFormRequest | null;
+  /** The signed-in account. The address is shown, never edited — the server
+   *  reads it from the session, so a typed one would be ignored anyway. */
+  account?: { email: string | null; name: string | null };
 }
 
-const initial: FormValues = { name: "", email: "", company: "", website: "", audience: "", goal: "" };
+const initial: FormValues = { name: "", company: "", website: "", audience: "", goal: "" };
 
-export function CampaignSetupDialog({ open, onOpenChange }: Props) {
+export function CampaignSetupDialog({ open, onOpenChange, request, account }: Props) {
   const [values, setValues] = useState<FormValues>(initial);
   const [errors, setErrors] = useState<Partial<Record<keyof FormValues, string>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
+  // Filled by scripts, never by people — see _shared/bot-signals.ts.
+  const [honeypot, setHoneypot] = useState("");
+  const openedAt = useRef<number>(Date.now());
+
+  useEffect(() => {
+    if (!open) return;
+    openedAt.current = Date.now();
+    if (account?.name) setValues((v) => (v.name ? v : { ...v, name: account.name! }));
+  }, [open, account?.name]);
 
   const update = (k: keyof FormValues) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setValues((v) => ({ ...v, [k]: e.target.value }));
@@ -43,7 +58,7 @@ export function CampaignSetupDialog({ open, onOpenChange }: Props) {
     onOpenChange(next);
     if (!next) {
       // Reset after close animation
-      setTimeout(() => { setValues(initial); setErrors({}); setSent(false); }, 200);
+      setTimeout(() => { setValues(initial); setErrors({}); setSent(false); setHoneypot(""); }, 200);
     }
   };
 
@@ -61,20 +76,28 @@ export function CampaignSetupDialog({ open, onOpenChange }: Props) {
     }
     setSubmitting(true);
     try {
-      const { data, error } = await supabase.functions.invoke("submit-campaign-setup", { body: parsed.data });
-      if (error) {
-        const msg = (data as any)?.error || error.message || "Something went wrong. Try again in a moment.";
-        toast.error(msg);
-        return;
-      }
-      if ((data as any)?.error) {
-        toast.error((data as any).error);
+      const { data, error } = await supabase.functions.invoke("submit-campaign-setup", {
+        body: {
+          ...parsed.data,
+          source: request?.source ?? "campaign_setup_form",
+          requestId: request?.requestId ?? null,
+          [HONEYPOT_FIELD]: honeypot,
+          elapsedMs: Date.now() - openedAt.current,
+        },
+      });
+      // The function answers a rejection with a 4xx and a reason in the body,
+      // which the client surfaces as an error with the body still attached.
+      // Reading the body first is what shows "Please sign in" instead of
+      // "Edge Function returned a non-2xx status code".
+      const reason = (data as { error?: string } | null)?.error;
+      if (error || reason) {
+        toast.error(reason || error?.message || "Something went wrong. Try again in a moment.");
         return;
       }
       setSent(true);
       toast.success("Request sent — check your inbox for confirmation.");
-    } catch (err: any) {
-      toast.error(err?.message || "Something went wrong. Try again in a moment.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Something went wrong. Try again in a moment.");
     } finally {
       setSubmitting(false);
     }
@@ -91,7 +114,7 @@ export function CampaignSetupDialog({ open, onOpenChange }: Props) {
                 We've got it — check your inbox
               </DialogTitle>
               <DialogDescription>
-                A real human on our team will review what you shared and reply within one business day. We just sent a confirmation to <span className="font-medium text-foreground">{values.email}</span>.
+                A real human on our team will review what you shared and reply within one business day. We just sent a confirmation to <span className="font-medium text-foreground">{account?.email}</span>.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
@@ -118,8 +141,8 @@ export function CampaignSetupDialog({ open, onOpenChange }: Props) {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="cs-email">Email</Label>
-                <Input id="cs-email" type="email" value={values.email} onChange={update("email")} placeholder="you@company.com" maxLength={200} autoComplete="email" />
-                {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
+                <Input id="cs-email" type="email" value={account?.email ?? ""} readOnly disabled aria-describedby="cs-email-note" />
+                <p id="cs-email-note" className="text-xs text-muted-foreground">We'll reply to your account address.</p>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="cs-company">Company <span className="text-muted-foreground">(optional)</span></Label>
@@ -141,6 +164,21 @@ export function CampaignSetupDialog({ open, onOpenChange }: Props) {
               <Label htmlFor="cs-goal">What's your goal for outbound?</Label>
               <Textarea id="cs-goal" value={values.goal} onChange={update("goal")} placeholder="e.g. Book 5 discovery calls this month, test a new offer, hit $10k MRR" maxLength={1000} rows={3} />
               {errors.goal && <p className="text-xs text-destructive">{errors.goal}</p>}
+            </div>
+
+            {/* Not a real field. Hidden from people and from screen readers;
+                anything in it came from a script filling every input it found. */}
+            <div aria-hidden="true" className="absolute h-0 w-0 overflow-hidden opacity-0">
+              <label htmlFor={HONEYPOT_FIELD}>Fax</label>
+              <input
+                id={HONEYPOT_FIELD}
+                name={HONEYPOT_FIELD}
+                type="text"
+                tabIndex={-1}
+                autoComplete="off"
+                value={honeypot}
+                onChange={(e) => setHoneypot(e.target.value)}
+              />
             </div>
 
             <DialogFooter className="gap-2">

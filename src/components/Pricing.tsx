@@ -5,6 +5,7 @@ import { useSearchCredits } from "@/hooks/use-search-credits";
 import { useNavigate } from "react-router-dom";
 import { QuickBuyCreditsDialog } from "@/components/dashboard/QuickBuyCreditsDialog";
 import { openCampaignSetupBooking } from "@/lib/campaign-setup";
+import { useIsSignedIn } from "@/hooks/use-signed-in";
 
 type BillingInterval = "monthly" | "yearly";
 
@@ -290,6 +291,7 @@ const mutedText = "hsl(0 0% 100% / 0.7)";
 const accentPurple = "hsl(261 75% 65%)";
 
 export const Pricing = () => {
+  const signedIn = useIsSignedIn();
   const { credits } = useSearchCredits();
   const [topupDialogOpen, setTopupDialogOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
@@ -311,7 +313,7 @@ export const Pricing = () => {
     if (!isPaidPlan(plan)) {
       const route = plan.ctaRoute || "/auth";
       if (route.startsWith("http")) {
-        void openCampaignSetupBooking("pricing", plan.key);
+        void openCampaignSetupBooking("pricing", plan.key, { signedIn });
       } else {
         navigate(route);
       }

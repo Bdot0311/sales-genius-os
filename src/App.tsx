@@ -1,4 +1,5 @@
 import { Component, Suspense, lazy, useState, useEffect, useRef, type ComponentType, type ErrorInfo, type ReactNode } from "react";
+import { CampaignSetupHost } from "@/components/CampaignSetupHost";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { isPostHogEnabled, posthog } from "@/lib/posthog";
@@ -468,6 +469,7 @@ const App = () => {
           <ScrollToTop />
           <RouteAnalytics />
           <AuthSideEffects />
+          <CampaignSetupHost />
         <ChunkErrorBoundary>
 
           <Suspense fallback={<PageLoader />}>
