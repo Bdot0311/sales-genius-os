@@ -1,9 +1,11 @@
 import { useNavigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { CAMPAIGN_SETUP_BOOKING_URL, openCampaignSetupBooking } from "@/lib/campaign-setup";
+import { useIsSignedIn } from "@/hooks/use-signed-in";
 import { Analytics } from "@/lib/analytics-events";
 
 export const HeroSection = () => {
+  const signedIn = useIsSignedIn();
   const navigate = useNavigate();
 
   return (
@@ -62,7 +64,7 @@ export const HeroSection = () => {
         >
           <a
             href={CAMPAIGN_SETUP_BOOKING_URL}
-            onClick={(e) => { e.preventDefault(); void openCampaignSetupBooking("hero_book_setup"); }}
+            onClick={(e) => { e.preventDefault(); void openCampaignSetupBooking("hero_book_setup", null, { signedIn }); }}
             target="_blank"
             rel="noopener noreferrer"
             className="cta-pill-glow inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-full px-8 text-sm font-semibold text-white group sm:w-auto transition-transform active:scale-[0.98] hover:scale-[1.02]"

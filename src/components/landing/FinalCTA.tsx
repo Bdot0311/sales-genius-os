@@ -1,10 +1,12 @@
 import { ArrowRight } from "lucide-react";
 import { motion } from "motion/react";
 import { CAMPAIGN_SETUP_BOOKING_URL, openCampaignSetupBooking } from "@/lib/campaign-setup";
+import { useIsSignedIn } from "@/hooks/use-signed-in";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
 export const FinalCTA = () => {
+  const signedIn = useIsSignedIn();
   return (
     <section
       className="relative py-40 md:py-52 overflow-hidden"
@@ -87,7 +89,7 @@ export const FinalCTA = () => {
           >
             <motion.a
               href={CAMPAIGN_SETUP_BOOKING_URL}
-            onClick={(e) => { e.preventDefault(); void openCampaignSetupBooking("final_cta_book_setup"); }}
+            onClick={(e) => { e.preventDefault(); void openCampaignSetupBooking("final_cta_book_setup", null, { signedIn }); }}
               target="_blank"
               rel="noopener noreferrer"
               className="cta-pill-glow inline-flex items-center gap-2 px-10 rounded-full text-sm font-semibold text-white"

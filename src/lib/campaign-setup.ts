@@ -43,8 +43,49 @@ export const buildCampaignSetupBookingUrl = (
   return url.toString();
 };
 
-/** Logs the request (best effort) and opens the booking page with tracking. */
-export const openCampaignSetupBooking = async (source: string, plan?: string | null) => {
+/**
+ * Fired when a signed-in visitor asks for a campaign setup. One
+ * CampaignSetupHost is mounted at the app root and opens the form, so the three
+ * landing-page CTAs don't each need to carry dialog state.
+ */
+export const CAMPAIGN_SETUP_FORM_EVENT = "outreign:campaign-setup-form";
+
+export interface CampaignSetupFormRequest {
+  source: string;
+  plan?: string | null;
+  /** The logged click, so the submitted answers land on the same row. */
+  requestId?: string | null;
+}
+
+export const openCampaignSetupForm = (detail: CampaignSetupFormRequest) => {
+  window.dispatchEvent(new CustomEvent(CAMPAIGN_SETUP_FORM_EVENT, { detail }));
+};
+
+/**
+ * The campaign setup CTA.
+ *
+ * A signed-in account gets the form — the questions a human needs before doing
+ * the work, and the only path that alerts sales. A signed-out visitor gets the
+ * booking page as before; the click is logged for attribution and nobody is
+ * emailed about it, because a click with no name, no address and no answers is
+ * not a request.
+ */
+export const openCampaignSetupBooking = async (
+  source: string,
+  plan?: string | null,
+  options?: { signedIn?: boolean | null },
+) => {
+  if (options?.signedIn) {
+    Analytics.freeLeadsCtaClicked(source, plan);
+    const id = await logCampaignSetupRequest(source, plan);
+    openCampaignSetupForm({ source, plan, requestId: id });
+    return;
+  }
+  return openCampaignSetupBookingUrlFlow(source, plan);
+};
+
+/** Signed-out path: log the click, open Calendly with tracking. */
+const openCampaignSetupBookingUrlFlow = async (source: string, plan?: string | null) => {
   // Track the click itself, before the async work — a slow network or a blocked
   // popup must never cost us the conversion event.
   Analytics.freeLeadsCtaClicked(source, plan);

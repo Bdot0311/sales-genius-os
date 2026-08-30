@@ -244,9 +244,19 @@ describe("agent-chat subject fallback", () => {
     new URL("../../supabase/functions/agent-chat/index.ts", import.meta.url),
     "utf8",
   );
+  const RULES_SRC = readFileSync(
+    new URL("../../supabase/functions/_shared/email-rules.ts", import.meta.url),
+    "utf8",
+  );
 
   it("does not put a placeholder company name in the subject line", () => {
-    // "Quick question — Unknown" was queued against real prospects.
-    expect(SRC).toMatch(/unknown\|n\\\/\?a\|none\|null/i);
+    // "Quick question — Unknown" was queued against real prospects. The list of
+    // stand-in values lives in _shared/email-rules.ts behind realValue(); this
+    // asserts the subject fallback actually goes through it, and that the list
+    // still covers what providers write.
+    expect(SRC).toMatch(/realValue\(lead\.company_name\)/);
+    expect(RULES_SRC).toMatch(/unknown\|n\\\/\?a/i);
+    expect(RULES_SRC).toMatch(/\bnone\b/i);
+    expect(RULES_SRC).toMatch(/\bnull\b/i);
   });
 });

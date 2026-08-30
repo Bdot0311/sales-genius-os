@@ -3,12 +3,13 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 // Logs a "book a campaign setup" click. Runs with the service role so it works
 // for signed-out landing-page visitors too — previously these clicks were never
 // recorded anywhere, so a booked meeting could arrive with no trace in admin.
+//
+// A click is attribution, not a request. It is recorded and nothing is emailed;
+// see the note further down. submit-campaign-setup owns the sales alert.
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-const SALES_EMAIL = "sales@bdotindustries.com";
 
 function json(status: number, body: Record<string, unknown>) {
   return new Response(JSON.stringify(body), {
@@ -101,29 +102,17 @@ Deno.serve(async (req) => {
     }
 
 
-    // Notify sales so a booking is never silently missed.
-    try {
-      await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
-        body: JSON.stringify({
-          templateName: "campaign-setup-request",
-          recipientEmail: SALES_EMAIL,
-          idempotencyKey: `campaign-setup-click-${row.id}`,
-          templateData: {
-            name: name || "Unknown visitor",
-            email: email || "not signed in",
-            company: "",
-            website: referrer,
-            audience: `Clicked "${source}"${plan ? ` on the ${plan} plan` : ""}`,
-            goal: userId ? "Existing account holder — see admin > Campaign setup" : "Anonymous visitor booking",
-            submittedAt: new Date().toUTCString(),
-          },
-        }),
-      });
-    } catch (e) {
-      console.warn("[log-campaign-setup-request] alert email failed:", e);
-    }
+    // Deliberately no sales alert here.
+    //
+    // This records a *click*, not a request: an anonymous landing-page visitor
+    // pressing a CTA, with no name, no address and no answers. Emailing sales
+    // on every one produced alerts reading "Unknown visitor / not signed in /
+    // Anonymous visitor booking", which is noise that buries the real ones.
+    //
+    // The alert belongs to submit-campaign-setup, which fires only for a signed-in
+    // account that filled in the form. A signed-out visitor who books through
+    // Calendly is still announced by Calendly itself, and the click stays here
+    // for attribution in admin > Campaign setup.
 
     return json(200, { success: true, id: row.id });
   } catch (e) {

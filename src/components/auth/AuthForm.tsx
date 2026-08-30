@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { HONEYPOT_FIELD, botRejectionMessage, botSignals } from "../../../supabase/functions/_shared/bot-signals";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,12 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
   const [resetLoading, setResetLoading] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
+  // Anti-automation for the signup form. Supabase Auth is the endpoint here, so
+  // unlike the campaign-setup form these can only be checked in the browser —
+  // they stop scripted form fillers, not a bot posting straight to the API.
+  // The server-side control for that is Supabase's own CAPTCHA setting.
+  const [signupHoneypot, setSignupHoneypot] = useState("");
+  const signupFormOpenedAt = useRef(Date.now());
   const [googleLoading, setGoogleLoading] = useState(false);
   const { toast } = useToast();
 
@@ -179,6 +186,22 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const automation = botSignals({
+      honeypot: signupHoneypot,
+      elapsedMs: Date.now() - signupFormOpenedAt.current,
+    });
+    if (automation.length > 0) {
+      // Deliberately the same wording a real mistake would get: naming the
+      // check teaches whoever is probing how to pass it next time.
+      toast({
+        title: "Couldn't create your account",
+        description: botRejectionMessage(automation),
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -445,6 +468,21 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
 
           <TabsContent value="signup">
             <form onSubmit={handleSignUp} className="space-y-4">
+              {/* Not a real field. Hidden from people and from screen readers;
+                  anything in it came from a script filling every input. */}
+              <div aria-hidden="true" className="absolute h-0 w-0 overflow-hidden opacity-0">
+                <label htmlFor={`signup-${HONEYPOT_FIELD}`}>Fax</label>
+                <input
+                  id={`signup-${HONEYPOT_FIELD}`}
+                  name={HONEYPOT_FIELD}
+                  type="text"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={signupHoneypot}
+                  onChange={(e) => setSignupHoneypot(e.target.value)}
+                />
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="signup-email">Email</Label>
                 <Input
