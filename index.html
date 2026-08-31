@@ -1,20 +1,67 @@
 <!doctype html>
 <html lang="en" prefix="og: https://ogp.me/ns#">
   <head>
-    <!-- Google Tag Manager -->
-    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-    })(window,document,'script','dataLayer','GTM-WMG9PP55');</script>
-    <!-- End Google Tag Manager -->
-    <!-- Ahrefs Analytics -->
-    <script src="https://analytics.ahrefs.com/analytics.js" data-key="PYS2Q4NavMQXMXS+pt9cjw" async></script>
-    <!-- End Ahrefs Analytics -->
-    <!-- GetLeads visitor identification pixel -->
-    <script async src="https://id.getleads.io/pixels/e47566e3-2407-4d64-a70d-fe32d029b64a/p.js" data-key="e47566e3-2407-4d64-a70d-fe32d029b64a"></script>
-    <!-- End GetLeads pixel -->
     <meta charset="UTF-8" />
+    <!-- Clickjacking protection.
+         X-Frame-Options / CSP frame-ancestors must be real response headers, and the
+         current host does not emit them, so this break-out runs before anything paints:
+         if the document is framed by a foreign origin, navigate the top window here. -->
+    <script>
+      (function () {
+        try {
+          if (window.top === window.self) return;
+          var sameOrigin = false;
+          try { sameOrigin = window.top.location.origin === window.location.origin; } catch (e) { sameOrigin = false; }
+          if (!sameOrigin) {
+            // Lovable's editor/preview iframes are trusted; everything else gets broken out of.
+            var ref = document.referrer || "";
+            var trusted = /(^|\.)lovable\.(app|dev)$|(^|\.)lovableproject\.com$/i;
+            var host = "";
+            try { host = ref ? new URL(ref).hostname : ""; } catch (e) { host = ""; }
+            if (!(host && trusted.test(host))) {
+              window.top.location = window.self.location.href;
+            }
+          }
+        } catch (e) { /* never block rendering on this */ }
+      })();
+    </script>
+    <!-- Third-party analytics (GTM, Ahrefs, GetLeads) are loaded after the page is
+         interactive instead of in the critical path. On mobile these three scripts were
+         competing with the app bundle and fonts for bandwidth, which is what pushed LCP
+         past 4s; deferring them leaves measurement intact but off the LCP path. -->
+    <script>
+      (function () {
+        var loaded = false;
+        function loadThirdParty() {
+          if (loaded) return;
+          loaded = true;
+          // Google Tag Manager
+          window.dataLayer = window.dataLayer || [];
+          window.dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+          var add = function (src, key) {
+            var s = document.createElement('script');
+            s.async = true;
+            s.src = src;
+            if (key) s.setAttribute('data-key', key);
+            document.head.appendChild(s);
+          };
+          add('https://www.googletagmanager.com/gtm.js?id=GTM-WMG9PP55');
+          add('https://analytics.ahrefs.com/analytics.js', 'PYS2Q4NavMQXMQS+pt9cjw');
+          add('https://id.getleads.io/pixels/e47566e3-2407-4d64-a70d-fe32d029b64a/p.js', 'e47566e3-2407-4d64-a70d-fe32d029b64a');
+        }
+        function schedule() {
+          if ('requestIdleCallback' in window) {
+            window.requestIdleCallback(loadThirdParty, { timeout: 3000 });
+          } else {
+            setTimeout(loadThirdParty, 1500);
+          }
+        }
+        if (document.readyState === 'complete') schedule();
+        else window.addEventListener('load', schedule, { once: true });
+        // Safety net: never let a slow load event delay measurement by more than 5s.
+        setTimeout(loadThirdParty, 5000);
+      })();
+    </script>
     <!-- CSP is set as a real HTTP response header via Cloudflare Worker; meta tag removed so frame-ancestors is honored. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
     
