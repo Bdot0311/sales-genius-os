@@ -53,14 +53,18 @@ const fullName = (o: AnyRec): string | null => {
 // Map an arbitrary external payload onto our lead shape.
 const mapLead = (o: AnyRec, defaultSource: string | null) => {
   const email = pick(o, ["contact_email", "email", "email_address", "work_email"]);
+  const domain = pick(o, ["domain", "company_domain"]);
+  const explicitCompany = pick(o, ["company_name", "company", "organization", "org", "account_name"]);
   const row: AnyRec = {
     contact_email: email ? email.toLowerCase() : null,
     contact_name: fullName(o),
-    company_name: pick(o, ["company_name", "company", "organization", "org", "account_name"]),
+    // Visitor-identification providers commonly send { name, domain } for a
+    // company rather than a person. Use name as the company only in that shape.
+    company_name: explicitCompany || (domain ? pick(o, ["name"]) : null),
     job_title: pick(o, ["job_title", "title", "position", "role"]),
     contact_phone: pick(o, ["contact_phone", "phone", "phone_number", "mobile"]),
     linkedin_url: pick(o, ["linkedin_url", "linkedin", "linkedin_profile"]),
-    company_website: pick(o, ["company_website", "website", "domain", "company_domain"]),
+    company_website: pick(o, ["company_website", "website"]) || domain,
     industry: pick(o, ["industry", "sector"]),
     company_size: pick(o, ["company_size", "employees", "employee_range"]),
     country: pick(o, ["country", "country_name"]),
@@ -106,12 +110,14 @@ serve(async (req) => {
 
     const provided =
       req.headers.get("x-webhook-secret") ||
-      req.headers.get("x-outreign-secret") ||
-      (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
+      req.headers.get("x-outreign-secret");
 
-    if (!provided || provided !== hook.secret) {
+    // The high-entropy endpoint token is a bearer credential in the URL. Some
+    // webhook providers (including GetLeads) cannot attach custom headers, so
+    // the secret header is optional. If a caller supplies one, it must match.
+    if (provided && provided !== hook.secret) {
       log("Auth failed", { webhook_id: hook.id });
-      return json({ error: "Invalid or missing webhook secret" }, 401);
+      return json({ error: "Invalid webhook secret" }, 401);
     }
 
     // Simple abuse guard: max 500 accepted requests per hour per endpoint
