@@ -306,7 +306,7 @@ export const ModulesSection = () => {
                       {/* Number */}
                       <span
                         className="font-mono text-xs flex-shrink-0 w-8 pt-0.5 transition-colors duration-200"
-                        style={{ color: isActive ? "hsl(261 75% 65%)" : "hsl(261 75% 50% / 0.4)" }}
+                        style={{ color: isActive ? "hsl(261 75% 72%)" : "hsl(261 40% 68%)" }}
                       >
                         {mod.number}
                       </span>
