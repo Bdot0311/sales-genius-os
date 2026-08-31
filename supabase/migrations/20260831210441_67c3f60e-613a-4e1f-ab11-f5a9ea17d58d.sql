@@ -1,0 +1,21 @@
+REVOKE SELECT ON public.webhooks FROM authenticated, anon;
+
+GRANT SELECT (
+  id,
+  user_id,
+  name,
+  url,
+  events,
+  is_active,
+  created_at,
+  last_triggered_at,
+  total_triggers,
+  direction,
+  endpoint_token,
+  default_source,
+  last_received_at,
+  total_received
+) ON public.webhooks TO authenticated;
+
+GRANT ALL ON public.webhooks TO service_role;
+GRANT SELECT ON public.webhooks_safe TO authenticated, service_role;
