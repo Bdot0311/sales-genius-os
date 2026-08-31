@@ -4941,6 +4941,7 @@ export type Database = {
           attempt_count: number
           completed_at: string | null
           created_at: string
+          direction: string
           event: string
           id: string
           last_attempt_at: string | null
@@ -4957,6 +4958,7 @@ export type Database = {
           attempt_count?: number
           completed_at?: string | null
           created_at?: string
+          direction?: string
           event: string
           id?: string
           last_attempt_at?: string | null
@@ -4973,6 +4975,7 @@ export type Database = {
           attempt_count?: number
           completed_at?: string | null
           created_at?: string
+          direction?: string
           event?: string
           id?: string
           last_attempt_at?: string | null
@@ -5062,36 +5065,51 @@ export type Database = {
       webhooks: {
         Row: {
           created_at: string
+          default_source: string | null
+          direction: string
+          endpoint_token: string | null
           events: string[]
           id: string
           is_active: boolean
+          last_received_at: string | null
           last_triggered_at: string | null
           name: string
           secret: string
+          total_received: number
           total_triggers: number
           url: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          default_source?: string | null
+          direction?: string
+          endpoint_token?: string | null
           events: string[]
           id?: string
           is_active?: boolean
+          last_received_at?: string | null
           last_triggered_at?: string | null
           name: string
           secret: string
+          total_received?: number
           total_triggers?: number
-          url: string
+          url?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          default_source?: string | null
+          direction?: string
+          endpoint_token?: string | null
           events?: string[]
           id?: string
           is_active?: boolean
+          last_received_at?: string | null
           last_triggered_at?: string | null
           name?: string
           secret?: string
+          total_received?: number
           total_triggers?: number
           url?: string
           user_id?: string
@@ -5198,39 +5216,54 @@ export type Database = {
       webhooks_safe: {
         Row: {
           created_at: string | null
+          default_source: string | null
+          direction: string | null
+          endpoint_token: string | null
           events: string[] | null
           has_secret: boolean | null
           id: string | null
           is_active: boolean | null
+          last_received_at: string | null
           last_triggered_at: string | null
           name: string | null
           secret_masked: string | null
+          total_received: number | null
           total_triggers: number | null
           url: string | null
           user_id: string | null
         }
         Insert: {
           created_at?: string | null
+          default_source?: string | null
+          direction?: string | null
+          endpoint_token?: string | null
           events?: string[] | null
           has_secret?: never
           id?: string | null
           is_active?: boolean | null
+          last_received_at?: string | null
           last_triggered_at?: string | null
           name?: string | null
           secret_masked?: never
+          total_received?: number | null
           total_triggers?: number | null
           url?: string | null
           user_id?: string | null
         }
         Update: {
           created_at?: string | null
+          default_source?: string | null
+          direction?: string | null
+          endpoint_token?: string | null
           events?: string[] | null
           has_secret?: never
           id?: string | null
           is_active?: boolean | null
+          last_received_at?: string | null
           last_triggered_at?: string | null
           name?: string | null
           secret_masked?: never
+          total_received?: number | null
           total_triggers?: number | null
           url?: string | null
           user_id?: string | null
