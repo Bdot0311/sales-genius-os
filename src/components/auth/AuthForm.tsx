@@ -40,7 +40,11 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
   const [signupHoneypot, setSignupHoneypot] = useState("");
   // Cloudflare Turnstile: the one check that is actually verified server-side.
   const [captchaToken, setCaptchaToken] = useState("");
+  // Set when Cloudflare's script/widget can't load. We then fail open, matching
+  // the server verifier, rather than dead-ending signup with nothing to tick.
+  const [captchaUnavailable, setCaptchaUnavailable] = useState(false);
   const [captchaResetKey, setCaptchaResetKey] = useState(0);
+
   const signupFormOpenedAt = useRef(Date.now());
   const [googleLoading, setGoogleLoading] = useState(false);
   const { toast } = useToast();
@@ -206,7 +210,8 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
       return;
     }
 
-    if (TURNSTILE_SITE_KEY && !captchaToken) {
+    if (TURNSTILE_SITE_KEY && !captchaToken && !captchaUnavailable) {
+
       toast({
         title: "Please complete the verification",
         description: "Tick the human-verification box below the password field, then try again.",
@@ -546,10 +551,15 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
               </div>
 
               <TurnstileWidget
-                onVerify={setCaptchaToken}
+                onVerify={(t) => {
+                  setCaptchaUnavailable(false);
+                  setCaptchaToken(t);
+                }}
                 onExpire={() => setCaptchaToken("")}
+                onUnavailable={() => setCaptchaUnavailable(true)}
                 resetKey={captchaResetKey}
               />
+
 
               <Button
                 type="submit"
