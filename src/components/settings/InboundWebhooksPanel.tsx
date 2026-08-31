@@ -184,7 +184,7 @@ export const InboundWebhooksPanel = () => {
       setHooks((prev) => prev.map((h) => (h.id === data.id ? { ...h, fullSecret: secret } : h)));
       setShowCreate(false);
       setForm({ name: "", source: "", events: ["lead.created"] });
-      toast.success("Endpoint created. Copy the secret now — it won't be shown again.");
+      toast.success("Endpoint created. The unique URL is ready to receive data.");
     } catch (err) {
       console.error("Error creating inbound webhook:", err);
       toast.error("Failed to create endpoint");
@@ -339,8 +339,9 @@ export const InboundWebhooksPanel = () => {
         <CardHeader>
           <CardTitle className="text-base">How to send data in</CardTitle>
           <CardDescription>
-            Send a POST request with the header <code>x-webhook-secret</code> set to your endpoint
-            secret. Field names are flexible — <code>email</code>, <code>first_name</code>,{" "}
+            Send a POST request to the unique endpoint URL. Providers that support custom headers
+            can also send <code>x-webhook-secret</code> with the endpoint secret for an additional
+            check. Field names are flexible — <code>email</code>, <code>first_name</code>,{" "}
             <code>company</code>, <code>title</code>, <code>phone</code>, <code>linkedin</code>,{" "}
             <code>website</code>, <code>industry</code>, <code>country</code>, <code>stage</code> and{" "}
             <code>notes</code> are all recognised. Leads are matched on email, so repeat sends update
@@ -351,8 +352,9 @@ export const InboundWebhooksPanel = () => {
         <CardContent>
           <pre className="text-xs bg-muted p-3 rounded overflow-x-auto">
 {`POST ${FUNCTIONS_BASE}/<endpoint-token>
-x-webhook-secret: <endpoint-secret>
 Content-Type: application/json
+
+Optional: x-webhook-secret: <endpoint-secret>
 
 {
   "event": "lead.created",

@@ -109,9 +109,12 @@ serve(async (req) => {
       req.headers.get("x-outreign-secret") ||
       (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
 
-    if (!provided || provided !== hook.secret) {
+    // The high-entropy endpoint token is a bearer credential in the URL. Some
+    // webhook providers (including GetLeads) cannot attach custom headers, so
+    // the secret header is optional. If a caller supplies one, it must match.
+    if (provided && provided !== hook.secret) {
       log("Auth failed", { webhook_id: hook.id });
-      return json({ error: "Invalid or missing webhook secret" }, 401);
+      return json({ error: "Invalid webhook secret" }, 401);
     }
 
     // Simple abuse guard: max 500 accepted requests per hour per endpoint
