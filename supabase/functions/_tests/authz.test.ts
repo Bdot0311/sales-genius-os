@@ -25,7 +25,7 @@ const PRIVATE_FUNCTIONS = [
   "research-lead",
   "rest-api", "rotate-api-key", "run-webhook-tests", "score-lead",
   "search-prospects", "send-email", "send-push-notification",
-  "send-transactional-email", "sync-to-google-calendar", "test-webhook",
+  "sync-to-google-calendar", "test-webhook",
   "trigger-webhook", "update-lead-engagement-state", "upload-email-logo",
   "verify-domain", "verify-topup-payment",
 ];

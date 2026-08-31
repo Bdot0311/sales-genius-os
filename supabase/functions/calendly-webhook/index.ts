@@ -2,6 +2,7 @@
 // campaign-setup request. Without this, bookings only showed up as
 // "Unknown visitor" clicks with no way to know who to prepare for.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { sendAppEmail } from "../_shared/transactional-email-templates/send-app-email.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -183,25 +184,19 @@ Deno.serve(async (req) => {
 
   // Alert sales with the real person's details, not "Unknown visitor".
   try {
-    await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
-      body: JSON.stringify({
-        templateName: "campaign-setup-request",
-        recipientEmail: SALES_EMAIL,
-        idempotencyKey: `calendly-${kind}-${clean(p.uri, 200) || requestId || email}`,
-        templateData: {
-          name: name || "Unknown invitee",
-          email: email || "no email provided",
-          company: "",
-          website: "",
-          audience: answers.length ? answers.join(" | ") : eventName,
-          goal: canceled
-            ? "Meeting CANCELLED via Calendly"
-            : `Meeting booked for ${scheduledAt ?? "unknown time"}${timezone ? ` (${timezone})` : ""} — plan: ${userPlan ?? (userId ? "unknown" : "no account yet")}`,
-          submittedAt: new Date().toUTCString(),
-        },
-      }),
+    await sendAppEmail(admin, "campaign-setup-request", SALES_EMAIL, {
+      idempotencyKey: `calendly-${kind}-${clean(p.uri, 200) || requestId || email}`,
+      templateData: {
+        name: name || "Unknown invitee",
+        email: email || "no email provided",
+        company: "",
+        website: "",
+        audience: answers.length ? answers.join(" | ") : eventName,
+        goal: canceled
+          ? "Meeting CANCELLED via Calendly"
+          : `Meeting booked for ${scheduledAt ?? "unknown time"}${timezone ? ` (${timezone})` : ""} — plan: ${userPlan ?? (userId ? "unknown" : "no account yet")}`,
+        submittedAt: new Date().toUTCString(),
+      },
     });
   } catch (e) {
     console.warn("[calendly-webhook] alert email failed:", e);

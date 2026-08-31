@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { sendAppEmail } from "../_shared/transactional-email-templates/send-app-email.ts";
 
 // Outbound side of campaign setup: an admin asks a customer for consented,
 // time-limited access to their account. The customer still has to grant it in
@@ -57,20 +58,13 @@ Deno.serve(async (req) => {
     email = profile.email ?? email;
     if (!email) return json(400, { error: "That customer has no email on file" });
 
-    const sendRes = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
-      body: JSON.stringify({
-        templateName: "campaign-setup-access-request",
-        recipientEmail: email,
-        idempotencyKey: `campaign-setup-access-${userId}-${new Date().toISOString().slice(0, 10)}`,
-        templateData: { name: profile.full_name?.split(" ")[0] ?? null, note, days: 14 },
-      }),
+    const sendRes = await sendAppEmail(admin, "campaign-setup-access-request", email, {
+      idempotencyKey: `campaign-setup-access-${userId}-${new Date().toISOString().slice(0, 10)}`,
+      templateData: { name: profile.full_name?.split(" ")[0] ?? null, note, days: 14 },
     });
-    const sendText = await sendRes.text();
-    if (!sendRes.ok) {
-      console.error(`[request-campaign-setup-access] send failed [${sendRes.status}]: ${sendText}`);
-      return json(502, { error: "Could not send the access request email", details: sendText });
+    if (!sendRes.sent && sendRes.reason === "failed") {
+      console.error(`[request-campaign-setup-access] send failed: ${sendRes.error}`);
+      return json(502, { error: "Could not send the access request email", details: sendRes.error });
     }
 
     // Reuse an existing open request for this customer so the admin table shows

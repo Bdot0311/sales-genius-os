@@ -1,5 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { botRejectionMessage, botSignals } from '../_shared/bot-signals.ts'
+import { sendAppEmail } from '../_shared/transactional-email-templates/send-app-email.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -125,25 +126,15 @@ Deno.serve(async (req) => {
   const idBase = `${email}-${Date.now()}`
 
   const invoke = async (templateName: string, recipientEmail: string, templateData: Record<string, unknown>, keySuffix: string) => {
-    const res = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${serviceKey}`,
-      },
-      body: JSON.stringify({
-        templateName,
-        recipientEmail,
-        idempotencyKey: `campaign-setup-${keySuffix}-${idBase}`,
-        templateData,
-      }),
+    const result = await sendAppEmail(admin, templateName, recipientEmail, {
+      idempotencyKey: `campaign-setup-${keySuffix}-${idBase}`,
+      templateData,
     })
-    const text = await res.text()
-    if (!res.ok) {
-      console.error(`submit-campaign-setup: ${templateName} failed [${res.status}]: ${text}`)
+    if (!result.sent && result.reason === 'failed') {
+      console.error(`submit-campaign-setup: ${templateName} failed: ${result.error}`)
       throw new Error(`${templateName} send failed`)
     }
-    return text
+    return result
   }
 
   // Record the real request alongside the click that opened the form, so admin

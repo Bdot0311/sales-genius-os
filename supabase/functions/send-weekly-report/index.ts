@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { FROM_DOMAIN, sendManagedEmail } from "../_shared/managed-email.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -76,9 +77,15 @@ serve(async (req) => {
 <p style="text-align:center;margin-top:30px;"><a href="https://outreign.io/analytics" style="background:#8B5CF6;color:white;padding:12px 30px;text-decoration:none;border-radius:6px;">View Full Analytics →</a></p>
 </div></div></body></html>`;
 
-        const messageId = crypto.randomUUID();
-        await supabaseClient.rpc('enqueue_email', { queue_name: 'transactional_emails', payload: { message_id: messageId, to: (user.profiles as any).email, from: 'OutReign Reports <noreply@notify.bdotindustries.com>', sender_domain: 'notify.bdotindustries.com', subject: '📊 Your Weekly OutReign Performance Report', html, text: `Weekly Report: ${newLeads?.length||0} leads, ${totalEmails} emails, ${openRate}% open rate`, purpose: 'transactional', label: 'weekly-report', idempotency_key: `weekly-${user.user_id}-${new Date().toISOString().split('T')[0]}`, queued_at: new Date().toISOString() } });
-        await supabaseClient.from('email_send_log').insert({ message_id: messageId, template_name: 'weekly-report', recipient_email: (user.profiles as any).email, status: 'pending' });
+        await sendManagedEmail(supabaseClient, {
+          to: (user.profiles as any).email,
+          from: `OutReign Reports <noreply@${FROM_DOMAIN}>`,
+          subject: '📊 Your Weekly OutReign Performance Report',
+          html,
+          text: `Weekly Report: ${newLeads?.length||0} leads, ${totalEmails} emails, ${openRate}% open rate`,
+          label: 'weekly-report',
+          idempotencyKey: `weekly-${user.user_id}-${new Date().toISOString().split('T')[0]}`,
+        });
         reportsSent++;
       } catch (err) { logStep("Error for user", { userId: user.user_id, error: err }); }
     }

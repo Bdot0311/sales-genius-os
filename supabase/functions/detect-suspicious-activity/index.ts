@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { corsHeaders, requireServiceRole } from "../_shared/internal-auth.ts";
+import { FROM_DOMAIN, sendManagedEmail } from "../_shared/managed-email.ts";
 
 
 const logStep = (step: string, details?: any) => {
@@ -9,20 +10,19 @@ const logStep = (step: string, details?: any) => {
 };
 
 const enqueueAlert = async (supabase: any, to: string, subject: string, html: string, label: string) => {
-  const messageId = crypto.randomUUID();
-  await supabase.rpc('enqueue_email', {
-    queue_name: 'transactional_emails',
-    payload: {
-      message_id: messageId, to,
-      from: `OutReign Security <noreply@notify.bdotindustries.com>`,
-      sender_domain: 'notify.bdotindustries.com',
-      subject, html, text: subject,
-      purpose: 'transactional', label,
-      idempotency_key: `${label}-${to}-${Date.now()}`,
-      queued_at: new Date().toISOString(),
-    },
-  });
-  await supabase.from('email_send_log').insert({ message_id: messageId, template_name: label, recipient_email: to, status: 'pending' });
+  try {
+    await sendManagedEmail(supabase, {
+      to,
+      from: `OutReign Security <noreply@${FROM_DOMAIN}>`,
+      subject,
+      html,
+      text: subject,
+      label,
+      idempotencyKey: `${label}-${to}-${Date.now()}`,
+    });
+  } catch (error) {
+    console.error('[SUSPICIOUS-ACTIVITY] alert send failed', error instanceof Error ? error.message : error);
+  }
 };
 
 serve(async (req) => {

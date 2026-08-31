@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { corsHeaders } from "../_shared/internal-auth.ts";
+import { sendAppEmail } from "../_shared/transactional-email-templates/send-app-email.ts";
 
 // Sends a re-engagement check-in to users who haven't signed in for a while.
 // - Inactive threshold: 14 days since last_sign_in_at
@@ -87,15 +88,11 @@ serve(async (req) => {
       : null;
     const firstName = user.full_name ? String(user.full_name).split(' ')[0] : undefined;
 
-    const { error: sendErr } = await supabase.functions.invoke('send-transactional-email', {
-      body: {
-        templateName: TEMPLATE_NAME,
-        recipientEmail: user.email,
-        idempotencyKey: `reengage-${user.id}-${new Date().toISOString().slice(0, 10)}${opts.manual ? '-manual' : ''}`,
-        templateData: { name: firstName, daysInactive: daysInactive ?? undefined },
-      },
-      headers: { Authorization: `Bearer ${serviceKey}` },
+    const sendRes = await sendAppEmail(supabase, TEMPLATE_NAME, user.email, {
+      idempotencyKey: `reengage-${user.id}-${new Date().toISOString().slice(0, 10)}${opts.manual ? '-manual' : ''}`,
+      templateData: { name: firstName, daysInactive: daysInactive ?? undefined },
     });
+    const sendErr = sendRes.sent ? null : { message: sendRes.error ?? sendRes.reason };
 
     await recordAttempt({
       user_id: user.id,

@@ -9,7 +9,7 @@ const MIGRATION = read("../../supabase/migrations/20260821090000_deliverability_
 
 describe("critical alerts reach the user, not just the dashboard", () => {
   it("sends mail rather than only writing a row", () => {
-    expect(SCAN).toContain("send-transactional-email");
+    expect(SCAN).toContain("sendAppEmail");
     expect(SCAN).toContain("deliverability-alert");
   });
 
@@ -21,7 +21,7 @@ describe("critical alerts reach the user, not just the dashboard", () => {
     // send-system-alert exists but goes to admins — wrong audience for
     // "your domain is blacklisted".
     expect(SCAN).toMatch(/from\(\s*"profiles"\s*\)/);
-    expect(SCAN).toContain("recipientEmail: profile.email");
+    expect(SCAN).toContain("profile.email");
   });
 });
 

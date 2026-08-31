@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { sendManagedEmail } from "../_shared/managed-email.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
 import { rateLimit, rateLimitResponse, clientIp } from "../_shared/rate-limit.ts";
 
@@ -73,16 +74,13 @@ ${description}
 Use case:
 ${useCase}`;
 
-    await supabase.rpc("enqueue_email", {
-      queue_name: "email_queue",
-      payload: {
-        purpose: "transactional",
-        to: notifyTo,
-        reply_to: email,
-        subject,
-        text,
-        html: text.replace(/\n/g, "<br/>"),
-      },
+    await sendManagedEmail(supabase, {
+      to: notifyTo,
+      replyTo: email,
+      subject,
+      text,
+      html: text.replace(/\n/g, "<br/>"),
+      label: "integration-request",
     });
 
     return new Response(JSON.stringify({ success: true }), {

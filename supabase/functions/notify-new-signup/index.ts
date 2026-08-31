@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, requireServiceRole } from "../_shared/internal-auth.ts";
 import { captureServerEvent } from "../_shared/posthog.ts";
+import { sendAppEmail } from "../_shared/transactional-email-templates/send-app-email.ts";
 
 
 serve(async (req) => {
@@ -77,55 +78,39 @@ serve(async (req) => {
 
 
     // 1. Admin notification
-    const { error: notifyErr } = await supabase.functions.invoke('send-transactional-email', {
-      body: {
-        templateName: 'signup-notification',
-        recipientEmail: NOTIFICATION_EMAIL,
-        idempotencyKey: `signup-notify-${userId}`,
-        templateData: {
-          userName: fullName,
-          userEmail: userEmail,
-          plan: planLabel,
-          signupDate: signupTime,
-        },
+    const notifyRes = await sendAppEmail(supabase, 'signup-notification', NOTIFICATION_EMAIL, {
+      idempotencyKey: `signup-notify-${userId}`,
+      templateData: {
+        userName: fullName,
+        userEmail: userEmail,
+        plan: planLabel,
+        signupDate: signupTime,
       },
     });
-    if (notifyErr) console.error('signup-notification error:', notifyErr);
+    if (!notifyRes.sent) console.error('signup-notification not sent:', notifyRes.reason, notifyRes.error ?? '');
 
     // 2. Welcome email to the new user
-    const { error: welcomeErr } = await supabase.functions.invoke('send-transactional-email', {
-      body: {
-        templateName: 'welcome-email',
-        recipientEmail: userEmail,
-        idempotencyKey: `welcome-${userId}`,
-        templateData: { name: displayName },
-      },
+    const welcomeRes = await sendAppEmail(supabase, 'welcome-email', userEmail, {
+      idempotencyKey: `welcome-${userId}`,
+      templateData: { name: displayName },
     });
-    if (welcomeErr) console.error('welcome-email error:', welcomeErr);
+    if (!welcomeRes.sent) console.error('welcome-email not sent:', welcomeRes.reason, welcomeRes.error ?? '');
 
     // 3. Personal founder note
-    const { error: founderErr } = await supabase.functions.invoke('send-transactional-email', {
-      body: {
-        templateName: 'founder-note',
-        recipientEmail: userEmail,
-        idempotencyKey: `founder-note-${userId}`,
-        templateData: { name: displayName },
-      },
+    const founderRes = await sendAppEmail(supabase, 'founder-note', userEmail, {
+      idempotencyKey: `founder-note-${userId}`,
+      templateData: { name: displayName },
     });
-    if (founderErr) console.error('founder-note error:', founderErr);
+    if (!founderRes.sent) console.error('founder-note not sent:', founderRes.reason, founderRes.error ?? '');
 
     // 4. Nurturing onboarding offer — free help launching first campaign
-    const { error: onboardingErr } = await supabase.functions.invoke('send-transactional-email', {
-      body: {
-        templateName: 'onboarding-offer',
-        recipientEmail: userEmail,
-        idempotencyKey: `onboarding-offer-${userId}`,
-        templateData: { name: displayName },
-      },
+    const onboardingRes = await sendAppEmail(supabase, 'onboarding-offer', userEmail, {
+      idempotencyKey: `onboarding-offer-${userId}`,
+      templateData: { name: displayName },
     });
-    if (onboardingErr) console.error('onboarding-offer error:', onboardingErr);
+    if (!onboardingRes.sent) console.error('onboarding-offer not sent:', onboardingRes.reason, onboardingRes.error ?? '');
 
-    console.log('Signup notification queued for:', userEmail);
+    console.log('Signup emails processed for:', userEmail);
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

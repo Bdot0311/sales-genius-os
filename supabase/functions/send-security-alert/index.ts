@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { FROM_DOMAIN, sendManagedEmail } from "../_shared/managed-email.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
@@ -115,26 +116,19 @@ serve(async (req) => {
 
     // Send to each admin individually via the queue
     for (const recipient of emailRecipients) {
-      const messageId = crypto.randomUUID();
-      await supabaseClient.rpc('enqueue_email', {
-        queue_name: 'transactional_emails',
-        payload: {
-          message_id: messageId,
+      try {
+        await sendManagedEmail(supabaseClient, {
           to: recipient,
-          from: `OutReign Security <noreply@notify.bdotindustries.com>`,
-          sender_domain: 'notify.bdotindustries.com',
+          from: `OutReign Security <noreply@${FROM_DOMAIN}>`,
           subject: `🚨 [${severity.toUpperCase()}] Security Alert: ${event_type.replace(/_/g, ' ')}`,
           html: emailHtml,
           text: `Security Alert: ${event_type} (${severity})`,
-          purpose: 'transactional',
           label: 'security-alert',
-          idempotency_key: `security-${event_type}-${recipient}-${Date.now()}`,
-          queued_at: new Date().toISOString(),
-        },
-      });
-      await supabaseClient.from('email_send_log').insert({
-        message_id: messageId, template_name: 'security-alert', recipient_email: recipient, status: 'pending',
-      });
+          idempotencyKey: `security-${event_type}-${recipient}-${Date.now()}`,
+        });
+      } catch (sendError) {
+        console.error('security-alert send failed', sendError instanceof Error ? sendError.message : sendError);
+      }
     }
 
     logStep("Alert sent successfully", { recipients: emailRecipients.length });

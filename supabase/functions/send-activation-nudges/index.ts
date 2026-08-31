@@ -1,4 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.45.0'
+import { sendAppEmail } from '../_shared/transactional-email-templates/send-app-email.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -66,17 +67,13 @@ Deno.serve(async (req) => {
       }
 
       const idempotency = `nudge-${rule.template}-${row.user_id}`
-      const { error: invokeErr } = await admin.functions.invoke('send-transactional-email', {
-        body: {
-          templateName: rule.template,
-          recipientEmail: prof.email,
-          idempotencyKey: idempotency,
-          templateData: { name: (prof.full_name || '').split(' ')[0] || undefined },
-        },
+      const sendRes = await sendAppEmail(admin, rule.template, prof.email, {
+        idempotencyKey: idempotency,
+        templateData: { name: (prof.full_name || '').split(' ')[0] || undefined },
       })
 
-      if (invokeErr) {
-        console.error('send failed', row.user_id, rule.template, invokeErr)
+      if (!sendRes.sent && sendRes.reason === 'failed') {
+        console.error('send failed', row.user_id, rule.template, sendRes.error)
         continue
       }
 

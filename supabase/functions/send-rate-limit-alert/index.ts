@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { sendManagedEmail } from "../_shared/managed-email.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
@@ -78,35 +79,16 @@ serve(async (req) => {
       </div>
     </body></html>`;
 
-    const messageId = crypto.randomUUID();
-
-    const { error: enqueueError } = await supabaseClient.rpc('enqueue_email', {
-      queue_name: 'transactional_emails',
-      payload: {
-        message_id: messageId,
-        to: profile.email,
-        from: `OutReign <noreply@notify.bdotindustries.com>`,
-        sender_domain: 'notify.bdotindustries.com',
-        subject,
-        html: emailHtml,
-        text: `Rate limit ${isExceeded ? 'exceeded' : 'warning'} for API key ${keyName}: ${usage}/${limit} (${percentage}%)`,
-        purpose: 'transactional',
-        label: 'rate-limit-alert',
-        idempotency_key: `rate-limit-${apiKeyId}-${Date.now()}`,
-        queued_at: new Date().toISOString(),
-      },
+    await sendManagedEmail(supabaseClient, {
+      to: profile.email,
+      subject,
+      html: emailHtml,
+      text: `Rate limit ${isExceeded ? 'exceeded' : 'warning'} for API key ${keyName}: ${usage}/${limit} (${percentage}%)`,
+      label: 'rate-limit-alert',
+      idempotencyKey: `rate-limit-${apiKeyId}-${Date.now()}`,
     });
 
-    if (enqueueError) throw enqueueError;
-
-    await supabaseClient.from('email_send_log').insert({
-      message_id: messageId,
-      template_name: 'rate-limit-alert',
-      recipient_email: profile.email,
-      status: 'pending',
-    });
-
-    logStep("Email enqueued successfully");
+    logStep("Email sent successfully");
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
