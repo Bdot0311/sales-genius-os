@@ -551,10 +551,15 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
               </div>
 
               <TurnstileWidget
-                onVerify={setCaptchaToken}
+                onVerify={(t) => {
+                  setCaptchaUnavailable(false);
+                  setCaptchaToken(t);
+                }}
                 onExpire={() => setCaptchaToken("")}
+                onUnavailable={() => setCaptchaUnavailable(true)}
                 resetKey={captchaResetKey}
               />
+
 
               <Button
                 type="submit"
