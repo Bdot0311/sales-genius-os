@@ -96,6 +96,8 @@ export const TurnstileWidget = ({ onVerify, onExpire, onUnavailable, resetKey = 
 
     return () => {
       cancelled = true;
+      window.clearTimeout(timeout);
+
       const turnstile = (window as any).turnstile;
       if (turnstile && widgetId.current) {
         try {
