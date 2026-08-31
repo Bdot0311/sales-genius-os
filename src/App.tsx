@@ -66,7 +66,6 @@ const Inbox = lazy(() => import("./pages/Inbox"));
 const Deliverability = lazy(() => import("./pages/Deliverability"));
 const Sequences = lazy(() => import("./pages/Sequences"));
 const MessageBlocks = lazy(() => import("./pages/MessageBlocks"));
-const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const ClientPortal = lazy(() => import("./pages/ClientPortal"));
 const Blog = lazy(() => import("./pages/Blog"));
 const BlogPost = lazy(() => import("./pages/BlogPost"));
@@ -532,7 +531,6 @@ const App = () => {
               <Route path="/dashboard/agent/chat" element={<MaintenanceGuard><AgentChat /></MaintenanceGuard>} />
               <Route path="/dashboard/agent/chat/:threadId" element={<MaintenanceGuard><AgentChat /></MaintenanceGuard>} />
               <Route path="/admin/*" element={<MaintenanceGuard><Admin /></MaintenanceGuard>} />
-              <Route path="/unsubscribe" element={<Unsubscribe />} />
               <Route path="/client-portal/:token" element={<ClientPortal />} />
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogPost />} />

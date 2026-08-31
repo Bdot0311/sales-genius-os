@@ -10,7 +10,6 @@ const SKIP_PATTERNS = [
   "track-email-open",
   "track-email-click",
   "/functions/v1/unsubscribe",
-  "handle-email-unsubscribe",
 ];
 
 export function buildClickUrl(supabaseUrl: string, pixelId: string, target: string): string {

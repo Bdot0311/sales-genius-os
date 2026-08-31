@@ -36,8 +36,7 @@ const PUBLIC_FUNCTIONS = [
   "check-signup-eligibility",   // pre-signup
   "create-account-with-subscription", // signup flow
   "create-checkout",            // unauthenticated checkout (per memory)
-  "handle-email-unsubscribe",   // public unsubscribe link
-  "handle-email-suppression",   // provider webhook
+  "handle-email-events",        // Lovable email events webhook (signed, not JWT)
   "llms-txt",                   // marketing
   "notify-new-signup",          // db trigger
   "reset-password",             // public reset

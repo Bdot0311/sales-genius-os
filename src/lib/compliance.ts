@@ -20,7 +20,7 @@ export interface UnsubscribeToken {
 
 /**
  * Generates a secure unsubscribe URL
- * Aligns with existing handle-email-unsubscribe edge function
+ * Unsubscribe handling is managed by Lovable email delivery
  */
 export function generateUnsubscribeUrl(token: UnsubscribeToken): string {
   // Use the same token format as the existing system

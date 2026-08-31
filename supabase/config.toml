@@ -96,16 +96,10 @@ project_id = "ghgfjnepvxvxrncmskys"
   [functions.slack-oauth-callback]
     verify_jwt = false
 
-  [functions.handle-email-suppression]
-    verify_jwt = false
-  [functions.handle-email-unsubscribe]
-    verify_jwt = false
   [functions.parse-lead-query]
     verify_jwt = true
   [functions.preview-transactional-email]
     verify_jwt = false
-  [functions.process-email-queue]
-    verify_jwt = true
   [functions.process-scheduled-emails]
     verify_jwt = false
   [functions.process-sequence-step]
@@ -132,8 +126,6 @@ project_id = "ghgfjnepvxvxrncmskys"
     verify_jwt = false
   [functions.send-subscription-confirmation]
     verify_jwt = false
-  [functions.send-transactional-email]
-    verify_jwt = true
   [functions.send-welcome-email]
     verify_jwt = false
   [functions.stripe-webhook]
