@@ -318,7 +318,7 @@ export const ModulesSection = () => {
                         >
                           {mod.title}
                         </h3>
-                        <p className="text-sm mb-2" style={{ color: "hsl(261 75% 65% / 0.75)" }}>
+                        <p className="text-sm mb-2" style={{ color: "hsl(261 75% 80%)" }}>
                           {mod.tagline}
                         </p>
                         {/* Description only expands when active */}
