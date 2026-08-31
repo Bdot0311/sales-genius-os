@@ -1,6 +1,8 @@
 project_id = "ghgfjnepvxvxrncmskys"
 
 [functions]
+  [functions.dispatch-webhooks]
+    verify_jwt = true
   [functions.detect-hiring-signals]
     verify_jwt = true
   [functions.detect-funding-signals]
