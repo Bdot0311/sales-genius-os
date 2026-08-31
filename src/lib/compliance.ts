@@ -47,15 +47,9 @@ export function generateComplianceFooter(options: ComplianceFooterOptions): stri
   }
 
   if (options.includeUnsubscribe) {
-    const token: UnsubscribeToken = {
-      userId: options.userId,
-      leadId: options.leadId,
-      campaignId: options.campaignId,
-      timestamp: Date.now(),
-      type: 'unsubscribe',
-    };
-    const unsubscribeUrl = generateUnsubscribeUrl(token);
-    parts.push(`To unsubscribe from future emails: ${unsubscribeUrl}`);
+    // Reply-based opt-out: outreach is sent from the user's own mailbox, so a
+    // reply is the opt-out channel (CAN-SPAM compliant) — no hosted page needed.
+    parts.push(`To unsubscribe from future emails, reply to this message with "unsubscribe".`);
   }
 
   return parts.join('\n\n');
