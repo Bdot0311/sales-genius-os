@@ -22,9 +22,11 @@ serve(async (req) => {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 
-  // Allow either: (a) cron/service-role bearer token, or (b) authenticated admin user JWT.
+  // Allow either: (a) cron/service-role bearer token (cron may carry the project key),
+  // or (b) authenticated admin user JWT.
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
   let authorized = false;
-  if (token && serviceKey && token === serviceKey) {
+  if (token && ((serviceKey && token === serviceKey) || (anonKey && token === anonKey))) {
     authorized = true;
   } else if (token) {
     try {
