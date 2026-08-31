@@ -176,8 +176,24 @@ serve(async (req) => {
       payload.contact ??
       payload.deal ??
       (payload.person || payload.company
-        ? { ...(payload.company ?? {}), ...(payload.person ?? {}) }
+        ? {
+            ...(payload.person ?? {}),
+            ...(payload.company
+              ? {
+                  company_name:
+                    pick(payload.company, ["company_name", "name", "company", "organization"]) ??
+                    undefined,
+                  company_website:
+                    pick(payload.company, ["company_website", "website", "domain"]) ?? undefined,
+                  industry: pick(payload.company, ["industry", "sector"]) ?? undefined,
+                  company_size:
+                    pick(payload.company, ["company_size", "employees", "employee_range"]) ??
+                    undefined,
+                }
+              : {}),
+          }
         : payload);
+
     const items: AnyRec[] = Array.isArray(payload.leads)
       ? payload.leads
       : Array.isArray(payload.records)
