@@ -154,11 +154,12 @@ serve(async (req) => {
       return json({ error: "Body must be valid JSON" }, 400);
     }
 
-    const action: string =
+    const rawAction: string =
       str(payload.action) || str(payload.event) || str(payload.type) || "lead.created";
+    const action: string = ACTION_ALIASES[rawAction.toLowerCase()] ?? rawAction;
     if (!SUPPORTED_ACTIONS.includes(action as any)) {
       return json(
-        { error: `Unsupported action "${action}"`, supported: SUPPORTED_ACTIONS },
+        { error: `Unsupported action "${rawAction}"`, supported: SUPPORTED_ACTIONS },
         400,
       );
     }
@@ -166,9 +167,17 @@ serve(async (req) => {
       return json({ error: `Action "${action}" is not enabled on this endpoint` }, 403);
     }
 
-    // Records can arrive as data / lead / leads[] / records[] or the bare body
+    // Records can arrive as data / lead / leads[] / records[], a nested
+    // person/company object (visitor identification), or the bare body
     const raw =
-      payload.data ?? payload.lead ?? payload.record ?? payload.contact ?? payload.deal ?? payload;
+      payload.data ??
+      payload.lead ??
+      payload.record ??
+      payload.contact ??
+      payload.deal ??
+      (payload.person || payload.company
+        ? { ...(payload.company ?? {}), ...(payload.person ?? {}) }
+        : payload);
     const items: AnyRec[] = Array.isArray(payload.leads)
       ? payload.leads
       : Array.isArray(payload.records)
@@ -176,6 +185,7 @@ serve(async (req) => {
         : Array.isArray(raw)
           ? raw
           : [raw];
+
 
     if (items.length === 0) return json({ error: "No records in payload" }, 400);
     if (items.length > 100) return json({ error: "Max 100 records per request" }, 400);
