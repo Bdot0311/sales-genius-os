@@ -20,7 +20,7 @@ export interface UnsubscribeToken {
 
 /**
  * Generates a secure unsubscribe URL
- * Aligns with existing handle-email-unsubscribe edge function
+ * Unsubscribe handling is managed by Lovable email delivery
  */
 export function generateUnsubscribeUrl(token: UnsubscribeToken): string {
   // Use the same token format as the existing system
@@ -47,15 +47,9 @@ export function generateComplianceFooter(options: ComplianceFooterOptions): stri
   }
 
   if (options.includeUnsubscribe) {
-    const token: UnsubscribeToken = {
-      userId: options.userId,
-      leadId: options.leadId,
-      campaignId: options.campaignId,
-      timestamp: Date.now(),
-      type: 'unsubscribe',
-    };
-    const unsubscribeUrl = generateUnsubscribeUrl(token);
-    parts.push(`To unsubscribe from future emails: ${unsubscribeUrl}`);
+    // Reply-based opt-out: outreach is sent from the user's own mailbox, so a
+    // reply is the opt-out channel (CAN-SPAM compliant) — no hosted page needed.
+    parts.push(`To unsubscribe from future emails, reply to this message with "unsubscribe".`);
   }
 
   return parts.join('\n\n');

@@ -6,6 +6,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
+import { sendAppEmail } from "../_shared/transactional-email-templates/send-app-email.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -186,27 +187,23 @@ async function notifyCritical(supabase: any): Promise<number> {
       // forever.
       if (!profile?.email) continue;
 
-      const { error: sendErr } = await supabase.functions.invoke("send-transactional-email", {
-        body: {
-          templateName: "deliverability-alert",
-          recipientEmail: profile.email,
-          // Alert ids rather than a timestamp: a retry after a partial failure
-          // must be recognised as the same message, and the set of ids is what
-          // actually identifies this notification.
-          idempotencyKey: `deliverability-${alerts.map((a: any) => a.id).sort().join("-")}`.slice(0, 200),
-          templateData: {
-            name: (profile.full_name || "").split(" ")[0] || undefined,
-            issues: alerts.map((a: any) => ({
-              type: a.alert_type,
-              domain: a.domain,
-              message: a.message,
-            })),
-          },
+      const sendRes = await sendAppEmail(supabase, "deliverability-alert", profile.email, {
+        // Alert ids rather than a timestamp: a retry after a partial failure
+        // must be recognised as the same message, and the set of ids is what
+        // actually identifies this notification.
+        idempotencyKey: `deliverability-${alerts.map((a: any) => a.id).sort().join("-")}`.slice(0, 200),
+        templateData: {
+          name: (profile.full_name || "").split(" ")[0] || undefined,
+          issues: alerts.map((a: any) => ({
+            type: a.alert_type,
+            domain: a.domain,
+            message: a.message,
+          })),
         },
       });
 
-      if (sendErr) {
-        console.error(`[deliverability-alerts-scan] notify failed for ${userId}:`, sendErr.message ?? sendErr);
+      if (!sendRes.sent && sendRes.reason === 'failed') {
+        console.error(`[deliverability-alerts-scan] notify failed for ${userId}:`, sendRes.error);
         continue; // unstamped, so the next run tries again
       }
 

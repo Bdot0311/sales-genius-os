@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { sendManagedEmail } from "../_shared/managed-email.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
@@ -147,25 +148,22 @@ serve(async (req) => {
       </html>
     `;
 
-    const { error: emailError } = await supabaseAdmin.rpc("enqueue_email", {
-      queue_name: "transactional_emails",
-      payload: {
-        message_id: crypto.randomUUID(),
+    let emailError: unknown = null;
+    try {
+      await sendManagedEmail(supabaseAdmin, {
         to: email,
-        from: "OutReign <noreply@notify.bdotindustries.com>",
-        sender_domain: "notify.bdotindustries.com",
         subject: "Reset Your OutReign Password",
         html: resetHtml,
         text: `Your OutReign admin sent you a password reset. Visit this link to reset: ${resetLink}. If you weren't expecting this, ignore this email.`,
-        purpose: "transactional",
         label: "admin-password-reset",
-        idempotency_key: `admin-password-reset-${email}-${Date.now()}`,
-        queued_at: new Date().toISOString(),
-      },
-    });
+        idempotencyKey: `admin-password-reset-${email}-${Date.now()}`,
+      });
+    } catch (err) {
+      emailError = err;
+    }
 
     if (emailError) {
-      console.error("Error enqueuing password reset email:", emailError);
+      console.error("Error sending password reset email:", emailError);
       return new Response(JSON.stringify({ error: "Failed to send email" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

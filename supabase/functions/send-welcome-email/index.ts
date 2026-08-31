@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { sendManagedEmail } from "../_shared/managed-email.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -97,38 +98,17 @@ serve(async (req) => {
 </body>
 </html>`;
 
-    // Enqueue via Lovable email infrastructure
-    const { error: enqueueError } = await supabase.rpc('enqueue_email', {
-      queue_name: 'transactional_emails',
-      payload: {
-        message_id: messageId,
-        to: email,
-        from: `OutReign <noreply@notify.bdotindustries.com>`,
-        sender_domain: 'notify.bdotindustries.com',
-        subject: 'Welcome to OutReign - Your Quick Start Guide 🚀',
-        html,
-        text: `Welcome to OutReign, ${displayName}! Sign in at ${appUrl}/auth`,
-        purpose: 'transactional',
-        label: 'welcome-email',
-        idempotency_key: `welcome-${email}-${Date.now()}`,
-        queued_at: new Date().toISOString(),
-      },
+    // Send via Lovable managed email delivery
+    await sendManagedEmail(supabase, {
+      to: email,
+      subject: 'Welcome to OutReign - Your Quick Start Guide 🚀',
+      html,
+      text: `Welcome to OutReign, ${displayName}! Sign in at ${appUrl}/auth`,
+      label: 'welcome-email',
+      idempotencyKey: `welcome-${email}-${Date.now()}`,
     });
 
-    if (enqueueError) {
-      console.error("Failed to enqueue welcome email:", enqueueError);
-      throw new Error("Failed to send welcome email");
-    }
-
-    // Log to email_send_log
-    await supabase.from('email_send_log').insert({
-      message_id: messageId,
-      template_name: 'welcome-email',
-      recipient_email: email,
-      status: 'pending',
-    });
-
-    console.log("Welcome email enqueued successfully");
+    console.log("Welcome email sent successfully");
 
     return new Response(
       JSON.stringify({ success: true, to: email }),

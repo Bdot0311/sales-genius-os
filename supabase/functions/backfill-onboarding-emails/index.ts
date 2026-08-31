@@ -2,6 +2,7 @@
 // recent signups who haven't received it yet. Requires service_role auth.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { sendAppEmail } from '../_shared/transactional-email-templates/send-app-email.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -67,26 +68,22 @@ Deno.serve(async (req) => {
 
     const firstName = (p.full_name as string | null)?.split(' ')[0] || null;
 
-    const { error: sendErr } = await supabase.functions.invoke('send-transactional-email', {
-      body: {
-        templateName: 'onboarding-offer',
-        recipientEmail: p.email,
-        idempotencyKey: `onboarding-offer-backfill-${p.id}`,
-        templateData: { firstName },
-      },
+    const sendRes = await sendAppEmail(supabase, 'onboarding-offer', p.email, {
+      idempotencyKey: `onboarding-offer-backfill-${p.id}`,
+      templateData: { firstName },
     });
 
-    if (sendErr) {
-      results.push({ email, status: 'failed', error: sendErr.message });
+    if (!sendRes.sent) {
+      results.push({ email, status: sendRes.reason === 'failed' ? 'failed' : sendRes.reason, error: sendRes.error });
     } else {
-      results.push({ email, status: 'queued' });
+      results.push({ email, status: 'sent' });
     }
   }
 
   return new Response(
     JSON.stringify({
       total: profiles?.length ?? 0,
-      queued: results.filter((r) => r.status === 'queued').length,
+      sent: results.filter((r) => r.status === 'sent').length,
       skipped: results.filter((r) => r.status === 'skipped_already_sent').length,
       failed: results.filter((r) => r.status === 'failed').length,
       results,

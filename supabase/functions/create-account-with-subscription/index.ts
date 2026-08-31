@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { sendManagedEmail } from "../_shared/managed-email.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -192,28 +193,16 @@ serve(async (req) => {
         </html>
       `;
 
-      const { error: emailError } = await supabaseAdmin.rpc('enqueue_email', {
-        queue_name: 'transactional_emails',
-        payload: {
-          message_id: crypto.randomUUID(),
-          to: email,
-          from: 'OutReign <noreply@notify.bdotindustries.com>',
-          sender_domain: 'notify.bdotindustries.com',
-          subject: 'Welcome to OutReign - Your Account Credentials',
-          html: credentialsHtml,
-          text: `Welcome to OutReign! Email: ${email}, Temporary Password: ${tempPassword}. Sign in at ${appUrl}/auth. Please change your password after first login.`,
-          purpose: 'transactional',
-          label: 'account-credentials',
-          idempotency_key: `account-creds-${userData.user?.id}-${Date.now()}`,
-          queued_at: new Date().toISOString(),
-        },
+      await sendManagedEmail(supabaseAdmin, {
+        to: email,
+        subject: 'Welcome to OutReign - Your Account Credentials',
+        html: credentialsHtml,
+        text: `Welcome to OutReign! Email: ${email}, Temporary Password: ${tempPassword}. Sign in at ${appUrl}/auth. Please change your password after first login.`,
+        label: 'account-credentials',
+        idempotencyKey: `account-creds-${userData.user?.id}-${Date.now()}`,
       });
-
-      if (emailError) {
-        console.error("Error enqueuing credentials email:", emailError);
-      }
     } catch (emailError) {
-      console.error("Error enqueuing credentials email:", emailError);
+      console.error("Error sending credentials email:", emailError);
     }
 
     return new Response(

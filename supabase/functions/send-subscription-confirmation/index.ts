@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { sendManagedEmail } from "../_shared/managed-email.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -92,33 +93,16 @@ serve(async (req) => {
 </body>
 </html>`;
 
-    const { error: enqueueError } = await supabase.rpc('enqueue_email', {
-      queue_name: 'transactional_emails',
-      payload: {
-        message_id: messageId,
-        to: email,
-        from: `OutReign <noreply@notify.bdotindustries.com>`,
-        sender_domain: 'notify.bdotindustries.com',
-        subject: `You're now on the ${planName} Plan! 🎉`,
-        html,
-        text: `Hey ${displayName}! Your ${planName} Plan is now active. Start using OutReign at ${appUrl}/dashboard`,
-        purpose: 'transactional',
-        label: 'subscription-confirmation',
-        idempotency_key: `sub-confirm-${email}-${Date.now()}`,
-        queued_at: new Date().toISOString(),
-      },
+    await sendManagedEmail(supabase, {
+      to: email,
+      subject: `You're now on the ${planName} Plan! 🎉`,
+      html,
+      text: `Hey ${displayName}! Your ${planName} Plan is now active. Start using OutReign at ${appUrl}/dashboard`,
+      label: 'subscription-confirmation',
+      idempotencyKey: `sub-confirm-${email}-${Date.now()}`,
     });
 
-    if (enqueueError) throw new Error("Failed to enqueue email");
-
-    await supabase.from('email_send_log').insert({
-      message_id: messageId,
-      template_name: 'subscription-confirmation',
-      recipient_email: email,
-      status: 'pending',
-    });
-
-    console.log("Subscription confirmation email enqueued successfully");
+    console.log("Subscription confirmation email sent successfully");
     return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
   } catch (error: any) {
     console.error("Subscription confirmation email error:", error);

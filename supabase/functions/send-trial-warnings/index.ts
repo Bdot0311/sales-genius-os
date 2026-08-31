@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { corsHeaders, requireServiceRole } from "../_shared/internal-auth.ts";
+import { sendManagedEmail } from "../_shared/managed-email.ts";
 
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
@@ -27,25 +28,14 @@ serve(async (req) => {
     let totalSent = 0;
 
     const sendEmail = async (to: string, subject: string, html: string, label: string) => {
-      const messageId = crypto.randomUUID();
-      const { error } = await supabaseClient.rpc('enqueue_email', {
-        queue_name: 'transactional_emails',
-        payload: {
-          message_id: messageId,
-          to,
-          from: `OutReign <noreply@notify.bdotindustries.com>`,
-          sender_domain: 'notify.bdotindustries.com',
-          subject,
-          html,
-          text: subject,
-          purpose: 'transactional',
-          label,
-          idempotency_key: `${label}-${to}-${Date.now()}`,
-          queued_at: new Date().toISOString(),
-        },
+      await sendManagedEmail(supabaseClient, {
+        to,
+        subject,
+        html,
+        text: subject,
+        label,
+        idempotencyKey: `${label}-${to}-${Date.now()}`,
       });
-      if (error) throw new Error(`Failed to enqueue email: ${error.message}`);
-      await supabaseClient.from('email_send_log').insert({ message_id: messageId, template_name: label, recipient_email: to, status: 'pending' });
     };
 
     const upgradeUrl = Deno.env.get("APP_URL") ? `${Deno.env.get("APP_URL")}/pricing` : "https://outreign.io/pricing";

@@ -90,7 +90,7 @@ describe("only a real submission alerts sales", () => {
   const formSubmit = readFileSync("supabase/functions/submit-campaign-setup/index.ts", "utf8");
 
   it("the click logger sends no email at all", () => {
-    expect(clickLogger).not.toMatch(/send-transactional-email/);
+    expect(clickLogger).not.toMatch(/sendAppEmail|send-transactional-email/);
     expect(clickLogger).not.toMatch(/campaign-setup-request['"]/);
   });
 

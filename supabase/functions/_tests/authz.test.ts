@@ -25,7 +25,7 @@ const PRIVATE_FUNCTIONS = [
   "research-lead",
   "rest-api", "rotate-api-key", "run-webhook-tests", "score-lead",
   "search-prospects", "send-email", "send-push-notification",
-  "send-transactional-email", "sync-to-google-calendar", "test-webhook",
+  "sync-to-google-calendar", "test-webhook",
   "trigger-webhook", "update-lead-engagement-state", "upload-email-logo",
   "verify-domain", "verify-topup-payment",
 ];
@@ -36,8 +36,7 @@ const PUBLIC_FUNCTIONS = [
   "check-signup-eligibility",   // pre-signup
   "create-account-with-subscription", // signup flow
   "create-checkout",            // unauthenticated checkout (per memory)
-  "handle-email-unsubscribe",   // public unsubscribe link
-  "handle-email-suppression",   // provider webhook
+  "handle-email-events",        // Lovable email events webhook (signed, not JWT)
   "llms-txt",                   // marketing
   "notify-new-signup",          // db trigger
   "reset-password",             // public reset

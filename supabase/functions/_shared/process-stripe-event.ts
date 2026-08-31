@@ -4,6 +4,7 @@
 
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { sendManagedEmail } from "./managed-email.ts";
 import { logSystemAlert } from "./alerts.ts";
 import { trackBusinessEvent } from "./heycatch.ts";
 import { captureServerEvent } from "./posthog.ts";
@@ -342,24 +343,16 @@ export async function processStripeEvent(
 
       try {
         const appUrl = Deno.env.get("APP_URL") ?? "https://outreign.io";
-        await supabase.rpc('enqueue_email', {
-          queue_name: 'transactional_emails',
-          payload: {
-            message_id: crypto.randomUUID(),
-            to: customerEmail,
-            from: 'OutReign <noreply@notify.bdotindustries.com>',
-            sender_domain: 'notify.bdotindustries.com',
-            subject: `Welcome to OutReign - Your Login Credentials`,
-            html: `<p>Welcome! Sign in at <a href="${appUrl}/auth">${appUrl}/auth</a> with email <b>${customerEmail}</b> and temporary password <b>${tempPassword}</b>. Please change it after first login.</p>`,
-            text: `Welcome to OutReign. Email: ${customerEmail}, Temp Password: ${tempPassword}. Sign in at ${appUrl}/auth.`,
-            purpose: 'transactional',
-            label: 'stripe-welcome',
-            idempotency_key: `stripe-welcome-${userId}-${event.id}`,
-            queued_at: new Date().toISOString(),
-          },
+        await sendManagedEmail(supabase, {
+          to: customerEmail,
+          subject: `Welcome to OutReign - Your Login Credentials`,
+          html: `<p>Welcome! Sign in at <a href="${appUrl}/auth">${appUrl}/auth</a> with email <b>${customerEmail}</b> and temporary password <b>${tempPassword}</b>. Please change it after first login.</p>`,
+          text: `Welcome to OutReign. Email: ${customerEmail}, Temp Password: ${tempPassword}. Sign in at ${appUrl}/auth.`,
+          label: 'stripe-welcome',
+          idempotencyKey: `stripe-welcome-${userId}-${event.id}`,
         });
       } catch (e) {
-        log("welcome email enqueue failed", { error: String(e) });
+        log("welcome email send failed", { error: String(e) });
       }
     }
 
