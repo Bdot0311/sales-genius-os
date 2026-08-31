@@ -210,7 +210,8 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
       return;
     }
 
-    if (TURNSTILE_SITE_KEY && !captchaToken) {
+    if (TURNSTILE_SITE_KEY && !captchaToken && !captchaUnavailable) {
+
       toast({
         title: "Please complete the verification",
         description: "Tick the human-verification box below the password field, then try again.",
