@@ -106,8 +106,7 @@ serve(async (req) => {
 
     const provided =
       req.headers.get("x-webhook-secret") ||
-      req.headers.get("x-outreign-secret") ||
-      (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
+      req.headers.get("x-outreign-secret");
 
     // The high-entropy endpoint token is a bearer credential in the URL. Some
     // webhook providers (including GetLeads) cannot attach custom headers, so
