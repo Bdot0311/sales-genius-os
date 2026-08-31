@@ -27,6 +27,24 @@ const SUPPORTED_ACTIONS = [
   "deal.created",
 ] as const;
 
+// Visitor-identification / enrichment providers use their own event names.
+// Normalize the common ones onto lead.created instead of rejecting them.
+const ACTION_ALIASES: Record<string, string> = {
+  "visitor.identified": "lead.created",
+  "visitor_identified": "lead.created",
+  "visitor.created": "lead.created",
+  "person.identified": "lead.created",
+  "person.created": "lead.created",
+  "identity.resolved": "lead.created",
+  "lead.identified": "lead.created",
+  "lead.new": "lead.created",
+  "new_lead": "lead.created",
+  "contact.identified": "contact.created",
+  "contact.updated": "lead.updated",
+  "deal.updated": "lead.updated",
+};
+
+
 const str = (v: unknown): string | null => {
   if (v === null || v === undefined) return null;
   const s = String(v).trim();
