@@ -7,8 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Webhook, Plus, Trash2, Loader2, Copy, Activity, Play } from "lucide-react";
+import { Webhook, Plus, Trash2, Loader2, Copy, Activity, Play, ArrowUpFromLine, ArrowDownToLine } from "lucide-react";
 import { WebhookTestDialog } from "./WebhookTestDialog";
+import { InboundWebhooksPanel } from "./InboundWebhooksPanel";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -56,7 +58,7 @@ const AVAILABLE_EVENTS = [
   { value: "deal.closed", label: "Deal Closed" },
 ];
 
-export const WebhooksTab = () => {
+const OutboundWebhooksPanel = () => {
   const [webhooks, setWebhooks] = useState<NewlyCreatedWebhook[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -80,6 +82,7 @@ export const WebhooksTab = () => {
       const { data, error } = await supabase
         .from("webhooks_safe")
         .select("*")
+        .eq("direction", "outbound")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -91,6 +94,7 @@ export const WebhooksTab = () => {
       setLoading(false);
     }
   };
+
 
   // Validate webhook URL to prevent SSRF attacks
   const isValidWebhookUrl = (url: string): { valid: boolean; error?: string } => {
@@ -168,6 +172,7 @@ export const WebhooksTab = () => {
           name: newWebhook.name,
           url: newWebhook.url,
           events: newWebhook.events,
+          direction: "outbound",
           secret,
         })
         .select("id")
@@ -489,5 +494,28 @@ export const WebhooksTab = () => {
         />
       )}
     </div>
+  );
+};
+
+export const WebhooksTab = () => {
+  return (
+    <Tabs defaultValue="outgoing" className="space-y-6">
+      <TabsList className="grid w-full grid-cols-2 sm:w-auto sm:inline-grid">
+        <TabsTrigger value="outgoing" className="gap-2">
+          <ArrowUpFromLine className="h-4 w-4" />
+          Outgoing
+        </TabsTrigger>
+        <TabsTrigger value="incoming" className="gap-2">
+          <ArrowDownToLine className="h-4 w-4" />
+          Incoming
+        </TabsTrigger>
+      </TabsList>
+      <TabsContent value="outgoing" className="mt-0">
+        <OutboundWebhooksPanel />
+      </TabsContent>
+      <TabsContent value="incoming" className="mt-0">
+        <InboundWebhooksPanel />
+      </TabsContent>
+    </Tabs>
   );
 };
