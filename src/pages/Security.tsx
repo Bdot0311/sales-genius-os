@@ -13,8 +13,8 @@ const Security = () => {
     <>
       <SEOHead
         title="Security & Data Protection | OutReign"
-        description="Learn about OutReign security practices. Enterprise-grade data protection with encryption, SOC 2 compliance, GDPR/CCPA compliance, and 24/7 monitoring."
-        keywords="OutReign security, data encryption, SOC 2, GDPR compliance, enterprise security, data protection"
+        description="How OutReign protects your data: encryption in transit and at rest, least-privilege access, GDPR and CCPA compliance, SOC 2 Type II in progress, and continuous monitoring."
+        keywords="OutReign security, data encryption, SOC 2 Type II, GDPR compliance, data protection"
       />
       <BreadcrumbSchema items={[
         { name: "Home", url: "https://outreign.io" },

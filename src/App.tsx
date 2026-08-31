@@ -57,6 +57,7 @@ const Admin = lazy(() => import("./pages/Admin"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Security = lazy(() => import("./pages/Security"));
+const Accessibility = lazy(() => import("./pages/Accessibility"));
 const Confirmation = lazy(() => import("./pages/Confirmation"));
 const HelpCenter = lazy(() => import("./pages/HelpCenter"));
 const Install = lazy(() => import("./pages/Install"));
@@ -497,6 +498,7 @@ const App = () => {
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/security" element={<Security />} />
+              <Route path="/accessibility" element={<Accessibility />} />
               <Route path="/confirmation" element={<Confirmation />} />
               <Route path="/help" element={<HelpCenter />} />
               <Route path="/help/category/:category" element={<HelpCenter />} />
