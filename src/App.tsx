@@ -498,6 +498,7 @@ const App = () => {
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/security" element={<Security />} />
+              <Route path="/accessibility" element={<Accessibility />} />
               <Route path="/confirmation" element={<Confirmation />} />
               <Route path="/help" element={<HelpCenter />} />
               <Route path="/help/category/:category" element={<HelpCenter />} />
