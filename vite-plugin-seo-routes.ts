@@ -75,7 +75,13 @@ const ROUTES: RouteMeta[] = [
     path: "/security",
     title: "Security & Data Protection | OutReign",
     description:
-      "Learn about OutReign security practices. Enterprise-grade data protection with encryption, SOC 2 compliance, GDPR/CCPA compliance, and 24/7 monitoring.",
+      "How OutReign protects your data: encryption in transit and at rest, least-privilege access, GDPR and CCPA compliance, SOC 2 Type II in progress, and continuous monitoring.",
+  },
+  {
+    path: "/accessibility",
+    title: "Accessibility Statement | OutReign",
+    description:
+      "OutReign's accessibility statement: our WCAG 2.1 Level AA commitment, keyboard and screen-reader support, known limitations, and how to report a barrier.",
   },
   {
     path: "/partners",
