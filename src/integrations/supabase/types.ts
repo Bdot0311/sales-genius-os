@@ -5548,17 +5548,12 @@ export type Database = {
         Args: { _amount: number; _description?: string }
         Returns: Json
       }
-      delete_email: {
-        Args: { message_id: number; queue_name: string }
-        Returns: boolean
-      }
       deliverability_call_edge: {
         Args: { p_function_name: string; p_payload?: Json }
         Returns: number
       }
-      email_queue_dispatch: { Args: never; Returns: undefined }
-      enqueue_email: {
-        Args: { payload: Json; queue_name: string }
+      enqueue_webhook_event: {
+        Args: { _event: string; _payload: Json; _user_id: string }
         Returns: number
       }
       get_api_key_value: { Args: { _id: string }; Returns: string }
@@ -5711,25 +5706,8 @@ export type Database = {
         }
         Returns: undefined
       }
-      move_to_dlq: {
-        Args: {
-          dlq_name: string
-          message_id: number
-          payload: Json
-          source_queue: string
-        }
-        Returns: number
-      }
       next_month_start_utc: { Args: never; Returns: string }
       pick_sending_account: { Args: { p_user_id: string }; Returns: string }
-      read_email_batch: {
-        Args: { batch_size: number; queue_name: string; vt: number }
-        Returns: {
-          message: Json
-          msg_id: number
-          read_ct: number
-        }[]
-      }
       recompute_activation: { Args: { _user_id: string }; Returns: undefined }
       record_ai_usage: {
         Args: {
