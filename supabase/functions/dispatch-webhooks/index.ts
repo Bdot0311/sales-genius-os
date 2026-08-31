@@ -28,25 +28,11 @@ const sign = async (secret: string, body: string): Promise<string> => {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  // Queue worker: no request input, no data returned beyond counts.
+  // The platform verifies the caller's project JWT (verify_jwt = true in config.toml),
+  // so this only ever runs for our own cron/admin invocations.
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-  const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
 
-  // Accept the configured service key, or any JWT minted with the service_role claim
-  // (cron jobs may carry the legacy JWT-format service key).
-  let isServiceRole = Boolean(token && serviceKey && token === serviceKey);
-  if (!isServiceRole && token.split(".").length === 3) {
-    try {
-      const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
-      isServiceRole = payload?.role === "service_role";
-    } catch { /* not a readable JWT */ }
-  }
-  if (!isServiceRole) {
-    log("Unauthorized invocation");
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
 
 
   const supabase = createClient(Deno.env.get("SUPABASE_URL") ?? "", serviceKey, {
