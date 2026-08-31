@@ -48,7 +48,7 @@ describe("not becoming noise", () => {
 
 describe("failure does not lose the alert", () => {
   it("stamps only after the send succeeded", () => {
-    const sendAt = SCAN.indexOf("if (sendErr)");
+    const sendAt = SCAN.indexOf("if (!sendRes.sent");
     const stampAt = SCAN.indexOf("notified_at: new Date().toISOString()");
     expect(sendAt).toBeGreaterThan(-1);
     expect(stampAt).toBeGreaterThan(sendAt);
