@@ -343,7 +343,7 @@ export const ModulesSection = () => {
                 className={`mt-10 transition-all duration-700 ${isVisible ? "opacity-100" : "opacity-0"}`}
                 style={{ transitionDelay: "400ms" }}
               >
-                <p className="text-[10px] uppercase tracking-[0.2em] mb-3" style={{ color: "hsl(261 75% 55% / 0.5)" }}>
+                <p className="text-[10px] uppercase tracking-[0.2em] mb-3" style={{ color: "hsl(261 50% 74%)" }}>
                   Also included
                 </p>
                 <div className="flex flex-wrap gap-x-4 gap-y-2">
@@ -394,7 +394,7 @@ export const ModulesSection = () => {
                   <span className="ml-3 text-[11px] font-medium" style={{ color: "hsl(0 0% 100% / 0.55)" }}>
                     OutReign — {modules[activeIndex].title}
                   </span>
-                  <span className="ml-auto text-[9px] font-medium uppercase tracking-wider" style={{ color: "hsl(0 0% 100% / 0.4)" }}>
+                  <span className="ml-auto text-[9px] font-medium uppercase tracking-wider" style={{ color: "hsl(0 0% 100% / 0.62)" }}>
                     Simulated preview
                   </span>
                 </div>
