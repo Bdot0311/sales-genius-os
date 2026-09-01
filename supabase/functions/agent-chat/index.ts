@@ -2939,8 +2939,53 @@ Value props: ${(config?.value_props ?? []).join("; ") || "not set"}
 
 ${icpContext || "No ICP profile is saved yet, so there is nothing to score results against. You can still source leads when the user names who they want (pass it as find_leads query), but suggest they save an ICP on the ICP page so results get qualified. Do not invent an ICP of your own."}`;
 
+    // Role/custom-build scope, applied to the PROMPT as well as the catalog.
+    // The how-to bullets below describe sending, scheduling and deleting in
+    // detail; if an agent cannot do those things, seeing those bullets makes it
+    // offer the work anyway ("no drafts to send — what would you like to do?").
+    // Strip every instruction whose tools this build does not have.
+    const SCOPE_GATED_PREFIXES: Array<{ marker: string; tools: string[] }> = [
+      { marker: "You can take real action", tools: [] },
+      { marker: "- When the user says something like", tools: ["draft_outreach"] },
+      { marker: "- NEVER write, rewrite", tools: ["draft_outreach"] },
+      { marker: "- draft_outreach goal", tools: ["draft_outreach"] },
+      { marker: "- Drafts are auto-saved", tools: ["draft_outreach"] },
+      { marker: "- QUALITY:", tools: ["send_outreach"] },
+      { marker: "- SENDING:", tools: ["send_drafts", "send_outreach"] },
+      { marker: "- SCHEDULING:", tools: ["schedule_drafts"] },
+      { marker: "- DELETING:", tools: ["delete_drafts", "delete_leads", "delete_inbox_threads"] },
+      { marker: "- Use send_outreach only", tools: ["send_outreach"] },
+      { marker: "- To identify or verify target COMPANIES", tools: ["search_companies"] },
+      { marker: "- To source NEW people", tools: ["find_leads"] },
+      { marker: "COLD EMAIL RULES", tools: ["draft_outreach", "send_outreach"] },
+    ];
+    const capabilityLine = (() => {
+      const bits: string[] = ["reading the user's leads and account status"];
+      if (allowedTools.includes("find_leads") || allowedTools.includes("search_companies")) bits.push("sourcing new leads and companies");
+      if (allowedTools.includes("enrich_leads") || allowedTools.includes("score_leads") || allowedTools.includes("research_leads")) bits.push("enriching, researching and scoring leads");
+      if (allowedTools.includes("draft_outreach") || allowedTools.includes("draft_sequence")) bits.push("drafting cold emails and sequences");
+      if (allowedTools.includes("send_drafts") || allowedTools.includes("send_outreach")) bits.push("sending outreach");
+      if (allowedTools.includes("schedule_drafts")) bits.push("scheduling sends for later");
+      if (allowedTools.includes("list_recent_replies")) bits.push("reviewing inbound replies");
+      if (allowedTools.includes("run_full_agent")) bits.push("triggering a full agent run");
+      return `On this account you can do exactly this and nothing more: ${bits.join(", ")}.`;
+    })();
+    const scopedSystemPrompt = systemPrompt
+      .split("\n")
+      .map((line) => {
+        if (line.startsWith("You can take real action")) return capabilityLine;
+        return line;
+      })
+      .filter((line) => {
+        const rule = SCOPE_GATED_PREFIXES.find((r) => r.marker !== "You can take real action" && line.startsWith(r.marker));
+        if (!rule) return true;
+        return rule.tools.some((t) => allowedTools.includes(t));
+      })
+      .join("\n") +
+      `\n\nHARD SCOPE LIMIT (overrides everything above)\nYour only tools are: ${allowedTools.join(", ")}.\nIf the user asks for anything that would need another tool — sending, scheduling, drafting, deleting, sourcing, enrolling, running the agent — do NOT attempt it, do NOT ask them what they would like you to send/do instead, and do NOT list options for that work. Reply in one or two sentences: state that this build (${config?.agent_name ?? "this agent"}) is not scoped to that, name what it is scoped to, and tell them to switch agents with the selector at the top of the chat. Never imply the work is merely blocked by missing drafts, approvals or data.`;
+
     const messages: any[] = [
-      { role: "system", content: systemPrompt },
+      { role: "system", content: scopedSystemPrompt },
       ...history.map((m) => ({ role: m.role, content: m.content })),
       ...(autoContinue
         ? [{
