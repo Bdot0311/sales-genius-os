@@ -1183,6 +1183,12 @@ serve(async (req) => {
       ((config as any)?.icp_snapshot as Record<string, any> | null) ?? (savedIcp as any) ?? null;
     const icpContext = buildIcpContext(icpSnapshot);
 
+    // Role/custom-build scope: the tool catalog handed to the model, and the
+    // scope wording injected into the prompt.
+    const allowedTools = allowedToolsFor(config as any);
+    const scopedTools = TOOLS.filter((t: any) => allowedTools.includes(t.function?.name));
+    const scopeNote = scopeNoteFor(config as any);
+
     const invokeFn = async (name: string, body: unknown) => {
       const res = await fetch(`${supabaseUrl}/functions/v1/${name}`, {
         method: "POST",
