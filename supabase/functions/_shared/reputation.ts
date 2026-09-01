@@ -2,6 +2,18 @@
 // A score is only produced when there is enough volume to be meaningful;
 // below the floor we return null ("insufficient data") rather than a made-up
 // number.
+//
+// Open rate is deliberately NOT an input. Open tracking needs a pixel, the
+// pixel raises spam score, and mail sitting in the spam folder still fires it
+// when the provider loads images — so the number that is supposed to measure
+// placement is inflated by the exact failure it should be catching. Scoring a
+// mailbox on it punished mailboxes whose recipients simply block images, and
+// after the tracking filters tightened it would have marked healthy mailboxes
+// down for a change in measurement rather than a change in deliverability.
+//
+// The rate is still computed and reported, because it is worth looking at. It
+// just does not move the score. Bounces, complaints and warmup spam placement
+// do — all three are observations of how the receiving world treats the mail.
 
 export const MIN_VOLUME_FOR_SCORE = 20;
 
@@ -53,11 +65,8 @@ export function computeReputation(input: ReputationInputs): ReputationResult {
   // OUTBOUND_KB (bounce warn 2% / danger 5%; complaint warn 0.1% / danger 0.3%).
   const bouncePenalty = Math.min(50, bounceRate * 600); // 5% -> 30, 8.3% -> 50 cap
   const complaintPenalty = Math.min(40, complaintRate * 13000); // 0.1% -> 13, 0.3% -> 39
-  // Weak engagement is a soft negative and only at real volume (opens are noisy).
-  const lowEngagementPenalty = sent >= 50 && openRate < 0.05 ? 5 : 0;
-
   const score = Math.round(
-    Math.max(0, Math.min(100, 100 - bouncePenalty - complaintPenalty - spamPlacementPenalty - lowEngagementPenalty)),
+    Math.max(0, Math.min(100, 100 - bouncePenalty - complaintPenalty - spamPlacementPenalty)),
   );
 
   return { score, ...base };
