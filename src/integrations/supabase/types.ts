@@ -3929,6 +3929,7 @@ export type Database = {
           demo_seed: boolean
           dkim_selector: string | null
           dkim_status: string
+          dmarc_rua_token: string
           dmarc_status: string
           domain: string
           id: string
@@ -3943,6 +3944,7 @@ export type Database = {
           demo_seed?: boolean
           dkim_selector?: string | null
           dkim_status?: string
+          dmarc_rua_token?: string
           dmarc_status?: string
           domain: string
           id?: string
@@ -3957,6 +3959,7 @@ export type Database = {
           demo_seed?: boolean
           dkim_selector?: string | null
           dkim_status?: string
+          dmarc_rua_token?: string
           dmarc_status?: string
           domain?: string
           id?: string

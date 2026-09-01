@@ -39,6 +39,10 @@ project_id = "ghgfjnepvxvxrncmskys"
     verify_jwt = false
   [functions.check-domain-auth]
     verify_jwt = false
+  # Called by a Cloudflare Email Worker with no Supabase session. The gate is
+  # DMARC_INGEST_SECRET, checked inside the function.
+  [functions.ingest-dmarc-report]
+    verify_jwt = false
   [functions.verify-tracking-domain]
     verify_jwt = false
   [functions.blacklist-sweep]
