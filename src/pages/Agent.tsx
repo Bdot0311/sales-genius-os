@@ -41,6 +41,8 @@ export interface AgentConfig {
   enabled: boolean;
   agent_name: string | null;
   role: string | null;
+  role_instructions?: string | null;
+  allowed_tools?: string[] | null;
   is_primary: boolean | null;
   persona: string | null;
   tone: string | null;
