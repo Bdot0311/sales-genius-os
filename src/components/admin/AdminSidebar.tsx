@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Settings, Activity, BarChart3, Lock, ArrowLeft, Bell, Webhook, UserPlus, Mail, Radio, TrendingUp, KeyRound, CreditCard, HeartPulse, Link2 } from "lucide-react";
+import { LayoutDashboard, Users, Settings, Lock, ArrowLeft, TrendingUp, CreditCard, HeartPulse } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -16,20 +16,11 @@ import {
 
 const menuItems = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard, exact: true },
-  { title: "System Health", url: "/admin/health", icon: HeartPulse },
   { title: "Users", url: "/admin/users", icon: Users },
-  { title: "Activation", url: "/admin/activation", icon: TrendingUp },
-  { title: "Campaign Setup", url: "/admin/campaign-setup", icon: KeyRound },
-  { title: "Activity Logs", url: "/admin/activity", icon: Activity },
-  { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
-  { title: "Traffic Sources", url: "/admin/traffic", icon: Link2 },
-  { title: "Alerts", url: "/admin/alerts", icon: Bell },
+  { title: "Growth", url: "/admin/growth", icon: TrendingUp },
+  { title: "Health", url: "/admin/health", icon: HeartPulse },
   { title: "Billing & Churn", url: "/admin/billing", icon: CreditCard },
-  { title: "Webhooks", url: "/admin/webhooks", icon: Webhook },
-  { title: "Signup Logs", url: "/admin/signup-logs", icon: UserPlus },
-  { title: "Re-engagement", url: "/admin/re-engagement", icon: Mail },
   { title: "Security", url: "/admin/security", icon: Lock },
-  { title: "Realtime Health", url: "/admin/realtime", icon: Radio },
   { title: "Settings", url: "/admin/settings", icon: Settings },
 ];
 

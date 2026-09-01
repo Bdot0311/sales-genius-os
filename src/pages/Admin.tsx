@@ -8,22 +8,13 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Shield } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
-// Import admin sub-pages
-import AdminUsers from "./admin/Users";
-import AdminActivity from "./admin/Activity";
-import AdminAnalytics from "./admin/Analytics";
+// Import admin sub-pages / grouped pages
 import AdminSecurity from "./admin/Security";
-import AdminSettings from "./admin/Settings";
-import AdminAlerts from "./admin/Alerts";
-import AdminWebhooks from "./admin/Webhooks";
-import AdminSignupLogs from "./admin/SignupLogs";
-import AdminReEngagement from "./admin/ReEngagement";
-import AdminRealtimeHealth from "./admin/RealtimeHealth";
-import AdminActivation from "./admin/Activation";
-import AdminCampaignSetup from "./admin/CampaignSetup";
 import AdminBilling from "./admin/Billing";
-import AdminSystemHealth from "./admin/SystemHealth";
-import AdminTraffic from "./admin/Traffic";
+import UsersGroup from "./admin/groups/UsersGroup";
+import GrowthGroup from "./admin/groups/GrowthGroup";
+import HealthGroup from "./admin/groups/HealthGroup";
+import SettingsGroup from "./admin/groups/SettingsGroup";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -77,21 +68,25 @@ const Admin = () => {
           <main className="flex-1 p-6 overflow-auto">
             <Routes>
               <Route index element={<AdminDashboard />} />
-              <Route path="users" element={<AdminUsers />} />
-              <Route path="activity" element={<AdminActivity />} />
-              <Route path="analytics" element={<AdminAnalytics />} />
+              {/* Grouped pages */}
+              <Route path="users" element={<UsersGroup />} />
+              <Route path="growth" element={<GrowthGroup />} />
+              <Route path="health" element={<HealthGroup />} />
+              <Route path="settings" element={<SettingsGroup />} />
               <Route path="security" element={<AdminSecurity />} />
-              <Route path="settings" element={<AdminSettings />} />
-              <Route path="alerts" element={<AdminAlerts />} />
               <Route path="billing" element={<AdminBilling />} />
-              <Route path="webhooks" element={<AdminWebhooks />} />
-              <Route path="signup-logs" element={<AdminSignupLogs />} />
-              <Route path="re-engagement" element={<AdminReEngagement />} />
-              <Route path="realtime" element={<AdminRealtimeHealth />} />
-              <Route path="health" element={<AdminSystemHealth />} />
-              <Route path="activation" element={<AdminActivation />} />
-              <Route path="campaign-setup" element={<AdminCampaignSetup />} />
-              <Route path="traffic" element={<AdminTraffic />} />
+
+              {/* Legacy paths -> grouped tabs */}
+              <Route path="activation" element={<Navigate to="/admin/users?tab=activation" replace />} />
+              <Route path="signup-logs" element={<Navigate to="/admin/users?tab=signup-logs" replace />} />
+              <Route path="campaign-setup" element={<Navigate to="/admin/users?tab=campaign-setup" replace />} />
+              <Route path="analytics" element={<Navigate to="/admin/growth?tab=analytics" replace />} />
+              <Route path="traffic" element={<Navigate to="/admin/growth?tab=traffic" replace />} />
+              <Route path="re-engagement" element={<Navigate to="/admin/growth?tab=re-engagement" replace />} />
+              <Route path="realtime" element={<Navigate to="/admin/health?tab=realtime" replace />} />
+              <Route path="activity" element={<Navigate to="/admin/health?tab=activity" replace />} />
+              <Route path="alerts" element={<Navigate to="/admin/health?tab=alerts" replace />} />
+              <Route path="webhooks" element={<Navigate to="/admin/settings?tab=webhooks" replace />} />
               <Route path="*" element={<Navigate to="/admin" replace />} />
             </Routes>
           </main>
