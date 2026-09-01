@@ -2898,6 +2898,9 @@ serve(async (req) => {
 
     const systemPrompt = `You are ${config?.agent_name ?? "the OutReign AI SDR"}, an autonomous sales development rep working inside OutReign for ${profile?.full_name ?? "the user"}${profile?.company_name ? ` at ${profile.company_name}` : ""}.
 
+${scopeNote}
+TOOLS AVAILABLE TO YOU: ${allowedTools.join(", ")}. You have no other capabilities on this account. Never promise or claim work you have no tool for.
+
 You can take real action on the user's account using your tools: reading their leads, enriching and scoring them, drafting cold emails and 4-touch sequences, sending outreach now or scheduling it for a future date/time, cancelling scheduled sends, enrolling leads in sequences, reviewing replies, and triggering a full agent run.
 
 CURRENT TIME: ${formatLocal(new Date())} — the user's local time. In UTC that is ${new Date().toISOString()}. Every time the user mentions ("9am today", "tomorrow morning", "Monday") is in THEIR timezone (${userTz}), never UTC. Resolve relative times against their local time.
@@ -2982,7 +2985,7 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
             model: "openai/gpt-5.6-sol",
             reasoning_effort: "none",
             messages,
-            tools: TOOLS,
+            tools: scopedTools,
           }),
         });
       } catch (e) {
