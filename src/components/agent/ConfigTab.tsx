@@ -25,7 +25,13 @@ import { Plus, Trash2, Loader2, Save } from "lucide-react";
 import type { AgentConfig } from "@/pages/Agent";
 import { ProspectingSourceHelper, type ICPSnapshot } from "@/components/agent/ProspectingSourceHelper";
 import { ObjectionLibrary } from "@/components/agent/ObjectionLibrary";
-import { AGENT_ROLES, roleDescription, type AgentRole } from "@/components/agent/AgentRoles";
+import {
+  AGENT_ROLES,
+  AGENT_TOOL_GROUPS,
+  roleDescription,
+  type AgentRole,
+} from "@/components/agent/AgentRoles";
+import { Checkbox } from "@/components/ui/checkbox";
 
 
 interface ConfigTabProps {
@@ -53,6 +59,8 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
   const [persona, setPersona] = useState("");
   const [tone, setTone] = useState("professional");
   const [role, setRole] = useState<AgentRole>("full_cycle");
+  const [roleInstructions, setRoleInstructions] = useState("");
+  const [allowedTools, setAllowedTools] = useState<string[]>([]);
   const [companyContext, setCompanyContext] = useState("");
   const [valueProps, setValueProps] = useState<string[]>([""]);
   const [objectionResponses, setObjectionResponses] = useState<
@@ -109,6 +117,8 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
     setPersona(config.persona ?? "");
     setTone(config.tone ?? "professional");
     setRole(((config.role as AgentRole) ?? "full_cycle"));
+    setRoleInstructions(config.role_instructions ?? "");
+    setAllowedTools(config.allowed_tools ?? []);
     setCompanyContext(config.company_context ?? "");
     setValueProps(
       config.value_props && config.value_props.length > 0
@@ -166,6 +176,8 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
         persona: persona.trim() || null,
         tone,
         role,
+        role_instructions: roleInstructions.trim() || null,
+        allowed_tools: role === "custom" ? allowedTools : null,
         company_context: companyContext.trim() || null,
         value_props: filteredValueProps.length > 0 ? filteredValueProps : null,
         objection_responses:
@@ -240,6 +252,58 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">{roleDescription(role)}</p>
+          </div>
+          {role === "custom" && (
+            <div className="space-y-3 rounded-lg border border-border/60 bg-card/40 p-3">
+              <div className="space-y-1.5">
+                <Label>Allowed actions</Label>
+                <p className="text-xs text-muted-foreground">
+                  This agent can only do what you tick here, in chat and in
+                  autonomous runs. Reading leads and its own status is always
+                  allowed.
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2 pt-1">
+                  {AGENT_TOOL_GROUPS.map((group) => (
+                    <div key={group.label} className="space-y-1.5">
+                      <p className="text-xs font-medium">{group.label}</p>
+                      {group.tools.map((tool) => (
+                        <label
+                          key={tool.name}
+                          className="flex items-center gap-2 text-xs text-muted-foreground"
+                        >
+                          <Checkbox
+                            checked={allowedTools.includes(tool.name)}
+                            onCheckedChange={(checked) =>
+                              setAllowedTools((prev) =>
+                                checked
+                                  ? [...prev, tool.name]
+                                  : prev.filter((t) => t !== tool.name),
+                              )
+                            }
+                          />
+                          {tool.label}
+                        </label>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+          <div className="space-y-1.5">
+            <Label htmlFor="role-instructions">
+              Scope instructions {role === "custom" ? "" : "(optional)"}
+            </Label>
+            <Textarea
+              id="role-instructions"
+              rows={3}
+              placeholder="What this agent should focus on, and what it must never do."
+              value={roleInstructions}
+              onChange={(e) => setRoleInstructions(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Added to the agent's instructions on every chat and run.
+            </p>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="persona">Persona</Label>

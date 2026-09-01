@@ -410,6 +410,7 @@ export type Database = {
       agent_configs: {
         Row: {
           agent_name: string | null
+          allowed_tools: string[] | null
           approval_mode: boolean
           calendly_url: string | null
           can_book_meetings: boolean | null
@@ -436,6 +437,7 @@ export type Database = {
           prospecting_job_title: string | null
           reply_delay_minutes: number | null
           role: string
+          role_instructions: string | null
           signature: string | null
           tone: string | null
           updated_at: string | null
@@ -444,6 +446,7 @@ export type Database = {
         }
         Insert: {
           agent_name?: string | null
+          allowed_tools?: string[] | null
           approval_mode?: boolean
           calendly_url?: string | null
           can_book_meetings?: boolean | null
@@ -470,6 +473,7 @@ export type Database = {
           prospecting_job_title?: string | null
           reply_delay_minutes?: number | null
           role?: string
+          role_instructions?: string | null
           signature?: string | null
           tone?: string | null
           updated_at?: string | null
@@ -478,6 +482,7 @@ export type Database = {
         }
         Update: {
           agent_name?: string | null
+          allowed_tools?: string[] | null
           approval_mode?: boolean
           calendly_url?: string | null
           can_book_meetings?: boolean | null
@@ -504,6 +509,7 @@ export type Database = {
           prospecting_job_title?: string | null
           reply_delay_minutes?: number | null
           role?: string
+          role_instructions?: string | null
           signature?: string | null
           tone?: string | null
           updated_at?: string | null

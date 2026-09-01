@@ -33,9 +33,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Bot, Plus, Star, Trash2, Loader2, Lock } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Bot, Plus, Star, Trash2, Loader2, Lock, Wand2 } from "lucide-react";
 import type { AgentConfig } from "@/pages/Agent";
-import { AGENT_ROLES, roleLabel, type AgentRole } from "./AgentRoles";
+import { AGENT_ROLES, roleLabel, agentToolLabel, type AgentRole } from "./AgentRoles";
 
 interface AgentSwitcherProps {
   agents: AgentConfig[];
@@ -61,6 +63,9 @@ export function AgentSwitcher({
   const [newName, setNewName] = useState("");
   const [newRole, setNewRole] = useState<AgentRole>("lead_gen");
   const [creating, setCreating] = useState(false);
+  const [description, setDescription] = useState("");
+  const [building, setBuilding] = useState(false);
+  const [draft, setDraft] = useState<Record<string, any> | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AgentConfig | null>(null);
 
@@ -88,6 +93,63 @@ export function AgentSwitcher({
       setCreateOpen(false);
       setNewName("");
       setNewRole("lead_gen");
+      setDescription("");
+      setDraft(null);
+      onChanged();
+      if (data?.id) onSelect(data.id);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast.error(`Failed to create agent: ${message}`);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  // Prompt-to-build: describe the agent in plain English and the model fills in
+  // the whole config, including which tools it is allowed to use.
+  const handleBuild = async () => {
+    if (description.trim().length < 10) {
+      toast.error("Describe the agent in a sentence or two first.");
+      return;
+    }
+    setBuilding(true);
+    setDraft(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("build-agent", {
+        body: { description: description.trim() },
+      });
+      if (error) throw error;
+      if (!data?.success || !data?.config) {
+        throw new Error(data?.error || "Could not build the agent");
+      }
+      setDraft(data.config);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast.error(`Build failed: ${message}`);
+    } finally {
+      setBuilding(false);
+    }
+  };
+
+  const handleCreateFromDraft = async () => {
+    if (!userId || !draft || atLimit) return;
+    setCreating(true);
+    try {
+      const { data, error } = await (supabase as any)
+        .from("agent_configs")
+        .insert({
+          user_id: userId,
+          is_primary: agents.length === 0,
+          enabled: false,
+          ...draft,
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+      toast.success(`${draft.agent_name} created`);
+      setCreateOpen(false);
+      setDescription("");
+      setDraft(null);
       onChanged();
       if (data?.id) onSelect(data.id);
     } catch (err) {
@@ -177,49 +239,138 @@ export function AgentSwitcher({
                 New agent
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Build a new agent</DialogTitle>
                 <DialogDescription>
-                  Give it a name and a role so you know what each agent is
-                  responsible for.
+                  Pick one of the standard roles, or describe the agent you want
+                  and it gets built for you.
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="new-agent-name">Agent name</Label>
-                  <Input
-                    id="new-agent-name"
-                    placeholder='e.g. "Scout — EU lead gen"'
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="new-agent-role">Role</Label>
-                  <Select
-                    value={newRole}
-                    onValueChange={(v) => setNewRole(v as AgentRole)}
+
+              <Tabs defaultValue="role">
+                <TabsList className="grid grid-cols-2">
+                  <TabsTrigger value="role">Pick a role</TabsTrigger>
+                  <TabsTrigger value="describe">Describe it</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="role" className="space-y-4 pt-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="new-agent-name">Agent name</Label>
+                    <Input
+                      id="new-agent-name"
+                      placeholder='e.g. "Scout, EU lead gen"'
+                      value={newName}
+                      onChange={(e) => setNewName(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="new-agent-role">Role</Label>
+                    <Select
+                      value={newRole}
+                      onValueChange={(v) => setNewRole(v as AgentRole)}
+                    >
+                      <SelectTrigger id="new-agent-role">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {AGENT_ROLES.filter((r) => r.value !== "custom").map((r) => (
+                          <SelectItem key={r.value} value={r.value}>
+                            {r.label} — {r.description}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-[11px] text-muted-foreground">
+                      An agent can only use the tools its role allows, in chat and
+                      in autonomous runs.
+                    </p>
+                  </div>
+                  <DialogFooter>
+                    <Button onClick={handleCreate} disabled={creating} className="gap-2">
+                      {creating && <Loader2 className="w-4 h-4 animate-spin" />}
+                      Create agent
+                    </Button>
+                  </DialogFooter>
+                </TabsContent>
+
+                <TabsContent value="describe" className="space-y-4 pt-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="agent-description">
+                      Describe the agent you want
+                    </Label>
+                    <Textarea
+                      id="agent-description"
+                      rows={5}
+                      placeholder="e.g. A research agent for UK fintech ops leaders. It should source and enrich leads and write drafts for me to review, but never send or schedule anything itself."
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      Say what it should do and what it must never do. The
+                      boundaries become real limits on its tools.
+                    </p>
+                  </div>
+
+                  <Button
+                    variant="secondary"
+                    className="gap-2 w-full"
+                    onClick={handleBuild}
+                    disabled={building}
                   >
-                    <SelectTrigger id="new-agent-role">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {AGENT_ROLES.map((r) => (
-                        <SelectItem key={r.value} value={r.value}>
-                          {r.label} — {r.description}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button onClick={handleCreate} disabled={creating} className="gap-2">
-                  {creating && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Create agent
-                </Button>
-              </DialogFooter>
+                    {building ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Wand2 className="w-4 h-4" />
+                    )}
+                    {building ? "Building…" : "Build it"}
+                  </Button>
+
+                  {draft && (
+                    <div className="rounded-lg border border-border/60 bg-card/40 p-3 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{draft.agent_name}</span>
+                        <Badge variant="outline" className="text-[10px]">
+                          {roleLabel(draft.role)}
+                        </Badge>
+                      </div>
+                      {draft.persona && (
+                        <p className="text-xs text-muted-foreground">{draft.persona}</p>
+                      )}
+                      {draft.role_instructions && (
+                        <p className="text-xs text-muted-foreground">
+                          <span className="text-foreground">Boundaries: </span>
+                          {draft.role_instructions}
+                        </p>
+                      )}
+                      {Array.isArray(draft.allowed_tools) && draft.allowed_tools.length > 0 && (
+                        <div className="flex flex-wrap gap-1 pt-1">
+                          {draft.allowed_tools.map((tool: string) => (
+                            <Badge key={tool} variant="outline" className="text-[10px]">
+                              {agentToolLabel(tool)}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                      <p className="text-[11px] text-muted-foreground">
+                        You can fine-tune everything on the Config tab after
+                        creating it.
+                      </p>
+                    </div>
+                  )}
+
+                  <DialogFooter>
+                    <Button
+                      onClick={handleCreateFromDraft}
+                      disabled={creating || !draft}
+                      className="gap-2"
+                    >
+                      {creating && <Loader2 className="w-4 h-4 animate-spin" />}
+                      Create this agent
+                    </Button>
+                  </DialogFooter>
+                </TabsContent>
+              </Tabs>
             </DialogContent>
           </Dialog>
         )}

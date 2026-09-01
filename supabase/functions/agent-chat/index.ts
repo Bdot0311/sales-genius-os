@@ -9,6 +9,7 @@ import { buildIcpContext, icpSearchBody } from "../_shared/icp-context.ts";
 import { captureServerEvent } from "../_shared/posthog.ts";
 import { getSignatureHtml, appendSignatureToBody } from "../_shared/signature.ts";
 import { aiFetch } from "../_shared/ai-provider.ts";
+import { allowedToolsFor, scopeNoteFor } from "../_shared/agent-tool-scope.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -1182,6 +1183,12 @@ serve(async (req) => {
       ((config as any)?.icp_snapshot as Record<string, any> | null) ?? (savedIcp as any) ?? null;
     const icpContext = buildIcpContext(icpSnapshot);
 
+    // Role/custom-build scope: the tool catalog handed to the model, and the
+    // scope wording injected into the prompt.
+    const allowedTools = allowedToolsFor(config as any);
+    const scopedTools = TOOLS.filter((t: any) => allowedTools.includes(t.function?.name));
+    const scopeNote = scopeNoteFor(config as any);
+
     const invokeFn = async (name: string, body: unknown) => {
       const res = await fetch(`${supabaseUrl}/functions/v1/${name}`, {
         method: "POST",
@@ -1460,6 +1467,15 @@ serve(async (req) => {
     };
 
     const runTool = async (name: string, args: Record<string, any>): Promise<unknown> => {
+      // Hard scope gate: even if the model hallucinates a tool it wasn't given,
+      // an out-of-role action never runs.
+      if (!allowedTools.includes(name)) {
+        return {
+          error: "out_of_scope",
+          note:
+            `This agent's role (${config?.role ?? "full_cycle"}) does not allow "${name}". Tell the user this agent is scoped differently and suggest switching agents. Do not attempt another tool to work around it.`,
+        };
+      }
       switch (name) {
         case "list_leads": {
           let q = admin.from("leads").select(LEAD_FIELDS).eq("user_id", userId);
@@ -2882,6 +2898,9 @@ serve(async (req) => {
 
     const systemPrompt = `You are ${config?.agent_name ?? "the OutReign AI SDR"}, an autonomous sales development rep working inside OutReign for ${profile?.full_name ?? "the user"}${profile?.company_name ? ` at ${profile.company_name}` : ""}.
 
+${scopeNote}
+TOOLS AVAILABLE TO YOU: ${allowedTools.join(", ")}. You have no other capabilities on this account. Never promise or claim work you have no tool for.
+
 You can take real action on the user's account using your tools: reading their leads, enriching and scoring them, drafting cold emails and 4-touch sequences, sending outreach now or scheduling it for a future date/time, cancelling scheduled sends, enrolling leads in sequences, reviewing replies, and triggering a full agent run.
 
 CURRENT TIME: ${formatLocal(new Date())} — the user's local time. In UTC that is ${new Date().toISOString()}. Every time the user mentions ("9am today", "tomorrow morning", "Monday") is in THEIR timezone (${userTz}), never UTC. Resolve relative times against their local time.
@@ -2966,7 +2985,7 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
             model: "openai/gpt-5.6-sol",
             reasoning_effort: "none",
             messages,
-            tools: TOOLS,
+            tools: scopedTools,
           }),
         });
       } catch (e) {
