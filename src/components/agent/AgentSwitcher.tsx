@@ -63,6 +63,9 @@ export function AgentSwitcher({
   const [newName, setNewName] = useState("");
   const [newRole, setNewRole] = useState<AgentRole>("lead_gen");
   const [creating, setCreating] = useState(false);
+  const [description, setDescription] = useState("");
+  const [building, setBuilding] = useState(false);
+  const [draft, setDraft] = useState<Record<string, any> | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AgentConfig | null>(null);
 
@@ -90,6 +93,63 @@ export function AgentSwitcher({
       setCreateOpen(false);
       setNewName("");
       setNewRole("lead_gen");
+      setDescription("");
+      setDraft(null);
+      onChanged();
+      if (data?.id) onSelect(data.id);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast.error(`Failed to create agent: ${message}`);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  // Prompt-to-build: describe the agent in plain English and the model fills in
+  // the whole config, including which tools it is allowed to use.
+  const handleBuild = async () => {
+    if (description.trim().length < 10) {
+      toast.error("Describe the agent in a sentence or two first.");
+      return;
+    }
+    setBuilding(true);
+    setDraft(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("build-agent", {
+        body: { description: description.trim() },
+      });
+      if (error) throw error;
+      if (!data?.success || !data?.config) {
+        throw new Error(data?.error || "Could not build the agent");
+      }
+      setDraft(data.config);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast.error(`Build failed: ${message}`);
+    } finally {
+      setBuilding(false);
+    }
+  };
+
+  const handleCreateFromDraft = async () => {
+    if (!userId || !draft || atLimit) return;
+    setCreating(true);
+    try {
+      const { data, error } = await (supabase as any)
+        .from("agent_configs")
+        .insert({
+          user_id: userId,
+          is_primary: agents.length === 0,
+          enabled: false,
+          ...draft,
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+      toast.success(`${draft.agent_name} created`);
+      setCreateOpen(false);
+      setDescription("");
+      setDraft(null);
       onChanged();
       if (data?.id) onSelect(data.id);
     } catch (err) {
