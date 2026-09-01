@@ -1,4 +1,4 @@
-export type AgentRole = "lead_gen" | "outreach" | "replies" | "full_cycle";
+export type AgentRole = "lead_gen" | "outreach" | "replies" | "full_cycle" | "custom";
 
 export const AGENT_ROLES: {
   value: AgentRole;
@@ -25,6 +25,11 @@ export const AGENT_ROLES: {
     label: "Replies",
     description: "Only classifies and answers inbound replies",
   },
+  {
+    value: "custom",
+    label: "Custom build",
+    description: "You pick exactly which actions this agent is allowed to take",
+  },
 ];
 
 export const roleLabel = (role?: string | null) =>
@@ -33,3 +38,62 @@ export const roleLabel = (role?: string | null) =>
 export const roleDescription = (role?: string | null) =>
   AGENT_ROLES.find((r) => r.value === role)?.description ??
   AGENT_ROLES[0].description;
+
+/**
+ * Mirrors supabase/functions/_shared/agent-tool-scope.ts. Keep both in sync:
+ * the edge function is what actually enforces scope, this list is the UI for
+ * custom builds.
+ */
+export const AGENT_TOOL_GROUPS: {
+  label: string;
+  tools: { name: string; label: string }[];
+}[] = [
+  {
+    label: "Leads",
+    tools: [
+      { name: "find_leads", label: "Source new leads" },
+      { name: "search_companies", label: "Search companies" },
+      { name: "enrich_leads", label: "Enrich leads" },
+      { name: "research_leads", label: "Research leads" },
+      { name: "score_leads", label: "Score against ICP" },
+      { name: "update_lead", label: "Update lead records" },
+      { name: "delete_leads", label: "Delete leads" },
+    ],
+  },
+  {
+    label: "Outreach",
+    tools: [
+      { name: "draft_outreach", label: "Draft emails" },
+      { name: "draft_sequence", label: "Draft sequences" },
+      { name: "list_drafts", label: "Review drafts" },
+      { name: "list_mailboxes", label: "See connected inboxes" },
+      { name: "send_drafts", label: "Send drafts" },
+      { name: "send_outreach", label: "Send a one-off email" },
+      { name: "schedule_drafts", label: "Schedule sends" },
+      { name: "list_scheduled_emails", label: "See scheduled sends" },
+      { name: "cancel_scheduled_email", label: "Cancel scheduled sends" },
+      { name: "delete_drafts", label: "Delete drafts" },
+      { name: "list_sequences", label: "See sequences" },
+      { name: "enroll_lead_in_sequence", label: "Enroll leads in sequences" },
+    ],
+  },
+  {
+    label: "Replies",
+    tools: [
+      { name: "list_recent_replies", label: "Read inbound replies" },
+      { name: "delete_inbox_threads", label: "Delete inbox threads" },
+      { name: "resolve_approvals", label: "Resolve approvals" },
+    ],
+  },
+  {
+    label: "Autonomy",
+    tools: [{ name: "run_full_agent", label: "Trigger a full agent run" }],
+  },
+];
+
+export const ALL_AGENT_TOOL_NAMES = AGENT_TOOL_GROUPS.flatMap((g) =>
+  g.tools.map((t) => t.name),
+);
+
+export const agentToolLabel = (name: string) =>
+  AGENT_TOOL_GROUPS.flatMap((g) => g.tools).find((t) => t.name === name)?.label ?? name;
