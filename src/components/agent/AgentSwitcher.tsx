@@ -33,9 +33,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Bot, Plus, Star, Trash2, Loader2, Lock } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Bot, Plus, Star, Trash2, Loader2, Lock, Wand2 } from "lucide-react";
 import type { AgentConfig } from "@/pages/Agent";
-import { AGENT_ROLES, roleLabel, type AgentRole } from "./AgentRoles";
+import { AGENT_ROLES, roleLabel, agentToolLabel, type AgentRole } from "./AgentRoles";
 
 interface AgentSwitcherProps {
   agents: AgentConfig[];
