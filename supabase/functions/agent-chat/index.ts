@@ -1461,6 +1461,15 @@ serve(async (req) => {
     };
 
     const runTool = async (name: string, args: Record<string, any>): Promise<unknown> => {
+      // Hard scope gate: even if the model hallucinates a tool it wasn't given,
+      // an out-of-role action never runs.
+      if (!allowedTools.includes(name)) {
+        return {
+          error: "out_of_scope",
+          note:
+            `This agent's role (${config?.role ?? "full_cycle"}) does not allow "${name}". Tell the user this agent is scoped differently and suggest switching agents. Do not attempt another tool to work around it.`,
+        };
+      }
       switch (name) {
         case "list_leads": {
           let q = admin.from("leads").select(LEAD_FIELDS).eq("user_id", userId);
