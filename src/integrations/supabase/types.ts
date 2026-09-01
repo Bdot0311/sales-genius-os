@@ -1591,6 +1591,80 @@ export type Database = {
           },
         ]
       }
+      deliverability_events: {
+        Row: {
+          created_at: string
+          detail: string | null
+          domain: string | null
+          event_type: string
+          id: string
+          metadata: Json
+          occurred_at: string
+          sending_account_id: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          detail?: string | null
+          domain?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json
+          occurred_at?: string
+          sending_account_id?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          detail?: string | null
+          domain?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json
+          occurred_at?: string
+          sending_account_id?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deliverability_events_sending_account_id_fkey"
+            columns: ["sending_account_id"]
+            isOneToOne: false
+            referencedRelation: "sending_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deliverability_preferences: {
+        Row: {
+          auto_quarantine_enabled: boolean
+          auto_quarantine_threshold: number
+          created_at: string
+          open_tracking_enabled: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_quarantine_enabled?: boolean
+          auto_quarantine_threshold?: number
+          created_at?: string
+          open_tracking_enabled?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_quarantine_enabled?: boolean
+          auto_quarantine_threshold?: number
+          created_at?: string
+          open_tracking_enabled?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       deliverability_settings: {
         Row: {
           created_at: string
@@ -1626,6 +1700,133 @@ export type Database = {
           domain?: string
         }
         Relationships: []
+      }
+      dmarc_report_records: {
+        Row: {
+          created_at: string
+          disposition: string | null
+          dkim_domain: string | null
+          dkim_result: string | null
+          dkim_selector: string | null
+          envelope_from: string | null
+          header_from: string | null
+          id: string
+          message_count: number
+          report_id: string
+          source_ip: unknown
+          spf_domain: string | null
+          spf_result: string | null
+        }
+        Insert: {
+          created_at?: string
+          disposition?: string | null
+          dkim_domain?: string | null
+          dkim_result?: string | null
+          dkim_selector?: string | null
+          envelope_from?: string | null
+          header_from?: string | null
+          id?: string
+          message_count?: number
+          report_id: string
+          source_ip: unknown
+          spf_domain?: string | null
+          spf_result?: string | null
+        }
+        Update: {
+          created_at?: string
+          disposition?: string | null
+          dkim_domain?: string | null
+          dkim_result?: string | null
+          dkim_selector?: string | null
+          envelope_from?: string | null
+          header_from?: string | null
+          id?: string
+          message_count?: number
+          report_id?: string
+          source_ip?: unknown
+          spf_domain?: string | null
+          spf_result?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dmarc_report_records_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "dmarc_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dmarc_reports: {
+        Row: {
+          created_at: string
+          date_range_begin: string
+          date_range_end: string
+          domain: string
+          external_report_id: string
+          id: string
+          org_email: string | null
+          org_name: string | null
+          passing_messages: number
+          policy_adkim: string | null
+          policy_aspf: string | null
+          policy_p: string | null
+          policy_pct: number | null
+          policy_sp: string | null
+          received_at: string
+          sending_domain_id: string | null
+          total_messages: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date_range_begin: string
+          date_range_end: string
+          domain: string
+          external_report_id: string
+          id?: string
+          org_email?: string | null
+          org_name?: string | null
+          passing_messages?: number
+          policy_adkim?: string | null
+          policy_aspf?: string | null
+          policy_p?: string | null
+          policy_pct?: number | null
+          policy_sp?: string | null
+          received_at?: string
+          sending_domain_id?: string | null
+          total_messages?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date_range_begin?: string
+          date_range_end?: string
+          domain?: string
+          external_report_id?: string
+          id?: string
+          org_email?: string | null
+          org_name?: string | null
+          passing_messages?: number
+          policy_adkim?: string | null
+          policy_aspf?: string | null
+          policy_p?: string | null
+          policy_pct?: number | null
+          policy_sp?: string | null
+          received_at?: string
+          sending_domain_id?: string | null
+          total_messages?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dmarc_reports_sending_domain_id_fkey"
+            columns: ["sending_domain_id"]
+            isOneToOne: false
+            referencedRelation: "sending_domains"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_drafts: {
         Row: {
@@ -2617,6 +2818,59 @@ export type Database = {
         }
         Relationships: []
       }
+      mailbox_quarantine_log: {
+        Row: {
+          action: string
+          automatic: boolean
+          created_at: string
+          id: string
+          mailbox_email: string
+          reason: string
+          redistributed_to: Json
+          reputation_score: number | null
+          sending_account_id: string | null
+          threshold: number | null
+          user_id: string
+          volume_redistributed: number | null
+        }
+        Insert: {
+          action: string
+          automatic?: boolean
+          created_at?: string
+          id?: string
+          mailbox_email: string
+          reason: string
+          redistributed_to?: Json
+          reputation_score?: number | null
+          sending_account_id?: string | null
+          threshold?: number | null
+          user_id: string
+          volume_redistributed?: number | null
+        }
+        Update: {
+          action?: string
+          automatic?: boolean
+          created_at?: string
+          id?: string
+          mailbox_email?: string
+          reason?: string
+          redistributed_to?: Json
+          reputation_score?: number | null
+          sending_account_id?: string | null
+          threshold?: number | null
+          user_id?: string
+          volume_redistributed?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mailbox_quarantine_log_sending_account_id_fkey"
+            columns: ["sending_account_id"]
+            isOneToOne: false
+            referencedRelation: "sending_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mailbox_warmup: {
         Row: {
           created_at: string
@@ -2846,25 +3100,43 @@ export type Database = {
         Row: {
           created_at: string
           detail: string | null
+          dkim_result: string | null
+          dmarc_result: string | null
           id: string
+          observed_at: string | null
           placement: string
           provider: string
+          seed_mailbox: string | null
+          spf_result: string | null
+          tab: string | null
           test_id: string
         }
         Insert: {
           created_at?: string
           detail?: string | null
+          dkim_result?: string | null
+          dmarc_result?: string | null
           id?: string
+          observed_at?: string | null
           placement?: string
           provider: string
+          seed_mailbox?: string | null
+          spf_result?: string | null
+          tab?: string | null
           test_id: string
         }
         Update: {
           created_at?: string
           detail?: string | null
+          dkim_result?: string | null
+          dmarc_result?: string | null
           id?: string
+          observed_at?: string | null
           placement?: string
           provider?: string
+          seed_mailbox?: string | null
+          spf_result?: string | null
+          tab?: string | null
           test_id?: string
         }
         Relationships: [
@@ -3212,6 +3484,10 @@ export type Database = {
           demo_seed: boolean
           id: string
           open_rate: number
+          placement_inbox_rate: number | null
+          placement_sample_size: number | null
+          placement_spam_rate: number | null
+          quarantined: boolean
           reputation_score: number | null
           sending_account_id: string
           snapshot_date: string
@@ -3226,6 +3502,10 @@ export type Database = {
           demo_seed?: boolean
           id?: string
           open_rate?: number
+          placement_inbox_rate?: number | null
+          placement_sample_size?: number | null
+          placement_spam_rate?: number | null
+          quarantined?: boolean
           reputation_score?: number | null
           sending_account_id: string
           snapshot_date?: string
@@ -3240,6 +3520,10 @@ export type Database = {
           demo_seed?: boolean
           id?: string
           open_rate?: number
+          placement_inbox_rate?: number | null
+          placement_sample_size?: number | null
+          placement_spam_rate?: number | null
+          quarantined?: boolean
           reputation_score?: number | null
           sending_account_id?: string
           snapshot_date?: string
