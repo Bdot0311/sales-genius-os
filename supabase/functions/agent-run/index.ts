@@ -329,9 +329,18 @@ const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
     // Role gating: a build labelled "lead gen" must not send outreach or answer
     // replies, and so on. "full_cycle" runs every phase.
     const agentRole = String((agentConfig as any).role ?? "full_cycle");
-    const runLeadGen = agentRole === "full_cycle" || agentRole === "lead_gen";
-    const runOutreach = agentRole === "full_cycle" || agentRole === "outreach";
-    const runReplies = agentRole === "full_cycle" || agentRole === "replies";
+    // Custom builds derive their phases from the tools the operator granted.
+    const customTools: string[] = Array.isArray((agentConfig as any).allowed_tools)
+      ? (agentConfig as any).allowed_tools
+      : [];
+    const customCan = (tools: string[]) =>
+      agentRole === "custom" && tools.some((t) => customTools.includes(t));
+    const runLeadGen = agentRole === "full_cycle" || agentRole === "lead_gen" ||
+      customCan(["find_leads", "search_companies", "enrich_leads"]);
+    const runOutreach = agentRole === "full_cycle" || agentRole === "outreach" ||
+      customCan(["draft_outreach", "send_drafts", "schedule_drafts", "send_outreach"]);
+    const runReplies = agentRole === "full_cycle" || agentRole === "replies" ||
+      customCan(["list_recent_replies"]);
 
     // Every action row is attributed to the agent build that produced it.
     auditAgentId = config.id;
