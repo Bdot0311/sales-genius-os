@@ -8,22 +8,13 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Shield } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
-// Import admin sub-pages
-import AdminUsers from "./admin/Users";
-import AdminActivity from "./admin/Activity";
-import AdminAnalytics from "./admin/Analytics";
+// Import admin sub-pages / grouped pages
 import AdminSecurity from "./admin/Security";
-import AdminSettings from "./admin/Settings";
-import AdminAlerts from "./admin/Alerts";
-import AdminWebhooks from "./admin/Webhooks";
-import AdminSignupLogs from "./admin/SignupLogs";
-import AdminReEngagement from "./admin/ReEngagement";
-import AdminRealtimeHealth from "./admin/RealtimeHealth";
-import AdminActivation from "./admin/Activation";
-import AdminCampaignSetup from "./admin/CampaignSetup";
 import AdminBilling from "./admin/Billing";
-import AdminSystemHealth from "./admin/SystemHealth";
-import AdminTraffic from "./admin/Traffic";
+import UsersGroup from "./admin/groups/UsersGroup";
+import GrowthGroup from "./admin/groups/GrowthGroup";
+import HealthGroup from "./admin/groups/HealthGroup";
+import SettingsGroup from "./admin/groups/SettingsGroup";
 
 const Admin = () => {
   const navigate = useNavigate();
