@@ -94,8 +94,10 @@ export function allowedToolsFor(config: {
   const role = (config?.role ?? "full_cycle") as AgentRole;
   if (role === "custom") {
     const saved = (config?.allowed_tools ?? []).filter((t) => ALL_AGENT_TOOLS.includes(t));
-    const scoped = [...new Set([...CORE_TOOLS, ...saved])];
-    return saved.length ? scoped : ALL_AGENT_TOOLS;
+    // A custom build with no (or no recognised) tools is read-only, NOT
+    // full-cycle: falling back to every tool is how a "deliverability only"
+    // build ended up offering to send email.
+    return [...new Set([...CORE_TOOLS, ...saved])];
   }
   return ROLE_TOOLS[(role in ROLE_TOOLS ? role : "full_cycle") as Exclude<AgentRole, "custom">];
 }
@@ -103,9 +105,15 @@ export function allowedToolsFor(config: {
 export function scopeNoteFor(config: {
   role?: string | null;
   role_instructions?: string | null;
+  allowed_tools?: string[] | null;
+  agent_name?: string | null;
 } | null | undefined): string {
   const role = (config?.role ?? "full_cycle") as AgentRole;
-  const base = ROLE_SCOPE_NOTE[role] ?? ROLE_SCOPE_NOTE.full_cycle;
+  let base = ROLE_SCOPE_NOTE[role] ?? ROLE_SCOPE_NOTE.full_cycle;
+  if (role === "custom") {
+    const tools = allowedToolsFor(config);
+    base = `SCOPE: you are "${config?.agent_name ?? "a custom agent"}", a custom build. The ONLY tools you have are: ${tools.join(", ")}. Anything else — sending, scheduling, drafting, deleting, sourcing, enrolling, full runs — is outside this build. If the user asks for it, say plainly that this build is not scoped to that and they should switch agents with the selector at the top of the chat. Do not offer alternatives for the out-of-scope work and never imply you would do it if drafts, approvals or data existed.`;
+  }
   const extra = (config?.role_instructions ?? "").trim();
   return extra ? `${base}\nOPERATOR INSTRUCTIONS FOR THIS BUILD: ${extra}` : base;
 }
