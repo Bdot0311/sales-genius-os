@@ -3160,6 +3160,7 @@ export type Database = {
           completed_at: string | null
           created_at: string
           id: string
+          seed_email: string | null
           sending_account_id: string | null
           status: string
           subject: string | null
@@ -3169,6 +3170,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           id?: string
+          seed_email?: string | null
           sending_account_id?: string | null
           status?: string
           subject?: string | null
@@ -3178,6 +3180,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           id?: string
+          seed_email?: string | null
           sending_account_id?: string | null
           status?: string
           subject?: string | null
