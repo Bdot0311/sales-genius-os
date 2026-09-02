@@ -53,12 +53,15 @@ async function invoke<T>(fn: string, body: Record<string, unknown>): Promise<T> 
       try {
         const raw = await ctx.text();
         try {
-          const parsed = JSON.parse(raw) as { error?: string };
-          if (parsed?.error) detail = parsed.error;
+          const parsed = JSON.parse(raw) as { error?: string; message?: string };
+          // Prefer the human-readable message; the code alone ("seed_unavailable")
+          // tells the user nothing about what to do next.
+          if (parsed?.message) detail = parsed.message;
+          else if (parsed?.error) detail = `${parsed.error}${ctx.status ? ` (${ctx.status})` : ""}`;
         } catch {
-          if (raw) detail = raw.slice(0, 300);
+          if (raw) detail = `${raw.slice(0, 300)}${ctx.status ? ` (${ctx.status})` : ""}`;
         }
-        if (ctx.status) detail = `${detail} (${ctx.status})`;
+
       } catch {
         /* keep the generic message */
       }
