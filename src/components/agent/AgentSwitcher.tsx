@@ -66,6 +66,8 @@ export function AgentSwitcher({
   const [description, setDescription] = useState("");
   const [building, setBuilding] = useState(false);
   const [draft, setDraft] = useState<Record<string, any> | null>(null);
+  // Actions the description asked for that this plan tier does not include.
+  const [planStripped, setPlanStripped] = useState<string[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AgentConfig | null>(null);
 
@@ -114,6 +116,7 @@ export function AgentSwitcher({
     }
     setBuilding(true);
     setDraft(null);
+    setPlanStripped([]);
     try {
       const { data, error } = await supabase.functions.invoke("build-agent", {
         body: { description: description.trim() },
@@ -123,6 +126,7 @@ export function AgentSwitcher({
         throw new Error(data?.error || "Could not build the agent");
       }
       setDraft(data.config);
+      setPlanStripped(Array.isArray(data.removed_by_plan) ? data.removed_by_plan : []);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
       toast.error(`Build failed: ${message}`);
@@ -351,6 +355,20 @@ export function AgentSwitcher({
                             </Badge>
                           ))}
                         </div>
+                      )}
+                      {planStripped.length > 0 && (
+                        <p className="text-[11px] text-amber-400">
+                          Your plan does not include{" "}
+                          {planStripped.map((t) => agentToolLabel(t)).join(", ")} — those
+                          actions were left out of this build.{" "}
+                          <button
+                            type="button"
+                            className="underline"
+                            onClick={() => navigate("/pricing")}
+                          >
+                            Upgrade to unlock
+                          </button>
+                        </p>
                       )}
                       <p className="text-[11px] text-muted-foreground">
                         You can fine-tune everything on the Config tab after
