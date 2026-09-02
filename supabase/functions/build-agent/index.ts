@@ -1,7 +1,12 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
 import { aiFetch } from "../_shared/ai-provider.ts";
-import { ALL_AGENT_TOOLS, CORE_TOOLS } from "../_shared/agent-tool-scope.ts";
+import { ALL_AGENT_TOOLS, CORE_TOOLS, allowedToolsFor } from "../_shared/agent-tool-scope.ts";
+import {
+  blockedToolsFor,
+  capToolsToTier,
+  resolveAgentTier,
+} from "../_shared/agent-tier-scope.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -134,10 +139,23 @@ serve(async (req) => {
       return Number.isFinite(n) && n >= 0 ? Math.min(Math.round(n), 500) : fallback;
     };
 
-    const role = ROLES.includes(parsed.role) ? parsed.role : "full_cycle";
+    const requestedRole = ROLES.includes(parsed.role) ? parsed.role : "full_cycle";
     const grantedTools = Array.isArray(parsed.allowed_tools)
       ? parsed.allowed_tools.filter((t: unknown) => typeof t === "string" && ALL_AGENT_TOOLS.includes(t))
       : [];
+
+    // Route the build through the account's plan tier: whatever the description
+    // asked for, the build can only be granted tools the plan allows. If the
+    // plan strips anything from the chosen role, the build becomes a custom one
+    // carrying the capped allow-list so the limit is saved, not just displayed.
+    const tier = await resolveAgentTier(admin as any, user.id);
+    const wanted =
+      requestedRole === "custom"
+        ? [...new Set([...CORE_TOOLS, ...grantedTools])]
+        : allowedToolsFor({ role: requestedRole });
+    const cappedTools = capToolsToTier(wanted, tier);
+    const removedByPlan = blockedToolsFor(wanted, tier);
+    const role = removedByPlan.length > 0 ? "custom" : requestedRole;
 
     const config = {
       agent_name: str(parsed.agent_name, 40) || "Custom agent",
@@ -149,10 +167,7 @@ serve(async (req) => {
         ? parsed.value_props.filter((v: unknown) => typeof v === "string" && v.trim()).slice(0, 4)
         : [],
       role_instructions: str(parsed.role_instructions, 1200),
-      allowed_tools:
-        role === "custom"
-          ? [...new Set([...CORE_TOOLS, ...grantedTools])]
-          : null,
+      allowed_tools: role === "custom" ? cappedTools : null,
       prospecting_job_title: str(parsed.prospecting_job_title, 120),
       prospecting_industry: str(parsed.prospecting_industry, 120),
       prospecting_country: str(parsed.prospecting_country, 120),
@@ -161,7 +176,13 @@ serve(async (req) => {
       max_daily_new_emails: num(parsed.max_daily_new_emails, 20),
     };
 
-    return json({ success: true, config });
+    return json({
+      success: true,
+      config,
+      plan_tier: tier,
+      removed_by_plan: removedByPlan,
+      requested_role: requestedRole,
+    });
   } catch (e) {
     console.error("build-agent failed", e);
     return json({ error: "Could not build the agent right now.", error_code: "unexpected" }, 200);
