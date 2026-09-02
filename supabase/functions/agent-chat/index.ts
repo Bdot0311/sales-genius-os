@@ -1191,9 +1191,14 @@ serve(async (req) => {
 
     // Role/custom-build scope: the tool catalog handed to the model, and the
     // scope wording injected into the prompt.
-    const allowedTools = allowedToolsFor(config as any);
+    // The role/custom allow-list is then capped by the account's plan tier, so
+    // a custom build can never grant itself capabilities the plan doesn't have.
+    const agentTier = await resolveAgentTier(admin as any, userId);
+    const roleTools = allowedToolsFor(config as any);
+    const allowedTools = capToolsToTier(roleTools, agentTier);
+    const tierRemoved = blockedToolsFor(roleTools, agentTier);
     const scopedTools = TOOLS.filter((t: any) => allowedTools.includes(t.function?.name));
-    const scopeNote = scopeNoteFor(config as any);
+    const scopeNote = scopeNoteFor(config as any) + tierScopeNote(agentTier, tierRemoved);
 
     const invokeFn = async (name: string, body: unknown) => {
       const res = await fetch(`${supabaseUrl}/functions/v1/${name}`, {
