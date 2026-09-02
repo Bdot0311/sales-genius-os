@@ -24,26 +24,37 @@ serve(async (req) => {
 
     let raised = 0;
 
-    // Helper: insert an alert only if no active one of the same (user, type, domain) exists.
+    // Helper: insert an alert only if an active one for the same subject and
+    // type is not already open. The subject is a domain for DNS-level problems
+    // and a mailbox for per-mailbox ones — deduping on the wrong one would
+    // either raise the same alert nightly or hide a second mailbox's problem
+    // behind the first.
     async function ensureAlert(params: {
       user_id: string;
-      domain: string | null;
+      domain?: string | null;
+      sending_account_id?: string | null;
       alert_type: string;
       severity: string;
       message: string;
     }) {
+      const domain = params.domain ?? null;
+      const accountId = params.sending_account_id ?? null;
+
       let q = supabase
         .from("deliverability_alerts")
         .select("id")
         .eq("user_id", params.user_id)
         .eq("alert_type", params.alert_type)
         .eq("status", "active");
-      q = params.domain ? q.eq("domain", params.domain) : q.is("domain", null);
+      q = accountId ? q.eq("sending_account_id", accountId) : q.is("sending_account_id", null);
+      q = domain ? q.eq("domain", domain) : q.is("domain", null);
+
       const { data: existing } = await q.maybeSingle();
       if (existing) return;
       await supabase.from("deliverability_alerts").insert({
         user_id: params.user_id,
-        domain: params.domain,
+        domain,
+        sending_account_id: accountId,
         alert_type: params.alert_type,
         severity: params.severity,
         message: params.message,
@@ -97,6 +108,103 @@ serve(async (req) => {
           message: `${row.target} is listed on ${row.rbl_name}. Request delisting and pause sending from this domain until resolved.`,
         });
       }
+    }
+
+    // ---- Volume-based alerts: bounce, complaints, placement ----
+    //
+    // The gap this closes was reported by users of every competing tool: you
+    // only find out something is wrong by going and looking. These are the
+    // thresholds providers publish, checked nightly, so the first sign of a
+    // problem is a notification rather than a bad week.
+    const { data: snapshots } = await supabase
+      .from("reputation_snapshots")
+      .select("user_id, sending_account_id, snapshot_date, bounce_rate, complaint_rate, volume, placement_inbox_rate")
+      .order("snapshot_date", { ascending: false })
+      .limit(4000);
+
+    // Latest snapshot per mailbox, plus the one from a week earlier for the
+    // week-over-week comparison.
+    const latest = new Map<string, Record<string, unknown>>();
+    const weekAgo = new Map<string, Record<string, unknown>>();
+    const weekAgoCutoff = new Date(Date.now() - 7 * 86_400_000).toISOString().slice(0, 10);
+
+    for (const row of snapshots ?? []) {
+      const id = String(row.sending_account_id);
+      if (!latest.has(id)) {
+        latest.set(id, row);
+      } else if (!weekAgo.has(id) && String(row.snapshot_date) <= weekAgoCutoff) {
+        weekAgo.set(id, row);
+      }
+    }
+
+    for (const [accountId, row] of latest) {
+      const volume = Number(row.volume) || 0;
+      // Rates on a handful of sends are noise. The same floor the UI uses.
+      if (volume < 50) continue;
+
+      const userId = String(row.user_id);
+      const bounceRate = Number(row.bounce_rate) || 0;      // stored as a percentage
+      const complaintRate = Number(row.complaint_rate) || 0;
+
+      if (bounceRate > 2) {
+        await ensureAlert({
+          user_id: userId,
+          sending_account_id: accountId,
+          alert_type: "bounce_rate",
+          severity: bounceRate >= 5 ? "critical" : "warning",
+          message: `Bounce rate is ${bounceRate.toFixed(1)}% over the last 30 days, above the 2% line where reputation starts to erode. Unverified addresses in the list are the usual cause.`,
+        });
+      }
+
+      // Google and Yahoo publish 0.3% as the line they stop delivering at, and
+      // 0.1% as the target. Alerting at the target rather than the line is the
+      // difference between a warning and a post-mortem.
+      if (complaintRate >= 0.1) {
+        await ensureAlert({
+          user_id: userId,
+          sending_account_id: accountId,
+          alert_type: "complaint_rate",
+          severity: complaintRate >= 0.3 ? "critical" : "warning",
+          message: `Spam complaints are at ${complaintRate.toFixed(2)}%, at or above the 0.1% target. Providers stop delivering a sender at 0.3%.`,
+        });
+      }
+
+      const now = row.placement_inbox_rate;
+      const before = weekAgo.get(accountId)?.placement_inbox_rate;
+      if (now != null && before != null) {
+        const dropPoints = (Number(before) - Number(now)) * 100;
+        if (dropPoints > 10) {
+          await ensureAlert({
+            user_id: userId,
+            sending_account_id: accountId,
+            alert_type: "placement_drop",
+            severity: dropPoints >= 25 ? "critical" : "warning",
+            message: `Inbox placement fell ${Math.round(dropPoints)} points week over week. Check authentication and recent copy or volume changes.`,
+          });
+        }
+      }
+    }
+
+    // ---- Mailboxes that stopped being able to send ----
+    //
+    // A disconnected mailbox is silent by nature: nothing fails loudly, sends
+    // just stop happening. Without this the first sign is an empty week.
+    const { data: accounts } = await supabase
+      .from("sending_accounts")
+      .select("id, user_id, email, status, paused_reason, integration_id");
+
+    for (const a of accounts ?? []) {
+      if (a.status === "active") continue;
+      // A mailbox the user paused by hand is not news.
+      if (/paused manually/i.test(String(a.paused_reason ?? ""))) continue;
+
+      await ensureAlert({
+        user_id: String(a.user_id),
+        sending_account_id: String(a.id),
+        alert_type: "mailbox_unavailable",
+        severity: a.status === "disabled" ? "critical" : "warning",
+        message: `${a.email} is not sending. ${a.paused_reason ?? "No reason was recorded."}`,
+      });
     }
 
     // ---- Auto-resolve alerts whose cause has cleared ----

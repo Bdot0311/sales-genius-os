@@ -9,6 +9,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 import { computeReputation } from "../_shared/reputation.ts";
+import {
+  planRedistribution,
+  quarantineReason,
+  redistributionSummary,
+  shouldQuarantine,
+} from "../_shared/quarantine.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -77,23 +83,86 @@ serve(async (req) => {
       // Update the account's live score.
       const { data: acct } = await supabase
         .from("sending_accounts")
-        .select("auto_pause_threshold, status")
+        .select("auto_pause_threshold, status, email, daily_limit, sent_today")
         .eq("id", row.sending_account_id)
         .maybeSingle();
 
       const patch: Record<string, unknown> = { reputation_score: result.score };
 
-      // Auto-pause only when we have a real score below threshold and the
-      // account is currently active.
-      if (
-        result.score !== null &&
-        acct &&
-        acct.status === "active" &&
-        result.score < (acct.auto_pause_threshold ?? 70)
-      ) {
+      // Containment is on by default but the user can turn it off. Reading the
+      // preference per user rather than assuming it: silently changing someone's
+      // sending after they opted out is worse than not containing at all.
+      const { data: prefs } = await supabase
+        .from("deliverability_preferences")
+        .select("auto_quarantine_enabled, auto_quarantine_threshold")
+        .eq("user_id", row.user_id)
+        .maybeSingle();
+      const quarantineEnabled = prefs?.auto_quarantine_enabled ?? true;
+      const threshold = prefs?.auto_quarantine_threshold
+        ?? acct?.auto_pause_threshold
+        ?? 70;
+
+      const candidate = {
+        id: row.sending_account_id,
+        email: acct?.email ?? "",
+        score: result.score,
+        threshold,
+        status: acct?.status ?? "active",
+        sentToday: acct?.sent_today ?? 0,
+        dailyLimit: acct?.daily_limit ?? 0,
+      };
+
+      if (shouldQuarantine(candidate, quarantineEnabled)) {
+        const reason = quarantineReason(candidate);
         patch.status = "paused";
-        patch.paused_reason = `Auto-paused: reputation ${result.score} below threshold ${acct.auto_pause_threshold ?? 70}`;
+        patch.paused_reason = reason;
         paused++;
+
+        // Move the stranded volume into headroom that already exists. No
+        // healthy mailbox's limit is ever raised to absorb it — that is how a
+        // reputation problem spreads across a whole rotation.
+        const { data: healthy } = await supabase
+          .from("sending_accounts")
+          .select("id, email, daily_limit, sent_today")
+          .eq("user_id", row.user_id)
+          .eq("status", "active")
+          .neq("id", row.sending_account_id);
+
+        const plan = planRedistribution(
+          candidate,
+          ((healthy ?? []) as { id: string; email: string; daily_limit: number; sent_today: number }[])
+            .map((h) => ({
+              id: h.id,
+              email: h.email,
+              headroom: Math.max(0, (h.daily_limit ?? 0) - (h.sent_today ?? 0)),
+            })),
+        );
+
+        // The log is the record that makes an automatic change acceptable.
+        await supabase.from("mailbox_quarantine_log").insert({
+          user_id: row.user_id,
+          sending_account_id: row.sending_account_id,
+          mailbox_email: candidate.email,
+          action: "quarantined",
+          reason,
+          reputation_score: result.score,
+          threshold,
+          volume_redistributed: plan.absorbed,
+          redistributed_to: plan.destinations,
+          automatic: true,
+        });
+
+        // And on the timeline, so a volume drop next week has its cause on it.
+        await supabase.from("deliverability_events").insert({
+          user_id: row.user_id,
+          sending_account_id: row.sending_account_id,
+          event_type: "quarantined",
+          title: `${candidate.email} pulled from rotation`,
+          detail: `${reason} ${redistributionSummary(plan)}`,
+          metadata: { score: result.score, threshold, plan },
+        });
+
+        console.log(`[compute-reputation] quarantined ${candidate.email}: ${redistributionSummary(plan)}`);
 
         // Raise an alert (deduped against existing active reputation_drop alerts).
         const { data: existing } = await supabase
@@ -109,7 +178,7 @@ serve(async (req) => {
             sending_account_id: row.sending_account_id,
             alert_type: "reputation_drop",
             severity: "critical",
-            message: `Reputation dropped to ${result.score}. Sending auto-paused to protect the mailbox.`,
+            message: `Reputation dropped to ${result.score}. This mailbox was pulled from rotation to protect the rest.`,
           });
         }
       }
