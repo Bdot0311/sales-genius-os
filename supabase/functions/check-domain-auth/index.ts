@@ -82,14 +82,8 @@ serve(async (req) => {
         note: "Turn on DKIM in Google Admin, then publish the key it gives you at this host.",
       });
     }
-    if (dmarcStatus !== "pass") {
-      recommended.push({
-        type: "TXT",
-        host: `_dmarc.${root}`,
-        value: `v=DMARC1; p=none; rua=mailto:dmarc@${root}`,
-        note: "Start at p=none to monitor, then tighten to quarantine/reject once SPF+DKIM are aligned.",
-      });
-    }
+    // The DMARC record is built after the domain row is resolved, because the
+    // rua address it should point at is per-domain. See below.
 
     // ---- Persist (best-effort; results are returned even if this fails) ----
     // Validate the caller with an anon+JWT client (getUser with explicit token),
@@ -111,11 +105,41 @@ serve(async (req) => {
       }
       if (userId && serviceKey) {
         const admin = createClient(supabaseUrl, serviceKey);
+
+        // Reuse the domain's existing rua token, or mint one for a new domain.
+        // Upsert would otherwise overwrite a published token on every re-check,
+        // silently breaking a customer's DMARC record.
+        const { data: existing } = await admin
+          .from("sending_domains")
+          .select("dmarc_rua_token")
+          .eq("user_id", userId)
+          .eq("domain", root)
+          .maybeSingle();
+        const ruaToken = existing?.dmarc_rua_token
+          ?? crypto.randomUUID().replace(/-/g, "");
+
+        if (dmarcStatus !== "pass") {
+          // Point rua at us only when we are actually able to receive reports.
+          // Recommending an address with no mailbox behind it would look
+          // correct in DNS and deliver nothing, which is worse than not asking.
+          const ruaDomain = Deno.env.get("DMARC_RUA_DOMAIN") ?? "";
+          const rua = ruaDomain ? `${ruaToken}@${ruaDomain}` : `dmarc@${root}`;
+          recommended.push({
+            type: "TXT",
+            host: `_dmarc.${root}`,
+            value: `v=DMARC1; p=none; rua=mailto:${rua}`,
+            note: ruaDomain
+              ? "Start at p=none to monitor, then tighten to quarantine/reject once SPF+DKIM are aligned. The rua address is unique to this domain — reports sent there appear in your dashboard."
+              : "Start at p=none to monitor, then tighten to quarantine/reject once SPF+DKIM are aligned.",
+          });
+        }
+
         const { error: upsertError } = await admin
           .from("sending_domains")
           .upsert({
             user_id: userId,
             domain: root,
+            dmarc_rua_token: ruaToken,
             spf_status: spfStatus,
             dkim_status: dkimStatus,
             dmarc_status: dmarcStatus,
@@ -125,6 +149,15 @@ serve(async (req) => {
           }, { onConflict: "user_id,domain" });
         if (upsertError) console.error("[check-domain-auth] upsert error:", upsertError);
       } else if (!userId) {
+        // Anonymous check: no domain row, so no per-domain rua address to give.
+        if (dmarcStatus !== "pass") {
+          recommended.push({
+            type: "TXT",
+            host: `_dmarc.${root}`,
+            value: `v=DMARC1; p=none; rua=mailto:dmarc@${root}`,
+            note: "Start at p=none to monitor, then tighten to quarantine/reject once SPF+DKIM are aligned.",
+          });
+        }
         console.warn("[check-domain-auth] no authenticated user; returning results without saving");
       }
     } catch (persistErr) {

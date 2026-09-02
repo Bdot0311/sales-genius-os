@@ -13,6 +13,8 @@ import { AccountSendLimit } from "@/components/deliverability/AccountSendLimit";
 import { DomainAuthPanel } from "@/components/deliverability/DomainAuthPanel";
 import { PlacementPanel } from "@/components/deliverability/PlacementPanel";
 import { SpamCheckerPanel } from "@/components/deliverability/SpamCheckerPanel";
+import { InsightsPanel } from "@/components/deliverability/InsightsPanel";
+import { ConnectionHealthGrid } from "@/components/deliverability/ConnectionHealthGrid";
 import {
   useSendingAccounts,
   useActiveAlerts,
@@ -118,9 +120,31 @@ const Deliverability = () => {
           <>
             <HealthOverview accounts={accounts} alerts={alerts} domains={domains} snapshots={snapshots} stats={stats} />
 
+            {/* Deliverability: does the mail land. Kept above Connection
+                Health, and visually separate from it, because a connected
+                mailbox is the precondition and not the outcome. */}
+            <section>
+              <SectionHeading
+                title="Insights"
+                sub="What each number means, what caused it, and what to do about it."
+              />
+              <InsightsPanel domains={domains} stats={stats} />
+            </section>
+
             <section>
               <SectionHeading title="Alerts" sub="Reputation drops, auth failures, and blacklist listings surface here." />
               <AlertsPanel alerts={alerts} />
+            </section>
+
+            {/* Uptime. Deliberately not called Insights, and deliberately not
+                sharing their green: whether a mailbox is connected says
+                nothing about whether its mail reaches anyone. */}
+            <section>
+              <SectionHeading
+                title="Connection health"
+                sub="Whether each mailbox can send right now. Not a measure of whether mail lands."
+              />
+              <ConnectionHealthGrid accounts={accounts} />
             </section>
 
             <section>
@@ -131,7 +155,7 @@ const Deliverability = () => {
               <AccountSendLimit />
             </section>
 
-            <section>
+            <section id="accounts">
               <SectionHeading title="Sending accounts" sub="Per-account reputation, updated nightly from real send data." />
               <AccountHealthGrid accounts={accounts} snapshots={snapshots} stats={stats} />
             </section>
@@ -141,17 +165,17 @@ const Deliverability = () => {
               <WarmupPanel accounts={accounts} />
             </section>
 
-            <section>
+            <section id="authentication">
               <SectionHeading title="Authentication & blacklists" sub="Live DNS checks for SPF, DKIM, DMARC, and domain blacklists." />
               <DomainAuthPanel />
             </section>
 
-            <section>
+            <section id="placement">
               <SectionHeading title="Inbox placement" sub="Send a seed test to see where your mail lands." />
               <PlacementPanel accounts={accounts} />
             </section>
 
-            <section>
+            <section id="content">
               <SectionHeading title="Content check" sub="Score a draft's spam and inbox-placement risk before you send." />
               <SpamCheckerPanel />
             </section>
