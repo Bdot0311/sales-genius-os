@@ -51,7 +51,9 @@ export const PlacementPanel = ({ accounts }: { accounts: SendingAccount[] }) => 
       if (!mounted.current) return;
       setTestId(res.testId);
       setGmail("pending");
+      setErrorMsg("");
       setStatus("running");
+
       toast.success("Test email sent to the seed inbox. Checking placement…");
       // Poll until the message shows up, or until we have waited long enough to
       // say so honestly.
