@@ -180,6 +180,11 @@ export const PlacementPanel = ({ accounts }: { accounts: SendingAccount[] }) => 
               </p>
             )}
 
+            {status === "error" && (
+              <p className="text-sm text-destructive">{errorMsg}</p>
+            )}
+
+
             {status !== "idle" && (
               <div className="flex flex-wrap items-center gap-2">
                 {(() => {
