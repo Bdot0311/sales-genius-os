@@ -10,6 +10,12 @@ import { captureServerEvent } from "../_shared/posthog.ts";
 import { getSignatureHtml, appendSignatureToBody } from "../_shared/signature.ts";
 import { aiFetch } from "../_shared/ai-provider.ts";
 import { allowedToolsFor, scopeNoteFor } from "../_shared/agent-tool-scope.ts";
+import {
+  blockedToolsFor,
+  capToolsToTier,
+  resolveAgentTier,
+  tierScopeNote,
+} from "../_shared/agent-tier-scope.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
