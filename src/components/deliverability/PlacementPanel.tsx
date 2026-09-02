@@ -110,13 +110,27 @@ export const PlacementPanel = ({ accounts }: { accounts: SendingAccount[] }) => 
       if (attempt !== null) scheduleNextCheck(id, attempt + 1);
       else if (mounted.current) setStatus("not_found");
     } catch (e) {
-      if (mounted.current && !silent) toast.error(e instanceof Error ? e.message : "Could not read placement");
-      // A failed read is not a verdict — keep the schedule alive so a transient
-      // error does not end the test.
+      const msg = e instanceof Error ? e.message : "Could not read placement";
+      if (!mounted.current) return;
+      // A read we can never perform (seed mailbox unreadable / disconnected) is
+      // terminal: retrying it just leaves the badge spinning forever, which is
+      // exactly the bug this replaced. Surface it and stop.
+      const terminal = /could not be read|could not search|seed_unavailable|not configured|reconnect/i.test(msg);
+      if (terminal) {
+        if (timer.current) clearTimeout(timer.current);
+        setErrorMsg(msg);
+        setStatus("error");
+        setGmail("missing");
+        if (!silent) toast.error(msg);
+        return;
+      }
+      if (!silent) toast.error(msg);
+      // A transient failure is not a verdict — keep the schedule alive.
       if (attempt !== null) scheduleNextCheck(id, attempt + 1);
     } finally {
       if (mounted.current) setBusy(false);
     }
+
   };
 
   return (
