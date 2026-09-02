@@ -14,6 +14,7 @@ import {
   scheduleFollowUps,
 } from "../_shared/cold-email-playbook.ts";
 import { aiFetch } from "../_shared/ai-provider.ts";
+import { capToolsToTier, resolveAgentTier } from "../_shared/agent-tier-scope.ts";
 
 
 
@@ -330,9 +331,15 @@ const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
     // replies, and so on. "full_cycle" runs every phase.
     const agentRole = String((agentConfig as any).role ?? "full_cycle");
     // Custom builds derive their phases from the tools the operator granted.
-    const customTools: string[] = Array.isArray((agentConfig as any).allowed_tools)
-      ? (agentConfig as any).allowed_tools
-      : [];
+    // Custom allow-lists are capped by the account's plan tier, so a build can
+    // never run a phase the plan doesn't include.
+    const agentTier = await resolveAgentTier(adminClient as any, user.id);
+    const customTools: string[] = capToolsToTier(
+      Array.isArray((agentConfig as any).allowed_tools)
+        ? (agentConfig as any).allowed_tools
+        : [],
+      agentTier,
+    );
     const customCan = (tools: string[]) =>
       agentRole === "custom" && tools.some((t) => customTools.includes(t));
     const runLeadGen = agentRole === "full_cycle" || agentRole === "lead_gen" ||
