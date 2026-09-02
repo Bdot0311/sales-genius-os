@@ -22,10 +22,12 @@ const gmailBadge = (p: Gmail) => {
 export const PlacementPanel = ({ accounts }: { accounts: SendingAccount[] }) => {
   const active = accounts.filter((a) => a.status === "active");
   const [accountId, setAccountId] = useState(active[0]?.id ?? "");
-  const [status, setStatus] = useState<"idle" | "running" | "done" | "not_found" | "unconfigured">("idle");
+  const [status, setStatus] = useState<"idle" | "running" | "done" | "not_found" | "unconfigured" | "error">("idle");
   const [gmail, setGmail] = useState<Gmail>("pending");
   const [testId, setTestId] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string>("");
   const [busy, setBusy] = useState(false);
+
 
   // Guard against setState after unmount and clean up the pending auto-check
   // timer — a timeout firing on an unmounted panel is what could blank the page.
