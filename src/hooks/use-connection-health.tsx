@@ -14,19 +14,13 @@ import type { SendingAccount } from "@/lib/deliverability-db";
 interface IntegrationRow {
   id: string;
   is_active: boolean;
-  config: unknown;
+  token_expires_at: number | null;
+  has_refresh_token: boolean;
 }
 
 export interface MailboxConnection {
   account: SendingAccount;
   diagnosis: ConnectionDiagnosis;
-}
-
-function readTokenState(config: unknown): { expiresAt: number | null; hasRefreshToken: boolean } {
-  const c = (config ?? {}) as Record<string, unknown>;
-  const expiresAt = typeof c.expiresAt === "number" ? c.expiresAt : null;
-  const hasRefreshToken = typeof c.refreshToken === "string" && c.refreshToken.length > 0;
-  return { expiresAt, hasRefreshToken };
 }
 
 export function useConnectionHealth(accounts: SendingAccount[]) {
@@ -38,18 +32,34 @@ export function useConnectionHealth(accounts: SendingAccount[]) {
     staleTime: 30_000,
     retry: 1,
     queryFn: async (): Promise<MailboxConnection[]> => {
+      // Token state lives in `integrations.config`, which the client cannot
+      // read. A security-definer RPC returns only the derived flags.
       let integrations = new Map<string, IntegrationRow>();
+      let integrationsReadable = true;
       if (ids.length > 0) {
-        const { data } = await supabase
-          .from("integrations")
-          .select("id, is_active, config")
-          .in("id", ids);
-        integrations = new Map(((data as IntegrationRow[]) ?? []).map((r) => [r.id, r]));
+        const { data, error } = await supabase.rpc("get_integration_connection_state");
+        if (error) {
+          // A failed read is not evidence the mailbox is disconnected.
+          console.error("connection health: integration read failed", error);
+          integrationsReadable = false;
+        } else {
+          integrations = new Map(
+            ((data as IntegrationRow[]) ?? []).map((r) => [
+              r.id,
+              {
+                id: r.id,
+                is_active: r.is_active,
+                token_expires_at: r.token_expires_at != null ? Number(r.token_expires_at) : null,
+                has_refresh_token: !!r.has_refresh_token,
+              },
+            ])
+          );
+        }
       }
+
 
       return accounts.map((account) => {
         const integration = account.integration_id ? integrations.get(account.integration_id) : undefined;
-        const { expiresAt, hasRefreshToken } = readTokenState(integration?.config);
 
         return {
           account,
@@ -59,14 +69,18 @@ export function useConnectionHealth(accounts: SendingAccount[]) {
             pausedReason: account.paused_reason,
             sentToday: account.sent_today,
             dailyLimit: account.daily_limit,
-            // No integration row at all means the link is gone, not that we
-            // failed to read it — the account row still points at an id.
-            integrationActive: integration ? integration.is_active : !account.integration_id,
-            tokenExpiresAt: expiresAt,
-            hasRefreshToken,
+            // Only call it disconnected when we actually know the link is gone.
+            // If the read failed, assume the mailbox is fine and let the send
+            // path report the truth.
+            integrationActive: integration
+              ? integration.is_active
+              : !account.integration_id || !integrationsReadable,
+            tokenExpiresAt: integration?.token_expires_at ?? null,
+            hasRefreshToken: integration?.has_refresh_token ?? true,
           }),
         };
       });
+
     },
   });
 }

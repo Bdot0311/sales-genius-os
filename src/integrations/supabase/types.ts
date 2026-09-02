@@ -5888,6 +5888,17 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_integration_connection_state: {
+        Args: never
+        Returns: {
+          connected_email: string
+          has_refresh_token: boolean
+          id: string
+          integration_id: string
+          is_active: boolean
+          token_expires_at: number
+        }[]
+      }
       get_maintenance_message: { Args: never; Returns: string }
       get_maintenance_status: { Args: never; Returns: boolean }
       get_monthly_email_limit: {
