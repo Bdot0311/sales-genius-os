@@ -60,7 +60,6 @@ export function useConnectionHealth(accounts: SendingAccount[]) {
 
       return accounts.map((account) => {
         const integration = account.integration_id ? integrations.get(account.integration_id) : undefined;
-        const { expiresAt, hasRefreshToken } = readTokenState(integration?.config);
 
         return {
           account,
@@ -70,14 +69,18 @@ export function useConnectionHealth(accounts: SendingAccount[]) {
             pausedReason: account.paused_reason,
             sentToday: account.sent_today,
             dailyLimit: account.daily_limit,
-            // No integration row at all means the link is gone, not that we
-            // failed to read it — the account row still points at an id.
-            integrationActive: integration ? integration.is_active : !account.integration_id,
-            tokenExpiresAt: expiresAt,
-            hasRefreshToken,
+            // Only call it disconnected when we actually know the link is gone.
+            // If the read failed, assume the mailbox is fine and let the send
+            // path report the truth.
+            integrationActive: integration
+              ? integration.is_active
+              : !account.integration_id || !integrationsReadable,
+            tokenExpiresAt: integration?.token_expires_at ?? null,
+            hasRefreshToken: integration?.has_refresh_token ?? true,
           }),
         };
       });
+
     },
   });
 }
