@@ -32,6 +32,9 @@ import {
   type AgentRole,
 } from "@/components/agent/AgentRoles";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useSubscription } from "@/hooks/use-subscription";
+import { capToolsToPlan, isToolOnPlan } from "@/lib/agent-tier-tools";
+import type { PlanType } from "@/lib/plan-features";
 
 
 interface ConfigTabProps {
@@ -55,6 +58,8 @@ const TONE_OPTIONS = [
 ];
 
 export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
+  const { subscription } = useSubscription();
+  const plan = (subscription?.plan ?? "free") as PlanType;
   const [agentName, setAgentName] = useState("");
   const [persona, setPersona] = useState("");
   const [tone, setTone] = useState("professional");
@@ -177,7 +182,8 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
         tone,
         role,
         role_instructions: roleInstructions.trim() || null,
-        allowed_tools: role === "custom" ? allowedTools : null,
+        // The plan tier is the ceiling: never save an action the plan excludes.
+        allowed_tools: role === "custom" ? capToolsToPlan(allowedTools, plan) : null,
         company_context: companyContext.trim() || null,
         value_props: filteredValueProps.length > 0 ? filteredValueProps : null,
         objection_responses:
@@ -266,24 +272,45 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
                   {AGENT_TOOL_GROUPS.map((group) => (
                     <div key={group.label} className="space-y-1.5">
                       <p className="text-xs font-medium">{group.label}</p>
-                      {group.tools.map((tool) => (
-                        <label
-                          key={tool.name}
-                          className="flex items-center gap-2 text-xs text-muted-foreground"
-                        >
-                          <Checkbox
-                            checked={allowedTools.includes(tool.name)}
-                            onCheckedChange={(checked) =>
-                              setAllowedTools((prev) =>
-                                checked
-                                  ? [...prev, tool.name]
-                                  : prev.filter((t) => t !== tool.name),
-                              )
+                      {group.tools.map((tool) => {
+                        const onPlan = isToolOnPlan(tool.name, plan);
+                        return (
+                          <label
+                            key={tool.name}
+                            className={`flex items-center gap-2 text-xs ${
+                              onPlan
+                                ? "text-muted-foreground"
+                                : "text-muted-foreground/50 cursor-not-allowed"
+                            }`}
+                            title={
+                              onPlan
+                                ? undefined
+                                : "Not included on your plan — upgrade to grant this action"
                             }
-                          />
-                          {tool.label}
-                        </label>
-                      ))}
+                          >
+                            <Checkbox
+                              disabled={!onPlan}
+                              checked={onPlan && allowedTools.includes(tool.name)}
+                              onCheckedChange={(checked) =>
+                                setAllowedTools((prev) =>
+                                  checked
+                                    ? [...prev, tool.name]
+                                    : prev.filter((t) => t !== tool.name),
+                                )
+                              }
+                            />
+                            <span>{tool.label}</span>
+                            {!onPlan && (
+                              <Link
+                                to="/pricing"
+                                className="text-[10px] text-primary underline"
+                              >
+                                upgrade
+                              </Link>
+                            )}
+                          </label>
+                        );
+                      })}
                     </div>
                   ))}
                 </div>
