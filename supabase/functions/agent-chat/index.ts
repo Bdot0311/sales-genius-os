@@ -3140,6 +3140,7 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
       { marker: "- NEVER write, rewrite", tools: ["draft_outreach"] },
       { marker: "- draft_outreach goal", tools: ["draft_outreach"] },
       { marker: "- Drafts are auto-saved", tools: ["draft_outreach"] },
+      { marker: "- INBOX HISTORY:", tools: ["list_sent_emails", "get_email_thread"] },
       { marker: "- QUALITY:", tools: ["send_outreach"] },
       { marker: "- SENDING:", tools: ["send_drafts", "send_outreach"] },
       { marker: "- SCHEDULING:", tools: ["schedule_drafts"] },
