@@ -44,7 +44,16 @@ export const OUTREACH_TOOLS = [
 export const REPLY_TOOLS = [
   "list_recent_replies",
   "list_mailboxes",
+  // A replies agent has to be able to WRITE the reply, not just read the thread.
+  "draft_outreach",
+  "list_drafts",
+  "send_drafts",
   "send_outreach",
+  "schedule_drafts",
+  "list_scheduled_emails",
+  "cancel_scheduled_email",
+  // Reading the lead behind the thread, and moving its stage after a reply.
+  "update_lead",
   "delete_inbox_threads",
   "resolve_approvals",
 ];
@@ -62,12 +71,23 @@ export const ALL_AGENT_TOOLS = [
   ]),
 ];
 
+// Preset roles get the same treatment custom builds get: the closure of every
+// tool the role's job actually needs. A role list that misses a prerequisite is
+// an agent that says "I can't do that" for work it is supposed to own.
 const ROLE_TOOLS: Record<Exclude<AgentRole, "custom">, string[]> = {
   full_cycle: ALL_AGENT_TOOLS,
   lead_gen: [...CORE_TOOLS, ...LEAD_GEN_TOOLS],
-  outreach: [...CORE_TOOLS, ...OUTREACH_TOOLS],
+  outreach: [
+    ...CORE_TOOLS,
+    ...OUTREACH_TOOLS,
+    // Personalisation and prioritisation of leads already in the account.
+    "research_leads",
+    "score_leads",
+    "update_lead",
+  ],
   replies: [...CORE_TOOLS, ...REPLY_TOOLS],
 };
+
 
 export const ROLE_SCOPE_NOTE: Record<AgentRole, string> = {
   full_cycle:
