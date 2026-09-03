@@ -102,6 +102,18 @@ export function coldiqCreditsExhausted(): boolean {
 
 export const COLDIQ_CREDITS_ERROR = "ColdIQ credit balance exhausted";
 
+/**
+ * Clear the breaker.
+ *
+ * The cooldown is module state, so once one call trips it every later call in
+ * the same process reports "credit balance exhausted" — including unrelated
+ * network failures, whose real cause is then invisible. Tests need to reset
+ * between cases for the same reason.
+ */
+export function resetColdiqBreaker(): void {
+  creditsExhaustedUntil = 0;
+}
+
 /** Record a non-OK response so a billing failure trips the breaker. */
 export function noteColdiqFailure(status: number, detail: string): void {
   if (status === 402 || /insufficient|balance is|out of credits/i.test(detail)) {
