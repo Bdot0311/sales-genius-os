@@ -470,6 +470,8 @@ const COLDIQ_BATCH_SIZE = 50;
  */
 async function verifyBatchViaColdIq(emails: string[]): Promise<Map<string, VerificationResult>> {
   const out = new Map<string, VerificationResult>();
+  // Billing failure is sticky: don't spend a chunk of round trips proving it.
+  if (coldiqCreditsExhausted()) return out;
 
   for (let i = 0; i < emails.length; i += COLDIQ_BATCH_SIZE) {
     const chunk = emails.slice(i, i + COLDIQ_BATCH_SIZE);
