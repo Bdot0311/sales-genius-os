@@ -97,7 +97,9 @@ export function allowedToolsFor(config: {
     // A custom build with no (or no recognised) tools is read-only, NOT
     // full-cycle: falling back to every tool is how a "deliverability only"
     // build ended up offering to send email.
-    return [...new Set([...CORE_TOOLS, ...saved])];
+    // Closure over prerequisites so a hand-picked build is coherent: "send
+    // drafts" without draft/list tools is an agent that can't do its job.
+    return withToolPrerequisites([...new Set([...CORE_TOOLS, ...saved])]);
   }
   return ROLE_TOOLS[(role in ROLE_TOOLS ? role : "full_cycle") as Exclude<AgentRole, "custom">];
 }
@@ -116,4 +118,83 @@ export function scopeNoteFor(config: {
   }
   const extra = (config?.role_instructions ?? "").trim();
   return extra ? `${base}\nOPERATOR INSTRUCTIONS FOR THIS BUILD: ${extra}` : base;
+}
+
+// ---------------------------------------------------------------------------
+// Catalog used when a custom build is generated from a plain-English prompt.
+//
+// Naming a tool is not enough for the model to pick well: "build me a follow-up
+// agent" used to come back with just list_recent_replies + delete_inbox_threads
+// because those names *sound* like follow-up work. The description of every
+// tool, plus the prerequisite closure below, is what makes the generated build
+// actually able to do the job it was described for.
+// ---------------------------------------------------------------------------
+
+export const TOOL_CATALOG: Record<string, string> = {
+  list_leads: "List leads already in the account, with filters.",
+  get_lead: "Read one lead's full record.",
+  get_agent_status: "Report this agent's own configuration and recent activity.",
+  list_pending_approvals: "List actions waiting for the user's approval.",
+  find_leads: "Source brand-new leads (people) from the lead network.",
+  search_companies: "Search companies matching an ICP.",
+  enrich_leads: "Fill missing contact/company data on existing leads.",
+  score_leads: "Score existing leads against the saved ICP.",
+  research_leads: "Research a lead/company for personalisation angles.",
+  update_lead: "Edit a lead's fields or pipeline stage.",
+  delete_leads: "Permanently delete leads (destructive).",
+  draft_outreach:
+    "Write email drafts for leads — first touch AND follow-ups. Required for any agent that writes email.",
+  draft_sequence: "Build a multi-step email sequence.",
+  list_drafts: "List existing unsent drafts.",
+  list_mailboxes: "List the user's connected sending mailboxes.",
+  send_drafts: "Send drafts that already exist.",
+  send_outreach: "Send a one-off email, including a reply in an existing thread.",
+  schedule_drafts: "Schedule drafts to send at a future time.",
+  list_scheduled_emails: "List emails scheduled to send later.",
+  cancel_scheduled_email: "Cancel a scheduled send.",
+  delete_drafts: "Permanently delete drafts (destructive).",
+  list_sequences: "List the account's sequences.",
+  enroll_lead_in_sequence: "Enroll leads into a sequence.",
+  resolve_approvals: "Approve or reject pending actions.",
+  list_recent_replies: "Read inbound replies from connected inboxes.",
+  delete_inbox_threads: "Permanently delete inbox threads (destructive).",
+  run_full_agent: "Run the whole autonomous cycle end to end.",
+};
+
+/** Tools that only make sense with these other tools also granted. */
+const TOOL_PREREQUISITES: Record<string, string[]> = {
+  send_drafts: ["list_drafts", "draft_outreach", "list_mailboxes"],
+  schedule_drafts: ["list_drafts", "draft_outreach", "list_scheduled_emails"],
+  cancel_scheduled_email: ["list_scheduled_emails"],
+  delete_drafts: ["list_drafts"],
+  send_outreach: ["list_mailboxes"],
+  draft_outreach: ["list_drafts"],
+  draft_sequence: ["list_sequences"],
+  enroll_lead_in_sequence: ["list_sequences"],
+  delete_inbox_threads: ["list_recent_replies"],
+  resolve_approvals: ["list_pending_approvals"],
+  enrich_leads: ["list_leads"],
+  score_leads: ["list_leads"],
+  research_leads: ["list_leads"],
+  update_lead: ["list_leads", "get_lead"],
+  delete_leads: ["list_leads"],
+  find_leads: ["list_leads"],
+  run_full_agent: ["get_agent_status"],
+};
+
+export const DESTRUCTIVE_TOOLS = ["delete_leads", "delete_drafts", "delete_inbox_threads"];
+
+/**
+ * Add the prerequisites a granted tool needs to be usable. Without this a build
+ * can be granted "send" with no way to write or find what to send.
+ */
+export function withToolPrerequisites(tools: string[]): string[] {
+  const out = new Set<string>(tools.filter((t) => ALL_AGENT_TOOLS.includes(t)));
+  // Two passes cover the one level of nesting the map has.
+  for (let i = 0; i < 2; i++) {
+    for (const t of [...out]) {
+      for (const dep of TOOL_PREREQUISITES[t] ?? []) out.add(dep);
+    }
+  }
+  return [...out];
 }

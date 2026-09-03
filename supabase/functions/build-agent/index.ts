@@ -1,7 +1,14 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
 import { aiFetch } from "../_shared/ai-provider.ts";
-import { ALL_AGENT_TOOLS, CORE_TOOLS, allowedToolsFor } from "../_shared/agent-tool-scope.ts";
+import {
+  ALL_AGENT_TOOLS,
+  CORE_TOOLS,
+  DESTRUCTIVE_TOOLS,
+  TOOL_CATALOG,
+  allowedToolsFor,
+  withToolPrerequisites,
+} from "../_shared/agent-tool-scope.ts";
 import {
   blockedToolsFor,
   capToolsToTier,
@@ -43,11 +50,16 @@ Return ONLY raw JSON, no markdown fences, with these keys:
   "max_daily_new_emails": number    // 0 if the build does not send email
 }
 
-Tool list for custom builds: ${ALL_AGENT_TOOLS.join(", ")}
+Tools available to custom builds (name — what it does). Pick from these names only:
+${Object.entries(TOOL_CATALOG).map(([name, desc]) => `- ${name}: ${desc}`).join("\n")}
 
 Rules:
-- Choose "custom" and an explicit allowed_tools list whenever the description mixes or narrows capabilities in a way the fixed roles do not cover.
-- Only grant tools the description actually implies. Never grant sending or deleting tools to a research-only build.
+- Default to "custom" with an explicit allowed_tools list. Only use a fixed role when the description matches it exactly end to end.
+- Grant every tool the described job actually needs to finish, not just tools whose names sound like the description. Work through the job: to write email you need draft_outreach; to send you need send_drafts or send_outreach; to send later you need schedule_drafts; to act on inbound mail you need list_recent_replies.
+- Worked example: "a follow-up agent" reads replies and sent history AND writes, schedules and sends follow-up email — list_recent_replies, list_leads, get_lead, draft_outreach, list_drafts, list_mailboxes, schedule_drafts, list_scheduled_emails, send_drafts, send_outreach. Granting only reply-reading would make that build useless.
+- A build must never be granted only read-only tools when the description asks it to do work.
+- Never grant sourcing tools (find_leads, search_companies) unless the description asks for new prospects.
+- Never grant destructive tools (${DESTRUCTIVE_TOOLS.join(", ")}) unless the description explicitly asks the agent to delete or clean things up.
 - Never invent the user's company, customers, metrics or proof. Leave fields empty when they are not stated.
 - role_instructions must state clearly what the agent must NOT do.`;
 
@@ -140,9 +152,12 @@ serve(async (req) => {
     };
 
     const requestedRole = ROLES.includes(parsed.role) ? parsed.role : "full_cycle";
-    const grantedTools = Array.isArray(parsed.allowed_tools)
-      ? parsed.allowed_tools.filter((t: unknown) => typeof t === "string" && ALL_AGENT_TOOLS.includes(t))
-      : [];
+    const wantsDeletes = /\b(delete|remove|purge|clean\s*up|clear out|wipe)\b/i.test(description);
+    const grantedTools = (Array.isArray(parsed.allowed_tools) ? parsed.allowed_tools : [])
+      .filter((t: unknown): t is string => typeof t === "string" && ALL_AGENT_TOOLS.includes(t))
+      // Destructive tools are only granted when the description asks for them —
+      // the model liked to sprinkle delete_* into unrelated builds.
+      .filter((t: string) => wantsDeletes || !DESTRUCTIVE_TOOLS.includes(t));
 
     // Route the build through the account's plan tier: whatever the description
     // asked for, the build can only be granted tools the plan allows. If the
@@ -151,7 +166,10 @@ serve(async (req) => {
     const tier = await resolveAgentTier(admin as any, user.id);
     const wanted =
       requestedRole === "custom"
-        ? [...new Set([...CORE_TOOLS, ...grantedTools])]
+        ? // Prerequisite closure: a build granted "send" with no way to draft or
+          // list drafts is what made custom agents report they can barely do
+          // anything. Grant the supporting tools the chosen work needs.
+          withToolPrerequisites([...new Set([...CORE_TOOLS, ...grantedTools])])
         : allowedToolsFor({ role: requestedRole });
     const cappedTools = capToolsToTier(wanted, tier);
     const removedByPlan = blockedToolsFor(wanted, tier);
