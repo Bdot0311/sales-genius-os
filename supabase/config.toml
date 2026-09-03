@@ -19,6 +19,8 @@ project_id = "ghgfjnepvxvxrncmskys"
     verify_jwt = true
   [functions.check-email-rubric]
     verify_jwt = true
+  [functions.check-copy-risk]
+    verify_jwt = true
   [functions.score-lead-v2]
     verify_jwt = true
   [functions.process-rescore-queue]

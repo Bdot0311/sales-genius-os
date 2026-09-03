@@ -15,6 +15,8 @@ import { PlacementPanel } from "@/components/deliverability/PlacementPanel";
 import { SpamCheckerPanel } from "@/components/deliverability/SpamCheckerPanel";
 import { InsightsPanel } from "@/components/deliverability/InsightsPanel";
 import { ConnectionHealthGrid } from "@/components/deliverability/ConnectionHealthGrid";
+import { EventTimeline } from "@/components/deliverability/EventTimeline";
+import { RecoveryLedger } from "@/components/deliverability/RecoveryLedger";
 import {
   useSendingAccounts,
   useActiveAlerts,
@@ -136,6 +138,16 @@ const Deliverability = () => {
               <AlertsPanel alerts={alerts} />
             </section>
 
+            {/* The save. Users do not credit software for problems they never
+                saw, so containment that worked is counted rather than silent. */}
+            <section>
+              <SectionHeading
+                title="Contained automatically"
+                sub="Mailboxes pulled before they cost you a domain, and the sends that kept moving."
+              />
+              <RecoveryLedger />
+            </section>
+
             {/* Uptime. Deliberately not called Insights, and deliberately not
                 sharing their green: whether a mailbox is connected says
                 nothing about whether its mail reaches anyone. */}
@@ -173,6 +185,16 @@ const Deliverability = () => {
             <section id="placement">
               <SectionHeading title="Inbox placement" sub="Send a seed test to see where your mail lands." />
               <PlacementPanel accounts={accounts} />
+            </section>
+
+            {/* Placed under everything it explains: a change here is the answer
+                to a shift in any chart above it. */}
+            <section>
+              <SectionHeading
+                title="What changed"
+                sub="Every mailbox, limit and DNS change, so a shift in the numbers above has a cause you can point at."
+              />
+              <EventTimeline />
             </section>
 
             <section id="content">
