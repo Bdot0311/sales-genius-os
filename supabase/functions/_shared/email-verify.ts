@@ -474,6 +474,7 @@ async function verifyBatchViaColdIq(emails: string[]): Promise<Map<string, Verif
   if (coldiqCreditsExhausted()) return out;
 
   for (let i = 0; i < emails.length; i += COLDIQ_BATCH_SIZE) {
+    if (coldiqCreditsExhausted()) break;
     const chunk = emails.slice(i, i + COLDIQ_BATCH_SIZE);
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), PROVIDER_TIMEOUT_MS * 3);
