@@ -22,7 +22,7 @@
 // case to callProvider() — nothing else in the codebase knows the vendor.
 
 import { dohQuery, validateDomain } from "./dns.ts";
-import { coldiqAuthHeaders, coldiqSpendCap, coldiqVerifyUrl } from "./coldiq.ts";
+import { coldiqAuthHeaders, coldiqCreditsExhausted, coldiqSpendCap, coldiqVerifyUrl, noteColdiqFailure } from "./coldiq.ts";
 
 export type VerificationStatus = "valid" | "catch_all" | "unknown" | "invalid" | "role";
 
@@ -345,6 +345,10 @@ function interpret(provider: string, body: unknown): VerificationResult {
 async function callProvider(email: string): Promise<VerificationResult> {
   const provider = providerName()!;
   const key = providerKey()!;
+  // Skip a call the vendor will reject for billing reasons anyway.
+  if (provider === "coldiq" && coldiqCreditsExhausted()) {
+    return { status: "unknown", verified: null, reason: "Verification unavailable — provider credits exhausted", source: provider };
+  }
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), PROVIDER_TIMEOUT_MS);
 
@@ -374,7 +378,15 @@ async function callProvider(email: string): Promise<VerificationResult> {
       // rejected address — which the status code alone does not.
       const detail = (await res.text().catch(() => "")).slice(0, 300);
       console.error(`[email-verify] ${provider} returned ${res.status}:`, detail);
-      return { status: "unknown", verified: null, reason: "Verification unavailable", source: provider };
+      if (provider === "coldiq") noteColdiqFailure(res.status, detail);
+      return {
+        status: "unknown",
+        verified: null,
+        reason: res.status === 402
+          ? "Verification unavailable — provider credits exhausted"
+          : "Verification unavailable",
+        source: provider,
+      };
     }
     return interpret(provider, await res.json());
   } catch (e) {
@@ -458,8 +470,11 @@ const COLDIQ_BATCH_SIZE = 50;
  */
 async function verifyBatchViaColdIq(emails: string[]): Promise<Map<string, VerificationResult>> {
   const out = new Map<string, VerificationResult>();
+  // Billing failure is sticky: don't spend a chunk of round trips proving it.
+  if (coldiqCreditsExhausted()) return out;
 
   for (let i = 0; i < emails.length; i += COLDIQ_BATCH_SIZE) {
+    if (coldiqCreditsExhausted()) break;
     const chunk = emails.slice(i, i + COLDIQ_BATCH_SIZE);
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), PROVIDER_TIMEOUT_MS * 3);
@@ -478,6 +493,7 @@ async function verifyBatchViaColdIq(emails: string[]): Promise<Map<string, Verif
       if (!res.ok) {
         const detail = (await res.text().catch(() => "")).slice(0, 300);
         console.error(`[email-verify] coldiq bulk returned ${res.status}:`, detail);
+        noteColdiqFailure(res.status, detail);
         continue; // leave this chunk unresolved rather than condemning it
       }
 

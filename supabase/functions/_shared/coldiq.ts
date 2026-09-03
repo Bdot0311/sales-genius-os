@@ -83,6 +83,35 @@ export function coldiqSpendCap(): { max_credits?: number } {
   return Number.isFinite(raw) && raw > 0 ? { max_credits: raw } : {};
 }
 
+/**
+ * Credit-exhaustion breaker.
+ *
+ * A 402 from the marketplace ("costs 5 credits and your balance is 0.32") is
+ * not transient: every subsequent call fails identically until the account is
+ * topped up. Enriching a 100-lead list would otherwise fire 100 doomed
+ * requests, each paying full network latency to learn the same thing. Once a
+ * 402 is seen, calls short-circuit for a cooldown window and the caller gets
+ * an honest, actionable error instead of a generic miss.
+ */
+const CREDIT_COOLDOWN_MS = 10 * 60 * 1000;
+let creditsExhaustedUntil = 0;
+
+export function coldiqCreditsExhausted(): boolean {
+  return Date.now() < creditsExhaustedUntil;
+}
+
+export const COLDIQ_CREDITS_ERROR = "ColdIQ credit balance exhausted";
+
+/** Record a non-OK response so a billing failure trips the breaker. */
+export function noteColdiqFailure(status: number, detail: string): void {
+  if (status === 402 || /insufficient|balance is|out of credits/i.test(detail)) {
+    if (!coldiqCreditsExhausted()) {
+      console.error("[coldiq] credit balance exhausted — pausing provider calls for 10 minutes");
+    }
+    creditsExhaustedUntil = Date.now() + CREDIT_COOLDOWN_MS;
+  }
+}
+
 export function coldiqVerifyUrl(): string {
   const path = Deno.env.get("COLDIQ_VERIFY_PATH") || DEFAULT_VERIFY_PATH;
   return `${coldiqBaseUrl()}${path.startsWith("/") ? path : `/${path}`}`;
@@ -200,6 +229,7 @@ export async function coldiqSearchPeople(
   input: ColdIqPeopleSearch,
 ): Promise<{ records: Record<string, unknown>[]; error?: string }> {
   if (!coldiqApiKey()) return { records: [], error: "COLDIQ_API_KEY not set" };
+  if (coldiqCreditsExhausted()) return { records: [], error: COLDIQ_CREDITS_ERROR };
 
   const path = Deno.env.get("COLDIQ_SEARCH_PATH") || DEFAULT_SEARCH_PATH;
   const url = `${coldiqBaseUrl()}${path.startsWith("/") ? path : `/${path}`}`;
@@ -221,7 +251,8 @@ export async function coldiqSearchPeople(
     if (!res.ok) {
       const detail = (await res.text().catch(() => "")).slice(0, 500);
       console.error(`[coldiq] people search ${res.status} at ${url}:`, detail);
-      return { records: [], error: `ColdIQ returned ${res.status}` };
+      noteColdiqFailure(res.status, detail);
+      return { records: [], error: res.status === 402 ? COLDIQ_CREDITS_ERROR : `ColdIQ returned ${res.status}` };
     }
 
     const payload = await res.json();
@@ -263,6 +294,7 @@ export async function coldiqFindEmail(
   input: ColdIqEmailFind,
 ): Promise<{ email: string | null; error?: string }> {
   if (!coldiqApiKey()) return { email: null, error: "COLDIQ_API_KEY not set" };
+  if (coldiqCreditsExhausted()) return { email: null, error: COLDIQ_CREDITS_ERROR };
 
   const payload: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(input)) {
@@ -303,7 +335,8 @@ export async function coldiqFindEmail(
     if (!res.ok) {
       const detail = (await res.text().catch(() => "")).slice(0, 300);
       console.error(`[coldiq] email find ${res.status}:`, detail);
-      return { email: null, error: `ColdIQ returned ${res.status}` };
+      noteColdiqFailure(res.status, detail);
+      return { email: null, error: res.status === 402 ? COLDIQ_CREDITS_ERROR : `ColdIQ returned ${res.status}` };
     }
 
     const body = await res.json();
@@ -344,6 +377,7 @@ const DEFAULT_WEB_FETCH_PATH = "/v1/web/fetch";
  */
 export async function coldiqFetchPages(urls: string[]): Promise<{ text: string; error?: string }> {
   if (!coldiqApiKey()) return { text: "", error: "COLDIQ_API_KEY not set" };
+  if (coldiqCreditsExhausted()) return { text: "", error: COLDIQ_CREDITS_ERROR };
   const list = urls.map((u) => String(u ?? "").trim()).filter(Boolean).slice(0, 5);
   if (list.length === 0) return { text: "", error: "no urls" };
 
@@ -362,7 +396,8 @@ export async function coldiqFetchPages(urls: string[]): Promise<{ text: string; 
     if (!res.ok) {
       const detail = (await res.text().catch(() => "")).slice(0, 300);
       console.error(`[coldiq] web fetch ${res.status}:`, detail);
-      return { text: "", error: `ColdIQ returned ${res.status}` };
+      noteColdiqFailure(res.status, detail);
+      return { text: "", error: res.status === 402 ? COLDIQ_CREDITS_ERROR : `ColdIQ returned ${res.status}` };
     }
 
     const body = await res.json();
