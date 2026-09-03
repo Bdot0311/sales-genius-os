@@ -2546,6 +2546,142 @@ serve(async (req) => {
           return { replies: data ?? [] };
         }
 
+        case "list_sent_emails": {
+          const limit = Math.min(Math.max(Number(args.limit ?? 20) || 20, 1), 50);
+          const days = Math.min(Math.max(Number(args.days ?? 30) || 30, 1), 180);
+          const includeBody = args.include_body !== false;
+          const since = new Date(Date.now() - days * 86_400_000).toISOString();
+          let q = admin
+            .from("sent_emails")
+            .select(
+              "id, lead_id, to_email, subject, body_text, sent_at, status, open_count, last_opened_at, replied_at, gmail_thread_id, sequence_step, leads(company_name, contact_name, pipeline_stage)",
+            )
+            .eq("user_id", userId)
+            .neq("status", "scheduled")
+            .not("sent_at", "is", null)
+            .gte("sent_at", since)
+            .order("sent_at", { ascending: false })
+            .limit(limit);
+          if (args.lead_id) q = q.eq("lead_id", String(args.lead_id));
+          if (args.email) q = q.ilike("to_email", `%${String(args.email)}%`);
+          if (args.awaiting_reply === true) q = q.is("replied_at", null);
+          const { data, error } = await q;
+          if (error) return { error: error.message };
+          const rows = data ?? [];
+          const ids = rows.map((r: any) => r.id);
+          const replyMap = new Map<string, any>();
+          if (ids.length) {
+            const { data: replies } = await admin
+              .from("reply_analysis")
+              .select("sent_email_id, intent_classification, reply_content, created_at")
+              .eq("user_id", userId)
+              .in("sent_email_id", ids);
+            for (const r of replies ?? []) replyMap.set(String((r as any).sent_email_id), r);
+          }
+          toolEvents.push({
+            name,
+            label: "Read sent inbox history",
+            status: "ok",
+            detail: `${rows.length} sent email${rows.length === 1 ? "" : "s"} reviewed`,
+          });
+          return {
+            timezone: userTz,
+            sent: rows.map((e: any) => {
+              const reply = replyMap.get(String(e.id));
+              return {
+                sent_email_id: e.id,
+                lead_id: e.lead_id,
+                to: e.to_email,
+                company: e.leads?.company_name ?? null,
+                contact: e.leads?.contact_name ?? null,
+                pipeline_stage: e.leads?.pipeline_stage ?? null,
+                subject: e.subject,
+                body: includeBody ? (e.body_text ?? null) : undefined,
+                sent_at: e.sent_at,
+                sent_at_local: e.sent_at ? formatLocal(new Date(e.sent_at)) : null,
+                sequence_step: e.sequence_step ?? null,
+                opens: e.open_count ?? 0,
+                last_opened_at: e.last_opened_at,
+                replied: Boolean(e.replied_at || reply),
+                reply_classification: reply?.intent_classification ?? null,
+                reply_snippet: reply?.reply_content ? String(reply.reply_content).slice(0, 400) : null,
+                thread_id: e.gmail_thread_id ?? null,
+              };
+            }),
+            note:
+              "This is what already went out. Use get_email_thread for the full conversation, and reference the real earlier wording in any follow-up instead of guessing.",
+          };
+        }
+
+        case "get_email_thread": {
+          let base: any = null;
+          if (args.sent_email_id) {
+            const { data } = await admin
+              .from("sent_emails")
+              .select("id, to_email, lead_id, gmail_thread_id")
+              .eq("user_id", userId)
+              .eq("id", String(args.sent_email_id))
+              .maybeSingle();
+            base = data;
+          }
+          const targetEmail = base?.to_email ?? (args.email ? String(args.email) : null);
+          const targetLead = base?.lead_id ?? (args.lead_id ? String(args.lead_id) : null);
+          if (!targetEmail && !targetLead) {
+            return { error: "Pass sent_email_id, email or lead_id. Use list_sent_emails to find one." };
+          }
+          let q = admin
+            .from("sent_emails")
+            .select(
+              "id, lead_id, to_email, subject, body_text, sent_at, status, open_count, replied_at, gmail_thread_id, sequence_step",
+            )
+            .eq("user_id", userId)
+            .order("sent_at", { ascending: true })
+            .limit(50);
+          q = targetEmail ? q.eq("to_email", targetEmail) : q.eq("lead_id", targetLead);
+          const { data: msgs, error } = await q;
+          if (error) return { error: error.message };
+          const rows = msgs ?? [];
+          if (!rows.length) return { messages: [], note: "No sent email found for that person yet." };
+          const { data: replies } = await admin
+            .from("reply_analysis")
+            .select("sent_email_id, intent_classification, intent_score, reply_content, created_at")
+            .eq("user_id", userId)
+            .in("sent_email_id", rows.map((r: any) => r.id))
+            .order("created_at", { ascending: true });
+          toolEvents.push({
+            name,
+            label: "Read email thread",
+            status: "ok",
+            detail: `${rows.length} message${rows.length === 1 ? "" : "s"} with ${targetEmail ?? "lead"}`,
+          });
+          return {
+            with: targetEmail,
+            lead_id: rows[0].lead_id,
+            timezone: userTz,
+            messages: rows.map((e: any) => ({
+              sent_email_id: e.id,
+              direction: "outbound",
+              subject: e.subject,
+              body: e.body_text ?? null,
+              sent_at: e.sent_at,
+              sent_at_local: e.sent_at ? formatLocal(new Date(e.sent_at)) : null,
+              status: e.status,
+              opens: e.open_count ?? 0,
+              sequence_step: e.sequence_step ?? null,
+            })),
+            replies: (replies ?? []).map((r: any) => ({
+              direction: "inbound",
+              in_reply_to: r.sent_email_id,
+              classification: r.intent_classification,
+              intent_score: r.intent_score,
+              body: r.reply_content,
+              received_at: r.created_at,
+            })),
+          };
+        }
+
+
+
         case "update_lead": {
           const update: Record<string, unknown> = {};
           if (args.pipeline_stage) {
