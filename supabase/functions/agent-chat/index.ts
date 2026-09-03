@@ -1,10 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { playbookSystemRules } from "../_shared/cold-email-playbook.ts";
+import { playbookEnforcementRules } from "../_shared/cold-email-playbook.ts";
 import { isWeak, rubricFeedback, scoreEmail } from "../_shared/email-quality.ts";
 import { signOffStartIndex } from "../_shared/email-rules.ts";
 import { findPlaceholders, hasPlaceholder, realValue } from "../_shared/email-rules.ts";
 import { asFnResult } from "../_shared/fn-result.ts";
+import { UNTRUSTED_CONTENT_RULE, fence, fenceRecords } from "../_shared/untrusted.ts";
+import { correctionFor, unbackedClaims } from "../_shared/claim-check.ts";
 import {
   accountFor,
   batchFetchLimit,
@@ -1213,7 +1215,30 @@ serve(async (req) => {
       // a thread exceeded 40 messages, making the model repeat stale work.
       .order("created_at", { ascending: false })
       .limit(40);
-    const history = (recentHistory ?? []).reverse();
+    /**
+     * History, bounded by size rather than by row count.
+     *
+     * Forty rows is forty rows whether they are one-liners or long run
+     * summaries, so the same limit produced wildly different context loads and
+     * nothing distinguished them. On a thread of long messages this is what
+     * eventually walks into a context-limit failure.
+     *
+     * Newest first, kept until the budget runs out, then reversed back into
+     * order — so what survives is always the most recent conversation rather
+     * than an arbitrary window.
+     */
+    const HISTORY_TOKEN_BUDGET = 12_000;
+    const approxTokens = (text: string) => Math.ceil(text.length / 4);
+
+    const history: typeof recentHistory = [];
+    let historyTokens = 0;
+    for (const message of recentHistory ?? []) {
+      const cost = approxTokens(String(message.content ?? ""));
+      if (historyTokens + cost > HISTORY_TOKEN_BUDGET && history.length > 0) break;
+      historyTokens += cost;
+      history.push(message);
+    }
+    history.reverse();
 
     // --- context ---------------------------------------------------------
     const [{ data: config }, { data: profile }, { data: savedIcp }] = await Promise.all([
@@ -2618,7 +2643,15 @@ serve(async (req) => {
             status: "ok",
             detail: `${data?.length ?? 0} recent repl${(data?.length ?? 0) === 1 ? "y" : "ies"}`,
           });
-          return { replies: data ?? [] };
+          // Reply bodies are written by prospects. Fenced so the model reads
+          // them as evidence rather than as instructions addressed to it.
+          return {
+            replies: fenceRecords(
+              (data ?? []) as Record<string, unknown>[],
+              ["reply_content", "reply_snippet", "subject"],
+              (r) => `reply from ${String(r.from_email ?? r.prospect_email ?? "a prospect")}`,
+            ),
+          };
         }
 
         case "list_sent_emails": {
@@ -2744,12 +2777,16 @@ serve(async (req) => {
               opens: e.open_count ?? 0,
               sequence_step: e.sequence_step ?? null,
             })),
+            // Outbound messages above are the account's own words. These came
+            // from the other side of the conversation, so they are fenced.
             replies: (replies ?? []).map((r: any) => ({
               direction: "inbound",
               in_reply_to: r.sent_email_id,
               classification: r.intent_classification,
               intent_score: r.intent_score,
-              body: r.reply_content,
+              body: r.reply_content
+                ? fence(`reply from ${targetEmail ?? "the prospect"}`, r.reply_content)
+                : null,
               received_at: r.created_at,
             })),
           };
@@ -3194,8 +3231,10 @@ AUTONOMY
 This conversation is in ${autonomous ? "FULL AUTONOMY mode: sending, enrolling and full agent runs execute immediately." : "APPROVAL mode: anything that sends an email — now or on a schedule — enrols a lead, or runs the full agent pauses for the user's approval instead of executing. Scheduling still works: call schedule_drafts as normal, it parks the request with the time attached, and approving it queues the send for that time rather than sending straight away. Approval happens purely through chat messages — there are no approve/reject buttons. When work pauses, state plainly what is queued (who, how many, which mailbox) and ask them to reply to confirm, then STOP and wait. When their next message confirms ('yes', 'send it', 'go ahead', 'do it'), call list_pending_approvals then resolve_approvals with decision 'approve' (all: true when they confirmed everything) and report what actually happened. When they decline ('no', 'cancel that', 'hold off'), call resolve_approvals with decision 'reject'. Never mention buttons or cards to click, and never tell them to go to another tab or page."}
 ${autonomous ? "" : "If the user asks you to just get on with it without approving each step, tell them they can switch this conversation to full autonomy with the mode selector at the top of the chat."}
 
+${UNTRUSTED_CONTENT_RULE}
+
 COLD EMAIL RULES (apply to every draft you write or review)
-${playbookSystemRules()}
+${playbookEnforcementRules()}
 
 Company context: ${config?.company_context ?? "not set"}
 Value props: ${(config?.value_props ?? []).join("; ") || "not set"}
@@ -3249,9 +3288,36 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
       .join("\n") +
       `\n\nHARD SCOPE LIMIT (overrides everything above)\nYour only tools are: ${allowedTools.join(", ")}.\nIf the user asks for anything that would need another tool — sending, scheduling, drafting, deleting, sourcing, enrolling, running the agent — do NOT attempt it, do NOT ask them what they would like you to send/do instead, and do NOT list options for that work. Reply in one or two sentences: state that this build (${config?.agent_name ?? "this agent"}) is not scoped to that, name what it is scoped to, and tell them to switch agents with the selector at the top of the chat. Never imply the work is merely blocked by missing drafts, approvals or data.`;
 
+    /**
+     * Past turns, with the evidence attached.
+     *
+     * History used to replay as plain text, so the agent's own past assertions
+     * arrived indistinguishable from things that actually happened. A claim it
+     * made falsely on Tuesday was in Wednesday's context as established
+     * history, and it reasoned from it — the model reinforcing its own
+     * hallucination one turn later.
+     *
+     * Now every assistant message carries a one-line record of what its tools
+     * actually did. Where the words and the record disagree, the record is
+     * right there next to them.
+     */
+    const withEvidence = (m: { role: string; content: string; tool_events?: unknown }) => {
+      if (m.role !== "assistant") return { role: m.role, content: m.content };
+      const events = Array.isArray(m.tool_events) ? (m.tool_events as ToolEvent[]) : [];
+      if (events.length === 0) return { role: m.role, content: m.content };
+      const record = events
+        .map((e) => `${e.name ?? "tool"}: ${e.status ?? "?"}${e.detail ? ` — ${e.detail}` : ""}`)
+        .slice(-12)
+        .join("; ");
+      return {
+        role: m.role,
+        content: `${m.content}\n\n[what actually ran that turn: ${record}]`,
+      };
+    };
+
     const messages: any[] = [
       { role: "system", content: scopedSystemPrompt },
-      ...history.map((m) => ({ role: m.role, content: m.content })),
+      ...history.map(withEvidence),
       ...(autoContinue
         ? [{
             role: "user",
@@ -3276,6 +3342,15 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
     // and still persist an assistant message describing what happened.
     let failureNote = "";
 
+    /**
+     * How many steps get a reasoning budget.
+     *
+     * Almost every turn resolves in one or two tool rounds; by step five the
+     * model is summarising rather than deciding. Spending reasoning on the
+     * early steps buys the decisions and skips the write-up.
+     */
+    const REASONING_STEPS = 5;
+
     for (let step = 0; step < 8; step++) {
       if (outOfTime()) {
         ranOutOfTime = true;
@@ -3293,7 +3368,16 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
           },
           body: JSON.stringify({
             model: "openai/gpt-5.6-sol",
-            reasoning_effort: "none",
+            // Reasoning was pinned to "none" on every call, including the ones
+            // that decide which of forty tools to run, on which records, in
+            // which order. A model that cannot think before acting
+            // pattern-matches on the prompt instead — which is most of what
+            // "it assumed" and "it did something I didn't ask for" looked like.
+            //
+            // The last step of a turn is usually just writing up work that is
+            // already done, and that genuinely does not need reasoning. So the
+            // budget goes where decisions are made and nowhere else.
+            reasoning_effort: step >= REASONING_STEPS ? "none" : "low",
             messages,
             tools: scopedTools,
           }),
@@ -3499,36 +3583,32 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
     // this turn. Nothing here rewrites the model's words; it appends the
     // correction, because silently editing what an agent said is its own kind
     // of lie.
-    const CLAIMS_SEND =
-      /\b(?:i(?:'ve| have)?\s+(?:just\s+)?sent|sent it|sent them|sent the (?:email|second|first|follow[- ]?up)|email (?:has been|was) sent|emails? (?:have|has) been sent)\b/i;
-    const sendingEvents = toolEvents.filter((e) =>
-      ["send_drafts", "send_outreach", "resolve_approvals", "schedule_drafts"].includes(e.name ?? ""),
-    );
-    // A "Scheduled …" event is a queue, not a delivery — it must not back a
-    // claim that an email was sent.
-    const anythingActuallySent = sendingEvents.some(
-      (e) =>
-        e.status === "ok" &&
-        e.label !== "Waiting for your approval" &&
-        !String(e.label ?? "").startsWith("Scheduled"),
-    );
-
-    const anythingQueued = toolEvents.some((e) => e.status === "queued");
-    if (CLAIMS_SEND.test(finalText) && !anythingActuallySent) {
+    // Every claim the agent makes is checked against the events, not just the
+    // one about sending. "I enriched them", "I scheduled those", "I deleted
+    // them" were all shipped unverified because the original check was written
+    // for a single reported failure and never widened.
+    const claims = unbackedClaims(finalText, toolEvents);
+    if (claims.length > 0) {
+      const anythingQueued = toolEvents.some((e) => e.status === "queued");
       const { count: stillPending } = await admin
         .from("agent_approvals")
         .select("id", { count: "exact", head: true })
         .eq("user_id", userId)
         .eq("status", "pending");
-      finalText +=
-        `\n\nCorrection: nothing was actually sent in this step.` +
-        (anythingQueued
+
+      finalText += `\n\n${correctionFor(claims)}`;
+      if (claims.some((c) => c.id === "sent")) {
+        finalText += anythingQueued
           ? " The email is waiting on your confirmation."
-          : " No send ran.") +
-        (stillPending
-          ? ` You have ${stillPending} email(s) sitting in the approval queue. Say "approve all" and I will send them.`
-          : "");
-      console.warn(`[agent-chat] corrected an unbacked send claim (${stillPending ?? 0} pending)`);
+          : " No send ran.";
+        if (stillPending) {
+          finalText +=
+            ` You have ${stillPending} email(s) sitting in the approval queue. Say "approve all" and I will send them.`;
+        }
+      }
+      console.warn(
+        `[agent-chat] corrected unbacked claim(s): ${claims.map((c) => c.id).join(", ")}`,
+      );
     }
 
     // A partial batch is the other way the agent tells the truth and misleads.

@@ -1,6 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { aiFetch } from "../_shared/ai-provider.ts";
+import {
+  AGENT_SCENARIOS,
+  explainResult,
+  scoreScenario,
+} from "../_shared/agent-scenarios.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -136,6 +141,74 @@ const DEFAULT_SCENARIOS: Scenario[] = [
   },
 ];
 
+/**
+ * Run the behavioural scenarios against the live agent.
+ *
+ * The classification eval below scores how replies are read. This scores what
+ * the agent DOES — which tools it reached for, which it left alone, and what it
+ * said — because "it did something I didn't ask for" is a different failure
+ * from "it read that reply wrong", and only one of them had a test.
+ *
+ * Each scenario is one real agent-chat turn on its own thread, so scenarios
+ * cannot contaminate each other through history.
+ */
+async function runScenarios(
+  supabaseUrl: string,
+  authHeader: string,
+  anonKey: string,
+): Promise<{ passed: number; failed: number; results: unknown[] }> {
+  const results: unknown[] = [];
+  let passed = 0;
+  let failed = 0;
+
+  for (const scenario of AGENT_SCENARIOS) {
+    let calledTools: string[] = [];
+    let reply = "";
+    let error: string | null = null;
+
+    try {
+      const res = await fetch(`${supabaseUrl}/functions/v1/agent-chat`, {
+        method: "POST",
+        headers: {
+          Authorization: authHeader,
+          "Content-Type": "application/json",
+          apikey: anonKey,
+        },
+        body: JSON.stringify({
+          message: scenario.message,
+          mode: scenario.mode,
+          // A fresh thread per scenario: shared history would let one
+          // scenario's work satisfy the next one's expectations.
+          threadId: null,
+          evalScenario: scenario.id,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      calledTools = Array.isArray(data?.toolEvents)
+        ? data.toolEvents.map((e: { name?: string }) => e?.name ?? "").filter(Boolean)
+        : [];
+      reply = String(data?.reply ?? data?.content ?? "");
+      if (!res.ok) error = `agent-chat returned ${res.status}`;
+    } catch (e) {
+      error = e instanceof Error ? e.message : "agent-chat did not respond";
+    }
+
+    if (error) {
+      // A scenario that could not run is not a scenario that passed.
+      failed++;
+      results.push({ id: scenario.id, passed: false, error, guards: scenario.guards });
+      continue;
+    }
+
+    const result = scoreScenario(scenario, calledTools, reply);
+    if (result.passed) passed++;
+    else failed++;
+    results.push({ ...result, guards: scenario.guards, explanation: explainResult(scenario, result) });
+  }
+
+  return { passed, failed, results };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -166,7 +239,7 @@ serve(async (req) => {
     }
 
     let payload: {
-      mode?: "dry_run" | "live_send" | "live_check" | "list_mailboxes";
+      mode?: "dry_run" | "live_send" | "live_check" | "list_mailboxes" | "behaviour";
       testEmail?: string;
       integrationRowId?: string;
       includeRealReplies?: boolean;
@@ -205,6 +278,26 @@ serve(async (req) => {
     const cfgValuePropsText = cfgValueProps.join("\n");
     const mode = payload.mode ?? "dry_run";
     const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    // Behavioural eval: what the agent DOES, not how it reads a reply.
+    if (mode === "behaviour") {
+      const { passed, failed, results } = await runScenarios(
+        Deno.env.get("SUPABASE_URL")!,
+        authHeader,
+        Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      );
+      return new Response(
+        JSON.stringify({
+          success: true,
+          mode: "behaviour",
+          passed,
+          failed,
+          total: passed + failed,
+          results,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
     if (mode === "list_mailboxes") {
       const { data: accounts, error: accountsError } = await adminClient

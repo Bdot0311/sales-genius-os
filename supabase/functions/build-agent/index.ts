@@ -14,6 +14,7 @@ import {
   capToolsToTier,
   resolveAgentTier,
 } from "../_shared/agent-tier-scope.ts";
+import { checkGrounded, keepGrounded } from "../_shared/grounding.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -87,7 +88,7 @@ serve(async (req) => {
     }
 
     // Ground the build in what the user already told us about their business.
-    const [{ data: profile }, { data: icp }] = await Promise.all([
+    const [{ data: profile }, { data: icp }, { data: subscription }] = await Promise.all([
       admin.from("profiles").select("full_name, company_name").eq("id", user.id).maybeSingle(),
       admin
         .from("icp_profiles")
@@ -95,6 +96,11 @@ serve(async (req) => {
         .eq("user_id", user.id)
         .order("updated_at", { ascending: false })
         .limit(1)
+        .maybeSingle(),
+      admin
+        .from("subscriptions")
+        .select("daily_email_limit")
+        .eq("user_id", user.id)
         .maybeSingle(),
     ]);
 
@@ -175,15 +181,49 @@ serve(async (req) => {
     const removedByPlan = blockedToolsFor(wanted, tier);
     const role = removedByPlan.length > 0 ? "custom" : requestedRole;
 
+    // Everything the user actually told us. Generated positioning has to trace
+    // back to one of these or it does not get saved — it would otherwise be
+    // written into every email this agent ever sends, and nobody would know
+    // where it came from.
+    const groundingSources = [
+      description,
+      profile?.company_name ?? "",
+      profile?.full_name ?? "",
+      icp ? JSON.stringify(icp) : "",
+    ];
+
+    const companyContextRaw = str(parsed.company_context, 1200);
+    const companyContextCheck = checkGrounded(companyContextRaw, groundingSources);
+    const rawValueProps = Array.isArray(parsed.value_props)
+      ? parsed.value_props.filter((v: unknown): v is string => typeof v === "string" && !!v.trim())
+          .slice(0, 4)
+      : [];
+    const { kept: groundedValueProps, dropped: droppedValueProps } = keepGrounded(
+      rawValueProps,
+      groundingSources,
+    );
+
+    if (!companyContextCheck.grounded && companyContextRaw) {
+      console.warn(
+        `[build-agent] dropped ungrounded company_context (${companyContextCheck.reason}): ${companyContextCheck.novel.join(", ")}`,
+      );
+    }
+    if (droppedValueProps.length > 0) {
+      console.warn(`[build-agent] dropped ${droppedValueProps.length} ungrounded value prop(s)`);
+    }
+
+    // The plan's real daily send cap, not a number the model picked. A build
+    // showing an allowance the account will never be permitted to send is a
+    // promise broken at send time.
+    const planDailyEmails = Number(subscription?.daily_email_limit ?? 10);
+
     const config = {
       agent_name: str(parsed.agent_name, 40) || "Custom agent",
       role,
       tone: TONES.includes(parsed.tone) ? parsed.tone : "professional",
       persona: str(parsed.persona, 600),
-      company_context: str(parsed.company_context, 1200),
-      value_props: Array.isArray(parsed.value_props)
-        ? parsed.value_props.filter((v: unknown) => typeof v === "string" && v.trim()).slice(0, 4)
-        : [],
+      company_context: companyContextCheck.grounded ? companyContextRaw : "",
+      value_props: groundedValueProps,
       role_instructions: str(parsed.role_instructions, 1200),
       allowed_tools: role === "custom" ? cappedTools : null,
       prospecting_job_title: str(parsed.prospecting_job_title, 120),
@@ -191,7 +231,7 @@ serve(async (req) => {
       prospecting_country: str(parsed.prospecting_country, 120),
       prospecting_company_size: str(parsed.prospecting_company_size, 60),
       daily_lead_target: num(parsed.daily_lead_target, 10),
-      max_daily_new_emails: num(parsed.max_daily_new_emails, 20),
+      max_daily_new_emails: Math.min(num(parsed.max_daily_new_emails, 20), planDailyEmails),
     };
 
     return json({
@@ -200,6 +240,13 @@ serve(async (req) => {
       plan_tier: tier,
       removed_by_plan: removedByPlan,
       requested_role: requestedRole,
+      // Surfaced so the builder can tell the user which fields it left for them
+      // rather than quietly shipping an agent with blank positioning.
+      needs_from_you: [
+        !config.company_context ? "company_context" : null,
+        config.value_props.length === 0 ? "value_props" : null,
+      ].filter(Boolean),
+      daily_email_cap: planDailyEmails,
     });
   } catch (e) {
     console.error("build-agent failed", e);

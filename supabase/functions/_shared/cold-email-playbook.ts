@@ -50,6 +50,22 @@ export function playbookSystemRules(): string {
   return `${PLAYBOOK_SYSTEM_RULES}${composeSkillContext({ goal: "sequence" })}`;
 }
 
+/**
+ * The rules for a caller that reviews and routes email but never writes it.
+ *
+ * agent-chat is forbidden from composing copy — every email it shows the user
+ * comes back from draft_outreach, which carries the full bundle. So the ~20k
+ * tokens of writing skills in its system prompt were teaching it to do the one
+ * thing it must not do, on every one of up to eight model calls per turn.
+ *
+ * What it does need is the constraints it has to enforce and repeat: the banned
+ * phrases, the proof rules, the placeholder ban. Those are the playbook rules
+ * themselves, and they are about a tenth of the size.
+ */
+export function playbookEnforcementRules(): string {
+  return PLAYBOOK_SYSTEM_RULES;
+}
+
 export type Touch = { day: number; purpose: string; subject: string; body: string };
 
 export function parseTouches(raw: string): Touch[] {

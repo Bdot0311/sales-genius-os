@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { UNTRUSTED_CONTENT_RULE, fence } from "../_shared/untrusted.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
 import { captureServerEvent } from "../_shared/posthog.ts";
@@ -1058,11 +1059,15 @@ ${playbookSystemRules()}`;
         repliesProcessed++;
 
         const classifySystemPrompt =
-          "You classify sales email replies. Respond ONLY with valid JSON.";
+          "You classify sales email replies. Respond ONLY with valid JSON.\n" +
+          // The classifier is the first thing to read a stranger's words, and
+          // a reply that talks its way into the wrong bucket steers everything
+          // downstream — an unsubscribe classified as interested gets answered.
+          UNTRUSTED_CONTENT_RULE;
         const classifyPrompt = `Classify this email reply:
 Subject: ${reply.subject}
 From: ${reply.fromEmail}
-Body: ${reply.bodyText}
+Body: ${fence(`reply from ${reply.fromEmail}`, reply.bodyText)}
 
 Classification rules (apply in this order):
 1. unsubscribe — asks to stop, remove me, do not contact, hostile "leave me alone".
@@ -1179,6 +1184,7 @@ Return JSON: { "classification": one of ["interested","objection","meeting_reque
           // else. The first-touch path gets the house rules through
           // playbookSystemRules(); the reply paths got none of it.
           const replySystemPrompt = `You are ${config.agent_name}, a sales rep. Your persona: ${config.persona}. Tone: ${config.tone}.
+${UNTRUSTED_CONTENT_RULE}
 ${bannedPhrasesBlock()}
 ${composeSkillContext({ goal: "meeting" })}
 Company context: ${config.company_context ?? ""}
@@ -1188,7 +1194,7 @@ ${icpContext}`;
 
           const replyPrompt = `A prospect replied to your email positively.
 Subject: ${reply.subject}
-Prospect reply: ${reply.bodyText}
+Prospect reply: ${fence(`reply from ${reply.fromEmail}`, reply.bodyText)}
 
 Write a concise ${config.tone} reply (2-3 sentences) that:
 - Acknowledges their interest briefly
@@ -1332,11 +1338,12 @@ Output ONLY the reply body. No subject line. No greeting like "Hi [name]". No si
           // what may be claimed about the product; the skills supply how to
           // write the reply.
           const objectionSystemPrompt = `You are ${config.agent_name}. ${config.persona}. Tone: ${config.tone}.
+${UNTRUSTED_CONTENT_RULE}
 ${bannedPhrasesBlock()}
 ${composeSkillContext({ goal: "objection" })}`;
           const objectionPrompt = `The prospect raised an objection to your sales email.
 Objection type, as classified: ${objectionType ?? "unclassified — read the reply and decide"}
-Prospect reply: ${reply.bodyText}
+Prospect reply: ${fence(`reply from ${reply.fromEmail}`, reply.bodyText)}
 ${objectionGuidance}
 Write a 2-3 sentence reply that acknowledges their concern, provides a brief value-focused response, and offers a low-commitment next step.
 Output ONLY the reply body. No subject line or signature.`;
@@ -1435,9 +1442,10 @@ Output ONLY the reply body. No subject line or signature.`;
             meetingReply = `Thanks for reaching out! You can book time directly on my calendar here: ${config.calendly_url}. Looking forward to connecting!`;
           } else {
             const meetingSystemPrompt = `You are ${config.agent_name}. ${config.persona}. Tone: ${config.tone}.
+${UNTRUSTED_CONTENT_RULE}
 ${bannedPhrasesBlock()}`;
             const meetingPrompt = `A prospect is requesting a meeting in response to your sales email.
-Prospect reply: ${reply.bodyText}
+Prospect reply: ${fence(`reply from ${reply.fromEmail}`, reply.bodyText)}
 Write a short, friendly reply asking for their availability (2-3 time options format or asking when works best).
 Output ONLY the reply body. No subject line or signature.`;
             meetingReply = await callGemini(meetingPrompt, meetingSystemPrompt);

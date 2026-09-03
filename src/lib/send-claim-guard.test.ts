@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
+import {
+  CLAIM_RULES,
+  unbackedClaims,
+} from "../../supabase/functions/_shared/claim-check.ts";
 
 const SRC = readFileSync(
   new URL("../../supabase/functions/agent-chat/index.ts", import.meta.url),
@@ -76,20 +80,28 @@ describe("the shipped didMutate matches the logic under test", () => {
   });
 });
 
+/**
+ * The check moved into _shared/claim-check.ts when it was widened past "sent" —
+ * these assert the same guarantees where the behaviour now lives, and that the
+ * chat turn still runs it.
+ */
 describe("an unbacked claim of sending is corrected", () => {
+  const sendRule = CLAIM_RULES.find((r) => r.id === "sent")!;
+
   it("checks the claim against the turn's own tool events", () => {
-    expect(SRC).toContain("CLAIMS_SEND");
-    expect(SRC).toContain("anythingActuallySent");
+    expect(SRC).toContain("unbackedClaims(finalText, toolEvents)");
+    expect(unbackedClaims("I've sent them.", []).map((c) => c.id)).toEqual(["sent"]);
   });
 
   it("counts only the tools that can actually send", () => {
-    for (const tool of ["send_drafts", "send_outreach", "resolve_approvals", "schedule_drafts"]) {
-      expect(SRC).toContain(`"${tool}"`);
-    }
+    expect(sendRule.tools).toEqual(
+      expect.arrayContaining(["send_drafts", "send_outreach", "resolve_approvals", "schedule_drafts"]),
+    );
   });
 
   it("does not treat an approval-queued event as a send", () => {
-    expect(SRC).toContain('e.label !== "Waiting for your approval"');
+    const queued = { name: "send_drafts", label: "Waiting for your approval", status: "queued" };
+    expect(unbackedClaims("I've sent them.", [queued]).map((c) => c.id)).toEqual(["sent"]);
   });
 
   it("tells the user how many are stuck in the queue", () => {
@@ -99,7 +111,7 @@ describe("an unbacked claim of sending is corrected", () => {
   });
 
   it("appends rather than rewriting what the model said", () => {
-    expect(SRC).toContain("finalText +=\n        `\\n\\nCorrection:");
+    expect(SRC).toContain("finalText += `\\n\\n${correctionFor(claims)}`");
   });
 });
 

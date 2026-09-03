@@ -1,122 +1,124 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { findMirrorAnalogies, groundingTerms, isGroundedIn } from "../../supabase/functions/_shared/email-rules.ts";
+import {
+  checkGrounded,
+  contentWords,
+  figuresIn,
+  keepGrounded,
+} from "../../supabase/functions/_shared/grounding.ts";
 
 /**
- * Both of these went to real prospects. The research step had already returned
- * "5 findings, 98/100 strong, high confidence" — and the drafts used none of it.
+ * build-agent turns a sentence into an agent config. company_context and
+ * value_props are then written into every email that agent ever sends — so a
+ * fabrication here happens once, at setup, and contaminates output for months.
  */
-const REAL_FACTS = [
-  "Raisi automates personalized investor outreach for early-stage founders",
-  "They are hiring a Head of Growth in New York",
-  "Their pricing page lists a Series A tier at $499/month",
+const SOURCES = [
+  "an agent that follows up with marketing agencies who opened but never replied",
+  "Alephwave",
+  JSON.stringify({ industry: "marketing agencies", job_title: "founder", country: "UK" }),
 ];
-const EXCLUDE = ["Raisi", "Bryan Yankton"];
 
-describe("the drafts that got no replies", () => {
-  const terms = groundingTerms(REAL_FACTS, EXCLUDE);
-
-  it("rejects the Customer.io draft as ungrounded", () => {
-    const body =
-      "Sent you a note last week about scaling customer activation without adding headcount. " +
-      "Your team's focus on verified outcomes suggests you value clear ROI. " +
-      "Outreign builds predictable pipeline without manual sales work, helping teams like yours drive efficiency. " +
-      "Worth comparing to your current process?";
-    expect(isGroundedIn(body, terms)).toBe(false);
+describe("what the model is allowed to write", () => {
+  it("accepts a rephrasing of what the user said", () => {
+    // Compression and tidying are the useful part; this must not be blocked.
+    expect(checkGrounded("Follow-up outreach for marketing agencies.", SOURCES).grounded).toBe(true);
   });
 
-  it("catches the mirror analogy, which grounding alone does not", () => {
-    // "like Raisi scales investor outreach" DOES cite a researched fact, so it
-    // passes grounding. It still carries no insight — the reader learns nothing
-    // about their own company. Grounding is a floor; this sits above it.
-    const body =
-      "Sent you a note last week about scaling your sales outreach like Raisi scales investor outreach. " +
-      "We help sales teams turn cold leads into booked calls faster. Worth comparing to your current process?";
-    expect(isGroundedIn(body, terms)).toBe(true);
-    expect(findMirrorAnalogies(body)).not.toHaveLength(0);
+  it("accepts wording drawn from the saved ICP", () => {
+    expect(checkGrounded("Works founders at UK marketing agencies.", SOURCES).grounded).toBe(true);
   });
 
-  it("leaves a real observation alone", () => {
-    const body = "You are hiring a Head of Growth in New York. Worth a look at how that hand-off usually goes?";
-    expect(findMirrorAnalogies(body)).toHaveLength(0);
-  });
-
-  it("accepts a draft that opens on something only true of this prospect", () => {
-    const body =
-      "You are hiring a Head of Growth in New York, which usually means the founder is still " +
-      "running outbound personally. Worth a look at how that hand-off normally goes?";
-    expect(isGroundedIn(body, terms)).toBe(true);
-  });
-
-  it("accepts a draft that cites a concrete detail", () => {
-    const body = "Saw the Series A tier on your pricing page. Curious how you handle that segment today?";
-    expect(isGroundedIn(body, terms)).toBe(true);
+  it("rejects positioning the user never gave", () => {
+    const check = checkGrounded(
+      "The leading revenue intelligence platform trusted by enterprise procurement teams.",
+      SOURCES,
+    );
+    expect(check.grounded).toBe(false);
+    expect(check.reason).toBe("introduces_claims");
   });
 });
 
-describe("what counts as evidence", () => {
-  it("does not treat the company or contact name as grounding", () => {
-    // Otherwise an email that only says the company name back would pass.
-    const terms = groundingTerms(["Acme builds warehouse robots"], ["Acme", "Jane Doe"]);
-    expect(terms).not.toContain("acme");
-    expect(isGroundedIn("Hi Jane, quick one about Acme.", terms)).toBe(false);
+describe("invented numbers are refused outright", () => {
+  it("rejects a metric that appears nowhere in the sources", () => {
+    const check = checkGrounded("Helps marketing agencies book 3x more meetings.", SOURCES);
+    expect(check.grounded).toBe(false);
+    expect(check.reason).toBe("introduces_figures");
+    expect(check.novel).toContain("3x");
   });
 
-  it("does not treat generic B2B vocabulary as grounding", () => {
-    const terms = groundingTerms(["They help sales teams improve pipeline and revenue growth"]);
-    // Every one of those words appears in copy aimed at anyone.
-    expect(terms).toHaveLength(0);
+  it("rejects a percentage even when the sentence otherwise matches", () => {
+    // The surrounding words are all from the sources. The figure is not, and a
+    // figure is what a prospect will ask about.
+    expect(checkGrounded("Follow-up for marketing agencies, 40% reply rate.", SOURCES).reason)
+      .toBe("introduces_figures");
   });
 
-  it("keeps proper nouns, products and figures", () => {
-    const terms = groundingTerms(["Migrated to Snowflake and posted a $2.5M seed round"]);
-    expect(terms).toContain("snowflake");
-    expect(terms.some((t) => t.includes("2.5"))).toBe(true);
+  it("keeps a figure the user actually supplied", () => {
+    const withNumber = [...SOURCES, "we send about 200 emails a week"];
+    expect(checkGrounded("Sends about 200 emails a week.", withNumber).grounded).toBe(true);
   });
 
-  it("passes anything when the research found nothing, rather than blocking", () => {
-    // Thin research is already handled upstream; this must not double-punish it.
-    expect(isGroundedIn("any body at all", [])).toBe(true);
-  });
-
-  it("matches on whole words only", () => {
-    const terms = groundingTerms(["They use Retool internally"]);
-    expect(isGroundedIn("we retooled our process", terms)).toBe(false);
-    expect(isGroundedIn("saw you run Retool internally", terms)).toBe(true);
+  it("finds figures in every shape they arrive in", () => {
+    expect(figuresIn("up 40% to 3x, worth $12,000 and 5k seats")).toEqual(
+      expect.arrayContaining(["40%", "3x", "$12,000", "5k"]),
+    );
   });
 });
 
-describe("the generator acts on it", () => {
-  const GEN = readFileSync(
-    new URL("../../supabase/functions/generate-email/index.ts", import.meta.url),
-    "utf8",
-  );
-
-  it("checks the draft against the research it was handed", () => {
-    expect(GEN).toContain("isGroundedIn(email, groundTerms)");
-    expect(GEN).toContain("findMirrorAnalogies(email)");
+describe("the word comparison", () => {
+  it("ignores filler so a rephrasing is not punished for connectives", () => {
+    expect(contentWords("we help the teams that are in a hurry")).toEqual(["team", "hurry"]);
   });
 
-  it("only enforces it when the research was worth using", () => {
-    // Thin research is handled upstream; punishing it twice pushes copy vaguer.
-    expect(GEN).toContain("safe_to_personalize !== false");
-    expect(GEN).toContain("groundTerms.length > 0 &&");
+  it("splits hyphens so a compound lines up with the words it came from", () => {
+    // "follow-up" has to match the "follows up" the user actually wrote.
+    expect(contentWords("follow-up outreach")).toEqual(["follow", "outreach"]);
   });
 
-  it("excludes the company and contact name from what counts as evidence", () => {
-    expect(GEN).toContain("[lead?.company_name ?? '', lead?.contact_name ?? '']");
+  it("treats an empty candidate as ungrounded rather than fine", () => {
+    expect(checkGrounded("   ", SOURCES)).toMatchObject({ grounded: false, reason: "empty" });
+  });
+});
+
+describe("filtering a list of value props", () => {
+  it("keeps the real ones and drops the invented ones", () => {
+    const { kept, dropped } = keepGrounded(
+      [
+        "Follow-up outreach for marketing agencies",
+        "Trusted by 500 enterprise revenue teams",
+        "Founder-led outreach in the UK",
+      ],
+      SOURCES,
+    );
+    expect(kept).toHaveLength(2);
+    expect(dropped).toEqual(["Trusted by 500 enterprise revenue teams"]);
+  });
+});
+
+describe("the builder uses it, and caps volume to the plan", () => {
+  const SRC = readFileSync("supabase/functions/build-agent/index.ts", "utf8");
+
+  it("saves company context only when it is grounded", () => {
+    expect(SRC).toMatch(/company_context: companyContextCheck\.grounded \? companyContextRaw : ""/);
   });
 
-  it("only accepts a rewrite that is better on every axis already guarded", () => {
-    // A sharper email carrying a new placeholder or invented metric is not
-    // an improvement.
-    expect(GEN).toContain("const secondOk =");
-    expect(GEN).toContain("!hasPlaceholder(second)");
-    expect(GEN).toContain("!findUnverifiedClaims(second, proofForClaims).length");
-    expect(GEN).toContain("!findMirrorAnalogies(second).length");
+  it("saves only grounded value props", () => {
+    expect(SRC).toMatch(/value_props: groundedValueProps/);
   });
 
-  it("keeps the original when the rewrite is worse, rather than shipping it", () => {
-    expect(GEN).toContain("specificity rewrite rejected, keeping original");
+  it("grounds against what the user actually supplied", () => {
+    expect(SRC).toMatch(/const groundingSources = \[/);
+    expect(SRC).toMatch(/description,/);
+  });
+
+  it("caps the daily send figure to the plan, not to a constant", () => {
+    // A build showing an allowance the account can never send is a promise
+    // broken at send time.
+    expect(SRC).toMatch(/Math\.min\(num\(parsed\.max_daily_new_emails, 20\), planDailyEmails\)/);
+    expect(SRC).toMatch(/daily_email_limit/);
+  });
+
+  it("tells the user which fields it left for them", () => {
+    expect(SRC).toMatch(/needs_from_you/);
   });
 });
