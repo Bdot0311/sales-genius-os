@@ -267,6 +267,8 @@ const PARALLEL_SAFE_TOOLS = new Set([
   "list_scheduled_emails",
   "list_sequences",
   "list_recent_replies",
+  "list_sent_emails",
+  "get_email_thread",
   "get_agent_status",
   "search_companies",
 ]);
@@ -3153,6 +3155,7 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
       if (allowedTools.includes("send_drafts") || allowedTools.includes("send_outreach")) bits.push("sending outreach");
       if (allowedTools.includes("schedule_drafts")) bits.push("scheduling sends for later");
       if (allowedTools.includes("list_recent_replies")) bits.push("reviewing inbound replies");
+      if (allowedTools.includes("list_sent_emails") || allowedTools.includes("get_email_thread")) bits.push("reading the inbox history of email already sent");
       if (allowedTools.includes("run_full_agent")) bits.push("triggering a full agent run");
       return `On this account you can do exactly this and nothing more: ${bits.join(", ")}.`;
     })();

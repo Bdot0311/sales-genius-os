@@ -26,6 +26,10 @@ export const LEAD_GEN_TOOLS = [
 ];
 
 export const OUTREACH_TOOLS = [
+  // Every email-facing agent must be able to see what already went out:
+  // follow-ups are written against the real first touch, not a guess.
+  "list_sent_emails",
+  "get_email_thread",
   "draft_outreach",
   "draft_sequence",
   "list_drafts",
@@ -43,6 +47,10 @@ export const OUTREACH_TOOLS = [
 
 export const REPLY_TOOLS = [
   "list_recent_replies",
+  // Read the outbound side of the thread too, so a reply/follow-up quotes the
+  // email that was actually sent.
+  "list_sent_emails",
+  "get_email_thread",
   "list_mailboxes",
   // A replies agent has to be able to WRITE the reply, not just read the thread.
   "draft_outreach",
@@ -95,9 +103,9 @@ export const ROLE_SCOPE_NOTE: Record<AgentRole, string> = {
   lead_gen:
     "SCOPE: you are a LEAD GENERATION agent. You may source, enrich, research, score and tidy leads. You CANNOT draft, send, schedule or delete email, and you cannot handle replies — those tools are not available to you. If the user asks for email work, say plainly that this agent is scoped to lead gen and they should switch to an outreach or full-cycle agent, and do not attempt a workaround.",
   outreach:
-    "SCOPE: you are an OUTREACH agent. You may draft, review, send, schedule and cancel first-touch email and sequences for leads that already exist in the account. You CANNOT source or enrich new leads — those tools are not available to you. If the user asks for prospecting, say this agent is scoped to outreach and they should switch to a lead gen or full-cycle agent.",
+    "SCOPE: you are an OUTREACH agent. You may read the inbox history of email already sent and draft, review, send, schedule and cancel first-touch email and sequences for leads that already exist in the account. You CANNOT source or enrich new leads — those tools are not available to you. If the user asks for prospecting, say this agent is scoped to outreach and they should switch to a lead gen or full-cycle agent.",
   replies:
-    "SCOPE: you are a REPLIES agent. You may review inbound replies, draft and send responses in existing threads, schedule those sends and move the lead's stage. You CANNOT source or enrich new leads and you CANNOT run new first-touch campaigns — those tools are not available to you. If the user asks for that, say this agent is scoped to replies and they should switch agents.",
+    "SCOPE: you are a REPLIES agent. You may read the inbox history of email already sent, review inbound replies, draft and send responses in existing threads, schedule those sends and move the lead's stage. You CANNOT source or enrich new leads and you CANNOT run new first-touch campaigns — those tools are not available to you. If the user asks for that, say this agent is scoped to replies and they should switch agents.",
   custom:
     "SCOPE: you are a CUSTOM agent. Only the tools listed for you are available. Never claim you can do work outside them; if the user asks, say what this build is scoped to and suggest switching agents.",
 };
@@ -187,6 +195,10 @@ export const TOOL_CATALOG: Record<string, string> = {
   enroll_lead_in_sequence: "Enroll leads into a sequence.",
   resolve_approvals: "Approve or reject pending actions.",
   list_recent_replies: "Read inbound replies from connected inboxes.",
+  list_sent_emails:
+    "Read the inbox history of email already SENT: recipient, subject, body, send time, opens and whether they replied. Required for any agent that writes follow-ups or needs to know who was already contacted.",
+  get_email_thread:
+    "Read one full conversation: every outbound email to that person plus their inbound replies. Required before replying or following up in an existing thread.",
   delete_inbox_threads: "Permanently delete inbox threads (destructive).",
   run_full_agent: "Run the whole autonomous cycle end to end.",
 };
@@ -197,11 +209,15 @@ const TOOL_PREREQUISITES: Record<string, string[]> = {
   schedule_drafts: ["list_drafts", "draft_outreach", "list_scheduled_emails"],
   cancel_scheduled_email: ["list_scheduled_emails"],
   delete_drafts: ["list_drafts"],
-  send_outreach: ["list_mailboxes"],
-  draft_outreach: ["list_drafts"],
-  draft_sequence: ["list_sequences"],
+  draft_outreach: ["list_drafts", "list_sent_emails", "get_email_thread"],
   enroll_lead_in_sequence: ["list_sequences"],
   delete_inbox_threads: ["list_recent_replies"],
+  // Writing email without being able to read what already went out produces
+  // follow-ups that contradict the first touch.
+  draft_sequence: ["list_sequences", "list_sent_emails"],
+  send_outreach: ["list_mailboxes", "list_sent_emails", "get_email_thread"],
+  list_recent_replies: ["list_sent_emails", "get_email_thread"],
+  get_email_thread: ["list_sent_emails"],
   resolve_approvals: ["list_pending_approvals"],
   enrich_leads: ["list_leads"],
   score_leads: ["list_leads"],
