@@ -267,6 +267,8 @@ const PARALLEL_SAFE_TOOLS = new Set([
   "list_scheduled_emails",
   "list_sequences",
   "list_recent_replies",
+  "list_sent_emails",
+  "get_email_thread",
   "get_agent_status",
   "search_companies",
 ]);
@@ -594,6 +596,45 @@ const TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "list_sent_emails",
+      description:
+        "Read the inbox history of email ALREADY SENT from the connected mailboxes: who was emailed, the subject, the body that went out, when it sent, whether it was opened and whether they replied. Use this before writing any follow-up so the follow-up references the real first email, and to check whether someone has already been contacted.",
+      parameters: {
+        type: "object",
+        properties: {
+          lead_id: { type: "string", description: "Only emails sent to this lead" },
+          email: { type: "string", description: "Only emails sent to this address (partial match ok)" },
+          days: { type: "number", description: "Look back this many days (default 30, max 180)" },
+          awaiting_reply: {
+            type: "boolean",
+            description: "Only emails that have had no reply yet — the follow-up candidates",
+          },
+          include_body: { type: "boolean", description: "Include the full sent body (default true)" },
+          limit: { type: "number", description: "Default 20, max 50" },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_email_thread",
+      description:
+        "Read one full conversation thread: every email sent to that person plus any inbound replies with their classification. Use it before replying or following up so you have the exact wording of the earlier messages.",
+      parameters: {
+        type: "object",
+        properties: {
+          sent_email_id: { type: "string", description: "Any email id from list_sent_emails" },
+          email: { type: "string", description: "The prospect's email address" },
+          lead_id: { type: "string" },
+        },
+      },
+    },
+  },
+
   {
     type: "function",
     function: {
@@ -2507,6 +2548,142 @@ serve(async (req) => {
           return { replies: data ?? [] };
         }
 
+        case "list_sent_emails": {
+          const limit = Math.min(Math.max(Number(args.limit ?? 20) || 20, 1), 50);
+          const days = Math.min(Math.max(Number(args.days ?? 30) || 30, 1), 180);
+          const includeBody = args.include_body !== false;
+          const since = new Date(Date.now() - days * 86_400_000).toISOString();
+          let q = admin
+            .from("sent_emails")
+            .select(
+              "id, lead_id, to_email, subject, body_text, sent_at, status, open_count, last_opened_at, replied_at, gmail_thread_id, sequence_step, leads(company_name, contact_name, pipeline_stage)",
+            )
+            .eq("user_id", userId)
+            .neq("status", "scheduled")
+            .not("sent_at", "is", null)
+            .gte("sent_at", since)
+            .order("sent_at", { ascending: false })
+            .limit(limit);
+          if (args.lead_id) q = q.eq("lead_id", String(args.lead_id));
+          if (args.email) q = q.ilike("to_email", `%${String(args.email)}%`);
+          if (args.awaiting_reply === true) q = q.is("replied_at", null);
+          const { data, error } = await q;
+          if (error) return { error: error.message };
+          const rows = data ?? [];
+          const ids = rows.map((r: any) => r.id);
+          const replyMap = new Map<string, any>();
+          if (ids.length) {
+            const { data: replies } = await admin
+              .from("reply_analysis")
+              .select("sent_email_id, intent_classification, reply_content, created_at")
+              .eq("user_id", userId)
+              .in("sent_email_id", ids);
+            for (const r of replies ?? []) replyMap.set(String((r as any).sent_email_id), r);
+          }
+          toolEvents.push({
+            name,
+            label: "Read sent inbox history",
+            status: "ok",
+            detail: `${rows.length} sent email${rows.length === 1 ? "" : "s"} reviewed`,
+          });
+          return {
+            timezone: userTz,
+            sent: rows.map((e: any) => {
+              const reply = replyMap.get(String(e.id));
+              return {
+                sent_email_id: e.id,
+                lead_id: e.lead_id,
+                to: e.to_email,
+                company: e.leads?.company_name ?? null,
+                contact: e.leads?.contact_name ?? null,
+                pipeline_stage: e.leads?.pipeline_stage ?? null,
+                subject: e.subject,
+                body: includeBody ? (e.body_text ?? null) : undefined,
+                sent_at: e.sent_at,
+                sent_at_local: e.sent_at ? formatLocal(new Date(e.sent_at)) : null,
+                sequence_step: e.sequence_step ?? null,
+                opens: e.open_count ?? 0,
+                last_opened_at: e.last_opened_at,
+                replied: Boolean(e.replied_at || reply),
+                reply_classification: reply?.intent_classification ?? null,
+                reply_snippet: reply?.reply_content ? String(reply.reply_content).slice(0, 400) : null,
+                thread_id: e.gmail_thread_id ?? null,
+              };
+            }),
+            note:
+              "This is what already went out. Use get_email_thread for the full conversation, and reference the real earlier wording in any follow-up instead of guessing.",
+          };
+        }
+
+        case "get_email_thread": {
+          let base: any = null;
+          if (args.sent_email_id) {
+            const { data } = await admin
+              .from("sent_emails")
+              .select("id, to_email, lead_id, gmail_thread_id")
+              .eq("user_id", userId)
+              .eq("id", String(args.sent_email_id))
+              .maybeSingle();
+            base = data;
+          }
+          const targetEmail = base?.to_email ?? (args.email ? String(args.email) : null);
+          const targetLead = base?.lead_id ?? (args.lead_id ? String(args.lead_id) : null);
+          if (!targetEmail && !targetLead) {
+            return { error: "Pass sent_email_id, email or lead_id. Use list_sent_emails to find one." };
+          }
+          let q = admin
+            .from("sent_emails")
+            .select(
+              "id, lead_id, to_email, subject, body_text, sent_at, status, open_count, replied_at, gmail_thread_id, sequence_step",
+            )
+            .eq("user_id", userId)
+            .order("sent_at", { ascending: true })
+            .limit(50);
+          q = targetEmail ? q.eq("to_email", targetEmail) : q.eq("lead_id", targetLead);
+          const { data: msgs, error } = await q;
+          if (error) return { error: error.message };
+          const rows = msgs ?? [];
+          if (!rows.length) return { messages: [], note: "No sent email found for that person yet." };
+          const { data: replies } = await admin
+            .from("reply_analysis")
+            .select("sent_email_id, intent_classification, intent_score, reply_content, created_at")
+            .eq("user_id", userId)
+            .in("sent_email_id", rows.map((r: any) => r.id))
+            .order("created_at", { ascending: true });
+          toolEvents.push({
+            name,
+            label: "Read email thread",
+            status: "ok",
+            detail: `${rows.length} message${rows.length === 1 ? "" : "s"} with ${targetEmail ?? "lead"}`,
+          });
+          return {
+            with: targetEmail,
+            lead_id: rows[0].lead_id,
+            timezone: userTz,
+            messages: rows.map((e: any) => ({
+              sent_email_id: e.id,
+              direction: "outbound",
+              subject: e.subject,
+              body: e.body_text ?? null,
+              sent_at: e.sent_at,
+              sent_at_local: e.sent_at ? formatLocal(new Date(e.sent_at)) : null,
+              status: e.status,
+              opens: e.open_count ?? 0,
+              sequence_step: e.sequence_step ?? null,
+            })),
+            replies: (replies ?? []).map((r: any) => ({
+              direction: "inbound",
+              in_reply_to: r.sent_email_id,
+              classification: r.intent_classification,
+              intent_score: r.intent_score,
+              body: r.reply_content,
+              received_at: r.created_at,
+            })),
+          };
+        }
+
+
+
         case "update_lead": {
           const update: Record<string, unknown> = {};
           if (args.pipeline_stage) {
@@ -2922,6 +3099,8 @@ HOW TO WORK
 - NEVER write, rewrite or "improve" email copy yourself in the chat. Every email the user sees must come from draft_outreach, which runs the playbook, the banned-phrase list, the proof rules and the quality rubric. When the user dislikes a draft ("redraft this", "too salesy", "make it shorter"), call draft_outreach again for that lead with feedback set to what they said — it replaces the draft. Copy you compose by hand is checked by nothing and reads like generic marketing, which is the single most common complaint about this product.
 - NEVER invent proof. No case studies, no "one company saw a significant increase", no anonymized customer stories, no metrics — not even vague ones — unless the exact proof was given to you in the lead data or by the user. An invented result is worse than no result.
 - draft_outreach goal must be one of: introduction, follow-up, meeting, demo, proposal. Use "introduction" for first touches.
+- INBOX HISTORY: before drafting a follow-up, replying, or claiming someone has or hasn't been contacted, read what already went out — list_sent_emails (use awaiting_reply: true for follow-up candidates, lead_id/email to narrow) and get_email_thread for the full conversation. Follow-ups must reference the real earlier email's angle and timing; never guess at what was sent and never repeat the same pitch.
+
 - Drafts are auto-saved and rendered in the chat as read-only preview cards. There are no buttons anywhere in this chat — everything happens through messages. After drafting, tell the user the drafts are below for review and ask them to reply when they want them sent or scheduled.
 - QUALITY: send_outreach scores anything you wrote yourself before it goes out. If it answers needs_rewrite, the email was NOT sent: rewrite it against the feedback it returned and call send_outreach again with the new subject and body. Do not re-send the same text, do not tell the user it went out, and do not work around the check by saving it as a draft and sending that instead. If it answers with unfilled placeholders, fill in the real values and call again.
 - SENDING: when the user approves the drafts ("send them", "all good, send"), YOU send them — call send_drafts. You never need the subject or body to send a saved draft, only draft ids: use the draft_ids from your draft_outreach results, or call list_drafts (optionally with lead_ids or a name) to look them up again. Pass from_email when the user names one inbox, or from_emails to rotate across several. When they do not name one, leave both off: sends automatically rotate across every healthy connected mailbox (least-used domain first), which is what you want for outbound volume. Use list_mailboxes if you need to know which addresses are connected, and never claim you can only send from one domain. Never tell the user to click "Send now" themselves or to open another page, and never claim you lack the lead ids or draft contents — look them up with list_drafts instead.
@@ -2961,6 +3140,7 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
       { marker: "- NEVER write, rewrite", tools: ["draft_outreach"] },
       { marker: "- draft_outreach goal", tools: ["draft_outreach"] },
       { marker: "- Drafts are auto-saved", tools: ["draft_outreach"] },
+      { marker: "- INBOX HISTORY:", tools: ["list_sent_emails", "get_email_thread"] },
       { marker: "- QUALITY:", tools: ["send_outreach"] },
       { marker: "- SENDING:", tools: ["send_drafts", "send_outreach"] },
       { marker: "- SCHEDULING:", tools: ["schedule_drafts"] },
@@ -2978,6 +3158,7 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
       if (allowedTools.includes("send_drafts") || allowedTools.includes("send_outreach")) bits.push("sending outreach");
       if (allowedTools.includes("schedule_drafts")) bits.push("scheduling sends for later");
       if (allowedTools.includes("list_recent_replies")) bits.push("reviewing inbound replies");
+      if (allowedTools.includes("list_sent_emails") || allowedTools.includes("get_email_thread")) bits.push("reading the inbox history of email already sent");
       if (allowedTools.includes("run_full_agent")) bits.push("triggering a full agent run");
       return `On this account you can do exactly this and nothing more: ${bits.join(", ")}.`;
     })();
