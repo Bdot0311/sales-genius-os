@@ -597,6 +597,45 @@ const TOOLS = [
   {
     type: "function",
     function: {
+      name: "list_sent_emails",
+      description:
+        "Read the inbox history of email ALREADY SENT from the connected mailboxes: who was emailed, the subject, the body that went out, when it sent, whether it was opened and whether they replied. Use this before writing any follow-up so the follow-up references the real first email, and to check whether someone has already been contacted.",
+      parameters: {
+        type: "object",
+        properties: {
+          lead_id: { type: "string", description: "Only emails sent to this lead" },
+          email: { type: "string", description: "Only emails sent to this address (partial match ok)" },
+          days: { type: "number", description: "Look back this many days (default 30, max 180)" },
+          awaiting_reply: {
+            type: "boolean",
+            description: "Only emails that have had no reply yet — the follow-up candidates",
+          },
+          include_body: { type: "boolean", description: "Include the full sent body (default true)" },
+          limit: { type: "number", description: "Default 20, max 50" },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_email_thread",
+      description:
+        "Read one full conversation thread: every email sent to that person plus any inbound replies with their classification. Use it before replying or following up so you have the exact wording of the earlier messages.",
+      parameters: {
+        type: "object",
+        properties: {
+          sent_email_id: { type: "string", description: "Any email id from list_sent_emails" },
+          email: { type: "string", description: "The prospect's email address" },
+          lead_id: { type: "string" },
+        },
+      },
+    },
+  },
+
+  {
+    type: "function",
+    function: {
       name: "update_lead",
       description: "Update a lead's visible pipeline label or notes. Outreach labels belong in pipeline_stage; lead_status is an internal record lifecycle and is not editable here.",
       parameters: {
