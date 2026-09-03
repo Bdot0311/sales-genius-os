@@ -97,23 +97,27 @@ export const ROLE_SCOPE_NOTE: Record<AgentRole, string> = {
   outreach:
     "SCOPE: you are an OUTREACH agent. You may draft, review, send, schedule and cancel first-touch email and sequences for leads that already exist in the account. You CANNOT source or enrich new leads — those tools are not available to you. If the user asks for prospecting, say this agent is scoped to outreach and they should switch to a lead gen or full-cycle agent.",
   replies:
-    "SCOPE: you are a REPLIES agent. You may review inbound replies and respond to them. You CANNOT source leads or run new first-touch campaigns — those tools are not available to you. If the user asks for that, say this agent is scoped to replies and they should switch agents.",
+    "SCOPE: you are a REPLIES agent. You may review inbound replies, draft and send responses in existing threads, schedule those sends and move the lead's stage. You CANNOT source or enrich new leads and you CANNOT run new first-touch campaigns — those tools are not available to you. If the user asks for that, say this agent is scoped to replies and they should switch agents.",
   custom:
     "SCOPE: you are a CUSTOM agent. Only the tools listed for you are available. Never claim you can do work outside them; if the user asks, say what this build is scoped to and suggest switching agents.",
 };
 
 /**
  * Resolve the tool names an agent may call.
- * Custom builds use their saved allow-list (intersected with the real catalog);
- * an empty/missing list falls back to full cycle so an agent is never useless.
+ *
+ * Custom builds use their saved allow-list. Preset roles use their role set, and
+ * if the operator narrowed that role in the config UI (a non-empty
+ * `allowed_tools` that is a subset of the role) the narrowed list wins. Either
+ * way the result is closed over prerequisites, so no agent — preset or custom —
+ * ends up holding a tool it cannot actually use.
  */
 export function allowedToolsFor(config: {
   role?: string | null;
   allowed_tools?: string[] | null;
 } | null | undefined): string[] {
   const role = (config?.role ?? "full_cycle") as AgentRole;
+  const saved = (config?.allowed_tools ?? []).filter((t) => ALL_AGENT_TOOLS.includes(t));
   if (role === "custom") {
-    const saved = (config?.allowed_tools ?? []).filter((t) => ALL_AGENT_TOOLS.includes(t));
     // A custom build with no (or no recognised) tools is read-only, NOT
     // full-cycle: falling back to every tool is how a "deliverability only"
     // build ended up offering to send email.
@@ -121,8 +125,14 @@ export function allowedToolsFor(config: {
     // drafts" without draft/list tools is an agent that can't do its job.
     return withToolPrerequisites([...new Set([...CORE_TOOLS, ...saved])]);
   }
-  return ROLE_TOOLS[(role in ROLE_TOOLS ? role : "full_cycle") as Exclude<AgentRole, "custom">];
+  const roleTools =
+    ROLE_TOOLS[(role in ROLE_TOOLS ? role : "full_cycle") as Exclude<AgentRole, "custom">];
+  // Operator narrowing of a preset role, never widening past the role.
+  const narrowed = saved.filter((t) => roleTools.includes(t));
+  const base = narrowed.length ? [...new Set([...CORE_TOOLS, ...narrowed])] : roleTools;
+  return withToolPrerequisites(base).filter((t) => roleTools.includes(t));
 }
+
 
 export function scopeNoteFor(config: {
   role?: string | null;
