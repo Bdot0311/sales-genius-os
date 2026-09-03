@@ -3301,23 +3301,46 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
      * actually did. Where the words and the record disagree, the record is
      * right there next to them.
      */
-    const withEvidence = (m: { role: string; content: string; tool_events?: unknown }) => {
-      if (m.role !== "assistant") return { role: m.role, content: m.content };
+    const evidenceFor = (m: { role: string; content: string; tool_events?: unknown }) => {
+      if (m.role !== "assistant") return null;
       const events = Array.isArray(m.tool_events) ? (m.tool_events as ToolEvent[]) : [];
-      if (events.length === 0) return { role: m.role, content: m.content };
-      const record = events
+      if (events.length === 0) return null;
+      return events
         .map((e) => `${e.name ?? "tool"}: ${e.status ?? "?"}${e.detail ? ` — ${e.detail}` : ""}`)
         .slice(-12)
         .join("; ");
-      return {
-        role: m.role,
-        content: `${m.content}\n\n[what actually ran that turn: ${record}]`,
-      };
+    };
+
+    /**
+     * The evidence goes in its own turn, not appended to the assistant message.
+     *
+     * Appending it made the annotation part of the assistant's own voice in the
+     * transcript, and the model started reproducing the format in new replies —
+     * writing a "[what actually ran…]" line of its own invention underneath a
+     * summary. An annotation the model can copy is worse than none: it looks
+     * exactly like the verified record while being another sentence it made up.
+     *
+     * As a separate non-assistant turn it is plainly something the system said
+     * about the previous turn, which is what it is.
+     */
+    const replayWithEvidence = (messages: typeof history) => {
+      const out: { role: string; content: string }[] = [];
+      for (const m of messages) {
+        out.push({ role: m.role, content: m.content });
+        const evidence = evidenceFor(m);
+        if (evidence) {
+          out.push({
+            role: "user",
+            content: `[system record, not from the user — what the tools actually did on that turn: ${evidence}. Where your reply above disagrees with this, this is what happened. Never write a line like this yourself.]`,
+          });
+        }
+      }
+      return out;
     };
 
     const messages: any[] = [
       { role: "system", content: scopedSystemPrompt },
-      ...history.map(withEvidence),
+      ...replayWithEvidence(history),
       ...(autoContinue
         ? [{
             role: "user",
@@ -3596,16 +3619,23 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
         .eq("user_id", userId)
         .eq("status", "pending");
 
-      finalText += `\n\n${correctionFor(claims)}`;
+      // The correction goes FIRST, not last.
+      //
+      // A user was shown eight hundred words of ticked-off names claiming
+      // twenty-one sends, with the correction underneath it. Anyone skimming
+      // sees the ticks and stops reading. A contradiction that arrives after
+      // the thing it contradicts has already been believed.
+      let correction = correctionFor(claims);
       if (claims.some((c) => c.id === "sent")) {
-        finalText += anythingQueued
+        correction += anythingQueued
           ? " The email is waiting on your confirmation."
           : " No send ran.";
         if (stillPending) {
-          finalText +=
+          correction +=
             ` You have ${stillPending} email(s) sitting in the approval queue. Say "approve all" and I will send them.`;
         }
       }
+      finalText = `⚠️ ${correction}\n\nWhat it said below is not reliable on that point:\n\n${finalText}`;
       console.warn(
         `[agent-chat] corrected unbacked claim(s): ${claims.map((c) => c.id).join(", ")}`,
       );
@@ -3619,9 +3649,13 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
     // and the summary rounded them off, so the numbers are appended here where
     // no summarising step can drop them.
     if (batchShortfalls.length > 0) {
-      finalText += `\n\n${batchShortfalls.length === 1 ? "Not everything went through." : "Some of that did not go through."}\n` +
-        batchShortfalls.map((line) => `- ${line}`).join("\n");
-      console.warn(`[agent-chat] appended ${batchShortfalls.length} batch shortfall note(s)`);
+      // Also first, and for the same reason: a shortfall reported under a
+      // summary that reads as success is a shortfall nobody reads.
+      finalText =
+        `⚠️ ${batchShortfalls.length === 1 ? "Not everything went through." : "Some of that did not go through."}\n` +
+        batchShortfalls.map((line) => `- ${line}`).join("\n") +
+        `\n\n${finalText}`;
+      console.warn(`[agent-chat] prepended ${batchShortfalls.length} batch shortfall note(s)`);
     }
 
 

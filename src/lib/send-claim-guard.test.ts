@@ -110,8 +110,19 @@ describe("an unbacked claim of sending is corrected", () => {
     expect(SRC).toContain('.eq("status", "pending")');
   });
 
-  it("appends rather than rewriting what the model said", () => {
-    expect(SRC).toContain("finalText += `\\n\\n${correctionFor(claims)}`");
+  it("keeps what the model said, word for word", () => {
+    // Silently editing an agent's own words hides the failure from whoever has
+    // to fix it. The reply is preserved verbatim; only its position moves.
+    expect(SRC).toContain("${finalText}`");
+    expect(SRC).not.toMatch(/finalText = finalText\.replace/);
+  });
+
+  it("leads with the correction rather than burying it", () => {
+    // A user was shown eight hundred words of ticked-off names claiming
+    // twenty-one sends, with the correction underneath. Anyone skimming sees
+    // the ticks and stops reading.
+    expect(SRC).toContain("What it said below is not reliable on that point");
+    expect(SRC).toMatch(/finalText = `⚠️ \$\{correction\}/);
   });
 });
 
