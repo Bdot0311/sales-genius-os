@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  COLDIQ_CREDITS_ERROR,
   coldiqLeadsMode,
   coldiqSearchPeople,
   extractRecords,
+  resetColdiqBreaker,
 } from "../../supabase/functions/_shared/coldiq.ts";
 import { readFileSync } from "node:fs";
 
@@ -91,10 +93,15 @@ describe("a failure leaves the caller where it was", () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("no credits", { status: 402 })));
     const r = await coldiqSearchPeople({ job_titles: ["CEO"] });
     expect(r.records).toHaveLength(0);
-    expect(r.error).toContain("402");
+    // A 402 now trips the credit breaker and reports the billing cause, which
+    // is more actionable than the status code it arrived as.
+    expect(r.error).toBe(COLDIQ_CREDITS_ERROR);
   });
 
   it("returns an error rather than throwing on a network failure", async () => {
+    // The breaker is module state: without this reset the previous test's 402
+    // is still tripped, and a network error is misreported as a billing one.
+    resetColdiqBreaker();
     setEnv({ COLDIQ_API_KEY: "k" });
     vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("boom"); }));
     const r = await coldiqSearchPeople({ job_titles: ["CEO"] });

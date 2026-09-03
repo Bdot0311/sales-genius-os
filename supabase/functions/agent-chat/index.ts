@@ -5,6 +5,12 @@ import { isWeak, rubricFeedback, scoreEmail } from "../_shared/email-quality.ts"
 import { signOffStartIndex } from "../_shared/email-rules.ts";
 import { findPlaceholders, hasPlaceholder, realValue } from "../_shared/email-rules.ts";
 import { asFnResult } from "../_shared/fn-result.ts";
+import {
+  accountFor,
+  batchFetchLimit,
+  isShortfall,
+  shortfallNote,
+} from "../_shared/batch-report.ts";
 import { buildIcpContext, icpSearchBody } from "../_shared/icp-context.ts";
 import { captureServerEvent } from "../_shared/posthog.ts";
 import { getSignatureHtml, appendSignatureToBody } from "../_shared/signature.ts";
@@ -1265,6 +1271,15 @@ serve(async (req) => {
     };
 
     const toolEvents: ToolEvent[] = [];
+    /**
+     * Batches that acted on fewer records than were asked for.
+     *
+     * The prompt tells the model to report a shortfall. Telling is not
+     * enforcing: a user asked for 32 sends, got 11, and was told everything had
+     * gone out. These are appended to the reply in code at the end of the turn,
+     * so the true numbers reach the user whatever the model chose to say.
+     */
+    const batchShortfalls: string[] = [];
     // Step timing telemetry (Agent > Performance tab reads this).
     const turnId = crypto.randomUUID();
     const turnStartedAt = Date.now();
@@ -2041,17 +2056,21 @@ serve(async (req) => {
             .filter(Boolean)
             .map((x: any) => String(x));
 
+          // Fetch what was actually asked for. A fixed page size here is what
+          // turned "send these 32" into eleven sends reported as a complete job.
+          const requestedCount = draftIds.length || leadIds.length;
           let q = admin
             .from("email_drafts")
             .select("id, lead_id, subject, body, created_at, leads(company_name, contact_name, contact_email)")
             .eq("user_id", userId)
             .order("created_at", { ascending: false })
-            .limit(20);
+            .limit(batchFetchLimit(requestedCount));
           if (draftIds.length) q = q.in("id", draftIds);
           else if (leadIds.length) q = q.in("lead_id", leadIds);
           const { data: draftRows, error: draftErr } = await q;
           if (draftErr) return { error: draftErr.message };
 
+          const fetchedCount = (draftRows ?? []).length;
           let drafts = draftRows ?? [];
           // One email per person, always.
           //
@@ -2114,16 +2133,46 @@ serve(async (req) => {
 
           const sentCount = results.filter((r) => r.sent).length;
           const queuedCount = results.filter((r) => r.queued_for_approval).length;
+          const failedCount = results.filter((r) => !r.sent && !r.queued_for_approval).length;
           const usedFrom = [...new Set(results.map((r) => r.from).filter(Boolean))];
+
+          // Account for the whole request, not just the rows this call saw.
+          const accounting = accountFor(requestedCount, fetchedCount, drafts.length);
+          const acted = autonomous ? sentCount : queuedCount;
+          const shortfall = shortfallNote(accounting, "were sent", acted);
+          if (isShortfall(accounting) || failedCount > 0) {
+            batchShortfalls.push(
+              `You asked for ${accounting.requested || drafts.length} — ${acted} ${
+                autonomous ? "actually sent" : "queued for your approval"
+              }${failedCount > 0 ? `, ${failedCount} failed` : ""}${
+                accounting.deduped > 0 ? `, ${accounting.deduped} skipped as duplicates for the same person` : ""
+              }${
+                accounting.overCeiling > 0
+                  ? `, ${accounting.overCeiling} not found among your saved drafts`
+                  : ""
+              }.`,
+            );
+          }
+
           return {
             from: usedFrom.join(", ") || pool[0].email,
             rotated_across: usedFrom.length,
+            requested: requestedCount || drafts.length,
+            attempted: results.length,
             sent: sentCount,
+            failed: failedCount,
             queued_for_approval: queuedCount,
+            accounting,
             results,
-            note: autonomous
-              ? `Sent ${sentCount} of ${results.length} draft(s), rotated across ${usedFrom.length || 1} mailbox(es): ${usedFrom.join(", ") || pool[0].email}.`
-              : `Nothing was sent yet — ${queuedCount} email(s) are paused waiting on the user. Ask them in the chat to confirm, then call resolve_approvals when they reply confirming. Never tell them to click a button or go to another page.`,
+            note: [
+              autonomous
+                ? `Sent ${sentCount} of ${results.length} draft(s) attempted, rotated across ${usedFrom.length || 1} mailbox(es): ${usedFrom.join(", ") || pool[0].email}.`
+                : `Nothing was sent yet — ${queuedCount} email(s) are paused waiting on the user. Ask them in the chat to confirm, then call resolve_approvals when they reply confirming. Never tell them to click a button or go to another page.`,
+              failedCount > 0
+                ? `${failedCount} did NOT go out — the per-record errors are in results. Report the failures, do not round them off.`
+                : "",
+              shortfall,
+            ].filter(Boolean).join(" "),
           };
         }
 
@@ -2155,17 +2204,21 @@ serve(async (req) => {
             .filter(Boolean)
             .map((x: any) => String(x));
 
+          // Same accounting as send_drafts: a scheduling request for 32 that
+          // quietly queues 11 is the same failure arriving later.
+          const requestedCount = draftIds.length || leadIds.length;
           let q = admin
             .from("email_drafts")
             .select("id, lead_id, subject, body, created_at, leads(company_name, contact_name, contact_email)")
             .eq("user_id", userId)
             .order("created_at", { ascending: false })
-            .limit(20);
+            .limit(batchFetchLimit(requestedCount));
           if (draftIds.length) q = q.in("id", draftIds);
           else if (leadIds.length) q = q.in("lead_id", leadIds);
           const { data: draftRows, error: draftErr } = await q;
           if (draftErr) return { error: draftErr.message };
 
+          const fetchedCount = (draftRows ?? []).length;
           let drafts = draftRows ?? [];
           // One scheduled email per person — same rule as send_drafts. A
           // duplicate scheduled instead of sent is the same duplicate arriving
@@ -2336,17 +2389,37 @@ serve(async (req) => {
             });
           }
 
+          const accounting = accountFor(requestedCount, fetchedCount, drafts.length);
+          const shortfall = shortfallNote(accounting, "were scheduled", queuedCount || okCount);
+          if (isShortfall(accounting)) {
+            batchShortfalls.push(
+              `You asked to schedule ${accounting.requested || drafts.length} — ${queuedCount || okCount} were queued${
+                accounting.deduped > 0 ? `, ${accounting.deduped} skipped as duplicates for the same person` : ""
+              }${
+                accounting.overCeiling > 0
+                  ? `, ${accounting.overCeiling} not found among your saved drafts`
+                  : ""
+              }.`,
+            );
+          }
+
           return {
             from: usedFrom.join(", ") || pool[0].email,
             rotated_across: usedFrom.length,
+            requested: requestedCount || drafts.length,
+            attempted: results.length,
             scheduled: okCount,
             queued_for_approval: queuedCount,
+            accounting,
             results,
-            note: queuedCount
-              ? `Nothing is scheduled yet — ${queuedCount} email(s) are paused waiting on the user, to go out at the times above once approved. Tell them who and when, ask them to confirm in the chat, then call resolve_approvals.`
-              : okCount
-                ? `Queued ${okCount} email(s) rotated across ${usedFrom.join(", ")}. The scheduler sends them automatically at the times above — the user does not need to do anything. They can be cancelled with cancel_scheduled_email.`
-                : "Nothing was scheduled.",
+            note: [
+              queuedCount
+                ? `Nothing is scheduled yet — ${queuedCount} email(s) are paused waiting on the user, to go out at the times above once approved. Tell them who and when, ask them to confirm in the chat, then call resolve_approvals.`
+                : okCount
+                  ? `Queued ${okCount} email(s) rotated across ${usedFrom.join(", ")}. The scheduler sends them automatically at the times above — the user does not need to do anything. They can be cancelled with cancel_scheduled_email.`
+                  : "Nothing was scheduled.",
+              shortfall,
+            ].filter(Boolean).join(" "),
           };
         }
 
@@ -3456,6 +3529,19 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
           ? ` You have ${stillPending} email(s) sitting in the approval queue. Say "approve all" and I will send them.`
           : "");
       console.warn(`[agent-chat] corrected an unbacked send claim (${stillPending ?? 0} pending)`);
+    }
+
+    // A partial batch is the other way the agent tells the truth and misleads.
+    //
+    // The send-claim check above only fires when NOTHING went out. It does not
+    // catch the case that actually reached a user: 32 asked for, 11 sent, and a
+    // reply saying they had all gone. The tool result carried the real numbers
+    // and the summary rounded them off, so the numbers are appended here where
+    // no summarising step can drop them.
+    if (batchShortfalls.length > 0) {
+      finalText += `\n\n${batchShortfalls.length === 1 ? "Not everything went through." : "Some of that did not go through."}\n` +
+        batchShortfalls.map((line) => `- ${line}`).join("\n");
+      console.warn(`[agent-chat] appended ${batchShortfalls.length} batch shortfall note(s)`);
     }
 
 
