@@ -81,6 +81,8 @@ export const AGENT_TOOL_GROUPS: {
     label: "Replies",
     tools: [
       { name: "list_recent_replies", label: "Read inbound replies" },
+      { name: "list_sent_emails", label: "Read sent inbox history" },
+      { name: "get_email_thread", label: "Read a full email thread" },
       { name: "delete_inbox_threads", label: "Delete inbox threads" },
       { name: "resolve_approvals", label: "Resolve approvals" },
     ],

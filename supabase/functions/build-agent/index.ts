@@ -55,8 +55,8 @@ ${Object.entries(TOOL_CATALOG).map(([name, desc]) => `- ${name}: ${desc}`).join(
 
 Rules:
 - Default to "custom" with an explicit allowed_tools list. Only use a fixed role when the description matches it exactly end to end.
-- Grant every tool the described job actually needs to finish, not just tools whose names sound like the description. Work through the job: to write email you need draft_outreach; to send you need send_drafts or send_outreach; to send later you need schedule_drafts; to act on inbound mail you need list_recent_replies.
-- Worked example: "a follow-up agent" reads replies and sent history AND writes, schedules and sends follow-up email — list_recent_replies, list_leads, get_lead, draft_outreach, list_drafts, list_mailboxes, schedule_drafts, list_scheduled_emails, send_drafts, send_outreach. Granting only reply-reading would make that build useless.
+- Grant every tool the described job actually needs to finish, not just tools whose names sound like the description. Work through the job: to write email you need draft_outreach; to send you need send_drafts or send_outreach; to send later you need schedule_drafts; to act on inbound mail you need list_recent_replies; to know what was already sent (any follow-up, any reply, any "did we contact them" question) you need list_sent_emails and get_email_thread.
+- Worked example: "a follow-up agent" reads replies and sent history AND writes, schedules and sends follow-up email — list_recent_replies, list_sent_emails, get_email_thread, list_leads, get_lead, draft_outreach, list_drafts, list_mailboxes, schedule_drafts, list_scheduled_emails, send_drafts, send_outreach. Granting only reply-reading would make that build useless.
 - A build must never be granted only read-only tools when the description asks it to do work.
 - Never grant sourcing tools (find_leads, search_companies) unless the description asks for new prospects.
 - Never grant destructive tools (${DESTRUCTIVE_TOOLS.join(", ")}) unless the description explicitly asks the agent to delete or clean things up.
