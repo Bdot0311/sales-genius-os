@@ -152,9 +152,12 @@ serve(async (req) => {
     };
 
     const requestedRole = ROLES.includes(parsed.role) ? parsed.role : "full_cycle";
-    const grantedTools = Array.isArray(parsed.allowed_tools)
-      ? parsed.allowed_tools.filter((t: unknown) => typeof t === "string" && ALL_AGENT_TOOLS.includes(t))
-      : [];
+    const wantsDeletes = /\b(delete|remove|purge|clean\s*up|clear out|wipe)\b/i.test(description);
+    const grantedTools = (Array.isArray(parsed.allowed_tools) ? parsed.allowed_tools : [])
+      .filter((t: unknown): t is string => typeof t === "string" && ALL_AGENT_TOOLS.includes(t))
+      // Destructive tools are only granted when the description asks for them —
+      // the model liked to sprinkle delete_* into unrelated builds.
+      .filter((t: string) => wantsDeletes || !DESTRUCTIVE_TOOLS.includes(t));
 
     // Route the build through the account's plan tier: whatever the description
     // asked for, the build can only be granted tools the plan allows. If the
@@ -163,7 +166,10 @@ serve(async (req) => {
     const tier = await resolveAgentTier(admin as any, user.id);
     const wanted =
       requestedRole === "custom"
-        ? [...new Set([...CORE_TOOLS, ...grantedTools])]
+        ? // Prerequisite closure: a build granted "send" with no way to draft or
+          // list drafts is what made custom agents report they can barely do
+          // anything. Grant the supporting tools the chosen work needs.
+          withToolPrerequisites([...new Set([...CORE_TOOLS, ...grantedTools])])
         : allowedToolsFor({ role: requestedRole });
     const cappedTools = capToolsToTier(wanted, tier);
     const removedByPlan = blockedToolsFor(wanted, tier);
