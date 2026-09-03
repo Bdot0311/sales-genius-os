@@ -97,7 +97,9 @@ export function allowedToolsFor(config: {
     // A custom build with no (or no recognised) tools is read-only, NOT
     // full-cycle: falling back to every tool is how a "deliverability only"
     // build ended up offering to send email.
-    return [...new Set([...CORE_TOOLS, ...saved])];
+    // Closure over prerequisites so a hand-picked build is coherent: "send
+    // drafts" without draft/list tools is an agent that can't do its job.
+    return withToolPrerequisites([...new Set([...CORE_TOOLS, ...saved])]);
   }
   return ROLE_TOOLS[(role in ROLE_TOOLS ? role : "full_cycle") as Exclude<AgentRole, "custom">];
 }
