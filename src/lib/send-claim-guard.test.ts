@@ -154,3 +154,37 @@ describe("the send-claim pattern", () => {
     }
   });
 });
+
+/**
+ * Ground truth from a real account: 11 emails sent (4/4/3 across three
+ * mailboxes), 103 approvals pending, and an agent reporting 21 fresh sends
+ * with a tick beside every name.
+ *
+ * resolve_approvals already returned each failure with its reason and told the
+ * model to report them. It reported success instead — the same "the prompt
+ * asked and the prompt is what failed" shape as every other finding.
+ */
+describe("a refused send tells the user why", () => {
+  const SRC = readFileSync("supabase/functions/agent-chat/index.ts", "utf8");
+
+  it("collects the refusal reasons in code, not just in the tool result", () => {
+    expect(SRC).toMatch(/const sendFailures: string\[\] = \[\]/);
+    expect(SRC).toMatch(/sendFailures\.push\(/);
+  });
+
+  it("deduplicates the reason rather than repeating it per recipient", () => {
+    // Twenty-one identical "daily limit reached" lines bury the one fact.
+    expect(SRC).toMatch(/\[\.\.\.new Set\(outcomes/);
+  });
+
+  it("puts the reason above the summary that claimed success", () => {
+    expect(SRC).toMatch(/⚠️ Sends were refused/);
+    expect(SRC).toMatch(/still queued, so they can go out once that is fixed/);
+  });
+
+  it("does not discard the failed approvals", () => {
+    // A failed send leaves the approval pending so it can be retried once the
+    // cause is fixed — that is what makes the queue recoverable.
+    expect(SRC).toMatch(/o\.status === "pending"/);
+  });
+});
