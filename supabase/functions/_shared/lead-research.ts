@@ -1,3 +1,5 @@
+import { changesPromptLines, type BriefChanges } from "./brief-diff.ts";
+
 // Shared types + freshness helpers for per-lead website research briefs.
 // The brief lives on public.leads (research_brief / research_sources /
 // research_confidence / researched_at) so one scrape serves every email
@@ -28,6 +30,14 @@ export interface LeadResearchBrief {
   confidence: "high" | "medium" | "low";
   /** Deterministic completeness score, stored with the brief for reuse. */
   quality?: ResearchQuality;
+  /**
+   * What moved on their site since the previous brief.
+   *
+   * Kept inside the brief rather than in its own column: this is a jsonb
+   * field, so adding to it needs no migration and cannot leave deployed code
+   * reading a column the live database has not got yet.
+   */
+  changes?: BriefChanges | null;
 }
 
 export type ResearchQualityLabel = "strong" | "usable" | "thin" | "insufficient";
@@ -182,6 +192,10 @@ export function briefToPromptBlock(
 ): string {
   if (!brief) return "";
   const lines: string[] = [];
+  // First, because it is the only material here whose timing is certain, and
+  // because a "why now" that arrives under four paragraphs of standing facts
+  // gets written as a footnote instead of as the opening line.
+  lines.push(...changesPromptLines(brief.changes));
   if (brief.what_they_do) lines.push(`- What they do: ${brief.what_they_do}`);
   if (brief.who_they_sell_to) lines.push(`- Who they sell to: ${brief.who_they_sell_to}`);
   for (const o of brief.observations || []) {
@@ -197,7 +211,11 @@ export function briefToPromptBlock(
     lines.push(`- Do NOT claim (unsupported by their site): ${brief.avoid.join("; ")}`);
   }
   if (sources?.length) lines.push(`- Sources read: ${sources.slice(0, 8).join(", ")}`);
-  if (!freshObservationDates(brief).length) {
+  // A change since the last look IS dated — that is the whole point of it —
+  // so the blanket "nothing here is dated, make no time claim" would
+  // contradict the strongest line in the block and suppress it.
+  const hasChanges = Boolean(brief.changes?.added?.length || brief.changes?.removed?.length);
+  if (!hasChanges && !freshObservationDates(brief).length) {
     lines.push(
       "- TIMING: nothing here is dated inside the last few months. Do NOT open with a time claim — no month names, no \"recently\", no \"just\", no \"I saw last week\". Reference the fact without dating it.",
     );

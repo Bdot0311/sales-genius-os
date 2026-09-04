@@ -14,6 +14,7 @@ import {
   type LeadResearchBrief,
 } from "../_shared/lead-research.ts";
 import { aiFetch } from "../_shared/ai-provider.ts";
+import { diffBriefs } from "../_shared/brief-diff.ts";
 import {
   FALLBACK_PATHS,
   isSitemapIndex,
@@ -597,9 +598,33 @@ serve(async (req) => {
         ? (signalFacts.length ? "high" : "medium")
         : result.brief.confidence,
     };
+    // ─── What moved since the last look ──────────────────────────────────────
+    //
+    // The previous brief is already in hand — it is the row we are about to
+    // overwrite — and comparing the two was never done. A difference is the
+    // only material in the whole brief whose timing is certain: a standing
+    // marketing page was equally true last year, but "this was not on their
+    // site three weeks ago" dates itself by construction.
+    //
+    // The previous brief carries its own `changes` from the run before. Diffing
+    // against a brief that already describes a diff would compound, so only the
+    // observations are compared, which is all diffBriefs reads.
+    const changes = diffBriefs(
+      (lead.research_brief ?? null) as LeadResearchBrief | null,
+      baseBrief,
+      { previousAt: (lead.researched_at as string | null) ?? null },
+    );
+    if (changes) {
+      console.log(
+        `[research-lead] ${host}: ${changes.added.length} new, ${changes.removed.length} gone since ${
+          changes.days === null ? "the last look" : `${changes.days}d ago`
+        }`,
+      );
+    }
+
     // Deterministic completeness score so every surface gates the same way.
     const quality = scoreResearchQuality(baseBrief, sources);
-    const brief: LeadResearchBrief = { ...baseBrief, quality };
+    const brief: LeadResearchBrief = { ...baseBrief, quality, changes };
     const researchedAt = new Date().toISOString();
 
     const { error: writeError } = await supabase
