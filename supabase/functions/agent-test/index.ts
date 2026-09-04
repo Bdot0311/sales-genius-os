@@ -177,7 +177,7 @@ async function runScenarios(
   const needsFixture = selected.some((s) => /Acme Corp/i.test(s.message));
   let fixtureLeadId: string | null = null;
   if (needsFixture) {
-    const { data: lead } = await admin
+    const { data: lead, error: leadErr } = await admin
       .from("leads")
       .insert({
         user_id: userId,
@@ -187,12 +187,24 @@ async function runScenarios(
         contact_email: "dana.reeves@acme-eval.example",
         company_website: "https://acme-eval.example",
         industry: "Logistics",
-        lead_status: "new",
+        lead_status: "active",
         pipeline_stage: "new",
         demo_seed: true,
       })
       .select("id")
       .maybeSingle();
+    if (leadErr) {
+      return {
+        passed: 0,
+        failed: selected.length,
+        results: selected.map((s) => ({
+          id: s.id,
+          passed: false,
+          error: `could not seed eval fixture: ${leadErr.message}`,
+          guards: s.guards,
+        })),
+      };
+    }
     fixtureLeadId = (lead as { id: string } | null)?.id ?? null;
   }
 
