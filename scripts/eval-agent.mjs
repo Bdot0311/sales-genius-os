@@ -41,35 +41,56 @@ if (missing.length) {
   process.exit(2);
 }
 
-const res = await fetch(`${url}/functions/v1/agent-test`, {
-  method: "POST",
-  headers: {
-    Authorization: `Bearer ${token}`,
-    apikey: anonKey,
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({ mode: "behaviour" }),
-});
-
-const text = await res.text();
-let data;
-try {
-  data = JSON.parse(text);
-} catch {
-  console.error(`Non-JSON response (${res.status}): ${text.slice(0, 500)}`);
-  process.exit(1);
+// Scenario ids come from the shared definition file, so the runner cannot
+// drift from the suite. Each one is its own request: a full agent turn is slow
+// and eight of them exceed the edge function's idle timeout.
+function scenarioIds() {
+  const file = path.resolve(process.cwd(), "supabase/functions/_shared/agent-scenarios.ts");
+  const src = fs.readFileSync(file, "utf8");
+  const body = src.slice(src.indexOf("AGENT_SCENARIOS: AgentScenario[]"));
+  return [...body.matchAll(/^\s{4}id: "([^"]+)"/gm)].map((m) => m[1]);
 }
 
-if (!data?.success) {
-  console.error(`Eval failed (${res.status}): ${data?.error ?? text.slice(0, 500)}`);
-  process.exit(1);
+async function runScenario(id) {
+  const res = await fetch(`${url}/functions/v1/agent-test`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      apikey: anonKey,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ mode: "behaviour", scenarioIds: [id] }),
+  });
+  const text = await res.text();
+  try {
+    const data = JSON.parse(text);
+    if (!data?.success) {
+      return { results: [{ id, passed: false, error: data?.error ?? `HTTP ${res.status}` }] };
+    }
+    return data;
+  } catch {
+    return { results: [{ id, passed: false, error: `HTTP ${res.status}: ${text.slice(0, 200)}` }] };
+  }
 }
 
-const results = Array.isArray(data.results) ? data.results : [];
-for (const r of results) {
-  const mark = r.passed ? "PASS" : "FAIL";
-  console.log(`${mark}  ${r.id}${r.error ? ` — ${r.error}` : ""}`);
-  if (!r.passed && r.explanation) console.log(`      ${r.explanation}`);
+const ids = scenarioIds();
+if (ids.length === 0) {
+  console.error("No scenarios found in supabase/functions/_shared/agent-scenarios.ts");
+  process.exit(2);
+}
+
+const data = { results: [], passed: 0, failed: 0, total: 0 };
+for (const id of ids) {
+  const part = await runScenario(id);
+  for (const r of part.results ?? []) {
+    data.results.push(r);
+    data.total++;
+    if (r.passed) data.passed++;
+    else data.failed++;
+    const mark = r.passed ? "PASS" : "FAIL";
+    console.log(`${mark}  ${r.id}${r.error ? ` — ${r.error}` : ""}`);
+    if (!r.passed && r.explanation) console.log(`      ${r.explanation}`);
+  }
 }
 
 console.log(`\n${data.passed}/${data.total} scenarios passed (${data.failed} failed)`);
